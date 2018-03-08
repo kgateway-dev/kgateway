@@ -25,7 +25,7 @@ Gloo offers first-class API management features on all functions:
 - Metrics & Tracing
 - Health Checks
 - Retries
-- Advanecd load balancing
+- Advanced load balancing
 - TLS Termination with SNI Support
 - HTTP Header modification
 <!-- TODO: -Authentication -->
