@@ -178,7 +178,7 @@ routes:
 
 ```
 
-Note that it is necessary to specify `paremeters` for this function invocation. Some function destinations
+Note that it is necessary to specify `parameters` for this function invocation. Some function destinations
 require extensions to be specified on the route they belong to. Documentation for each plugin can be found in the Plugins
 section.
 
