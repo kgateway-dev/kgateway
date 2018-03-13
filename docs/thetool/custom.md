@@ -10,7 +10,7 @@ You can get a list of available features by using the `list` command.
 
     thetool list
 
-This will show all the features that are available and wether they are enabled or disabled.
+This will show all the features that are available and whether they are enabled or disabled.
 
 ```
 Repository:       https://github.com/solo-io/gloo-plugins.git
