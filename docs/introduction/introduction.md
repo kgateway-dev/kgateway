@@ -1,8 +1,8 @@
 # Introduction
 
-- [What is Gloo?](#What is Gloo?)
-- [Using Gloo](#Using Gloo)
-- [Basic Workflow](#Basic Workflow)
+- [What is Gloo?](#what-is-gloo)
+- [Using Gloo](#using-gloo)
+- [Basic Workflow](#basic-workflow)
 
 
 
