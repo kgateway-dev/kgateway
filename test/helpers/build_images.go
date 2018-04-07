@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/onsi/ginkgo"
+
 	"github.com/solo-io/gloo/pkg/log"
 )
 
@@ -56,8 +58,8 @@ func BuildPushContainers(push bool, debug bool) error {
 
 		cmd := exec.Command("make", arg)
 		cmd.Dir = GlooSoloDirectory()
-		cmd.Stdout = os.Stderr // TODO(yuval-k): should this be GinkgoWriter ?
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = ginkgo.GinkgoWriter
+		cmd.Stderr = ginkgo.GinkgoWriter
 		if err := cmd.Run(); err != nil {
 			return err
 		}
@@ -79,23 +81,23 @@ func BuildPushContainers(push bool, debug bool) error {
 		log.Debugf("TEST: building fullImage %v", fullImage)
 		cmd := exec.Command("make", "docker")
 		cmd.Dir = path
-		cmd.Stdout = os.Stderr
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = ginkgo.GinkgoWriter
+		cmd.Stderr = ginkgo.GinkgoWriter
 		if err := cmd.Run(); err != nil {
 			return err
 		}
 		if push {
 			cmd = exec.Command("docker", "push", fullImage)
-			cmd.Stdout = os.Stderr
-			cmd.Stderr = os.Stderr
+			cmd.Stdout = ginkgo.GinkgoWriter
+			cmd.Stderr = ginkgo.GinkgoWriter
 			if err := cmd.Run(); err != nil {
 				return err
 			}
 		}
 		cmd = exec.Command("make", "clean")
 		cmd.Dir = path
-		cmd.Stdout = os.Stderr
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = ginkgo.GinkgoWriter
+		cmd.Stderr = ginkgo.GinkgoWriter
 		cmd.Run()
 	}
 	return nil

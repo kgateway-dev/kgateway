@@ -15,5 +15,6 @@ func TestKubernetes(t *testing.T) {
 		return
 	}
 	RegisterFailHandler(Fail)
+	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "Kubernetes Suite")
 }

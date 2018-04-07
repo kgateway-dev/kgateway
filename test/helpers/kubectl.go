@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"text/template"
 
+	"github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/log"
 )
@@ -178,8 +179,8 @@ func kubectl(args ...string) error {
 			break
 		}
 	}
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = ginkgo.GinkgoWriter
+	cmd.Stderr = ginkgo.GinkgoWriter
 	return cmd.Run()
 }
 

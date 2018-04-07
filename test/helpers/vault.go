@@ -3,6 +3,8 @@ package helpers
 import (
 	"os"
 	"os/exec"
+
+	"github.com/onsi/ginkgo"
 )
 
 func DockerRunVault(containerName, rootToken string) error {
@@ -14,8 +16,8 @@ func DockerRunVault(containerName, rootToken string) error {
 		"-p", "8200:8200",
 		"--name="+containerName, "vault")
 	if os.Getenv("DEBUG") == "1" {
-		cmd.Stdout = os.Stderr
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = ginkgo.GinkgoWriter
+		cmd.Stderr = ginkgo.GinkgoWriter
 	}
 	return cmd.Start()
 }
