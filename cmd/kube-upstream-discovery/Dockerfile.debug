@@ -1,0 +1,3 @@
+FROM ubuntu
+COPY kube-upstream-discovery-debug /
+ENTRYPOINT ["/kube-upstream-discovery-debug"]

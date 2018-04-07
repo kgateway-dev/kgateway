@@ -42,13 +42,17 @@ var _ = Describe("Kubernetes Deployment", func() {
 
 		// are we on minikube? set docket env vars and push to false
 		push := true
+		debug := false
 		if setupMinikubeEnvVars() {
 			push = false
+		}
+		if os.Getenv("DEBUG_IMAGES") =="1" {
+			debug = true
 		}
 
 		log.Debugf("SetupKubeForE2eTest: push =  %v \t namespace = %v", push, namespace)
 
-		err := SetupKubeForE2eTest(namespace, true, push)
+		err := SetupKubeForE2eTest(namespace, true, push, debug)
 		Must(err)
 		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 		masterUrl := ""

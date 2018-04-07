@@ -11,25 +11,25 @@ ingress:
 control_plane:
   replicaCount: 1
   port: 8081
-  image: "soloio/control-plane"
+  image: soloio/control-plane{{ .Debug }}
   imageTag: {{ .ImageTag }}
   imagePullPolicy: {{ .ImagePullPolicy }}
 
 #  extra
 function_discovery:
-  image: soloio/function-discovery
+  image: soloio/function-discovery{{ .Debug }}
   imageTag: {{ .ImageTag }}
   imagePullPolicy: {{ .ImagePullPolicy }}
   enable: true
 
 kube_ingress_controller:
-  image: soloio/kube-ingress-controller
+  image: soloio/kube-ingress-controller{{ .Debug }}
   imageTag: {{ .ImageTag }}
   imagePullPolicy: {{ .ImagePullPolicy }}
   enable: true
 
 kube_upstream_discovery:
-  image: soloio/kube-upstream-discovery
+  image: soloio/kube-upstream-discovery{{ .Debug }}
   imageTag: {{ .ImageTag }}
   imagePullPolicy: {{ .ImagePullPolicy }}
   enable: true

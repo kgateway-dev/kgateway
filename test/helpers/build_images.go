@@ -35,7 +35,7 @@ func hash(h string) string {
 }
 
 // builds and pushes all docker containers needed for test
-func BuildPushContainers(push bool) error {
+func BuildPushContainers(push bool, debug bool) error {
 	if os.Getenv("SKIP_BUILD") == "1" {
 		return nil
 	}
@@ -48,6 +48,10 @@ func BuildPushContainers(push bool) error {
 		arg += "-docker"
 		if push {
 			arg += "-push"
+		}
+
+		if debug {
+			arg += "-debug"
 		}
 
 		cmd := exec.Command("make", arg)

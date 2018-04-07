@@ -46,6 +46,7 @@ $(eval OUTPUT_BINARY := $(OUTPUT)/$(BINARY))
 .PHONY: $(BINARY)-docker
 .PHONY: $(BINARY)-docker-debug
 .PHONY: $(BINARY)-docker-push
+.PHONY: $(BINARY)-docker-push-debug
 
 # nice targets for the binaries
 $(BINARY): $(OUTPUT_BINARY)
@@ -53,17 +54,19 @@ $(BINARY)-debug: $(OUTPUT_BINARY)-debug
 
 # go build
 $(OUTPUT_BINARY): $(OUTPUT) $(PREREQUISITES)
-	CGO_ENABLED=0 GOOS=linux go build -i -v -o $(OUTPUT_BINARY) cmd/$(BINARY)/main.go
+	CGO_ENABLED=0 GOOS=linux go build -v -o $(OUTPUT_BINARY) cmd/$(BINARY)/main.go
 $(OUTPUT_BINARY)-debug: $(OUTPUT) $(PREREQUISITES)
 	go build -i -gcflags "-N -l" -o $(OUTPUT_BINARY)-debug cmd/$(BINARY)/main.go
 
 # docker
 $(BINARY)-docker: $(OUTPUT_BINARY)
-	docker build -t $(DOCKER_USER)/$(BINARY):$(IMAGE_TAG) -f cmd/$(BINARY)/Dockerfile $(OUTPUT)
+	docker build -t $(DOCKER_USER)/$(BINARY):$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile 
 $(BINARY)-docker-debug: $(OUTPUT_BINARY)-debug
-	docker build -t $(DOCKER_USER)/$(BINARY)-debug:$(IMAGE_TAG) -f cmd/$(BINARY)/Dockerfile.debug $(OUTPUT)
+	docker build -t $(DOCKER_USER)/$(BINARY)-debug:$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile.debug
 $(BINARY)-docker-push: $(BINARY)-docker
 	docker push $(DOCKER_USER)/$(BINARY):$(IMAGE_TAG)
+$(BINARY)-docker-push-debug: $(BINARY)-docker-debug
+	docker push $(DOCKER_USER)/$(BINARY)-debug:$(IMAGE_TAG)
 
 endef
 

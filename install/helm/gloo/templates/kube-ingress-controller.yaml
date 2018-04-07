@@ -28,7 +28,6 @@ spec:
           value: "1"
         - name: GRPC_TRACE
           value: all
-        command: ["/kube-ingress-controller"]
         args:
         - "--service=ingress"
         - "--syncperiod=30m"

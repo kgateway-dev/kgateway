@@ -30,7 +30,6 @@ spec:
           value: "all"
         - name: DEBUG
           value: "1"
-        command: ["/control-plane"]
         args:
         - "--storage.type=kube"
         - "--storage.refreshrate=1m"

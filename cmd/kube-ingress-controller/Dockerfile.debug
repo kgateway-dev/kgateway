@@ -1,0 +1,3 @@
+FROM ubuntu
+COPY kube-ingress-controller-debug /
+ENTRYPOINT ["/kube-ingress-controller-debug"]

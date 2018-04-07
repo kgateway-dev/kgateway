@@ -28,7 +28,6 @@ spec:
           value: "all"
         - name: DEBUG
           value: "1"
-        command: ["/function-discovery"]
         args:
         - "--storage.type=kube"
         - "--storage.refreshrate=30m"

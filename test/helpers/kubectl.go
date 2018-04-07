@@ -59,12 +59,12 @@ func TeardownKubeE2E(namespace string) error {
 	return kubectl("delete", "-f", filepath.Join(E2eDirectory(), "kube_resources", "testing-resources.yml"))
 }
 
-func SetupKubeForE2eTest(namespace string, buildImages, push bool) error {
+func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error {
 	if err := SetupKubeForTest(namespace); err != nil {
 		return err
 	}
 	if buildImages {
-		if err := BuildPushContainers(push); err != nil {
+		if err := BuildPushContainers(push, debug); err != nil {
 			return err
 		}
 	}
@@ -86,7 +86,11 @@ func SetupKubeForE2eTest(namespace string, buildImages, push bool) error {
 		Namespace       string
 		ImageTag        string
 		ImagePullPolicy string
-	}{Namespace: namespace, ImageTag: ImageTag(), ImagePullPolicy: pullPolicy}
+		Debug           string
+	}{Namespace: namespace, ImageTag: ImageTag(), ImagePullPolicy: pullPolicy, Debug: ""}
+	if debug {
+		data.Debug = "-debug"
+	}
 
 	tmpl, err := template.New("Test_Resources").ParseFiles(filepath.Join(kubeResourcesDir, "helm-values.yaml.tmpl"))
 	if err != nil {
