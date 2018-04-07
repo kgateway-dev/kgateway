@@ -13,9 +13,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/local_e2e/test_grpc_service/glootest/protos"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 var _ = Describe("GRPC Plugin", func() {
@@ -25,8 +25,6 @@ var _ = Describe("GRPC Plugin", func() {
 
 		err = glooInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
-
-		log.Printf("gloo: %v", glooInstance)
 
 		envoyPort := glooInstance.EnvoyPort()
 
