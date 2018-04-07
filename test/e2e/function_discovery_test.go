@@ -1,8 +1,6 @@
 package e2e
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -53,7 +51,7 @@ var _ = Describe("Function Discovery Service Detection", func() {
 						return nil, errors.New("could not find upstream " + test.upstreamName)
 					}
 					return upstreamToTest.ServiceInfo, nil
-				}, time.Minute*2).Should(Equal(test.expectedServiceInfo))
+				}, "2m", "5s").Should(Equal(test.expectedServiceInfo))
 			})
 		})
 	}

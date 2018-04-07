@@ -62,7 +62,7 @@ var _ = Describe("Kubernetes Ingress Controller", func() {
 					return nil, err
 				}
 				return updated.Status.LoadBalancer.Ingress, nil
-			}, time.Minute*1).Should(Equal(expectedLbStatus))
+			}, "1m","5s").Should(Equal(expectedLbStatus))
 		})
 	})
 	Context("creating a kubernetes ingress with multiple rules", func() {

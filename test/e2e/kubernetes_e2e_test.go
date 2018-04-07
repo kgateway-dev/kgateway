@@ -103,7 +103,7 @@ func curlEventuallyShouldRespond(opts curlOpts, substr string, timeout ...time.D
 			log.GreyPrintf("success: %v", res)
 		}
 		return res
-	}, t).Should(ContainSubstring(substr))
+	}, t,"5s").Should(ContainSubstring(substr))
 }
 
 func curl(opts curlOpts) (string, error) {

@@ -88,5 +88,5 @@ func logsShouldEventuallyContain(substr string, timeout ...time.Duration) {
 			log.GreyPrintf("success: %v", logs)
 		}
 		return logs
-	}, t).Should(ContainSubstring(substr))
+	}, t, "1s").Should(ContainSubstring(substr))
 }
