@@ -69,8 +69,8 @@ volumes: [
                         export RUN_KUBE_TESTS=1
                         # TODO: add console tests
                         # TODO: only run cover and race in unit tests and not in e2e (or anything else that is time sensitive)
-                        # ginkgo -r --skipPackage xds,vault --noColor  --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
-                        ginkgo -r --skipPackage xds,vault --noColor  --randomizeAllSpecs --randomizeSuites --failOnPending --trace --progress
+                        ginkgo -r --skipPackage xds,vault --noColor  --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress pkg internal
+                        ginkgo -r --noColor  --randomizeAllSpecs --randomizeSuites --failOnPending --trace --progress test
                     fi
                 '''
             }
