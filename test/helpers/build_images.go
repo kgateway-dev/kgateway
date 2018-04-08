@@ -37,7 +37,7 @@ func hash(h string) string {
 }
 
 // builds and pushes all docker containers needed for test
-func BuildPushContainers(push bool, debug bool) error {
+func BuildPushContainers(push, debug bool) error {
 	if os.Getenv("SKIP_BUILD") == "1" {
 		return nil
 	}
