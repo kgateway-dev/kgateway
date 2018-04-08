@@ -78,7 +78,7 @@ kind: Deployment
 metadata:
   labels:
     gloo: control-plane
-  name: gloo
+  name: control-plane
   namespace: gloo-system
 spec:
   selector:
@@ -91,8 +91,8 @@ spec:
         gloo: control-plane
     spec:
       containers:
-      - image: soloio/control-plane:v0.1.7-108
-        name: gloo
+      - image: soloio/control-plane:v0.1.7
+        name: control-plane
         ports:
         - containerPort: 8081
           name: http
@@ -113,7 +113,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: gloo
+  name: control-plane
   labels:
     gloo: control-plane
   namespace: gloo-system
@@ -180,7 +180,7 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       containers:
-      - image: soloio/envoy:v0.1.7-108
+      - image: soloio/envoy:monorepo-17
         name: envoy
         ports:
         - containerPort: 8080
@@ -240,7 +240,7 @@ data:
         connect_timeout: 5.000s
         hosts:
         - socket_address:
-            address: gloo.gloo-system.svc.cluster.local
+            address: control-plane
             port_value: 8081
         http2_protocol_options: {}
         type: STRICT_DNS
@@ -325,7 +325,7 @@ spec:
         gloo: kube-upstream-discovery
     spec:
       containers:
-      - image: soloio/kube-upstream-discovery:v0.1.2-108
+      - image: soloio/kube-upstream-discovery:v0.1.7
         name: kube-upstream-discovery
         env:
         - name: GRPC_TRACE
@@ -355,7 +355,7 @@ spec:
         gloo: function-discovery
     spec:
       containers:
-      - image: soloio/function-discovery:v0.1.7-108
+      - image: soloio/function-discovery:v0.1.7
         name: function-discovery
         env:
         - name: GRPC_TRACE
@@ -403,7 +403,7 @@ spec:
         gloo: ingress-controller
     spec:
       containers:
-      - image: soloio/kube-ingress-controller:v0.1.2-108
+      - image: soloio/kube-ingress-controller:v0.1.7
         name: ingress-controller
         env:
         - name: DEBUG
