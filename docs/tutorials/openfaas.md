@@ -67,7 +67,7 @@ openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.cert -days 365
 
 Add the certificates as secrets to kubernetes (this makes them available to gloo):
 ```
-kubectl create --namespace=gloo-system secret generic gloo-secure --from-file=ca_chain=server.cert  --from-file=private_key=server.key
+glooctl secret create certificate --name gloo-secure -c server.cert -p server.key
 ```
 
 Configure gloo's default virtual host to route to the function and use the certificates:
