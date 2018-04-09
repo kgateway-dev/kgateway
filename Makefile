@@ -74,7 +74,7 @@ PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES)
 $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 
 clean:
-	rm -f $(OUTPUT)
+	rm -rf $(OUTPUT)
 
 #----------------------------------------------------------------------------------
 # Docs
