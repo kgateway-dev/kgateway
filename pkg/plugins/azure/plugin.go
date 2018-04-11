@@ -83,6 +83,8 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 	p.isNeeded = true
 
 	out.Type = envoyapi.Cluster_LOGICAL_DNS
+
+	// TODO(talnordan): Use an e2e test to check whether the IPv4 restriction is needed.
 	out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 
 	azureUpstream, err := DecodeUpstreamSpec(in.Spec)
@@ -154,6 +156,9 @@ func getPathParameters(functionSpec *FunctionSpec, apiKeys map[string]string) (s
 	case "anonymous":
 		return "", nil
 	case "function":
+		// TODO(talnordan): Consider whether using the "function" authentication level should require
+		// using a function key and not a master key. This is a product decision. From the technical
+		// point of view, a master key does satisfy the "function" authentication level.
 		keyNames = []string{functionSpec.FunctionName, masterKeyName}
 	case "admin":
 		keyNames = []string{masterKeyName}
