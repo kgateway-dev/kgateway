@@ -9,7 +9,7 @@ type File struct {
 }
 
 type Secret struct {
-	Name            string
+	Ref             string
 	Data            map[string]string
 	ResourceVersion string
 }
