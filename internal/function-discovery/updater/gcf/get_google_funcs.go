@@ -16,6 +16,11 @@ import (
 	"github.com/solo-io/gloo/pkg/secretwatcher"
 )
 
+var missingAnnotationErr = errors.Errorf("Google Function Discovery requires that a secret ref for a secret containing "+
+"Google Cloud account credentials be specified in the annotations for each Google Cloud Upstream. "+
+"The annotation key is %v. The annotations should contain the annotation %v: [your_secret_ref]",
+annotationKey, annotationKey)
+
 const (
 	// expected annotation key for secret ref
 	// TODO: make sure this is well documented
@@ -85,12 +90,12 @@ func GetFuncs(us *v1.Upstream, secrets secretwatcher.SecretMap) ([]*v1.Function,
 }
 
 func GetSecretRef(us *v1.Upstream) (string, error) {
+	if us.Metadata == nil {
+		return "", missingAnnotationErr
+	}
 	secretRef, ok := us.Metadata.Annotations[annotationKey]
 	if !ok {
-		return "", errors.Errorf("Google Function Discovery requires that a secret ref for a secret containing "+
-			"Google Cloud account credentials be specified in the annotations for each Google Cloud Upstream. "+
-			"The annotation key is %v. The annotations should contain the annotation %v: [your_secret_ref]",
-			annotationKey, annotationKey)
+		return "", missingAnnotationErr
 	}
 	return secretRef, nil
 }
