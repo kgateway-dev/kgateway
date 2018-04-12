@@ -29,14 +29,14 @@ func GetFuncs(us *v1.Upstream, secrets secretwatcher.SecretMap) ([]*v1.Function,
 		return nil, errors.Wrapf(err, "secrets not found for secret ref %v", lambdaSpec.SecretRef)
 	}
 
-	accessKey, ok := awsSecrets[awsAccessKey]
+	accessKey, ok := awsSecrets.Data[awsAccessKey]
 	if !ok {
 		return nil, errors.Errorf("key %v missing from provided secret", awsAccessKey)
 	}
 	if accessKey != "" && !utf8.Valid([]byte(accessKey)) {
 		return nil, errors.Errorf("%s not a valid string", awsAccessKey)
 	}
-	secretKey, ok := awsSecrets[awsSecretKey]
+	secretKey, ok := awsSecrets.Data[awsSecretKey]
 	if !ok {
 		return nil, errors.Errorf("key %v missing from provided secret", awsSecretKey)
 	}

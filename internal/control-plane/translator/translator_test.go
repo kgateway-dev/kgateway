@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
 	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 var _ = Describe("Translator", func() {
@@ -140,11 +141,11 @@ var _ = Describe("Translator", func() {
 					snap, reports, err := t.Translate(Inputs{
 						Cfg: cfg,
 						Secrets: secretwatcher.SecretMap{
-							"ssl-secret-ref": map[string]string{
+							"ssl-secret-ref": &dependencies.Secret{Ref: "ssl-secret-ref", Data: map[string]string{
 								"ca_chain":    "1111",
 								"private_key": "1111",
 							},
-						},
+							}},
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(reports).To(HaveLen(2))

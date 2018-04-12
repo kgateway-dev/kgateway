@@ -17,6 +17,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	awsplugin "github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -27,10 +28,10 @@ var _ = Describe("GetLambdaFuncs", func() {
 			helpers.Must(err)
 			region := "us-east-1"
 			secrets := secretwatcher.SecretMap{
-				"my-aws-creds": map[string]string{
+				"my-aws-creds": &dependencies.Secret{Ref: "ssl-secret-ref", Data: map[string]string{
 					awsplugin.AwsAccessKey: accessKey,
 					awsplugin.AwsSecretKey: secretKey,
-				},
+				}},
 			}
 			us := &v1.Upstream{
 				Name: "something",

@@ -5,9 +5,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	. "github.com/solo-io/gloo/internal/function-discovery/detector"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -20,6 +21,11 @@ var _ = Describe("Marker", func() {
 				&mockDetector{id: "succeeding", triesBeforeSucceding: 3},
 			}, resolve)
 			us := helpers.NewTestUpstream2()
+			us.Spec = service.EncodeUpstreamSpec(service.UpstreamSpec{
+				Hosts: []service.Host{
+					{Addr: "localhost", Port: 8000},
+				},
+			})
 			svcInfo, annotations, err := marker.DetectFunctionalUpstream(us)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(svcInfo).To(Equal(&v1.ServiceInfo{Type: "mock_service"}))

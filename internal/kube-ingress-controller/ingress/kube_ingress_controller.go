@@ -11,14 +11,13 @@ import (
 	kubeplugin "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	v1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 
-	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/kubecontroller"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -183,7 +182,7 @@ func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.Vi
 		if ingress.Spec.Backend != nil {
 			us := c.newUpstreamFromBackend(ingress.Namespace, *ingress.Spec.Backend)
 			if _, ok := routesByHostName[defaultVirtualHost]; ok {
-				runtime.HandleError(errors.Errorf("default backend was redefined in ingress %v, ignoring", ingress.Name))
+				log.Warnf("default backend was redefined in ingress %v, ignoring", ingress.Name)
 			} else {
 				routesByHostName[defaultVirtualHost] = []*v1.Route{
 					{

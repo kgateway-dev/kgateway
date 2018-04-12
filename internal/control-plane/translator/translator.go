@@ -17,15 +17,14 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/matcher"
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
 	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
-	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
@@ -533,11 +532,11 @@ func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string,
 	if !ok {
 		return "", "", errors.Errorf("ssl secret not found for ref %v", ref)
 	}
-	certChain, ok := sslSecrets[sslCertificateChainKey]
+	certChain, ok := sslSecrets.Data[sslCertificateChainKey]
 	if !ok {
 		return "", "", errors.Errorf("key %v not found in ssl secrets", sslCertificateChainKey)
 	}
-	privateKey, ok := sslSecrets[sslPrivateKeyKey]
+	privateKey, ok := sslSecrets.Data[sslPrivateKeyKey]
 	if !ok {
 		return "", "", errors.Errorf("key %v not found in ssl secrets", sslPrivateKeyKey)
 	}
@@ -656,7 +655,7 @@ func (t *Translator) createHttpFilters() []*envoyhttp.HttpFilter {
 		stagedFilters := filterPlugin.HttpFilters(params)
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.HttpFilter == nil {
-				runtime.HandleError(errors.New("plugin implements HttpFilters() but returned nil"))
+				log.Warnf("plugin implements HttpFilters() but returned nil")
 				continue
 			}
 			filtersByStage = append(filtersByStage, stagedFilter{

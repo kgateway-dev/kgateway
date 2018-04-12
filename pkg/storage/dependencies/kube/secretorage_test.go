@@ -154,7 +154,7 @@ var _ = Describe("Secret Storage Client", func() {
 			Expect(list).NotTo(ContainElement(s1))
 		})
 		It("watches", func() {
-			lists := make(chan []*dependencies.Secret, 3)
+			lists := make(chan []*dependencies.Secret, 4)
 			stop := make(chan struct{})
 			defer close(stop)
 			errs := make(chan error)
@@ -188,16 +188,17 @@ var _ = Describe("Secret Storage Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 			s3, err := client.Create(secret3)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(lists).Should(HaveLen(3))
+			Eventually(lists).Should(HaveLen(4))
 			list1 := <-lists
-			Expect(list1).To(HaveLen(1))
+			// if we got an extra event for the service account secret
+			if len(list1) == 1 {
+				list1 = <-lists
+			}
 			Expect(list1).To(ContainElement(s1))
 			list2 := <-lists
-			Expect(list2).To(HaveLen(2))
 			Expect(list2).To(ContainElement(s1))
-			//Expect(list2).To(ContainElement(s2))
+			Expect(list2).To(ContainElement(s2))
 			list3 := <-lists
-			Expect(list3).To(HaveLen(3))
 			Expect(list3).To(ContainElement(s1))
 			Expect(list3).To(ContainElement(s2))
 			Expect(list3).To(ContainElement(s3))

@@ -9,6 +9,7 @@ import (
 	. "github.com/solo-io/gloo/pkg/plugins/aws"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 var _ = Describe("Plugin", func() {
@@ -61,11 +62,11 @@ var _ = Describe("Plugin", func() {
 		Context("When referenced secret is invalid", func() {
 			It("should error", func() {
 				secrets := []map[string]string{
-					map[string]string{},
-					map[string]string{AwsAccessKey: "", AwsSecretKey: "ball"},
-					map[string]string{AwsAccessKey: "apple", AwsSecretKey: ""},
-					map[string]string{AwsAccessKey: string([]byte{0xff, 1}), AwsSecretKey: "ball"},
-					map[string]string{AwsAccessKey: "apple", AwsSecretKey: string([]byte{0xff, 1})},
+					{},
+					{AwsAccessKey: "", AwsSecretKey: "ball"},
+					{AwsAccessKey: "apple", AwsSecretKey: ""},
+					{AwsAccessKey: string([]byte{0xff, 1}), AwsSecretKey: "ball"},
+					{AwsAccessKey: "apple", AwsSecretKey: string([]byte{0xff, 1})},
 				}
 				p := Plugin{}
 				upstream := &v1.Upstream{
@@ -74,8 +75,8 @@ var _ = Describe("Plugin", func() {
 				}
 				out := &envoyapi.Cluster{}
 				for _, s := range secrets {
-					params := &plugins.UpstreamPluginParams{Secrets: map[string]map[string]string{
-						"aws-secret": s,
+					params := &plugins.UpstreamPluginParams{Secrets: map[string]*dependencies.Secret{
+						"aws-secret": {Ref: "aws-secret", Data: s},
 					}}
 					err := p.ProcessUpstream(params, upstream, out)
 					Expect(err).To(HaveOccurred())
@@ -96,8 +97,8 @@ var _ = Describe("Plugin", func() {
 					Spec: upstreamSpec("us-east-1", "aws-secret"),
 				}
 				out = &envoyapi.Cluster{}
-				params := &plugins.UpstreamPluginParams{Secrets: map[string]map[string]string{
-					"aws-secret": map[string]string{AwsAccessKey: "apple", AwsSecretKey: "ball"},
+				params := &plugins.UpstreamPluginParams{Secrets: map[string]*dependencies.Secret{
+					"aws-secret": {Ref: "aws-secret", Data: map[string]string{AwsAccessKey: "apple", AwsSecretKey: "ball"}},
 				}}
 				err = p.ProcessUpstream(params, upstream, out)
 			})

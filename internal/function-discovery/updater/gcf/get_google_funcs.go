@@ -50,7 +50,7 @@ func GetFuncs(us *v1.Upstream, secrets secretwatcher.SecretMap) ([]*v1.Function,
 		return nil, errors.Wrapf(err, "secrets not found for secret ref %v", secretRef)
 	}
 
-	jsonKey, ok := googleSecrets[serviceAccountJsonKeyFile]
+	jsonKey, ok := googleSecrets.Data[serviceAccountJsonKeyFile]
 	if !ok {
 		return nil, errors.Errorf("key %v missing from provided secret", serviceAccountJsonKeyFile)
 	}

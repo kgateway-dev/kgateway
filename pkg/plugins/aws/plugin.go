@@ -126,14 +126,14 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 
 	var secretErrs error
 
-	accessKey, ok := awsSecrets[AwsAccessKey]
+	accessKey, ok := awsSecrets.Data[AwsAccessKey]
 	if !ok {
 		secretErrs = multierror.Append(secretErrs, errors.Errorf("key %v missing from provided secret", AwsAccessKey))
 	}
 	if accessKey == "" || !utf8.Valid([]byte(accessKey)) {
 		secretErrs = multierror.Append(secretErrs, errors.Errorf("%s not a valid string", AwsAccessKey))
 	}
-	secretKey, ok := awsSecrets[AwsSecretKey]
+	secretKey, ok := awsSecrets.Data[AwsSecretKey]
 	if !ok {
 		secretErrs = multierror.Append(secretErrs, errors.Errorf("key %v missing from provided secret", AwsSecretKey))
 	}
