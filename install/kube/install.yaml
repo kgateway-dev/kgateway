@@ -106,6 +106,8 @@ spec:
         - "--storage.refreshrate=1m"
         - "--secrets.type=kube"
         - "--secrets.refreshrate=1m"
+        - "--files.type=kube"
+        - "--files.refreshrate=1m"
         - "--xds.port=8081"
         - "--kube.namespace=gloo-system"
 ---
