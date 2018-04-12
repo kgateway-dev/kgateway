@@ -2,6 +2,7 @@ package local_e2e
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"os"
 
@@ -122,6 +123,9 @@ var _ = Describe("Azure Functions", func() {
 				return err
 			}
 			if resp.StatusCode != 200 {
+				fmt.Fprintf(GinkgoWriter, "resp is: %d\n", resp.StatusCode)
+				io.Copy(GinkgoWriter, resp.Body)
+				fmt.Fprintln(GinkgoWriter)
 				return errors.New("request is not 200 ok")
 			}
 
