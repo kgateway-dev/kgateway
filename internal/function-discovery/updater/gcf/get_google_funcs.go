@@ -17,9 +17,9 @@ import (
 )
 
 var missingAnnotationErr = errors.Errorf("Google Function Discovery requires that a secret ref for a secret containing "+
-"Google Cloud account credentials be specified in the annotations for each Google Cloud Upstream. "+
-"The annotation key is %v. The annotations should contain the annotation %v: [your_secret_ref]",
-annotationKey, annotationKey)
+	"Google Cloud account credentials be specified in the annotations for each Google Cloud Upstream. "+
+	"The annotation key is %v. The annotations should contain the annotation %v: [your_secret_ref]",
+	annotationKey, annotationKey)
 
 const (
 	// expected annotation key for secret ref
@@ -36,7 +36,6 @@ const (
 )
 
 func GetFuncs(us *v1.Upstream, secrets secretwatcher.SecretMap) ([]*v1.Function, error) {
-
 	secretRef, err := GetSecretRef(us)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting secret ref")
