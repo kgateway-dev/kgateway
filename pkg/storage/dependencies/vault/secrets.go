@@ -3,11 +3,14 @@ package vault
 import (
 	"time"
 
+	"github.com/d4l3k/messagediff"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -20,6 +23,9 @@ type secretStorage struct {
 const secretPrefix = "/secret/"
 
 func NewSecretStorage(vault *vaultapi.Client, rootPath string, syncFrequency time.Duration) dependencies.SecretStorage {
+	if !strings.HasPrefix(rootPath, secretPrefix) {
+		rootPath = secretPrefix + rootPath
+	}
 	return &secretStorage{
 		vault:         vault,
 		rootPath:      rootPath,
@@ -28,10 +34,7 @@ func NewSecretStorage(vault *vaultapi.Client, rootPath string, syncFrequency tim
 }
 
 func (s *secretStorage) fullPath(ref string) string {
-	if strings.HasPrefix(s.rootPath, secretPrefix) {
-		return s.rootPath + "/" + ref
-	}
-	return secretPrefix + s.rootPath + "/" + ref
+	return s.rootPath + "/" + ref
 }
 
 func (s *secretStorage) Create(secret *dependencies.Secret) (*dependencies.Secret, error) {
@@ -100,58 +103,41 @@ func (s *secretStorage) List() ([]*dependencies.Secret, error) {
 }
 
 func (s *secretStorage) Watch(handlers ...dependencies.SecretEventHandler) (*storage.Watcher, error) {
+	var lastSeen []*dependencies.Secret
+	sync := func() error {
+		list, err := s.List()
+		if err != nil {
+			return errors.Wrap(err, "listing secrets")
+		}
+		sort.SliceStable(list, func(i, j int) bool {
+			return list[i].Ref < list[j].Ref
+		})
 
-	return storage.NewWatcher(func(stop <-chan struct{}, _ chan error) {
-		//sw.Run(stop)
+		// no change since last poll
+		if _, equal := messagediff.PrettyDiff(lastSeen, list); equal {
+			return nil
+		}
+
+		// update index
+		lastSeen = list
+		for _, h := range handlers {
+			h.OnUpdate(list, nil)
+		}
+		return nil
+	}
+	return storage.NewWatcher(func(stop <-chan struct{}, errs chan error) {
+		for {
+			select {
+			default:
+				if err := sync(); err != nil {
+					log.Warnf("error syncing with vault: %v", err)
+				}
+			case err := <-errs:
+				log.Warnf("failed to start watcher to: %v", err)
+				return
+			case <-stop:
+				return
+			}
+		}
 	}), nil
 }
-
-//// implements the vaultrnetes ResourceEventHandler interface
-//type secretEventHandler struct {
-//	handler dependencies.SecretEventHandler
-//	store   cache.Store
-//}
-//
-//func secretSecret(obj interface{}) (*dependencies.Secret, bool) {
-//	vaultSecret, ok := obj.(*v1.Secret)
-//	if !ok {
-//		return nil, ok
-//	}
-//	return vaultSecretToSecret(vaultSecret), ok
-//}
-//
-//func (eh *secretEventHandler) getUpdatedList() []*dependencies.Secret {
-//	updatedList := eh.store.List()
-//	var updatedSecretList []*dependencies.Secret
-//	for _, updated := range updatedList {
-//		vaultSecret, ok := updated.(*v1.Secret)
-//		if !ok {
-//			continue
-//		}
-//		updatedSecretList = append(updatedSecretList, vaultSecretToSecret(vaultSecret))
-//	}
-//	return updatedSecretList
-//}
-//
-//func (eh *secretEventHandler) OnAdd(obj interface{}) {
-//	secret, ok := secretSecret(obj)
-//	if !ok {
-//		return
-//	}
-//	eh.handler.OnAdd(eh.getUpdatedList(), secret)
-//}
-//func (eh *secretEventHandler) OnUpdate(_, newObj interface{}) {
-//	secret, ok := secretSecret(newObj)
-//	if !ok {
-//		return
-//	}
-//	eh.handler.OnUpdate(eh.getUpdatedList(), secret)
-//}
-//
-//func (eh *secretEventHandler) OnDelete(obj interface{}) {
-//	secret, ok := secretSecret(obj)
-//	if !ok {
-//		return
-//	}
-//	eh.handler.OnDelete(eh.getUpdatedList(), secret)
-//}

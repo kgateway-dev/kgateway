@@ -141,7 +141,7 @@ var _ = Describe("Secret Storage Client", func() {
 			defer close(stop)
 			errs := make(chan error)
 			w, err := client.Watch(&dependencies.SecretEventHandlerFuncs{
-				AddFunc: func(updatedList []*dependencies.Secret, obj *dependencies.Secret) {
+				UpdateFunc: func(updatedList []*dependencies.Secret, obj *dependencies.Secret) {
 					lists <- updatedList
 				},
 			})
