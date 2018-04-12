@@ -52,7 +52,6 @@ var _ = Describe("watching vault secrets", func() {
 		cfg.Address = "http://127.0.0.1:8200"
 		c, err := api.NewClient(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		log.GreyPrintf("%s", vaultInstance.Token())
 		c.SetToken(vaultInstance.Token())
 		vault = c
 		client := vauiltsecrets.NewSecretStorage(c, rootPath, time.Millisecond)

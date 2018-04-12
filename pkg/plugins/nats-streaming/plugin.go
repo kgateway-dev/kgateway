@@ -7,11 +7,11 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/protoutil"
-	"k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/common"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
@@ -101,7 +101,7 @@ func natsConfig(cluster string) *types.Struct {
 
 	filterConfig, err := protoutil.MarshalStruct(&natsStreaming)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Warnf("error in nats plugin: %v", err)
 		return nil
 	}
 	return filterConfig

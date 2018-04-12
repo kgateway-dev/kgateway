@@ -8,10 +8,10 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/kubecontroller"
 	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/listers/core/v1"
@@ -115,7 +115,7 @@ func (c *IngressSyncer) sync() error {
 		ingress.Status.LoadBalancer = service.Status.LoadBalancer
 		updated, err := c.client.ExtensionsV1beta1().Ingresses(ingress.Namespace).Update(ingress)
 		if err != nil {
-			runtime.HandleError(errors.Wrap(err, "failed to update ingress with load status"))
+			log.Warnf("failed to update ingress with load status: %v", err)
 		}
 		c.mu.Lock()
 		c.cachedStatuses[ingress.Name] = updated.Status.LoadBalancer

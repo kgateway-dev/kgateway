@@ -10,11 +10,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/radovskyb/watcher"
-	"k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/storage"
 )
 
 // TODO: evaluate efficiency of LSing a whole dir on every op
@@ -163,7 +162,7 @@ func (u *virtualHostsClient) Watch(handlers ...storage.VirtualHostEventHandler) 
 			select {
 			case event := <-w.Event:
 				if err := u.onEvent(event, handlers...); err != nil {
-					runtime.HandleError(err)
+					log.Warnf("failed to handle file event: %v", err)
 				}
 			case err := <-w.Error:
 				errs <- err

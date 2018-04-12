@@ -9,14 +9,12 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/radovskyb/watcher"
-	"k8s.io/apimachinery/pkg/util/runtime"
 
-	"fmt"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/storage"
 )
 
 // TODO: evaluate efficiency of LSing a whole dir on every op
@@ -165,13 +163,13 @@ func (u *upstreamsClient) Watch(handlers ...storage.UpstreamEventHandler) (*stor
 			select {
 			case event := <-w.Event:
 				if err := u.onEvent(event, handlers...); err != nil {
-					runtime.HandleError(err)
+					log.Warnf("event handle error in file-based config storage client: %v", err)
 				}
 			case err := <-w.Error:
-				runtime.HandleError(fmt.Errorf("watcher encoutnered error: %v", err))
+				log.Warnf("watcher error in file-based config storage client: %v", err)
 				return
 			case err := <-errs:
-				runtime.HandleError(fmt.Errorf("failed to start watcher to: %v", err))
+				log.Warnf("failed to start file watcher: %v", err)
 				return
 			case <-stop:
 				w.Close()

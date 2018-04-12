@@ -9,7 +9,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	kubev1resources "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	kubelisters "k8s.io/client-go/listers/core/v1"
@@ -94,7 +93,7 @@ func (c *endpointController) TrackUpstreams(upstreams []*v1.Upstream) {
 		}
 		spec, err := DecodeUpstreamSpec(us.Spec)
 		if err != nil {
-			runtime.HandleError(err)
+			log.Warnf("error in kubernetes endpoint controller: %v", err)
 			continue
 		}
 		c.upstreamSpecs[us.Name] = spec
@@ -145,7 +144,7 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 		// if targetport is empty, skip this upstream
 		targetPort, err := portForUpstream(spec, serviceList)
 		if err != nil || targetPort == 0 {
-			runtime.HandleError(err)
+			log.Warnf("error in kubernetes endpoint controller: %v", err)
 			continue
 		}
 		for _, endpoint := range endpointList {
@@ -158,7 +157,7 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 							err = errors.Wrapf(err, "error for upstream %v service %v", upstreamName, spec.ServiceName)
 							// pod not found for ip? what's that about?
 							// log it and keep going
-							runtime.HandleError(err)
+							log.Warnf("error in kubernetes endpoint controller: %v", err)
 							continue
 						}
 						if !labels.AreLabelsInWhiteList(spec.Labels, podLabels) {
@@ -188,7 +187,7 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 	}
 	newHash, err := hashstructure.Hash(endpointGroups, nil)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Warnf("error in kubernetes endpoint controller: %v", err)
 		return nil, nil
 	}
 	if newHash == c.lastSeen {
@@ -212,7 +211,7 @@ func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service)
 		if spec.ServiceName == svc.Name && spec.ServiceNamespace == svc.Namespace {
 			// found the port we want
 			if svc.Spec.ExternalName != "" {
-				runtime.HandleError(fmt.Errorf("WARNING: external name services are not supported for Kubernetes Endpoint Interface"))
+				log.Warnf("WARNING: external name services are not supported for Kubernetes Endpoint Interface")
 			}
 			// if the service only has one port, just assume that's the one we want
 			// this way the user doesn't have to specify portname
@@ -222,7 +221,7 @@ func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service)
 			for _, port := range svc.Spec.Ports {
 				if port.TargetPort.StrVal != "" {
 					//TODO: remove this warning if it's too chatty
-					runtime.HandleError(fmt.Errorf("target port must be type int for kube endpoint discovery"))
+					log.Warnf("target port must be type int for kube endpoint discovery")
 					continue
 				}
 				if spec.ServicePort == port.TargetPort.IntVal {

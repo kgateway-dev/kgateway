@@ -13,16 +13,17 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/e2e/containers/grpc-test-service/bookstore/protos"
 	"github.com/solo-io/gloo/test/e2e/containers/grpc-test-service/server"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/log"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/reflection"
 )
 
 func TestGrpc(t *testing.T) {
 	RegisterFailHandler(Fail)
+	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "GRPC Discovery Suite")
 }
 

@@ -5,9 +5,11 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
-func TestCrd(t *testing.T) {
+func TestFile(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Crd Suite")
+	log.DefaultOut = GinkgoWriter
+	RunSpecs(t, "File Suite")
 }

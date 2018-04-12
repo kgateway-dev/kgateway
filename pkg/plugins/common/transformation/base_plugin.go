@@ -13,7 +13,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -376,7 +375,7 @@ func (p *transformationPlugin) GetTransformationFilter() *plugins.StagedFilter {
 		Transformations: p.cachedTransformations,
 	})
 	if err != nil {
-		runtime.HandleError(err)
+		log.Warnf("error in transformation plugin: %v", err)
 		return nil
 	}
 

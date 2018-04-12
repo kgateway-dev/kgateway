@@ -10,7 +10,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	kubev1resources "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -82,7 +81,7 @@ func (c *endpointController) TrackUpstreams(upstreams []*v1.Upstream) {
 		}
 		spec, err := DecodeUpstreamSpec(us.Spec)
 		if err != nil {
-			runtime.HandleError(err)
+			log.Warnf("error in consul plugin endpoint controller: %v", err)
 			continue
 		}
 		c.upstreamSpecs[us.Name] = spec
@@ -150,7 +149,7 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 		// if targetport is empty, skip this upstream
 		targetPort, err := portForUpstream(spec, serviceList)
 		if err != nil || targetPort == 0 {
-			runtime.HandleError(err)
+			log.Warnf("error in consul endpoint controller: %v", err)
 			continue
 		}
 		for _, endpoint := range endpointList {
@@ -163,7 +162,7 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 							err = errors.Wrapf(err, "error for upstream %v service %v", upstreamName, spec.ServiceName)
 							// pod not found for ip? what's that about?
 							// log it and keep going
-							runtime.HandleError(err)
+							log.Warnf("error in consul endpoint controller: %v", err)
 							continue
 						}
 						if !labels.AreLabelsInWhiteList(spec.Labels, podLabels) {
@@ -193,7 +192,7 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 	}
 	newHash, err := hashstructure.Hash(endpointGroups, nil)
 	if err != nil {
-		runtime.HandleError(err)
+		log.Warnf("error in consul endpoint controller: %v", err)
 		return nil, nil
 	}
 	if newHash == c.lastSeen {
@@ -227,7 +226,7 @@ func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service)
 			for _, port := range svc.Spec.Ports {
 				if port.TargetPort.StrVal != "" {
 					//TODO: remove this warning if it's too chatty
-					runtime.HandleError(fmt.Errorf("target port must be type int for kube endpoint discovery"))
+					log.Warnf("error in consul endpoint controller: %v", fmt.Errorf("target port must be type int for kube endpoint discovery"))
 					continue
 				}
 				if spec.ServicePort == port.TargetPort.IntVal {

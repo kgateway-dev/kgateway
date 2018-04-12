@@ -1,12 +1,12 @@
 package consul
 
 import (
-	"log"
 	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/helpers/local"
 )
@@ -17,6 +17,7 @@ func TestConsul(t *testing.T) {
 		return
 	}
 	RegisterFailHandler(Fail)
+	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "Consul Suite")
 }
 

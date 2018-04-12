@@ -9,9 +9,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/radovskyb/watcher"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 type fileStorage struct {
@@ -103,10 +103,10 @@ func (s *fileStorage) Watch(handlers ...dependencies.FileEventHandler) (*storage
 			select {
 			case event := <-w.Event:
 				if err := s.onEvent(event, handlers...); err != nil {
-					log.Warnf("watcher encoutnered error: %v", err)
+					log.Warnf("watcher encountered error: %v", err)
 				}
 			case err := <-w.Error:
-				log.Warnf("watcher encoutnered error: %v", err)
+				log.Warnf("watcher encountered error: %v", err)
 				return
 			case err := <-errs:
 				log.Warnf("failed to start watcher to: %v", err)

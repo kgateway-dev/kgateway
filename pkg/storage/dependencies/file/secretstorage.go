@@ -93,10 +93,10 @@ func (s *secretStorage) Watch(handlers ...dependencies.SecretEventHandler) (*sto
 			select {
 			case event := <-w.Event:
 				if err := s.onEvent(event, handlers...); err != nil {
-					log.Warnf("watcher encoutnered error: %v", err)
+					log.Warnf("watcher encountered error: %v", err)
 				}
 			case err := <-w.Error:
-				log.Warnf("watcher encoutnered error: %v", err)
+				log.Warnf("watcher encountered error: %v", err)
 				return
 			case err := <-errs:
 				log.Warnf("failed to start watcher to: %v", err)

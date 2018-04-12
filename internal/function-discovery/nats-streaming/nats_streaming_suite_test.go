@@ -5,12 +5,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/helpers/local"
 )
 
 func TestNatsStreaming(t *testing.T) {
 	RegisterFailHandler(Fail)
+	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "NatsStreaming Suite")
 }
 

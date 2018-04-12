@@ -265,7 +265,7 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 			current.endpoints[endpointTuple.discoveredBy] = endpointTuple.endpoints
 			sync(current)
 		case err := <-workerErrors:
-			runtime.HandleError(err)
+			log.Warnf("error in control plane event loop: %v", err)
 		}
 	}
 }
@@ -290,12 +290,12 @@ func (e *eventLoop) updateXds(cache *cache) {
 	})
 	if err != nil {
 		// TODO: panic or handle these internal errors smartly
-		runtime.HandleError(errors.Wrap(err, "failed to translate based on the latest config"))
+		log.Warnf("failed to translate based on the latest config: %v", err)
 		return
 	}
 
 	if err := e.reporter.WriteReports(reports); err != nil {
-		runtime.HandleError(err)
+		log.Warnf("error writing reports: %v", err)
 	}
 
 	for _, st := range reports {
