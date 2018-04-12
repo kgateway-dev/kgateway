@@ -1,0 +1,412 @@
+---
+#system namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gloo-system
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: upstreams.gloo.solo.io
+spec:
+  group: gloo.solo.io
+  names:
+    kind: Upstream
+    listKind: UpstreamList
+    plural: upstreams
+    singular: upstream
+  scope: Namespaced
+  version: v1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: virtualhosts.gloo.solo.io
+spec:
+  group: gloo.solo.io
+  names:
+    kind: VirtualHost
+    listKind: VirtualHostList
+    plural: virtualhosts
+    singular: virtualhost
+  scope: Namespaced
+  version: v1
+---
+# Source: gloo/templates/ingress-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingress-config
+  namespace: gloo-system
+data:
+  envoy.yaml: |
+    node:
+      cluster: ingress
+      id: NODE_ID_PLACE_HOLDER
+    static_resources:
+      clusters:
+      - name: xds_cluster
+        connect_timeout: 5.000s
+        hosts:
+        - socket_address:
+            address: control-plane
+            port_value: 8081
+        http2_protocol_options: {}
+        type: STRICT_DNS
+    dynamic_resources:
+      ads_config:
+        api_type: GRPC
+        cluster_names:
+        - xds_cluster
+      cds_config:
+        ads: {}
+      lds_config:
+        ads: {}
+    admin:
+      access_log_path: /dev/null
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 19000
+
+---
+# Source: gloo/templates/rbac.yaml
+---
+#rbac for control-plane
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gloo-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "create"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "create"]
+- apiGroups: ["gloo.solo.io"]
+  resources: ["upstreams", "virtualhosts"]
+  verbs: ["*"]
+---
+#rbac for function-discovery
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gloo-discovery-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: [""]
+  resources: ["secrets", "configmaps"]
+  verbs: ["*"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["gloo.solo.io"]
+  resources: ["upstreams", "virtualhosts"]
+  verbs: ["*"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gloo-cluster-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: gloo-system
+roleRef:
+  kind: ClusterRole
+  name: gloo-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gloo-discovery-cluster-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: gloo-system
+roleRef:
+  kind: ClusterRole
+  name: gloo-discovery-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Source: gloo/templates/control-plane.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: control-plane
+  namespace: gloo-system
+  labels:
+    gloo: control-plane
+    release: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gloo: control-plane
+      release: test
+  template:
+    metadata:
+      labels:
+        gloo: control-plane
+        release: test
+    spec:
+      containers:
+      - name: control-plane
+        image: "soloio/control-plane:dev"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081
+          name: http
+        env:
+        - name: GRPC_TRACE
+          value: "all"
+        - name: DEBUG
+          value: "1"
+        args:
+        - "--storage.type=kube"
+        - "--storage.refreshrate=1m"
+        - "--secrets.type=kube"
+        - "--secrets.refreshrate=1m"
+        - "--files.type=kube"
+        - "--files.refreshrate=1m"
+        - "--xds.port=8081"
+        - "--kube.namespace=gloo-system"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane
+  namespace: gloo-system
+  labels:
+    gloo: control-plane
+    release: test
+spec:
+  ports:
+    - port: 8081
+      protocol: TCP
+      name: http
+  selector:
+    gloo: control-plane
+    release: test
+---
+# Source: gloo/templates/function-discovery.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: function-discovery
+  namespace: gloo-system
+  labels:
+    gloo: function-discovery
+    release: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gloo: function-discovery
+      release: test
+  template:
+    metadata:
+      labels:
+        gloo: function-discovery
+        release: test
+    spec:
+      containers:
+      - name: function-discovery
+        image: "soloio/function-discovery:dev"
+        imagePullPolicy: Always
+        env:
+        - name: GRPC_TRACE
+          value: "all"
+        - name: DEBUG
+          value: "1"
+        args:
+        - "--storage.type=kube"
+        - "--storage.refreshrate=30m"
+        - "--secrets.type=kube"
+        - "--secrets.refreshrate=30m"
+        - "--files.type=kube"
+        - "--files.refreshrate=30m"
+        - "--kube.namespace=gloo-system"
+
+---
+# Source: gloo/templates/ingress.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ingress
+  namespace: gloo-system
+  labels:
+    gloo: ingress
+    release: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gloo: ingress
+      release: test
+  template:
+    metadata:
+      labels:
+        gloo: ingress
+        release: test
+    spec:
+      initContainers:
+      - name: assignnodeid
+        image: busybox
+        command:
+        - sed
+        - s/NODE_ID_PLACE_HOLDER/$(POD_NAME).$(POD_NAMESPACE)/;w /config-tmp/envoy.yaml
+        - "/config/envoy.yaml"
+        volumeMounts:
+        - name: envoy-config
+          mountPath: /config
+        - name: config-tmp
+          mountPath: /config-tmp
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+      - name: envoy
+        image: "soloio/envoy:latest"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8443
+          name: https
+        - containerPort: 19000
+          name: admin
+        command: ["envoy"]
+        args: ["-c", "/config/envoy.yaml", "--v2-config-only"]
+        volumeMounts:
+        - name: config-tmp
+          mountPath: /config
+      volumes:
+      - name: envoy-config
+        configMap:
+          name: ingress-config
+      - name: config-tmp
+        emptyDir: {}
+---
+# GW
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress
+  namespace: gloo-system
+  labels:
+    gloo: ingress
+    release: test
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      protocol: TCP
+      name: http
+    - port: 8443
+      protocol: TCP
+      name: https
+    - port: 19000
+      protocol: TCP
+      name: admin
+  selector:
+    gloo: ingress
+    release: test
+---
+# Source: gloo/templates/kube-ingress-controller.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kube-ingress-controller
+  namespace: gloo-system
+  labels:
+    gloo: kube-ingress-controller
+    release: test
+spec:
+  selector:
+    matchLabels:
+      gloo: kube-ingress-controller
+      release: test
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        gloo: kube-ingress-controller
+        release: test
+    spec:
+      containers:
+      - image: "soloio/kube-ingress-controller:dev"
+        imagePullPolicy: Always
+        name: kube-ingress-controller
+        env:
+        - name: DEBUG
+          value: "1"
+        - name: GRPC_TRACE
+          value: all
+        args:
+        - "--service=ingress"
+        - "--storage.refreshrate=30m"
+        - "--storage.type=kube"
+        - "--kube.namespace=gloo-system"
+
+---
+# Source: gloo/templates/kube-upstream-discovery.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    gloo: kube-upstream-discovery
+  name: service-discovery
+  namespace: gloo-system
+spec:
+  selector:
+    matchLabels:
+      gloo: kube-upstream-discovery
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        gloo: kube-upstream-discovery
+    spec:
+      containers:
+      - image: soloio/kube-upstream-discovery:dev
+        imagePullPolicy: Always
+        name: kube-upstream-discovery
+        env:
+        - name: GRPC_TRACE
+          value: "all"
+        - name: DEBUG
+          value: "1"
+        args:
+        - "--storage.type=kube"
+        - "--storage.refreshrate=30m"
+        - "--kube.namespace=gloo-system"
+
+---
+# Source: gloo/templates/jaeger.yaml
+
+---
+# Source: gloo/templates/statsd-exporter.yaml
+
