@@ -3,15 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
-	"time"
 
-	"github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/spf13/cobra"
 
 	"github.com/solo-io/gloo/internal/function-discovery/eventloop"
 	"github.com/solo-io/gloo/internal/function-discovery/options"
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/signals"
 )
@@ -51,43 +49,18 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	// config watcher
-	rootCmd.PersistentFlags().StringVar(&opts.ConfigStorageOptions.Type, "storage.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for config objects. supported: [%s]", strings.Join(bootstrap.SupportedCwTypes, " | ")))
-	rootCmd.PersistentFlags().DurationVar(&opts.ConfigStorageOptions.SyncFrequency, "storage.refreshrate", time.Second, "refresh rate for polling config")
+	// choose storage options (type, etc) for configs, secrets, and artifacts
+	flags.AddConfigStorageOptionFlags(rootCmd, &opts)
+	flags.AddSecretStorageOptionFlags(rootCmd, &opts)
+	flags.AddFileStorageOptionFlags(rootCmd, &opts)
 
-	// secret watcher
-	rootCmd.PersistentFlags().StringVar(&opts.SecretStorageOptions.Type, "secrets.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for secrets. supported: [%s]", strings.Join(bootstrap.SupportedSwTypes, " | ")))
-	rootCmd.PersistentFlags().DurationVar(&opts.SecretStorageOptions.SyncFrequency, "secrets.refreshrate", time.Second, "refresh rate for polling secrets")
+	// storage backends
+	flags.AddFileFlags(rootCmd, &opts)
+	flags.AddKubernetesFlags(rootCmd, &opts)
+	flags.AddConsulFlags(rootCmd, &opts)
+	flags.AddVaultFlags(rootCmd, &opts)
 
-	// file watcher
-	rootCmd.PersistentFlags().StringVar(&opts.FileStorageOptions.Type, "files.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for files. supported: [%s]", strings.Join(bootstrap.SupportedFwTypes, " | ")))
-	rootCmd.PersistentFlags().DurationVar(&opts.FileStorageOptions.SyncFrequency, "files.refreshrate", time.Second, "refresh rate for polling files")
-
-	// file
-	rootCmd.PersistentFlags().StringVar(&opts.FileOptions.ConfigDir, "file.config.dir", "_gloo_config", "root directory to use for storing gloo config files")
-	rootCmd.PersistentFlags().StringVar(&opts.FileOptions.FilesDir, "file.files.dir", "_gloo_config", "root directory to use for storing input files")
-	rootCmd.PersistentFlags().StringVar(&opts.FileOptions.SecretDir, "file.secret.dir", "_gloo_secrets", "root directory to use for storing gloo secret files")
-
-	// kube
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.MasterURL, "master", "", "url of the kubernetes apiserver. not needed if running in-cluster")
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.KubeConfig, "kubeconfig", "", "path to kubeconfig file. not needed if running in-cluster")
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.Namespace, "kube.namespace", crd.GlooDefaultNamespace, "namespace to read/write gloo storage objects")
-
-	// consul
-	rootCmd.PersistentFlags().StringVar(&opts.ConsulOptions.RootPath, "consul.root", "gloo", "prefix for all k/v pairs stored in consul by gloo, when using consul for storage")
-	rootCmd.PersistentFlags().StringVar(&opts.ConsulOptions.Datacenter, "consul.datacenter", "", "datacenter of the consul server when using consul for storage or service discovery")
-	rootCmd.PersistentFlags().StringVar(&opts.ConsulOptions.Address, "consul.address", "", "address (including port) of the consul server to connect to when using consul for storage")
-	rootCmd.PersistentFlags().StringVar(&opts.ConsulOptions.Scheme, "consul.scheme", "", "uri scheme for the consul server")
-	rootCmd.PersistentFlags().StringVar(&opts.ConsulOptions.Token, "consul.token", "", "token is used to provide a per-request ACL token to override the default")
-	rootCmd.PersistentFlags().StringVar(&opts.ConsulOptions.Username, "consul.username", "", "username for authenticating to the consul server, if using basic auth")
-	rootCmd.PersistentFlags().StringVar(&opts.ConsulOptions.Password, "consul.password", "", "password for authenticating to the consul server, if using basic auth")
-
-	// vault
-	rootCmd.PersistentFlags().StringVar(&opts.VaultOptions.VaultAddr, "vault.addr", "", "url for vault server")
-	rootCmd.PersistentFlags().StringVar(&opts.VaultOptions.VaultToken, "vault.token", "", "auth token for reading vault secrets")
-	rootCmd.PersistentFlags().IntVar(&opts.VaultOptions.Retries, "vault.retries", 3, "number of times to retry failed requests to vault")
-
-	// upstream service type detection
+	// function discovery: upstream service type detection
 	rootCmd.PersistentFlags().BoolVar(&discoveryOpts.AutoDiscoverSwagger, "detect-swagger-upstreams", true, "enable automatic discovery of upstreams that implement Swagger by querying for common Swagger Doc endpoints.")
 	rootCmd.PersistentFlags().BoolVar(&discoveryOpts.AutoDiscoverNATS, "detect-nats-upstreams", true, "enable automatic discovery of upstreams that are running NATS by connecting to the default cluster id.")
 	rootCmd.PersistentFlags().BoolVar(&discoveryOpts.AutoDiscoverGRPC, "detect-grpc-upstreams", true, "enable automatic discovery of upstreams that are running gRPC Services and haeve reflection enabled.")

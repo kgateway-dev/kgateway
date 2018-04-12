@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -13,6 +11,7 @@ import (
 
 	"github.com/solo-io/gloo/internal/kube-ingress-controller/ingress"
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/signals"
 	"github.com/solo-io/gloo/pkg/storage"
@@ -55,21 +54,17 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	// choose storage options for configs
+	flags.AddConfigStorageOptionFlags(rootCmd, &opts)
+
+	// config storage backends
+	flags.AddFileFlags(rootCmd, &opts)
+	flags.AddKubernetesFlags(rootCmd, &opts)
+	flags.AddConsulFlags(rootCmd, &opts)
+
 	// ingress-specific
 	rootCmd.PersistentFlags().BoolVar(&globalIngress, "global", true, "use gloo as the cluster-wide kubernetes ingress")
 	rootCmd.PersistentFlags().StringVar(&ingressServiceName, "service", "", "The name of the proxy service (envoy) if running in-cluster. If --service is set, the ingress controller will update ingress objects with the load balancer endpoints")
-	rootCmd.PersistentFlags().DurationVar(&opts.ConfigStorageOptions.SyncFrequency, "syncperiod", time.Minute*30, "sync period for watching ingress rules")
-
-	// config writer
-	rootCmd.PersistentFlags().StringVar(&opts.ConfigStorageOptions.Type, "storage.type", bootstrap.WatcherTypeFile, fmt.Sprintf("storage backend for gloo config objects. supported: [%s]", strings.Join(bootstrap.SupportedCwTypes, " | ")))
-
-	// file
-	rootCmd.PersistentFlags().StringVar(&opts.FileOptions.ConfigDir, "file.config.dir", "_gloo_config", "root directory to use for storing gloo config files")
-
-	// kube
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.MasterURL, "master", "", "url of the kubernetes apiserver. not needed if running in-cluster")
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.KubeConfig, "kubeconfig", "", "path to kubeconfig file. not needed if running in-cluster")
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.Namespace, "kube.namespace", crd.GlooDefaultNamespace, "namespace to read/write gloo storage objects")
 }
 
 func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {

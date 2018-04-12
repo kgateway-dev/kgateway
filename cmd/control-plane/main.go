@@ -45,9 +45,12 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	// choose storage options (type, etc) for configs, secrets, and artifacts
 	flags.AddConfigStorageOptionFlags(rootCmd, &opts)
 	flags.AddSecretStorageOptionFlags(rootCmd, &opts)
 	flags.AddFileStorageOptionFlags(rootCmd, &opts)
+
+	// storage backends
 	flags.AddFileFlags(rootCmd, &opts)
 	flags.AddKubernetesFlags(rootCmd, &opts)
 	flags.AddConsulFlags(rootCmd, &opts)
