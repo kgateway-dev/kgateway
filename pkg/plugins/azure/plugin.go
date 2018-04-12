@@ -23,7 +23,6 @@ func init() {
 
 type Plugin struct {
 	isNeeded bool
-	hostname string
 	apiKeys  map[string]string
 }
 
@@ -37,9 +36,11 @@ const (
 
 	masterKeyName = "_master"
 
+	// upstream-specific metadata
+	azureFunctionAppHostname = "host"
+
 	// function-specific metadata
-	functionHost = "host"
-	functionPath = "path"
+	azureFunctionPath = "path"
 )
 
 func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
@@ -62,7 +63,6 @@ func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilter {
 	defer func() {
 		p.isNeeded = false
-		p.hostname = ""
 		p.apiKeys = make(map[string]string)
 	}()
 
@@ -92,13 +92,13 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 		return errors.Wrap(err, "invalid Azure upstream spec")
 	}
 
-	p.hostname = azureUpstream.GetHostname()
+	hostname := azureUpstream.GetHostname()
 	out.Hosts = append(out.Hosts, &envoycore.Address{Address: &envoycore.Address_SocketAddress{SocketAddress: &envoycore.SocketAddress{
-		Address:       p.hostname,
+		Address:       hostname,
 		PortSpecifier: &envoycore.SocketAddress_PortValue{PortValue: 443},
 	}}})
 	out.TlsContext = &envoyauth.UpstreamTlsContext{
-		Sni: p.hostname,
+		Sni: hostname,
 	}
 
 	if azureUpstream.SecretRef != "" {
@@ -115,7 +115,9 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 	}
 	common.InitFilterMetadata(filterName, out.Metadata)
 	out.Metadata.FilterMetadata[filterName] = &types.Struct{
-		Fields: map[string]*types.Value{},
+		Fields: map[string]*types.Value{
+			azureFunctionAppHostname: {Kind: &types.Value_StringValue{StringValue: hostname}},
+		},
 	}
 
 	return nil
@@ -136,7 +138,7 @@ func (p *Plugin) ParseFunctionSpec(params *plugins.FunctionPluginParams, in v1.F
 		return nil, err
 	}
 
-	return getFunctionStruct(p.hostname, path), nil
+	return getFunctionStruct(path), nil
 }
 
 func getApiKey(apiKeys map[string]string, keyNames []string) (string, error) {
@@ -183,11 +185,10 @@ func getPath(functionSpec *FunctionSpec, apiKeys map[string]string) (string, err
 	return fmt.Sprintf("/api/%s%s", functionName, pathParameters), nil
 }
 
-func getFunctionStruct(host string, path string) *types.Struct {
+func getFunctionStruct(path string) *types.Struct {
 	return &types.Struct{
 		Fields: map[string]*types.Value{
-			functionHost: {Kind: &types.Value_StringValue{StringValue: host}},
-			functionPath: {Kind: &types.Value_StringValue{StringValue: path}},
+			azureFunctionPath: {Kind: &types.Value_StringValue{StringValue: path}},
 		},
 	}
 }

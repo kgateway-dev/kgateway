@@ -38,7 +38,6 @@ var _ = Describe("Plugin HTTP filters", func() {
 		It("should create a filter and reset plugin", func() {
 			p := &Plugin{
 				isNeeded: true,
-				hostname: "previous.host.name",
 				apiKeys:  map[string]string{"a": "b"},
 			}
 			filters := p.HttpFilters(nil)
@@ -46,7 +45,6 @@ var _ = Describe("Plugin HTTP filters", func() {
 			Expect(filters[0].HttpFilter.Name).To(Equal("io.solo.azure_functions"))
 			Expect(filters[0].Stage).To(Equal(plugins.OutAuth))
 			Expect(p.isNeeded).To(Equal(false))
-			Expect(p.hostname).To(Equal(""))
 			Expect(p.apiKeys).To(HaveLen(0))
 		})
 	})
@@ -54,13 +52,11 @@ var _ = Describe("Plugin HTTP filters", func() {
 		It("should reset plugin without creating a filter", func() {
 			p := &Plugin{
 				isNeeded: false,
-				hostname: "previous.host.name",
 				apiKeys:  map[string]string{"a": "b"},
 			}
 			filters := p.HttpFilters(nil)
 			Expect(filters).To(HaveLen(0))
 			Expect(p.isNeeded).To(Equal(false))
-			Expect(p.hostname).To(Equal(""))
 			Expect(p.apiKeys).To(HaveLen(0))
 		})
 	})
@@ -119,14 +115,14 @@ var _ = Describe("Processing upstream", func() {
 			Expect(out.Type).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
 			Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
 		})
-		It("should have empty Azure metadata in output", func() {
+		It("should contain the hostname in the output Azure metadata", func() {
 			metadata, ok := out.Metadata.FilterMetadata["io.solo.azure_functions"]
 			Expect(ok).To(Equal(true))
-			Expect(metadata.Fields).Should(HaveLen(0))
+			Expect(metadata.Fields).Should(HaveLen(1))
+			Expect(get(metadata, "host")).To(Equal("my-appwhos.azurewebsites.net"))
 		})
-		It("should add the hostname and api key map to the plugin", func() {
+		It("should add the api key map to the plugin", func() {
 			Expect(p.isNeeded).To(Equal(true))
-			Expect(p.hostname).To(Equal("my-appwhos.azurewebsites.net"))
 			Expect(p.apiKeys).To(Equal(map[string]string{"_master": "key1", "foo": "key1", "bar": "key2"}))
 		})
 	})
@@ -159,14 +155,14 @@ var _ = Describe("Processing upstream", func() {
 			Expect(out.Type).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
 			Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
 		})
-		It("should have empty Azure metadata in output", func() {
+		It("should contain the hostname in the output Azure metadata", func() {
 			metadata, ok := out.Metadata.FilterMetadata["io.solo.azure_functions"]
 			Expect(ok).To(Equal(true))
-			Expect(metadata.Fields).Should(HaveLen(0))
+			Expect(metadata.Fields).Should(HaveLen(1))
+			Expect(get(metadata, "host")).To(Equal("my-appwhos.azurewebsites.net"))
 		})
-		It("should add the hostname to the plugin, but the api key map should remain empty", func() {
+		It("should leave the api key map empty in the plugin", func() {
 			Expect(p.isNeeded).To(Equal(true))
-			Expect(p.hostname).To(Equal("my-appwhos.azurewebsites.net"))
 			Expect(p.apiKeys).To(Equal(make(map[string]string)))
 		})
 	})
@@ -186,7 +182,6 @@ var _ = Describe("Processing function", func() {
 		It("should error", func() {
 			p := Plugin{
 				isNeeded: true,
-				hostname: "my-appwhos.azurewebsites.net",
 				apiKeys:  map[string]string{"foo": "key1"},
 			}
 			param := &plugins.FunctionPluginParams{UpstreamType: UpstreamTypeAzure}
@@ -198,7 +193,6 @@ var _ = Describe("Processing function", func() {
 		It("should error", func() {
 			p := Plugin{
 				isNeeded: true,
-				hostname: "my-appwhos.azurewebsites.net",
 				apiKeys:  map[string]string{"foo": "key1"},
 			}
 			param := &plugins.FunctionPluginParams{UpstreamType: UpstreamTypeAzure}
@@ -207,16 +201,14 @@ var _ = Describe("Processing function", func() {
 		})
 	})
 	Context("with valid function spec", func() {
-		It("should return host and path", func() {
+		It("should return path", func() {
 			p := Plugin{
 				isNeeded: true,
-				hostname: "my-appwhos.azurewebsites.net",
 				apiKeys:  map[string]string{"foo": "key1"},
 			}
 			param := &plugins.FunctionPluginParams{UpstreamType: UpstreamTypeAzure}
 			out, err := p.ParseFunctionSpec(param, functionSpec("foo", "function"))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(get(out, "host")).To(Equal("my-appwhos.azurewebsites.net"))
 			Expect(get(out, "path")).To(Equal("/api/foo?code=key1"))
 		})
 	})
