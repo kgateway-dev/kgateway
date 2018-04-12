@@ -1,19 +1,18 @@
-package kube_test
+package secretwatcher
 
 import (
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"os"
 	"path/filepath"
 
 	"fmt"
 
-	. "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/pkg/log"
-	. "github.com/solo-io/gloo/pkg/secretwatcher/kube"
+	"github.com/solo-io/gloo/pkg/storage/dependencies/kube"
+	. "github.com/solo-io/gloo/test/helpers"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -28,6 +27,7 @@ var _ = Describe("KubeSecretWatcher", func() {
 	var (
 		masterUrl, kubeconfigPath string
 		namespace                 string
+		stop                      chan struct{}
 	)
 	BeforeEach(func() {
 		namespace = RandString(8)
@@ -44,8 +44,15 @@ var _ = Describe("KubeSecretWatcher", func() {
 			cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 			Expect(err).NotTo(HaveOccurred())
 
-			watcher, err := NewSecretWatcher(masterUrl, kubeconfigPath, time.Second, make(chan struct{}))
+			secretClient, err := kube.NewSecretStorage(cfg, namespace, time.Second)
 			Expect(err).NotTo(HaveOccurred())
+
+			watcher, err := NewSecretWatcher(secretClient)
+			Expect(err).NotTo(HaveOccurred())
+			stop = make(chan struct{})
+
+			go watcher.Run(stop)
+			defer close(stop)
 
 			// add a secret
 			kubeClient, err := kubernetes.NewForConfig(cfg)
@@ -71,7 +78,7 @@ var _ = Describe("KubeSecretWatcher", func() {
 				Expect(fmt.Errorf("expected to have received resource event before 5s")).NotTo(HaveOccurred())
 			case secrets := <-watcher.Secrets():
 				Expect(len(secrets)).To(Equal(1))
-				Expect(secrets[createdSecret.Name]["username"]).To(Equal("me@example.com"))
+				Expect(secrets[createdSecret.Name].Data["username"]).To(Equal("me@example.com"))
 			case err := <-watcher.Error():
 				Expect(err).NotTo(HaveOccurred())
 			}

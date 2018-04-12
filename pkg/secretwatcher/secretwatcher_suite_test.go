@@ -1,4 +1,4 @@
-package file
+package secretwatcher_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestFile(t *testing.T) {
+func TestSecretwatcher(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "File Suite")
+	RunSpecs(t, "Secretwatcher Suite")
 }

@@ -1,4 +1,4 @@
-package file_test
+package secretwatcher
 
 import (
 	"io/ioutil"
@@ -14,8 +14,8 @@ import (
 	"path/filepath"
 
 	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/gloo/pkg/secretwatcher"
-	. "github.com/solo-io/gloo/pkg/secretwatcher/file"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+	filesecrets "github.com/solo-io/gloo/pkg/storage/dependencies/file"
 	. "github.com/solo-io/gloo/test/helpers"
 )
 
@@ -25,17 +25,24 @@ var _ = Describe("FileSecretWatcher", func() {
 		file  string
 		ref   string
 		err   error
-		watch secretwatcher.Interface
+		watch Interface
+		stop  chan struct{}
 	)
 	BeforeEach(func() {
 		ref = "secrets.yml"
 		dir, err = ioutil.TempDir("", "filesecrettest")
 		Must(err)
 		file = filepath.Join(dir, ref)
-		watch, err = NewSecretWatcher(dir, time.Millisecond)
+		secretClient, err := filesecrets.NewSecretStorage(dir, time.Millisecond)
 		Must(err)
+		watch, err = NewSecretWatcher(secretClient)
+		Must(err)
+		stop = make(chan struct{})
+
+		go watch.Run(stop)
 	})
 	AfterEach(func() {
+		close(stop)
 		log.Debugf("removing " + dir)
 		os.RemoveAll(dir)
 	})
@@ -59,17 +66,19 @@ var _ = Describe("FileSecretWatcher", func() {
 		})
 		Context("valid secrets are written to the ref file", func() {
 			It("sends a corresponding secretmap on Secrets()", func() {
-
-				secrets := map[string]string{"username": "me@example.com", "password": "foobar"}
-				yml, err := yaml.Marshal(secrets)
+				secret := &dependencies.Secret{
+					Ref:  ref,
+					Data: map[string]string{"username": "me@example.com", "password": "foobar"},
+				}
+				yml, err := yaml.Marshal(secret.Data)
 				Must(err)
 				err = ioutil.WriteFile(file, yml, 0644)
 				Must(err)
 				go watch.TrackSecrets([]string{ref})
 				select {
 				case parsedSecrets := <-watch.Secrets():
-					Expect(parsedSecrets).To(Equal(secretwatcher.SecretMap{
-						ref: secrets,
+					Expect(parsedSecrets).To(Equal(SecretMap{
+						ref: secret,
 					}))
 				case err := <-watch.Error():
 					Expect(err).NotTo(HaveOccurred())
