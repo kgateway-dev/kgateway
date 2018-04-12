@@ -12,13 +12,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/solo-io/gloo/internal/kube-upstream-discovery/controller"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/signals"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/consul"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/solo-io/gloo/pkg/storage/file"
-	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/gloo/pkg/signals"
 )
 
 func main() {
@@ -56,10 +56,10 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	// controller-specific
-	rootCmd.PersistentFlags().DurationVar(&opts.ConfigWatcherOptions.SyncFrequency, "syncperiod", time.Minute*30, "sync period for watching ingress rules")
+	rootCmd.PersistentFlags().DurationVar(&opts.ConfigStorageOptions.SyncFrequency, "syncperiod", time.Minute*30, "sync period for watching ingress rules")
 
 	// config writer
-	rootCmd.PersistentFlags().StringVar(&opts.ConfigWatcherOptions.Type, "storage.type", bootstrap.WatcherTypeFile, fmt.Sprintf("storage backend for gloo config objects. supported: [%s]", strings.Join(bootstrap.SupportedCwTypes, " | ")))
+	rootCmd.PersistentFlags().StringVar(&opts.ConfigStorageOptions.Type, "storage.type", bootstrap.WatcherTypeFile, fmt.Sprintf("storage backend for gloo config objects. supported: [%s]", strings.Join(bootstrap.SupportedCwTypes, " | ")))
 
 	// file
 	rootCmd.PersistentFlags().StringVar(&opts.FileOptions.ConfigDir, "file.config.dir", "_gloo_config", "root directory to use for storing gloo config files")
@@ -80,13 +80,13 @@ func init() {
 }
 
 func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
-	switch opts.ConfigWatcherOptions.Type {
+	switch opts.ConfigStorageOptions.Type {
 	case bootstrap.WatcherTypeFile:
 		dir := opts.FileOptions.ConfigDir
 		if dir == "" {
 			return nil, errors.New("must provide directory for file config watcher")
 		}
-		client, err := file.NewStorage(dir, opts.ConfigWatcherOptions.SyncFrequency)
+		client, err := file.NewStorage(dir, opts.ConfigStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start file config watcher for directory %v", dir)
 		}
@@ -96,24 +96,24 @@ func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "building kube restclient")
 		}
-		cfgWatcher, err := crd.NewStorage(cfg, opts.KubeOptions.Namespace, opts.ConfigWatcherOptions.SyncFrequency)
+		cfgWatcher, err := crd.NewStorage(cfg, opts.KubeOptions.Namespace, opts.ConfigStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start kube config watcher with config %#v", opts.KubeOptions)
 		}
 		return cfgWatcher, nil
 	case bootstrap.WatcherTypeConsul:
 		cfg := opts.ConsulOptions.ToConsulConfig()
-		cfgWatcher, err := consul.NewStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigWatcherOptions.SyncFrequency)
+		cfgWatcher, err := consul.NewStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start consul config watcher with config %#v", opts.ConsulOptions)
 		}
 		return cfgWatcher, nil
 	}
-	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigWatcherOptions.Type)
+	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigStorageOptions.Type)
 }
 
 func runServiceDiscovery(cfg *rest.Config, store storage.Interface, stop <-chan struct{}) error {
-	serviceCtl, err := controller.NewServiceController(cfg, store, opts.ConfigWatcherOptions.SyncFrequency)
+	serviceCtl, err := controller.NewServiceController(cfg, store, opts.ConfigStorageOptions.SyncFrequency)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service discovery service")
 	}

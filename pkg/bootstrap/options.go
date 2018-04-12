@@ -35,17 +35,14 @@ type Options struct {
 	// these 3 get copied around. fun, i know
 	KubeOptions          KubeOptions
 	ConsulOptions        ConsulOptions
-	ConfigWatcherOptions WatcherOptions
-	SecretWatcherOptions WatcherOptions
-	FileWatcherOptions   WatcherOptions
+	ConfigStorageOptions StorageOptions
+	SecretStorageOptions StorageOptions
+	FileStorageOptions   StorageOptions
 	FileOptions          FileOptions
 	VaultOptions         VaultOptions
-	XdsOptions           XdsOptions
-	// may be needed by plugins
-	Extra map[string]string
 }
 
-type WatcherOptions struct {
+type StorageOptions struct {
 	Type          string
 	SyncFrequency time.Duration
 }

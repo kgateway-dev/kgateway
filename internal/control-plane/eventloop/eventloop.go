@@ -41,7 +41,7 @@ type eventLoop struct {
 	startFuncs []func() error
 }
 
-func Setup(opts bootstrap.Options, stop <-chan struct{}) (*eventLoop, error) {
+func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
 	store, err := createStorageClient(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create config store client")
@@ -62,7 +62,7 @@ func Setup(opts bootstrap.Options, stop <-chan struct{}) (*eventLoop, error) {
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
 
-	xdsConfig, _, err := xds.RunXDS(opts.XdsOptions.Port)
+	xdsConfig, _, err := xds.RunXDS(xdsPort)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start xds server")
 	}
@@ -111,13 +111,13 @@ func getDependenciesFor(translatorPlugins []plugins.TranslatorPlugin) func(cfg *
 }
 
 func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
-	switch opts.ConfigWatcherOptions.Type {
+	switch opts.ConfigStorageOptions.Type {
 	case bootstrap.WatcherTypeFile:
 		dir := opts.FileOptions.ConfigDir
 		if dir == "" {
 			return nil, errors.New("must provide directory for file config watcher")
 		}
-		client, err := file.NewStorage(dir, opts.ConfigWatcherOptions.SyncFrequency)
+		client, err := file.NewStorage(dir, opts.ConfigStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start file config watcher for directory %v", dir)
 		}
@@ -127,27 +127,27 @@ func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "building kube restclient")
 		}
-		cfgWatcher, err := crd.NewStorage(cfg, opts.KubeOptions.Namespace, opts.ConfigWatcherOptions.SyncFrequency)
+		cfgWatcher, err := crd.NewStorage(cfg, opts.KubeOptions.Namespace, opts.ConfigStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start kube config watcher with config %#v", opts.KubeOptions)
 		}
 		return cfgWatcher, nil
 	case bootstrap.WatcherTypeConsul:
 		cfg := opts.ConsulOptions.ToConsulConfig()
-		cfgWatcher, err := consul.NewStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigWatcherOptions.SyncFrequency)
+		cfgWatcher, err := consul.NewStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start consul config watcher with config %#v", opts.ConsulOptions)
 		}
 		return cfgWatcher, nil
 	}
-	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigWatcherOptions.Type)
+	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigStorageOptions.Type)
 }
 
 func setupFileWatcher(opts bootstrap.Options, stop <-chan struct{}) (filewatcher.Interface, error) {
 	var store dependencies.FileStorage
-	switch opts.SecretWatcherOptions.Type {
+	switch opts.FileStorageOptions.Type {
 	case bootstrap.WatcherTypeFile:
-		s, err := filestore.NewFileStorage(opts.FileOptions.FilesDir, opts.FileWatcherOptions.SyncFrequency)
+		s, err := filestore.NewFileStorage(opts.FileOptions.FilesDir, opts.FileStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start filesystem-based file watcher with config %#v", opts.FileOptions)
 		}
@@ -157,20 +157,20 @@ func setupFileWatcher(opts bootstrap.Options, stop <-chan struct{}) (filewatcher
 		if err != nil {
 			return nil, errors.Wrap(err, "building kube restclient")
 		}
-		s, err := kubestore.NewFileStorage(cfg, opts.KubeOptions.Namespace, opts.FileWatcherOptions.SyncFrequency)
+		s, err := kubestore.NewFileStorage(cfg, opts.KubeOptions.Namespace, opts.FileStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start kube configmap-based file watcher with config %#v", opts.KubeOptions)
 		}
 		store = s
 	case bootstrap.WatcherTypeConsul:
 		cfg := opts.ConsulOptions.ToConsulConfig()
-		s, err := consulfiles.NewFileStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigWatcherOptions.SyncFrequency)
+		s, err := consulfiles.NewFileStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start consul KV-based file watcher with config %#v", opts.ConsulOptions)
 		}
 		store = s
 	default:
-		return nil, errors.Errorf("unknown or unspecified file watcher type: %v", opts.FileWatcherOptions.Type)
+		return nil, errors.Errorf("unknown or unspecified file watcher type: %v", opts.FileStorageOptions.Type)
 	}
 	return filewatcher.NewFileWatcher(store)
 }

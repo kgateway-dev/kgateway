@@ -52,16 +52,16 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	// config watcher
-	rootCmd.PersistentFlags().StringVar(&opts.ConfigWatcherOptions.Type, "storage.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for config objects. supported: [%s]", strings.Join(bootstrap.SupportedCwTypes, " | ")))
-	rootCmd.PersistentFlags().DurationVar(&opts.ConfigWatcherOptions.SyncFrequency, "storage.refreshrate", time.Second, "refresh rate for polling config")
+	rootCmd.PersistentFlags().StringVar(&opts.ConfigStorageOptions.Type, "storage.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for config objects. supported: [%s]", strings.Join(bootstrap.SupportedCwTypes, " | ")))
+	rootCmd.PersistentFlags().DurationVar(&opts.ConfigStorageOptions.SyncFrequency, "storage.refreshrate", time.Second, "refresh rate for polling config")
 
 	// secret watcher
-	rootCmd.PersistentFlags().StringVar(&opts.SecretWatcherOptions.Type, "secrets.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for secrets. supported: [%s]", strings.Join(bootstrap.SupportedSwTypes, " | ")))
-	rootCmd.PersistentFlags().DurationVar(&opts.SecretWatcherOptions.SyncFrequency, "secrets.refreshrate", time.Second, "refresh rate for polling secrets")
+	rootCmd.PersistentFlags().StringVar(&opts.SecretStorageOptions.Type, "secrets.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for secrets. supported: [%s]", strings.Join(bootstrap.SupportedSwTypes, " | ")))
+	rootCmd.PersistentFlags().DurationVar(&opts.SecretStorageOptions.SyncFrequency, "secrets.refreshrate", time.Second, "refresh rate for polling secrets")
 
 	// file watcher
-	rootCmd.PersistentFlags().StringVar(&opts.FileWatcherOptions.Type, "files.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for files. supported: [%s]", strings.Join(bootstrap.SupportedFwTypes, " | ")))
-	rootCmd.PersistentFlags().DurationVar(&opts.FileWatcherOptions.SyncFrequency, "files.refreshrate", time.Second, "refresh rate for polling files")
+	rootCmd.PersistentFlags().StringVar(&opts.FileStorageOptions.Type, "files.type", bootstrap.WatcherTypeKube, fmt.Sprintf("storage backend for files. supported: [%s]", strings.Join(bootstrap.SupportedFwTypes, " | ")))
+	rootCmd.PersistentFlags().DurationVar(&opts.FileStorageOptions.SyncFrequency, "files.refreshrate", time.Second, "refresh rate for polling files")
 
 	// file
 	rootCmd.PersistentFlags().StringVar(&opts.FileOptions.ConfigDir, "file.config.dir", "_gloo_config", "root directory to use for storing gloo config files")
