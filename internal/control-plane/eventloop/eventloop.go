@@ -6,29 +6,26 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/storage/consul"
 	consulfiles "github.com/solo-io/gloo/pkg/storage/dependencies/consul"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
+	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
+	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/internal/control-plane/translator"
+	"github.com/solo-io/gloo/internal/control-plane/xds"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	filestore "github.com/solo-io/gloo/pkg/storage/dependencies/file"
 	kubestore "github.com/solo-io/gloo/pkg/storage/dependencies/kube"
 	"github.com/solo-io/gloo/pkg/storage/file"
-	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
-	"github.com/solo-io/gloo/internal/control-plane/reporter"
-	"github.com/solo-io/gloo/internal/control-plane/translator"
-	"github.com/solo-io/gloo/internal/control-plane/xds"
-	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
-	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
-	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/pkg/secretwatcher"
-	filesecrets "github.com/solo-io/gloo/pkg/secretwatcher/file"
-	kubesecrets "github.com/solo-io/gloo/pkg/secretwatcher/kube"
-	"github.com/solo-io/gloo/pkg/secretwatcher/vault"
 )
 
 type eventLoop struct {
@@ -55,7 +52,7 @@ func Setup(opts bootstrap.Options, stop <-chan struct{}) (*eventLoop, error) {
 		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	secretWatcher, err := setupSecretWatcher(opts, stop)
+	secretWatcher, err := secretwatchersetup.Bootstrap(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up secret watcher")
 	}
@@ -146,30 +143,6 @@ func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
 	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigWatcherOptions.Type)
 }
 
-func setupSecretWatcher(opts bootstrap.Options, stop <-chan struct{}) (secretwatcher.Interface, error) {
-	switch opts.SecretWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		secretWatcher, err := filesecrets.NewSecretWatcher(opts.FileOptions.SecretDir, opts.SecretWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeKube:
-		secretWatcher, err := kubesecrets.NewSecretWatcher(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig, opts.SecretWatcherOptions.SyncFrequency, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeVault:
-		secretWatcher, err := vault.NewVaultSecretWatcher(opts.SecretWatcherOptions.SyncFrequency, opts.VaultOptions.Retries, opts.VaultOptions.VaultAddr, opts.VaultOptions.AuthToken, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start vault secret watcher with config %#v", opts.VaultOptions)
-		}
-		return secretWatcher, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified secret watcher type: %v", opts.SecretWatcherOptions.Type)
-}
-
 func setupFileWatcher(opts bootstrap.Options, stop <-chan struct{}) (filewatcher.Interface, error) {
 	var store dependencies.FileStorage
 	switch opts.SecretWatcherOptions.Type {
@@ -212,6 +185,7 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 		go eds.Run(stop)
 	}
 	go e.configWatcher.Run(stop)
+	go e.secretWatcher.Run(stop)
 
 	endpointDiscovery := e.endpointDiscovery()
 	workerErrors := e.errors()

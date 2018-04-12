@@ -7,16 +7,20 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
 	"github.com/solo-io/gloo/internal/function-discovery/grpc"
-	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/nats-streaming"
+	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/options"
+	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/swagger"
 	"github.com/solo-io/gloo/internal/function-discovery/updater"
 	"github.com/solo-io/gloo/internal/function-discovery/upstreamwatcher"
-	"github.com/solo-io/gloo/internal/function-discovery/resolver"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
+	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/consul"
 	"github.com/solo-io/gloo/pkg/storage/crd"
@@ -25,12 +29,6 @@ import (
 	filestorage "github.com/solo-io/gloo/pkg/storage/dependencies/file"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/kube"
 	"github.com/solo-io/gloo/pkg/storage/file"
-	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/gloo/pkg/secretwatcher"
-	filesecrets "github.com/solo-io/gloo/pkg/secretwatcher/file"
-	kubesecrets "github.com/solo-io/gloo/pkg/secretwatcher/kube"
-	"github.com/solo-io/gloo/pkg/secretwatcher/vault"
 )
 
 const (
@@ -53,10 +51,12 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		return errors.Wrap(err, "failed to start monitoring upstreams")
 	}
 
-	secretWatcher, err := setupSecretWatcher(opts, stop)
+	secretWatcher, err := secretwatchersetup.Bootstrap(opts)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up secret watcher")
 	}
+
+	go secretWatcher.Run(stop)
 
 	resolve := createResolver(opts)
 
@@ -249,28 +249,4 @@ func createResolver(opts bootstrap.Options) resolver.Resolver {
 		log.Warnf("create kube client failed: %v. swagger services running in kubernetes will not be discovered by function discovery")
 	}
 	return resolver.NewResolver(kube)
-}
-
-func setupSecretWatcher(opts bootstrap.Options, stop <-chan struct{}) (secretwatcher.Interface, error) {
-	switch opts.SecretWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		secretWatcher, err := filesecrets.NewSecretWatcher(opts.FileOptions.SecretDir, opts.SecretWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeKube:
-		secretWatcher, err := kubesecrets.NewSecretWatcher(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig, opts.SecretWatcherOptions.SyncFrequency, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeVault:
-		secretWatcher, err := vault.NewVaultSecretWatcher(opts.SecretWatcherOptions.SyncFrequency, opts.VaultOptions.Retries, opts.VaultOptions.VaultAddr, opts.VaultOptions.AuthToken, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start vault secret watcher with config %#v", opts.VaultOptions)
-		}
-		return secretWatcher, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified secret watcher type: %v", opts.SecretWatcherOptions.Type)
 }

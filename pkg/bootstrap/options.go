@@ -107,9 +107,11 @@ func (o ConsulOptions) ToConsulConfig() *api.Config {
 }
 
 type VaultOptions struct {
-	VaultAddr string
-	AuthToken string
-	Retries   int
+	VaultAddr      string
+	VaultToken     string
+	VaultTokenFile string
+	Retries        int
+	RootPath       string
 }
 
 type FileOptions struct {

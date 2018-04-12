@@ -80,6 +80,6 @@ func init() {
 
 	// vault
 	rootCmd.PersistentFlags().StringVar(&opts.VaultOptions.VaultAddr, "vault.addr", "", "url for vault server")
-	rootCmd.PersistentFlags().StringVar(&opts.VaultOptions.AuthToken, "vault.token", "", "auth token for reading vault secrets")
+	rootCmd.PersistentFlags().StringVar(&opts.VaultOptions.VaultToken, "vault.token", "", "auth token for reading vault secrets")
 	rootCmd.PersistentFlags().IntVar(&opts.VaultOptions.Retries, "vault.retries", 3, "number of times to retry failed requests to vault")
 }
