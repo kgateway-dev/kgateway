@@ -27,6 +27,6 @@ spec:
           value: "1"
         args:
         - "--storage.type=kube"
-        - "--syncperiod=30m"
+        - "--storage.refreshrate=30m"
         - "--kube.namespace={{ .Release.Namespace }}"
 {{ end }}

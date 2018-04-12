@@ -20,6 +20,6 @@ func AddSecretStorageOptionFlags(cmd *cobra.Command, opts *bootstrap.Options) {
 }
 
 func AddFileStorageOptionFlags(cmd *cobra.Command, opts *bootstrap.Options) {
-	cmd.PersistentFlags().StringVar(&opts.FileStorageOptions.Type, "filewatcher.type", bootstrap.WatcherTypeFile, fmt.Sprintf("storage backend for raw files. supported: [%s]", strings.Join(bootstrap.SupportedFwTypes, " | ")))
-	cmd.PersistentFlags().DurationVar(&opts.FileStorageOptions.SyncFrequency, "filewatcher.refreshrate", time.Second, "refresh rate for polling config")
+	cmd.PersistentFlags().StringVar(&opts.FileStorageOptions.Type, "files.type", bootstrap.WatcherTypeFile, fmt.Sprintf("storage backend for raw files. supported: [%s]", strings.Join(bootstrap.SupportedFwTypes, " | ")))
+	cmd.PersistentFlags().DurationVar(&opts.FileStorageOptions.SyncFrequency, "files.refreshrate", time.Second, "refresh rate for polling config")
 }

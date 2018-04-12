@@ -336,7 +336,7 @@ spec:
           value: "1"
         args:
         - "--storage.type=kube"
-        - "--syncperiod=30m"
+        - "--storage.refreshrate=30m"
         - "--kube.namespace=gloo-system"
 ---
 apiVersion: extensions/v1beta1
@@ -414,6 +414,6 @@ spec:
           value: all
         args:
         - "--service=ingress"
-        - "--syncperiod=30m"
+        - "--storage.refreshrate=30m"
         - "--storage.type=kube"
         - "--kube.namespace=gloo-system"
