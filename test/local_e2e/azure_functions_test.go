@@ -77,6 +77,10 @@ var _ = Describe("Azure Functions", func() {
 		err = glooInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 
+		secret := make(map[string]string)
+		secret["solo"] = "solo"
+		glooInstance.AddSecret(AzureSecretRef, secret)
+
 		envoyPort := glooInstance.EnvoyPort()
 
 		au := NewAzureUpstream()
