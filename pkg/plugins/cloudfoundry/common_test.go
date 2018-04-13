@@ -14,15 +14,8 @@ var _ = Describe("Common", func() {
 	var resp copilotapi.RoutesResponse
 	var us v1.Upstream
 	BeforeEach(func() {
-		resp.Backends = make(map[string]*copilotapi.BackendSet)
-		resp.Backends[hostname] = new(copilotapi.BackendSet)
-		resp.Backends[hostname].Backends = []*copilotapi.Backend{
-			{
-				Address: "1.2.3.4",
-				Port:    1234,
-			},
-		}
-
+		resp = *FakeResponse(hostname, "1.2.3.4", 1234)
+		
 		us = v1.Upstream{
 			Name: "doesnt matter",
 			Type: UpstreamTypeCF,
