@@ -16,6 +16,33 @@ import (
 	"github.com/solo-io/gloo/pkg/log"
 )
 
+func ResyncLoop(ctx context.Context, stop <-chan struct{}, resync func(), resyncDuration time.Duration) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	ticker := time.NewTicker(resyncDuration)
+	defer ticker.Stop()
+
+	if stop != nil {
+		go func(cancel context.CancelFunc) {
+			<-stop
+			cancel()
+		}(cancel)
+	}
+
+	// first time resync
+	resync()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			resync()
+		}
+	}
+}
+
 func createEndpointDiscovery(ctx context.Context, opts bootstrap.Options) (endpointdiscovery.Interface, error) {
 	// kubeConfig := opts.KubeOptions.KubeConfig
 	// masterUrl := opts.KubeOptions.MasterURL
@@ -25,7 +52,7 @@ func createEndpointDiscovery(ctx context.Context, opts bootstrap.Options) (endpo
 }
 
 type endpointDiscovery struct {
-	ticker *time.Ticker
+	resyncDuration time.Duration
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -42,14 +69,14 @@ type endpointDiscovery struct {
 func NewEndpointDiscovery(ctx context.Context, client copilot.IstioClient, resyncDuration time.Duration) endpointdiscovery.Interface {
 	ctx, cancel := context.WithCancel(ctx)
 	return &endpointDiscovery{
-		ticker: time.NewTicker(resyncDuration),
-		ctx:    ctx,
-		cancel: cancel,
+		resyncDuration: resyncDuration,
+		ctx:            ctx,
+		cancel:         cancel,
 
 		client: client,
 
-		errors:    make(chan error,100),
-		endpoints: make(chan endpointdiscovery.EndpointGroups,100),
+		errors:    make(chan error, 100),
+		endpoints: make(chan endpointdiscovery.EndpointGroups, 100),
 	}
 }
 
@@ -66,27 +93,7 @@ func (ed *endpointDiscovery) setUpstreamsToTrack(u []*v1.Upstream) {
 }
 
 func (ed *endpointDiscovery) Run(stop <-chan struct{}) {
-	defer ed.cancel()
-	defer ed.ticker.Stop()
-
-	if stop != nil {
-		go func(cancel context.CancelFunc) {
-			<-stop
-			cancel()
-		}(ed.cancel)
-	}
-
-	// first time resync
-	ed.resync()
-
-	for {
-		select {
-		case <-ed.ctx.Done():
-			return
-		case <-ed.ticker.C:
-			ed.resync()
-		}
-	}
+	ResyncLoop(ed.ctx, stop, ed.resync, ed.resyncDuration)
 }
 
 func (ed *endpointDiscovery) resync() {
