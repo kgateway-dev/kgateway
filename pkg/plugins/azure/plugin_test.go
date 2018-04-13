@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 var _ = Describe("Plugin dependencies", func() {
@@ -99,8 +100,11 @@ var _ = Describe("Processing upstream", func() {
 				Spec: upstreamSpec("my-appwhos", "azure-secret1"),
 			}
 			out = &envoyapi.Cluster{}
-			params := &plugins.UpstreamPluginParams{Secrets: map[string]map[string]string{
-				"azure-secret1": map[string]string{"_master": "key1", "foo": "key1", "bar": "key2"},
+			params := &plugins.UpstreamPluginParams{Secrets: map[string]*dependencies.Secret{
+				"azure-secret1": {
+					Ref:  "azure-secret1",
+					Data: map[string]string{"_master": "key1", "foo": "key1", "bar": "key2"},
+				},
 			}}
 			err = p.ProcessUpstream(params, upstream, out)
 		})
@@ -139,8 +143,11 @@ var _ = Describe("Processing upstream", func() {
 				Spec: upstreamSpec("my-appwhos", ""),
 			}
 			out = &envoyapi.Cluster{}
-			params := &plugins.UpstreamPluginParams{Secrets: map[string]map[string]string{
-				"some-irrelevant-secret1": map[string]string{"_master": "key1", "foo": "key1", "bar": "key2"},
+			params := &plugins.UpstreamPluginParams{Secrets: map[string]*dependencies.Secret{
+				"some-irrelevant-secret1": {
+					Ref:  "some-irrelevant-secret1",
+					Data: map[string]string{"_master": "key1", "foo": "key1", "bar": "key2"},
+				},
 			}}
 			err = p.ProcessUpstream(params, upstream, out)
 		})
