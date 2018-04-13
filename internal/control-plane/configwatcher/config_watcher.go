@@ -9,14 +9,17 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/storage"
 )
 
 type configWatcher struct {
 	watchers []*storage.Watcher
 	configs  chan *v1.Config
 	errs     chan error
+
+	cache     *v1.Config
+	cacheLock sync.Mutex
 }
 
 func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
@@ -41,60 +44,81 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		VirtualHosts: initialVirtualHosts,
 	}
 	// throw it down the channel to get things going
-	go func() {
-		configs <- cache
-	}()
+	go func(cache v1.Config) {
+		configs <- &cache
+	}(*cache)
 
-	syncUpstreams := func(updatedList []*v1.Upstream, _ *v1.Upstream) {
-		sort.SliceStable(updatedList, func(i, j int) bool {
-			return updatedList[i].GetName() < updatedList[j].GetName()
-		})
-
-		diff, equal := messagediff.PrettyDiff(cache.Upstreams, updatedList)
-		if equal {
-			return
-		}
-		log.GreyPrintf("change detected in upstream: %v", diff)
-
-		cache.Upstreams = updatedList
-		configs <- cache
+	cw := &configWatcher{
+		configs: configs,
+		errs:    make(chan error),
+		cache:   cache,
 	}
+
 	upstreamWatcher, err := storageClient.V1().Upstreams().Watch(&storage.UpstreamEventHandlerFuncs{
-		AddFunc:    syncUpstreams,
-		UpdateFunc: syncUpstreams,
-		DeleteFunc: syncUpstreams,
+		AddFunc:    cw.syncUpstreams,
+		UpdateFunc: cw.syncUpstreams,
+		DeleteFunc: cw.syncUpstreams,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create watcher for upstreams")
 	}
-	syncVhosts := func(updatedList []*v1.VirtualHost, _ *v1.VirtualHost) {
-		sort.SliceStable(updatedList, func(i, j int) bool {
-			return updatedList[i].GetName() < updatedList[j].GetName()
-		})
-
-		diff, equal := messagediff.PrettyDiff(cache.VirtualHosts, updatedList)
-		if equal {
-			return
-		}
-		log.GreyPrintf("change detected in virtualhosts: %v", diff)
-
-		cache.VirtualHosts = updatedList
-		configs <- cache
-	}
 	vhostWatcher, err := storageClient.V1().VirtualHosts().Watch(&storage.VirtualHostEventHandlerFuncs{
-		AddFunc:    syncVhosts,
-		UpdateFunc: syncVhosts,
-		DeleteFunc: syncVhosts,
+		AddFunc:    cw.syncVhosts,
+		UpdateFunc: cw.syncVhosts,
+		DeleteFunc: cw.syncVhosts,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create watcher for virtualhosts")
 	}
 
-	return &configWatcher{
-		watchers: []*storage.Watcher{vhostWatcher, upstreamWatcher},
-		configs:  configs,
-		errs:     make(chan error),
-	}, nil
+	cw.watchers = []*storage.Watcher{vhostWatcher, upstreamWatcher}
+	return cw, nil
+}
+
+func (w *configWatcher) syncVhosts(updatedList []*v1.VirtualHost, _ *v1.VirtualHost) {
+	sort.SliceStable(updatedList, func(i, j int) bool {
+		return updatedList[i].GetName() < updatedList[j].GetName()
+	})
+
+	w.cacheLock.Lock()
+	vhosts := w.cache.VirtualHosts
+	w.cacheLock.Unlock()
+
+	diff, equal := messagediff.PrettyDiff(vhosts, updatedList)
+	if equal {
+		return
+	}
+	log.GreyPrintf("change detected in virtualhosts: %v", diff)
+
+	w.cacheLock.Lock()
+	w.cache.VirtualHosts = updatedList
+	copyCache := *w.cache
+	w.cacheLock.Unlock()
+
+	w.configs <- &copyCache
+}
+
+func (w *configWatcher) syncUpstreams(updatedList []*v1.Upstream, _ *v1.Upstream) {
+	sort.SliceStable(updatedList, func(i, j int) bool {
+		return updatedList[i].GetName() < updatedList[j].GetName()
+	})
+
+	w.cacheLock.Lock()
+	upstreams := w.cache.Upstreams
+	w.cacheLock.Unlock()
+
+	diff, equal := messagediff.PrettyDiff(upstreams, updatedList)
+	if equal {
+		return
+	}
+	log.GreyPrintf("change detected in upstream: %v", diff)
+
+	w.cacheLock.Lock()
+	w.cache.Upstreams = updatedList
+	copyCache := *w.cache
+	w.cacheLock.Unlock()
+
+	w.configs <- &copyCache
 }
 
 func (w *configWatcher) Run(stop <-chan struct{}) {

@@ -145,7 +145,6 @@
 package configwatcher
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
@@ -153,9 +152,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage/file"
 	. "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 var _ = Describe("FileConfigWatcher", func() {
@@ -177,7 +177,9 @@ var _ = Describe("FileConfigWatcher", func() {
 			Must(err)
 			watcher, err := NewConfigWatcher(storageClient)
 			Must(err)
-			go func() { watcher.Run(make(chan struct{})) }()
+			c := make(chan struct{})
+			defer close(c)
+			go func() { watcher.Run(c) }()
 
 			virtualHost := NewTestVirtualHost("something", NewTestRoute1())
 			created, err := storageClient.V1().VirtualHosts().Create(virtualHost)
@@ -186,17 +188,28 @@ var _ = Describe("FileConfigWatcher", func() {
 			// give controller time to register
 			time.Sleep(time.Second * 2)
 
-			select {
-			case <-time.After(time.Second * 5):
-				Expect(fmt.Errorf("expected to have received resource event before 5s")).NotTo(HaveOccurred())
-			case cfg := <-watcher.Config():
+			Eventually(func() []*v1.VirtualHost {
+				select {
+				case cfg := <-watcher.Config():
+					return cfg.VirtualHosts
+				case err := <-watcher.Error():
+					Expect(err).NotTo(HaveOccurred())
+				default:
+					return nil
+				}
+				return nil
+			}, "5s").Should(SatisfyAll(
+				HaveLen(1),
+				ContainElement(created),
+			))
+
+			/*
 				Expect(len(cfg.VirtualHosts)).To(Equal(1))
 				Expect(cfg.VirtualHosts[0]).To(Equal(created))
 				Expect(len(cfg.VirtualHosts[0].Routes)).To(Equal(1))
 				Expect(cfg.VirtualHosts[0].Routes[0]).To(Equal(created.Routes[0]))
-			case err := <-watcher.Error():
-				Expect(err).NotTo(HaveOccurred())
-			}
+			*/
+
 		})
 	})
 })

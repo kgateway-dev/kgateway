@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -20,7 +21,7 @@ import (
 // to watch secrets
 type fileWatcher struct {
 	dir            string
-	secretsToWatch []string
+	secretsToWatch atomic.Value // This contains []string
 	secrets        chan secretwatcher.SecretMap
 	errors         chan error
 	lastSeen       uint64
@@ -62,7 +63,7 @@ func (fw *fileWatcher) updateSecrets() {
 
 // triggers an update
 func (fw *fileWatcher) TrackSecrets(secretRefs []string) {
-	fw.secretsToWatch = secretRefs
+	fw.secretsToWatch.Store(secretRefs)
 	fw.updateSecrets()
 }
 
@@ -77,17 +78,20 @@ func (fw *fileWatcher) Error() <-chan error {
 func (fw *fileWatcher) getSecrets() (secretwatcher.SecretMap, error) {
 	desiredSecrets := make(secretwatcher.SecretMap)
 	// ref should be the filename
-	for _, ref := range fw.secretsToWatch {
-		yml, err := ioutil.ReadFile(filepath.Join(fw.dir, ref))
-		if err != nil {
-			return nil, errors.Wrapf(err, "reading file: %v", filepath.Join(fw.dir, ref))
+	secretsToWatch := fw.secretsToWatch.Load()
+	if secretsToWatch != nil {
+		for _, ref := range secretsToWatch.([]string) {
+			yml, err := ioutil.ReadFile(filepath.Join(fw.dir, ref))
+			if err != nil {
+				return nil, errors.Wrapf(err, "reading file: %v", filepath.Join(fw.dir, ref))
+			}
+			var contents map[string]string
+			err = yaml.Unmarshal(yml, &contents)
+			if err != nil {
+				return nil, errors.Wrap(err, "unmarshalling yaml")
+			}
+			desiredSecrets[ref] = contents
 		}
-		var contents map[string]string
-		err = yaml.Unmarshal(yml, &contents)
-		if err != nil {
-			return nil, errors.Wrap(err, "unmarshalling yaml")
-		}
-		desiredSecrets[ref] = contents
 	}
 
 	hash, err := hashstructure.Hash(desiredSecrets, nil)
@@ -95,9 +99,13 @@ func (fw *fileWatcher) getSecrets() (secretwatcher.SecretMap, error) {
 		runtime.HandleError(err)
 		return nil, nil
 	}
-	if fw.lastSeen == hash {
+
+	old := atomic.LoadUint64(&fw.lastSeen)
+	if old == hash {
 		return nil, nil
 	}
-	fw.lastSeen = hash
+	// TODO(yuval-k): do anything if we lost the race?
+	atomic.CompareAndSwapUint64(&fw.lastSeen, old, hash)
+
 	return desiredSecrets, nil
 }

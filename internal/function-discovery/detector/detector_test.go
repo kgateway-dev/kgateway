@@ -1,13 +1,15 @@
 package detector_test
 
 import (
+	"sync/atomic"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	. "github.com/solo-io/gloo/internal/function-discovery/detector"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -24,12 +26,12 @@ var _ = Describe("Marker", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(svcInfo).To(Equal(&v1.ServiceInfo{Type: "mock_service"}))
 			Expect(annotations).To(Equal(map[string]string{"foo": "bar"}))
-			Expect(totalTries).To(BeNumerically(">=", 5))
+			Expect(atomic.LoadInt32(&totalTriesCounter)).To(BeNumerically(">=", 5))
 		})
 	})
 })
 
-var totalTries int
+var totalTriesCounter int32
 
 type mockDetector struct {
 	id                   string
@@ -37,7 +39,7 @@ type mockDetector struct {
 }
 
 func (d *mockDetector) DetectFunctionalService(_ *v1.Upstream, addr string) (*v1.ServiceInfo, map[string]string, error) {
-	totalTries++
+	atomic.AddInt32(&totalTriesCounter, 1)
 	d.triesBeforeSucceding--
 	if d.triesBeforeSucceding > 0 {
 		return nil, nil, errors.Errorf("mock[%s]: failed detection", d.id)

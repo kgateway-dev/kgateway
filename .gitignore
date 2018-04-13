@@ -2,6 +2,7 @@ vendor/
 vendor.*/
 _gloo_config*
 site/
+*.coverprofile
 /envoy
 /control-plane
 /function-discovery
