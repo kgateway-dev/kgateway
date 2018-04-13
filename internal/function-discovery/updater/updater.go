@@ -6,19 +6,22 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
+	"github.com/solo-io/gloo/internal/function-discovery/functiontypes"
+	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/gcf"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/lambda"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/backoff"
-	"github.com/solo-io/gloo/internal/function-discovery/functiontypes"
-	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 
-	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/internal/function-discovery/updater/azure"
 	"github.com/solo-io/gloo/pkg/log"
+	azureplugin "github.com/solo-io/gloo/pkg/plugins/azure"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 func GetSecretRefsToWatch(upstreams []*v1.Upstream) []string {
@@ -37,6 +40,12 @@ func GetSecretRefsToWatch(upstreams []*v1.Upstream) []string {
 				continue
 			}
 			refs = append(refs, ref)
+		case functiontypes.FunctionTypeAzure:
+			ref, err := azure.GetSecretRef(us)
+			if err != nil {
+				continue
+			}
+			refs = append(refs, ref)
 		}
 	}
 	return refs
@@ -46,7 +55,7 @@ func GetSecretRefsToWatch(upstreams []*v1.Upstream) []string {
 // we want to forceSync on every refreshDuration
 // on a config / secrets change, we don't want to force sync
 // else we can get into an update loop
-func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, upstreamName string, secrets secretwatcher.SecretMap) error {
+func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, secretStore dependencies.SecretStorage, upstreamName string, secrets secretwatcher.SecretMap) error {
 	us, err := gloo.V1().Upstreams().Get(upstreamName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get existing upstream with name %v", upstreamName)
@@ -80,8 +89,17 @@ func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, upstream
 	case functiontypes.FunctionTypeOpenFaas:
 		funcs, err = openfaas.GetFuncs(resolve, us)
 		if err != nil {
-			return errors.Wrap(err, "updating faas functions")
+			return errors.Wrap(err, "retreving faas functions")
 		}
+	case functiontypes.FunctionTypeAzure:
+		funcs, secret, err := azure.GetFuncsAndSecret(us, secrets)
+		if err != nil {
+			return errors.Wrap(err, "retreving azure functions")
+		}
+		// special case because we need to update azure with the
+		// discovered secrets & secret ref
+		// TODO(ilackarms): implement an interface that handles azure with more elegance
+		return updateAzureUpstream(gloo, secretStore, us.Name, funcs, secret)
 	default:
 		return nil //errors.Errorf("unknown function type")
 	}
@@ -90,6 +108,38 @@ func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, upstream
 		return errors.Wrap(err, "updating upstream object with new funcs")
 	}
 	return nil
+}
+
+func updateAzureUpstream(gloo storage.Interface, secretStore dependencies.SecretStorage,
+	upstreamName string, funcs []*v1.Function, azureSecret *dependencies.Secret) error {
+	usToUpdate, err := gloo.V1().Upstreams().Get(upstreamName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get existing upstream with name %v", upstreamName)
+	}
+
+	azureSpec, err := azureplugin.DecodeUpstreamSpec(usToUpdate.Spec)
+	if err != nil {
+		return errors.Wrap(err, "decoding azure spec")
+	}
+
+	if _, err := secretStore.Create(azureSecret); err != nil {
+		if storage.IsAlreadyExists(err) {
+			if _, err := secretStore.Update(azureSecret); err != nil {
+				return errors.Wrap(err, "writing azure secret to storage")
+			}
+		} else {
+			return errors.Wrap(err, "writing azure secret to storage")
+		}
+	}
+
+	azureSpec.SecretRef = azureSecret.Ref
+	usToUpdate.Spec = azureplugin.EncodeUpstreamSpec(*azureSpec)
+	_, err = gloo.V1().Upstreams().Update(usToUpdate)
+	if err != nil {
+		return err
+	}
+
+	return updateUpstreamWithFuncs(gloo, upstreamName, funcs)
 }
 
 func updateUpstreamWithFuncs(gloo storage.Interface, upstreamName string, funcs []*v1.Function) error {

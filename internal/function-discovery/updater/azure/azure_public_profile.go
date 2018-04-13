@@ -41,7 +41,7 @@ type publishProfile struct {
 }
 
 func getUserCredentials(us *v1.Upstream, secrets secretwatcher.SecretMap) (string, string, error) {
-	ref, err := getSecretRef(us)
+	ref, err := GetSecretRef(us)
 	if err != nil {
 		return "", "", err
 	}
@@ -71,7 +71,7 @@ func getUserCredentials(us *v1.Upstream, secrets secretwatcher.SecretMap) (strin
 	return profile.PublishData.PublishProfile[0].UserName, profile.PublishData.PublishProfile[0].UserPWD, nil
 }
 
-func getSecretRef(us *v1.Upstream) (string, error) {
+func GetSecretRef(us *v1.Upstream) (string, error) {
 	if us.Metadata == nil {
 		return "", missingAnnotationErr
 	}

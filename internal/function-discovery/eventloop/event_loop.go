@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
@@ -48,6 +49,11 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 	secretWatcher, err := secretwatchersetup.Bootstrap(opts)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up secret watcher")
+	}
+
+	secretStore, err := secretstorage.Bootstrap(opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to set up secret storage client")
 	}
 
 	go secretWatcher.Run(stop)
@@ -89,7 +95,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		if err := updater.UpdateServiceInfo(store, us.Name, marker); err != nil {
 			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
 		}
-		if err := updater.UpdateFunctions(resolve, store, us.Name, secrets); err != nil {
+		if err := updater.UpdateFunctions(resolve, store, secretStore, us.Name, secrets); err != nil {
 			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
 		}
 	}
