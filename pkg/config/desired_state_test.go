@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	google_protobuf "github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	. "github.com/solo-io/gloo/pkg/config"
 	"github.com/solo-io/gloo/pkg/storage"
@@ -42,7 +43,7 @@ var _ = Describe("DesiredState", func() {
 
 		syncer = &UpstreamSyncer{
 			GlooStorage:      glooClient,
-			Owner:           OwnerTest,
+			Owner:            OwnerTest,
 			DesiredUpstreams: func() ([]*v1.Upstream, error) { return desiredState, desiredError },
 		}
 	})
@@ -53,8 +54,8 @@ var _ = Describe("DesiredState", func() {
 	})
 
 	It("Should create upstreams when storage is empty", func() {
-		origUs:= makeTestUpstream(1)
-		desiredState = append(desiredState,origUs)
+		origUs := makeTestUpstream(1)
+		desiredState = append(desiredState, origUs)
 		err := syncer.SyncDesiredState()
 		Expect(err).NotTo(HaveOccurred())
 
@@ -78,6 +79,47 @@ var _ = Describe("DesiredState", func() {
 		createdUpstreams, err := glooClient.V1().Upstreams().List()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(createdUpstreams).To(HaveLen(1))
+	})
+
+	It("Should remove stale upstreams", func() {
+		desiredState = append(desiredState, makeTestUpstream(1))
+		err := syncer.SyncDesiredState()
+		Expect(err).NotTo(HaveOccurred())
+		desiredState = nil
+		err = syncer.SyncDesiredState()
+		Expect(err).NotTo(HaveOccurred())
+
+		createdUpstreams, err := glooClient.V1().Upstreams().List()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(createdUpstreams).To(BeEmpty())
+	})
+
+	It("Should update same upstream on change", func() {
+		origUs := makeTestUpstream(1)
+		desiredState = append(desiredState, origUs)
+		err := syncer.SyncDesiredState()
+		Expect(err).NotTo(HaveOccurred())
+
+		origUs.Spec = &google_protobuf.Struct{
+			Fields: map[string]*google_protobuf.Value{
+				"testvalue": &google_protobuf.Value{
+					Kind: &google_protobuf.Value_StringValue{
+						StringValue: "test",
+					},
+				},
+			},
+		}
+
+		err = syncer.SyncDesiredState()
+		Expect(err).NotTo(HaveOccurred())
+
+		createdUpstreams, err := glooClient.V1().Upstreams().List()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(createdUpstreams).To(HaveLen(1))
+
+		us := createdUpstreams[0]
+		Expect(us.Name).To(Equal(origUs.Name))
+		Expect(us.Spec.Fields["testvalue"]).ToNot(BeNil())
 	})
 
 })
