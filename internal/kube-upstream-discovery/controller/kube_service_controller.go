@@ -15,6 +15,7 @@ import (
 	kubeplugin "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/config"
 	"github.com/solo-io/kubecontroller"
 )
 
@@ -22,16 +23,19 @@ const (
 	kubeSystemNamespace = "kube-system"
 
 	ownerAnnotationKey = "generated_by"
+
+	generatedBy =  "kubernetes-upstream-discovery"
 )
 
 type ServiceController struct {
 	errors chan error
 
 	serviceLister kubelisters.ServiceLister
-	upstreams     storage.Interface
 	runFunc       func(stop <-chan struct{})
 
 	generatedBy string
+
+	syncer config.UpstreamSyncer
 }
 
 func NewServiceController(cfg *rest.Config,
@@ -54,9 +58,15 @@ func NewServiceController(cfg *rest.Config,
 		errors: make(chan error),
 
 		serviceLister: serviceInformer.Lister(),
-		upstreams:     configStore,
-		generatedBy:   "kubernetes-upstream-discovery",
+		generatedBy :generatedBy,
+		
+		syncer : config.UpstreamSyncer {
+			Owner :  generatedBy,
+			GlooStorage : configStore,
+		},
 	}
+
+	c.syncer.DesiredUpstreams = c.generateDesiredUpstreams
 
 	kubeController := kubecontroller.NewController("gloo-service-discovery", kubeClient,
 		kubecontroller.NewLockingSyncHandler(c.syncGlooUpstreamsWithKubeServices),
@@ -93,39 +103,9 @@ func (c *ServiceController) Error() <-chan error {
 }
 
 func (c *ServiceController) syncGlooUpstreamsWithKubeServices() {
-	if err := c.syncGlooUpstreams(); err != nil {
+	if err := c.syncer.SyncDesiredState(); err != nil {
 		c.errors <- err
 	}
-}
-
-func (c *ServiceController) syncGlooUpstreams() error {
-	desiredUpstreams, err := c.generateDesiredUpstreams()
-	if err != nil {
-		return fmt.Errorf("failed to generate desired upstreams: %v", err)
-	}
-	actualUpstreams, err := c.getActualUpstreams()
-	if err != nil {
-		return fmt.Errorf("failed to list actual upstreams: %v", err)
-	}
-	if err := c.syncUpstreams(desiredUpstreams, actualUpstreams); err != nil {
-		return fmt.Errorf("failed to sync actual with desired upstreams: %v", err)
-	}
-	return nil
-}
-
-func (c *ServiceController) getActualUpstreams() ([]*v1.Upstream, error) {
-	upstreams, err := c.upstreams.V1().Upstreams().List()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get upstream crd list: %v", err)
-	}
-	var ourUpstreams []*v1.Upstream
-	for _, us := range upstreams {
-		if us.Metadata != nil && us.Metadata.Annotations[ownerAnnotationKey] == c.generatedBy {
-			// our upstream, we supervise it
-			ourUpstreams = append(ourUpstreams, us)
-		}
-	}
-	return ourUpstreams, nil
 }
 
 func (c *ServiceController) generateDesiredUpstreams() ([]*v1.Upstream, error) {
@@ -172,80 +152,6 @@ func (c *ServiceController) generateDesiredUpstreams() ([]*v1.Upstream, error) {
 	return upstreams, nil
 }
 
-func (c *ServiceController) syncUpstreams(desiredUpstreams, actualUpstreams []*v1.Upstream) error {
-	var (
-		upstreamsToCreate []*v1.Upstream
-		upstreamsToUpdate []*v1.Upstream
-	)
-	for _, desiredUpstream := range desiredUpstreams {
-		var update bool
-		for i, actualUpstream := range actualUpstreams {
-			if desiredUpstream.Name == actualUpstream.Name {
-				// modify existing upstream
-				desiredUpstream.Metadata = actualUpstream.GetMetadata()
-				update = true
-				if !desiredUpstream.Equal(actualUpstream) {
-					// only actually update if the spec has changed
-					upstreamsToUpdate = append(upstreamsToUpdate, desiredUpstream)
-				}
-				// remove it from the list we match against
-				actualUpstreams = append(actualUpstreams[:i], actualUpstreams[i+1:]...)
-				break
-			}
-		}
-		if !update {
-			// desired was not found, mark for creation
-			upstreamsToCreate = append(upstreamsToCreate, desiredUpstream)
-		}
-	}
-	for _, us := range upstreamsToCreate {
-		// TODO: think about caring about already exists errors
-		// This workaround is necessary because the ingress controller may be running and creating upstreams
-		if _, err := c.upstreams.V1().Upstreams().Create(us); err != nil && !storage.IsAlreadyExists(err) {
-			log.Debugf("creating upstream %v", us.Name)
-			return fmt.Errorf("failed to create upstream crd %s: %v", us.Name, err)
-		}
-	}
-	for _, us := range upstreamsToUpdate {
-		log.Debugf("updating upstream %v", us.Name)
-		// preserve functions that may have already been discovered
-		currentUpstream, err := c.upstreams.V1().Upstreams().Get(us.Name)
-		if err != nil {
-			return fmt.Errorf("failed to get existing upstream %s: %v", us.Name, err)
-		}
-		// all we want to do is update the spec and merge the annotations
-		currentUpstream.Spec = us.Spec
-		if currentUpstream.Metadata == nil {
-			currentUpstream.Metadata = &v1.Metadata{}
-		}
-		currentUpstream.Metadata.Annotations = mergeAnnotations(currentUpstream.Metadata.Annotations, us.Metadata.Annotations)
-		if _, err := c.upstreams.V1().Upstreams().Update(currentUpstream); err != nil {
-			return fmt.Errorf("failed to update upstream %s: %v", us.Name, err)
-		}
-	}
-	// only remaining are no longer desired, delete em!
-	for _, us := range actualUpstreams {
-		log.Debugf("deleting upstream %v", us.Name)
-		if err := c.upstreams.V1().Upstreams().Delete(us.Name); err != nil {
-			return fmt.Errorf("failed to update upstream crd %s: %v", us.Name, err)
-		}
-	}
-	return nil
-}
-
 func upstreamName(serviceNamespace, serviceName string, servicePort int32) string {
 	return fmt.Sprintf("%s-%s-%v", serviceNamespace, serviceName, servicePort)
-}
-
-// get the unique set of funcs between two lists
-// if conflict, new wins
-func mergeAnnotations(oldAnnotations, newAnnotations map[string]string) map[string]string {
-	merged := make(map[string]string)
-	for k, v := range oldAnnotations {
-		merged[k] = v
-	}
-	for k, v := range newAnnotations {
-		merged[k] = v
-	}
-	return merged
 }
