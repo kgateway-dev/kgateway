@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/test/helpers"
 )
 
 var _ = Describe("AzurePublicProfile", func() {
@@ -18,7 +19,7 @@ var _ = Describe("AzurePublicProfile", func() {
 			},
 		}
 		secrets := secretwatcher.SecretMap{ref: {Ref: ref, Data: map[string]string{
-			publishProfileKey: profileStringTemplate,
+			publishProfileKey: helpers.AzureProfileStringTemplate,
 		}}}
 		username, pass, err := getUserCredentials(us, secrets)
 		Expect(err).NotTo(HaveOccurred())
