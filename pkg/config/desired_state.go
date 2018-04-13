@@ -23,6 +23,8 @@ func (c *UpstreamSyncer) SyncDesiredState() error {
 		return fmt.Errorf("failed to generate desired upstreams: %v", err)
 	}
 
+	c.updateOwner(desiredUpstreams)
+
 	actualUpstreams, err := c.getActualUpstreams()
 	if err != nil {
 		return fmt.Errorf("failed to list actual upstreams: %v", err)
@@ -31,6 +33,18 @@ func (c *UpstreamSyncer) SyncDesiredState() error {
 		return fmt.Errorf("failed to sync actual with desired upstreams: %v", err)
 	}
 	return nil
+}
+
+func (c *UpstreamSyncer) updateOwner(uss []*v1.Upstream) {
+	for _, us := range uss {
+		if us.Metadata == nil {
+			us.Metadata = &v1.Metadata{}
+		}
+		if us.Metadata.Annotations == nil {
+			us.Metadata.Annotations = make(map[string]string)
+		}
+		us.Metadata.Annotations[OwnerAnnotationKey] = c.Owner
+	}
 }
 
 func (c *UpstreamSyncer) getActualUpstreams() ([]*v1.Upstream, error) {
@@ -75,15 +89,6 @@ func (c *UpstreamSyncer) syncUpstreams(desiredUpstreams, actualUpstreams []*v1.U
 		}
 	}
 	for _, us := range upstreamsToCreate {
-
-		// Creating a new upstream means we own it - add annotation
-		if us.Metadata == nil {
-			us.Metadata = &v1.Metadata{}
-		}
-		if us.Metadata.Annotations == nil {
-			us.Metadata.Annotations = make(map[string]string)
-		}
-		us.Metadata.Annotations[OwnerAnnotationKey] = c.Owner
 
 		// TODO: think about caring about already exists errors
 		// This workaround is necessary because the ingress controller may be running and creating upstreams
