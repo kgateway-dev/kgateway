@@ -8,6 +8,15 @@
   version = "v0.20.0"
 
 [[projects]]
+  branch = "master"
+  name = "code.cloudfoundry.org/copilot"
+  packages = [
+    ".",
+    "api"
+  ]
+  revision = "35aef47bc6c01933164a1d5082c8fe87aedb1f1c"
+
+[[projects]]
   name = "github.com/PuerkitoBio/purell"
   packages = ["."]
   revision = "0bcb03f4b4d0a9428594752bd2a3b9aa0a9d4bd4"
@@ -1101,6 +1110,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c7850f3997798bafb34417f8e4e03170b970d7a821fac310a50311e86fc1459f"
+  inputs-digest = "360b522c2daecf8277589370a336fb1601da1db83e27d5c3c01e818a2756f244"
   solver-name = "gps-cdcl"
   solver-version = 1
