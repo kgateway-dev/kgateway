@@ -22,6 +22,7 @@ func (c *UpstreamSyncer) SyncDesiredState() error {
 	if err != nil {
 		return fmt.Errorf("failed to generate desired upstreams: %v", err)
 	}
+
 	actualUpstreams, err := c.getActualUpstreams()
 	if err != nil {
 		return fmt.Errorf("failed to list actual upstreams: %v", err)
@@ -74,6 +75,16 @@ func (c *UpstreamSyncer) syncUpstreams(desiredUpstreams, actualUpstreams []*v1.U
 		}
 	}
 	for _, us := range upstreamsToCreate {
+
+		// Creating a new upstream means we own it - add annotation
+		if us.Metadata == nil {
+			us.Metadata = &v1.Metadata{}
+		}
+		if us.Metadata.Annotations == nil {
+			us.Metadata.Annotations = make(map[string]string)
+		}
+		us.Metadata.Annotations[OwnerAnnotationKey] = c.Owner
+
 		// TODO: think about caring about already exists errors
 		// This workaround is necessary because the ingress controller may be running and creating upstreams
 		if _, err := c.GlooStorage.V1().Upstreams().Create(us); err != nil && !storage.IsAlreadyExists(err) {

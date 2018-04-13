@@ -21,9 +21,6 @@ import (
 
 const (
 	kubeSystemNamespace = "kube-system"
-
-	ownerAnnotationKey = "generated_by"
-
 	generatedBy =  "kubernetes-upstream-discovery"
 )
 
@@ -126,9 +123,7 @@ func (c *ServiceController) generateDesiredUpstreams() ([]*v1.Upstream, error) {
 
 		for _, port := range svc.Spec.Ports {
 			// annotate
-			annotations := map[string]string{
-				ownerAnnotationKey: c.generatedBy,
-			}
+			annotations := map[string]string{}
 			for k, v := range svc.Annotations {
 				annotations[k] = v
 			}
