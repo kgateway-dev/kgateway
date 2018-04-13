@@ -23,7 +23,7 @@ func (c *UpstreamSyncer) SyncDesiredState() error {
 		return fmt.Errorf("failed to generate desired upstreams: %v", err)
 	}
 
-	c.updateOwner(desiredUpstreams)
+	c.setOwnerAnnotation(desiredUpstreams)
 
 	actualUpstreams, err := c.getActualUpstreams()
 	if err != nil {
@@ -35,7 +35,7 @@ func (c *UpstreamSyncer) SyncDesiredState() error {
 	return nil
 }
 
-func (c *UpstreamSyncer) updateOwner(uss []*v1.Upstream) {
+func (c *UpstreamSyncer) setOwnerAnnotation(uss []*v1.Upstream) {
 	for _, us := range uss {
 		if us.Metadata == nil {
 			us.Metadata = &v1.Metadata{}
