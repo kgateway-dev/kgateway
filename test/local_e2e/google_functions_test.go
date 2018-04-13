@@ -35,7 +35,7 @@ func NewGoogleUpstream() *v1.Upstream {
 
 	googleFunction := os.Getenv("GOOGLE_UPPERCASE")
 	if googleFunction == "" {
-		Skip("no google uppercase function, test cannot continue"+ skipMsg)
+		Skip("no google uppercase function, test cannot continue" + skipMsg)
 	}
 
 	serviceSpec := gfunc.UpstreamSpec{
@@ -87,14 +87,14 @@ var _ = Describe("Google functions", func() {
 		secret := make(map[string]string)
 		secretFilePath := os.Getenv("GOOGLE_SECRET_PATH")
 		if secretFilePath == "" {
-			Skip("no google secrets, test cannot continue"+ skipMsg)
+			Skip("no google secrets, test cannot continue" + skipMsg)
 		}
 		secretFile, err := ioutil.ReadFile(secretFilePath)
 		Expect(err).NotTo(HaveOccurred())
 		secret["json_key_file"] = string(secretFile)
 		glooInstance.AddSecret(GoogleSecretRef, secret)
 
-		err = functionDiscoveryInstance.Run(glooInstance.DataDir())
+		err = functionDiscoveryInstance.Run(glooInstance.ConfigDir())
 		Expect(err).NotTo(HaveOccurred())
 
 		envoyPort := glooInstance.EnvoyPort()

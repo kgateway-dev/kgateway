@@ -79,7 +79,9 @@ func (gf *GlooFactory) NewGlooInstance() (*GlooInstance, error) {
 		tmpdir:   tmpdir,
 	}
 
-	gi.initStorage()
+	if err := gi.initStorage(); err != nil {
+		return nil, err
+	}
 
 	if err != nil {
 		return nil, err
@@ -99,12 +101,16 @@ type GlooInstance struct {
 	cmd    *exec.Cmd
 }
 
-func (gi *GlooInstance) DataDir() string {
-	return gi.tmpdir
+func (gi *GlooInstance) ConfigDir() string {
+	return filepath.Join(gi.tmpdir)
 }
 
 func (gi *GlooInstance) FilesDir() string {
 	return filepath.Join(gi.tmpdir, "_gloo_files")
+}
+
+func (gi *GlooInstance) SecretsDir() string {
+	return filepath.Join(gi.tmpdir, "_gloo_secrets")
 }
 
 func (gi *GlooInstance) EnvoyPort() uint32 {
@@ -116,7 +122,7 @@ func (gi *GlooInstance) AddUpstream(u *v1.Upstream) error {
 	return err
 }
 
-func (gi *GlooInstance) GetUpstream(s string) (*v1.Upstream,error) {
+func (gi *GlooInstance) GetUpstream(s string) (*v1.Upstream, error) {
 	return gi.store.V1().Upstreams().Get(s)
 }
 
@@ -149,6 +155,10 @@ func (gi *GlooInstance) initStorage() error {
 	}
 	// enable file storage
 	if err := os.MkdirAll(filepath.Join(gi.tmpdir, "_gloo_files"), 0755); err != nil {
+		return err
+	}
+	// enable secret storage
+	if err := os.MkdirAll(filepath.Join(gi.tmpdir, "_gloo_secrets"), 0755); err != nil {
 		return err
 	}
 	gi.store = client

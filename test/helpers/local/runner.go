@@ -37,10 +37,10 @@ func (r *Runner) waitForExternalProcess() error {
 
 func (r *Runner) run(c *exec.Cmd) (*exec.Cmd, error) {
 	if os.Getenv("USE_DEBUGGER_"+r.ComponentName) == "1" {
-		fmt.Println("Please run the following command in your debugger:\n")
-		fmt.Printf("%v %v\n", c.Path, c.Args)
-		fmt.Printf("CWD %v\n", c.Dir)
-		fmt.Println("looking for processes started from", r.Sourcepath)
+		fmt.Printf("Please run the following command in your debugger:\n"+
+			"%v %v \n"+
+			"CWD %v \n"+
+			"looking for processes started from %v", c.Path, c.Args, c.Dir, r.Sourcepath)
 
 		return nil, r.waitForExternalProcess()
 	}
