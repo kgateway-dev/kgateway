@@ -20,6 +20,7 @@ import (
 
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/internal/control-plane/translator/defaults"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/matcher"
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
@@ -63,10 +64,21 @@ func NewTranslator(translatorPlugins []plugins.TranslatorPlugin) *Translator {
 			functionPlugins = append(functionPlugins, functionPlugin)
 		}
 	}
-	// the initializer plugin must be initialized with any function plugins
-	// it's responsible for setting cluster weights and common route properties
-	initPlugin := newInitializerPlugin(functionPlugins)
-	translatorPlugins = append([]plugins.TranslatorPlugin{initPlugin}, translatorPlugins...)
+
+	// the route initializer plugin intializes route actions and metadata
+	// including cluster weights for upstream and function destinations
+	routeInitializer := newRouteInitializerPlugin()
+
+	// the functional upstream plugins call ParseFunctionSpec on each function plugin
+	// and adds the function spec to the cluster metadata
+	// the functional upstream processor should be inserted at the end of the plugin chain
+	// to ensure ProcessUpstream() is called before ParseFunctionSpec for each upstream
+	functionalUpstreamProcessor := newFunctionalPluginProcessor(functionPlugins)
+
+	// order matters here
+	translatorPlugins = append([]plugins.TranslatorPlugin{routeInitializer}, translatorPlugins...)
+	translatorPlugins = append(translatorPlugins, functionalUpstreamProcessor)
+
 	return &Translator{
 		plugins: translatorPlugins,
 	}
@@ -259,6 +271,13 @@ func (t *Translator) computeCluster(cfg *v1.Config, dependencies *pluginDependen
 	if edsCluster {
 		out.Type = envoyapi.Cluster_EDS
 	}
+
+	timeout := upstream.ConnectionTimeout
+	if timeout == 0 {
+		timeout = defaults.ClusterConnectionTimeout
+	}
+	out.ConnectTimeout = timeout
+
 	var upstreamErrors error
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)

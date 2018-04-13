@@ -6,7 +6,6 @@ import (
 	"github.com/gogo/protobuf/types"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/plugins/aws"
 	// . "github.com/solo-io/gloo/test/helpers"
 	// . "github.com/solo-io/gloo/internal/translator"
 
@@ -18,9 +17,8 @@ import (
 )
 
 var _ = Describe("InitPlugin", func() {
-	It("should do correct weights for functions", func() {
-		funcs := []plugins.FunctionPlugin{&aws.Plugin{}}
-		initPlugin := newInitializerPlugin(funcs)
+	It("should set correct weights for functions", func() {
+		initPlugin := newRouteInitializerPlugin()
 
 		outroute := envoyroute.Route{Metadata: new(envoycore.Metadata)}
 		outroute.Metadata.FilterMetadata = make(map[string]*types.Struct)
