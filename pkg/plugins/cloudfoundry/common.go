@@ -25,6 +25,8 @@ Based on this example: https://github.com/cloudfoundry/copilot/blob/master/cmd/c
 
 const UpstreamTypeCF = "cloudfoundry"
 
+var WrongUpstreamType error = errors.New("wrong upstream type")
+
 func GetClient(address, caCert, clientCert, clientKey string) (copilot.IstioClient, error) {
 	if address == "" {
 		address = "127.0.0.1:9000"
@@ -64,7 +66,7 @@ func GetEndpointsForUpstream(ctx context.Context, client copilot.IstioClient, u 
 func GetEndpointsFromResponse(resp *copilotapi.RoutesResponse, us *v1.Upstream) ([]endpointdiscovery.Endpoint, error) {
 
 	if us.Type != UpstreamTypeCF {
-		return nil, errors.New("wrong upstream type")
+		return nil, WrongUpstreamType
 	}
 	spec, err := DecodeUpstreamSpec(us.Spec)
 	if err != nil {
@@ -83,6 +85,7 @@ func convertBackendSet(set *copilotapi.BackendSet) []endpointdiscovery.Endpoint 
 			Port:    int32(b.Port),
 		})
 	}
+
 	return endpoints
 }
 
@@ -98,7 +101,7 @@ func GetUpstreamsFromResponse(resp *copilotapi.RoutesResponse) ([]*v1.Upstream, 
 	var uss []*v1.Upstream
 	for hostname := range resp.Backends {
 		uss = append(uss, &v1.Upstream{
-			Name: upstreamName(hostname),
+			Name: HostnameToUpstreamName(hostname),
 			Type: UpstreamTypeCF,
 			Spec: EncodeUpstreamSpec(UpstreamSpec{
 				Hostname: hostname,
@@ -109,6 +112,6 @@ func GetUpstreamsFromResponse(resp *copilotapi.RoutesResponse) ([]*v1.Upstream, 
 	return uss, nil
 }
 
-func upstreamName(hostname string) string {
+func HostnameToUpstreamName(hostname string) string {
 	return hostname
 }
