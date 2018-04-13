@@ -18,12 +18,11 @@ var _ = Describe("AzurePublicProfile", func() {
 			},
 		}
 		secrets := secretwatcher.SecretMap{ref: {Ref: ref, Data: map[string]string{
-			publishProfileKey: profileString,
+			publishProfileKey: profileStringTemplate,
 		}}}
-		pass, err := getUserPassword(us, secrets)
+		username, pass, err := getUserCredentials(us, secrets)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(pass).To(Equal("PASSW0RD"))
+		Expect(pass).To(Equal("{{ .Password }}"))
+		Expect(username).To(Equal("${{ .AppName }}"))
 	})
 })
-
-const profileString = `<publishData><publishProfile profileName="appName - Web Deploy" publishMethod="MSDeploy" publishUrl="appName.scm.azurewebsites.net:443" msdeploySite="appName" userName="$appName" userPWD="PASSW0RD" destinationAppUrl="http://appName.azurewebsites.net" SQLServerDBConnectionString="" mySQLDBConnectionString="" hostingProviderForumLink="" controlPanelLink="http://windows.azure.com" webSystem="WebSites"><databases /></publishProfile><publishProfile profileName="appName - FTP" publishMethod="FTP" publishUrl="ftp://waws-prod-dm1-063.ftp.azurewebsites.windows.net/site/wwwroot" ftpPassiveMode="True" userName="appName\$appName" userPWD="PASSW0RD" destinationAppUrl="http://appName.azurewebsites.net" SQLServerDBConnectionString="" mySQLDBConnectionString="" hostingProviderForumLink="" controlPanelLink="http://windows.azure.com" webSystem="WebSites"><databases /></publishProfile></publishData>`

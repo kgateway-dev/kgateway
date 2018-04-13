@@ -40,35 +40,35 @@ type publishProfile struct {
 	} `json:"publishData"`
 }
 
-func getUserPassword(us *v1.Upstream, secrets secretwatcher.SecretMap) (string, error) {
+func getUserCredentials(us *v1.Upstream, secrets secretwatcher.SecretMap) (string, string, error) {
 	ref, err := getSecretRef(us)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	publishProfileSecret, ok := secrets[ref]
 	if !ok {
-		return "", errors.Errorf("secret ref %s not found", ref)
+		return "", "", errors.Errorf("secret ref %s not found", ref)
 	}
 	publishProfileXML, ok := publishProfileSecret.Data[publishProfileKey]
 	if !ok {
-		return "", errors.Errorf("key %v missing from provided secret", publishProfileKey)
+		return "", "", errors.Errorf("key %v missing from provided secret", publishProfileKey)
 	}
 	if !utf8.Valid([]byte(publishProfileXML)) {
-		return "", errors.Errorf("contents of %s not a valid string", publishProfileKey)
+		return "", "", errors.Errorf("contents of %s not a valid string", publishProfileKey)
 	}
 	jsn, err := xml2json.Convert(strings.NewReader(publishProfileXML))
 	if err != nil {
-		return "", errors.Wrap(err, "parsing publish profile xml")
+		return "", "", errors.Wrap(err, "parsing publish profile xml")
 	}
 	var profile publishProfile
 	if err := json.Unmarshal(jsn.Bytes(), &profile); err != nil {
-		return "", errors.Wrap(err, "parsing publish profile json")
+		return "", "", errors.Wrap(err, "parsing publish profile json")
 	}
 	if len(profile.PublishData.PublishProfile) < 1 {
-		return "", errors.Errorf("publish profile contained no profiles")
+		return "", "", errors.Errorf("publish profile contained no profiles")
 	}
 
-	return profile.PublishData.PublishProfile[0].UserPWD, nil
+	return profile.PublishData.PublishProfile[0].UserName, profile.PublishData.PublishProfile[0].UserPWD, nil
 }
 
 func getSecretRef(us *v1.Upstream) (string, error) {

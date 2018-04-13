@@ -107,7 +107,7 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 			return errors.Errorf("azure secrets for ref %v not found", azureUpstream.SecretRef)
 		}
 
-		p.apiKeys = azureSecrets
+		p.apiKeys = azureSecrets.Data
 	}
 
 	if out.Metadata == nil {
