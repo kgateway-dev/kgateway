@@ -158,6 +158,17 @@ func (u *virtualHostsClient) Watch(handlers ...storage.VirtualHostEventHandler) 
 				errs <- err
 			}
 		}()
+		// start the watch with an "initial read" event
+		go func() {
+			current, err := u.List()
+			if err != nil {
+				errs <- err
+				return
+			}
+			for _, h := range handlers {
+				h.OnAdd(current, nil)
+			}
+		}()
 		for {
 			select {
 			case event := <-w.Event:

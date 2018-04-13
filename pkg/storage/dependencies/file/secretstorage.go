@@ -28,7 +28,7 @@ func NewSecretStorage(dir string, syncFrequency time.Duration) (dependencies.Sec
 
 func (s *secretStorage) Create(secret *dependencies.Secret) (*dependencies.Secret, error) {
 	if _, err := s.Get(secret.Ref); err == nil {
-		return nil, errors.Errorf("secret %v already exists", secret.Ref)
+		return nil, storage.NewAlreadyExistsErr(errors.Errorf("secret %v", secret.Ref))
 	}
 	if err := writeSecret(s.dir, secret); err != nil {
 		return nil, errors.Wrap(err, "writing secret")
@@ -87,6 +87,17 @@ func (s *secretStorage) Watch(handlers ...dependencies.SecretEventHandler) (*sto
 		go func() {
 			if err := w.Start(s.syncFrequency); err != nil {
 				errs <- err
+			}
+		}()
+		// start the watch with an "initial read" event
+		go func() {
+			current, err := s.List()
+			if err != nil {
+				errs <- err
+				return
+			}
+			for _, h := range handlers {
+				h.OnAdd(current, nil)
 			}
 		}()
 		for {

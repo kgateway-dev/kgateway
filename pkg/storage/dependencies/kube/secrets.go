@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"k8s.io/api/core/v1"
+	kubeerrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -36,6 +37,9 @@ func NewSecretStorage(cfg *rest.Config, namespace string, syncFrequency time.Dur
 func (s *secretStorage) Create(secret *dependencies.Secret) (*dependencies.Secret, error) {
 	kubeSecret, err := s.kube.CoreV1().Secrets(s.namespace).Create(secretToKubeSecret(secret))
 	if err != nil {
+		if kubeerrs.IsAlreadyExists(err) {
+			return nil, storage.NewAlreadyExistsErr(errors.Errorf("secret %v", secret.Ref))
+		}
 		return nil, errors.Wrap(err, "kube api call")
 	}
 	return kubeSecretToSecret(kubeSecret), nil
