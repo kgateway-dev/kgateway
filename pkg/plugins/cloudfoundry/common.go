@@ -53,7 +53,7 @@ func GetClient(address, caCert, clientCert, clientKey string) (copilot.IstioClie
 	return copilot.NewIstioClient(address, tlsConfig)
 }
 
-func GetEndpointsForUpstream(ctx context.Context, client copilot.IstioClient, u v1.Upstream) ([]endpointdiscovery.Endpoint, error) {
+func GetEndpointsForUpstream(ctx context.Context, client copilot.IstioClient, u *v1.Upstream) ([]endpointdiscovery.Endpoint, error) {
 	resp, err := client.Routes(ctx, new(copilotapi.RoutesRequest))
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func GetEndpointsForUpstream(ctx context.Context, client copilot.IstioClient, u 
 	return GetEndpointsFromResponse(resp, u)
 }
 
-func GetEndpointsFromResponse(resp *copilotapi.RoutesResponse, us v1.Upstream) ([]endpointdiscovery.Endpoint, error) {
+func GetEndpointsFromResponse(resp *copilotapi.RoutesResponse, us *v1.Upstream) ([]endpointdiscovery.Endpoint, error) {
 
 	if us.Type != UpstreamTypeCF {
 		return nil, errors.New("wrong upstream type")
