@@ -122,21 +122,28 @@ func updateAzureUpstream(gloo storage.Interface, secretStore dependencies.Secret
 		return errors.Wrap(err, "decoding azure spec")
 	}
 
-	if _, err := secretStore.Create(azureSecret); err != nil {
-		if storage.IsAlreadyExists(err) {
-			if _, err := secretStore.Update(azureSecret); err != nil {
-				return errors.Wrap(err, "writing azure secret to storage")
-			}
-		} else {
+	// only write the secret if it doesn't exist, or if the data does not match
+	existingSecret, err := secretStore.Get(azureSecret.Ref)
+	if err != nil {
+		// create secret, it doesn't exist
+		if _, err := secretStore.Create(azureSecret); err != nil {
+			return errors.Wrap(err, "writing azure secret to storage")
+		}
+	} else if reflect.DeepEqual(existingSecret.Data, azureSecret.Ref) {
+		// seret exists but has changed
+		if _, err := secretStore.Update(azureSecret); err != nil {
 			return errors.Wrap(err, "writing azure secret to storage")
 		}
 	}
 
-	azureSpec.SecretRef = azureSecret.Ref
-	usToUpdate.Spec = azureplugin.EncodeUpstreamSpec(*azureSpec)
-	_, err = gloo.V1().Upstreams().Update(usToUpdate)
-	if err != nil {
-		return err
+	// only update the upstream spec if the ref doesn't match
+	if azureSpec.SecretRef != azureSecret.Ref {
+		azureSpec.SecretRef = azureSecret.Ref
+		usToUpdate.Spec = azureplugin.EncodeUpstreamSpec(*azureSpec)
+		_, err = gloo.V1().Upstreams().Update(usToUpdate)
+		if err != nil {
+			return err
+		}
 	}
 
 	return updateUpstreamWithFuncs(gloo, upstreamName, funcs)
