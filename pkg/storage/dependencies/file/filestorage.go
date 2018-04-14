@@ -100,17 +100,14 @@ func (s *fileStorage) Watch(handlers ...dependencies.FileEventHandler) (*storage
 			}
 		}()
 		// start the watch with an "initial read" event
-		go func() {
-			current, err := s.List()
-			if err != nil {
-				errs <- err
-				return
-			}
-			log.Printf("current secrets: %s", current)
-			for _, h := range handlers {
-				h.OnAdd(current, nil)
-			}
-		}()
+		current, err := s.List()
+		if err != nil {
+			errs <- err
+			return
+		}
+		for _, h := range handlers {
+			h.OnAdd(current, nil)
+		}
 
 		for {
 			select {

@@ -90,16 +90,14 @@ func (s *secretStorage) Watch(handlers ...dependencies.SecretEventHandler) (*sto
 			}
 		}()
 		// start the watch with an "initial read" event
-		go func() {
-			current, err := s.List()
-			if err != nil {
-				errs <- err
-				return
-			}
-			for _, h := range handlers {
-				h.OnAdd(current, nil)
-			}
-		}()
+		current, err := s.List()
+		if err != nil {
+			errs <- err
+			return
+		}
+		for _, h := range handlers {
+			h.OnAdd(current, nil)
+		}
 		for {
 			select {
 			case event := <-w.Event:
