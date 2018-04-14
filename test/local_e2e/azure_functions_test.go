@@ -21,9 +21,9 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 )
 
-const publishProfileSecretRef = "azure-public-profile"
+const publishProfileSecretRef = "azure-publish-profile"
 
-const azureSkipMsg = ". Run like so: AZURE_FUNCTION_APP=<function app name> AZURE_UPPERCASE=<function name> AZURE_PROFILE_PASSWORD=<api key> ginkgo"
+const azureSkipMsg = ". Run like so: AZURE_FUNCTION_APP=<function app name> AZURE_UPPERCASE=<function name> AZURE_PROFILE_PASSWORD=<azure publish profile password> ginkgo"
 
 func NewAzureUpstream() *v1.Upstream {
 	azureFunctionApp := os.Getenv("AZURE_FUNCTION_APP")
@@ -53,7 +53,7 @@ func NewAzureUpstream() *v1.Upstream {
 	return u
 }
 
-var _ = FDescribe("Azure Functions", func() {
+var _ = Describe("Azure Functions", func() {
 	var (
 		au        *v1.Upstream
 		envoyPort uint32
@@ -252,7 +252,7 @@ var _ = FDescribe("Azure Functions", func() {
 			resp.Body.Close()
 		}
 
-		Expect("Hello solo.io").To(Equal(string(rbody)))
+		Expect("\"Hello solo.io\"").To(Equal(string(rbody)))
 	})
 
 })
