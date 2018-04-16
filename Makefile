@@ -42,7 +42,7 @@ $(OUTPUT):
 
 define BINARY_TARGETS
 $(eval VERSION := $(shell cat cmd/$(BINARY)/version))
-$(eval IMAGE_TAG ?= v$(VERSION))
+$(eval IMAGE_TAG ?= $(VERSION))
 $(eval OUTPUT_BINARY := $(OUTPUT)/$(BINARY))
 
 .PHONY: $(BINARY)
