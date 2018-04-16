@@ -34,6 +34,12 @@ type eventLoop struct {
 	startFuncs []func() error
 }
 
+func translatorConfig(opts bootstrap.Options) translator.TranslatorConfig {
+	var cfg translator.TranslatorConfig
+	cfg.EnvoyBindAddress = opts.EnvoyOptions.BindAddress
+	return cfg
+}
+
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
 	store, err := configstorage.Bootstrap(opts)
 	if err != nil {
@@ -62,7 +68,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 
 	plugs := plugins.RegisteredPlugins()
 
-	trans := translator.NewTranslator(plugs)
+	trans := translator.NewTranslator(translatorConfig(opts), plugs)
 
 	e := &eventLoop{
 		configWatcher:   cfgWatcher,

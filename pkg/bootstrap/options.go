@@ -41,6 +41,11 @@ type Options struct {
 	FileStorageOptions   StorageOptions
 	FileOptions          FileOptions
 	VaultOptions         VaultOptions
+	EnvoyOptions         EnvoyOptions
+}
+
+type EnvoyOptions struct {
+	BindAddress string
 }
 
 type StorageOptions struct {

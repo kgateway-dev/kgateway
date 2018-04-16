@@ -56,6 +56,7 @@ func init() {
 	flags.AddConsulFlags(rootCmd, &opts)
 	flags.AddCoPilotFlags(rootCmd, &opts)
 	flags.AddVaultFlags(rootCmd, &opts)
+	flags.AddEnvoyFlags(rootCmd, &opts)
 
 	// xds port
 	rootCmd.PersistentFlags().IntVar(&xdsPort, "xds.port", 8081, "port to serve envoy xDS services. this port should be specified in your envoy's static config")
