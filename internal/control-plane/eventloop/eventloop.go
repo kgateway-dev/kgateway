@@ -5,13 +5,13 @@ import (
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
 
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
 	"github.com/solo-io/gloo/internal/control-plane/translator"
 	"github.com/solo-io/gloo/internal/control-plane/xds"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
@@ -41,7 +41,7 @@ func translatorConfig(opts bootstrap.Options) translator.TranslatorConfig {
 }
 
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
-	store, err := configstorage.Bootstrap(opts)
+	store, err := configstorage.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create config store client")
 	}
@@ -51,7 +51,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	secretWatcher, err := secretwatchersetup.Bootstrap(opts)
+	secretWatcher, err := secretwatchersetup.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up secret watcher")
 	}
@@ -82,7 +82,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 
 	for _, endpointDiscoveryInitializer := range plugins.EndpointDiscoveryInitializers() {
 		e.startFuncs = append(e.startFuncs, func() error {
-			discovery, err := endpointDiscoveryInitializer(opts)
+			discovery, err := endpointDiscoveryInitializer(opts.Options)
 			if err != nil {
 				log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
 					"upstream type", err)
@@ -110,7 +110,7 @@ func getDependenciesFor(translatorPlugins []plugins.TranslatorPlugin) func(cfg *
 }
 
 func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
-	store, err := artifactstorage.Bootstrap(opts)
+	store, err := artifactstorage.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating file storage client")
 	}
