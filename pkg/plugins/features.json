@@ -24,6 +24,10 @@
         "gloo": "pkg/plugins/kubernetes"
     },
     {
+        "name": "cloudfoundry",
+        "gloo": "pkg/plugins/cloudfoundry"
+    },
+    {
         "name": "rest",
         "gloo": "pkg/plugins/rest",
         "envoy": "pkg/plugins/common/transformation/envoy"
