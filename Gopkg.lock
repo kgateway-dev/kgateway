@@ -67,6 +67,12 @@
   version = "v1.13.29"
 
 [[projects]]
+  name = "github.com/basgys/goxml2json"
+  packages = ["."]
+  revision = "652b277a9313806ef04f7c0cb0205dd455c4f344"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/cenkalti/backoff"
   packages = ["."]
   revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
@@ -1095,6 +1101,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fcbc683a0d1b617e2c4adc56e0cf7a829ab8a6d85fb11d455caa455f1da796d8"
+  inputs-digest = "c7850f3997798bafb34417f8e4e03170b970d7a821fac310a50311e86fc1459f"
   solver-name = "gps-cdcl"
   solver-version = 1
