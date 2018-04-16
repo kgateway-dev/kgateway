@@ -10,22 +10,19 @@ import (
 	"code.cloudfoundry.org/copilot"
 	copilotapi "code.cloudfoundry.org/copilot/api"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 )
-
-/*
-
-Based on this example: https://github.com/cloudfoundry/copilot/blob/master/cmd/copilot-clients/istio/main.go
-	flag.StringVar(&address, "address", , "ip:port of copilot server")
-	flag.StringVar(&caCert, "server-ca", "", "path to cert for the copilot server CA")
-	flag.StringVar(&clientCert, "client-cert", "", "path to cert for the copilot client")
-	flag.StringVar(&clientKey, "client-key", "", "path to key for the copilot client")
-
-*/
 
 const UpstreamTypeCF = "cloudfoundry"
 
 var WrongUpstreamType error = errors.New("wrong upstream type")
+
+func GetClientFromOptions(opts bootstrap.CoPilotOptions) (copilot.IstioClient, error) {
+
+	return GetClient(opts.Address, opts.ServerCA, opts.ClientCert, opts.ClientKey)
+
+}
 
 func GetClient(address, caCert, clientCert, clientKey string) (copilot.IstioClient, error) {
 	if address == "" {

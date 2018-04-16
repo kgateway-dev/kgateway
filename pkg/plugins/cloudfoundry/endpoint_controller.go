@@ -11,18 +11,9 @@ import (
 
 	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
 )
-
-func createEndpointDiscovery(ctx context.Context, opts bootstrap.Options) (endpointdiscovery.Interface, error) {
-	// kubeConfig := opts.KubeOptions.KubeConfig
-	// masterUrl := opts.KubeOptions.MasterURL
-	resyncDuration := opts.ConfigStorageOptions.SyncFrequency
-	disc := NewEndpointDiscovery(ctx, nil, resyncDuration)
-	return disc, nil
-}
 
 type endpointDiscovery struct {
 	resyncDuration time.Duration

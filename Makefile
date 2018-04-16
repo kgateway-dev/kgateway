@@ -7,7 +7,7 @@ OUTPUT := _output
 # Build
 #----------------------------------------------------------------------------------
 
-BINARIES ?= control-plane function-discovery kube-ingress-controller kube-upstream-discovery
+BINARIES ?= control-plane function-discovery kube-ingress-controller kube-upstream-discovery copilot-upstream-discovery
 DEBUG_BINARIES = $(foreach BINARY,$(BINARIES),$(BINARY)-debug)
 
 DOCKER_USER=soloio

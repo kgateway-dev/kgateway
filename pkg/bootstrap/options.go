@@ -36,6 +36,7 @@ type Options struct {
 	KubeOptions          KubeOptions
 	ConsulOptions        ConsulOptions
 	ConfigStorageOptions StorageOptions
+	CoPilotOptions       CoPilotOptions
 	SecretStorageOptions StorageOptions
 	FileStorageOptions   StorageOptions
 	FileOptions          FileOptions
@@ -78,6 +79,19 @@ type ConsulOptions struct {
 	RootPath string
 
 	// TODO: TLS Configuration for Consul
+}
+type CoPilotOptions struct {
+	// Address is the address of the Consul server
+	Address string
+
+	// Datacenter to use. If not provided, the default agent datacenter is used.
+	ServerCA string
+
+	// Scheme is the URI scheme for the Consul server
+	ClientCert string
+
+	// Username to use for HTTP Basic Authentication
+	ClientKey string
 }
 
 func (o ConsulOptions) ToConsulConfig() *api.Config {

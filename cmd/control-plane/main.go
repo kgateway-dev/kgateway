@@ -54,6 +54,7 @@ func init() {
 	flags.AddFileFlags(rootCmd, &opts)
 	flags.AddKubernetesFlags(rootCmd, &opts)
 	flags.AddConsulFlags(rootCmd, &opts)
+	flags.AddCoPilotFlags(rootCmd, &opts)
 	flags.AddVaultFlags(rootCmd, &opts)
 
 	// xds port
