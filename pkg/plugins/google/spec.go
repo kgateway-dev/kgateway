@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	validRegions = map[string]bool{
+	ValidRegions = map[string]bool{
 		"northamerica-northeast1": true,
 		"us-central1":             true,
 		"us-west1":                true,
@@ -44,7 +44,7 @@ func DecodeUpstreamSpec(generic v1.UpstreamSpec) (*UpstreamSpec, error) {
 }
 
 func (s *UpstreamSpec) validateUpstream() error {
-	_, exists := validRegions[s.Region]
+	_, exists := ValidRegions[s.Region]
 	if !exists {
 		return errors.New("no such region")
 
