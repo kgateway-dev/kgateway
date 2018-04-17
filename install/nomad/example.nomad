@@ -36,6 +36,7 @@ job "example" {
       driver = "docker"
 
       config {
+        dns_servers = ["172.17.0.1:8600"]
         image = "redis:3.2"
         port_map {
           db = 6379
@@ -69,6 +70,7 @@ job "example" {
     task "testrunner" {
       driver = "docker"
       config {
+        dns_servers = ["172.17.0.1"]
         image = "soloio/testrunner:testing"
       }
 
