@@ -6,9 +6,9 @@ import (
 
 	"github.com/d4l3k/messagediff"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 type fileWatcher struct {

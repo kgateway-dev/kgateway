@@ -298,7 +298,11 @@ func (c *cache) hash() uint64 {
 	if err != nil {
 		panic(err)
 	}
-	h := h0 + h1 + h2
+	h3, err := hashstructure.Hash(c.files, nil)
+	if err != nil {
+		panic(err)
+	}
+	h := h0 + h1 + h2 + h3
 	return h
 }
 
