@@ -77,9 +77,15 @@ var _ = Describe("EndpointController", func() {
 		fakeClient.FakeResponse = FakeResponse(hostname, "address", 1337)
 		endpointDiscovery.TrackUpstreams([]*v1.Upstream{upstream})
 		go endpointDiscovery.Run(nil)
-		Eventually(endpointDiscovery.Endpoints()).Should(Receive())
+
+		expected := endpointdiscovery.EndpointGroups{}
+		expected[upstream.Name] = []endpointdiscovery.Endpoint{{Address: "address", Port: 1337}}
+		Eventually(endpointDiscovery.Endpoints()).Should(Receive(Equal(expected)))
+
 		fakeClient.SetFakeResponse(hostname, "address2", 1337)
-		Eventually(endpointDiscovery.Endpoints()).Should(Receive())
+		expected = endpointdiscovery.EndpointGroups{}
+		expected[upstream.Name] = []endpointdiscovery.Endpoint{{Address: "address2", Port: 1337}}
+		Eventually(endpointDiscovery.Endpoints()).Should(Receive(Equal(expected)))
 
 	})
 

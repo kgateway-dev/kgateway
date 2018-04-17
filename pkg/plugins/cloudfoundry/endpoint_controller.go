@@ -121,9 +121,11 @@ func (ed *endpointDiscovery) updateIfNeeded(endpointGroups endpointdiscovery.End
 	if newHash == lastSeen {
 		return
 	}
-	atomic.CompareAndSwapUint64(&ed.lastSeen, lastSeen, newHash)
-
-	ed.endpoints <- endpointGroups
+	swapped := atomic.CompareAndSwapUint64(&ed.lastSeen, lastSeen, newHash)
+	if swapped {
+		ed.endpoints <- endpointGroups
+	}
+	// swapped == false - no need to send the endpoints if someone else has done it..
 }
 
 func (ed *endpointDiscovery) TrackUpstreams(upstreams []*v1.Upstream) {
