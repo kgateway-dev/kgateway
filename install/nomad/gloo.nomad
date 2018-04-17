@@ -1,4 +1,4 @@
-job "example" {
+job "gloo" {
 
   datacenters = ["dc1"]
   type = "service"
@@ -18,7 +18,7 @@ job "example" {
     healthy_deadline = "5m"
   }
 
-  group "cache" {
+  group "gloo" {
     count = 1
     restart {
       attempts = 2
@@ -31,15 +31,15 @@ job "example" {
       size = 300
     }
 
-    task "redis" {
+    task "nginx" {
 
       driver = "docker"
 
       config {
-        dns_servers = ["172.17.0.1:8600"]
-        image = "redis:3.2"
+        dns_servers = ["172.17.0.1"]
+        image = "nginx"
         port_map {
-          db = 6379
+          web = 80
         }
       }
 
@@ -48,16 +48,14 @@ job "example" {
         memory = 256
         network {
           mbits = 10
-          port "db" {}
+          port "web" {}
         }
       }
 
       service {
-        name = "redis-cache"
-        tags = [
-          "global",
-          "cache"]
-        port = "db"
+        name = "nginx"
+        tags = ["global", "test"]
+        port = "web"
         check {
           name = "alive"
           type = "tcp"
@@ -70,7 +68,37 @@ job "example" {
     task "testrunner" {
       driver = "docker"
       config {
-        dns_servers = ["172.17.0.1"]
+        dns_servers = ["172.17.0.1", "8.8.8.8"]
+        image = "soloio/testrunner:testing"
+      }
+
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+        }
+      }
+
+      service {
+        name = "testrunner"
+        tags = [
+          "global",
+          "cache"]
+        check {
+          name = "alive"
+          type = "script"
+          command = "ps"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "poopybutt" {
+      driver = "docker"
+      config {
+        dns_servers = ["172.17.0.1", "8.8.8.8"]
         image = "soloio/testrunner:testing"
       }
 
