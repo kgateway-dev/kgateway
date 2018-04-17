@@ -81,16 +81,19 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 	}
 
 	for _, endpointDiscoveryInitializer := range plugins.EndpointDiscoveryInitializers() {
-		e.startFuncs = append(e.startFuncs, func() error {
-			discovery, err := endpointDiscoveryInitializer(opts.Options)
-			if err != nil {
-				log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
-					"upstream type", err)
+		startfunc := func(edi plugins.EndpointDiscoveryInitFunc) func() error {
+			return func() error {
+				discovery, err := edi(opts.Options)
+				if err != nil {
+					log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
+						"upstream type", err)
+					return nil
+				}
+				e.endpointDiscoveries = append(e.endpointDiscoveries, discovery)
 				return nil
 			}
-			e.endpointDiscoveries = append(e.endpointDiscoveries, discovery)
-			return nil
-		})
+		}(endpointDiscoveryInitializer)
+		e.startFuncs = append(e.startFuncs, startfunc)
 	}
 	return e, nil
 }
