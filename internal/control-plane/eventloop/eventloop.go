@@ -168,9 +168,9 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 			go e.secretWatcher.TrackSecrets(secretRefs)
 			go e.fileWatcher.TrackFiles(fileRefs)
 			for _, discovery := range e.endpointDiscoveries {
-				go func() {
-					discovery.TrackUpstreams(cfg.Upstreams)
-				}()
+				go func(epd endpointdiscovery.Interface) {
+					epd.TrackUpstreams(cfg.Upstreams)
+				}(discovery)
 			}
 			sync(current)
 		case secrets := <-e.secretWatcher.Secrets():
