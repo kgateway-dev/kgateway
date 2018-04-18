@@ -24,7 +24,7 @@ var _ = Describe("Client", func() {
 	BeforeEach(func() {
 		dir, err = ioutil.TempDir("", "")
 		Must(err)
-		client, err = NewSecretStorage(dir, time.Millisecond/2)
+		client, err = NewSecretStorage(dir, time.Millisecond)
 		Must(err)
 	})
 	AfterEach(func() { os.RemoveAll(dir) })
@@ -107,7 +107,7 @@ var _ = Describe("Client", func() {
 			Expect(list).NotTo(ContainElement(s1))
 		})
 		It("watches", func() {
-			lists := make(chan []*dependencies.Secret, 3)
+			lists := make(chan []*dependencies.Secret, 4)
 			stop := make(chan struct{})
 			defer close(stop)
 			errs := make(chan error)
@@ -142,6 +142,9 @@ var _ = Describe("Client", func() {
 			s3, err := client.Create(file3)
 			Expect(err).NotTo(HaveOccurred())
 			time.Sleep(time.Millisecond * 100)
+			Eventually(lists).Should(HaveLen(4))
+			// throw out the initial read
+			<-lists
 			list1 := <-lists
 			Expect(list1).To(HaveLen(1))
 			Expect(list1).To(ContainElement(s1))

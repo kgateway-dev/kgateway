@@ -104,7 +104,7 @@ var _ = Describe("Client", func() {
 			Expect(list).NotTo(ContainElement(f1))
 		})
 		It("watches", func() {
-			lists := make(chan []*dependencies.File, 3)
+			lists := make(chan []*dependencies.File, 4)
 			stop := make(chan struct{})
 			defer close(stop)
 			errs := make(chan error)
@@ -139,6 +139,9 @@ var _ = Describe("Client", func() {
 			f3, err := client.Create(file3)
 			Expect(err).NotTo(HaveOccurred())
 			time.Sleep(time.Millisecond * 100)
+			Eventually(lists).Should(HaveLen(4))
+			// throw out the initial read
+			<-lists
 			list1 := <-lists
 			Expect(list1).To(HaveLen(1))
 			Expect(list1).To(ContainElement(f1))
