@@ -24,12 +24,9 @@ type Interface interface {
 	Error() <-chan error
 }
 
-func Less(e1, e2 *Endpoint) bool {
+func Less(e1, e2 Endpoint) bool {
 	if e1.Address < e2.Address {
 		return true
 	}
-	if e1.Port < e2.Port {
-		return true
-	}
-	return false
+	return e1.Port < e2.Port
 }

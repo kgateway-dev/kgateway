@@ -16,10 +16,8 @@ func init() {
 }
 
 func createEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
-	kubeConfig := opts.KubeOptions.KubeConfig
-	masterUrl := opts.KubeOptions.MasterURL
-	resyncDuration := opts.ConfigStorageOptions.SyncFrequency
-	disc, err := NewEndpointDiscovery(masterUrl, kubeConfig, resyncDuration)
+	cfg := opts.ConsulOptions.ToConsulConfig()
+	disc, err := newEndpointController(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start Kubernetes endpoint discovery")
 	}

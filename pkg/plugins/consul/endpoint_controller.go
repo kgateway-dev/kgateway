@@ -9,6 +9,8 @@ import (
 
 	"context"
 
+	"sort"
+
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/backoff"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
@@ -34,10 +36,11 @@ func newEndpointController(cfg *api.Config) (*endpointController, error) {
 		return nil, fmt.Errorf("failed to create consul client: %v", err)
 	}
 	c := &endpointController{
-		endpoints:        make(chan endpointdiscovery.EndpointGroups),
-		errs:             make(chan error),
-		upstreamsToTrack: make(chan []*v1.Upstream, 1),
-		consul:           client,
+		endpoints:           make(chan endpointdiscovery.EndpointGroups),
+		errs:                make(chan error),
+		upstreamsToTrack:    make(chan []*v1.Upstream, 1),
+		upstreamCancelFuncs: make(map[string]context.CancelFunc),
+		consul:              client,
 	}
 
 	return c, nil
@@ -140,6 +143,13 @@ func (c *endpointController) beginTrackingUpstream(ctx context.Context, us *v1.U
 					return errors.Wrapf(err, "getting next endpoints for consul upstream failed")
 				}
 				lastIndex = index
+				if len(eps) == 0 {
+					return nil
+				}
+				// idempotency
+				sort.SliceStable(eps, func(i, j int) bool {
+					return endpointdiscovery.Less(eps[i], eps[j])
+				})
 				discoveredEndpoints <- endpointsTuple{usName: us.Name, eps: eps}
 				return nil
 			}, ctx)

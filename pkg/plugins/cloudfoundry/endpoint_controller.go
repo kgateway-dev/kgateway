@@ -103,7 +103,7 @@ func (ed *endpointDiscovery) processEndpoint(endpointGroups endpointdiscovery.En
 
 	for upstreamName, epGroup := range endpointGroups {
 		sort.SliceStable(epGroup, func(i, j int) bool {
-			return endpointdiscovery.Less(&epGroup[i], &epGroup[j])
+			return endpointdiscovery.Less(epGroup[i], epGroup[j])
 		})
 		endpointGroups[upstreamName] = epGroup
 	}
