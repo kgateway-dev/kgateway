@@ -47,17 +47,17 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	// choose storage options (type, etc) for configs, secrets, and artifacts
-	sharedOpts := &opts.Options
-	flags.AddConfigStorageOptionFlags(rootCmd, sharedOpts)
-	flags.AddSecretStorageOptionFlags(rootCmd, sharedOpts)
-	flags.AddFileStorageOptionFlags(rootCmd, sharedOpts)
+	baseOpts := &opts.Options
+	flags.AddConfigStorageOptionFlags(rootCmd, baseOpts)
+	flags.AddSecretStorageOptionFlags(rootCmd, baseOpts)
+	flags.AddFileStorageOptionFlags(rootCmd, baseOpts)
 
 	// storage backends
-	flags.AddFileFlags(rootCmd, sharedOpts)
-	flags.AddKubernetesFlags(rootCmd, sharedOpts)
-	flags.AddConsulFlags(rootCmd, sharedOpts)
-	flags.AddCoPilotFlags(rootCmd, sharedOpts)
-	flags.AddVaultFlags(rootCmd, sharedOpts)
+	flags.AddFileFlags(rootCmd, baseOpts)
+	flags.AddKubernetesFlags(rootCmd, baseOpts)
+	flags.AddConsulFlags(rootCmd, baseOpts)
+	flags.AddCoPilotFlags(rootCmd, baseOpts)
+	flags.AddVaultFlags(rootCmd, baseOpts)
 
 	// xds port
 	rootCmd.PersistentFlags().IntVar(&xdsPort, "xds.port", 8081, "port to serve envoy xDS services. this port should be specified in your envoy's static config")
