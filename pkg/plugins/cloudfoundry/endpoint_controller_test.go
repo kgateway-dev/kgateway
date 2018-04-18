@@ -18,13 +18,13 @@ var _ = Describe("EndpointController", func() {
 	var fakeClient *FakeIstioClient
 	var endpointDiscovery endpointdiscovery.Interface
 	var cancel context.CancelFunc
+	var ctx context.Context
 	var upstream *v1.Upstream
 	const hostname = "hostname"
 
 	BeforeEach(func() {
 		fakeClient = &FakeIstioClient{}
-		ctx, cncl := context.WithCancel(context.Background())
-		cancel = cncl
+		ctx, cancel = context.WithCancel(context.Background())
 		// check frequently for eventually to work
 		endpointDiscovery = NewEndpointDiscovery(ctx, fakeClient, time.Second/1000)
 		upstream = &v1.Upstream{
@@ -87,6 +87,19 @@ var _ = Describe("EndpointController", func() {
 		expected[upstream.Name] = []endpointdiscovery.Endpoint{{Address: "address2", Port: 1337}}
 		Eventually(endpointDiscovery.Endpoints()).Should(Receive(Equal(expected)))
 
+	})
+
+	It("should report when upstreams are updated", func() {
+		// long wait
+		endpointDiscovery = NewEndpointDiscovery(ctx, fakeClient, time.Second*1000)
+
+		go endpointDiscovery.Run(nil)
+		//first resync should happen immediatly, so wait a second
+		time.Sleep(time.Second)
+
+		fakeClient.SetFakeResponse(hostname, "address", 1337)
+		endpointDiscovery.TrackUpstreams([]*v1.Upstream{upstream})
+		Eventually(endpointDiscovery.Endpoints()).Should(Receive())
 	})
 
 })

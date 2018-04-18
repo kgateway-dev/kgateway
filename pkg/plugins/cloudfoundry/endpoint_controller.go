@@ -60,14 +60,7 @@ func (ed *endpointDiscovery) setUpstreamsToTrack(u []*v1.Upstream) {
 }
 
 func (ed *endpointDiscovery) Run(stop <-chan struct{}) {
-	defer close(ed.kickChan)
-	loopKickChan := make(chan struct{}, 1)
-	go func() {
-		for range ed.kickChan {
-			loopKickChan <- struct{}{}
-		}
-	}()
-	ResyncLoopWithKick(ed.ctx, stop, ed.resync, ed.resyncDuration, loopKickChan)
+	ResyncLoopWithKick(ed.ctx, stop, ed.resync, ed.resyncDuration, ed.kickChan)
 }
 
 func (ed *endpointDiscovery) resync() {
