@@ -28,6 +28,8 @@ type endpointDiscovery struct {
 	upstreamsToTrack atomic.Value
 
 	lastSeen uint64
+
+	kickChan chan struct{}
 }
 
 func NewEndpointDiscovery(ctx context.Context, client copilot.IstioClient, resyncDuration time.Duration) endpointdiscovery.Interface {
@@ -41,6 +43,7 @@ func NewEndpointDiscovery(ctx context.Context, client copilot.IstioClient, resyn
 
 		errors:    make(chan error, 100),
 		endpoints: make(chan endpointdiscovery.EndpointGroups, 100),
+		kickChan:  make(chan struct{}, 1),
 	}
 }
 
@@ -57,7 +60,14 @@ func (ed *endpointDiscovery) setUpstreamsToTrack(u []*v1.Upstream) {
 }
 
 func (ed *endpointDiscovery) Run(stop <-chan struct{}) {
-	ResyncLoop(ed.ctx, stop, ed.resync, ed.resyncDuration)
+	defer close(ed.kickChan)
+	loopKickChan := make(chan struct{}, 1)
+	go func() {
+		for range ed.kickChan {
+			loopKickChan <- struct{}{}
+		}
+	}()
+	ResyncLoopWithKick(ed.ctx, stop, ed.resync, ed.resyncDuration, loopKickChan)
 }
 
 func (ed *endpointDiscovery) resync() {
@@ -130,6 +140,11 @@ func (ed *endpointDiscovery) updateIfNeeded(endpointGroups endpointdiscovery.End
 
 func (ed *endpointDiscovery) TrackUpstreams(upstreams []*v1.Upstream) {
 	ed.setUpstreamsToTrack(upstreams)
+	// kick the sync loop to trigger an update now.
+	select {
+	case ed.kickChan <- struct{}{}:
+	default:
+	}
 }
 
 func (ed *endpointDiscovery) Endpoints() <-chan endpointdiscovery.EndpointGroups {

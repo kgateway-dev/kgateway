@@ -22,7 +22,7 @@ var _ = Describe("Util", func() {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		go ResyncLoopWithTicker(ctx, resyncfunc, ticker)
+		go ResyncLoopWithTicker(ctx, resyncfunc, ticker, nil)
 		// Make sure we receive only once (the first resync)
 		Eventually(waitforRsync).Should(Receive())
 		Eventually(waitforRsync).ShouldNot(Receive())
@@ -45,6 +45,30 @@ var _ = Describe("Util", func() {
 		Eventually(ctx.Done()).ShouldNot(Receive())
 		close(stop)
 		Eventually(ctx.Done()).Should(BeClosed())
+
+	})
+
+	It("should trigger and update when kicker", func() {
+
+		counter := 0
+
+		waitforRsync := make(chan struct{})
+		resyncfunc := func() { counter += 1; waitforRsync <- struct{}{} }
+
+		ticker := make(chan time.Time, 1)
+		kickchan := make(chan struct{}, 1)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go ResyncLoopWithTicker(ctx, resyncfunc, ticker, kickchan)
+		// clear the first resync in the loop
+		Eventually(waitforRsync).Should(Receive())
+
+		// kick the loop
+		kickchan <- struct{}{}
+
+		Eventually(waitforRsync).Should(Receive())
+		Expect(counter).To(BeEquivalentTo(2))
 
 	})
 })
