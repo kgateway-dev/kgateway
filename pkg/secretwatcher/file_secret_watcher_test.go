@@ -9,8 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"encoding/json"
-
 	"path/filepath"
 
 	"github.com/solo-io/gloo/pkg/log"
@@ -49,8 +47,11 @@ var _ = Describe("FileSecretWatcher", func() {
 	Describe("watching file", func() {
 		Context("no secrets wanted", func() {
 			It("doesnt send anything on any channel", func() {
-				missingSecrets := map[string]map[string][]byte{"another-key": {"foo": []byte("bar"), "baz": []byte("qux")}}
-				data, err := json.Marshal(missingSecrets)
+				missingSecrets := &dependencies.Secret{
+					Ref:  ref,
+					Data: map[string]string{"username": "me@example.com", "password": "foobar"},
+				}
+				data, err := yaml.Marshal(missingSecrets.Data)
 				Expect(err).NotTo(HaveOccurred())
 				err = ioutil.WriteFile(file, data, 0644)
 				Expect(err).NotTo(HaveOccurred())
