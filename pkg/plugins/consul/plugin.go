@@ -30,7 +30,7 @@ type Plugin struct{}
 
 const (
 	// define Upstream type name
-	UpstreamTypeKube = "kubernetes"
+	UpstreamTypeConsul = "consul"
 )
 
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
@@ -38,15 +38,15 @@ func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
 }
 
 func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstream, out *envoyapi.Cluster) error {
-	if in.Type != UpstreamTypeKube {
+	if in.Type != UpstreamTypeConsul {
 		return nil
 	}
 	// decode does validation for us
 	if _, err := DecodeUpstreamSpec(in.Spec); err != nil {
-		return errors.Wrap(err, "invalid kubernetes upstream spec")
+		return errors.Wrap(err, "invalid consul upstream spec")
 	}
 
-	// just configure the cluster to use EDS:ADS and call it a day
+	// consul upstreams use EDS
 	out.Type = envoyapi.Cluster_EDS
 	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{

@@ -11,5 +11,6 @@ type FunctionSpec *types.Struct
 type ConfigObject interface {
 	proto.Message
 	GetName() string
+	GetStatus() *Status
 	GetMetadata() *Metadata
 }

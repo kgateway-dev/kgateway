@@ -33,9 +33,12 @@ job "gloo" {
 
     # control plane
     task "control-plane" {
+      env {
+        DEBUG = "1"
+      }
       driver = "docker"
       config {
-        image = "soloio/control-plane:0.2.0"
+        image = "soloio/control-plane:tmp"
         port_map {
           xds = 8081
         }
@@ -159,6 +162,10 @@ EOF
 
     # function-discovery
     task "function-discovery" {
+
+      env {
+        DEBUG = "1"
+      }
 
       driver = "docker"
       config {

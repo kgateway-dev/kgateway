@@ -7,9 +7,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/pkg/errors"
-	kubev1 "k8s.io/api/core/v1"
 	kubev1resources "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -76,7 +74,7 @@ func (c *endpointController) TrackUpstreams(upstreams []*v1.Upstream) {
 	//flush stale upstreams
 	c.upstreamSpecs = make(map[string]*UpstreamSpec)
 	for _, us := range upstreams {
-		if us.Type != UpstreamTypeKube {
+		if us.Type != UpstreamTypeConsul {
 			continue
 		}
 		spec, err := DecodeUpstreamSpec(us.Spec)
@@ -118,69 +116,25 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 
 		}
 	}
-	serviceList, _, err := c.consul.Catalog().Services(nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error retrieving service list")
-	}
-	servicesByNameAndTag := make(map[string]map[string][]*api.CatalogService)
-	for svcName, tags := range serviceList {
-		if len(tags) == 0 {
-			// append empty tag
-			tags = append(tags, "")
-		}
-		svcList, _, err := c.consul.Catalog().Service(svcName, "", nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error retrieving services named %v", svcName)
-		}
-
-	}
-	endpointList, err := c.endpointsLister.List(labels.Everything())
-	if err != nil {
-		return nil, errors.Wrap(err, "error retrieving endpoints")
-	}
-	podList, err := c.podsLister.List(labels.Everything())
-	if err != nil {
-		return nil, errors.Wrap(err, "error retrieving pods")
-	}
-
 	endpointGroups := make(endpointdiscovery.EndpointGroups)
 	for upstreamName, spec := range c.upstreamSpecs {
-		// find the targetport for our service
-		// if targetport is empty, skip this upstream
-		targetPort, err := portForUpstream(spec, serviceList)
-		if err != nil || targetPort == 0 {
-			log.Warnf("error in consul endpoint controller: %v", err)
-			continue
+		instances, meta, err := c.consul.Catalog().Service(spec.ServiceName, "", nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find %v in service catalog", spec.ServiceName)
 		}
-		for _, endpoint := range endpointList {
-			if spec.ServiceName == endpoint.Name && spec.ServiceNamespace == endpoint.Namespace {
-				for _, es := range endpoint.Subsets {
-					for _, addr := range es.Addresses {
-						// determine whether labels for the owner of this ip (pod) matches the spec
-						podLabels, err := getPodLabelsForIp(addr.IP, podList)
-						if err != nil {
-							err = errors.Wrapf(err, "error for upstream %v service %v", upstreamName, spec.ServiceName)
-							// pod not found for ip? what's that about?
-							// log it and keep going
-							log.Warnf("error in consul endpoint controller: %v", err)
-							continue
-						}
-						if !labels.AreLabelsInWhiteList(spec.Labels, podLabels) {
-							continue
-						}
-						// pod hasn't been assigned address yet
-						if addr.IP == "" {
-							continue
-						}
-
-						m := endpointdiscovery.Endpoint{
-							Address: addr.IP,
-							Port:    targetPort,
-						}
-						endpointGroups[upstreamName] = append(endpointGroups[upstreamName], m)
-					}
-				}
+		if len(instances) < 1 {
+			log.Warnf("no healthy instances found for upstream %s with service name %s"+
+				", EDS will not get endpoints for it", upstreamName, spec.ServiceName)
+		}
+		for _, inst := range instances {
+			if !hasRequiredTags(inst.ServiceTags, spec.ServiceTags) {
+				continue
 			}
+			ep := endpointdiscovery.Endpoint{
+				Address: inst.ServiceAddress,
+				Port:    int32(inst.ServicePort),
+			}
+			endpointGroups[upstreamName] = append(endpointGroups[upstreamName], ep)
 		}
 	}
 	// sort for idempotency
@@ -202,38 +156,23 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 	return endpointGroups, nil
 }
 
-func getPodLabelsForIp(ip string, pods []*kubev1.Pod) (map[string]string, error) {
-	for _, pod := range pods {
-		if pod.Status.PodIP == ip && pod.Status.Phase == kubev1.PodRunning {
-			return pod.Labels, nil
-		}
+func hasRequiredTags(tags, required []string) bool {
+	if len(required) == 0 {
+		return true
 	}
-	return nil, errors.Errorf("running pod not found with ip %v", ip)
-}
-
-func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service) (int32, error) {
-	for _, svc := range serviceList {
-		if spec.ServiceName == svc.Name && spec.ServiceNamespace == svc.Namespace {
-			// found the port we want
-			if svc.Spec.ExternalName != "" {
-				log.Warnf("WARNING: external name services are not supported for Kubernetes Endpoint Interface")
-			}
-			// if the service only has one port, just assume that's the one we want
-			// this way the user doesn't have to specify portname
-			if len(svc.Spec.Ports) == 1 {
-				return svc.Spec.Ports[0].TargetPort.IntVal, nil
-			}
-			for _, port := range svc.Spec.Ports {
-				if port.TargetPort.StrVal != "" {
-					//TODO: remove this warning if it's too chatty
-					log.Warnf("error in consul endpoint controller: %v", fmt.Errorf("target port must be type int for kube endpoint discovery"))
-					continue
-				}
-				if spec.ServicePort == port.TargetPort.IntVal {
-					return port.TargetPort.IntVal, nil
-				}
+	for _, req := range required {
+		var found bool
+		for _, t := range tags {
+			// found the required tag
+			if t == req {
+				found = true
+				break
 			}
 		}
+		// missing required tag
+		if !found {
+			return false
+		}
 	}
-	return 0, fmt.Errorf("target port or service not found for service %v", spec.ServiceName)
+	return true
 }
