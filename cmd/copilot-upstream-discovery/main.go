@@ -60,6 +60,11 @@ func init() {
 
 	// storage backends
 	flags.AddFileFlags(rootCmd, &opts)
+	flags.AddKubernetesFlags(rootCmd, &opts)
+	flags.AddConsulFlags(rootCmd, &opts)
+	flags.AddVaultFlags(rootCmd, &opts)
+
+	// copilot flags
 	flags.AddCoPilotFlags(rootCmd, &opts)
 }
 
