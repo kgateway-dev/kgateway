@@ -35,7 +35,6 @@ job "gloo" {
     task "control-plane" {
       driver = "docker"
       config {
-        network_mode = "host"
         image = "soloio/control-plane:0.2.0"
         port_map {
           xds = 8081
@@ -108,8 +107,8 @@ static_resources:
     connect_timeout: 5.000s
     hosts:
     - socket_address:
-        address: ${attr.driver.docker.bridge_ip}
-        port_value: 8081
+        address: ${NOMAD_IP_control_plane_xds}
+        port_value: ${NOMAD_PORT_control_plane_xds}
     http2_protocol_options: {}
     type: STATIC
 

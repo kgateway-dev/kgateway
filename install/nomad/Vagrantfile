@@ -35,6 +35,24 @@ sudo chmod a+w /etc/nomad.d
 echo "Installing Vault..."
 unzip vault.zip
 sudo install vault /usr/bin/vault
+(
+cat <<-EOF
+	[Unit]
+	Description=vault server
+	Requires=network-online.target
+	After=network-online.target
+
+	[Service]
+	Restart=on-failure
+	ExecStart=/usr/bin/vault server -dev
+	ExecReload=/bin/kill -HUP $MAINPID
+
+	[Install]
+	WantedBy=multi-user.target
+EOF
+) | sudo tee /etc/systemd/system/vault.service
+sudo systemctl enable vault.service
+sudo systemctl start vault
 
 sudo mkdir -p /etc/vault.d
 sudo chmod a+w /etc/vault.d
@@ -67,7 +85,7 @@ cat <<-EOF
 	
 	[Service]
 	Restart=on-failure
-	ExecStart=/usr/bin/consul agent -dev
+	ExecStart=/usr/bin/consul agent -dev --client 0.0.0.0
 	ExecReload=/bin/kill -HUP $MAINPID
 	
 	[Install]
