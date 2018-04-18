@@ -233,14 +233,14 @@ func (e *eventLoop) updateXds(cache *cache) {
 func (e *eventLoop) endpointDiscovery() <-chan endpointTuple {
 	aggregatedEndpointsChan := make(chan endpointTuple)
 	for _, ed := range e.endpointDiscoveries {
-		go func() {
-			for endpoints := range ed.Endpoints() {
+		go func(endpointDisc endpointdiscovery.Interface) {
+			for endpoints := range endpointDisc.Endpoints() {
 				aggregatedEndpointsChan <- endpointTuple{
 					endpoints:    endpoints,
-					discoveredBy: ed,
+					discoveredBy: endpointDisc,
 				}
 			}
-		}()
+		}(ed)
 	}
 	return aggregatedEndpointsChan
 }
