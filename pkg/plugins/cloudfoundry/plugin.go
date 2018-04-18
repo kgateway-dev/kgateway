@@ -34,7 +34,7 @@ func createEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interfac
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start copilot endpoint discovery")
 	}
-	return disc, err
+	return disc, nil
 }
 
 func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
