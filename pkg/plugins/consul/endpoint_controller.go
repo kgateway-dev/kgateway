@@ -2,89 +2,83 @@ package consul
 
 import (
 	"fmt"
-	"sort"
-	"time"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/pkg/errors"
-	kubev1resources "k8s.io/api/core/v1"
-
 	"github.com/mitchellh/hashstructure"
+	"github.com/pkg/errors"
+
+	"context"
+
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/backoff"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/kubecontroller"
 )
 
 type endpointController struct {
-	endpoints     chan endpointdiscovery.EndpointGroups
-	errors        chan error
-	consul        *api.Client
-	upstreamSpecs map[string]*UpstreamSpec
-	runFunc       func(stop <-chan struct{})
-	lastSeen      uint64
+	endpoints chan endpointdiscovery.EndpointGroups
+	errs      chan error
+	consul    *api.Client
+	ctx       context.Context
+
+	// map of upstream + spec  hash to cancel func
+	upstreamCancelFuncs map[string]context.CancelFunc
+
+	lastSeen         uint64
+	upstreamsToTrack chan []*v1.Upstream
 }
 
-func newEndpointController(cfg *api.Config, syncPeriod time.Duration) (*endpointController, error) {
+func newEndpointController(cfg *api.Config) (*endpointController, error) {
 	client, err := api.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create consul client: %v", err)
 	}
 	c := &endpointController{
-		endpoints: make(chan endpointdiscovery.EndpointGroups),
-		errors:    make(chan error),
-		consul:    client,
-	}
-
-	kubeController := kubecontroller.NewController("gloo-endpoints-controller",
-		kubeClient,
-		kubecontroller.NewSyncHandler(c.syncEndpoints),
-		endpointInformer.Informer(),
-		serviceInformer.Informer(),
-		podInformer.Informer())
-
-	c.runFunc = func(stop <-chan struct{}) {
-		go informerFactory.Start(stop)
-		go kubeController.Run(2, stop)
-		// refresh every minute
-		tick := time.Tick(time.Minute)
-		go func() {
-			for {
-				select {
-				case <-tick:
-					c.syncEndpoints()
-				case <-stop:
-					return
-				}
-			}
-		}()
-		<-stop
-		log.Printf("kube endpoint discovery stopped")
+		endpoints:        make(chan endpointdiscovery.EndpointGroups),
+		errs:             make(chan error),
+		upstreamsToTrack: make(chan []*v1.Upstream, 1),
+		consul:           client,
 	}
 
 	return c, nil
 }
 
-func (c *endpointController) Run(stop <-chan struct{}) {
-	c.runFunc(stop)
+type endpointsTuple struct {
+	usName string
+	eps    []endpointdiscovery.Endpoint
 }
 
-// triggers an update
-func (c *endpointController) TrackUpstreams(upstreams []*v1.Upstream) {
-	//flush stale upstreams
-	c.upstreamSpecs = make(map[string]*UpstreamSpec)
-	for _, us := range upstreams {
-		if us.Type != UpstreamTypeConsul {
-			continue
+func (c *endpointController) Run(stop <-chan struct{}) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c.ctx = ctx
+	discoveredEndpoints := make(chan endpointsTuple)
+	cachedEndpointGroups := make(endpointdiscovery.EndpointGroups)
+	for {
+		select {
+		case <-stop:
+			log.Printf("consul eds stopped")
+			return
+		case newUpstreamList := <-c.upstreamsToTrack:
+			c.startWatch(newUpstreamList, discoveredEndpoints)
+		case tuple := <-discoveredEndpoints:
+			cachedEndpointGroups[tuple.usName] = tuple.eps
+			newEndpointGroups := make(endpointdiscovery.EndpointGroups)
+			for usName, eps := range cachedEndpointGroups {
+				newEndpointGroups[usName] = eps
+			}
+			newHash, _ := hashstructure.Hash(cachedEndpointGroups, nil)
+			if newHash == c.lastSeen {
+				continue
+			}
+			c.lastSeen = newHash
+			c.endpoints <- newEndpointGroups
 		}
-		spec, err := DecodeUpstreamSpec(us.Spec)
-		if err != nil {
-			log.Warnf("error in consul plugin endpoint controller: %v", err)
-			continue
-		}
-		c.upstreamSpecs[us.Name] = spec
 	}
-	c.syncEndpoints()
+}
+
+func (c *endpointController) TrackUpstreams(upstreams []*v1.Upstream) {
+	c.upstreamsToTrack <- upstreams
 }
 
 func (c *endpointController) Endpoints() <-chan endpointdiscovery.EndpointGroups {
@@ -92,68 +86,89 @@ func (c *endpointController) Endpoints() <-chan endpointdiscovery.EndpointGroups
 }
 
 func (c *endpointController) Error() <-chan error {
-	return c.errors
+	return c.errs
 }
 
-// pushes EndpointGroups or error to channel
-func (c *endpointController) syncEndpoints() {
-	endpointGroups, err := c.getUpdatedEndpoints()
-	if err != nil {
-		c.errors <- err
-		return
-	}
-	// ignore empty configs / no secrets to watch
-	if len(endpointGroups) == 0 {
-		return
-	}
-	c.endpoints <- endpointGroups
+func hashUpstream(us *v1.Upstream) string {
+	h, _ := hashstructure.Hash(*us.Spec, nil)
+	return fmt.Sprintf("%v-%v", us.Name, h)
 }
 
-// retrieves secrets from kubernetes
-func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGroups, error) {
-	for usName, spec := range c.upstreamSpecs {
-		if len(spec.ServiceTags) > 0 {
+func (c *endpointController) startWatch(upstreams []*v1.Upstream, discoveredEndpoints chan endpointsTuple) {
+	// cancel watches for upstreams that are deceased
+	for usHash, cancel := range c.upstreamCancelFuncs {
+		var found bool
+		for _, us := range upstreams {
+			if hashUpstream(us) == usHash {
+				found = true
+				break
+			}
+		}
+		if !found {
+			cancel()
+			delete(c.upstreamCancelFuncs, usHash)
+		}
+	}
+	for _, us := range upstreams {
+		usHash := hashUpstream(us)
+		// nothing to do
+		if _, ok := c.upstreamCancelFuncs[usHash]; ok {
+			continue
+		}
+		ctx, cancel := context.WithCancel(c.ctx)
+		c.upstreamCancelFuncs[usHash] = cancel
+		// start goroutine for this upstream
+		go c.beginTrackingUpstream(ctx, us, discoveredEndpoints)
+	}
+}
 
-		}
-	}
-	endpointGroups := make(endpointdiscovery.EndpointGroups)
-	for upstreamName, spec := range c.upstreamSpecs {
-		instances, meta, err := c.consul.Catalog().Service(spec.ServiceName, "", nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find %v in service catalog", spec.ServiceName)
-		}
-		if len(instances) < 1 {
-			log.Warnf("no healthy instances found for upstream %s with service name %s"+
-				", EDS will not get endpoints for it", upstreamName, spec.ServiceName)
-		}
-		for _, inst := range instances {
-			if !hasRequiredTags(inst.ServiceTags, spec.ServiceTags) {
-				continue
-			}
-			ep := endpointdiscovery.Endpoint{
-				Address: inst.ServiceAddress,
-				Port:    int32(inst.ServicePort),
-			}
-			endpointGroups[upstreamName] = append(endpointGroups[upstreamName], ep)
-		}
-	}
-	// sort for idempotency
-	for upstreamName, epGroup := range endpointGroups {
-		sort.SliceStable(epGroup, func(i, j int) bool {
-			return epGroup[i].Address < epGroup[j].Address
-		})
-		endpointGroups[upstreamName] = epGroup
-	}
-	newHash, err := hashstructure.Hash(endpointGroups, nil)
+func (c *endpointController) beginTrackingUpstream(ctx context.Context, us *v1.Upstream, discoveredEndpoints chan endpointsTuple) {
+	spec, err := DecodeUpstreamSpec(us.Spec)
 	if err != nil {
-		log.Warnf("error in consul endpoint controller: %v", err)
-		return nil, nil
+		c.errs <- errors.Wrapf(err, "failed to parse spec for upstream %s, cannot discover endpoints for it", us.Name)
+		return
 	}
-	if newHash == c.lastSeen {
-		return nil, nil
+	var lastIndex uint64
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			backoff.UntilSuccess(func() error {
+				eps, index, err := c.getNextUpdateForUpstream(ctx, spec, lastIndex)
+				if err != nil {
+					return errors.Wrapf(err, "getting next endpoints for consul upstream failed")
+				}
+				lastIndex = index
+				discoveredEndpoints <- endpointsTuple{usName: us.Name, eps: eps}
+				return nil
+			}, ctx)
+		}
 	}
-	c.lastSeen = newHash
-	return endpointGroups, nil
+}
+
+func (c *endpointController) getNextUpdateForUpstream(ctx context.Context, spec *UpstreamSpec, lastIndex uint64) ([]endpointdiscovery.Endpoint, uint64, error) {
+	opts := &api.QueryOptions{RequireConsistent: true, WaitIndex: lastIndex}
+	opts = opts.WithContext(ctx)
+	instances, meta, err := c.consul.Catalog().Service(spec.ServiceName, "", opts)
+	if err != nil {
+		return nil, lastIndex, errors.Wrapf(err, "failed to find %v in service catalog", spec.ServiceName)
+	}
+	if len(instances) < 1 {
+		log.Warnf("no healthy instances found for service name %s, EDS will not get endpoints for it", spec.ServiceName)
+	}
+	var eps []endpointdiscovery.Endpoint
+	for _, inst := range instances {
+		if !hasRequiredTags(inst.ServiceTags, spec.ServiceTags) {
+			continue
+		}
+		ep := endpointdiscovery.Endpoint{
+			Address: inst.ServiceAddress,
+			Port:    int32(inst.ServicePort),
+		}
+		eps = append(eps, ep)
+	}
+	return eps, meta.LastIndex, nil
 }
 
 func hasRequiredTags(tags, required []string) bool {

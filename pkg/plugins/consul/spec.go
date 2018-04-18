@@ -32,8 +32,5 @@ func (s *UpstreamSpec) validateUpstream() error {
 	if s.ServiceName == "" {
 		return errors.New("service name must be set")
 	}
-	if s.ServiceNamespace == "" {
-		return errors.New("service namespace must be set")
-	}
 	return nil
 }
