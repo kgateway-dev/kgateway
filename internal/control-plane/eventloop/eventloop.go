@@ -36,7 +36,7 @@ type eventLoop struct {
 
 func translatorConfig(opts bootstrap.Options) translator.TranslatorConfig {
 	var cfg translator.TranslatorConfig
-	cfg.EnvoyBindAddress = opts.EnvoyOptions.BindAddress
+	cfg.IngressBindAddress = opts.IngressOptions.BindAddress
 	return cfg
 }
 

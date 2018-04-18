@@ -45,7 +45,7 @@ const (
 )
 
 type TranslatorConfig struct {
-	EnvoyBindAddress string
+	IngressBindAddress string
 }
 
 type Translator struct {
@@ -61,8 +61,8 @@ var corePlugins = []plugins.TranslatorPlugin{
 }
 
 func addDefaults(cfg TranslatorConfig) TranslatorConfig {
-	if cfg.EnvoyBindAddress == "" {
-		cfg.EnvoyBindAddress = "::"
+	if cfg.IngressBindAddress == "" {
+		cfg.IngressBindAddress = "::"
 	}
 
 	return cfg
@@ -590,7 +590,7 @@ func (t *Translator) constructHttpListener(name string, port uint32, filters []e
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  t.config.EnvoyBindAddress,
+					Address:  t.config.IngressBindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
@@ -639,7 +639,7 @@ func (t *Translator) constructHttpsListener(name string,
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  t.config.EnvoyBindAddress,
+					Address:  t.config.IngressBindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},

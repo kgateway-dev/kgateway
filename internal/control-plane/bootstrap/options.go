@@ -6,9 +6,9 @@ import (
 
 type Options struct {
 	bootstrap.Options
-	EnvoyOptions EnvoyOptions
+	IngressOptions IngressOptions
 }
 
-type EnvoyOptions struct {
+type IngressOptions struct {
 	BindAddress string
 }
