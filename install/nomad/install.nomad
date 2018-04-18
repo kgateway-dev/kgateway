@@ -47,9 +47,9 @@ job "gloo" {
           "--files.type=consul",
           "--files.refreshrate=1m",
           "--xds.port=8081",
-          "--consul.address=172.17.0.1:8500",
+          "--consul.address=${attr.driver.docker.bridge_ip}:8500",
           "--consul.scheme=http",
-          "--vault.addr=http://172.17.0.1:8200",
+          "--vault.addr=http://${attr.driver.docker.bridge_ip}:8200",
           "--vault.token=${VAULT_TOKEN}",
         ]
       }
@@ -98,7 +98,7 @@ job "gloo" {
 cat > ${NOMAD_TASK_DIR}/envoy.yaml <<CONFIG_END; envoy -c /local/envoy.yaml --v2-config-only
 node:
   cluster: ingress
-  id: NODE_ID_PLACE_HOLDER
+  id: ${NOMAD_ALLOC_ID}
 
 static_resources:
   clusters:
@@ -154,6 +154,36 @@ EOF
           interval = "10s"
           timeout = "5s"
         }
+      }
+    }
+
+    # function-discovery
+    task "function-discovery" {
+
+      driver = "docker"
+      config {
+        image = "soloio/function-discovery:0.2.0"
+        args = [
+          "--storage.type=consul",
+          "--storage.refreshrate=1m",
+          "--secrets.type=vault",
+          "--secrets.refreshrate=1m",
+          "--files.type=consul",
+          "--files.refreshrate=1m",
+          "--consul.address=${attr.driver.docker.bridge_ip}:8500",
+          "--consul.scheme=http",
+          "--vault.addr=http://${attr.driver.docker.bridge_ip}:8200",
+          "--vault.token=${VAULT_TOKEN}",
+        ]
+      }
+      resources {
+        cpu = 500
+        memory = 256
+      }
+      vault {
+        change_mode = "restart"
+        policies = [
+          "gloo"]
       }
     }
 
