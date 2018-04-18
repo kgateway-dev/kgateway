@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/copilot"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/internal/copilot-upstream-discovery/controller"
 	"github.com/solo-io/gloo/pkg/plugins/cloudfoundry"
 	"github.com/spf13/cobra"
 
@@ -70,7 +71,7 @@ func init() {
 
 func runServiceDiscovery(client copilot.IstioClient, store storage.Interface, stop <-chan struct{}) error {
 	ctx := context.Background()
-	serviceCtl := cloudfoundry.NewServiceController(ctx, store, client, 5*time.Second)
+	serviceCtl := controller.NewServiceController(ctx, store, client, 5*time.Second)
 
 	go func(stop <-chan struct{}) {
 		for {

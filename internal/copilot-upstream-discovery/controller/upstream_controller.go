@@ -1,4 +1,4 @@
-package cloudfoundry
+package controller
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/config"
 	"github.com/solo-io/gloo/pkg/storage"
+
+	"github.com/solo-io/gloo/pkg/plugins/cloudfoundry"
 )
 
 const generatedBy = "cloudfoundry-upstream-discovery"
@@ -41,7 +43,7 @@ func NewServiceController(ctx context.Context, configStore storage.Interface, cl
 }
 
 func (sc *ServiceController) Run(stop <-chan struct{}) {
-	ResyncLoop(sc.ctx, stop, sc.resync, sc.resyncDuration)
+	cloudfoundry.ResyncLoop(sc.ctx, stop, sc.resync, sc.resyncDuration)
 }
 
 func (c *ServiceController) Error() <-chan error {
@@ -49,7 +51,7 @@ func (c *ServiceController) Error() <-chan error {
 }
 
 func (sc *ServiceController) getDesiredUpstreams() ([]*v1.Upstream, error) {
-	return GetUpstreams(sc.ctx, sc.client)
+	return cloudfoundry.GetUpstreams(sc.ctx, sc.client)
 }
 
 func (sc *ServiceController) resync() {
