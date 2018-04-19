@@ -99,6 +99,8 @@ type GlooInstance struct {
 	tmpdir string
 	store  storage.Interface
 	cmd    *exec.Cmd
+
+	Args []string
 }
 
 func (gi *GlooInstance) ConfigDir() string {
@@ -179,6 +181,8 @@ func (gi *GlooInstance) RunWithPort(xdsport uint32) error {
 		"--secrets.refreshrate=1s",
 		fmt.Sprintf("--xds.port=%d", xdsport),
 	}
+	glooargs = append(glooargs, gi.Args...)
+
 	if os.Getenv("DEBUG_GLOO") != "" {
 		dlvargs := append([]string{"--headless", "--listen=:2345", "--log", "exec", gi.gloopath, "--"}, glooargs...)
 		cmd = exec.Command("dlv", dlvargs...)

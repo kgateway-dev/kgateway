@@ -14,10 +14,10 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	"github.com/solo-io/gloo/pkg/plugins/grpc"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/local_e2e/test_grpc_service"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
 )
 
 type ReceivedRequest struct {
@@ -30,7 +30,7 @@ type TestUpstream struct {
 	C        <-chan *ReceivedRequest
 }
 
-func runServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
+func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 	bodychan := make(chan *ReceivedRequest, 100)
 	handlerfunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
@@ -81,7 +81,7 @@ func runServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 var id = 0
 
 func NewTestHttpUpstream(ctx context.Context) *TestUpstream {
-	backendport, responses := runServer(ctx)
+	backendport, responses := RunTestServer(ctx)
 	return newTestUpstream(backendport, responses)
 }
 
