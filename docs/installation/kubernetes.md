@@ -30,35 +30,35 @@ deploy/function-discovery      1         1         1            1           3m
 deploy/gloo                    1         1         1            1           3m
 deploy/ingress                 1         1         1            1           3m
 deploy/ingress-controller      1         1         1            1           3m
-deploy/k8s-service-discovery   1         1         1            1           3m
+deploy/upstream-discovery   1         1         1            1           3m
 
 NAME                                  DESIRED   CURRENT   READY     AGE
 rs/function-discovery-74cbdb66b5      1         1         1         3m
 rs/gloo-6f68b9f7d6                    1         1         1         3m
 rs/ingress-controller-78cfcd7f78      1         1         1         3m
 rs/ingress-d5478d8c8                  1         1         1         3m
-rs/k8s-service-discovery-84744c4676   1         1         1         3m
+rs/upstream-discovery-84744c4676   1         1         1         3m
 
 NAME                           DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 deploy/function-discovery      1         1         1            1           3m
 deploy/gloo                    1         1         1            1           3m
 deploy/ingress                 1         1         1            1           3m
 deploy/ingress-controller      1         1         1            1           3m
-deploy/k8s-service-discovery   1         1         1            1           3m
+deploy/upstream-discovery   1         1         1            1           3m
 
 NAME                                  DESIRED   CURRENT   READY     AGE
 rs/function-discovery-74cbdb66b5      1         1         1         3m
 rs/gloo-6f68b9f7d6                    1         1         1         3m
 rs/ingress-controller-78cfcd7f78      1         1         1         3m
 rs/ingress-d5478d8c8                  1         1         1         3m
-rs/k8s-service-discovery-84744c4676   1         1         1         3m
+rs/upstream-discovery-84744c4676   1         1         1         3m
 
 NAME                                        READY     STATUS    RESTARTS   AGE
 po/function-discovery-74cbdb66b5-zknxp      1/1       Running   0          3m
 po/gloo-6f68b9f7d6-hn46t                    1/1       Running   0          3m
 po/ingress-controller-78cfcd7f78-nmqm6      1/1       Running   0          3m
 po/ingress-d5478d8c8-w6kxs                  1/1       Running   0          3m
-po/k8s-service-discovery-84744c4676-sdtgt   1/1       Running   0          3m
+po/upstream-discovery-84744c4676-sdtgt   1/1       Running   0          3m
 
 NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                         AGE
 svc/gloo      ClusterIP   10.107.176.154   <none>        8081/TCP                        3m

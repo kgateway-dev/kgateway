@@ -77,9 +77,9 @@ Pushed gloo-function-discovery image axhixh/gloo-function-discovery:644fefd
 Building gloo-ingress-controller...
 Publishing gloo-ingress-controller...
 Pushed gloo-ingress-controller image axhixh/gloo-ingress-controller:90f2b21
-Building gloo-k8s-service-discovery...
-Publishing gloo-k8s-service-discovery...
-Pushed gloo-k8s-service-discovery image axhixh/gloo-k8s-service-discovery:12b4753
+Building gloo-upstream-discovery...
+Publishing gloo-upstream-discovery...
+Pushed gloo-upstream-discovery image axhixh/gloo-upstream-discovery:12b4753
 ```
 
 `thetool` builds Gloo and its components using Docker containers. The first build can take some time, specially on macOS. You can speed up the build by giving the Docker machine more memory and CPUs. Future build will use the cache and be a lot quicker.
@@ -122,5 +122,5 @@ goodly-duck-function-discovery-84c67868bd-9hbtl   1/1       Running   0         
 goodly-duck-gloo-5f7f975c75-754kf                 1/1       Running   0          1m
 goodly-duck-ingress-6cfcbd4784-pbpzw              1/1       Running   0          1m
 goodly-duck-ingress-controller-6fc9f58b74-h784s   1/1       Running   0          1m
-goodly-duck-service-discovery-86dfcd79-vv79b      1/1       Running   0          1m
+goodly-duck-upstream-discovery-86dfcd79-vv79b      1/1       Running   0          1m
 ```
