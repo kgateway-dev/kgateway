@@ -67,11 +67,11 @@ func BuildPushContainers(push, debug bool) error {
 
 	for _, path := range []string{
 		filepath.Join(GlooSoloDirectory(), "hack", "auditor"),
-		filepath.Join(E2eDirectory(), "containers", "helloservice"),
-		filepath.Join(E2eDirectory(), "containers", "testrunner"),
-		filepath.Join(E2eDirectory(), "containers", "event-emitter"),
-		filepath.Join(E2eDirectory(), "containers", "upstream-for-events"),
-		filepath.Join(E2eDirectory(), "containers", "grpc-test-service"),
+		filepath.Join(KubeE2eDirectory(), "containers", "helloservice"),
+		filepath.Join(KubeE2eDirectory(), "containers", "testrunner"),
+		filepath.Join(KubeE2eDirectory(), "containers", "event-emitter"),
+		filepath.Join(KubeE2eDirectory(), "containers", "upstream-for-events"),
+		filepath.Join(KubeE2eDirectory(), "containers", "grpc-test-service"),
 	} {
 		dockerUser := os.Getenv("DOCKER_USER")
 		if dockerUser == "" {
