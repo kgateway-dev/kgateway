@@ -193,7 +193,7 @@ var _ = Describe("Copilot", func() {
 
 	}
 
-	FIt("discovers copilot upstreams", func() {
+	It("discovers copilot upstreams", func() {
 		WaitForHealthy(istioClient, ccClient)
 		setup()
 
