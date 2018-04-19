@@ -379,29 +379,29 @@ spec:
         - "--kube.namespace=gloo-system"
 
 ---
-# Source: gloo/templates/kube-upstream-discovery.yaml
+# Source: gloo/templates/upstream-discovery.yaml
 
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    gloo: kube-upstream-discovery
-  name: service-discovery
+    gloo: upstream-discovery
+  name: upstream-discovery
   namespace: gloo-system
 spec:
   selector:
     matchLabels:
-      gloo: kube-upstream-discovery
+      gloo: upstream-discovery
   replicas: 1
   template:
     metadata:
       labels:
-        gloo: kube-upstream-discovery
+        gloo: upstream-discovery
     spec:
       containers:
-      - image: soloio/kube-upstream-discovery:0.2.0
+      - image: soloio/upstream-discovery:0.2.0
         imagePullPolicy: IfNotPresent
-        name: kube-upstream-discovery
+        name: upstream-discovery
         env:
         - name: GRPC_TRACE
           value: "all"

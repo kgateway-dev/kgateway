@@ -32,8 +32,8 @@ kube_ingress_controller:
   imagePullPolicy: IfNotPresent
   enable: true
 
-kube_upstream_discovery:
-  image: soloio/kube-upstream-discovery
+upstream_discovery:
+  image: soloio/upstream-discovery
   imageTag: v0.1.2-108
   imagePullPolicy: IfNotPresent
   enable: true

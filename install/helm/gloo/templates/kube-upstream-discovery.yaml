@@ -1,25 +1,25 @@
-{{ if .Values.kube_upstream_discovery.enable }}
+{{ if .Values.upstream_discovery.enable }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    gloo: kube-upstream-discovery
-  name: {{ .Release.Name }}-service-discovery
+    gloo: upstream-discovery
+  name: {{ .Release.Name }}-upstream-discovery
   namespace: {{ .Release.Namespace }}
 spec:
   selector:
     matchLabels:
-      gloo: kube-upstream-discovery
+      gloo: upstream-discovery
   replicas: 1
   template:
     metadata:
       labels:
-        gloo: kube-upstream-discovery
+        gloo: upstream-discovery
     spec:
       containers:
-      - image: {{ .Values.kube_upstream_discovery.image }}:{{ .Values.kube_upstream_discovery.imageTag }}
-        imagePullPolicy: {{ .Values.kube_upstream_discovery.imagePullPolicy }}
-        name: kube-upstream-discovery
+      - image: {{ .Values.upstream_discovery.image }}:{{ .Values.upstream_discovery.imageTag }}
+        imagePullPolicy: {{ .Values.upstream_discovery.imagePullPolicy }}
+        name: upstream-discovery
         env:
         - name: GRPC_TRACE
           value: "all"
