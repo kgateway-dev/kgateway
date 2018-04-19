@@ -7,10 +7,10 @@ site/
 /function-discovery
 /kube-ingress-controller
 /upstream-discovery
-test/e2e/kube_resources/helm-values.yaml
-test/e2e/kube_resources/testing-resources.yml
+test/kube_e2e/kube_resources/helm-values.yaml
+test/kube_e2e/kube_resources/testing-resources.yml
 
-test/e2e/kube_resources/install.yml
+test/kube_e2e/kube_resources/install.yml
 _output/
 cmd/control-plane/control-plane
 cmd/function-discovery/gloo-function-discovery

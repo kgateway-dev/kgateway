@@ -1,4 +1,4 @@
-package e2e
+package kube_e2e
 
 import (
 	"time"
@@ -7,8 +7,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	. "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	. "github.com/solo-io/gloo/test/helpers"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

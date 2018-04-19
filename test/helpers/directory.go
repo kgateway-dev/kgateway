@@ -21,7 +21,7 @@ func LocalE2eDirectory() string {
 }
 
 func E2eDirectory() string {
-	return filepath.Join(SoloDirectory(), "gloo", "test", "e2e")
+	return filepath.Join(SoloDirectory(), "gloo", "test", "kube_e2e")
 }
 
 func CertsDirectory() string {

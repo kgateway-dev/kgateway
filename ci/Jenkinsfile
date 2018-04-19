@@ -68,7 +68,7 @@ volumes: [
                     if [ "$SKIP_TESTS" != "true" ]; then
                         export RUN_KUBE_TESTS=1
                         # TODO: add console tests
-                        # TODO: only run cover and race in unit tests and not in e2e (or anything else that is time sensitive)
+                        # TODO: only run cover and race in unit tests and not in kube_e2e (or anything else that is time sensitive)
                         ginkgo -r --skipPackage xds,vault --noColor  --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress pkg internal
                         ginkgo -r --noColor  --randomizeAllSpecs --randomizeSuites --failOnPending --trace --progress test
                     fi

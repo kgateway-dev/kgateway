@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	. "github.com/solo-io/gloo/test/e2e/containers/grpc-test-service/bookstore/protos"
+	. "github.com/solo-io/gloo/test/kube_e2e/containers/grpc-test-service/bookstore/protos"
 )
 
 func NewServer() BookstoreServer {

@@ -1,4 +1,4 @@
-package e2e
+package kube_e2e
 
 import (
 	. "github.com/onsi/ginkgo"

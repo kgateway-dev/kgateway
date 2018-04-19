@@ -1,4 +1,4 @@
-package e2e
+package kube_e2e
 
 import (
 	"time"
@@ -6,24 +6,27 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/pborman/uuid"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	. "github.com/solo-io/gloo/test/helpers"
 )
 
-var _ = Describe("Kubernetes Upstream + Endpoint Discovery Plugin", func() {
+var _ = Describe("Core Service Plugin", func() {
 	const helloService = "helloservice"
 	const servicePort = 8080
-	Context("creating kube upstream and a vhost with a single route to it", func() {
+	Context("creating service upstream and a vhost with a single route to it", func() {
 		randomPath := "/" + uuid.New()
 		vhostName := "one-route"
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
-				Type: kubernetes.UpstreamTypeKube,
-				Spec: kubernetes.EncodeUpstreamSpec(kubernetes.UpstreamSpec{
-					ServiceNamespace: namespace,
-					ServiceName:      helloService,
-					ServicePort:      servicePort,
+				Type: service.UpstreamTypeService,
+				Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
+					Hosts: []service.Host{
+						{
+							Addr: helloService,
+							Port: servicePort,
+						},
+					},
 				}),
 			})
 			Must(err)
@@ -55,6 +58,9 @@ var _ = Describe("Kubernetes Upstream + Endpoint Discovery Plugin", func() {
 		})
 		It("should configure envoy with a 200 OK route (backed by helloservice)", func() {
 			curlEventuallyShouldRespond(curlOpts{path: randomPath}, "< HTTP/1.1 200", time.Minute*5)
+		})
+		It("POST should be 404", func() {
+			curlEventuallyShouldRespond(curlOpts{path: randomPath, method: "POST"}, "< HTTP/1.1 404", time.Minute*5)
 		})
 	})
 })

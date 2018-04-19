@@ -14,9 +14,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/gloo/test/e2e/containers/grpc-test-service/bookstore/protos"
-	"github.com/solo-io/gloo/test/e2e/containers/grpc-test-service/server"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube_e2e/containers/grpc-test-service/bookstore/protos"
+	"github.com/solo-io/gloo/test/kube_e2e/containers/grpc-test-service/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/reflection"
 )

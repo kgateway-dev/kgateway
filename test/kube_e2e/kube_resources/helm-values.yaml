@@ -1,0 +1,35 @@
+ingress:
+  type: NodePort
+  replicaCount: 1
+  port: 8080
+  securePort: 8443
+  adminPort: 19000
+  image: "soloio/envoy"
+  imageTag: "latest"
+  imagePullPolicy: Always
+
+control_plane:
+  replicaCount: 1
+  port: 8081
+  image: soloio/control-plane
+  imageTag: testing-c940a3d2
+  imagePullPolicy: Always
+
+#  extra
+function_discovery:
+  image: soloio/function-discovery
+  imageTag: testing-c940a3d2
+  imagePullPolicy: Always
+  enable: true
+
+kube_ingress_controller:
+  image: soloio/kube-ingress-controller
+  imageTag: testing-c940a3d2
+  imagePullPolicy: Always
+  enable: true
+
+upstream_discovery:
+  image: soloio/upstream-discovery
+  imageTag: testing-c940a3d2
+  imagePullPolicy: Always
+  enable: true
