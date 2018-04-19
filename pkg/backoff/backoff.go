@@ -45,22 +45,20 @@ func UntilSuccess(fn func() error, ctx context.Context) {
 	if err := fn(); err == nil {
 		return
 	}
-	tilNextRetry := backoffCap
-	var elapsed time.Duration
+	tilNextRetry := defaultInitialInterval
 	for {
 		select {
 		// stopped by another goroutine
 		case <-ctx.Done():
 			return
 		case <-time.After(tilNextRetry):
-			elapsed += tilNextRetry
 			tilNextRetry *= 2
 			err := fn()
 			if err == nil {
 				return
 			}
-			if elapsed >= backoffCap {
-				elapsed = backoffCap
+			if tilNextRetry >= backoffCap {
+				tilNextRetry = backoffCap
 			}
 		}
 	}

@@ -38,7 +38,7 @@ job "gloo" {
       }
       driver = "docker"
       config {
-        image = "soloio/control-plane:tmp"
+        image = "soloio/control-plane:0.2.0"
         port_map {
           xds = 8081
         }
@@ -49,7 +49,7 @@ job "gloo" {
           "--secrets.refreshrate=1m",
           "--files.type=consul",
           "--files.refreshrate=1m",
-          "--xds.port=8081",
+          "--xds.port=${NOMAD_PORT_xds}",
           "--consul.address=${attr.driver.docker.bridge_ip}:8500",
           "--consul.scheme=http",
           "--vault.addr=http://${attr.driver.docker.bridge_ip}:8200",

@@ -19,7 +19,7 @@ func createEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interfac
 	cfg := opts.ConsulOptions.ToConsulConfig()
 	disc, err := newEndpointController(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to start Kubernetes endpoint discovery")
+		return nil, errors.Wrap(err, "failed to start consul endpoint discovery")
 	}
 	return disc, err
 }
