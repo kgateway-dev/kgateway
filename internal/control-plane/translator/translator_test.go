@@ -17,11 +17,15 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
+func newTranslator() *Translator {
+	return NewTranslator(TranslatorConfig{"::"}, []plugins.TranslatorPlugin{&service.Plugin{}})
+}
+
 var _ = Describe("Translator", func() {
 	Context("invalid config", func() {
 		Context("domains are not unique amongst virtual hosts", func() {
 			cfg := InvalidConfigSharedDomains()
-			t := NewTranslator([]plugins.TranslatorPlugin{&service.Plugin{}})
+			t := newTranslator()
 			snap, reports, err := t.Translate(Inputs{Cfg: cfg})
 			It("returns four reports, one for each upstream, one for each virtualhost", func() {
 				Expect(err).NotTo(HaveOccurred())
@@ -49,7 +53,7 @@ var _ = Describe("Translator", func() {
 		})
 		Context("one valid route, one invalid route", func() {
 			cfg := PartiallyValidConfig()
-			t := NewTranslator([]plugins.TranslatorPlugin{&service.Plugin{}})
+			t := newTranslator()
 			snap, reports, err := t.Translate(Inputs{Cfg: cfg})
 			It("returns four reports, one for each upstream, one for each virtualhost", func() {
 				Expect(err).NotTo(HaveOccurred())
@@ -80,7 +84,7 @@ var _ = Describe("Translator", func() {
 		})
 		Context("with missing upstream for route", func() {
 			cfg := InvalidConfigNoUpstream()
-			t := NewTranslator([]plugins.TranslatorPlugin{&service.Plugin{}})
+			t := newTranslator()
 			It("returns report for the error and no virtual hosts", func() {
 				snap, reports, err := t.Translate(Inputs{Cfg: cfg})
 				Expect(err).NotTo(HaveOccurred())
@@ -102,7 +106,7 @@ var _ = Describe("Translator", func() {
 	Context("valid config", func() {
 		Context("with no ssl vhosts", func() {
 			cfg := ValidConfigNoSsl()
-			t := NewTranslator([]plugins.TranslatorPlugin{&service.Plugin{}})
+			t := newTranslator()
 			It("returns an empty ssl routeconfig and a len 1 nossl routeconfig", func() {
 				snap, reports, err := t.Translate(Inputs{Cfg: cfg})
 				Expect(err).NotTo(HaveOccurred())
@@ -123,7 +127,7 @@ var _ = Describe("Translator", func() {
 		})
 		Context("with an ssl secret specified", func() {
 			cfg := ValidConfigSsl()
-			t := NewTranslator([]plugins.TranslatorPlugin{&service.Plugin{}})
+			t := newTranslator()
 			Context("the desired ssl secret not present in the secret map", func() {
 				It("returns an error for the not found secretref", func() {
 					_, reports, err := t.Translate(Inputs{Cfg: cfg})
