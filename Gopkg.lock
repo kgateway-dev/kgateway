@@ -9,12 +9,30 @@
 
 [[projects]]
   branch = "master"
+  name = "code.cloudfoundry.org/bbs"
+  packages = [
+    "encryption",
+    "format",
+    "models"
+  ]
+  revision = "76cc6a4304ad4fe1cdbd82918941f5eba92b13be"
+
+[[projects]]
+  branch = "master"
   name = "code.cloudfoundry.org/copilot"
   packages = [
     ".",
-    "api"
+    "api",
+    "config",
+    "testhelpers"
   ]
   revision = "35aef47bc6c01933164a1d5082c8fe87aedb1f1c"
+
+[[projects]]
+  name = "code.cloudfoundry.org/lager"
+  packages = ["."]
+  revision = "0bfa98e49e7a976af91e918d47978f07c00b081f"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/PuerkitoBio/purell"
@@ -592,6 +610,9 @@
   packages = [
     ".",
     "format",
+    "gbytes",
+    "gexec",
+    "ghttp",
     "internal/assertion",
     "internal/asyncassertion",
     "internal/oraclematcher",
@@ -682,6 +703,12 @@
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/square/certstrap"
+  packages = ["pkix"]
+  revision = "fa1359e6e510efcf9cd67bc0edbe43d7300a7833"
+  version = "v1.1.1"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -875,6 +902,12 @@
     "internal/json"
   ]
   revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/validator.v2"
+  packages = ["."]
+  revision = "59c90c7046f643cbe0d4e7c8776c42a84ce75910"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -1109,6 +1142,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f52c5422c9fbc6805e4456bcb00457637cbe1a4baabed2c76f027ecc98f9efeb"
+  inputs-digest = "5e9fad9c5e7a7c9407f4ff29143bceb7ddac195a5d10b30c0fc974fdb46b577b"
   solver-name = "gps-cdcl"
   solver-version = 1
