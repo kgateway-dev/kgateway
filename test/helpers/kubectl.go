@@ -27,7 +27,7 @@ const (
 	envoy                 = "ingress"
 	gloo                  = "control-plane"
 	kubeIngressController = "kube-ingress-controller"
-	kubeUpstreamDiscovery = "kube-upstream-discovery"
+	upstreamDiscovery     = "upstream-discovery"
 	funcitonDiscovery     = "function-discovery"
 	upstreamForEvents     = "upstream-for-events"
 	grpcTestService       = "grpc-test-service"
@@ -159,7 +159,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 		envoy,
 		gloo,
 		kubeIngressController,
-		kubeUpstreamDiscovery,
+		upstreamDiscovery,
 		funcitonDiscovery,
 	); err != nil {
 		return errors.Wrap(err, "waiting for pods to start")

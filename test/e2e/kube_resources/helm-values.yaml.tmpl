@@ -28,8 +28,8 @@ kube_ingress_controller:
   imagePullPolicy: {{ .ImagePullPolicy }}
   enable: true
 
-kube_upstream_discovery:
-  image: soloio/kube-upstream-discovery{{ .Debug }}
+upstream_discovery:
+  image: soloio/upstream-discovery{{ .Debug }}
   imageTag: {{ .ImageTag }}
   imagePullPolicy: {{ .ImagePullPolicy }}
   enable: true
