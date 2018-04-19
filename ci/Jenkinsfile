@@ -82,7 +82,7 @@ volumes: [
                     cd ${GOPATH}/src/github.com/solo-io/gloo
                     TAG=v1.0.8-$BUILD_NUMBER
                     
-                    GLOO_PROJECTS="control-plane function-discovery kube-ingress-controller kube-upstream-discovery"
+                    GLOO_PROJECTS="control-plane function-discovery kube-ingress-controller upstream-discovery"
 
                     for i in ${GLOO_PROJECTS}; do
                         if [[ -f cmd/$i/Dockerfile ]]; then

@@ -6,7 +6,7 @@ site/
 /control-plane
 /function-discovery
 /kube-ingress-controller
-/kube-upstream-discovery
+/upstream-discovery
 test/e2e/kube_resources/helm-values.yaml
 test/e2e/kube_resources/testing-resources.yml
 
