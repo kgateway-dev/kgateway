@@ -272,22 +272,22 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    gloo: upstream-discovery
-  name: upstream-discovery
+    gloo: k8s-service-discovery
+  name: k8s-service-discovery
   namespace: gloo-system
 spec:
   selector:
     matchLabels:
-      gloo: upstream-discovery
+      gloo: k8s-service-discovery
   replicas: 1
   template:
     metadata:
       labels:
-        gloo: upstream-discovery
+        gloo: k8s-service-discovery
     spec:
       containers:
-      - image: soloio/gloo-upstream-discovery:v0.1
-        name: upstream-discovery
+      - image: soloio/gloo-k8s-service-discovery:v0.1
+        name: k8s-service-discovery
         env:
         - name: GRPC_TRACE
           value: "all"
