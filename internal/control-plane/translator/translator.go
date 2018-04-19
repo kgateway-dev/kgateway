@@ -643,6 +643,7 @@ func (t *Translator) constructHttpsListener(name string,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
+					Ipv4Compat: true,
 				},
 			},
 		},

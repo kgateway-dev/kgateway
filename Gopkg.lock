@@ -147,8 +147,7 @@
     "pkg/server",
     "pkg/util"
   ]
-  revision = "24ec8afcc1ff4a7380f375a8bf1402dff6fd49a7"
-  source = "https://github.com/ilackarms/go-control-plane.git"
+  revision = "5f52d064b948cc3a39451b20055e173597d3885e"
 
 [[projects]]
   branch = "master"
@@ -1110,6 +1109,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d4e906acd715941a843fb4c15c74e593a21398bf40732a2264dca3af2a008031"
+  inputs-digest = "f52c5422c9fbc6805e4456bcb00457637cbe1a4baabed2c76f027ecc98f9efeb"
   solver-name = "gps-cdcl"
   solver-version = 1

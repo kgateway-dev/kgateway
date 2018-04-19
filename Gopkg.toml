@@ -44,7 +44,6 @@
 [[constraint]]
   name = "github.com/envoyproxy/go-control-plane"
   branch = "master"
-  source = "https://github.com/ilackarms/go-control-plane.git"
 
 [[constraint]]
   name = "github.com/ghodss/yaml"

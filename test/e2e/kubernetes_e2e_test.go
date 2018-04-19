@@ -46,7 +46,7 @@ var _ = Describe("Kubernetes Deployment", func() {
 		if setupMinikubeEnvVars() {
 			push = false
 		}
-		if os.Getenv("DEBUG_IMAGES") =="1" {
+		if os.Getenv("DEBUG_IMAGES") == "1" {
 			debug = true
 		}
 
@@ -103,11 +103,11 @@ func curlEventuallyShouldRespond(opts curlOpts, substr string, timeout ...time.D
 			log.GreyPrintf("success: %v", res)
 		}
 		return res
-	}, t,"5s").Should(ContainSubstring(substr))
+	}, t, "5s").Should(ContainSubstring(substr))
 }
 
 func curl(opts curlOpts) (string, error) {
-	args := []string{"curl", "-v"}
+	args := []string{"curl", "-v", "--connect-timeout", "10", "--max-time", "10"}
 
 	if opts.method != "GET" && opts.method != "" {
 		args = append(args, "-X"+opts.method)
