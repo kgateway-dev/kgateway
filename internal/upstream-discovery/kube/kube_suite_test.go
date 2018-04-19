@@ -1,4 +1,4 @@
-package controller
+package kube
 
 import (
 	"testing"
@@ -11,5 +11,5 @@ import (
 func TestKube(t *testing.T) {
 	RegisterFailHandler(Fail)
 	log.DefaultOut = GinkgoWriter
-	RunSpecs(t, "Service Controller Suite")
+	RunSpecs(t, "Upstream Controller Suite")
 }

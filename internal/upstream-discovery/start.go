@@ -1,0 +1,58 @@
+package upstreamdiscovery
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/internal/upstream-discovery/bootstrap"
+	"github.com/solo-io/gloo/internal/upstream-discovery/copilot"
+	"github.com/solo-io/gloo/internal/upstream-discovery/kube"
+	"github.com/solo-io/gloo/pkg/plugins/cloudfoundry"
+	"github.com/solo-io/gloo/pkg/storage"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+func Start(opts bootstrap.Options, store storage.Interface, stop <-chan struct{}) error {
+	if opts.UpstreamDiscoveryOptions.EnableDiscoveryForKubernetes {
+		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to create kube restclient config")
+		}
+
+		kubeController, err := kube.NewUpstreamController(cfg, store, opts.ConfigStorageOptions.SyncFrequency)
+		if err != nil {
+			return errors.Wrap(err, "failed to create kubernetes upstream discovery service")
+		}
+		go runController("kubernetes", kubeController, stop)
+	}
+
+	if opts.UpstreamDiscoveryOptions.EnableDiscoveryForCopilot {
+		istioclient, err := cloudfoundry.GetClientFromOptions(opts.CoPilotOptions)
+		if err != nil {
+			return errors.Wrap(err, "failed to create copilot client from config")
+		}
+
+		serviceCtl := copilot.NewUpstreamController(context.Background(), store, istioclient, 5*time.Second)
+		go runController("copilot", serviceCtl, stop)
+	}
+
+	return nil
+}
+
+func runController(name string, controller Controller, stop <-chan struct{}) {
+	go func(stop <-chan struct{}) {
+		for {
+			select {
+			case err := <-controller.Error():
+				log.Printf("%s service discovery encountered error: %v", name, err)
+			case <-stop:
+				return
+			}
+		}
+	}(stop)
+
+	log.Printf("starting %s service discovery", name)
+	controller.Run(stop)
+}

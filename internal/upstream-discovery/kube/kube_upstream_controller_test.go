@@ -1,4 +1,4 @@
-package controller
+package kube
 
 import (
 	"os"
@@ -13,11 +13,11 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/log"
 	kubeplugin "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	. "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 var _ = Describe("Kube Service Discovery", func() {
@@ -41,7 +41,7 @@ var _ = Describe("Kube Service Discovery", func() {
 	})
 	Describe("service discovery", func() {
 		var (
-			discovery  *ServiceController
+			discovery  *UpstreamController
 			kubeClient kubernetes.Interface
 			glooClient storage.Interface
 		)
@@ -52,7 +52,7 @@ var _ = Describe("Kube Service Discovery", func() {
 			glooClient, err = crd.NewStorage(cfg, namespace, time.Minute)
 			Must(err)
 
-			discovery, err = NewServiceController(cfg, glooClient, time.Minute)
+			discovery, err = NewUpstreamController(cfg, glooClient, time.Minute)
 			Must(err)
 
 			go discovery.Run(make(chan struct{}))

@@ -1,3 +1,0 @@
-FROM ubuntu
-COPY copilot-upstream-discovery-debug /copilot-upstream-discovery
-ENTRYPOINT ["/copilot-upstream-discovery"]

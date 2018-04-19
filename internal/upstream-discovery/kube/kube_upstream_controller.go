@@ -1,4 +1,4 @@
-package controller
+package kube
 
 import (
 	"fmt"
@@ -12,19 +12,19 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/config"
+	"github.com/solo-io/gloo/pkg/log"
 	kubeplugin "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/gloo/pkg/config"
 	"github.com/solo-io/kubecontroller"
 )
 
 const (
 	kubeSystemNamespace = "kube-system"
-	generatedBy =  "kubernetes-upstream-discovery"
+	generatedBy         = "kubernetes-upstream-discovery"
 )
 
-type ServiceController struct {
+type UpstreamController struct {
 	errors chan error
 
 	serviceLister kubelisters.ServiceLister
@@ -35,9 +35,9 @@ type ServiceController struct {
 	syncer config.UpstreamSyncer
 }
 
-func NewServiceController(cfg *rest.Config,
+func NewUpstreamController(cfg *rest.Config,
 	configStore storage.Interface,
-	resyncDuration time.Duration) (*ServiceController, error) {
+	resyncDuration time.Duration) (*UpstreamController, error) {
 	kubeClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kube clientset: %v", err)
@@ -51,21 +51,21 @@ func NewServiceController(cfg *rest.Config,
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, resyncDuration)
 	serviceInformer := kubeInformerFactory.Core().V1().Services()
 
-	c := &ServiceController{
+	c := &UpstreamController{
 		errors: make(chan error),
 
 		serviceLister: serviceInformer.Lister(),
-		generatedBy :generatedBy,
-		
-		syncer : config.UpstreamSyncer {
-			Owner :  generatedBy,
-			GlooStorage : configStore,
+		generatedBy:   generatedBy,
+
+		syncer: config.UpstreamSyncer{
+			Owner:       generatedBy,
+			GlooStorage: configStore,
 		},
 	}
 
 	c.syncer.DesiredUpstreams = c.generateDesiredUpstreams
 
-	kubeController := kubecontroller.NewController("gloo-service-discovery", kubeClient,
+	kubeController := kubecontroller.NewController("kube-upstream-discovery", kubeClient,
 		kubecontroller.NewLockingSyncHandler(c.syncGlooUpstreamsWithKubeServices),
 		serviceInformer.Informer())
 
@@ -91,21 +91,21 @@ func NewServiceController(cfg *rest.Config,
 	return c, nil
 }
 
-func (c *ServiceController) Run(stop <-chan struct{}) {
+func (c *UpstreamController) Run(stop <-chan struct{}) {
 	c.runFunc(stop)
 }
 
-func (c *ServiceController) Error() <-chan error {
+func (c *UpstreamController) Error() <-chan error {
 	return c.errors
 }
 
-func (c *ServiceController) syncGlooUpstreamsWithKubeServices() {
+func (c *UpstreamController) syncGlooUpstreamsWithKubeServices() {
 	if err := c.syncer.SyncDesiredState(); err != nil {
 		c.errors <- err
 	}
 }
 
-func (c *ServiceController) generateDesiredUpstreams() ([]*v1.Upstream, error) {
+func (c *UpstreamController) generateDesiredUpstreams() ([]*v1.Upstream, error) {
 	serviceList, err := c.serviceLister.List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ingresses: %v", err)

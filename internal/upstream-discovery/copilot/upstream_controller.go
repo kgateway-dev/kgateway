@@ -1,4 +1,4 @@
-package controller
+package copilot
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 
 const generatedBy = "cloudfoundry-upstream-discovery"
 
-type ServiceController struct {
+type UpstreamController struct {
 	errors chan error
 
 	resyncDuration time.Duration
@@ -24,8 +24,8 @@ type ServiceController struct {
 	syncer config.UpstreamSyncer
 }
 
-func NewServiceController(ctx context.Context, configStore storage.Interface, client copilot.IstioClient, resyncDuration time.Duration) *ServiceController {
-	sc := &ServiceController{
+func NewUpstreamController(ctx context.Context, configStore storage.Interface, client copilot.IstioClient, resyncDuration time.Duration) *UpstreamController {
+	sc := &UpstreamController{
 		errors: make(chan error),
 
 		resyncDuration: resyncDuration,
@@ -42,25 +42,25 @@ func NewServiceController(ctx context.Context, configStore storage.Interface, cl
 	return sc
 }
 
-func (sc *ServiceController) Run(stop <-chan struct{}) {
+func (sc *UpstreamController) Run(stop <-chan struct{}) {
 	cloudfoundry.ResyncLoop(sc.ctx, stop, sc.resync, sc.resyncDuration)
 }
 
-func (c *ServiceController) Error() <-chan error {
+func (c *UpstreamController) Error() <-chan error {
 	return c.errors
 }
 
-func (sc *ServiceController) getDesiredUpstreams() ([]*v1.Upstream, error) {
+func (sc *UpstreamController) getDesiredUpstreams() ([]*v1.Upstream, error) {
 	return cloudfoundry.GetUpstreams(sc.ctx, sc.client)
 }
 
-func (sc *ServiceController) resync() {
+func (sc *UpstreamController) resync() {
 	err := sc.resyncWithError()
 	if err != nil {
 		sc.errors <- err
 	}
 }
 
-func (sc *ServiceController) resyncWithError() error {
+func (sc *UpstreamController) resyncWithError() error {
 	return sc.syncer.SyncDesiredState()
 }
