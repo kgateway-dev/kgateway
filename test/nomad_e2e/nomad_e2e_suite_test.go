@@ -4,11 +4,17 @@ import (
 	"os"
 	"testing"
 
+	"time"
+
+	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage/consul"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/helpers/local"
+	"github.com/solo-io/gloo/test/nomad_e2e/utils"
 )
 
 func TestConsul(t *testing.T) {
@@ -31,6 +37,8 @@ var (
 
 	nomadFactory  *localhelpers.NomadFactory
 	nomadInstance *localhelpers.NomadInstance
+
+	gloo storage.Interface
 
 	err error
 )
@@ -56,15 +64,28 @@ var _ = BeforeSuite(func() {
 	helpers.Must(err)
 	err = nomadInstance.Run()
 	helpers.Must(err)
+
+	gloo, err = consul.NewStorage(api.DefaultConfig(), "gloo", time.Second)
+	helpers.Must(err)
+
+	err = utils.SetupNomadForE2eTest(nomadInstance, true)
+	helpers.Must(err)
 })
 
 var _ = AfterSuite(func() {
+	if err := utils.TeardownNomadE2e(); err != nil {
+		log.Warnf("FAILED TEARING DOWN: %v", err)
+	}
+
 	vaultInstance.Clean()
 	vaultFactory.Clean()
 
 	consulInstance.Clean()
 	consulFactory.Clean()
 
-	nomadInstance.Clean()
+	if err := nomadInstance.Clean(); err != nil {
+		log.Warnf("FAILED CLEANING UP: %v", err)
+	}
 	nomadFactory.Clean()
+
 })

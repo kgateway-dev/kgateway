@@ -10,6 +10,9 @@ import (
 
 	"time"
 
+	"syscall"
+
+	"github.com/hashicorp/nomad/api"
 	"github.com/onsi/ginkgo"
 )
 
@@ -100,7 +103,7 @@ func (i *NomadInstance) Run() error {
 }
 
 func (i *NomadInstance) RunWithPort() error {
-	cmd := exec.Command(i.nomadpath, "-dev",
+	cmd := exec.Command(i.nomadpath, "agent", "-dev",
 		"--vault-enabled=true",
 		"--vault-address=http://127.0.0.1:8200",
 		"--vault-token=root",
@@ -124,11 +127,19 @@ func (i *NomadInstance) Binary() string {
 
 func (i *NomadInstance) Clean() error {
 	if i.cmd != nil {
-		i.cmd.Process.Kill()
-		i.cmd.Wait()
+		if err := i.cmd.Process.Signal(syscall.SIGINT); err != nil {
+			return err
+		}
+		if err := i.cmd.Wait(); err != nil {
+			return err
+		}
 	}
 	if i.tmpdir != "" {
 		os.RemoveAll(i.tmpdir)
 	}
 	return nil
+}
+
+func (i *NomadInstance) Cfg() *api.Config {
+	return api.DefaultConfig()
 }

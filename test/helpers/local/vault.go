@@ -115,7 +115,7 @@ func (i *VaultInstance) RunWithPort() error {
 		"server",
 		"-dev",
 		"-dev-root-token-id=root",
-		"-dev-listen-address 0.0.0.0:8200",
+		"-dev-listen-address=0.0.0.0:8200",
 	)
 	buf := &bytes.Buffer{}
 	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)

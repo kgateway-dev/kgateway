@@ -100,7 +100,7 @@ func (i *ConsulInstance) Run() error {
 }
 
 func (i *ConsulInstance) RunWithPort() error {
-	cmd := exec.Command(i.consulpath, "agent", "-dev", "--client 0.0.0.0")
+	cmd := exec.Command(i.consulpath, "agent", "-dev", "--client=0.0.0.0")
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter

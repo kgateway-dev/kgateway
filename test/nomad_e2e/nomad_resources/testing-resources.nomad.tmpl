@@ -1,0 +1,232 @@
+job "testing-resources" {
+
+  datacenters = [
+    "dc1"]
+  type = "service"
+
+  update {
+    max_parallel = 1
+    min_healthy_time = "10s"
+    healthy_deadline = "3m"
+    auto_revert = false
+    canary = 0
+  }
+
+  migrate {
+    max_parallel = 1
+    health_check = "checks"
+    min_healthy_time = "10s"
+    healthy_deadline = "5m"
+  }
+
+  group "testing-resources-group" {
+    count = 1
+    restart {
+      attempts = 2
+      interval = "30m"
+      delay = "15s"
+      mode = "fail"
+    }
+    ephemeral_disk {
+      size = 300
+    }
+
+    task "event-emitter" {
+      driver = "docker"
+      config {
+        image = "soloio/event-emitter:{{ .ImageTag }}"
+        port_map {
+          http = 8080
+        }
+      }
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "http" {}
+        }
+      }
+      service {
+        name = "event-emitter"
+        port = "http"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "upstream-for-events" {
+      driver = "docker"
+      config {
+        image = "soloio/upstream-for-events:{{ .ImageTag }}"
+        port_map {
+          http = 8080
+        }
+      }
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "http" {}
+        }
+      }
+      service {
+        name = "upstream-for-events"
+        port = "http"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "grpc-test-service" {
+      driver = "docker"
+      config {
+        image = "soloio/grpc-test-service:{{ .ImageTag }}"
+        port_map {
+          http = 8080
+        }
+      }
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "http" {}
+        }
+      }
+      service {
+        name = "grpc-test-service"
+        port = "http"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "helloservice-2" {
+      driver = "docker"
+      config {
+        image = "soloio/helloservice:{{ .ImageTag }}"
+        port_map {
+          http = 8080
+        }
+      }
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "http" {}
+        }
+      }
+      service {
+        name = "helloservice-2"
+        port = "http"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "helloservice" {
+      driver = "docker"
+      config {
+        image = "soloio/helloservice:{{ .ImageTag }}"
+        port_map {
+          http = 8080
+        }
+      }
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "http" {}
+        }
+      }
+      service {
+        name = "helloservice"
+        port = "http"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "petstore" {
+      driver = "docker"
+      config {
+        image = "soloio/petstore-example:latest"
+        port_map {
+          http = 8080
+        }
+      }
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "http" {}
+        }
+      }
+      service {
+        name = "petstore"
+        port = "http"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+    task "nats-streaming" {
+      driver = "docker"
+      config {
+        image = "nats-streaming:latest"
+        port_map {
+          nats = 4222
+        }
+      }
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "nats" {}
+        }
+      }
+      service {
+        name = "nats-streaming"
+        port = "nats"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+
+  }
+
+}

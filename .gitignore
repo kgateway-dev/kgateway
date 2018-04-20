@@ -14,3 +14,5 @@ test/kube_e2e/kube_resources/install.yml
 _output/
 cmd/control-plane/control-plane
 cmd/function-discovery/gloo-function-discovery
+test/nomad_e2e/nomad_resources/install.nomad
+test/nomad_e2e/nomad_resources/testing-resources.nomad
