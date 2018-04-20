@@ -4,6 +4,9 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/spf13/cobra"
+
+	// enables various kubernetes authentication plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func AddKubernetesFlags(cmd *cobra.Command, opts *bootstrap.Options) {
