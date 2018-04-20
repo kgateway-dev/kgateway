@@ -29,6 +29,10 @@
   name = "github.com/aws/aws-sdk-go"
   version = "1.13.29"
 
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  version = "v9.10.0"
+
 [[constraint]]
   name = "github.com/d4l3k/messagediff"
   version = "1.2.1"
