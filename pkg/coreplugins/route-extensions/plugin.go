@@ -1,6 +1,8 @@
 package extensions
 
 import (
+	"fmt"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
@@ -30,7 +32,6 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 	if err != nil {
 		return err
 	}
-
 	routeAction, ok := out.Action.(*envoyroute.Route_Route)
 	// not a compatible route type
 	if !ok {
@@ -71,6 +72,19 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 		routeAction.Route.RetryPolicy = &envoyroute.RouteAction_RetryPolicy{
 			RetryOn:    defaultRetryPolicy,
 			NumRetries: &types.UInt32Value{Value: spec.MaxRetries},
+		}
+	}
+	if spec.Cors != nil {
+		routeAction.Route.Cors = &envoyroute.CorsPolicy{
+			AllowOrigin:      spec.Cors.AllowOrigin,
+			AllowHeaders:     spec.Cors.AllowHeaders,
+			AllowMethods:     spec.Cors.AllowMethods,
+			ExposeHeaders:    spec.Cors.ExposeHeaders,
+			AllowCredentials: &types.BoolValue{Value: spec.Cors.AllowCredentials},
+		}
+		if spec.Cors.MaxAge != 0 {
+			maxAge := fmt.Sprintf("%.0f", spec.Cors.MaxAge.Seconds())
+			routeAction.Route.Cors.MaxAge = maxAge
 		}
 	}
 	return nil

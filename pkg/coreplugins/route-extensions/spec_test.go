@@ -44,7 +44,14 @@ add_request_headers:
 max_retries: 1
 prefix_rewrite: /foo
 timeout: 60000000000
-something_invalid: another_spec_maybe?`
+something_invalid: another_spec_maybe?
+cors:
+  allow_origin: 
+  - solo.io
+  allow_methods: GET, POST
+  allow_headers: X-Gloo, Ping
+  max_age: 86400000000000
+  allow_credentials: true`
 		jsn, err := yaml.YAMLToJSON([]byte(yam))
 		Expect(err).NotTo(HaveOccurred())
 		var struc types.Struct
@@ -52,6 +59,8 @@ something_invalid: another_spec_maybe?`
 		Expect(err).NotTo(HaveOccurred())
 		specc, err := DecodeRouteExtensions(&struc)
 		Expect(err).NotTo(HaveOccurred())
+		Expect(specc.Cors).NotTo(BeNil())
+		Expect(specc.Cors.MaxAge).To(Equal(time.Duration(24 * time.Hour)))
 		log.Printf("%v", specc)
 	})
 })

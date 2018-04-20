@@ -16,14 +16,23 @@ type RouteExtensionSpec struct {
 	Timeout     time.Duration `json:"timeout,omitempty"`
 	HostRewrite string        `json:"host_rewrite,omitempty"`
 
+	Cors *CorsPolicy `json:"cors",omitempty`
 	//TODO: support RateLimit
-	//TODO: support CORS policy
 }
 
 type HeaderValue struct {
 	Key    string `json:"key,omitempty"`
 	Value  string `json:"value,omitempty"`
 	Append bool   `json:"append,omitempty"`
+}
+
+type CorsPolicy struct {
+	AllowOrigin      []string      `json:"allow_origin",omitempty`
+	AllowMethods     string        `json:"allow_methods",omitempty`
+	AllowHeaders     string        `json:"allow_headers",omitempty`
+	ExposeHeaders    string        `json:"expose_headers",omitempty`
+	MaxAge           time.Duration `json:"max_age",omitempty`
+	AllowCredentials bool          `json:"allow_credentials",omitempty`
 }
 
 func DecodeRouteExtensions(generic *types.Struct) (RouteExtensionSpec, error) {

@@ -129,3 +129,39 @@ func NewTestRoute2() *v1.Route {
 		Extensions: extensions,
 	}
 }
+
+func NewTestRouteWithCORS() *v1.Route {
+	extensions, _ := protoutil.MarshalStruct(map[string]interface{}{
+		"cors": map[string]interface{}{
+			"allow_origin":  []string{"*.solo.io"},
+			"allow_methods": "GET, POST",
+			"max_age":       86400000000000,
+		},
+		"auth": map[string]interface{}{
+			"credentials": struct {
+				Username, Password string
+			}{
+				Username: "alice",
+				Password: "bob",
+			},
+			"token": "my-12345",
+		}})
+	return &v1.Route{
+		Matcher: &v1.Route_RequestMatcher{
+			RequestMatcher: &v1.RequestMatcher{
+				Path: &v1.RequestMatcher_PathExact{
+					PathExact: "/bar",
+				},
+				Verbs: []string{"GET", "POST"},
+			},
+		},
+		SingleDestination: &v1.Destination{
+			DestinationType: &v1.Destination_Upstream{
+				Upstream: &v1.UpstreamDestination{
+					Name: "my-upstream",
+				},
+			},
+		},
+		Extensions: extensions,
+	}
+}
