@@ -109,13 +109,13 @@ var _ = Describe("Swagger Function Discovery", func() {
 					"x-name": "spatula",
 					"x-tag":  "dolphin",
 				},
-			}, "< HTTP/1.1 200", time.Second*5)
+			}, "< HTTP/1.1 200", time.Second*45)
 			CurlEventuallyShouldRespond(CurlOpts{
 				Path: getPath + "/4",
-			}, "< HTTP/1.1 200", time.Second*5)
+			}, "< HTTP/1.1 200", time.Second*45)
 			CurlEventuallyShouldRespond(CurlOpts{
 				Path: getPath + "/4",
-			}, `{"id":4,"name":"spatula"}`, time.Second*5)
+			}, `{"id":4,"name":"spatula"}`, time.Second*15)
 		})
 	})
 })

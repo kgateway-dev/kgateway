@@ -54,7 +54,7 @@ func CurlEventuallyShouldRespond(opts CurlOpts, substr string, timeout ...time.D
 }
 
 func Curl(addr string, opts CurlOpts) (string, error) {
-	args := []string{"curl", "-v", "--connect-timeout", "10", "--max-time", "10"}
+	args := []string{"-v", "--connect-timeout", "10", "--max-time", "10"}
 
 	if opts.Method != "GET" && opts.Method != "" {
 		args = append(args, "-X"+opts.Method)
