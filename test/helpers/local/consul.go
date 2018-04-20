@@ -21,11 +21,11 @@ type ConsulFactory struct {
 }
 
 func NewConsulFactory() (*ConsulFactory, error) {
-	envoypath := os.Getenv("CONSUL_BINARY")
+	consulpath := os.Getenv("CONSUL_BINARY")
 
-	if envoypath != "" {
+	if consulpath != "" {
 		return &ConsulFactory{
-			consulpath: envoypath,
+			consulpath: consulpath,
 		}, nil
 	}
 
@@ -100,7 +100,7 @@ func (i *ConsulInstance) Run() error {
 }
 
 func (i *ConsulInstance) RunWithPort() error {
-	cmd := exec.Command(i.consulpath, "agent", "-dev")
+	cmd := exec.Command(i.consulpath, "agent", "-dev", "--client 0.0.0.0")
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter

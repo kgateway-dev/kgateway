@@ -11,11 +11,12 @@ import (
 	"time"
 
 	"bytes"
-	"github.com/onsi/ginkgo"
-	"github.com/pkg/errors"
 	"io"
 	"regexp"
 	"strings"
+
+	"github.com/onsi/ginkgo"
+	"github.com/pkg/errors"
 )
 
 const defualtVaultDockerImage = "vault"
@@ -110,7 +111,12 @@ func (i *VaultInstance) Token() string {
 }
 
 func (i *VaultInstance) RunWithPort() error {
-	cmd := exec.Command(i.vaultpath, "server", "-dev")
+	cmd := exec.Command(i.vaultpath,
+		"server",
+		"-dev",
+		"-dev-root-token-id=root",
+		"-dev-listen-address 0.0.0.0:8200",
+	)
 	buf := &bytes.Buffer{}
 	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
 	cmd.Dir = i.tmpdir
