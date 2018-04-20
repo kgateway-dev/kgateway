@@ -8,7 +8,7 @@ Sourcing Events from GitHub Webhooks
 ## Setup
 
 #### Deploy Gloo
-    kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo-install/master/kube/install.yaml
+    kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml
 
 #### Deploy NATS and minio
     kubectl apply -f \

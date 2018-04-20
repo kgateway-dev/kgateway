@@ -14,7 +14,7 @@ kubectl apply -f ./namespaces.yml,./yaml
 
 To install gloo, run:
 ```
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo-install/master/kube/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml
 ```
 
 # Deploy Function

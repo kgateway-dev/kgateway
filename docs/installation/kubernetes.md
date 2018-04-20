@@ -17,7 +17,7 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 
 ```bash
 kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo-install/master/kube/install.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml
 ```
 
 Check that the Gloo pods and services have been created:

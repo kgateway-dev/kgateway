@@ -24,7 +24,7 @@
 [208.015441, "o", "\r\n"]
 [208.019113, "o", "\u001b]0;yuval@yuvallaptop-2018: ~/go/src/github.com/solo-io/gloo/example/demo\u0007\u001b[01;32myuval@yuvallaptop-2018\u001b[00m:\u001b[01;34m~/go/src/github.com/solo-io/gloo/example/demo\u001b[00m$ "]
 [212.394906, "o", "kubectl apply \\\r\n> "]
-[212.396542, "o", "          -f https://raw.githubusercontent.com/solo-io/gloo-install/master/kube/install.yaml"]
+[212.396542, "o", "          -f https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml"]
 [213.488482, "o", "\r\n"]
 [215.329079, "o", "namespace \"gloo-system\" created\r\n"]
 [215.533536, "o", "customresourcedefinition \"upstreams.gloo.solo.io\" created\r\n"]
