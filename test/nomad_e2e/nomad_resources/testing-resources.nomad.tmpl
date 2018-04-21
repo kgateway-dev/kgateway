@@ -122,6 +122,7 @@ job "testing-resources" {
         port_map {
           http = 8080
         }
+        args = ["--reply=expected-reply-2"]
       }
       resources {
         cpu = 500
@@ -150,6 +151,7 @@ job "testing-resources" {
         port_map {
           http = 8080
         }
+        args = ["--reply=expected-reply-1"]
       }
       resources {
         cpu = 500

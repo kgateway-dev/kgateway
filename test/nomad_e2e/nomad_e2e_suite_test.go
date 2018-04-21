@@ -23,7 +23,27 @@ func TestConsul(t *testing.T) {
 			"To enable, set RUN_NOMAD_TESTS=1 in your env.")
 		return
 	}
-	RegisterFailHandler(Fail)
+	RegisterFailHandler(func(message string, callerSkip ...int) {
+		var logs string
+		for _, task := range []string{"control-plane", "ingress"} {
+			l, err := utils.Logs(nomadInstance, "gloo", task)
+			logs += l + "\n"
+			if err != nil {
+				logs += "error getting logs for " + task + ": " + err.Error()
+			}
+		}
+		addr, err := helpers.ConsulServiceAddress("ingress", "admin")
+		if err == nil {
+			configDump, err := helpers.Curl(addr, helpers.CurlOpts{Path: "/config_dump"})
+			if err == nil {
+				logs += "\n\n\n" + configDump + "\n\n\n"
+			}
+		}
+
+		log.Printf("\n****************************************" +
+			"\nLOGS FROM THE BOYS: \n\n" + logs + "\n************************************")
+		Fail(message, callerSkip...)
+	})
 	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "Nomad Suite")
 }
@@ -55,6 +75,7 @@ var _ = BeforeSuite(func() {
 	helpers.Must(err)
 	consulInstance, err = consulFactory.NewConsulInstance()
 	helpers.Must(err)
+	consulInstance.Silence()
 	err = consulInstance.Run()
 	helpers.Must(err)
 
@@ -62,6 +83,7 @@ var _ = BeforeSuite(func() {
 	helpers.Must(err)
 	nomadInstance, err = nomadFactory.NewNomadInstance()
 	helpers.Must(err)
+	nomadInstance.Silence()
 	err = nomadInstance.Run()
 	helpers.Must(err)
 
@@ -83,9 +105,7 @@ var _ = AfterSuite(func() {
 	consulInstance.Clean()
 	consulFactory.Clean()
 
-	if err := nomadInstance.Clean(); err != nil {
-		log.Warnf("FAILED CLEANING UP: %v", err)
-	}
+	nomadInstance.Clean()
 	nomadFactory.Clean()
 
 })

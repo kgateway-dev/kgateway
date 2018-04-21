@@ -91,11 +91,26 @@ func (ef *NomadFactory) NewNomadInstance() (*NomadInstance, error) {
 		return nil, err
 	}
 
+	cmd := exec.Command(ef.nomadpath, "agent", "-dev",
+		"--vault-enabled=true",
+		"--vault-address=http://127.0.0.1:8200",
+		"--vault-token=root",
+		"-network-interface=docker0",
+	)
+	cmd.Dir = tmpdir
+	cmd.Stdout = ginkgo.GinkgoWriter
+	cmd.Stderr = ginkgo.GinkgoWriter
 	return &NomadInstance{
 		nomadpath: ef.nomadpath,
 		tmpdir:    tmpdir,
+		cmd:       cmd,
 	}, nil
 
+}
+
+func (i *NomadInstance) Silence() {
+	i.cmd.Stdout = nil
+	i.cmd.Stderr = nil
 }
 
 func (i *NomadInstance) Run() error {
@@ -103,21 +118,11 @@ func (i *NomadInstance) Run() error {
 }
 
 func (i *NomadInstance) RunWithPort() error {
-	cmd := exec.Command(i.nomadpath, "agent", "-dev",
-		"--vault-enabled=true",
-		"--vault-address=http://127.0.0.1:8200",
-		"--vault-token=root",
-		"-network-interface=docker0",
-	)
-	cmd.Dir = i.tmpdir
-	cmd.Stdout = ginkgo.GinkgoWriter
-	cmd.Stderr = ginkgo.GinkgoWriter
-	err := cmd.Start()
+	err := i.cmd.Start()
 	if err != nil {
 		return err
 	}
 	time.Sleep(time.Millisecond * 1500)
-	i.cmd = cmd
 	return nil
 }
 

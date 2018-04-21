@@ -172,6 +172,9 @@ func (c *endpointController) getNextUpdateForUpstream(ctx context.Context, spec 
 		if !hasRequiredTags(inst.ServiceTags, spec.ServiceTags) {
 			continue
 		}
+		if inst.ServiceAddress == "" || inst.ServicePort == 0 {
+			continue
+		}
 		ep := endpointdiscovery.Endpoint{
 			Address: inst.ServiceAddress,
 			Port:    int32(inst.ServicePort),

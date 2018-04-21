@@ -36,8 +36,9 @@ func SetupNomadForE2eTest(nomadInstance *localhelpers.NomadInstance, buildImages
 	}
 
 	data := &struct {
-		ImageTag string
-	}{ImageTag: helpers.ImageTag()}
+		ImageTag      string
+		EnvoyImageTag string
+	}{ImageTag: helpers.ImageTag(), EnvoyImageTag: envoyImageTag}
 
 	tmpl, err := template.New("Test_Resources").ParseFiles(filepath.Join(nomadResourcesDir, "install.nomad.tmpl"))
 	if err != nil {
@@ -69,9 +70,14 @@ func SetupNomadForE2eTest(nomadInstance *localhelpers.NomadInstance, buildImages
 		return errors.Wrap(err, "writing generated test resources template")
 	}
 
+	_, err = Vault("policy", "write", "-address=http://127.0.0.1:8200", "gloo", filepath.Join(nomadResourcesDir, "gloo-policy.hcl"))
+	if err != nil {
+		return errors.Wrap(err, "setting vault policy")
+	}
+
 	backoff.WithBackoff(func() error {
 		// test stuff first
-		if _, err := NomadCli("run", filepath.Join(nomadResourcesDir, "testing-resources.nomad")); err != nil {
+		if _, err := Nomad("run", filepath.Join(nomadResourcesDir, "testing-resources.nomad")); err != nil {
 			return errors.Wrapf(err, "creating nomad resource from testing-resources.nomad")
 		}
 		return nil
@@ -81,7 +87,7 @@ func SetupNomadForE2eTest(nomadInstance *localhelpers.NomadInstance, buildImages
 		return errors.Wrap(err, "waiting for job to start")
 	}
 
-	if _, err := NomadCli("run", filepath.Join(nomadResourcesDir, "install.nomad")); err != nil {
+	if _, err := Nomad("run", filepath.Join(nomadResourcesDir, "install.nomad")); err != nil {
 		return errors.Wrapf(err, "creating nomad resource from install.nomad")
 	}
 
@@ -92,7 +98,6 @@ func SetupNomadForE2eTest(nomadInstance *localhelpers.NomadInstance, buildImages
 	var ingressAddr string
 
 	backoff.WithBackoff(func() error {
-		log.Debugf("")
 		addr, err := helpers.ConsulServiceAddress("ingress", "admin")
 		if err != nil {
 			return errors.Wrap(err, "getting ingress addr")
@@ -106,19 +111,36 @@ func SetupNomadForE2eTest(nomadInstance *localhelpers.NomadInstance, buildImages
 }
 
 func TeardownNomadE2e() error {
-	out, err := NomadCli("job", "stop", "-purge", "gloo")
+	out, err := Nomad("job", "stop", "-purge", "gloo")
 	if err != nil {
 		return errors.Wrapf(err, "stop job failed: %v", out)
 	}
-	out, err = NomadCli("job", "stop", "-purge", "testing-resources")
+	out, err = Nomad("job", "stop", "-purge", "testing-resources")
 	if err != nil {
 		return errors.Wrapf(err, "stop job failed: %v", out)
 	}
 	return nil
 }
 
-func NomadCli(args ...string) (string, error) {
+func Nomad(args ...string) (string, error) {
 	cmd := exec.Command("nomad", args...)
+	cmd.Env = os.Environ()
+	// disable DEBUG=1 from getting through to nomad
+	for i, pair := range cmd.Env {
+		if strings.HasPrefix(pair, "DEBUG") {
+			cmd.Env = append(cmd.Env[:i], cmd.Env[i+1:]...)
+			break
+		}
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("%s (%v)", out, err)
+	}
+	return string(out), err
+}
+
+func Vault(args ...string) (string, error) {
+	cmd := exec.Command("vault", args...)
 	cmd.Env = os.Environ()
 	// disable DEBUG=1 from getting through to nomad
 	for i, pair := range cmd.Env {
@@ -139,7 +161,12 @@ func Logs(nomadInstance *localhelpers.NomadInstance, job, task string) (string, 
 	if err != nil {
 		return "", err
 	}
-	return NomadCli("logs", allocId, task)
+	stdout, err := Nomad("logs", allocId, task)
+	if err != nil {
+		return "", err
+	}
+	stderr, err := Nomad("logs", "-stderr", allocId, task)
+	return stdout + "\n\n" + stderr, nil
 }
 
 func getAllocationId(nomadInstance *localhelpers.NomadInstance, job string) (string, error) {
@@ -194,7 +221,7 @@ func waitJobStatus(nomadInstance *localhelpers.NomadInstance, job, status string
 				return fmt.Errorf("failed getting status: %v", err)
 			}
 			if strings.Contains(out, "dead") || strings.Contains(out, "failed") {
-				out, _ = NomadCli("status", job)
+				out, _ = Nomad("status", job)
 				return errors.Errorf("%v in dead with logs %v", job, out)
 			}
 			if out == status {
