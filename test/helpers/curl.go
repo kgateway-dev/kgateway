@@ -76,7 +76,11 @@ func Curl(addr string, opts CurlOpts) (string, error) {
 	if protocol == "" {
 		protocol = "http"
 	}
-	args = append(args, fmt.Sprintf("%v://%s%s", protocol, addr, opts.Path))
+	split := strings.Split(addr, ":")
+	ip := split[0]
+	port := split[1]
+	args = append(args, "--resolve", fmt.Sprintf("%s:%s:%s", "test-ingress", port, ip))
+	args = append(args, fmt.Sprintf("%s://%s:%s%s", protocol, "test-ingress", port, opts.Path))
 	log.Debugf("running: curl %v", strings.Join(args, " "))
 	return Exec("curl", args...)
 }

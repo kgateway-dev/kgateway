@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/api"
+	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/consul"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+	"github.com/solo-io/gloo/pkg/storage/dependencies/vault"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/helpers/local"
 	"github.com/solo-io/gloo/test/nomad_e2e/utils"
@@ -58,7 +61,8 @@ var (
 	nomadFactory  *localhelpers.NomadFactory
 	nomadInstance *localhelpers.NomadInstance
 
-	gloo storage.Interface
+	gloo    storage.Interface
+	secrets dependencies.SecretStorage
 
 	err error
 )
@@ -89,6 +93,14 @@ var _ = BeforeSuite(func() {
 
 	gloo, err = consul.NewStorage(api.DefaultConfig(), "gloo", time.Second)
 	helpers.Must(err)
+
+	vaultCfg := vaultapi.DefaultConfig()
+	vaultCfg.Address = "http://127.0.0.1:8200"
+	cli, err := vaultapi.NewClient(vaultCfg)
+	helpers.Must(err)
+	cli.SetToken(vaultInstance.Token())
+
+	secrets = vault.NewSecretStorage(cli, "gloo", time.Second)
 
 	err = utils.SetupNomadForE2eTest(nomadInstance, true)
 	helpers.Must(err)
