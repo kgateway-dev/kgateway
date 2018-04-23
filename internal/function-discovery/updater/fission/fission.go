@@ -1,79 +1,27 @@
 package fission
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"net/url"
-	"path"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
+
+	"github.com/solo-io/gloo/internal/function-discovery/updater/fission/imported"
 )
 
-/*
-
-
-router api:
-
-curl http://192.168.99.100:32406/fission-function/hello
-
-
-controller api:
-
- curl http://192.168.99.100:31313/v2/functions | jq
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   628  100   628    0     0    628      0  0:00:01 --:--:--  0:00:01 78500
-[
-  {
-    "kind": "Function",
-    "apiVersion": "fission.io/v1",
-    "metadata": {
-      "name": "hello",
-      "namespace": "default",
-      "selfLink": "/apis/fission.io/v1/namespaces/default/functions/hello",
-      "uid": "9944e5f6-43ce-11e8-8cf5-0800276fb67d",
-      "resourceVersion": "718",
-      "creationTimestamp": "2018-04-19T12:38:44Z"
-    },
-    "spec": {
-      "environment": {
-        "namespace": "default",
-        "name": "nodejs"
-      },
-      "package": {
-        "packageref": {
-          "namespace": "default",
-          "name": "hello-js-4hav",
-          "resourceversion": "717"
-        }
-      },
-      "secrets": null,
-      "configmaps": null,
-      "resources": {},
-      "InvokeStrategy": {
-        "ExecutionStrategy": {
-          "ExecutorType": "poolmgr",
-          "MinScale": 0,
-          "MaxScale": 1,
-          "TargetCPUPercent": 80
-        },
-        "StrategyType": "execution"
-      }
-    }
-  }
-]
-
-
-
-
-
-*/
+func GetFuncs(resolve resolver.Resolver, us *v1.Upstream) ([]*v1.Function, error) {
+	client, err := getFissionClient()
+	if err != nil {
+		return nil, err
+	}
+	fr := FissionRetreiver{Lister: listFissionFunctions(client)}
+	return fr.GetFuncs(resolve, us)
+}
 
 // ideally we want to use the function UrlForFunction from here:
 // https://github.com/fission/fission/blob/master/common.go
@@ -83,39 +31,37 @@ func UrlForFunction(name string) string {
 	return fmt.Sprintf("%v/%v", prefix, name)
 }
 
-func isFissionUpstream(us *v1.Upstream) bool {
-	panic("TODO")
+func IsFissionUpstream(us *v1.Upstream) bool {
+
+	if us.Type != kubernetes.UpstreamTypeKube {
+		return false
+	}
+
+	spec, err := kubernetes.DecodeUpstreamSpec(us.Spec)
+	if err != nil {
+		return false
+	}
+
+	if spec.ServiceNamespace != "fission" || spec.ServiceName != "router" {
+		return false
+	}
+	return true
+
 }
 
-type FissionFunction struct {
-	Name string `json:"name"`
-}
-
-type FissionFunctions []FissionFunction
+type FissionFunctions []fission_imported.Function
 
 type FissionRetreiver struct {
-	Lister func(from string) (FissionFunctions, error)
+	Lister func(ns string) (FissionFunctions, error)
 }
 
 func (fr *FissionRetreiver) GetFuncs(resolve resolver.Resolver, us *v1.Upstream) ([]*v1.Function, error) {
 
-	if !isFissionUpstream(us) {
+	if !IsFissionUpstream(us) {
 		return nil, nil
 	}
 
-	gw, err := resolve.Resolve(us)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting faas service")
-	}
-
-	if gw == "" {
-		return nil, nil
-	}
-
-	// convert it to an http address
-	httpgw := "http://" + gw
-
-	functions, err := fr.Lister(httpgw)
+	functions, err := fr.Lister("default")
 	if err != nil {
 		return nil, errors.Wrap(err, "error fetching functions")
 	}
@@ -123,49 +69,42 @@ func (fr *FissionRetreiver) GetFuncs(resolve resolver.Resolver, us *v1.Upstream)
 	var funcs []*v1.Function
 
 	for _, fn := range functions {
-		if fn.Name != "" {
+		if fn.Metadata.Name != "" {
 			funcs = append(funcs, createFunction(fn))
 		}
 	}
 	return funcs, nil
 }
 
-func createFunction(fn FissionFunction) *v1.Function {
+func createFunction(fn fission_imported.Function) *v1.Function {
 
 	headersTemplate := map[string]string{":method": "POST"}
 
 	return &v1.Function{
-		Name: fn.Name,
+		Name: fn.Metadata.Name,
 		Spec: rest.EncodeFunctionSpec(rest.Template{
-			Path:            UrlForFunction(fn.Name),
+			Path:            UrlForFunction(fn.Metadata.Name),
 			Header:          headersTemplate,
 			PassthroughBody: true,
 		}),
 	}
 }
 
-func listGatewayFunctions(httpget func(string) (io.ReadCloser, error)) func(gw string) (FissionFunctions, error) {
+func getFissionClient() (fission_imported.FissionClient, error) {
+	fissionClient, _, _, err := fission_imported.MakeFissionClient()
+	if err != nil {
+		return nil, err
+	}
+	return fissionClient, nil
+}
 
-	return func(gw string) (FissionFunctions, error) {
-		u, err := url.Parse(gw)
+func listFissionFunctions(fissionClient fission_imported.FissionClient) func(string) (FissionFunctions, error) {
+	return func(ns string) (FissionFunctions, error) {
+		var opts metav1.ListOptions
+		l, err := fissionClient.Functions(ns).List(opts)
 		if err != nil {
 			return nil, err
 		}
-		u.Path = path.Join(u.Path, "v2", "functions")
-		s := u.String()
-		body, err := httpget(s)
-
-		if err != nil {
-			return nil, err
-		}
-		defer body.Close()
-		var funcs FissionFunctions
-		err = json.NewDecoder(body).Decode(&funcs)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return funcs, nil
+		return l.Items, nil
 	}
 }

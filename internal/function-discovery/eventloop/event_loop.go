@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/internal/function-discovery/grpc"
 	"github.com/solo-io/gloo/internal/function-discovery/nats-streaming"
 	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
+	"github.com/solo-io/gloo/internal/function-discovery/fission"
 	"github.com/solo-io/gloo/internal/function-discovery/options"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/swagger"
@@ -69,6 +70,9 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 
 	if discoveryOpts.AutoDiscoverFAAS {
 		detectors = append(detectors, openfaas.NewFaasDetector())
+	}
+	if discoveryOpts.AutoDiscoverFission {
+		detectors = append(detectors, fission.NewFissionDetector())
 	}
 
 	if discoveryOpts.AutoDiscoverSwagger {

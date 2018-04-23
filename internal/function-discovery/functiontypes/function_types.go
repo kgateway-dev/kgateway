@@ -1,6 +1,7 @@
 package functiontypes
 
 import (
+	"github.com/solo-io/gloo/internal/function-discovery/updater/fission"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -17,6 +18,7 @@ const (
 	FunctionTypeSwagger  FunctionType = "functionTypeSwagger"
 	FunctionTypeOpenFaas FunctionType = "functionTypeFaas"
 	FunctionTypeAzure    FunctionType = "functionTypeAzure"
+	FunctionTypeFission  FunctionType = "functionTypeFission"
 	NonFunctional        FunctionType = "nonFunctional"
 )
 
@@ -32,6 +34,8 @@ func GetFunctionType(us *v1.Upstream) FunctionType {
 		return FunctionTypeSwagger
 	case openfaas.IsOpenFaas(us):
 		return FunctionTypeOpenFaas
+	case fission.IsFissionUpstream(us):
+		return FunctionTypeFission
 	}
 	return NonFunctional
 }
