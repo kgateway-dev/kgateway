@@ -191,15 +191,6 @@
   revision = "ebf56d35bba727c68ac77f56f2fcf90b181851aa"
 
 [[projects]]
-  name = "github.com/fission/fission"
-  packages = [
-    ".",
-    "crd"
-  ]
-  revision = "db372c11eb5acb65b72b9b5796bbe63417558c8d"
-  version = "0.4.1"
-
-[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
