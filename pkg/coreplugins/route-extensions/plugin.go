@@ -5,6 +5,7 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -16,9 +17,14 @@ const (
 	serverFailurePolicy     = "5xx"
 	connectionFailurePolicy = "connect-failure"
 	defaultRetryPolicy      = serverFailurePolicy
+
+	filterName  = "envoy.cors"
+	pluginStage = plugins.InAuth
 )
 
-type Plugin struct{}
+type Plugin struct {
+	corsFilterNeeded bool
+}
 
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
 	return nil
@@ -75,6 +81,7 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 		}
 	}
 	if spec.Cors != nil {
+		p.corsFilterNeeded = true
 		routeAction.Route.Cors = &envoyroute.CorsPolicy{
 			AllowOrigin:      spec.Cors.AllowOrigin,
 			AllowHeaders:     spec.Cors.AllowHeaders,
@@ -86,6 +93,17 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 			maxAge := fmt.Sprintf("%.0f", spec.Cors.MaxAge.Seconds())
 			routeAction.Route.Cors.MaxAge = maxAge
 		}
+	}
+	return nil
+}
+
+func (p *Plugin) HttpFilters(params *plugins.FilterPluginParams) []plugins.StagedFilter {
+	defer func() { p.corsFilterNeeded = false }()
+
+	if p.corsFilterNeeded {
+		return []plugins.StagedFilter{{
+			HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage,
+		}}
 	}
 	return nil
 }

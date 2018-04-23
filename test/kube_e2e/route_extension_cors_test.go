@@ -40,7 +40,6 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 							Path: &v1.RequestMatcher_PathExact{
 								PathExact: servicePath,
 							},
-							Verbs: []string{"HEAD", "GET"},
 						},
 					},
 					SingleDestination: &v1.Destination{
@@ -54,7 +53,7 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 						extensions.RouteExtensionSpec{
 							Cors: &extensions.CorsPolicy{
 								AllowOrigin:  []string{"*"},
-								AllowMethods: "GET, POST",
+								AllowMethods: "GET, POST, PUT",
 							},
 						},
 					),
@@ -68,13 +67,27 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 			gloo.V1().VirtualHosts().Delete(vhostName)
 		})
 
-		It("should return response with CORS allow method header", func() {
-			curlEventuallyShouldRespond(curlOpts{path: servicePath, returnHeaders: true},
-				"access-control-allow-methods: GET, POST", time.Minute*5)
+		FIt("should return response with CORS allow method header", func() {
+			curlEventuallyShouldRespond(curlOpts{
+				path:          servicePath,
+				method:        "OPTIONS",
+				returnHeaders: true,
+				headers: map[string]string{
+					"Origin":                        "gloo.solo.io",
+					"Access-Control-Request-Method": "POST",
+				}},
+				"access-control-allow-methods: GET, POST, PUT", time.Minute*1)
 		})
-		It("should return response with CORS allow origin header", func() {
-			curlEventuallyShouldRespond(curlOpts{path: servicePath, returnHeaders: true},
-				"access-control-allow-origin: *", time.Minute*5)
+		FIt("should return response with CORS allow origin header", func() {
+			curlEventuallyShouldRespond(curlOpts{
+				path:          servicePath,
+				method:        "OPTIONS",
+				returnHeaders: true,
+				headers: map[string]string{
+					"Origin":                        "gloo.solo.io",
+					"Access-Control-Request-Method": "POST",
+				}},
+				"access-control-allow-origin: gloo.solo.io", time.Minute*5)
 		})
 	})
 })
