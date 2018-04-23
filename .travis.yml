@@ -20,9 +20,11 @@ before_install:
 - mkdir -p ${HOME}/.kube
 - mkdir -p ${HOME}/.aws
 - openssl aes-256-cbc -K $encrypted_a410bae03b49_key -iv $encrypted_a410bae03b49_iv
-  -in .travis/awsconfig.enc -out ~\/.aws/config -d
+  -in .travis/awscreds.enc -out ${HOME}/.aws/credentials -d
 - openssl aes-256-cbc -K $encrypted_a410bae03b49_key -iv $encrypted_a410bae03b49_iv
-  -in .travis/kubeconfig.enc -out ~\/.kube/config -d
+  -in .travis/awsconfig.enc -out ${HOME}/.aws/config -d
+- openssl aes-256-cbc -K $encrypted_a410bae03b49_key -iv $encrypted_a410bae03b49_iv
+  -in .travis/kubeconfig.enc -out ${HOME}/.kube/config -d
 - go get -u github.com/golang/dep/cmd/dep
 - go get -u github.com/onsi/ginkgo/ginkgo
 - curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/linux/amd64/kubectl
