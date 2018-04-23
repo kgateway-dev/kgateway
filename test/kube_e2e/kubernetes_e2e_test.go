@@ -70,15 +70,16 @@ var _ = Describe("Kubernetes Deployment", func() {
 })
 
 type curlOpts struct {
-	protocol string
-	path     string
-	method   string
-	host     string
-	service  string
-	caFile   string
-	body     string
-	headers  map[string]string
-	port     int
+	protocol      string
+	path          string
+	method        string
+	host          string
+	service       string
+	caFile        string
+	body          string
+	headers       map[string]string
+	port          int
+	returnHeaders bool
 }
 
 func curlEventuallyShouldRespond(opts curlOpts, substr string, timeout ...time.Duration) {
@@ -108,6 +109,10 @@ func curlEventuallyShouldRespond(opts curlOpts, substr string, timeout ...time.D
 
 func curl(opts curlOpts) (string, error) {
 	args := []string{"curl", "-v", "--connect-timeout", "10", "--max-time", "10"}
+
+	if opts.returnHeaders {
+		args = append(args, "-I")
+	}
 
 	if opts.method != "GET" && opts.method != "" {
 		args = append(args, "-X"+opts.method)
