@@ -65,6 +65,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&discoveryOpts.AutoDiscoverNATS, "detect-nats-upstreams", true, "enable automatic discovery of upstreams that are running NATS by connecting to the default cluster id.")
 	rootCmd.PersistentFlags().BoolVar(&discoveryOpts.AutoDiscoverGRPC, "detect-grpc-upstreams", true, "enable automatic discovery of upstreams that are running gRPC Services and haeve reflection enabled.")
 	rootCmd.PersistentFlags().BoolVar(&discoveryOpts.AutoDiscoverFAAS, "detect-faas-upstreams", true, "enable automatic discovery open faas upstreams.")
+	rootCmd.PersistentFlags().BoolVar(&discoveryOpts.AutoDiscoverFission, "detect-fission-upstreams", true, "enable automatic discovery fission upstreams.")
 	rootCmd.PersistentFlags().StringSliceVar(&discoveryOpts.SwaggerUrisToTry, "swagger-uris", []string{}, "paths function discovery should try to use to discover swagger services. function discovery will query http://<upstream>/<uri> for the swagger.json document. "+
 		"if found, REST functions will be discovered for this upstream.")
 }
