@@ -67,7 +67,7 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 			gloo.V1().VirtualHosts().Delete(vhostName)
 		})
 
-		FIt("should return response with CORS allow method header", func() {
+		It("should return response with CORS allow method header", func() {
 			curlEventuallyShouldRespond(curlOpts{
 				path:          servicePath,
 				method:        "OPTIONS",
@@ -78,7 +78,7 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 				}},
 				"access-control-allow-methods: GET, POST, PUT", time.Minute*1)
 		})
-		FIt("should return response with CORS allow origin header", func() {
+		It("should return response with CORS allow origin header", func() {
 			curlEventuallyShouldRespond(curlOpts{
 				path:          servicePath,
 				method:        "OPTIONS",
