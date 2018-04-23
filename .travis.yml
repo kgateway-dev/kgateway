@@ -18,10 +18,11 @@ env:
   - secure: RiCIgH1POG2VYY0q+Rgi8K7yPt8Nv5Qz6vUBkyABNtTg5mUjI6oY0sTMEv4tc/cQRwErnqcEzBfdZpyfNYCVkbZsiO3QG8Zn0iG59oYkGWNRHmAbm2cXizY7YFF9SV4YFH3QdS+/0EYtL4Z5rTdfmgXUkuaAQKuKjNoPmvtZwiIa+eBQBF4AUhgzx0++oNdB704l/t07CNufslhyYD2c91DML4zoKr2wTeuq85SYT15kH5N1McoXgn1kiZoi2YxBQtu/E+v8ZByVdPgEG6oJ0FZdnSKy2yiDSzN1yW44bntadyOieCDVFViDayO90u6pKUqAWwkVPj1/uEb398UI+5oE1WhKBHy3slsssIF+lJVBcbIHHMMPukNyuOwrUw5gKK784k5mbm6PPx+OjVImRxE0ULfloJOpEvY4VYNh+BZ53oE5gUUKR9zKjt1eoe7ynWMMI+0JThg3H69BeYXEC1iFmiqTK6iUZlK0D+tQiCSa+ReeZxJ+CHuueFHZpYeFpBajBzoygRgwxSzQ1pH7kxRQySXhGU5pJjmQQvCYKxewSKX2GhwWIOWXXfauq4tP186afyWDjE45I930JVz/NA3LK2K6E4NxEXAM43RhdjZvIvvbHJ9fvgUHWBUml0NrN+wjZzr2rprD9XCFBHXW41ewbVJ+3JV8sFjy89aZmQA=
 before_install:
 - mkdir -p ${HOME}/.kube
-- openssl aes-256-cbc -K $encrypted_a410bae03b49_key -iv $encrypted_a410bae03b49_iv
-  -in .travis/kubeconfig.enc -out ${HOME}/.kube/config -d
 - mkdir -p ${HOME}/.aws
-- openssl aes-256-cbc -K $encrypted_a410bae03b49_key -iv $encrypted_a410bae03b49_iv -in .travis/awsconfig.enc -out ${HOME}/.aws/config -d
+- openssl aes-256-cbc -K $encrypted_a410bae03b49_key -iv $encrypted_a410bae03b49_iv
+  -in .travis/awsconfig.enc -out ~\/.aws/config -d
+- openssl aes-256-cbc -K $encrypted_a410bae03b49_key -iv $encrypted_a410bae03b49_iv
+  -in .travis/kubeconfig.enc -out ~\/.kube/config -d
 - go get -u github.com/golang/dep/cmd/dep
 - go get -u github.com/onsi/ginkgo/ginkgo
 - curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/linux/amd64/kubectl
