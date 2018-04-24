@@ -39,7 +39,7 @@ static_resources:
         address: %s
         port_value: %d
     http2_protocol_options: {}
-    type: STRICT_DNS
+    type: STATIC
 
 dynamic_resources:
   ads_config:
@@ -147,7 +147,7 @@ type EnvoyInstance struct {
 }
 
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
-	gloo := "localhost"
+	gloo := "127.0.0.1"
 	var tmpdir string
 	var err error
 	if ef.useDocker {
