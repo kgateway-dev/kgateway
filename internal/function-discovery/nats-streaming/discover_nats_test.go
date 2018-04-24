@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/gloo/internal/function-discovery"
 	. "github.com/solo-io/gloo/internal/function-discovery/nats-streaming"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
@@ -22,7 +23,7 @@ var _ = Describe("DiscoverNats", func() {
 				detector := NewNatsDetector(natsStreamingInstance.ClusterId())
 				svcInfo, annotations, err := detector.DetectFunctionalService(&v1.Upstream{Name: "Test"}, fmt.Sprintf("localhost:%v", natsStreamingInstance.NatsPort()))
 				Expect(err).To(BeNil())
-				Expect(annotations).To(BeNil())
+				Expect(annotations).To(HaveKey(functiondiscovery.DiscoveryTypeAnnotationKey))
 				Expect(svcInfo).To(Equal(&v1.ServiceInfo{
 					Type: natsstreaming.ServiceTypeNatsStreaming,
 					Properties: natsstreaming.EncodeServiceProperties(natsstreaming.ServiceProperties{

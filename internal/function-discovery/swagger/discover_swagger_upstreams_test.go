@@ -9,11 +9,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/internal/function-discovery"
 	. "github.com/solo-io/gloo/internal/function-discovery/swagger"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
-	"github.com/solo-io/gloo/pkg/plugins/rest"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins/rest"
 )
 
 var _ = Describe("DiscoverSwaggerUpstreams", func() {
@@ -39,9 +40,9 @@ var _ = Describe("DiscoverSwaggerUpstreams", func() {
 				d := NewSwaggerDetector(nil)
 				svc, annotations, err := d.DetectFunctionalService(&v1.Upstream{Name: "Test"}, addr)
 				Expect(err).To(BeNil())
-				Expect(annotations).To(Equal(map[string]string{
-					swagger.AnnotationKeySwaggerURL: "http://" + addr + "/v1/swagger",
-				}))
+				Expect(annotations).To(HaveKeyWithValue(swagger.AnnotationKeySwaggerURL, "http://"+addr+"/v1/swagger"))
+				Expect(annotations).To(HaveKey(functiondiscovery.DiscoveryTypeAnnotationKey))
+
 				Expect(svc).To(Equal(&v1.ServiceInfo{Type: rest.ServiceTypeREST}))
 			})
 		})
