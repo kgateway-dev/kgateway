@@ -17,7 +17,7 @@ jobs:
       - run:
           name: Extract Secrets
           command: |
-            openssl aes-256-cbc -d -in .circleci/secrets.tar.enc -out secrets.tar -k $ENCRYPTION_KEY
+            openssl aes-256-cbc -d -in .circleci/secrets.tar.enc -out secrets.tar -k ${ENCRYPTION_KEY}
             tar xvf secrets.tar
             mkdir -p ${HOME}/.kube
             mkdir -p ${HOME}/.aws
