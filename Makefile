@@ -44,7 +44,7 @@ $(OUTPUT_DIR):
 	mkdir -p $@
 
 # kubernetes custom clientsets
-clientset:
+clientset: $(GENERATED_PROTO_FILES)
 	cd ${GOPATH}/src/k8s.io/code-generator && \
 	./generate-groups.sh all \
 		$(PACKAGE_PATH)/pkg/storage/crd/client \
