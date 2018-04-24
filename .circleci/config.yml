@@ -1,0 +1,38 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version
+      - image: soloio/jenkins:latest
+
+    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      # specify any bash command here prefixed with `run: `
+      - run:
+          name: Extract Secrets
+          command: |
+            openssl aes-256-cbc -in .circleci/secrets.tar.enc -out secrets.tar -k $ENCRYPTION_KEY
+            tar xvf secrets.tar
+            mkdir -p ${HOME}/.kube
+            mkdir -p ${HOME}/.aws
+            mv secrets/aws/* ${HOME}/.aws/
+            mv secrets/kube/* ${HOME}/.kube/
+            rm -r secrets
+      - run:
+          name: Dep ensure
+          command: dep ensure -v
+      - run:
+          name: Test
+          command: ginkgo -r -v .
+          environment:
+            RUN_CONSUL_TESTS: "1"
+            RUN_VAULT_TESTS: "1"
+            RUN_NOMAD_TESTS: "1"
+            RUN_KUBE_TESTS: "1"
+            ENVOY_IMAGE_TAG: "v0.1.6-127"

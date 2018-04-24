@@ -6,13 +6,14 @@ import (
 
 	"time"
 
+	"os"
+
 	"github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	vauiltsecrets "github.com/solo-io/gloo/pkg/storage/dependencies/vault"
 	. "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/helpers/local"
-	"os"
 )
 
 var _ = Describe("watching vault secrets", func() {
@@ -69,7 +70,7 @@ var _ = Describe("watching vault secrets", func() {
 	Context("no secrets wanted", func() {
 		It("doesnt send anything on any channel", func() {
 			ref := "mysecret"
-			vault.Logical().Write(rootPath+"/"+ref, map[string]interface{}{"some": "secret"})
+			_, err := vault.Logical().Write(rootPath+"/"+ref, map[string]interface{}{"some": "secret"})
 			Expect(err).NotTo(HaveOccurred())
 			select {
 			case <-watch.Secrets():
@@ -84,7 +85,7 @@ var _ = Describe("watching vault secrets", func() {
 	Context("want secrets that the file doesn't contain", func() {
 		It("sends nothing", func() {
 			ref := "mysecret"
-			vault.Logical().Write(rootPath+"/"+ref, map[string]interface{}{"some": "secret"})
+			_, err := vault.Logical().Write(rootPath+"/"+ref, map[string]interface{}{"some": "secret"})
 			Expect(err).NotTo(HaveOccurred())
 			go watch.TrackSecrets([]string{"this key really should not be in the secretmap"})
 			select {
