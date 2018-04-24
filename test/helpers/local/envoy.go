@@ -10,13 +10,15 @@ import (
 
 	"io/ioutil"
 
+	"bytes"
+	"io"
+
 	"github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
 )
 
 const (
-	defualtEnvoyDockerImage = "soloio/envoy:v0.1.2"
-	containerName           = "e2e_envoy"
+	containerName = "e2e_envoy"
 )
 
 func buildBootstrap(glooAddr string, xdsPort uint32) []byte {
@@ -138,6 +140,7 @@ type EnvoyInstance struct {
 	envoypath    string
 	envoycfgpath string
 	tmpdir       string
+	logs         *bytes.Buffer
 	cmd          *exec.Cmd
 	useDocker    bool
 	localAddr    string // address for gloo and services
@@ -199,8 +202,11 @@ func (ei *EnvoyInstance) RunWithPort(port uint32) error {
 	// run directly
 	cmd := exec.Command(ei.envoypath, "-c", ei.envoycfgpath, "--v2-config-only")
 	cmd.Dir = ei.tmpdir
-	cmd.Stdout = ginkgo.GinkgoWriter
-	cmd.Stderr = ginkgo.GinkgoWriter
+	buf := &bytes.Buffer{}
+	ei.logs = buf
+	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
+	cmd.Stdout = w
+	cmd.Stderr = w
 
 	runner := Runner{Sourcepath: ei.envoypath, ComponentName: "ENVOY"}
 	cmd, err = runner.run(cmd)
@@ -308,4 +314,8 @@ func localAddr() (string, error) {
 		}
 	}
 	return "", errors.New("unable to find Gloo IP")
+}
+
+func (ei *EnvoyInstance) Logs() string {
+	return ei.logs.String()
 }
