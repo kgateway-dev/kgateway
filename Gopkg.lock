@@ -801,8 +801,7 @@
 [[projects]]
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "b4c50a2b199d93b13dc15e78929cfb23bfdf21ab"
-  version = "v1.1.1"
+  revision = "f3cacc17c85ecb7f1b6a9e373ee85d1480919868"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -1243,6 +1242,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1e3c8901c74b8c4101a9d34485de0d60835947325e0637196dfae44f7933ca53"
+  inputs-digest = "e2a45b85543e3d1990611b858851ce63474d44c6db4705a7710706b01b453567"
   solver-name = "gps-cdcl"
   solver-version = 1
