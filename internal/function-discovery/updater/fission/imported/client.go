@@ -45,6 +45,9 @@ type (
 	}
 )
 
+// TODO: Use our get kube client (that's generated from our bootstrap.Options) once we have a better
+// routing story.
+
 // Get a kubernetes client using the kubeconfig file at the
 // environment var $KUBECONFIG, or an in-cluster config if that's
 // undefined.
