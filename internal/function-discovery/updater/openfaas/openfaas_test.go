@@ -10,8 +10,9 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/plugins/rest"
+	"github.com/solo-io/gloo/test/helpers"
 )
 
 func dummyListFuncs(gw string) (OpenFaasFunctions, error) {
@@ -73,19 +74,11 @@ func getServices(ns, n string) <-chan *v1.Upstream {
 	return c
 }
 
-type mockResolve struct {
-	result string
-}
-
-func (m *mockResolve) Resolve(us *v1.Upstream) (string, error) {
-	return m.result, nil
-}
-
 var _ = Describe("Faas", func() {
 
-	var mockResolver *mockResolve
+	var mockResolver *helpers.MockResolver
 	BeforeEach(func() {
-		mockResolver = &mockResolve{result: "somehost"}
+		mockResolver = &helpers.MockResolver{Result: "somehost"}
 	})
 
 	It("should get list of functions", func() {
