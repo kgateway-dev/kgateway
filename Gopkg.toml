@@ -25,9 +25,9 @@
 #   unused-packages = true
 
 
-[[override]]
-  name = "github.com/ugorji/go"
-  revision = "f3cacc17c85ecb7f1b6a9e373ee85d1480919868"
+[[constraint]]
+  name = "github.com/hashicorp/nomad"
+  revision = "1c75593351b712bb2c22339efd642f1518ae837f"
 
 [[constraint]]
   name = "github.com/aws/aws-sdk-go"
