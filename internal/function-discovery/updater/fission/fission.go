@@ -19,7 +19,7 @@ func GetFuncs(resolve resolver.Resolver, us *v1.Upstream) ([]*v1.Function, error
 	if err != nil {
 		return nil, err
 	}
-	fr := FissionRetreiver{Lister: listFissionFunctions(client)}
+	fr := NewFissionRetreiver(client)
 	return fr.GetFuncs(resolve, us)
 }
 
@@ -52,16 +52,28 @@ func IsFissionUpstream(us *v1.Upstream) bool {
 type FissionFunctions []fission_imported.Function
 
 type FissionRetreiver struct {
-	Lister func(ns string) (FissionFunctions, error)
+	fissionClient fission_imported.FissionClient
 }
 
-func (fr *FissionRetreiver) GetFuncs(resolve resolver.Resolver, us *v1.Upstream) ([]*v1.Function, error) {
+func NewFissionRetreiver(c fission_imported.FissionClient) *FissionRetreiver {
+	return &FissionRetreiver{fissionClient: c}
+}
+func (fr *FissionRetreiver) listFissionFunctions(ns string) (FissionFunctions, error) {
+	var opts metav1.ListOptions
+	l, err := fr.fissionClient.Functions(ns).List(opts)
+	if err != nil {
+		return nil, err
+	}
+	return l.Items, nil
+}
+
+func (fr *FissionRetreiver) GetFuncs(_ resolver.Resolver, us *v1.Upstream) ([]*v1.Function, error) {
 
 	if !IsFissionUpstream(us) {
 		return nil, nil
 	}
 
-	functions, err := fr.Lister("default")
+	functions, err := fr.listFissionFunctions("default")
 	if err != nil {
 		return nil, errors.Wrap(err, "error fetching functions")
 	}
@@ -96,15 +108,4 @@ func getFissionClient() (fission_imported.FissionClient, error) {
 		return nil, err
 	}
 	return fissionClient, nil
-}
-
-func listFissionFunctions(fissionClient fission_imported.FissionClient) func(string) (FissionFunctions, error) {
-	return func(ns string) (FissionFunctions, error) {
-		var opts metav1.ListOptions
-		l, err := fissionClient.Functions(ns).List(opts)
-		if err != nil {
-			return nil, err
-		}
-		return l.Items, nil
-	}
 }
