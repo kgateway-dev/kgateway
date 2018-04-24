@@ -23,7 +23,7 @@ var _ = Describe("Fission Function Discovery Service Detection", func() {
 		upstreamName = "fission-router-80"
 	})
 
-	FIt("should detect the upstream service info", func() {
+	It("should detect the upstream service info", func() {
 		Eventually(func() (*v1.ServiceInfo, error) {
 			list, err := gloo.V1().Upstreams().List()
 			if err != nil {
