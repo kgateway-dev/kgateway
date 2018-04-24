@@ -32,7 +32,7 @@ var _ = Describe("GRPC Plugin", func() {
 		err = glooInstance.AddUpstream(tu.Upstream)
 		Expect(err).NotTo(HaveOccurred())
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{
 				{

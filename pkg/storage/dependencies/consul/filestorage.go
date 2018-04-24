@@ -62,11 +62,11 @@ func (c *fileStorage) List() ([]*dependencies.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	var virtualHosts []*dependencies.File
+	var virtualServices []*dependencies.File
 	for _, obj := range list {
-		virtualHosts = append(virtualHosts, obj.File)
+		virtualServices = append(virtualServices, obj.File)
 	}
-	return virtualHosts, nil
+	return virtualServices, nil
 }
 
 func (c *fileStorage) Watch(handlers ...dependencies.FileEventHandler) (*storage.Watcher, error) {

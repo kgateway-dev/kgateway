@@ -64,7 +64,7 @@ existing ones. <!--(TODO)-->
 
 
 The "API" of Gloo is accessed through the storage layer (selected by the user). Config objects 
-(see the [Gloo v1 API specification](../v1/virtualhost.md)) for Gloo are written by the user in one of the following ways:
+(see the [Gloo v1 API specification](../v1/virtualservice.md)) for Gloo are written by the user in one of the following ways:
 
 - manually writing them to storage (e.g. a file or kubernetes custom resource)
 - glooctl <!--(TODO)-->
@@ -91,5 +91,5 @@ The basic Gloo workflow looks like the following (these can be done in any order
 2. *Optionally* deploy Gloo discovery services<!--(TODO)--> for automated creation of gloo config.
 2. Deploy at least 1 Envoy proxy configured to use Gloo as its ADS service<!--(TODO)-->.
     * *Note: we recommend using TheTool<!--(TODO)--> to automate the above steps for you.*
-3. Write some Gloo configuration objects<!--(TODO)-->. At least one [route](../v1/virtualhost.md#Route) and one
+3. Write some Gloo configuration objects<!--(TODO)-->. At least one [route](../v1/virtualservice.md#Route) and one
 [upstream](../v1/upstream.md) are required for Gloo to begin routing.

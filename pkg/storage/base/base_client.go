@@ -135,9 +135,9 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 			return nil
 		}
 		var (
-			virtualHosts []*v1.VirtualHost
-			upstreams    []*v1.Upstream
-			files        []*dependencies.File
+			virtualServices []*v1.VirtualService
+			upstreams       []*v1.Upstream
+			files           []*dependencies.File
 		)
 		for _, p := range pairs {
 			item, err := itemFromKVPair(c.rootPath, p)
@@ -148,12 +148,12 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 			switch {
 			case item.Upstream != nil:
 				upstreams = append(upstreams, item.Upstream)
-			case item.VirtualHost != nil:
-				virtualHosts = append(virtualHosts, item.VirtualHost)
+			case item.VirtualService != nil:
+				virtualServices = append(virtualServices, item.VirtualService)
 			case item.File != nil:
 				files = append(files, item.File)
 			default:
-				panic("virtual host, file or upstream must be set")
+				panic("virtual service, file or upstream must be set")
 
 			}
 		}
@@ -164,9 +164,9 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 			for _, h := range handlers {
 				h.UpstreamEventHandler.OnUpdate(upstreams, nil)
 			}
-		case len(virtualHosts) > 0:
+		case len(virtualServices) > 0:
 			for _, h := range handlers {
-				h.VirtualHostEventHandler.OnUpdate(virtualHosts, nil)
+				h.VirtualServiceEventHandler.OnUpdate(virtualServices, nil)
 			}
 		case len(files) > 0:
 			for _, h := range handlers {

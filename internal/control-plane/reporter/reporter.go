@@ -49,18 +49,18 @@ func (r *reporter) writeReport(report ConfigObjectReport) error {
 		if _, err := r.store.V1().Upstreams().Update(us); err != nil {
 			return errors.Wrapf(err, "failed to update upstream store with status report")
 		}
-	case *v1.VirtualHost:
-		virtualHost, err := r.store.V1().VirtualHosts().Get(name)
+	case *v1.VirtualService:
+		virtualService, err := r.store.V1().VirtualServices().Get(name)
 		if err != nil {
-			return errors.Wrapf(err, "failed to find virtualhost %v", name)
+			return errors.Wrapf(err, "failed to find virtualservice %v", name)
 		}
 		// only update if status doesn't match
-		if virtualHost.Status.Equal(status) {
+		if virtualService.Status.Equal(status) {
 			return nil
 		}
-		virtualHost.Status = status
-		if _, err := r.store.V1().VirtualHosts().Update(virtualHost); err != nil {
-			return errors.Wrapf(err, "failed to update virtualhost store with status report")
+		virtualService.Status = status
+		if _, err := r.store.V1().VirtualServices().Update(virtualService); err != nil {
+			return errors.Wrapf(err, "failed to update virtualservice store with status report")
 		}
 	}
 	return nil

@@ -34,8 +34,8 @@ type UpstreamList struct {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// VirtualHost is the generic Kubernetes API object wrapper for Gloo VirtualHosts
-type VirtualHost struct {
+// VirtualService is the generic Kubernetes API object wrapper for Gloo VirtualServices
+type VirtualService struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,13 +45,13 @@ type VirtualHost struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// VirtualHostList is the generic Kubernetes API object wrapper
-type VirtualHostList struct {
+// VirtualServiceList is the generic Kubernetes API object wrapper
+type VirtualServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ListMeta `json:"metadata"`
 	metav1.Status   `json:"status,omitempty"`
-	Items           []VirtualHost `json:"items"`
+	Items           []VirtualService `json:"items"`
 }
 
 // spec implements deepcopy

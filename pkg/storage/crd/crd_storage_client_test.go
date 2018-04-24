@@ -8,10 +8,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/log"
 	. "github.com/solo-io/gloo/pkg/storage/crd"
 	crdv1 "github.com/solo-io/gloo/pkg/storage/crd/solo.io/v1"
 	. "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/log"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -146,7 +146,7 @@ var _ = Describe("CrdStorageClient", func() {
 			})
 		})
 	})
-	Describe("virtualhosts", func() {
+	Describe("virtualservices", func() {
 		Describe("Create", func() {
 			It("creates a crd from the item", func() {
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
@@ -155,11 +155,11 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				virtualhost := NewTestVirtualHost("something", NewTestRoute1())
-				createdUpstream, err := client.V1().VirtualHosts().Create(virtualhost)
+				virtualService := NewTestVirtualService("something", NewTestRoute1())
+				createdUpstream, err := client.V1().VirtualServices().Create(virtualService)
 				Expect(err).NotTo(HaveOccurred())
-				virtualhost.Metadata = createdUpstream.GetMetadata()
-				Expect(virtualhost).To(Equal(createdUpstream))
+				virtualService.Metadata = createdUpstream.GetMetadata()
+				Expect(virtualService).To(Equal(createdUpstream))
 			})
 		})
 		Describe("Get", func() {
@@ -170,13 +170,13 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				vhost := NewTestVirtualHost("something", NewTestRoute1())
-				_, err = client.V1().VirtualHosts().Create(vhost)
+				vService := NewTestVirtualService("something", NewTestRoute1())
+				_, err = client.V1().VirtualServices().Create(vService)
 				Expect(err).NotTo(HaveOccurred())
-				created, err := client.V1().VirtualHosts().Get(vhost.Name)
+				created, err := client.V1().VirtualServices().Get(vService.Name)
 				Expect(err).NotTo(HaveOccurred())
-				vhost.Metadata = created.Metadata
-				Expect(created).To(Equal(vhost))
+				vService.Metadata = created.Metadata
+				Expect(created).To(Equal(vService))
 			})
 		})
 		Describe("Update", func() {
@@ -187,17 +187,17 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				vHost := NewTestVirtualHost("something", NewTestRoute1())
-				created, err := client.V1().VirtualHosts().Create(vHost)
+				vService := NewTestVirtualService("something", NewTestRoute1())
+				created, err := client.V1().VirtualServices().Create(vService)
 				Expect(err).NotTo(HaveOccurred())
 				// need to set resource ver
-				vHost.Metadata = created.GetMetadata()
-				vHost.Metadata.Annotations["just_for_this_test"] = "bar"
-				updated, err := client.V1().VirtualHosts().Update(vHost)
+				vService.Metadata = created.GetMetadata()
+				vService.Metadata.Annotations["just_for_this_test"] = "bar"
+				updated, err := client.V1().VirtualServices().Update(vService)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(updated.Metadata.Annotations).To(HaveKey("just_for_this_test"))
-				vHost.Metadata = updated.GetMetadata()
-				Expect(updated).To(Equal(vHost))
+				vService.Metadata = updated.GetMetadata()
+				Expect(updated).To(Equal(vService))
 			})
 		})
 		Describe("Delete", func() {
@@ -208,12 +208,12 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				vhost := NewTestVirtualHost("something", NewTestRoute1())
-				_, err = client.V1().VirtualHosts().Create(vhost)
+				vService := NewTestVirtualService("something", NewTestRoute1())
+				_, err = client.V1().VirtualServices().Create(vService)
 				Expect(err).NotTo(HaveOccurred())
-				err = client.V1().VirtualHosts().Delete(vhost.Name)
+				err = client.V1().VirtualServices().Delete(vService.Name)
 				Expect(err).NotTo(HaveOccurred())
-				_, err = client.V1().VirtualHosts().Get(vhost.Name)
+				_, err = client.V1().VirtualServices().Get(vService.Name)
 				Expect(err).To(HaveOccurred())
 			})
 		})

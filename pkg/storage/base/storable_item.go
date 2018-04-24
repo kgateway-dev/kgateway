@@ -8,21 +8,21 @@ import (
 )
 
 type StorableItem struct {
-	Upstream    *v1.Upstream
-	VirtualHost *v1.VirtualHost
-	File        *dependencies.File
+	Upstream       *v1.Upstream
+	VirtualService *v1.VirtualService
+	File           *dependencies.File
 }
 
 func (item *StorableItem) GetName() string {
 	switch {
 	case item.Upstream != nil:
 		return item.Upstream.GetName()
-	case item.VirtualHost != nil:
-		return item.VirtualHost.GetName()
+	case item.VirtualService != nil:
+		return item.VirtualService.GetName()
 	case item.File != nil:
 		return item.File.Ref
 	default:
-		panic("virtual host, file or upstream must be set")
+		panic("virtual service, file or upstream must be set")
 	}
 }
 
@@ -33,15 +33,15 @@ func (item *StorableItem) GetResourceVersion() string {
 			return ""
 		}
 		return item.Upstream.GetMetadata().GetResourceVersion()
-	case item.VirtualHost != nil:
-		if item.VirtualHost.GetMetadata() == nil {
+	case item.VirtualService != nil:
+		if item.VirtualService.GetMetadata() == nil {
 			return ""
 		}
-		return item.VirtualHost.GetMetadata().GetResourceVersion()
+		return item.VirtualService.GetMetadata().GetResourceVersion()
 	case item.File != nil:
 		return item.File.ResourceVersion
 	default:
-		panic("virtual host, file or upstream must be set")
+		panic("virtual service, file or upstream must be set")
 	}
 }
 
@@ -52,15 +52,15 @@ func (item *StorableItem) SetResourceVersion(rv string) {
 			item.Upstream.Metadata = &v1.Metadata{}
 		}
 		item.Upstream.Metadata.ResourceVersion = rv
-	case item.VirtualHost != nil:
-		if item.VirtualHost.GetMetadata() == nil {
-			item.VirtualHost.Metadata = &v1.Metadata{}
+	case item.VirtualService != nil:
+		if item.VirtualService.GetMetadata() == nil {
+			item.VirtualService.Metadata = &v1.Metadata{}
 		}
-		item.VirtualHost.Metadata.ResourceVersion = rv
+		item.VirtualService.Metadata.ResourceVersion = rv
 	case item.File != nil:
 		item.File.ResourceVersion = rv
 	default:
-		panic("virtual host, file or upstream must be set")
+		panic("virtual service, file or upstream must be set")
 	}
 }
 
@@ -68,12 +68,12 @@ func (item *StorableItem) GetBytes() ([]byte, error) {
 	switch {
 	case item.Upstream != nil:
 		return proto.Marshal(item.Upstream)
-	case item.VirtualHost != nil:
-		return proto.Marshal(item.VirtualHost)
+	case item.VirtualService != nil:
+		return proto.Marshal(item.VirtualService)
 	case item.File != nil:
 		return item.File.Contents, nil
 	default:
-		panic("virtual host, file or upstream must be set")
+		panic("virtual service, file or upstream must be set")
 	}
 }
 
@@ -81,12 +81,12 @@ func (item *StorableItem) GetTypeFlag() StorableItemType {
 	switch {
 	case item.Upstream != nil:
 		return StorableItemTypeUpstream
-	case item.VirtualHost != nil:
-		return StorableItemTypeVirtualHost
+	case item.VirtualService != nil:
+		return StorableItemTypeVirtualService
 	case item.File != nil:
 		return StorableItemTypeFile
 	default:
-		panic("virtual host, file or upstream must be set")
+		panic("virtual service, file or upstream must be set")
 	}
 }
 
@@ -94,12 +94,12 @@ type StorableItemType uint64
 
 const (
 	StorableItemTypeUpstream StorableItemType = iota
-	StorableItemTypeVirtualHost
+	StorableItemTypeVirtualService
 	StorableItemTypeFile
 )
 
 type StorableItemEventHandler struct {
-	UpstreamEventHandler    storage.UpstreamEventHandler
-	VirtualHostEventHandler storage.VirtualHostEventHandler
-	FileEventHandler        dependencies.FileEventHandler
+	UpstreamEventHandler       storage.UpstreamEventHandler
+	VirtualServiceEventHandler storage.VirtualServiceEventHandler
+	FileEventHandler           dependencies.FileEventHandler
 }

@@ -26,8 +26,8 @@ import (
 type Interface interface {
 	// Upstreams returns a UpstreamInformer.
 	Upstreams() UpstreamInformer
-	// VirtualHosts returns a VirtualHostInformer.
-	VirtualHosts() VirtualHostInformer
+	// VirtualServices returns a VirtualServiceInformer.
+	VirtualServices() VirtualServiceInformer
 }
 
 type version struct {
@@ -46,7 +46,7 @@ func (v *version) Upstreams() UpstreamInformer {
 	return &upstreamInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// VirtualHosts returns a VirtualHostInformer.
-func (v *version) VirtualHosts() VirtualHostInformer {
-	return &virtualHostInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// VirtualServices returns a VirtualServiceInformer.
+func (v *version) VirtualServices() VirtualServiceInformer {
+	return &virtualServiceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

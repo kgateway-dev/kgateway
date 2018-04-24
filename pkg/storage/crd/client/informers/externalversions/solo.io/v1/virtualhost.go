@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// VirtualHostInformer provides access to a shared informer and lister for
-// VirtualHosts.
-type VirtualHostInformer interface {
+// VirtualServiceInformer provides access to a shared informer and lister for
+// VirtualServices.
+type VirtualServiceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.VirtualHostLister
+	Lister() v1.VirtualServiceLister
 }
 
-type virtualHostInformer struct {
+type virtualServiceInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewVirtualHostInformer constructs a new informer for VirtualHost type.
+// NewVirtualServiceInformer constructs a new informer for VirtualService type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewVirtualHostInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredVirtualHostInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewVirtualServiceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredVirtualServiceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredVirtualHostInformer constructs a new informer for VirtualHost type.
+// NewFilteredVirtualServiceInformer constructs a new informer for VirtualService type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredVirtualHostInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredVirtualServiceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.GlooV1().VirtualHosts(namespace).List(options)
+				return client.GlooV1().VirtualServices(namespace).List(options)
 			},
 			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.GlooV1().VirtualHosts(namespace).Watch(options)
+				return client.GlooV1().VirtualServices(namespace).Watch(options)
 			},
 		},
-		&solo_io_v1.VirtualHost{},
+		&solo_io_v1.VirtualService{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *virtualHostInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredVirtualHostInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *virtualServiceInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredVirtualServiceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *virtualHostInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&solo_io_v1.VirtualHost{}, f.defaultInformer)
+func (f *virtualServiceInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&solo_io_v1.VirtualService{}, f.defaultInformer)
 }
 
-func (f *virtualHostInformer) Lister() v1.VirtualHostLister {
-	return v1.NewVirtualHostLister(f.Informer().GetIndexer())
+func (f *virtualServiceInformer) Lister() v1.VirtualServiceLister {
+	return v1.NewVirtualServiceLister(f.Informer().GetIndexer())
 }

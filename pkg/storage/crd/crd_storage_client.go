@@ -12,10 +12,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
 	crdclientset "github.com/solo-io/gloo/pkg/storage/crd/client/clientset/versioned"
 	crdv1 "github.com/solo-io/gloo/pkg/storage/crd/solo.io/v1"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 type Client struct {
@@ -45,7 +45,7 @@ func NewStorage(cfg *rest.Config, namespace string, syncFrequency time.Duration)
 				namespace:     namespace,
 				syncFrequency: syncFrequency,
 			},
-			virtualHosts: &virtualHostsClient{
+			virtualServices: &virtualServicesClient{
 				crds:          crdClient,
 				namespace:     namespace,
 				syncFrequency: syncFrequency,
@@ -62,11 +62,11 @@ func (c *Client) V1() storage.V1 {
 }
 
 type v1client struct {
-	apiexts      apiexts.Interface
-	kubeclient   kubernetes.Interface
-	upstreams    *upstreamsClient
-	virtualHosts *virtualHostsClient
-	namespace    string
+	apiexts         apiexts.Interface
+	kubeclient      kubernetes.Interface
+	upstreams       *upstreamsClient
+	virtualServices *virtualServicesClient
+	namespace       string
 }
 
 func (c *v1client) Register() error {
@@ -104,6 +104,6 @@ func (c *v1client) Upstreams() storage.Upstreams {
 	return c.upstreams
 }
 
-func (c *v1client) VirtualHosts() storage.VirtualHosts {
-	return c.virtualHosts
+func (c *v1client) VirtualServices() storage.VirtualServices {
+	return c.virtualServices
 }

@@ -161,10 +161,10 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 				secretRefs = append(secretRefs, dep.SecretRefs...)
 				fileRefs = append(fileRefs, dep.FileRefs...)
 			}
-			// secrets for virtualhosts
-			for _, vhost := range cfg.VirtualHosts {
-				if vhost.SslConfig != nil && vhost.SslConfig.SecretRef != "" {
-					secretRefs = append(secretRefs, vhost.SslConfig.SecretRef)
+			// secrets for virtualservices
+			for _, vService := range cfg.VirtualServices {
+				if vService.SslConfig != nil && vService.SslConfig.SecretRef != "" {
+					secretRefs = append(secretRefs, vService.SslConfig.SecretRef)
 				}
 			}
 			go e.secretWatcher.TrackSecrets(secretRefs)

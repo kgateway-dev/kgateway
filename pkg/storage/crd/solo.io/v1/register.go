@@ -18,13 +18,13 @@ var (
 		Version: Version,
 		Kind:    "Upstream",
 	}
-	VirtualHostCRD = crd{
-		Plural:  "virtualhosts",
+	VirtualServiceCRD = crd{
+		Plural:  "virtualservices",
 		Group:   GroupName,
 		Version: Version,
-		Kind:    "VirtualHost",
+		Kind:    "VirtualService",
 	}
-	KnownCRDs = []crd{UpstreamCRD, VirtualHostCRD}
+	KnownCRDs = []crd{UpstreamCRD, VirtualServiceCRD}
 )
 
 type crd struct {
@@ -61,8 +61,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Upstream{},
 		&UpstreamList{},
-		&VirtualHost{},
-		&VirtualHostList{},
+		&VirtualService{},
+		&VirtualServiceList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -25,70 +25,70 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// VirtualHostLister helps list VirtualHosts.
-type VirtualHostLister interface {
-	// List lists all VirtualHosts in the indexer.
-	List(selector labels.Selector) (ret []*v1.VirtualHost, err error)
-	// VirtualHosts returns an object that can list and get VirtualHosts.
-	VirtualHosts(namespace string) VirtualHostNamespaceLister
-	VirtualHostListerExpansion
+// VirtualServiceLister helps list VirtualServices.
+type VirtualServiceLister interface {
+	// List lists all VirtualServices in the indexer.
+	List(selector labels.Selector) (ret []*v1.VirtualService, err error)
+	// VirtualServices returns an object that can list and get VirtualServices.
+	VirtualServices(namespace string) VirtualServiceNamespaceLister
+	VirtualServiceListerExpansion
 }
 
-// virtualHostLister implements the VirtualHostLister interface.
-type virtualHostLister struct {
+// virtualServiceLister implements the VirtualServiceLister interface.
+type virtualServiceLister struct {
 	indexer cache.Indexer
 }
 
-// NewVirtualHostLister returns a new VirtualHostLister.
-func NewVirtualHostLister(indexer cache.Indexer) VirtualHostLister {
-	return &virtualHostLister{indexer: indexer}
+// NewVirtualServiceLister returns a new VirtualServiceLister.
+func NewVirtualServiceLister(indexer cache.Indexer) VirtualServiceLister {
+	return &virtualServiceLister{indexer: indexer}
 }
 
-// List lists all VirtualHosts in the indexer.
-func (s *virtualHostLister) List(selector labels.Selector) (ret []*v1.VirtualHost, err error) {
+// List lists all VirtualServices in the indexer.
+func (s *virtualServiceLister) List(selector labels.Selector) (ret []*v1.VirtualService, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.VirtualHost))
+		ret = append(ret, m.(*v1.VirtualService))
 	})
 	return ret, err
 }
 
-// VirtualHosts returns an object that can list and get VirtualHosts.
-func (s *virtualHostLister) VirtualHosts(namespace string) VirtualHostNamespaceLister {
-	return virtualHostNamespaceLister{indexer: s.indexer, namespace: namespace}
+// VirtualServices returns an object that can list and get VirtualServices.
+func (s *virtualServiceLister) VirtualServices(namespace string) VirtualServiceNamespaceLister {
+	return virtualServiceNamespaceLister{indexer: s.indexer, namespace: namespace}
 }
 
-// VirtualHostNamespaceLister helps list and get VirtualHosts.
-type VirtualHostNamespaceLister interface {
-	// List lists all VirtualHosts in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1.VirtualHost, err error)
-	// Get retrieves the VirtualHost from the indexer for a given namespace and name.
-	Get(name string) (*v1.VirtualHost, error)
-	VirtualHostNamespaceListerExpansion
+// VirtualServiceNamespaceLister helps list and get VirtualServices.
+type VirtualServiceNamespaceLister interface {
+	// List lists all VirtualServices in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.VirtualService, err error)
+	// Get retrieves the VirtualService from the indexer for a given namespace and name.
+	Get(name string) (*v1.VirtualService, error)
+	VirtualServiceNamespaceListerExpansion
 }
 
-// virtualHostNamespaceLister implements the VirtualHostNamespaceLister
+// virtualServiceNamespaceLister implements the VirtualServiceNamespaceLister
 // interface.
-type virtualHostNamespaceLister struct {
+type virtualServiceNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string
 }
 
-// List lists all VirtualHosts in the indexer for a given namespace.
-func (s virtualHostNamespaceLister) List(selector labels.Selector) (ret []*v1.VirtualHost, err error) {
+// List lists all VirtualServices in the indexer for a given namespace.
+func (s virtualServiceNamespaceLister) List(selector labels.Selector) (ret []*v1.VirtualService, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.VirtualHost))
+		ret = append(ret, m.(*v1.VirtualService))
 	})
 	return ret, err
 }
 
-// Get retrieves the VirtualHost from the indexer for a given namespace and name.
-func (s virtualHostNamespaceLister) Get(name string) (*v1.VirtualHost, error) {
+// Get retrieves the VirtualService from the indexer for a given namespace and name.
+func (s virtualServiceNamespaceLister) Get(name string) (*v1.VirtualService, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("virtualhost"), name)
+		return nil, errors.NewNotFound(v1.Resource("virtualservice"), name)
 	}
-	return obj.(*v1.VirtualHost), nil
+	return obj.(*v1.VirtualService), nil
 }

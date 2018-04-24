@@ -10,13 +10,13 @@ func NewTestConfig() *v1.Config {
 		NewTestUpstream1(),
 		NewTestUpstream2(),
 	}
-	virtualhosts := []*v1.VirtualHost{
-		NewTestVirtualHost("my-vhost", NewTestRoute1(), NewTestRoute2()),
-		NewTestVirtualHost("my-vhost-2", NewTestRoute1(), NewTestRoute2()),
+	virtualServices := []*v1.VirtualService{
+		NewTestVirtualService("my-vService", NewTestRoute1(), NewTestRoute2()),
+		NewTestVirtualService("my-vService-2", NewTestRoute1(), NewTestRoute2()),
 	}
 	return &v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
@@ -56,8 +56,8 @@ func NewTestUpstream2() *v1.Upstream {
 	}
 }
 
-func NewTestVirtualHost(name string, routes ...*v1.Route) *v1.VirtualHost {
-	return &v1.VirtualHost{
+func NewTestVirtualService(name string, routes ...*v1.Route) *v1.VirtualService {
+	return &v1.VirtualService{
 		Name:   name,
 		Routes: routes,
 		Metadata: &v1.Metadata{

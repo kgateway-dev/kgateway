@@ -13,9 +13,9 @@ import (
 var _ = Describe("Kubernetes Upstream + Endpoint Discovery Plugin", func() {
 	const helloService = "helloservice"
 	const servicePort = 8080
-	Context("creating kube upstream and a vhost with a single route to it", func() {
+	Context("creating kube upstream and a vService with a single route to it", func() {
 		randomPath := "/" + uuid.New()
-		vhostName := "one-route"
+		vServiceName := "one-route"
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
@@ -27,8 +27,8 @@ var _ = Describe("Kubernetes Upstream + Endpoint Discovery Plugin", func() {
 				}),
 			})
 			Must(err)
-			_, err = gloo.V1().VirtualHosts().Create(&v1.VirtualHost{
-				Name: vhostName,
+			_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
+				Name: vServiceName,
 				Routes: []*v1.Route{{
 					Matcher: &v1.Route_RequestMatcher{
 						RequestMatcher: &v1.RequestMatcher{
@@ -51,7 +51,7 @@ var _ = Describe("Kubernetes Upstream + Endpoint Discovery Plugin", func() {
 		})
 		AfterEach(func() {
 			gloo.V1().Upstreams().Delete(helloService)
-			gloo.V1().VirtualHosts().Delete(vhostName)
+			gloo.V1().VirtualServices().Delete(vServiceName)
 		})
 		It("should configure envoy with a 200 OK route (backed by helloservice)", func() {
 			curlEventuallyShouldRespond(curlOpts{path: randomPath}, "< HTTP/1.1 200", time.Minute*5)

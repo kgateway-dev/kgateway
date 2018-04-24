@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	defaultVirtualHost = "default"
+	defaultVirtualService = "default"
 
 	GlooIngressClass = "gloo"
 
@@ -109,24 +109,24 @@ func (c *IngressController) syncGlooResourcesWithIngresses() {
 }
 
 func (c *IngressController) syncGlooResources() error {
-	desiredUpstreams, desiredVirtualHosts, err := c.generateDesiredResources()
+	desiredUpstreams, desiredVirtualServices, err := c.generateDesiredResources()
 	if err != nil {
 		return fmt.Errorf("failed to generate desired configObjects: %v", err)
 	}
-	actualUpstreams, actualVirtualHosts, err := c.getActualResources()
+	actualUpstreams, actualVirtualServices, err := c.getActualResources()
 	if err != nil {
 		return fmt.Errorf("failed to list actual configObjects: %v", err)
 	}
 	if err := c.syncUpstreams(desiredUpstreams, actualUpstreams); err != nil {
 		return fmt.Errorf("failed to sync actual with desired upstreams: %v", err)
 	}
-	if err := c.syncVirtualHosts(desiredVirtualHosts, actualVirtualHosts); err != nil {
-		return fmt.Errorf("failed to sync actual with desired virtualHosts: %v", err)
+	if err := c.syncVirtualServices(desiredVirtualServices, actualVirtualServices); err != nil {
+		return fmt.Errorf("failed to sync actual with desired virtualServices: %v", err)
 	}
 	return nil
 }
 
-func (c *IngressController) getActualResources() ([]*v1.Upstream, []*v1.VirtualHost, error) {
+func (c *IngressController) getActualResources() ([]*v1.Upstream, []*v1.VirtualService, error) {
 	upstreams, err := c.configObjects.V1().Upstreams().List()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get upstream crd list: %v", err)
@@ -138,21 +138,21 @@ func (c *IngressController) getActualResources() ([]*v1.Upstream, []*v1.VirtualH
 			ourUpstreams = append(ourUpstreams, us)
 		}
 	}
-	virtualHosts, err := c.configObjects.V1().VirtualHosts().List()
+	virtualServices, err := c.configObjects.V1().VirtualServices().List()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get virtual host crd list: %v", err)
+		return nil, nil, fmt.Errorf("failed to get virtual service crd list: %v", err)
 	}
-	var ourVhosts []*v1.VirtualHost
-	for _, vhost := range virtualHosts {
-		if vhost.Metadata != nil && vhost.Metadata.Annotations[ownerAnnotationKey] == c.generatedBy {
-			// our vhost, we supervise it
-			ourVhosts = append(ourVhosts, vhost)
+	var ourVhosts []*v1.VirtualService
+	for _, vService := range virtualServices {
+		if vService.Metadata != nil && vService.Metadata.Annotations[ownerAnnotationKey] == c.generatedBy {
+			// our vService, we supervise it
+			ourVhosts = append(ourVhosts, vService)
 		}
 	}
 	return ourUpstreams, ourVhosts, nil
 }
 
-func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.VirtualHost, error) {
+func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.VirtualService, error) {
 	ingressList, err := c.ingressLister.List(labels.Everything())
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list ingresses: %v", err)
@@ -172,19 +172,19 @@ func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.Vi
 		// configure ssl for each host
 		for _, tls := range ingress.Spec.TLS {
 			if len(tls.Hosts) == 0 {
-				sslsByHostName[defaultVirtualHost] = &v1.SSLConfig{SecretRef: tls.SecretName}
+				sslsByHostName[defaultVirtualService] = &v1.SSLConfig{SecretRef: tls.SecretName}
 			}
 			for _, host := range tls.Hosts {
 				sslsByHostName[host] = &v1.SSLConfig{SecretRef: tls.SecretName}
 			}
 		}
-		// default virtualhost
+		// default virtualservice
 		if ingress.Spec.Backend != nil {
 			us := c.newUpstreamFromBackend(ingress.Namespace, *ingress.Spec.Backend)
-			if _, ok := routesByHostName[defaultVirtualHost]; ok {
+			if _, ok := routesByHostName[defaultVirtualService]; ok {
 				log.Warnf("default backend was redefined in ingress %v, ignoring", ingress.Name)
 			} else {
-				routesByHostName[defaultVirtualHost] = []*v1.Route{
+				routesByHostName[defaultVirtualService] = []*v1.Route{
 					{
 						Matcher: &v1.Route_RequestMatcher{
 							RequestMatcher: &v1.RequestMatcher{
@@ -210,25 +210,25 @@ func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.Vi
 			c.addRoutesAndUpstreams(ingress.Namespace, rule, upstreamsByName, routesByHostName)
 		}
 	}
-	uniqueVirtualHosts := make(map[string]*v1.VirtualHost)
+	uniqueVirtualServices := make(map[string]*v1.VirtualService)
 	for host, routes := range routesByHostName {
 		// sort routes by path length
 		// equal length sorted by string compare
 		// longest routes should come first
 		sortRoutes(routes)
 		// TODO: evaluate
-		// set default virtualhost to match *
+		// set default virtualservice to match *
 		domains := []string{host}
-		if host == defaultVirtualHost {
+		if host == defaultVirtualService {
 			domains[0] = "*"
 		}
-		uniqueVirtualHosts[host] = &v1.VirtualHost{
+		uniqueVirtualServices[host] = &v1.VirtualService{
 			Name: host,
-			// kubernetes only supports a single domain per virtualhost
+			// kubernetes only supports a single domain per virtualservice
 			Domains:   domains,
 			Routes:    routes,
 			SslConfig: sslsByHostName[host],
-			// mark the virtualhost as ours
+			// mark the virtualservice as ours
 			Metadata: &v1.Metadata{
 				Annotations: map[string]string{
 					ownerAnnotationKey: c.generatedBy,
@@ -237,16 +237,16 @@ func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.Vi
 		}
 	}
 	var (
-		upstreams    []*v1.Upstream
-		virtualHosts []*v1.VirtualHost
+		upstreams       []*v1.Upstream
+		virtualServices []*v1.VirtualService
 	)
 	for _, us := range upstreamsByName {
 		upstreams = append(upstreams, us)
 	}
-	for _, virtualHost := range uniqueVirtualHosts {
-		virtualHosts = append(virtualHosts, virtualHost)
+	for _, virtualService := range uniqueVirtualServices {
+		virtualServices = append(virtualServices, virtualService)
 	}
-	return upstreams, virtualHosts, nil
+	return upstreams, virtualServices, nil
 }
 
 func getPathStr(matcher *v1.Route_RequestMatcher) string {
@@ -325,49 +325,49 @@ func (c *IngressController) syncUpstreams(desiredUpstreams, actualUpstreams []*v
 	return nil
 }
 
-func (c *IngressController) syncVirtualHosts(desiredVirtualHosts, actualVirtualHosts []*v1.VirtualHost) error {
+func (c *IngressController) syncVirtualServices(desiredVirtualServices, actualVirtualServices []*v1.VirtualService) error {
 	var (
-		virtualHostsToCreate []*v1.VirtualHost
-		virtualHostsToUpdate []*v1.VirtualHost
+		virtualServicesToCreate []*v1.VirtualService
+		virtualServicesToUpdate []*v1.VirtualService
 	)
-	for _, desiredVirtualHost := range desiredVirtualHosts {
+	for _, desiredVirtualService := range desiredVirtualServices {
 		var update bool
-		for i, actualVirtualHost := range actualVirtualHosts {
-			if desiredVirtualHost.Name == actualVirtualHost.Name {
-				// modify existing virtualHost
-				desiredVirtualHost.Metadata = actualVirtualHost.GetMetadata()
+		for i, actualVirtualService := range actualVirtualServices {
+			if desiredVirtualService.Name == actualVirtualService.Name {
+				// modify existing virtualService
+				desiredVirtualService.Metadata = actualVirtualService.GetMetadata()
 				update = true
 				// only actually update if the spec has changed
-				if !desiredVirtualHost.Equal(actualVirtualHost) {
-					virtualHostsToUpdate = append(virtualHostsToUpdate, desiredVirtualHost)
+				if !desiredVirtualService.Equal(actualVirtualService) {
+					virtualServicesToUpdate = append(virtualServicesToUpdate, desiredVirtualService)
 				}
 				// remove it from the list we match against
-				actualVirtualHosts = append(actualVirtualHosts[:i], actualVirtualHosts[i+1:]...)
+				actualVirtualServices = append(actualVirtualServices[:i], actualVirtualServices[i+1:]...)
 				break
 			}
 		}
 		if !update {
 			// desired was not found, mark for creation
-			virtualHostsToCreate = append(virtualHostsToCreate, desiredVirtualHost)
+			virtualServicesToCreate = append(virtualServicesToCreate, desiredVirtualService)
 		}
 	}
-	for _, virtualHost := range virtualHostsToCreate {
-		log.Printf("creating virtualhost %v", virtualHost.Name)
-		if _, err := c.configObjects.V1().VirtualHosts().Create(virtualHost); err != nil {
-			return fmt.Errorf("failed to create virtualHost crd %s: %v", virtualHost.Name, err)
+	for _, virtualService := range virtualServicesToCreate {
+		log.Printf("creating virtualservice %v", virtualService.Name)
+		if _, err := c.configObjects.V1().VirtualServices().Create(virtualService); err != nil {
+			return fmt.Errorf("failed to create virtualService crd %s: %v", virtualService.Name, err)
 		}
 	}
-	for _, virtualHost := range virtualHostsToUpdate {
-		log.Printf("updating virtualhost %v", virtualHost.Name)
-		if _, err := c.configObjects.V1().VirtualHosts().Update(virtualHost); err != nil {
-			return fmt.Errorf("failed to update upstream crd %s: %v", virtualHost.Name, err)
+	for _, virtualService := range virtualServicesToUpdate {
+		log.Printf("updating virtualservice %v", virtualService.Name)
+		if _, err := c.configObjects.V1().VirtualServices().Update(virtualService); err != nil {
+			return fmt.Errorf("failed to update upstream crd %s: %v", virtualService.Name, err)
 		}
 	}
 	// only remaining are no longer desired, delete em!
-	for _, virtualHost := range actualVirtualHosts {
-		log.Printf("deleting virtualhost %v", virtualHost.Name)
-		if err := c.configObjects.V1().VirtualHosts().Delete(virtualHost.Name); err != nil {
-			return fmt.Errorf("failed to update upstream crd %s: %v", virtualHost.Name, err)
+	for _, virtualService := range actualVirtualServices {
+		log.Printf("deleting virtualservice %v", virtualService.Name)
+		if err := c.configObjects.V1().VirtualServices().Delete(virtualService.Name); err != nil {
+			return fmt.Errorf("failed to update upstream crd %s: %v", virtualService.Name, err)
 		}
 	}
 	return nil
@@ -382,7 +382,7 @@ func (c *IngressController) addRoutesAndUpstreams(namespace string, rule v1beta1
 		upstreams[generatedUpstream.Name] = generatedUpstream
 		host := rule.Host
 		if host == "" {
-			host = defaultVirtualHost
+			host = defaultVirtualService
 		}
 		routes[rule.Host] = append(routes[rule.Host], &v1.Route{
 			Matcher: &v1.Route_RequestMatcher{

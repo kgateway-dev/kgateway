@@ -13,7 +13,7 @@ type Client struct {
 }
 
 const upstreamsDir = "upstreams"
-const virtualHostsDir = "virtualhosts"
+const virtualServicesDir = "virtualservices"
 
 func NewStorage(dir string, syncFrequency time.Duration) (storage.Interface, error) {
 	if dir == "" {
@@ -25,8 +25,8 @@ func NewStorage(dir string, syncFrequency time.Duration) (storage.Interface, err
 				dir:           filepath.Join(dir, upstreamsDir),
 				syncFrequency: syncFrequency,
 			},
-			virtualHosts: &virtualHostsClient{
-				dir:           filepath.Join(dir, virtualHostsDir),
+			virtualServices: &virtualServicesClient{
+				dir:           filepath.Join(dir, virtualServicesDir),
 				syncFrequency: syncFrequency,
 			},
 		},
@@ -38,8 +38,8 @@ func (c *Client) V1() storage.V1 {
 }
 
 type v1client struct {
-	upstreams    *upstreamsClient
-	virtualHosts *virtualHostsClient
+	upstreams       *upstreamsClient
+	virtualServices *virtualServicesClient
 }
 
 func (c *v1client) Register() error {
@@ -47,7 +47,7 @@ func (c *v1client) Register() error {
 	if err != nil && err != os.ErrExist {
 		return err
 	}
-	err = os.MkdirAll(c.virtualHosts.dir, 0755)
+	err = os.MkdirAll(c.virtualServices.dir, 0755)
 	if err != nil && err != os.ErrExist {
 		return err
 	}
@@ -58,6 +58,6 @@ func (c *v1client) Upstreams() storage.Upstreams {
 	return c.upstreams
 }
 
-func (c *v1client) VirtualHosts() storage.VirtualHosts {
-	return c.virtualHosts
+func (c *v1client) VirtualServices() storage.VirtualServices {
+	return c.virtualServices
 }

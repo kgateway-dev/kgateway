@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/protoutil"
 	. "github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
 var _ = Describe("Conversion", func() {
@@ -48,20 +48,20 @@ var _ = Describe("Conversion", func() {
 			Expect(spec["functions"]).To(Equal(fnsInSpec))
 		})
 	})
-	Describe("VirtualhostToCrd", func() {
-		It("Converts a gloo virtualhost to crd", func() {
-			vHost := helpers.NewTestVirtualHost("foo", helpers.NewTestRoute1())
+	Describe("VirtualServiceToCrd", func() {
+		It("Converts a gloo virtualservice to crd", func() {
+			vService := helpers.NewTestVirtualService("foo", helpers.NewTestRoute1())
 			annotations := map[string]string{"foo": "bar"}
-			vHost.Metadata = &v1.Metadata{
+			vService.Metadata = &v1.Metadata{
 				Annotations: annotations,
 			}
-			vhCrd, err := VirtualHostToCrd("foo", vHost)
+			vsCrd, err := VirtualServiceToCrd("foo", vService)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(vhCrd.Name).To(Equal(vHost.Name))
-			Expect(vhCrd.Namespace).To(Equal("foo"))
-			Expect(vhCrd.Spec).NotTo(BeNil())
-			Expect(vhCrd.Annotations).To(Equal(annotations))
-			spec := *vhCrd.Spec
+			Expect(vsCrd.Name).To(Equal(vService.Name))
+			Expect(vsCrd.Namespace).To(Equal("foo"))
+			Expect(vsCrd.Spec).NotTo(BeNil())
+			Expect(vsCrd.Annotations).To(Equal(annotations))
+			spec := *vsCrd.Spec
 			// removed parts
 			Expect(spec["name"]).To(BeNil())
 			Expect(spec["metadata"]).To(BeNil())
@@ -69,43 +69,43 @@ var _ = Describe("Conversion", func() {
 			Expect(spec["annotations"]).To(BeNil())
 
 			//// shifted parts
-			vhostMap, err := protoutil.MarshalMap(vHost)
+			vServiceMap, err := protoutil.MarshalMap(vService)
 			Expect(err).To(BeNil())
-			Expect(spec["routes"]).To(Equal(vhostMap["routes"]))
+			Expect(spec["routes"]).To(Equal(vServiceMap["routes"]))
 		})
 	})
-	Describe("VirtualhostFromCrd", func() {
-		It("Converts a gloo virtualhost to crd", func() {
-			vHost := helpers.NewTestVirtualHost("foo", helpers.NewTestRoute1())
+	Describe("VirtualServiceFromCrd", func() {
+		It("Converts a gloo virtualservice to crd", func() {
+			vService := helpers.NewTestVirtualService("foo", helpers.NewTestRoute1())
 			annotations := map[string]string{"foo": "bar"}
-			vHost.Metadata = &v1.Metadata{
+			vService.Metadata = &v1.Metadata{
 				Annotations: annotations,
 			}
-			vhCrd, err := VirtualHostToCrd("foo", vHost)
+			vsCrd, err := VirtualServiceToCrd("foo", vService)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(vhCrd.Name).To(Equal(vHost.Name))
-			Expect(vhCrd.Namespace).To(Equal("foo"))
-			Expect(vhCrd.Spec).NotTo(BeNil())
-			spec := *vhCrd.Spec
+			Expect(vsCrd.Name).To(Equal(vService.Name))
+			Expect(vsCrd.Namespace).To(Equal("foo"))
+			Expect(vsCrd.Spec).NotTo(BeNil())
+			spec := *vsCrd.Spec
 			// removed parts
 			Expect(spec["name"]).To(BeNil())
 			Expect(spec["metadata"]).To(BeNil())
 			Expect(spec["status"]).To(BeNil())
 
 			//// shifted parts
-			vhostMap, err := protoutil.MarshalMap(vHost)
+			vServiceMap, err := protoutil.MarshalMap(vService)
 			Expect(err).To(BeNil())
-			Expect(spec["routes"]).To(Equal(vhostMap["routes"]))
+			Expect(spec["routes"]).To(Equal(vServiceMap["routes"]))
 
 			// bring it back now
-			outVhost, err := VirtualHostFromCrd(vhCrd)
-			vHost.Metadata = &v1.Metadata{
-				ResourceVersion: vhCrd.ResourceVersion,
-				Namespace:       vhCrd.Namespace,
+			outVhost, err := VirtualServiceFromCrd(vsCrd)
+			vService.Metadata = &v1.Metadata{
+				ResourceVersion: vsCrd.ResourceVersion,
+				Namespace:       vsCrd.Namespace,
 				Annotations:     annotations,
 			}
 			Expect(err).To(BeNil())
-			Expect(outVhost).To(Equal(vHost))
+			Expect(outVhost).To(Equal(vService))
 		})
 	})
 })

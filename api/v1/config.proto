@@ -2,7 +2,7 @@ syntax = "proto3";
 package v1;
 
 import "upstream.proto";
-import "virtualhost.proto";
+import "virtualservice.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
@@ -12,5 +12,5 @@ option (gogoproto.equal_all) = true;
  */
 message Config {
     repeated Upstream upstreams = 1; // The list of all upstreams defined by the user.
-    repeated VirtualHost virtual_hosts = 2; // the list of all virtual hosts defined by the user.
+    repeated VirtualService virtual_services = 2; // the list of all virtual services defined by the user.
 }

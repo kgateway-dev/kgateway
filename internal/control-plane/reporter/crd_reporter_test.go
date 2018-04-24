@@ -12,10 +12,10 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	. "github.com/solo-io/gloo/test/helpers"
 	. "github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
+	. "github.com/solo-io/gloo/test/helpers"
 )
 
 var _ = Describe("CrdReporter", func() {
@@ -40,10 +40,10 @@ var _ = Describe("CrdReporter", func() {
 	})
 	Describe("writereports", func() {
 		var (
-			glooClient   storage.Interface
-			reports      []ConfigObjectReport
-			upstreams    []*v1.Upstream
-			virtualHosts []*v1.VirtualHost
+			glooClient      storage.Interface
+			reports         []ConfigObjectReport
+			upstreams       []*v1.Upstream
+			virtualServices []*v1.VirtualService
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
@@ -61,11 +61,11 @@ var _ = Describe("CrdReporter", func() {
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, us)
 				}
-				virtualHosts = testCfg.VirtualHosts
-				for _, vHost := range virtualHosts {
-					_, err := glooClient.V1().VirtualHosts().Create(vHost)
+				virtualServices = testCfg.VirtualServices
+				for _, vService := range virtualServices {
+					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, vHost)
+					storables = append(storables, vService)
 				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
@@ -84,7 +84,7 @@ var _ = Describe("CrdReporter", func() {
 				for _, updatedUpstream := range updatedUpstreams {
 					Expect(updatedUpstream.Status.State).To(Equal(v1.Status_Accepted))
 				}
-				updatedVhosts, err := glooClient.V1().VirtualHosts().List()
+				updatedVhosts, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(updatedVhosts).To(HaveLen(len(upstreams)))
 				for _, updatedVhost := range updatedVhosts {
@@ -108,11 +108,11 @@ var _ = Describe("CrdReporter", func() {
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, us)
 				}
-				virtualHosts = testCfg.VirtualHosts
-				for _, vHost := range virtualHosts {
-					_, err := glooClient.V1().VirtualHosts().Create(vHost)
+				virtualServices = testCfg.VirtualServices
+				for _, vService := range virtualServices {
+					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, vHost)
+					storables = append(storables, vService)
 				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
@@ -131,7 +131,7 @@ var _ = Describe("CrdReporter", func() {
 				for _, updatedUpstream := range updatedUpstreams {
 					Expect(updatedUpstream.Status.State).To(Equal(v1.Status_Rejected))
 				}
-				updatedVhosts, err := glooClient.V1().VirtualHosts().List()
+				updatedVhosts, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(updatedVhosts).To(HaveLen(len(upstreams)))
 				for _, updatedVhost := range updatedVhosts {

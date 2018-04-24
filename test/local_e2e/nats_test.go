@@ -48,7 +48,7 @@ var _ = Describe("Nats streaming test", func() {
 		err = glooInstance.AddUpstream(u)
 		Expect(err).NotTo(HaveOccurred())
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_EventMatcher{

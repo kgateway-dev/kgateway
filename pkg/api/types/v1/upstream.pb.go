@@ -40,7 +40,7 @@ type Upstream struct {
 	// Certain upstream types support (and may require) [functions](../introduction/concepts.md#Functions).
 	// Functions allow function-level routing to be done. For example, the [AWS lambda](../plugins/aws.md) upstream type
 	// Permits routing to AWS lambda function].
-	// [routes](virtualhost.md#Route) on virtualhosts can specify function destinations to route to specific functions.
+	// [routes](virtualservice.md#Route) on virtualservices can specify function destinations to route to specific functions.
 	Functions []*Function `protobuf:"bytes,5,rep,name=functions" json:"functions,omitempty"`
 	// Status indicates the validation status of the upstream resource. Status is read-only by clients, and set by gloo during validation
 	Status *Status `protobuf:"bytes,6,opt,name=status" json:"status,omitempty" testdiff:"ignore"`

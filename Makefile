@@ -3,6 +3,9 @@ PROTOS := $(shell find api/v1 -name "*.proto")
 SOURCES := $(shell find . -name "*.go" | grep -v test)
 GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go") docs/api.json
 OUTPUT_DIR ?= _output
+
+PACKAGE_PATH:=github.com/solo-io/gloo
+
 #----------------------------------------------------------------------------------
 # Build
 #----------------------------------------------------------------------------------
@@ -39,6 +42,14 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 
 $(OUTPUT_DIR):
 	mkdir -p $@
+
+# kubernetes custom clientsets
+clientset:
+	cd ${GOPATH}/src/k8s.io/code-generator && \
+	./generate-groups.sh all \
+		$(PACKAGE_PATH)/pkg/storage/crd/client \
+		$(PACKAGE_PATH)/pkg/storage/crd \
+		"solo.io:v1"
 
 define BINARY_TARGETS
 $(eval VERSION := $(shell cat cmd/$(BINARY)/version))

@@ -18,7 +18,7 @@ var _ = Describe("Event matcher route type", func() {
 	const upstreamForEvents = "upstream-for-events"
 	const servicePort = 8080
 	Context("routes events for the given topic", func() {
-		vhostName := "eventroute"
+		vServiceName := "eventroute"
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: upstreamForEvents,
@@ -33,8 +33,8 @@ var _ = Describe("Event matcher route type", func() {
 				}),
 			})
 			Must(err)
-			_, err = gloo.V1().VirtualHosts().Create(&v1.VirtualHost{
-				Name: vhostName,
+			_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
+				Name: vServiceName,
 				Routes: []*v1.Route{{
 					Matcher: &v1.Route_EventMatcher{
 						EventMatcher: &v1.EventMatcher{
@@ -54,7 +54,7 @@ var _ = Describe("Event matcher route type", func() {
 		})
 		AfterEach(func() {
 			gloo.V1().Upstreams().Delete(upstreamForEvents)
-			gloo.V1().VirtualHosts().Delete(vhostName)
+			gloo.V1().VirtualServices().Delete(vServiceName)
 		})
 		It("receive the event", func() {
 			// start the event emitter

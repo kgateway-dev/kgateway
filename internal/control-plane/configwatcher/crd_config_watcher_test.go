@@ -10,9 +10,9 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	. "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 var _ = Describe("KubeConfigWatcher", func() {
@@ -46,8 +46,8 @@ var _ = Describe("KubeConfigWatcher", func() {
 			Must(err)
 			go func() { watcher.Run(make(chan struct{})) }()
 
-			virtualHost := NewTestVirtualHost("something", NewTestRoute1())
-			created, err := storageClient.V1().VirtualHosts().Create(virtualHost)
+			virtualService := NewTestVirtualService("something", NewTestRoute1())
+			created, err := storageClient.V1().VirtualServices().Create(virtualService)
 			Expect(err).NotTo(HaveOccurred())
 
 			// give controller time to register
@@ -57,10 +57,10 @@ var _ = Describe("KubeConfigWatcher", func() {
 			case <-time.After(time.Second * 5):
 				Expect(fmt.Errorf("expected to have received resource event before 5s")).NotTo(HaveOccurred())
 			case cfg := <-watcher.Config():
-				Expect(len(cfg.VirtualHosts)).To(Equal(1))
-				Expect(cfg.VirtualHosts[0]).To(Equal(created))
-				Expect(len(cfg.VirtualHosts[0].Routes)).To(Equal(1))
-				Expect(cfg.VirtualHosts[0].Routes[0]).To(Equal(created.Routes[0]))
+				Expect(len(cfg.VirtualServices)).To(Equal(1))
+				Expect(cfg.VirtualServices[0]).To(Equal(created))
+				Expect(len(cfg.VirtualServices[0].Routes)).To(Equal(1))
+				Expect(cfg.VirtualServices[0].Routes[0]).To(Equal(created.Routes[0]))
 			case err := <-watcher.Error():
 				Expect(err).NotTo(HaveOccurred())
 			}

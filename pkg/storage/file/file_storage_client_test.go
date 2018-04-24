@@ -79,24 +79,24 @@ var _ = Describe("CrdStorageClient", func() {
 			Expect(err).NotTo(HaveOccurred())
 			err = client.V1().Register()
 			Expect(err).NotTo(HaveOccurred())
-			vhost := NewTestVirtualHost("v1")
-			vhost, err = client.V1().VirtualHosts().Create(vhost)
-			vhost2 := NewTestVirtualHost("v2")
-			vhost2, err = client.V1().VirtualHosts().Create(vhost2)
+			vService := NewTestVirtualService("v1")
+			vService, err = client.V1().VirtualServices().Create(vService)
+			vService2 := NewTestVirtualService("v2")
+			vService2, err = client.V1().VirtualServices().Create(vService2)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = client.V1().VirtualHosts().Update(vhost)
+			_, err = client.V1().VirtualServices().Update(vService)
 			Expect(err).NotTo(HaveOccurred())
 
-			created1, err := client.V1().VirtualHosts().Get(vhost.Name)
+			created1, err := client.V1().VirtualServices().Get(vService.Name)
 			Expect(err).NotTo(HaveOccurred())
-			vhost.Metadata = created1.Metadata
-			Expect(created1).To(Equal(vhost))
+			vService.Metadata = created1.Metadata
+			Expect(created1).To(Equal(vService))
 
-			created2, err := client.V1().VirtualHosts().Get(vhost2.Name)
+			created2, err := client.V1().VirtualServices().Get(vService2.Name)
 			Expect(err).NotTo(HaveOccurred())
-			vhost2.Metadata = created2.Metadata
-			Expect(created2).To(Equal(vhost2))
+			vService2.Metadata = created2.Metadata
+			Expect(created2).To(Equal(vService2))
 		})
 	})
 	Describe("Get", func() {

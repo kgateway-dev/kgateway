@@ -70,9 +70,9 @@ spec:
   selector:
     app: website-example
 ---
-# virtual host for gloo
+# virtual service for gloo
 apiVersion: gloo.solo.io/v1
-kind: VirtualHost
+kind: VirtualService
 metadata:
   name: default
   namespace: gloo-system

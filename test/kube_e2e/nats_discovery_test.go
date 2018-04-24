@@ -12,15 +12,15 @@ import (
 
 var _ = Describe("Function Discovery for NATS upstream", func() {
 	natsUpstreamName := namespace + "-nats-streaming-4222"
-	Context("creating a vhost with a route to a NATS upstream discovered by "+
+	Context("creating a vService with a route to a NATS upstream discovered by "+
 		" gloo-function-discovery", func() {
 		natsPath := "/nats"
 		natsTopic := "my-topic"
-		vhostName := "default"
+		vServiceName := "default"
 
 		BeforeEach(func() {
-			_, err := gloo.V1().VirtualHosts().Create(&v1.VirtualHost{
-				Name: vhostName,
+			_, err := gloo.V1().VirtualServices().Create(&v1.VirtualService{
+				Name: vServiceName,
 				Routes: []*v1.Route{
 					{
 						Matcher: &v1.Route_RequestMatcher{
@@ -45,7 +45,7 @@ var _ = Describe("Function Discovery for NATS upstream", func() {
 		})
 		AfterEach(func() {
 			gloo.V1().Upstreams().Delete(natsUpstreamName)
-			gloo.V1().VirtualHosts().Delete(vhostName)
+			gloo.V1().VirtualServices().Delete(vServiceName)
 		})
 		It("should route to the nats topic", func() {
 			//messageBuffer, done, err := readNatsMessage(namespace, natsTopic)

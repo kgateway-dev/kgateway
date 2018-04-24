@@ -19,13 +19,13 @@ Config is a top-level config object. It is used internally by gloo as a containe
 
 ```yaml
 upstreams: [{Upstream}]
-virtual_hosts: [{VirtualHost}]
+virtual_services: [{VirtualService}]
 
 ```
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | upstreams | [Upstream](upstream.md#v1.Upstream) | repeated | The list of all upstreams defined by the user. |
-| virtual_hosts | [VirtualHost](virtualhost.md#v1.VirtualHost) | repeated | the list of all virtual hosts defined by the user. |
+| virtual_services | [VirtualService](virtualservice.md#v1.VirtualService) | repeated | the list of all virtual services defined by the user. |
 
 
 

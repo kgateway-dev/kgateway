@@ -15,7 +15,7 @@
 <a name="v1.Status"></a>
 
 ### Status
-Status indicates whether a config resource (currently only [virtualhosts](../introduction/concepts.md) and [upstreams](../introduction/concepts.md)) has been (in)validated by gloo
+Status indicates whether a config resource (currently only [virtualservices](../introduction/concepts.md) and [upstreams](../introduction/concepts.md)) has been (in)validated by gloo
 
 
 ```yaml

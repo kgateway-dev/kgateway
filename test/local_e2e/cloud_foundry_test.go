@@ -221,7 +221,7 @@ var _ = Describe("Copilot", func() {
 		err = glooInstance.AddUpstream(us)
 		Expect(err).NotTo(HaveOccurred())
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{

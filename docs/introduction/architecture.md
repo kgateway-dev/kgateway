@@ -45,7 +45,7 @@ updates and responding immediately with v2 gRPC updates to Envoy.
 
 ![Component Architecture](component_architecture.png "Component Architecture")
 
-* The **Config Watcher** watches the storage layer for updates to user configuration objects ([Upstreams](concepts.md#Upstreams) and [Virtual Hosts](concepts.md#Virtual Hosts))
+* The **Config Watcher** watches the storage layer for updates to user configuration objects ([Upstreams](concepts.md#Upstreams) and [Virtual Services](concepts.md#Virtual Services))
 * The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the [AWS Lambda Plugin](../plugins/aws.md))
 * **Endpoint Discovery** watches service registries such as Kubernetes, Cloud Foundry, and Consul for IPs associated with services. 
 Endpoint Discovery is plugin-specific. For example, the Kubernetes Plugin<!--(TODO)--> runs its own Endpoint Discovery goroutine.
@@ -60,14 +60,14 @@ creating a new Envoy xDS Snapshot.
     filters.
     1. The next step generates all of the **[Envoy routes](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto.html?highlight=route)** 
     via the route plugins<!--(TODO)-->. Routes are generated for 
-    each route rule defined on the [virtual host objects](../v1/virtualhost.md). When all of the routes are created, the translator aggregates them
-    into [Envoy virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vhost.html?highlight=virtual%20host) 
-    and adds them to a new [Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vhost.html?highlight=virtual%20host) 
+    each route rule defined on the [virtual service objects](../v1/virtualservice.md). When all of the routes are created, the translator aggregates them
+    into [Envoy virtual services](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vService.html?highlight=virtual%20host)
+    and adds them to a new [Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vService.html?highlight=virtual%20host)
     configuration.
     1. Filter plugins<!--(TODO)--> are queried for their filter configurations, generating the list of HTTP Filters that will go 
     on the [Envoy listeners](https://www.envoyproxy.io/docs/envoy/latest/api-v1/listeners/listeners).
     1. Finally, a snapshot is composed of the all the valid endpoints, clusters, rds configs, and listeners
-* The **Reporter** receives a validation report for every upstream and virtual host processed by the translator. Any invalid
+* The **Reporter** receives a validation report for every upstream and virtual service processed by the translator. Any invalid
   config objects are reported back to the user through the storage layer. Invalid objects are marked as "Rejected" with 
   detailed error messages describing mistakes in the user config.
 * The final snapshot is passed to the **xDS server**, which notifies Envoy of a succesful config update, updating the Envoy

@@ -15,7 +15,7 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["get", "create"]
 - apiGroups: ["gloo.solo.io"]
-  resources: ["upstreams", "virtualhosts"]
+  resources: ["upstreams", "virtualservices"]
   verbs: ["*"]
 ---
 #rbac for function-discovery
@@ -34,7 +34,7 @@ rules:
   resources: ["ingresses"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["gloo.solo.io"]
-  resources: ["upstreams", "virtualhosts"]
+  resources: ["upstreams", "virtualservices"]
   verbs: ["*"]
 
 ---

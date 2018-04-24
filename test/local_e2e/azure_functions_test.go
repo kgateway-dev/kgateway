@@ -112,7 +112,7 @@ var _ = Describe("Azure Functions", func() {
 			return us.Functions, nil
 		}, time.Second*10).Should(ContainElement(expectedFunction))
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{
@@ -197,7 +197,7 @@ var _ = Describe("Azure Functions", func() {
 			return us.Functions, nil
 		}, time.Second*10).Should(ContainElement(expectedFunction))
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{

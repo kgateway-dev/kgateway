@@ -37,7 +37,7 @@ pages:
     - v1 API reference:
 #      - Overview: v1/overview.md
       - Upstreams: v1/upstream.md
-      - Virtual Hosts: v1/virtualhost.md
+      - Virtual Services: v1/virtualservice.md
       - Metadata: v1/metadata.md
       - Status: v1/status.md
 repo_url: https://github.com/solo-io/gloo/

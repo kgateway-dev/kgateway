@@ -18,4 +18,4 @@ package v1
 
 type UpstreamExpansion interface{}
 
-type VirtualHostExpansion interface{}
+type VirtualServiceExpansion interface{}

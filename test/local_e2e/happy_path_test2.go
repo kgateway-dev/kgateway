@@ -33,7 +33,7 @@ var _ = Describe("HappyPath2Upstreams", func() {
 		err = glooInstance.AddUpstream(tu2.Upstream)
 		Expect(err).NotTo(HaveOccurred())
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{

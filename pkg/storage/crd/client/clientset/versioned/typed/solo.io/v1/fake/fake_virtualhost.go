@@ -26,31 +26,31 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-// FakeVirtualHosts implements VirtualHostInterface
-type FakeVirtualHosts struct {
+// FakeVirtualServices implements VirtualServiceInterface
+type FakeVirtualServices struct {
 	Fake *FakeGlooV1
 	ns   string
 }
 
-var virtualhostsResource = schema.GroupVersionResource{Group: "gloo.solo.io", Version: "v1", Resource: "virtualhosts"}
+var virtualServicesResource = schema.GroupVersionResource{Group: "gloo.solo.io", Version: "v1", Resource: "virtualservices"}
 
-var virtualhostsKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "VirtualHost"}
+var virtualServicesKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "VirtualService"}
 
-// Get takes name of the virtualHost, and returns the corresponding virtualHost object, and an error if there is any.
-func (c *FakeVirtualHosts) Get(name string, options v1.GetOptions) (result *solo_io_v1.VirtualHost, err error) {
+// Get takes name of the virtualService, and returns the corresponding virtualService object, and an error if there is any.
+func (c *FakeVirtualServices) Get(name string, options v1.GetOptions) (result *solo_io_v1.VirtualService, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(virtualhostsResource, c.ns, name), &solo_io_v1.VirtualHost{})
+		Invokes(testing.NewGetAction(virtualServicesResource, c.ns, name), &solo_io_v1.VirtualService{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*solo_io_v1.VirtualHost), err
+	return obj.(*solo_io_v1.VirtualService), err
 }
 
-// List takes label and field selectors, and returns the list of VirtualHosts that match those selectors.
-func (c *FakeVirtualHosts) List(opts v1.ListOptions) (result *solo_io_v1.VirtualHostList, err error) {
+// List takes label and field selectors, and returns the list of VirtualServices that match those selectors.
+func (c *FakeVirtualServices) List(opts v1.ListOptions) (result *solo_io_v1.VirtualServiceList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(virtualhostsResource, virtualhostsKind, c.ns, opts), &solo_io_v1.VirtualHostList{})
+		Invokes(testing.NewListAction(virtualServicesResource, virtualServicesKind, c.ns, opts), &solo_io_v1.VirtualServiceList{})
 
 	if obj == nil {
 		return nil, err
@@ -60,8 +60,8 @@ func (c *FakeVirtualHosts) List(opts v1.ListOptions) (result *solo_io_v1.Virtual
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &solo_io_v1.VirtualHostList{}
-	for _, item := range obj.(*solo_io_v1.VirtualHostList).Items {
+	list := &solo_io_v1.VirtualServiceList{}
+	for _, item := range obj.(*solo_io_v1.VirtualServiceList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -69,58 +69,58 @@ func (c *FakeVirtualHosts) List(opts v1.ListOptions) (result *solo_io_v1.Virtual
 	return list, err
 }
 
-// Watch returns a watch.Interface that watches the requested virtualHosts.
-func (c *FakeVirtualHosts) Watch(opts v1.ListOptions) (watch.Interface, error) {
+// Watch returns a watch.Interface that watches the requested virtualServices.
+func (c *FakeVirtualServices) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(virtualhostsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchAction(virtualServicesResource, c.ns, opts))
 
 }
 
-// Create takes the representation of a virtualHost and creates it.  Returns the server's representation of the virtualHost, and an error, if there is any.
-func (c *FakeVirtualHosts) Create(virtualHost *solo_io_v1.VirtualHost) (result *solo_io_v1.VirtualHost, err error) {
+// Create takes the representation of a virtualService and creates it.  Returns the server's representation of the virtualService, and an error, if there is any.
+func (c *FakeVirtualServices) Create(virtualService *solo_io_v1.VirtualService) (result *solo_io_v1.VirtualService, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(virtualhostsResource, c.ns, virtualHost), &solo_io_v1.VirtualHost{})
+		Invokes(testing.NewCreateAction(virtualServicesResource, c.ns, virtualService), &solo_io_v1.VirtualService{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*solo_io_v1.VirtualHost), err
+	return obj.(*solo_io_v1.VirtualService), err
 }
 
-// Update takes the representation of a virtualHost and updates it. Returns the server's representation of the virtualHost, and an error, if there is any.
-func (c *FakeVirtualHosts) Update(virtualHost *solo_io_v1.VirtualHost) (result *solo_io_v1.VirtualHost, err error) {
+// Update takes the representation of a virtualService and updates it. Returns the server's representation of the virtualService, and an error, if there is any.
+func (c *FakeVirtualServices) Update(virtualService *solo_io_v1.VirtualService) (result *solo_io_v1.VirtualService, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(virtualhostsResource, c.ns, virtualHost), &solo_io_v1.VirtualHost{})
+		Invokes(testing.NewUpdateAction(virtualServicesResource, c.ns, virtualService), &solo_io_v1.VirtualService{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*solo_io_v1.VirtualHost), err
+	return obj.(*solo_io_v1.VirtualService), err
 }
 
-// Delete takes name of the virtualHost and deletes it. Returns an error if one occurs.
-func (c *FakeVirtualHosts) Delete(name string, options *v1.DeleteOptions) error {
+// Delete takes name of the virtualService and deletes it. Returns an error if one occurs.
+func (c *FakeVirtualServices) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(virtualhostsResource, c.ns, name), &solo_io_v1.VirtualHost{})
+		Invokes(testing.NewDeleteAction(virtualServicesResource, c.ns, name), &solo_io_v1.VirtualService{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeVirtualHosts) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(virtualhostsResource, c.ns, listOptions)
+func (c *FakeVirtualServices) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(virtualServicesResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &solo_io_v1.VirtualHostList{})
+	_, err := c.Fake.Invokes(action, &solo_io_v1.VirtualServiceList{})
 	return err
 }
 
-// Patch applies the patch and returns the patched virtualHost.
-func (c *FakeVirtualHosts) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *solo_io_v1.VirtualHost, err error) {
+// Patch applies the patch and returns the patched virtualService.
+func (c *FakeVirtualServices) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *solo_io_v1.VirtualService, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(virtualhostsResource, c.ns, name, data, subresources...), &solo_io_v1.VirtualHost{})
+		Invokes(testing.NewPatchSubresourceAction(virtualServicesResource, c.ns, name, data, subresources...), &solo_io_v1.VirtualService{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*solo_io_v1.VirtualHost), err
+	return obj.(*solo_io_v1.VirtualService), err
 }

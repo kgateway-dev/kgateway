@@ -1,19 +1,20 @@
 package audit
 
 import (
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/gogo/protobuf/proto"
-	"net/http"
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"github.com/solo-io/gloo/pkg/log"
+	"net/http"
 	"os"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 const (
 	pathUpstream = "/upstreams"
-	pathVhost    = "/virtualhosts"
+	pathVhost    = "/virtualservices"
 )
 
 const (
@@ -45,7 +46,7 @@ func EmitEvent(operation string, item v1.ConfigObject) error {
 	switch item.(type) {
 	case *v1.Upstream:
 		path = pathUpstream
-	case *v1.VirtualHost:
+	case *v1.VirtualService:
 		path = pathVhost
 	default:
 		panic("bad input")
@@ -78,7 +79,7 @@ func getSource() string {
 func NewServeMux() *http.ServeMux {
 	m := http.NewServeMux()
 	m.HandleFunc(pathUpstream, upstreamsHandler)
-	m.HandleFunc(pathVhost, vhostsHandler)
+	m.HandleFunc(pathVhost, vServicesHandler)
 	return m
 }
 
@@ -111,8 +112,8 @@ func upstreamsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func vhostsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("new vh %v", r.Header)
+func vServicesHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("new vs %v", r.Header)
 	if r.Method != http.MethodPost {
 		http.NotFound(w, r)
 	}
@@ -121,13 +122,13 @@ func vhostsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	defer r.Body.Close()
-	var vh v1.VirtualHost
-	err = proto.Unmarshal(body, &vh)
+	var vs v1.VirtualService
+	err = proto.Unmarshal(body, &vs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	log.Printf("%v", logEvent{
-		obj: &vh,
+		obj: &vs,
 		event: EventMeta{
 			Operation: r.Header.Get(HeaderOperation),
 			Source:    r.Header.Get(HeaderSource),

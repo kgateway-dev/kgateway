@@ -98,7 +98,7 @@ browse to ./images in your file browser
 
 
 #### Cleanup
-    kubectl delete virtualhost default
+    kubectl delete virtualservice default
     kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/source_events_from_github/kube-deploy.yaml 
     kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/source_events_from_github/image-pusher/deploy.yaml 
     kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/source_events_from_github/slack-bot/deploy.yaml 

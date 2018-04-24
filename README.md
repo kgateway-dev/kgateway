@@ -39,7 +39,7 @@ the component architecture
 
 ### v1 API reference:
 * [Upstreams](docs/v1/upstream.md): API Specification for the Gloo Upstream Config Object
-* [Virtual](docs/v1/virtualhost.md): API Specification for the Gloo Virtual Host Config Object
+* [Virtual](docs/v1/virtualservice.md): API Specification for the Gloo Virtual Service Config Object
 * [Metadata](docs/v1/metadata.md): API Specification for Gloo Config Object Metadata
 * [Status](docs/v1/status.md): API Specification for Gloo Config Object Status
 
@@ -77,7 +77,7 @@ Join us on our slack channel: [https://slack.solo.io/](https://slack.solo.io/)
 - gloo-sdk-go
 - gloo-sdk-node
 - SNI config
-- Detailed virtualhost rules
+- Detailed virtualservice rules
 - Detailed upstream rules
 - glooctl
 - thetool

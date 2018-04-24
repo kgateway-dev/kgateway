@@ -17,7 +17,7 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 
 	Context("route with CORS", func() {
 		servicePath := "/" + uuid.New()
-		vhostName := "cors-route"
+		vServiceName := "cors-route"
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
@@ -32,8 +32,8 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 				}),
 			})
 			Must(err)
-			_, err = gloo.V1().VirtualHosts().Create(&v1.VirtualHost{
-				Name: vhostName,
+			_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
+				Name: vServiceName,
 				Routes: []*v1.Route{{
 					Matcher: &v1.Route_RequestMatcher{
 						RequestMatcher: &v1.RequestMatcher{
@@ -64,7 +64,7 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 
 		AfterEach(func() {
 			gloo.V1().Upstreams().Delete(helloService)
-			gloo.V1().VirtualHosts().Delete(vhostName)
+			gloo.V1().VirtualServices().Delete(vServiceName)
 		})
 
 		It("should return response with CORS allow method header", func() {

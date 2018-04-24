@@ -10,7 +10,7 @@ SECRETS_DIR=${CONFIG_DIR}/secrets/
 FILES_DIR=${CONFIG_DIR}/files
 
 mkdir -p ${CONFIG_DIR}/upstreams
-mkdir -p ${CONFIG_DIR}/virtualhosts
+mkdir -p ${CONFIG_DIR}/virtualservices
 mkdir -p ${SECRETS_DIR}
 mkdir -p ${FILES_DIR}
 

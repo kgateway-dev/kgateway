@@ -26,7 +26,7 @@ import (
 type GlooV1Interface interface {
 	RESTClient() rest.Interface
 	UpstreamsGetter
-	VirtualHostsGetter
+	VirtualServicesGetter
 }
 
 // GlooV1Client is used to interact with features provided by the gloo.solo.io group.
@@ -38,8 +38,8 @@ func (c *GlooV1Client) Upstreams(namespace string) UpstreamInterface {
 	return newUpstreams(c, namespace)
 }
 
-func (c *GlooV1Client) VirtualHosts(namespace string) VirtualHostInterface {
-	return newVirtualHosts(c, namespace)
+func (c *GlooV1Client) VirtualServices(namespace string) VirtualServiceInterface {
+	return newVirtualServices(c, namespace)
 }
 
 // NewForConfig creates a new GlooV1Client for the given config.

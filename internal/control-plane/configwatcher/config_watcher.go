@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/storage"
 )
 
 type configWatcher struct {
@@ -29,16 +29,16 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		log.Warnf("Startup: failed to read upstreams from storage: %v", err)
 		initialUpstreams = []*v1.Upstream{}
 	}
-	initialVirtualHosts, err := storageClient.V1().VirtualHosts().List()
+	initialVirtualServices, err := storageClient.V1().VirtualServices().List()
 	if err != nil {
-		log.Warnf("Startup: failed to read virtual hosts from storage: %v", err)
-		initialVirtualHosts = []*v1.VirtualHost{}
+		log.Warnf("Startup: failed to read virtual services from storage: %v", err)
+		initialVirtualServices = []*v1.VirtualService{}
 	}
 	configs := make(chan *v1.Config)
 	// do a first time read
 	cache := &v1.Config{
-		Upstreams:    initialUpstreams,
-		VirtualHosts: initialVirtualHosts,
+		Upstreams:       initialUpstreams,
+		VirtualServices: initialVirtualServices,
 	}
 	// throw it down the channel to get things going
 	go func() {
@@ -67,31 +67,31 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create watcher for upstreams")
 	}
-	syncVhosts := func(updatedList []*v1.VirtualHost, _ *v1.VirtualHost) {
+	syncVhosts := func(updatedList []*v1.VirtualService, _ *v1.VirtualService) {
 		sort.SliceStable(updatedList, func(i, j int) bool {
 			return updatedList[i].GetName() < updatedList[j].GetName()
 		})
 
-		diff, equal := messagediff.PrettyDiff(cache.VirtualHosts, updatedList)
+		diff, equal := messagediff.PrettyDiff(cache.VirtualServices, updatedList)
 		if equal {
 			return
 		}
-		log.GreyPrintf("change detected in virtualhosts: %v", diff)
+		log.GreyPrintf("change detected in virtualservices: %v", diff)
 
-		cache.VirtualHosts = updatedList
+		cache.VirtualServices = updatedList
 		configs <- cache
 	}
-	vhostWatcher, err := storageClient.V1().VirtualHosts().Watch(&storage.VirtualHostEventHandlerFuncs{
+	vServiceWatcher, err := storageClient.V1().VirtualServices().Watch(&storage.VirtualServiceEventHandlerFuncs{
 		AddFunc:    syncVhosts,
 		UpdateFunc: syncVhosts,
 		DeleteFunc: syncVhosts,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create watcher for virtualhosts")
+		return nil, errors.Wrap(err, "failed to create watcher for virtualservices")
 	}
 
 	return &configWatcher{
-		watchers: []*storage.Watcher{vhostWatcher, upstreamWatcher},
+		watchers: []*storage.Watcher{vServiceWatcher, upstreamWatcher},
 		configs:  configs,
 		errs:     make(chan error),
 	}, nil

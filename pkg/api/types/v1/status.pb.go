@@ -42,7 +42,7 @@ func (x Status_State) String() string {
 func (Status_State) EnumDescriptor() ([]byte, []int) { return fileDescriptorStatus, []int{0, 0} }
 
 // *
-// Status indicates whether a config resource (currently only [virtualhosts](../introduction/concepts.md) and [upstreams](../introduction/concepts.md)) has been (in)validated by gloo
+// Status indicates whether a config resource (currently only [virtualservices](../introduction/concepts.md) and [upstreams](../introduction/concepts.md)) has been (in)validated by gloo
 type Status struct {
 	// State is the enum indicating the state of the resource
 	State Status_State `protobuf:"varint,1,opt,name=state,proto3,enum=v1.Status_State" json:"state,omitempty"`

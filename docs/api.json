@@ -30,12 +30,12 @@
               "defaultValue": ""
             },
             {
-              "name": "virtual_hosts",
-              "description": "the list of all virtual hosts defined by the user.",
+              "name": "virtual_services",
+              "description": "the list of all virtual services defined by the user.",
               "label": "repeated",
-              "type": "VirtualHost",
-              "longType": "VirtualHost",
-              "fullType": "v1.VirtualHost",
+              "type": "VirtualService",
+              "longType": "VirtualService",
+              "fullType": "v1.VirtualService",
               "defaultValue": ""
             }
           ]
@@ -163,7 +163,7 @@
           "name": "Status",
           "longName": "Status",
           "fullName": "v1.Status",
-          "description": "Status indicates whether a config resource (currently only [virtualhosts](../introduction/concepts.md) and [upstreams](../introduction/concepts.md)) has been (in)validated by gloo",
+          "description": "Status indicates whether a config resource (currently only [virtualservices](../introduction/concepts.md) and [upstreams](../introduction/concepts.md)) has been (in)validated by gloo",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
@@ -249,7 +249,7 @@
             },
             {
               "name": "functions",
-              "description": "Certain upstream types support (and may require) [functions](../introduction/concepts.md#Functions).\nFunctions allow function-level routing to be done. For example, the [AWS lambda](../plugins/aws.md) upstream type\nPermits routing to AWS lambda function].\n[routes](virtualhost.md#Route) on virtualhosts can specify function destinations to route to specific functions.",
+              "description": "Certain upstream types support (and may require) [functions](../introduction/concepts.md#Functions).\nFunctions allow function-level routing to be done. For example, the [AWS lambda](../plugins/aws.md) upstream type\nPermits routing to AWS lambda function].\n[routes](virtualservice.md#Route) on virtualservices can specify function destinations to route to specific functions.",
               "label": "repeated",
               "type": "Function",
               "longType": "Function",
@@ -347,7 +347,7 @@
       "services": []
     },
     {
-      "name": "virtualhost.proto",
+      "name": "virtualservice.proto",
       "description": "",
       "package": "v1",
       "hasEnums": false,
@@ -358,17 +358,17 @@
       "extensions": [],
       "messages": [
         {
-          "name": "VirtualHost",
-          "longName": "VirtualHost",
-          "fullName": "v1.VirtualHost",
-          "description": "Virtual Hosts represent a collection of routes for a set of domains.\nGloo's Virtual Hosts can be compared to\n[virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vhost.html?highlight=virtual%20host) in Envoy terminology.\nA virtual host can be used to define \"apps\"; a collection of APIs that belong to a particular domain.\nThe Virtual Host concept allows configuration of per-virtualhost SSL certificates",
+          "name": "VirtualService",
+          "longName": "VirtualService",
+          "fullName": "v1.VirtualService",
+          "description": "Virtual Services represent a collection of routes for a set of domains.\nGloo's Virtual Services can be compared to\n[virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vService.html?highlight=virtual%20host) in Envoy terminology.\nA virtual service can be used to define \"apps\"; a collection of APIs that belong to a particular domain.\nThe Virtual Service concept allows configuration of per-virtualservice SSL certificates",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
           "fields": [
             {
               "name": "name",
-              "description": "Name of the virtual host. Names must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
+              "description": "Name of the virtual service. Names must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
               "label": "",
               "type": "string",
               "longType": "string",
@@ -377,7 +377,7 @@
             },
             {
               "name": "domains",
-              "description": "Domains represent the list of domains (host/authority header) that will match for all routes on this virtual host.\nAs in Envoy: wildcard hosts are supported in the form of “*.foo.com” or “*-bar.foo.com”.\nIf domains is empty, gloo will set the domain to \"*\", making that virtual host the \"default\" virtualhost.\nThe default virtualhost will be the fallback virtual host for all requests that do not match a domain on an existing virtual host.\nOnly one default virtual host can be defined (either with an empty domain list, or a domain list that includes \"*\")",
+              "description": "Domains represent the list of domains (host/authority header) that will match for all routes on this virtual service.\nAs in Envoy: wildcard hosts are supported in the form of “*.foo.com” or “*-bar.foo.com”.\nIf domains is empty, gloo will set the domain to \"*\", making that virtual service the \"default\" virtualservice.\nThe default virtualservice will be the fallback virtual service for all requests that do not match a domain on an existing virtual service.\nOnly one default virtual service can be defined (either with an empty domain list, or a domain list that includes \"*\")",
               "label": "repeated",
               "type": "string",
               "longType": "string",
@@ -386,7 +386,7 @@
             },
             {
               "name": "routes",
-              "description": "Routes define the list of [routes](../) that live on this virtual host.",
+              "description": "Routes define the list of [routes](../) that live on this virtual service.",
               "label": "repeated",
               "type": "Route",
               "longType": "Route",
@@ -395,7 +395,7 @@
             },
             {
               "name": "ssl_config",
-              "description": "SSL Config is optional for the virtual host. If provided, the virtual host will listen on the envoy HTTPS listener port (default :8443)\nIf left empty, the virtual host will listen on the HTTP listener port (default :8080)",
+              "description": "SSL Config is optional for the virtual service. If provided, the virtual service will listen on the envoy HTTPS listener port (default :8443)\nIf left empty, the virtual service will listen on the HTTP listener port (default :8080)",
               "label": "",
               "type": "SSLConfig",
               "longType": "SSLConfig",
@@ -404,7 +404,7 @@
             },
             {
               "name": "status",
-              "description": "Status indicates the validation status of the virtual host resource. Status is read-only by clients, and set by gloo during validation",
+              "description": "Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation",
               "label": "",
               "type": "Status",
               "longType": "Status",
@@ -413,7 +413,7 @@
             },
             {
               "name": "metadata",
-              "description": "Metadata contains the resource metadata for the virtual host",
+              "description": "Metadata contains the resource metadata for the virtual service",
               "label": "",
               "type": "Metadata",
               "longType": "Metadata",
@@ -426,7 +426,7 @@
           "name": "Route",
           "longName": "Route",
           "fullName": "v1.Route",
-          "description": "Routes declare the entrypoints on virtual hosts and the upstreams or functions they route requests to",
+          "description": "Routes declare the entrypoints on virtual services and the upstreams or functions they route requests to",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
@@ -741,7 +741,7 @@
           "name": "SSLConfig",
           "longName": "SSLConfig",
           "fullName": "v1.SSLConfig",
-          "description": "SSLConfig contains the options necessary to configure a virtualhost to use TLS",
+          "description": "SSLConfig contains the options necessary to configure a virtualservice to use TLS",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],

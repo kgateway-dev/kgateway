@@ -50,13 +50,13 @@ func itemFromKVPair(rootPath string, p *api.KVPair) (*StorableItem, error) {
 			return nil, errors.Wrap(err, "unmarshalling value as upstream")
 		}
 		item.Upstream = &us
-	case StorableItemTypeVirtualHost:
-		var vh v1.VirtualHost
-		err := proto.Unmarshal(p.Value, &vh)
+	case StorableItemTypeVirtualService:
+		var vs v1.VirtualService
+		err := proto.Unmarshal(p.Value, &vs)
 		if err != nil {
-			return nil, errors.Wrap(err, "unmarshalling value as virtualhost")
+			return nil, errors.Wrap(err, "unmarshalling value as virtualservice")
 		}
-		item.VirtualHost = &vh
+		item.VirtualService = &vs
 	case StorableItemTypeFile:
 		item.File = &dependencies.File{
 			Ref:      strings.TrimPrefix(p.Key, rootPath+"/"),

@@ -14,11 +14,11 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/log"
 	kubeplugin "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	. "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 var _ = Describe("KubeIngressController", func() {
@@ -104,9 +104,9 @@ var _ = Describe("KubeIngressController", func() {
 				upstreams, err := glooClient.V1().Upstreams().List()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(upstreams).To(HaveLen(0))
-				virtualHostList, err := glooClient.V1().VirtualHosts().List()
+				virtualServiceList, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(virtualHostList).To(HaveLen(0))
+				Expect(virtualServiceList).To(HaveLen(0))
 			})
 		})
 		Context("an ingress is created with a default backend", func() {
@@ -151,7 +151,7 @@ var _ = Describe("KubeIngressController", func() {
 					Fail("err passed, but was nil")
 				}
 			})
-			It("creates the default virtualhost for the ingress", func() {
+			It("creates the default virtualservice for the ingress", func() {
 				glooRoute := &v1.Route{
 					Matcher: &v1.Route_RequestMatcher{
 						RequestMatcher: &v1.RequestMatcher{
@@ -168,19 +168,19 @@ var _ = Describe("KubeIngressController", func() {
 						},
 					},
 				}
-				glooVirtualHost := &v1.VirtualHost{
-					Name:    defaultVirtualHost,
+				glooVirtualService := &v1.VirtualService{
+					Name:    defaultVirtualService,
 					Domains: []string{"*"},
 					Routes:  []*v1.Route{glooRoute},
 				}
-				virtualHostList, err := glooClient.V1().VirtualHosts().List()
+				virtualServiceList, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(virtualHostList).To(HaveLen(1))
-				virtualHost := virtualHostList[0]
-				Expect(virtualHost.Name).To(Equal(defaultVirtualHost))
+				Expect(virtualServiceList).To(HaveLen(1))
+				virtualService := virtualServiceList[0]
+				Expect(virtualService.Name).To(Equal(defaultVirtualService))
 				// have to set metadata
-				glooVirtualHost.Metadata = virtualHost.Metadata
-				Expect(virtualHost).To(Equal(glooVirtualHost))
+				glooVirtualService.Metadata = virtualService.Metadata
+				Expect(virtualService).To(Equal(glooVirtualService))
 			})
 			It("creates an upstream for the ingress backend", func() {
 				expectedUpstream := ingressCtl.newUpstreamFromBackend(namespace, *defaultBackend)
@@ -320,7 +320,7 @@ var _ = Describe("KubeIngressController", func() {
 			})
 			It("create a route for every path", func() {
 				time.Sleep(4 * time.Second)
-				expectedVirtualHosts := map[string]*v1.VirtualHost{
+				expectedVirtualServices := map[string]*v1.VirtualService{
 					"host2": {
 						Name:    "host2",
 						Domains: []string{"host2"},
@@ -333,8 +333,8 @@ var _ = Describe("KubeIngressController", func() {
 
 				for _, rule := range createdIngress.Spec.Rules {
 					for _, path := range rule.HTTP.Paths {
-						vHost := expectedVirtualHosts[rule.Host]
-						vHost.Routes = append(vHost.Routes, &v1.Route{
+						vService := expectedVirtualServices[rule.Host]
+						vService.Routes = append(vService.Routes, &v1.Route{
 							Matcher: &v1.Route_RequestMatcher{
 								RequestMatcher: &v1.RequestMatcher{
 									Path: &v1.RequestMatcher_PathRegex{PathRegex: path.Path},
@@ -348,27 +348,27 @@ var _ = Describe("KubeIngressController", func() {
 								},
 							},
 						})
-						sortRoutes(vHost.Routes)
-						expectedVirtualHosts[rule.Host] = vHost
+						sortRoutes(vService.Routes)
+						expectedVirtualServices[rule.Host] = vService
 					}
 				}
 
 				for _, tls := range createdIngress.Spec.TLS {
 					for _, host := range tls.Hosts {
-						vHost := expectedVirtualHosts[host]
-						vHost.SslConfig = &v1.SSLConfig{
+						vService := expectedVirtualServices[host]
+						vService.SslConfig = &v1.SSLConfig{
 							SecretRef: tls.SecretName,
 						}
-						expectedVirtualHosts[host] = vHost
+						expectedVirtualServices[host] = vService
 					}
 				}
-				virtuavirtualHostList, err := glooClient.V1().VirtualHosts().List()
+				virtuavirtualServiceList, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(virtuavirtualHostList).To(HaveLen(len(expectedVirtualHosts)))
-				for _, virtualHost := range virtuavirtualHostList {
+				Expect(virtuavirtualServiceList).To(HaveLen(len(expectedVirtualServices)))
+				for _, virtualService := range virtuavirtualServiceList {
 					// ignore metadata
-					virtualHost.Metadata = nil
-					Expect(expectedVirtualHosts).To(ContainElement(virtualHost))
+					virtualService.Metadata = nil
+					Expect(expectedVirtualServices).To(ContainElement(virtualService))
 				}
 			})
 		})

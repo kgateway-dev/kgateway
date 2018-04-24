@@ -17,9 +17,9 @@ import (
 	"encoding/json"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/storage/crd"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
 )
 
 var upstreamAddr string
@@ -54,7 +54,7 @@ func main() {
 	outDir := "_gloo_config"
 	err = os.MkdirAll(filepath.Join(outDir, "upstreams"), 0755)
 	must(err)
-	err = os.MkdirAll(filepath.Join(outDir, "virtualhosts"), 0755)
+	err = os.MkdirAll(filepath.Join(outDir, "virtualservices"), 0755)
 	must(err)
 	for _, upstream := range cfg.Upstreams {
 		var jsn []byte
@@ -75,23 +75,23 @@ func main() {
 		err = ioutil.WriteFile(filename, data, 0644)
 		must(err)
 	}
-	for _, virtualHost := range cfg.VirtualHosts {
+	for _, virtualService := range cfg.VirtualServices {
 		var jsn []byte
 		if *storageType == "crd" {
-			vh, err := crd.VirtualHostToCrd("put-namespace-here", virtualHost)
+			vs, err := crd.VirtualServiceToCrd("put-namespace-here", virtualService)
 			must(err)
-			vh.TypeMeta.APIVersion = "gloo.solo.io/v1"
-			vh.TypeMeta.Kind = "VirtualHost"
-			jsn, err = json.Marshal(vh)
+			vs.TypeMeta.APIVersion = "gloo.solo.io/v1"
+			vs.TypeMeta.Kind = "VirtualService"
+			jsn, err = json.Marshal(vs)
 			must(err)
 		} else {
-			jsn, err = protoutil.Marshal(virtualHost)
+			jsn, err = protoutil.Marshal(virtualService)
 			must(err)
 		}
 		data, err := yaml.JSONToYAML(jsn)
 		must(err)
 		log.GreyPrintf("%s", jsn)
-		filename := filepath.Join(outDir, "virtualhosts", fmt.Sprintf("virtualhost-%v.yml", virtualHost.Name))
+		filename := filepath.Join(outDir, "virtualservices", fmt.Sprintf("virtualservice-%v.yml", virtualService.Name))
 		err = ioutil.WriteFile(filename, data, 0644)
 		must(err)
 	}
@@ -124,12 +124,12 @@ func NewλConfig() v1.Config {
 			}},
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
-		NewTestVirtualHost("localhost-app", NewλRoute()),
+	virtualServices := []*v1.VirtualService{
+		NewTestVirtualService("localhost-app", NewλRoute()),
 	}
 	return v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
@@ -145,17 +145,17 @@ func NewTestConfig() v1.Config {
 			}),
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
-		NewTestVirtualHost("localhost-app", NewTestRoute(), NewTestRouteMultiDest()),
+	virtualServices := []*v1.VirtualService{
+		NewTestVirtualService("localhost-app", NewTestRoute(), NewTestRouteMultiDest()),
 	}
 	return v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
-func NewTestVirtualHost(name string, routes ...*v1.Route) *v1.VirtualHost {
-	return &v1.VirtualHost{
+func NewTestVirtualService(name string, routes ...*v1.Route) *v1.VirtualService {
+	return &v1.VirtualService{
 		Name:   name,
 		Routes: routes,
 	}

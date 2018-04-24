@@ -103,7 +103,7 @@ var _ = Describe("Google functions", func() {
 
 		funcname := gu.Functions[0].Name
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{
@@ -188,7 +188,7 @@ var _ = Describe("Google functions", func() {
 		err = glooInstance.AddUpstream(gu)
 		Expect(err).NotTo(HaveOccurred())
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{

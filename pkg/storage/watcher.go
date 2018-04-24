@@ -20,10 +20,10 @@ type UpstreamEventHandler interface {
 	OnDelete(updatedList []*v1.Upstream, obj *v1.Upstream)
 }
 
-type VirtualHostEventHandler interface {
-	OnAdd(updatedList []*v1.VirtualHost, obj *v1.VirtualHost)
-	OnUpdate(updatedList []*v1.VirtualHost, newObj *v1.VirtualHost)
-	OnDelete(updatedList []*v1.VirtualHost, obj *v1.VirtualHost)
+type VirtualServiceEventHandler interface {
+	OnAdd(updatedList []*v1.VirtualService, obj *v1.VirtualService)
+	OnUpdate(updatedList []*v1.VirtualService, newObj *v1.VirtualService)
+	OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService)
 }
 
 // UpstreamEventHandlerFuncs is an adaptor to let you easily specify as many or
@@ -56,31 +56,31 @@ func (r UpstreamEventHandlerFuncs) OnDelete(updatedList []*v1.Upstream, obj *v1.
 	}
 }
 
-// VirtualHostEventHandlerFuncs is an adaptor to let you easily specify as many or
+// VirtualServiceEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
-// VirtualHostEventHandler.
-type VirtualHostEventHandlerFuncs struct {
-	AddFunc    func(updatedList []*v1.VirtualHost, obj *v1.VirtualHost)
-	UpdateFunc func(updatedList []*v1.VirtualHost, newObj *v1.VirtualHost)
-	DeleteFunc func(updatedList []*v1.VirtualHost, obj *v1.VirtualHost)
+// VirtualServiceEventHandler.
+type VirtualServiceEventHandlerFuncs struct {
+	AddFunc    func(updatedList []*v1.VirtualService, obj *v1.VirtualService)
+	UpdateFunc func(updatedList []*v1.VirtualService, newObj *v1.VirtualService)
+	DeleteFunc func(updatedList []*v1.VirtualService, obj *v1.VirtualService)
 }
 
 // OnAdd calls AddFunc if it's not nil.
-func (r VirtualHostEventHandlerFuncs) OnAdd(updatedList []*v1.VirtualHost, obj *v1.VirtualHost) {
+func (r VirtualServiceEventHandlerFuncs) OnAdd(updatedList []*v1.VirtualService, obj *v1.VirtualService) {
 	if r.AddFunc != nil {
 		r.AddFunc(updatedList, obj)
 	}
 }
 
 // OnUpdate calls UpdateFunc if it's not nil.
-func (r VirtualHostEventHandlerFuncs) OnUpdate(updatedList []*v1.VirtualHost, newObj *v1.VirtualHost) {
+func (r VirtualServiceEventHandlerFuncs) OnUpdate(updatedList []*v1.VirtualService, newObj *v1.VirtualService) {
 	if r.UpdateFunc != nil {
 		r.UpdateFunc(updatedList, newObj)
 	}
 }
 
 // OnDelete calls DeleteFunc if it's not nil.
-func (r VirtualHostEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualHost, obj *v1.VirtualHost) {
+func (r VirtualServiceEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService) {
 	if r.DeleteFunc != nil {
 		r.DeleteFunc(updatedList, obj)
 	}

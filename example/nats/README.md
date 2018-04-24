@@ -25,15 +25,15 @@ $ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_
 $ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_secrets/ upstream create  -f analytics.yaml
 ```
 
-Initialize gloo virtualhost:
+Initialize gloo virtualservice:
 ```
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/  virtualhost create  -f virtualhost.1.5.yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/  virtualservice create  -f virtualservice.1.5.yaml
 ```
 
 You can test that everything is in order using:
 ```
 $ glooctl --gloo-config-dir gloo-config/_gloo_config/  upstream get -o yaml
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/  virtualhost get -o yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/  virtualservice get -o yaml
 ```
 
 Once everything is up and running, you can the demo website in your browser, and continue there: http://localhost:8080
@@ -53,5 +53,5 @@ Remove gloo config:
 
 ```bash
 $ rm gloo-config/_gloo_config/upstreams/*
-$ rm gloo-config/_gloo_config/virtualhosts/*
+$ rm gloo-config/_gloo_config/virtualservices/*
 ```

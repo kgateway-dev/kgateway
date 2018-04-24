@@ -14,9 +14,9 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 	const helloService = "helloservice"
 	const helloService2 = "helloservice-2"
 	const servicePort = 8080
-	Context("creating a vhost route with mutliple upstream destinations", func() {
+	Context("creating a vService route with mutliple upstream destinations", func() {
 		randomPath := "/" + uuid.New()
-		vhostName := "multidestinationroute"
+		vServiceName := "multidestinationroute"
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
@@ -44,8 +44,8 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 				}),
 			})
 			Must(err)
-			_, err = gloo.V1().VirtualHosts().Create(&v1.VirtualHost{
-				Name: vhostName,
+			_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
+				Name: vServiceName,
 				Routes: []*v1.Route{{
 					Matcher: &v1.Route_RequestMatcher{
 						RequestMatcher: &v1.RequestMatcher{
@@ -84,7 +84,7 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 		AfterEach(func() {
 			gloo.V1().Upstreams().Delete(helloService)
 			gloo.V1().Upstreams().Delete(helloService2)
-			gloo.V1().VirtualHosts().Delete(vhostName)
+			gloo.V1().VirtualServices().Delete(vServiceName)
 		})
 		It("should balance requests between the two destinations", func() {
 			curlEventuallyShouldRespond(curlOpts{path: randomPath}, "expected-reply-1", time.Minute*5)

@@ -20,7 +20,7 @@ for the templates used in request transformation should match that specified in 
 
 If a function's request template uses named variables (denoted by a string such as `{{ variable_name }}`), Gloo requires that
 the routes pointing to that function specify sources for those parameters on the incoming request. The sources for the parameters
-live in the route's [`extensions`](../v1/virtualhost.md#Route). A request that fails to supply a parameter to a function
+live in the route's [`extensions`](../v1/virtualservice.md#Route). A request that fails to supply a parameter to a function
 upstream will receive a 400 Bad Request as a response.
 
 If the request body is JSON, the fields in that object can be used as sources for parameters without having to specify 
@@ -60,7 +60,7 @@ An example request transformation function looks like the following:
 
 #### Route Spec Configuration - Request Transformation (Parameters)
 
-Request Transformation parameters live on the [`route extensions`](../v1/virtualhost.md#Route), and have the following structure:
+Request Transformation parameters live on the [`route extensions`](../v1/virtualservice.md#Route), and have the following structure:
 
 ```yaml
 parameters:

@@ -18,133 +18,133 @@ import (
 
 // TODO: evaluate efficiency of LSing a whole dir on every op
 // so far this is preferable to caring what files are named
-type virtualHostsClient struct {
+type virtualServicesClient struct {
 	dir           string
 	syncFrequency time.Duration
 }
 
-func (c *virtualHostsClient) Create(item *v1.VirtualHost) (*v1.VirtualHost, error) {
+func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualService, error) {
 	// set resourceversion on clone
-	virtualHostClone, ok := proto.Clone(item).(*v1.VirtualHost)
+	virtualServiceClone, ok := proto.Clone(item).(*v1.VirtualService)
 	if !ok {
 		return nil, errors.New("internal error: output of proto.Clone was not expected type")
 	}
-	if virtualHostClone.Metadata == nil {
-		virtualHostClone.Metadata = &v1.Metadata{}
+	if virtualServiceClone.Metadata == nil {
+		virtualServiceClone.Metadata = &v1.Metadata{}
 	}
-	virtualHostClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualHostClone.Metadata.ResourceVersion)
-	virtualHostFiles, err := c.pathsToVirtualHosts()
+	virtualServiceClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualServiceClone.Metadata.ResourceVersion)
+	virtualServiceFiles, err := c.pathsToVirtualServices()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualHost dir")
+		return nil, errors.Wrap(err, "failed to read virtualService dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualHostFiles {
+	for file, existingUps := range virtualServiceFiles {
 		if existingUps.Name == item.Name {
-			return nil, storage.NewAlreadyExistsErr(errors.Errorf("virtualHost %v already defined in %s", item.Name, file))
+			return nil, storage.NewAlreadyExistsErr(errors.Errorf("virtualService %v already defined in %s", item.Name, file))
 		}
 	}
 	filename := filepath.Join(c.dir, item.Name+".yml")
-	err = WriteToFile(filename, virtualHostClone)
+	err = WriteToFile(filename, virtualServiceClone)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating file")
 	}
-	return virtualHostClone, nil
+	return virtualServiceClone, nil
 }
 
-func (c *virtualHostsClient) Update(item *v1.VirtualHost) (*v1.VirtualHost, error) {
+func (c *virtualServicesClient) Update(item *v1.VirtualService) (*v1.VirtualService, error) {
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}
-	virtualHostFiles, err := c.pathsToVirtualHosts()
+	virtualServiceFiles, err := c.pathsToVirtualServices()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualHost dir")
+		return nil, errors.Wrap(err, "failed to read virtualService dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualHostFiles {
+	for file, existingUps := range virtualServiceFiles {
 		if existingUps.Name != item.Name {
 			continue
 		}
 		if existingUps.Metadata != nil && lessThan(item.Metadata.ResourceVersion, existingUps.Metadata.ResourceVersion) {
 			return nil, errors.Errorf("resource version outdated for %v", item.Name)
 		}
-		virtualHostClone, ok := proto.Clone(item).(*v1.VirtualHost)
+		virtualServiceClone, ok := proto.Clone(item).(*v1.VirtualService)
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
-		virtualHostClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualHostClone.Metadata.ResourceVersion)
+		virtualServiceClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualServiceClone.Metadata.ResourceVersion)
 
-		err = WriteToFile(file, virtualHostClone)
+		err = WriteToFile(file, virtualServiceClone)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed creating file")
 		}
 
-		return virtualHostClone, nil
+		return virtualServiceClone, nil
 	}
-	return nil, errors.Errorf("virtualHost %v not found", item.Name)
+	return nil, errors.Errorf("virtualService %v not found", item.Name)
 }
 
-func (c *virtualHostsClient) Delete(name string) error {
-	virtualHostFiles, err := c.pathsToVirtualHosts()
+func (c *virtualServicesClient) Delete(name string) error {
+	virtualServiceFiles, err := c.pathsToVirtualServices()
 	if err != nil {
-		return errors.Wrap(err, "failed to read virtualHost dir")
+		return errors.Wrap(err, "failed to read virtualService dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualHostFiles {
+	for file, existingUps := range virtualServiceFiles {
 		if existingUps.Name == name {
 			return os.Remove(file)
 		}
 	}
-	return errors.Errorf("file not found for virtualHost %v", name)
+	return errors.Errorf("file not found for virtualService %v", name)
 }
 
-func (c *virtualHostsClient) Get(name string) (*v1.VirtualHost, error) {
-	virtualHostFiles, err := c.pathsToVirtualHosts()
+func (c *virtualServicesClient) Get(name string) (*v1.VirtualService, error) {
+	virtualServiceFiles, err := c.pathsToVirtualServices()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualHost dir")
+		return nil, errors.Wrap(err, "failed to read virtualService dir")
 	}
 	// error if exists already
-	for _, existingUps := range virtualHostFiles {
+	for _, existingUps := range virtualServiceFiles {
 		if existingUps.Name == name {
 			return existingUps, nil
 		}
 	}
-	return nil, errors.Errorf("file not found for virtualHost %v", name)
+	return nil, errors.Errorf("file not found for virtualService %v", name)
 }
 
-func (c *virtualHostsClient) List() ([]*v1.VirtualHost, error) {
-	virtualHostPaths, err := c.pathsToVirtualHosts()
+func (c *virtualServicesClient) List() ([]*v1.VirtualService, error) {
+	virtualServicePaths, err := c.pathsToVirtualServices()
 	if err != nil {
 		return nil, err
 	}
-	var virtualHosts []*v1.VirtualHost
-	for _, up := range virtualHostPaths {
-		virtualHosts = append(virtualHosts, up)
+	var virtualServices []*v1.VirtualService
+	for _, up := range virtualServicePaths {
+		virtualServices = append(virtualServices, up)
 	}
-	return virtualHosts, nil
+	return virtualServices, nil
 }
 
-func (c *virtualHostsClient) pathsToVirtualHosts() (map[string]*v1.VirtualHost, error) {
+func (c *virtualServicesClient) pathsToVirtualServices() (map[string]*v1.VirtualService, error) {
 	files, err := ioutil.ReadDir(c.dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read dir")
 	}
-	virtualHosts := make(map[string]*v1.VirtualHost)
+	virtualServices := make(map[string]*v1.VirtualService)
 	for _, f := range files {
 		path := filepath.Join(c.dir, f.Name())
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var virtualHost v1.VirtualHost
-		err := ReadFileInto(path, &virtualHost)
+		var virtualService v1.VirtualService
+		err := ReadFileInto(path, &virtualService)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as virtualHost")
+			return nil, errors.Wrap(err, "unable to parse .yml file as virtualService")
 		}
-		virtualHosts[path] = &virtualHost
+		virtualServices[path] = &virtualService
 	}
-	return virtualHosts, nil
+	return virtualServices, nil
 }
 
-func (u *virtualHostsClient) Watch(handlers ...storage.VirtualHostEventHandler) (*storage.Watcher, error) {
+func (u *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHandler) (*storage.Watcher, error) {
 	w := watcher.New()
 	w.SetMaxEvents(0)
 	w.FilterOps(watcher.Create, watcher.Write, watcher.Remove)
@@ -184,7 +184,7 @@ func (u *virtualHostsClient) Watch(handlers ...storage.VirtualHostEventHandler) 
 	}), nil
 }
 
-func (u *virtualHostsClient) onEvent(event watcher.Event, handlers ...storage.VirtualHostEventHandler) error {
+func (u *virtualServicesClient) onEvent(event watcher.Event, handlers ...storage.VirtualServiceEventHandler) error {
 	log.Debugf("file event: %v [%v]", event.Path, event.Op)
 	current, err := u.List()
 	if err != nil {
@@ -196,7 +196,7 @@ func (u *virtualHostsClient) onEvent(event watcher.Event, handlers ...storage.Vi
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.VirtualHost
+			var created v1.VirtualService
 			err := ReadFileInto(event.Path, &created)
 			if err != nil {
 				return err
@@ -205,7 +205,7 @@ func (u *virtualHostsClient) onEvent(event watcher.Event, handlers ...storage.Vi
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.VirtualHost
+			var updated v1.VirtualService
 			err := ReadFileInto(event.Path, &updated)
 			if err != nil {
 				return err

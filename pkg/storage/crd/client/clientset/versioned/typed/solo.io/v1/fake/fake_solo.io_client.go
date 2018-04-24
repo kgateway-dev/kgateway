@@ -30,8 +30,8 @@ func (c *FakeGlooV1) Upstreams(namespace string) v1.UpstreamInterface {
 	return &FakeUpstreams{c, namespace}
 }
 
-func (c *FakeGlooV1) VirtualHosts(namespace string) v1.VirtualHostInterface {
-	return &FakeVirtualHosts{c, namespace}
+func (c *FakeGlooV1) VirtualServices(namespace string) v1.VirtualServiceInterface {
+	return &FakeVirtualServices{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -23,25 +23,25 @@ func newTranslator() *Translator {
 
 var _ = Describe("Translator", func() {
 	Context("invalid config", func() {
-		Context("domains are not unique amongst virtual hosts", func() {
+		Context("domains are not unique amongst virtual services", func() {
 			cfg := InvalidConfigSharedDomains()
 			t := newTranslator()
 			snap, reports, err := t.Translate(Inputs{Cfg: cfg})
-			It("returns four reports, one for each upstream, one for each virtualhost", func() {
+			It("returns four reports, one for each upstream, one for each virtualservice", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(3))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
-				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualHosts[0]))
-				Expect(reports[2].CfgObject).To(Equal(cfg.VirtualHosts[1]))
+				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
+				Expect(reports[2].CfgObject).To(Equal(cfg.VirtualServices[1]))
 			})
 			It("returns no error report for the cluster", func() {
 				Expect(reports[0].Err).To(BeNil())
 			})
-			It("returns an error report for each virtual host", func() {
+			It("returns an error report for each virtual service", func() {
 				Expect(reports[1].Err).NotTo(BeNil())
 				Expect(reports[2].Err).NotTo(BeNil())
-				Expect(reports[1].Err.Error()).To(ContainSubstring("is shared by the following virtual hosts: [invalid-vhost-1 invalid-vhost-2]"))
-				Expect(reports[2].Err.Error()).To(ContainSubstring("shared by the following virtual hosts: [invalid-vhost-1 invalid-vhost-2]"))
+				Expect(reports[1].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vService-1 invalid-vService-2]"))
+				Expect(reports[2].Err.Error()).To(ContainSubstring("shared by the following virtual services: [invalid-vService-1 invalid-vService-2]"))
 			})
 			It("returns only the valid cluster", func() {
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
@@ -55,13 +55,13 @@ var _ = Describe("Translator", func() {
 			cfg := PartiallyValidConfig()
 			t := newTranslator()
 			snap, reports, err := t.Translate(Inputs{Cfg: cfg})
-			It("returns four reports, one for each upstream, one for each virtualhost", func() {
+			It("returns four reports, one for each upstream, one for each virtualservice", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(4))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
 				Expect(reports[1].CfgObject).To(Equal(cfg.Upstreams[1]))
-				Expect(reports[2].CfgObject).To(Equal(cfg.VirtualHosts[0]))
-				Expect(reports[3].CfgObject).To(Equal(cfg.VirtualHosts[1]))
+				Expect(reports[2].CfgObject).To(Equal(cfg.VirtualServices[0]))
+				Expect(reports[3].CfgObject).To(Equal(cfg.VirtualServices[1]))
 			})
 			It("returns an error report for the bad cluster and the bad route", func() {
 				Expect(reports[0].Err).To(BeNil())
@@ -71,12 +71,12 @@ var _ = Describe("Translator", func() {
 				Expect(reports[1].Err.Error()).To(ContainSubstring("ip cannot be empty"))
 				Expect(reports[3].Err.Error()).To(ContainSubstring("upstream invalid-service was not found or had errors for function destination"))
 			})
-			It("returns one cluster and one vhost", func() {
+			It("returns one cluster and one vService", func() {
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
 				Expect(clas).To(HaveLen(0))
 				Expect(clusters).To(HaveLen(1))
 				Expect(routeConfigs).To(HaveLen(1))
-				Expect(routeConfigs[0].VirtualHosts).To(HaveLen(1))
+				Expect(routeConfigs[0].VirtualServices).To(HaveLen(1))
 				Expect(listeners).To(HaveLen(1))
 				Expect(listeners[0].FilterChains).To(HaveLen(1))
 				Expect(listeners[0].FilterChains[0].Filters).To(HaveLen(1))
@@ -85,7 +85,7 @@ var _ = Describe("Translator", func() {
 		Context("with missing upstream for route", func() {
 			cfg := InvalidConfigNoUpstream()
 			t := newTranslator()
-			It("returns report for the error and no virtual hosts", func() {
+			It("returns report for the error and no virtual services", func() {
 				snap, reports, err := t.Translate(Inputs{Cfg: cfg})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(2))
@@ -94,7 +94,7 @@ var _ = Describe("Translator", func() {
 				Expect(reports[1].Err).NotTo(BeNil())
 				Expect(reports[1].Err.Error()).To(ContainSubstring("upstream invalid-service was not found or had " +
 					"errors for upstream destination"))
-				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualHosts[0]))
+				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
 				Expect(clas).To(HaveLen(0))
 				Expect(clusters).To(HaveLen(1))
@@ -104,7 +104,7 @@ var _ = Describe("Translator", func() {
 		})
 	})
 	Context("valid config", func() {
-		Context("with no ssl vhosts", func() {
+		Context("with no ssl vServices", func() {
 			cfg := ValidConfigNoSsl()
 			t := newTranslator()
 			It("returns an empty ssl routeconfig and a len 1 nossl routeconfig", func() {
@@ -112,7 +112,7 @@ var _ = Describe("Translator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(2))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
-				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualHosts[0]))
+				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
 				Expect(reports[0].Err).To(BeNil())
 				Expect(reports[1].Err).To(BeNil())
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
@@ -120,8 +120,8 @@ var _ = Describe("Translator", func() {
 				Expect(clusters).To(HaveLen(1))
 				Expect(routeConfigs).To(HaveLen(1))
 				Expect(routeConfigs[0].Name).To(Equal(nosslRdsName))
-				Expect(routeConfigs[0].VirtualHosts).To(HaveLen(1))
-				Expect(routeConfigs[0].VirtualHosts[0].RequireTls).To(Equal(envoyroute.VirtualHost_NONE))
+				Expect(routeConfigs[0].VirtualServices).To(HaveLen(1))
+				Expect(routeConfigs[0].VirtualServices[0].RequireTls).To(Equal(envoyroute.VirtualService_NONE))
 				Expect(listeners).To(HaveLen(1))
 			})
 		})
@@ -134,7 +134,7 @@ var _ = Describe("Translator", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(reports).To(HaveLen(2))
 					Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
-					Expect(reports[1].CfgObject).To(Equal(cfg.VirtualHosts[0]))
+					Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
 					Expect(reports[0].Err).To(BeNil())
 					Expect(reports[1].Err).NotTo(BeNil())
 					Expect(reports[1].Err.Error()).To(ContainSubstring("secret not found for ref ssl-secret-ref"))
@@ -154,7 +154,7 @@ var _ = Describe("Translator", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(reports).To(HaveLen(2))
 					Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
-					Expect(reports[1].CfgObject).To(Equal(cfg.VirtualHosts[0]))
+					Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
 					Expect(reports[0].Err).To(BeNil())
 					Expect(reports[1].Err).To(BeNil())
 					clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
@@ -162,8 +162,8 @@ var _ = Describe("Translator", func() {
 					Expect(clusters).To(HaveLen(1))
 					Expect(routeConfigs).To(HaveLen(1))
 					Expect(routeConfigs[0].Name).To(Equal(sslRdsName))
-					Expect(routeConfigs[0].VirtualHosts).To(HaveLen(1))
-					Expect(routeConfigs[0].VirtualHosts[0].RequireTls).To(Equal(envoyroute.VirtualHost_ALL))
+					Expect(routeConfigs[0].VirtualServices).To(HaveLen(1))
+					Expect(routeConfigs[0].VirtualServices[0].RequireTls).To(Equal(envoyroute.VirtualService_ALL))
 					Expect(listeners).To(HaveLen(1))
 				})
 			})
@@ -209,9 +209,9 @@ func ValidConfigNoSsl() *v1.Config {
 			}),
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
+	virtualServices := []*v1.VirtualService{
 		{
-			Name: "valid-vhost",
+			Name: "valid-vService",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -249,8 +249,8 @@ func ValidConfigNoSsl() *v1.Config {
 		},
 	}
 	return &v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
@@ -269,9 +269,9 @@ func InvalidConfigSharedDomains() *v1.Config {
 			}),
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
+	virtualServices := []*v1.VirtualService{
 		{
-			Name: "invalid-vhost-1",
+			Name: "invalid-vService-1",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -294,7 +294,7 @@ func InvalidConfigSharedDomains() *v1.Config {
 			},
 		},
 		{
-			Name:    "invalid-vhost-2",
+			Name:    "invalid-vService-2",
 			Domains: []string{"*"},
 			Routes: []*v1.Route{
 				{
@@ -319,8 +319,8 @@ func InvalidConfigSharedDomains() *v1.Config {
 		},
 	}
 	return &v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
@@ -339,9 +339,9 @@ func ValidConfigSsl() *v1.Config {
 			}),
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
+	virtualServices := []*v1.VirtualService{
 		{
-			Name: "valid-vhost",
+			Name: "valid-vService",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -382,8 +382,8 @@ func ValidConfigSsl() *v1.Config {
 		},
 	}
 	return &v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
@@ -414,9 +414,9 @@ func PartiallyValidConfig() *v1.Config {
 			}),
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
+	virtualServices := []*v1.VirtualService{
 		{
-			Name:    "valid-vhost",
+			Name:    "valid-vService",
 			Domains: []string{"foo.example.com"},
 			Routes: []*v1.Route{
 				{
@@ -440,7 +440,7 @@ func PartiallyValidConfig() *v1.Config {
 			},
 		},
 		{
-			Name:    "invalid-vhost",
+			Name:    "invalid-vService",
 			Domains: []string{"bar.example.com"},
 			Routes: []*v1.Route{
 				{
@@ -480,8 +480,8 @@ func PartiallyValidConfig() *v1.Config {
 		},
 	}
 	return &v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
@@ -505,9 +505,9 @@ func InvalidConfigNoFuncPlugin() *v1.Config {
 			},
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
+	virtualServices := []*v1.VirtualService{
 		{
-			Name: "invalid-vhost",
+			Name: "invalid-vService",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -546,8 +546,8 @@ func InvalidConfigNoFuncPlugin() *v1.Config {
 		},
 	}
 	return &v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }
 
@@ -566,9 +566,9 @@ func InvalidConfigNoUpstream() *v1.Config {
 			}),
 		},
 	}
-	virtualhosts := []*v1.VirtualHost{
+	virtualServices := []*v1.VirtualService{
 		{
-			Name: "invalid-vhost",
+			Name: "invalid-vService",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -606,7 +606,7 @@ func InvalidConfigNoUpstream() *v1.Config {
 		},
 	}
 	return &v1.Config{
-		Upstreams:    upstreams,
-		VirtualHosts: virtualhosts,
+		Upstreams:       upstreams,
+		VirtualServices: virtualServices,
 	}
 }

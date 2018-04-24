@@ -28,13 +28,13 @@
 //		dir                         string
 //		err                         error
 //		watch                       configwatcher.Interface
-//		resourceDirs                = []string{"upstreams", "virtualhosts"}
-//		upstreamDir, virtualhostDir string
+//		resourceDirs                = []string{"upstreams", "virtualservices"}
+//		upstreamDir, virtualserviceDir string
 //		upstreamFilename            = func(us *v1.Upstream) string {
 //			return filepath.Join(upstreamDir, fmt.Sprintf("%v.yaml", us.Name))
 //		}
-//		virtualhostFilename = func(vh *v1.VirtualHost) string {
-//			return filepath.Join(virtualhostDir, fmt.Sprintf("%v.yaml", vh.Name))
+//		virtualserviceFilename = func(vs *v1.VirtualService) string {
+//			return filepath.Join(virtualserviceDir, fmt.Sprintf("%v.yaml", vs.Name))
 //		}
 //	)
 //	BeforeEach(func() {
@@ -45,7 +45,7 @@
 //		watch, err = NewConfigWatcher(storageClient)
 //		Must(err)
 //		upstreamDir = filepath.Join(dir, "upstreams")
-//		virtualhostDir = filepath.Join(dir, "virtualhosts")
+//		virtualserviceDir = filepath.Join(dir, "virtualservices")
 //	})
 //	AfterEach(func() {
 //		log.Debugf("removing " + dir)
@@ -74,8 +74,8 @@
 //					err := writeConfigObjFile(us, upstreamFilename(us))
 //					Expect(err).NotTo(HaveOccurred())
 //				}
-//				for _, vhost := range cfg.VirtualHosts {
-//					err := writeConfigObjFile(vhost, virtualhostFilename(vhost))
+//				for _, vService := range cfg.VirtualServices {
+//					err := writeConfigObjFile(vService, virtualserviceFilename(vService))
 //					Expect(err).NotTo(HaveOccurred())
 //				}
 //				var expectedCfg v1.Config
@@ -86,14 +86,14 @@
 //				var actualCfg *v1.Config
 //				Eventually(func() (v1.Config, error) {
 //					cfg, err := readConfig(watch)
-//					sort.SliceStable(cfg.VirtualHosts, func(i, j int) bool {
-//						return cfg.VirtualHosts[i].Name < cfg.VirtualHosts[j].Name
+//					sort.SliceStable(cfg.VirtualServices, func(i, j int) bool {
+//						return cfg.VirtualServices[i].Name < cfg.VirtualServices[j].Name
 //					})
 //					sort.SliceStable(cfg.Upstreams, func(i, j int) bool {
 //						return cfg.Upstreams[i].Name < cfg.Upstreams[j].Name
 //					})
 //					actualCfg = &cfg
-//					log.Printf("%v", actualCfg.VirtualHosts)
+//					log.Printf("%v", actualCfg.VirtualServices)
 //					return cfg, err
 //				}).Should(Equal(expectedCfg))
 //			})
@@ -153,9 +153,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage/file"
 	. "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 var _ = Describe("FileConfigWatcher", func() {
@@ -179,8 +179,8 @@ var _ = Describe("FileConfigWatcher", func() {
 			Must(err)
 			go func() { watcher.Run(make(chan struct{})) }()
 
-			virtualHost := NewTestVirtualHost("something", NewTestRoute1())
-			created, err := storageClient.V1().VirtualHosts().Create(virtualHost)
+			virtualService := NewTestVirtualService("something", NewTestRoute1())
+			created, err := storageClient.V1().VirtualServices().Create(virtualService)
 			Expect(err).NotTo(HaveOccurred())
 
 			// give controller time to register
@@ -190,10 +190,10 @@ var _ = Describe("FileConfigWatcher", func() {
 			case <-time.After(time.Second * 5):
 				Expect(fmt.Errorf("expected to have received resource event before 5s")).NotTo(HaveOccurred())
 			case cfg := <-watcher.Config():
-				Expect(len(cfg.VirtualHosts)).To(Equal(1))
-				Expect(cfg.VirtualHosts[0]).To(Equal(created))
-				Expect(len(cfg.VirtualHosts[0].Routes)).To(Equal(1))
-				Expect(cfg.VirtualHosts[0].Routes[0]).To(Equal(created.Routes[0]))
+				Expect(len(cfg.VirtualServices)).To(Equal(1))
+				Expect(cfg.VirtualServices[0]).To(Equal(created))
+				Expect(len(cfg.VirtualServices[0].Routes)).To(Equal(1))
+				Expect(cfg.VirtualServices[0].Routes[0]).To(Equal(created.Routes[0]))
 			case err := <-watcher.Error():
 				Expect(err).NotTo(HaveOccurred())
 			}

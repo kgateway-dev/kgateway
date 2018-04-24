@@ -23,12 +23,12 @@ var (
 	sslPrivateKey []byte //= []byte(``)
 )
 
-var _ = Describe("SNI Virtualhost", func() {
+var _ = Describe("SNI VirtualService", func() {
 	const helloService = "helloservice"
 	const servicePort = 8080
-	Context("creating a vhost with an ssl config", func() {
+	Context("creating a vService with an ssl config", func() {
 		path := "/ssl-route"
-		vhostName := "ssl-config"
+		vServiceName := "ssl-config"
 		secretName := "test-secret"
 		BeforeEach(func() {
 			var err error
@@ -60,8 +60,8 @@ var _ = Describe("SNI Virtualhost", func() {
 				}),
 			})
 			Must(err)
-			_, err = gloo.V1().VirtualHosts().Create(&v1.VirtualHost{
-				Name: vhostName,
+			_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
+				Name: vServiceName,
 				Routes: []*v1.Route{{
 					Matcher: &v1.Route_RequestMatcher{
 						RequestMatcher: &v1.RequestMatcher{
@@ -88,7 +88,7 @@ var _ = Describe("SNI Virtualhost", func() {
 		AfterEach(func() {
 			kube.CoreV1().Secrets(namespace).Delete(secretName, nil)
 			gloo.V1().Upstreams().Delete(helloService)
-			gloo.V1().VirtualHosts().Delete(vhostName)
+			gloo.V1().VirtualServices().Delete(vServiceName)
 		})
 		It("should get a 200ok on the ssl port (8443)", func() {
 			curlEventuallyShouldRespond(curlOpts{protocol: "https", path: path, port: 8443, caFile: "/root.crt"}, "< HTTP/1.1 200", time.Minute*5)

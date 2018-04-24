@@ -10,7 +10,7 @@ type Interface interface {
 type V1 interface {
 	Register() error
 	Upstreams() Upstreams
-	VirtualHosts() VirtualHosts
+	VirtualServices() VirtualServices
 }
 
 type Upstreams interface {
@@ -22,11 +22,11 @@ type Upstreams interface {
 	Watch(handlers ...UpstreamEventHandler) (*Watcher, error)
 }
 
-type VirtualHosts interface {
-	Create(*v1.VirtualHost) (*v1.VirtualHost, error)
-	Update(*v1.VirtualHost) (*v1.VirtualHost, error)
+type VirtualServices interface {
+	Create(*v1.VirtualService) (*v1.VirtualService, error)
+	Update(*v1.VirtualService) (*v1.VirtualService, error)
 	Delete(name string) error
-	Get(name string) (*v1.VirtualHost, error)
-	List() ([]*v1.VirtualHost, error)
-	Watch(...VirtualHostEventHandler) (*Watcher, error)
+	Get(name string) (*v1.VirtualService, error)
+	List() ([]*v1.VirtualService, error)
+	Watch(...VirtualServiceEventHandler) (*Watcher, error)
 }

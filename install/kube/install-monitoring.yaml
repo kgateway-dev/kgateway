@@ -3004,7 +3004,7 @@ spec:
 
 ---
 apiVersion: gloo.solo.io/v1
-kind: VirtualHost
+kind: VirtualService
 metadata:
   name: my-services
   namespace: gloo-system

@@ -55,8 +55,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=gloo.solo.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("upstreams"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gloo().V1().Upstreams().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("virtualhosts"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gloo().V1().VirtualHosts().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("virtualservices"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gloo().V1().VirtualServices().Informer()}, nil
 
 	}
 

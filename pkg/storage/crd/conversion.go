@@ -4,8 +4,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	crdv1 "github.com/solo-io/gloo/pkg/storage/crd/solo.io/v1"
 	"github.com/solo-io/gloo/pkg/protoutil"
+	crdv1 "github.com/solo-io/gloo/pkg/storage/crd/solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -75,42 +75,42 @@ func UpstreamFromCrd(upstreamCrd *crdv1.Upstream) (*v1.Upstream, error) {
 	return &upstream, nil
 }
 
-func VirtualHostToCrd(namespace string, virtualHost *v1.VirtualHost) (*crdv1.VirtualHost, error) {
-	name := virtualHost.Name
+func VirtualServiceToCrd(namespace string, virtualService *v1.VirtualService) (*crdv1.VirtualService, error) {
+	name := virtualService.Name
 	var status *v1.Status
 	var ok bool
-	if virtualHost.Status != nil {
-		status, ok = proto.Clone(virtualHost.Status).(*v1.Status)
+	if virtualService.Status != nil {
+		status, ok = proto.Clone(virtualService.Status).(*v1.Status)
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
 	}
 	var resourceVersion string
 	var annotations map[string]string
-	if virtualHost.Metadata != nil {
-		resourceVersion = virtualHost.Metadata.ResourceVersion
-		if virtualHost.Metadata.Namespace != "" {
-			namespace = virtualHost.Metadata.Namespace
+	if virtualService.Metadata != nil {
+		resourceVersion = virtualService.Metadata.ResourceVersion
+		if virtualService.Metadata.Namespace != "" {
+			namespace = virtualService.Metadata.Namespace
 		}
-		annotations = virtualHost.Metadata.Annotations
+		annotations = virtualService.Metadata.Annotations
 	}
 
 	// clone and remove fields
-	vHostClone, ok := proto.Clone(virtualHost).(*v1.VirtualHost)
+	vServiceClone, ok := proto.Clone(virtualService).(*v1.VirtualService)
 	if !ok {
 		return nil, errors.New("internal error: output of proto.Clone was not expected type")
 	}
-	vHostClone.Metadata = nil
-	vHostClone.Name = ""
-	vHostClone.Status = nil
+	vServiceClone.Metadata = nil
+	vServiceClone.Name = ""
+	vServiceClone.Status = nil
 
-	spec, err := protoutil.MarshalMap(vHostClone)
+	spec, err := protoutil.MarshalMap(vServiceClone)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert proto upstream to map[string]interface{}")
 	}
 	copySpec := crdv1.Spec(spec)
 
-	return &crdv1.VirtualHost{
+	return &crdv1.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
@@ -122,21 +122,21 @@ func VirtualHostToCrd(namespace string, virtualHost *v1.VirtualHost) (*crdv1.Vir
 	}, nil
 }
 
-func VirtualHostFromCrd(vHostCrd *crdv1.VirtualHost) (*v1.VirtualHost, error) {
-	var virtualHost v1.VirtualHost
-	if vHostCrd.Spec != nil {
-		err := protoutil.UnmarshalMap(*vHostCrd.Spec, &virtualHost)
+func VirtualServiceFromCrd(vServiceCrd *crdv1.VirtualService) (*v1.VirtualService, error) {
+	var virtualService v1.VirtualService
+	if vServiceCrd.Spec != nil {
+		err := protoutil.UnmarshalMap(*vServiceCrd.Spec, &virtualService)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert crd spec to virtualhost")
+			return nil, errors.Wrap(err, "failed to convert crd spec to virtualservice")
 		}
 	}
 	// add removed fields to the internal object
-	virtualHost.Name = vHostCrd.Name
-	virtualHost.Metadata = &v1.Metadata{
-		ResourceVersion: vHostCrd.ResourceVersion,
-		Namespace:       vHostCrd.Namespace,
-		Annotations:     vHostCrd.Annotations,
+	virtualService.Name = vServiceCrd.Name
+	virtualService.Metadata = &v1.Metadata{
+		ResourceVersion: vServiceCrd.ResourceVersion,
+		Namespace:       vServiceCrd.Namespace,
+		Annotations:     vServiceCrd.Annotations,
 	}
-	virtualHost.Status = vHostCrd.Status
-	return &virtualHost, nil
+	virtualService.Status = vServiceCrd.Status
+	return &virtualService, nil
 }

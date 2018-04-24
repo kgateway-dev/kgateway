@@ -10,41 +10,41 @@ import "status.proto";
 import "metadata.proto";
 
 /**
- * Virtual Hosts represent a collection of routes for a set of domains.
- * Gloo's Virtual Hosts can be compared to
- * [virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vhost.html?highlight=virtual%20host) in Envoy terminology.
- * A virtual host can be used to define "apps"; a collection of APIs that belong to a particular domain.
- * The Virtual Host concept allows configuration of per-virtualhost SSL certificates
+ * Virtual Services represent a collection of routes for a set of domains.
+ * Gloo's Virtual Services can be compared to
+ * [virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vService.html?highlight=virtual%20host) in Envoy terminology.
+ * A virtual service can be used to define "apps"; a collection of APIs that belong to a particular domain.
+ * The Virtual Service concept allows configuration of per-virtualservice SSL certificates
  */
-message VirtualHost {
-    // Name of the virtual host. Names must be unique and follow the following syntax rules:
+message VirtualService {
+    // Name of the virtual service. Names must be unique and follow the following syntax rules:
     // One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
     string name = 1;
-    // Domains represent the list of domains (host/authority header) that will match for all routes on this virtual host.
+    // Domains represent the list of domains (host/authority header) that will match for all routes on this virtual service.
     // As in Envoy: wildcard hosts are supported in the form of “*.foo.com” or “*-bar.foo.com”.
-    // If domains is empty, gloo will set the domain to "*", making that virtual host the "default" virtualhost.
-    // The default virtualhost will be the fallback virtual host for all requests that do not match a domain on an existing virtual host.
-    // Only one default virtual host can be defined (either with an empty domain list, or a domain list that includes "*")
+    // If domains is empty, gloo will set the domain to "*", making that virtual service the "default" virtualservice.
+    // The default virtualservice will be the fallback virtual service for all requests that do not match a domain on an existing virtual service.
+    // Only one default virtual service can be defined (either with an empty domain list, or a domain list that includes "*")
     repeated string domains = 2;
-    // Routes define the list of [routes](../) that live on this virtual host.
+    // Routes define the list of [routes](../) that live on this virtual service.
     repeated Route routes = 3;
-    // SSL Config is optional for the virtual host. If provided, the virtual host will listen on the envoy HTTPS listener port (default :8443)
-    // If left empty, the virtual host will listen on the HTTP listener port (default :8080)
+    // SSL Config is optional for the virtual service. If provided, the virtual service will listen on the envoy HTTPS listener port (default :8443)
+    // If left empty, the virtual service will listen on the HTTP listener port (default :8080)
     SSLConfig ssl_config = 4;
 
-    // Status indicates the validation status of the virtual host resource. Status is read-only by clients, and set by gloo during validation
+    // Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation
     Status status = 5 [(gogoproto.moretags) = "testdiff:\"ignore\""];
-    // Metadata contains the resource metadata for the virtual host
+    // Metadata contains the resource metadata for the virtual service
     Metadata metadata = 6;
 }
 
 /**
- * Routes declare the entrypoints on virtual hosts and the upstreams or functions they route requests to
+ * Routes declare the entrypoints on virtual services and the upstreams or functions they route requests to
  */
 message Route {
     // Matcher defines what properties of a request to match on.
     // Routes will route all requests they match.
-    // If a request matches more than one route, the first route on the virtual host's route list will be selected.
+    // If a request matches more than one route, the first route on the virtual service's route list will be selected.
     oneof matcher {
         // request_matcher indicates this route should match requests according to the specification in the provided RequestMatcher
         // only one of request_matcher or event_matcher can be set
@@ -133,7 +133,7 @@ message UpstreamDestination {
     string name = 1;
 }
 
-// SSLConfig contains the options necessary to configure a virtualhost to use TLS
+// SSLConfig contains the options necessary to configure a virtualservice to use TLS
 message SSLConfig {
     /** SecretRef contains the secret ref<!--(TODO)--> to a gloo secret<!--(TODO)--> containing the following structure:
     {

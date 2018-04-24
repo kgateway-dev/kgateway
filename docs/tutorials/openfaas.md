@@ -70,9 +70,9 @@ Add the certificates as secrets to kubernetes (this makes them available to gloo
 glooctl secret create certificate --name gloo-secure -c server.cert -p server.key
 ```
 
-Configure gloo's default virtual host to route to the function and use the certificates:
+Configure gloo's default virtual service to route to the function and use the certificates:
 ```
-$ cat <<EOF | glooctl virtualhost create -f -
+$ cat <<EOF | glooctl virtualservice create -f -
 name: default
 routes:
 - request_matcher:

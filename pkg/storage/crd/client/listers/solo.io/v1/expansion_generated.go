@@ -26,10 +26,10 @@ type UpstreamListerExpansion interface{}
 // UpstreamNamespaceLister.
 type UpstreamNamespaceListerExpansion interface{}
 
-// VirtualHostListerExpansion allows custom methods to be added to
-// VirtualHostLister.
-type VirtualHostListerExpansion interface{}
+// VirtualServiceListerExpansion allows custom methods to be added to
+// VirtualServiceLister.
+type VirtualServiceListerExpansion interface{}
 
-// VirtualHostNamespaceListerExpansion allows custom methods to be added to
-// VirtualHostNamespaceLister.
-type VirtualHostNamespaceListerExpansion interface{}
+// VirtualServiceNamespaceListerExpansion allows custom methods to be added to
+// VirtualServiceNamespaceLister.
+type VirtualServiceNamespaceListerExpansion interface{}
