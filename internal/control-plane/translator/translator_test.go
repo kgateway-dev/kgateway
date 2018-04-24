@@ -40,8 +40,8 @@ var _ = Describe("Translator", func() {
 			It("returns an error report for each virtual service", func() {
 				Expect(reports[1].Err).NotTo(BeNil())
 				Expect(reports[2].Err).NotTo(BeNil())
-				Expect(reports[1].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vService-1 invalid-vService-2]"))
-				Expect(reports[2].Err.Error()).To(ContainSubstring("shared by the following virtual services: [invalid-vService-1 invalid-vService-2]"))
+				Expect(reports[1].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
+				Expect(reports[2].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
 			})
 			It("returns only the valid cluster", func() {
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
@@ -71,12 +71,12 @@ var _ = Describe("Translator", func() {
 				Expect(reports[1].Err.Error()).To(ContainSubstring("ip cannot be empty"))
 				Expect(reports[3].Err.Error()).To(ContainSubstring("upstream invalid-service was not found or had errors for function destination"))
 			})
-			It("returns one cluster and one vService", func() {
+			It("returns one cluster and one envoy virtual host", func() {
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
 				Expect(clas).To(HaveLen(0))
 				Expect(clusters).To(HaveLen(1))
 				Expect(routeConfigs).To(HaveLen(1))
-				Expect(routeConfigs[0].VirtualServices).To(HaveLen(1))
+				Expect(routeConfigs[0].VirtualHosts).To(HaveLen(1))
 				Expect(listeners).To(HaveLen(1))
 				Expect(listeners[0].FilterChains).To(HaveLen(1))
 				Expect(listeners[0].FilterChains[0].Filters).To(HaveLen(1))
@@ -119,9 +119,9 @@ var _ = Describe("Translator", func() {
 				Expect(clas).To(HaveLen(0))
 				Expect(clusters).To(HaveLen(1))
 				Expect(routeConfigs).To(HaveLen(1))
-				Expect(routeConfigs[0].Name).To(Equal(nosslRdsName))
-				Expect(routeConfigs[0].VirtualServices).To(HaveLen(1))
-				Expect(routeConfigs[0].VirtualServices[0].RequireTls).To(Equal(envoyroute.VirtualService_NONE))
+				Expect(routeConfigs[0].Name).To(Equal(noSslRdsName))
+				Expect(routeConfigs[0].VirtualHosts).To(HaveLen(1))
+				Expect(routeConfigs[0].VirtualHosts[0].RequireTls).To(Equal(envoyroute.VirtualHost_NONE))
 				Expect(listeners).To(HaveLen(1))
 			})
 		})
@@ -162,8 +162,8 @@ var _ = Describe("Translator", func() {
 					Expect(clusters).To(HaveLen(1))
 					Expect(routeConfigs).To(HaveLen(1))
 					Expect(routeConfigs[0].Name).To(Equal(sslRdsName))
-					Expect(routeConfigs[0].VirtualServices).To(HaveLen(1))
-					Expect(routeConfigs[0].VirtualServices[0].RequireTls).To(Equal(envoyroute.VirtualService_ALL))
+					Expect(routeConfigs[0].VirtualHosts).To(HaveLen(1))
+					Expect(routeConfigs[0].VirtualHosts[0].RequireTls).To(Equal(envoyroute.VirtualHost_ALL))
 					Expect(listeners).To(HaveLen(1))
 				})
 			})
@@ -294,7 +294,7 @@ func InvalidConfigSharedDomains() *v1.Config {
 			},
 		},
 		{
-			Name:    "invalid-vService-2",
+			Name:    "invalid-vservice-2",
 			Domains: []string{"*"},
 			Routes: []*v1.Route{
 				{

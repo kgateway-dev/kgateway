@@ -35,8 +35,8 @@ const (
 	sslRdsName      = "gloo-rds-https"
 	sslListenerName = "listener-" + sslRdsName
 
-	nosslRdsName      = "gloo-rds-http"
-	nosslListenerName = "listener-" + nosslRdsName
+	noSslRdsName      = "gloo-rds-http"
+	nosslListenerName = "listener-" + noSslRdsName
 
 	connMgrFilter = "envoy.http_connection_manager"
 	routerFilter  = "envoy.router"
@@ -125,12 +125,12 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	// mark errored upstreams; routes that point to them are considered invalid
 	errored := getErroredUpstreams(upstreamReports)
 
-	// virtualservices
-	sslVirtualServices, nosslVirtualServices, virtualServiceReports := t.computeVirtualServices(cfg, errored, secrets)
+	// envoy virtual hosts
+	sslVirtualHosts, noSslVirtualHosts, virtualServiceReports := t.computeVirtualHosts(cfg, errored, secrets)
 
-	nosslRouteConfig := &envoyapi.RouteConfiguration{
-		Name:            nosslRdsName,
-		VirtualServices: nosslVirtualServices,
+	noSslRouteConfig := &envoyapi.RouteConfiguration{
+		Name:         noSslRdsName,
+		VirtualHosts: noSslVirtualHosts,
 	}
 
 	// create the base http filters which both listeners will implement
@@ -140,7 +140,7 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	// they are basically the same, but have different rds names
 
 	// http filters
-	nosslFilters, err := t.constructFilters(nosslRouteConfig.Name, httpFilters)
+	nosslFilters, err := t.constructFilters(noSslRouteConfig.Name, httpFilters)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "constructing http filter chain %v", nosslListenerName)
 	}
@@ -148,8 +148,8 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 
 	// https filters
 	sslRouteConfig := &envoyapi.RouteConfiguration{
-		Name:            sslRdsName,
-		VirtualServices: sslVirtualServices,
+		Name:         sslRdsName,
+		VirtualHosts: sslVirtualHosts,
 	}
 
 	sslFilters, err := t.constructFilters(sslRouteConfig.Name, httpFilters)
@@ -182,13 +182,13 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	var listenersProto, routesProto []envoycache.Resource
 
 	// only add http listener and route config if we have no ssl vServices
-	if len(nosslVirtualServices) > 0 && len(nosslListener.FilterChains) > 0 {
+	if len(noSslVirtualHosts) > 0 && len(nosslListener.FilterChains) > 0 {
 		listenersProto = append(listenersProto, nosslListener)
-		routesProto = append(routesProto, nosslRouteConfig)
+		routesProto = append(routesProto, noSslRouteConfig)
 	}
 
 	// only add https listener and route config if we have ssl vServices
-	if len(sslVirtualServices) > 0 && len(httpsListener.FilterChains) > 0 {
+	if len(sslVirtualHosts) > 0 && len(httpsListener.FilterChains) > 0 {
 		listenersProto = append(listenersProto, httpsListener)
 		routesProto = append(routesProto, sslRouteConfig)
 	}
@@ -352,20 +352,20 @@ func dependenciesForPlugin(cfg *v1.Config, plug plugins.TranslatorPlugin, depend
 
 // VirtualServices
 
-func (t *Translator) computeVirtualServices(cfg *v1.Config,
+func (t *Translator) computeVirtualHosts(cfg *v1.Config,
 	erroredUpstreams map[string]bool,
-	secrets secretwatcher.SecretMap) ([]envoyroute.VirtualService, []envoyroute.VirtualService, []reporter.ConfigObjectReport) {
+	secrets secretwatcher.SecretMap) ([]envoyroute.VirtualHost, []envoyroute.VirtualHost, []reporter.ConfigObjectReport) {
 	var (
-		reports              []reporter.ConfigObjectReport
-		sslVirtualServices   []envoyroute.VirtualService
-		nosslVirtualServices []envoyroute.VirtualService
+		reports           []reporter.ConfigObjectReport
+		sslVirtualHosts   []envoyroute.VirtualHost
+		noSslVirtualHosts []envoyroute.VirtualHost
 	)
 
 	// check for bad domains, then add those errors to the vService error list
 	vServicesWithBadDomains := virtualServicesWithConflictingDomains(cfg.VirtualServices, reports)
 
 	for _, virtualService := range cfg.VirtualServices {
-		envoyVirtualService, err := t.computeVirtualService(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
+		envoyVirtualHost, err := t.computeVirtualHost(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
 		if domainErr, invalidVService := vServicesWithBadDomains[virtualService.Name]; invalidVService {
 			err = multierror.Append(err, domainErr)
 		}
@@ -376,14 +376,14 @@ func (t *Translator) computeVirtualServices(cfg *v1.Config,
 		}
 		if virtualService.SslConfig != nil && virtualService.SslConfig.SecretRef != "" {
 			// TODO: allow user to specify require ALL tls or just external
-			envoyVirtualService.RequireTls = envoyroute.VirtualService_ALL
-			sslVirtualServices = append(sslVirtualServices, envoyVirtualService)
+			envoyVirtualHost.RequireTls = envoyroute.VirtualHost_ALL
+			sslVirtualHosts = append(sslVirtualHosts, envoyVirtualHost)
 		} else {
-			nosslVirtualServices = append(nosslVirtualServices, envoyVirtualService)
+			noSslVirtualHosts = append(noSslVirtualHosts, envoyVirtualHost)
 		}
 	}
 
-	return sslVirtualServices, nosslVirtualServices, reports
+	return sslVirtualHosts, noSslVirtualHosts, reports
 }
 
 // adds errors to report if virtualservice domains are not unique
@@ -416,10 +416,10 @@ func virtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService,
 	return erroredVServices
 }
 
-func (t *Translator) computeVirtualService(upstreams []*v1.Upstream,
+func (t *Translator) computeVirtualHost(upstreams []*v1.Upstream,
 	virtualService *v1.VirtualService,
 	erroredUpstreams map[string]bool,
-	secrets secretwatcher.SecretMap) (envoyroute.VirtualService, error) {
+	secrets secretwatcher.SecretMap) (envoyroute.VirtualHost, error) {
 	var envoyRoutes []envoyroute.Route
 	var vServiceErrors error
 	for _, route := range virtualService.Routes {
@@ -454,8 +454,8 @@ func (t *Translator) computeVirtualService(upstreams []*v1.Upstream,
 
 	// TODO: handle default virtualservice
 	// TODO: handle ssl
-	return envoyroute.VirtualService{
-		Name:    virtualServiceName(virtualService.Name),
+	return envoyroute.VirtualHost{
+		Name:    virtualHostName(virtualService.Name),
 		Domains: domains,
 		Routes:  envoyRoutes,
 	}, vServiceErrors
@@ -759,7 +759,7 @@ func clusterName(upstreamName string) string {
 }
 
 // for future-proofing possible safety issues with bad virtualservice names
-func virtualServiceName(virtualServiceName string) string {
+func virtualHostName(virtualServiceName string) string {
 	return virtualServiceName
 }
 
