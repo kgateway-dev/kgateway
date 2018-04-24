@@ -67,7 +67,7 @@ var _ = Describe("HappyPath2Upstreams", func() {
 			},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte("solo.io test")

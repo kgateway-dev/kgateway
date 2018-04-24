@@ -239,7 +239,7 @@ var _ = Describe("Copilot", func() {
 			}},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte("solo.io test")

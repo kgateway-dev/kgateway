@@ -361,7 +361,7 @@
           "name": "VirtualService",
           "longName": "VirtualService",
           "fullName": "v1.VirtualService",
-          "description": "Virtual Services represent a collection of routes for a set of domains.\nGloo's Virtual Services can be compared to\n[virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vService.html?highlight=virtual%20host) in Envoy terminology.\nA virtual service can be used to define \"apps\"; a collection of APIs that belong to a particular domain.\nThe Virtual Service concept allows configuration of per-virtualservice SSL certificates",
+          "description": "Virtual Services represent a collection of routes for a set of domains.\nGloo's Virtual Services can be compared to\n[virtual services](https://www.envoyproxy.io/docs/envoy/latest/api-v1/route_config/vService.html?highlight=virtual%20host) in Envoy terminology.\nA virtual service can be used to define \"apps\"; a collection of APIs that belong to a particular domain.\nThe Virtual Service concept allows configuration of per-virtualservice SSL certificates",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],

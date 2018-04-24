@@ -73,7 +73,7 @@ var _ = Describe("CrdStorageClient", func() {
 
 		})
 	})
-	Describe("Create2Update Vhost", func() {
+	Describe("Create2Update vService", func() {
 		It("creates and updates", func() {
 			client, err := NewStorage(dir, resync)
 			Expect(err).NotTo(HaveOccurred())

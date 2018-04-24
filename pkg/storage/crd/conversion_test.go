@@ -98,14 +98,14 @@ var _ = Describe("Conversion", func() {
 			Expect(spec["routes"]).To(Equal(vServiceMap["routes"]))
 
 			// bring it back now
-			outVhost, err := VirtualServiceFromCrd(vsCrd)
+			outvService, err := VirtualServiceFromCrd(vsCrd)
 			vService.Metadata = &v1.Metadata{
 				ResourceVersion: vsCrd.ResourceVersion,
 				Namespace:       vsCrd.Namespace,
 				Annotations:     annotations,
 			}
 			Expect(err).To(BeNil())
-			Expect(outVhost).To(Equal(vService))
+			Expect(outvService).To(Equal(vService))
 		})
 	})
 })

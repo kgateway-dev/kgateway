@@ -84,11 +84,11 @@ var _ = Describe("CrdReporter", func() {
 				for _, updatedUpstream := range updatedUpstreams {
 					Expect(updatedUpstream.Status.State).To(Equal(v1.Status_Accepted))
 				}
-				updatedVhosts, err := glooClient.V1().VirtualServices().List()
+				updatedvServices, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedVhosts).To(HaveLen(len(upstreams)))
-				for _, updatedVhost := range updatedVhosts {
-					Expect(updatedVhost.Status.State).To(Equal(v1.Status_Accepted))
+				Expect(updatedvServices).To(HaveLen(len(upstreams)))
+				for _, updatedvService := range updatedvServices {
+					Expect(updatedvService.Status.State).To(Equal(v1.Status_Accepted))
 				}
 			})
 		})
@@ -131,11 +131,11 @@ var _ = Describe("CrdReporter", func() {
 				for _, updatedUpstream := range updatedUpstreams {
 					Expect(updatedUpstream.Status.State).To(Equal(v1.Status_Rejected))
 				}
-				updatedVhosts, err := glooClient.V1().VirtualServices().List()
+				updatedvServices, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedVhosts).To(HaveLen(len(upstreams)))
-				for _, updatedVhost := range updatedVhosts {
-					Expect(updatedVhost.Status.State).To(Equal(v1.Status_Rejected))
+				Expect(updatedvServices).To(HaveLen(len(upstreams)))
+				for _, updatedvService := range updatedvServices {
+					Expect(updatedvService.Status.State).To(Equal(v1.Status_Rejected))
 				}
 			})
 		})

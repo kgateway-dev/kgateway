@@ -128,7 +128,7 @@ func (gi *GlooInstance) GetUpstream(s string) (*v1.Upstream, error) {
 	return gi.store.V1().Upstreams().Get(s)
 }
 
-func (gi *GlooInstance) AddVhost(u *v1.VirtualService) error {
+func (gi *GlooInstance) AddvService(u *v1.VirtualService) error {
 	_, err := gi.store.V1().VirtualServices().Create(u)
 	return err
 }

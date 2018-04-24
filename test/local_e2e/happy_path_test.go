@@ -56,8 +56,8 @@ var _ = Describe("HappyPath", func() {
 			}},
 		}
 
-		fmt.Fprintln(ginkgo.GinkgoWriter, "adding virtual host")
-		err = glooInstance.AddVhost(v)
+		fmt.Fprintln(ginkgo.GinkgoWriter, "adding virtual service")
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte("solo.io test")

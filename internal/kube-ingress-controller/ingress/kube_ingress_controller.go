@@ -142,14 +142,14 @@ func (c *IngressController) getActualResources() ([]*v1.Upstream, []*v1.VirtualS
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get virtual service crd list: %v", err)
 	}
-	var ourVhosts []*v1.VirtualService
+	var ourvServices []*v1.VirtualService
 	for _, vService := range virtualServices {
 		if vService.Metadata != nil && vService.Metadata.Annotations[ownerAnnotationKey] == c.generatedBy {
 			// our vService, we supervise it
-			ourVhosts = append(ourVhosts, vService)
+			ourvServices = append(ourvServices, vService)
 		}
 	}
-	return ourUpstreams, ourVhosts, nil
+	return ourUpstreams, ourvServices, nil
 }
 
 func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.VirtualService, error) {

@@ -67,7 +67,7 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create watcher for upstreams")
 	}
-	syncVhosts := func(updatedList []*v1.VirtualService, _ *v1.VirtualService) {
+	syncvServices := func(updatedList []*v1.VirtualService, _ *v1.VirtualService) {
 		sort.SliceStable(updatedList, func(i, j int) bool {
 			return updatedList[i].GetName() < updatedList[j].GetName()
 		})
@@ -82,9 +82,9 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		configs <- cache
 	}
 	vServiceWatcher, err := storageClient.V1().VirtualServices().Watch(&storage.VirtualServiceEventHandlerFuncs{
-		AddFunc:    syncVhosts,
-		UpdateFunc: syncVhosts,
-		DeleteFunc: syncVhosts,
+		AddFunc:    syncvServices,
+		UpdateFunc: syncvServices,
+		DeleteFunc: syncvServices,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create watcher for virtualservices")

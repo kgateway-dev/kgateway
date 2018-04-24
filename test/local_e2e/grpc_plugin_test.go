@@ -53,7 +53,7 @@ var _ = Describe("GRPC Plugin", func() {
 			},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte(`{"str": "foo"}`)

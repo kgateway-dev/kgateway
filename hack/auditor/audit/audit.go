@@ -14,7 +14,7 @@ import (
 
 const (
 	pathUpstream = "/upstreams"
-	pathVhost    = "/virtualservices"
+	pathvService = "/virtualservices"
 )
 
 const (
@@ -47,7 +47,7 @@ func EmitEvent(operation string, item v1.ConfigObject) error {
 	case *v1.Upstream:
 		path = pathUpstream
 	case *v1.VirtualService:
-		path = pathVhost
+		path = pathvService
 	default:
 		panic("bad input")
 	}
@@ -79,7 +79,7 @@ func getSource() string {
 func NewServeMux() *http.ServeMux {
 	m := http.NewServeMux()
 	m.HandleFunc(pathUpstream, upstreamsHandler)
-	m.HandleFunc(pathVhost, vServicesHandler)
+	m.HandleFunc(pathvService, vServicesHandler)
 	return m
 }
 

@@ -127,7 +127,7 @@ var _ = Describe("Google functions", func() {
 		err = glooInstance.AddUpstream(gu)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() []*v1.Function {
@@ -207,7 +207,7 @@ var _ = Describe("Google functions", func() {
 			}},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte(`{"message": "solo.io"}`)

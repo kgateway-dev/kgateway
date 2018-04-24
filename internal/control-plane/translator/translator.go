@@ -366,7 +366,7 @@ func (t *Translator) computeVirtualServices(cfg *v1.Config,
 
 	for _, virtualService := range cfg.VirtualServices {
 		envoyVirtualService, err := t.computeVirtualService(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
-		if domainErr, invalidVHost := vServicesWithBadDomains[virtualService.Name]; invalidVHost {
+		if domainErr, invalidVService := vServicesWithBadDomains[virtualService.Name]; invalidVService {
 			err = multierror.Append(err, domainErr)
 		}
 		reports = append(reports, createReport(virtualService, err))
@@ -403,17 +403,17 @@ func virtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService,
 			domainsToVirtualServices[domain] = append(domainsToVirtualServices[domain], vService.Name)
 		}
 	}
-	erroredVHosts := make(map[string]error)
+	erroredVServices := make(map[string]error)
 	// see if we found any conflicts, if so, write reports
 	for domain, vServices := range domainsToVirtualServices {
 		if len(vServices) > 1 {
 			for _, name := range vServices {
-				erroredVHosts[name] = multierror.Append(erroredVHosts[name], errors.Errorf("domain %v is "+
+				erroredVServices[name] = multierror.Append(erroredVServices[name], errors.Errorf("domain %v is "+
 					"shared by the following virtual services: %v", domain, vServices))
 			}
 		}
 	}
-	return erroredVHosts
+	return erroredVServices
 }
 
 func (t *Translator) computeVirtualService(upstreams []*v1.Upstream,

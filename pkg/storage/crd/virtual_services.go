@@ -106,11 +106,11 @@ func (v *virtualServicesClient) createOrUpdateVirtualServiceCrd(virtualService *
 			return nil, errors.Wrap(err, "kubernetes update api request")
 		}
 	}
-	returnedVhost, err := VirtualServiceFromCrd(returnedCrd)
+	returnedvService, err := VirtualServiceFromCrd(returnedCrd)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to virtualService")
 	}
-	return returnedVhost, nil
+	return returnedvService, nil
 }
 
 // implements the kubernetes ResourceEventHandler interface

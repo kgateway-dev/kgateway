@@ -11,8 +11,8 @@ func NewTestConfig() *v1.Config {
 		NewTestUpstream2(),
 	}
 	virtualServices := []*v1.VirtualService{
-		NewTestVirtualService("my-vService", NewTestRoute1(), NewTestRoute2()),
-		NewTestVirtualService("my-vService-2", NewTestRoute1(), NewTestRoute2()),
+		NewTestVirtualService("my-vservice", NewTestRoute1(), NewTestRoute2()),
+		NewTestVirtualService("my-vservice-2", NewTestRoute1(), NewTestRoute2()),
 	}
 	return &v1.Config{
 		Upstreams:       upstreams,

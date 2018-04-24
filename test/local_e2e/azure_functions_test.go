@@ -131,7 +131,7 @@ var _ = Describe("Azure Functions", func() {
 			}},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte(`{"message": "solo.io"}`)
@@ -216,7 +216,7 @@ var _ = Describe("Azure Functions", func() {
 			}},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte(`{"name": "solo.io"}`)

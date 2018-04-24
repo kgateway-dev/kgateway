@@ -211,7 +211,7 @@ func ValidConfigNoSsl() *v1.Config {
 	}
 	virtualServices := []*v1.VirtualService{
 		{
-			Name: "valid-vService",
+			Name: "valid-vservice",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -271,7 +271,7 @@ func InvalidConfigSharedDomains() *v1.Config {
 	}
 	virtualServices := []*v1.VirtualService{
 		{
-			Name: "invalid-vService-1",
+			Name: "invalid-vservice-1",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -341,7 +341,7 @@ func ValidConfigSsl() *v1.Config {
 	}
 	virtualServices := []*v1.VirtualService{
 		{
-			Name: "valid-vService",
+			Name: "valid-vservice",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -507,7 +507,7 @@ func InvalidConfigNoFuncPlugin() *v1.Config {
 	}
 	virtualServices := []*v1.VirtualService{
 		{
-			Name: "invalid-vService",
+			Name: "invalid-vservice",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -568,7 +568,7 @@ func InvalidConfigNoUpstream() *v1.Config {
 	}
 	virtualServices := []*v1.VirtualService{
 		{
-			Name: "invalid-vService",
+			Name: "invalid-vservice",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
