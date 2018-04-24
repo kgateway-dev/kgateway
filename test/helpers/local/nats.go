@@ -4,12 +4,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -23,7 +25,8 @@ type NatsStreamingFactory struct {
 
 func downloadNats(tmpdir string) (string, error) {
 	// get us some natsss
-	natsurl := "https://github.com/nats-io/nats-streaming-server/releases/download/v0.9.0/nats-streaming-server-v0.9.0-linux-amd64.zip"
+	natsurl := fmt.Sprintf("https://github.com/nats-io/nats-streaming-server/releases/download/v0.9.0/nats-streaming-server-v0.9.0-%s-amd64.zip",
+		runtime.GOOS)
 
 	resp, err := http.Get(natsurl)
 	if err != nil {
