@@ -3,10 +3,11 @@ package nats
 import (
 	"github.com/nats-io/go-nats-streaming"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/internal/function-discovery"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
-	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 )
 
 const (
@@ -46,5 +47,7 @@ func (d *natsDetector) DetectFunctionalService(us *v1.Upstream, addr string) (*v
 		}),
 	}
 
-	return svcInfo, nil, nil
+	annotations := make(map[string]string)
+	annotations[functiondiscovery.DiscoveryTypeAnnotationKey] = "nats-streaming"
+	return svcInfo, annotations, nil
 }

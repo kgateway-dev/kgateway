@@ -12,11 +12,12 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/internal/function-discovery"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/log"
 	grpcplugin "github.com/solo-io/gloo/pkg/plugins/grpc"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
-	"github.com/solo-io/gloo/pkg/log"
 	"google.golang.org/grpc"
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
@@ -94,7 +95,9 @@ func (d *grpcDetector) DetectFunctionalService(us *v1.Upstream, addr string) (*v
 		}),
 	}
 
-	return svcInfo, nil, nil
+	annotations := make(map[string]string)
+	annotations[functiondiscovery.DiscoveryTypeAnnotationKey] = "grpc"
+	return svcInfo, annotations, nil
 }
 
 func getAllDescriptors(refClient *grpcreflect.Client, s string) ([]*descriptor.FileDescriptorProto, error) {

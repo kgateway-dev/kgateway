@@ -6,11 +6,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/internal/function-discovery"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
-	"github.com/solo-io/gloo/pkg/plugins/rest"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins/rest"
 )
 
 var commonSwaggerURIs = []string{
@@ -58,6 +59,7 @@ func (d *swaggerDetector) DetectFunctionalService(us *v1.Upstream, addr string) 
 				Type: rest.ServiceTypeREST,
 			}
 			annotations := map[string]string{swagger.AnnotationKeySwaggerURL: url}
+			annotations[functiondiscovery.DiscoveryTypeAnnotationKey] = "swagger"
 			return svcInfo, annotations, nil
 		} else {
 			errs = multierror.Append(errs, errors.Errorf("path: %v response code: %v headers: %v", uri, res.Status, res.Header))
