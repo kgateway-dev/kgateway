@@ -8,7 +8,7 @@ jobs:
       # specify the version
       - image: soloio/jenkins:latest
 
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    working_directory: /go/src/github.com/solo-io/gloo
     steps:
       - checkout
       - setup_remote_docker:
