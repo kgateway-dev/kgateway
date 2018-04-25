@@ -23,7 +23,7 @@ var (
 	sslPrivateKey []byte //= []byte(``)
 )
 
-var _ = Describe("SNI VirtualService", func() {
+var _ = FDescribe("SNI VirtualService", func() {
 	const helloService = "helloservice"
 	const servicePort = 8080
 	Context("creating a vService with an ssl config", func() {

@@ -468,7 +468,8 @@
     "helper/uuid",
     "nomad/structs"
   ]
-  revision = "1c75593351b712bb2c22339efd642f1518ae837f"
+  revision = "951b76e4c261c4b01ae148a8689c0d5473a8d8fb"
+  version = "v0.8.1"
 
 [[projects]]
   name = "github.com/hashicorp/raft"
@@ -1241,6 +1242,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e58a574b7efd78f72c382d2c7fcbcc58743a03982efbb16d3ae33a2a6bfb7579"
+  inputs-digest = "79ce1d779dca91d7520fd4c373943caa6e38fffd797e7cd1759b2e4e3da191ab"
   solver-name = "gps-cdcl"
   solver-version = 1
