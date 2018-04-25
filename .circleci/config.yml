@@ -28,6 +28,9 @@ jobs:
           name: Dep ensure
           command: dep ensure -v
       - run:
+          name: Docker login
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run:
           name: Test
           command: ginkgo -r -v .
           environment:
