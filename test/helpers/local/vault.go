@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const defualtVaultDockerImage = "vault"
+const defualtVaultDockerImage = "vault:0.9.2"
 
 type VaultFactory struct {
 	vaultpath string
