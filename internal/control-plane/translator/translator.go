@@ -33,7 +33,7 @@ import (
 
 const (
 	sslRdsName      = "gloo-rds-https"
-	sslListenerName = "listener-" + nosslRdsName
+	sslListenerName = "listener-" + sslRdsName
 	sslListenerPort = uint32(8443)
 
 	nosslRdsName      = "gloo-rds-http"
