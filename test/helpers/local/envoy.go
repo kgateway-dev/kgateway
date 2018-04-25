@@ -243,7 +243,7 @@ func runContainer(cfgpath string, port uint32) error {
 
 	cfgDir := filepath.Dir(cfgpath)
 	image := "soloio/envoy:" + envoyImageTag
-	args := []string{"run", "-d", "--rm", "--name", "e2e_envoy",
+	args := []string{"run", "-d", "--rm", "--name", containerName,
 		"-v", cfgDir + ":/etc/config/",
 		"-p", "8080:8080",
 		"-p", "19000:19000",
