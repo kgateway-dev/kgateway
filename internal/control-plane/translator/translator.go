@@ -36,7 +36,7 @@ const (
 	sslListenerName = "listener-" + sslRdsName
 
 	noSslRdsName      = "gloo-rds-http"
-	nosslListenerName = "listener-" + noSslRdsName
+	noSslListenerName = "listener-" + noSslRdsName
 
 	connMgrFilter = "envoy.http_connection_manager"
 	routerFilter  = "envoy.router"
@@ -140,11 +140,11 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	// they are basically the same, but have different rds names
 
 	// http filters
-	nosslFilters, err := t.constructFilters(noSslRouteConfig.Name, httpFilters)
+	noSslFilters, err := t.constructFilters(noSslRouteConfig.Name, httpFilters)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "constructing http filter chain %v", nosslListenerName)
+		return nil, nil, errors.Wrapf(err, "constructing http filter chain %v", noSslListenerName)
 	}
-	nosslListener := t.constructHttpListener(nosslListenerName, t.config.IngressPort, nosslFilters)
+	noSslListener := t.constructHttpListener(noSslListenerName, t.config.IngressPort, noSslFilters)
 
 	// https filters
 	sslRouteConfig := &envoyapi.RouteConfiguration{
@@ -182,8 +182,8 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	var listenersProto, routesProto []envoycache.Resource
 
 	// only add http listener and route config if we have no ssl vServices
-	if len(noSslVirtualHosts) > 0 && len(nosslListener.FilterChains) > 0 {
-		listenersProto = append(listenersProto, nosslListener)
+	if len(noSslVirtualHosts) > 0 && len(noSslListener.FilterChains) > 0 {
+		listenersProto = append(listenersProto, noSslListener)
 		routesProto = append(routesProto, noSslRouteConfig)
 	}
 
