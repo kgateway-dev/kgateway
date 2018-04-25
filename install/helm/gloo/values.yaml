@@ -7,34 +7,35 @@ ingress:
   replicaCount: 1
   port: 8080
   securePort: 8443
+  exposeAdminPort: false
   adminPort: 19000
-  image: "soloio/envoy"
-  imageTag: "v0.1.7-108"
+  image: soloio/envoy
+  imageTag: v0.1.6-127
   imagePullPolicy: IfNotPresent
 
 control_plane:
   replicaCount: 1
   port: 8081
-  image: "soloio/control-plane"
-  imageTag: "v0.1.7-108"
+  image: soloio/control-plane
+  imageTag: 0.2.0
   imagePullPolicy: IfNotPresent
 
-#  extra
+#  addons
 function_discovery:
   image: soloio/function-discovery
-  imageTag: v0.1.7-108
+  imageTag: 0.2.0
   imagePullPolicy: IfNotPresent
   enable: true
 
 kube_ingress_controller:
   image: soloio/kube-ingress-controller
-  imageTag: v0.1.2-108
+  imageTag: 0.2.0
   imagePullPolicy: IfNotPresent
   enable: true
 
 upstream_discovery:
   image: soloio/upstream-discovery
-  imageTag: v0.1.2-108
+  imageTag: 0.2.0
   imagePullPolicy: IfNotPresent
   enable: true
 

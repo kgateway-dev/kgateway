@@ -82,9 +82,11 @@ spec:
     - port: {{ .Values.ingress.securePort }}
       protocol: TCP
       name: https
+    {{ if .Values.ingress.exposeAdminPort -}}
     - port: {{ .Values.ingress.adminPort }}
       protocol: TCP
       name: admin
+    {{- end }}
   selector:
     gloo: ingress
     release: {{ .Release.Name }}

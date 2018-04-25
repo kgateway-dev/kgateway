@@ -80,6 +80,25 @@ $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 clean:
 	rm -rf $(OUTPUT)
 
+
+#----------------------------------------------------------------------------------
+# Installation Manifests
+#----------------------------------------------------------------------------------
+
+.PHONY: manifests
+manifests: install/kube/install.yaml
+
+install/kube/install.yaml: $(shell find install/helm/ -name '*.yaml')
+	cat install/helm/bootstrap.yaml \
+	  | sed -e "s/{{ .Namespace }}/gloo-system/" > $@
+	echo >> $@
+	echo >> $@
+	helm template --namespace gloo-system \
+		-f install/helm/gloo/values.yaml \
+		-n REMOVEME install/helm/gloo | \
+		sed s/REMOVEME-//g | \
+		sed '/^.*REMOVEME$$/d' >> $@
+
 #----------------------------------------------------------------------------------
 # Docs
 #----------------------------------------------------------------------------------

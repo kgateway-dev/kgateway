@@ -112,6 +112,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 		"--namespace", namespace,
 		"-n", "test",
 		"--set", "ingress.imageTag="+envoyImageTag,
+		"--set", "ingress.exposeAdminPort=true",
 		"-f", filepath.Join(kubeResourcesDir, "helm-values.yaml")).CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err, "running helm template: %v", string(installBytes))
@@ -164,7 +165,8 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	); err != nil {
 		return errors.Wrap(err, "waiting for pods to start")
 	}
-	TestRunner("curl", "test-ingress:19000/logging?config=debug")
+	_, err = TestRunner("curl", "test-ingress:19000/logging?config=debug")
+	Must(err)
 	return nil
 }
 

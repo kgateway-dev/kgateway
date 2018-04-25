@@ -1,6 +1,6 @@
 name: gloo
 version: 0.1.0
-description: Chart to Gloo the Universe
+description: Helm Chart for installing Gloo and Supporting Services
 apiVersion: v1
 appVersion: "1.0"
 icon: https://raw.githubusercontent.com/solo-io/gloo/master/Gloo-01.png

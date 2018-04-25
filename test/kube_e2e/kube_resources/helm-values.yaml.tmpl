@@ -1,8 +1,13 @@
+# Default values for gloo-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
 ingress:
   type: NodePort
   replicaCount: 1
   port: 8080
   securePort: 8443
+  exposeAdminPort: true
   adminPort: 19000
   image: "soloio/envoy"
   imageTag: "latest"
@@ -15,7 +20,7 @@ control_plane:
   imageTag: {{ .ImageTag }}
   imagePullPolicy: {{ .ImagePullPolicy }}
 
-#  extra
+#  addons
 function_discovery:
   image: soloio/function-discovery{{ .Debug }}
   imageTag: {{ .ImageTag }}
