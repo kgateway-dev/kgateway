@@ -36,7 +36,7 @@ RUN go get -v github.com/ilackarms/protoc-gen-doc/cmd/protoc-gen-doc
 # Run dep ensure to fill in the cache:
 RUN mkdir -p ${GOPATH}/src/github.com/solo-io/ && \
     cd ${GOPATH}/src/github.com/solo-io/ && \
-    git clone -b monorepo  https://github.com/solo-io/gloo  && \
+    git clone https://github.com/solo-io/gloo  && \
     cd gloo && \
         dep ensure -v && \
     cd / && \
