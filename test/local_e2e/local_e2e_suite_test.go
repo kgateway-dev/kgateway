@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/test/helpers"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 )
 
 func TestLocalE2e(t *testing.T) {
-	RegisterFailHandler(Fail)
+	helpers.RegisterCommonFailHandlers()
 	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "LocalE2e Suite")
 }

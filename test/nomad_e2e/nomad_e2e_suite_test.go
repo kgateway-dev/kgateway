@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/consul"
@@ -26,7 +25,8 @@ func TestConsul(t *testing.T) {
 			"To enable, set RUN_NOMAD_TESTS=1 in your env.")
 		return
 	}
-	RegisterFailHandler(func(message string, callerSkip ...int) {
+
+	helpers.RegisterPreFailHandler(func() {
 		var logs string
 		for _, task := range []string{"control-plane", "ingress"} {
 			l, err := utils.Logs(nomadInstance, "gloo", task)
@@ -45,8 +45,10 @@ func TestConsul(t *testing.T) {
 
 		log.Printf("\n****************************************" +
 			"\nLOGS FROM THE BOYS: \n\n" + logs + "\n************************************")
-		Fail(message, callerSkip...)
 	})
+
+	helpers.RegisterCommonFailHandlers()
+
 	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "Nomad Suite")
 }
