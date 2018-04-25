@@ -73,11 +73,11 @@ func BuildPushContainers(push, debug bool) error {
 		filepath.Join(KubeE2eDirectory(), "containers", "upstream-for-events"),
 		filepath.Join(KubeE2eDirectory(), "containers", "grpc-test-service"),
 	} {
-		dockerUser := os.Getenv("DOCKER_ORG")
-		if dockerUser == "" {
-			dockerUser = "soloio"
+		dockerOrg := os.Getenv("DOCKER_ORG")
+		if dockerOrg == "" {
+			dockerOrg = "soloio"
 		}
-		fullImage := dockerUser + "/" + filepath.Base(path) + ":" + ImageTag()
+		fullImage := dockerOrg + "/" + filepath.Base(path) + ":" + ImageTag()
 		log.Debugf("TEST: building fullImage %v", fullImage)
 		cmd := exec.Command("make", "docker")
 		cmd.Dir = path
