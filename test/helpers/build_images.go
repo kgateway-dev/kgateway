@@ -73,7 +73,7 @@ func BuildPushContainers(push, debug bool) error {
 		filepath.Join(KubeE2eDirectory(), "containers", "upstream-for-events"),
 		filepath.Join(KubeE2eDirectory(), "containers", "grpc-test-service"),
 	} {
-		dockerUser := os.Getenv("DOCKER_USER")
+		dockerUser := os.Getenv("DOCKER_ORG")
 		if dockerUser == "" {
 			dockerUser = "soloio"
 		}

@@ -10,7 +10,7 @@ OUTPUT := _output
 BINARIES ?= control-plane function-discovery kube-ingress-controller upstream-discovery
 DEBUG_BINARIES = $(foreach BINARY,$(BINARIES),$(BINARY)-debug)
 
-DOCKER_USER=soloio
+DOCKER_ORG=soloio
 
 .PHONY: build
 build: $(BINARIES)
@@ -64,13 +64,13 @@ $(OUTPUT_BINARY)-debug: $(OUTPUT) $(PREREQUISITES)
 
 # docker
 $(BINARY)-docker: $(OUTPUT_BINARY)
-	docker build -t $(DOCKER_USER)/$(BINARY):$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile 
+	docker build -t $(DOCKER_ORG)/$(BINARY):$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile
 $(BINARY)-docker-debug: $(OUTPUT_BINARY)-debug
-	docker build -t $(DOCKER_USER)/$(BINARY)-debug:$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile.debug
+	docker build -t $(DOCKER_ORG)/$(BINARY)-debug:$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile.debug
 $(BINARY)-docker-push: $(BINARY)-docker
-	docker push $(DOCKER_USER)/$(BINARY):$(IMAGE_TAG)
+	docker push $(DOCKER_ORG)/$(BINARY):$(IMAGE_TAG)
 $(BINARY)-docker-push-debug: $(BINARY)-docker-debug
-	docker push $(DOCKER_USER)/$(BINARY)-debug:$(IMAGE_TAG)
+	docker push $(DOCKER_ORG)/$(BINARY)-debug:$(IMAGE_TAG)
 
 endef
 
@@ -111,7 +111,7 @@ site: doc
 	mkdocs build
 
 docker-docs: site
-	docker build -t $(DOCKER_USER)/nginx-docs:v$(VERSION) -f Dockerfile.site .
+	docker build -t $(DOCKER_ORG)/nginx-docs:v$(VERSION) -f Dockerfile.site .
 
 #----------------------------------------------------------------------------------
 # Test
