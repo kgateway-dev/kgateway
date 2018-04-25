@@ -28,7 +28,7 @@ var _ = Describe("GRPC Plugin", func() {
 
 		envoyPort := glooInstance.EnvoyPort()
 
-		tu := NewTestGRPCUpstream(glooInstance.FilesDir())
+		tu := NewTestGRPCUpstream(envoyInstance.LocalAddr(), glooInstance.FilesDir())
 		err = glooInstance.AddUpstream(tu.Upstream)
 		Expect(err).NotTo(HaveOccurred())
 

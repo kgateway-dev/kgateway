@@ -32,7 +32,7 @@ var _ = Describe("Nats streaming test", func() {
 
 		serviceSpec := service.UpstreamSpec{
 			Hosts: []service.Host{{
-				Addr: "localhost",
+				Addr: envoyInstance.LocalAddr(),
 				Port: natsStreamingInstance.NatsPort(),
 			}},
 		}

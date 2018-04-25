@@ -1,7 +1,6 @@
 package localhelpers
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -15,7 +14,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const defualtEnvoyDockerImage = "soloio/envoy:v0.1.2"
+const (
+	defualtEnvoyDockerImage = "soloio/envoy:v0.1.2"
+	containerName           = "e2e_envoy"
+)
 
 func buildBootstrap(glooAddr string, xdsPort uint32) []byte {
 	return []byte(fmt.Sprintf(envoyConfigTemplate, glooAddr, xdsPort))
@@ -138,13 +140,18 @@ type EnvoyInstance struct {
 	tmpdir       string
 	cmd          *exec.Cmd
 	useDocker    bool
-	containerId  string
+	localAddr    string // address for gloo and services
 }
 
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
+	gloo := "localhost"
 	var tmpdir string
 	var err error
 	if ef.useDocker {
+		gloo, err = localAddr()
+		if err != nil {
+			return nil, err
+		}
 		pwd, err := os.Getwd()
 		if err != nil {
 			return nil, err
@@ -166,6 +173,7 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		envoycfgpath: envoyconfigyaml,
 		tmpdir:       tmpdir,
 		useDocker:    ef.useDocker,
+		localAddr:    gloo,
 	}, nil
 
 }
@@ -175,25 +183,16 @@ func (ei *EnvoyInstance) Run() error {
 }
 
 func (ei *EnvoyInstance) RunWithPort(port uint32) error {
-	gloo := "localhost"
-	if ei.useDocker {
-		var err error
-		gloo, err = glooAddr()
-		if err != nil {
-			return err
-		}
-	}
-	err := ioutil.WriteFile(ei.envoycfgpath, buildBootstrap(gloo, port), 0644)
+	err := ioutil.WriteFile(ei.envoycfgpath, buildBootstrap(ei.localAddr, port), 0644)
 	if err != nil {
 		return err
 	}
 
 	if ei.useDocker {
-		containerId, err := runContainer(ei.envoycfgpath, port)
+		err := runContainer(ei.envoycfgpath, port)
 		if err != nil {
 			return err
 		}
-		ei.containerId = containerId
 		return nil
 	}
 
@@ -216,6 +215,10 @@ func (ei *EnvoyInstance) Binary() string {
 	return ei.envoypath
 }
 
+func (ei *EnvoyInstance) LocalAddr() string {
+	return ei.localAddr
+}
+
 func (ei *EnvoyInstance) Clean() error {
 	if ei.cmd != nil {
 		ei.cmd.Process.Kill()
@@ -224,15 +227,15 @@ func (ei *EnvoyInstance) Clean() error {
 	if ei.tmpdir != "" {
 		os.RemoveAll(ei.tmpdir)
 	}
-	if ei.containerId != "" {
-		if err := stopContainer(ei.containerId); err != nil {
+	if ei.useDocker {
+		if err := stopContainer(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func runContainer(cfgpath string, port uint32) (string, error) {
+func runContainer(cfgpath string, port uint32) error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {
 		envoyImageTag = "latest"
@@ -240,7 +243,7 @@ func runContainer(cfgpath string, port uint32) (string, error) {
 
 	cfgDir := filepath.Dir(cfgpath)
 	image := "soloio/envoy:" + envoyImageTag
-	args := []string{"run", "-d", "--rm",
+	args := []string{"run", "-d", "--rm", "--name", "e2e_envoy",
 		"-v", cfgDir + ":/etc/config/",
 		"-p", "8080:8080",
 		"-p", "19000:19000",
@@ -251,29 +254,27 @@ func runContainer(cfgpath string, port uint32) (string, error) {
 	fmt.Fprintln(ginkgo.GinkgoWriter, args)
 	cmd := exec.Command("docker", args...)
 	cmd.Dir = cfgDir
-	cmd.Stderr = ginkgo.GinkgoWriter
-	buffer := &bytes.Buffer{}
-	cmd.Stdout = buffer
-	err := cmd.Run()
-	if err != nil {
-		return "", errors.Wrap(err, "Unable to start envoy container")
-	}
-	return string(buffer.Bytes()), nil
-
-}
-
-func stopContainer(containerId string) error {
-	cmd := exec.Command("docker", "stop", containerId)
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter
 	err := cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "Error stopping container "+containerId)
+		return errors.Wrap(err, "Unable to start envoy container")
 	}
 	return nil
 }
 
-func glooAddr() (string, error) {
+func stopContainer() error {
+	cmd := exec.Command("docker", "stop", containerName)
+	cmd.Stdout = ginkgo.GinkgoWriter
+	cmd.Stderr = ginkgo.GinkgoWriter
+	err := cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "Error stopping container "+containerName)
+	}
+	return nil
+}
+
+func localAddr() (string, error) {
 	ip := os.Getenv("GLOO_IP")
 	if ip != "" {
 		return ip, nil

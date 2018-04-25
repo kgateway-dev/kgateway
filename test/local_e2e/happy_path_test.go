@@ -3,6 +3,8 @@ package local_e2e
 import (
 	"net/http"
 
+	"github.com/onsi/ginkgo"
+
 	"bytes"
 	"context"
 	"fmt"
@@ -16,17 +18,23 @@ import (
 var _ = Describe("HappyPath", func() {
 
 	It("Receive proxied request", func() {
+		fmt.Fprintln(ginkgo.GinkgoWriter, "Running Envoy")
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 
+		fmt.Fprintln(ginkgo.GinkgoWriter, "Running Gloo")
 		err = glooInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 
 		envoyPort := glooInstance.EnvoyPort()
+		fmt.Fprintln(ginkgo.GinkgoWriter, "Envoy Port: ", envoyPort)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		tu := NewTestHttpUpstream(ctx)
+
+		fmt.Fprintln(ginkgo.GinkgoWriter, "adding upstream")
+		tu := NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+		fmt.Fprintln(ginkgo.GinkgoWriter, tu.Upstream)
 		err = glooInstance.AddUpstream(tu.Upstream)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -48,6 +56,7 @@ var _ = Describe("HappyPath", func() {
 			}},
 		}
 
+		fmt.Fprintln(ginkgo.GinkgoWriter, "adding virtual host")
 		err = glooInstance.AddVhost(v)
 		Expect(err).NotTo(HaveOccurred())
 

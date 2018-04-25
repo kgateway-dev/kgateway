@@ -80,12 +80,12 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 
 var id = 0
 
-func NewTestHttpUpstream(ctx context.Context) *TestUpstream {
+func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
 	backendport, responses := RunTestServer(ctx)
-	return newTestUpstream(backendport, responses)
+	return newTestUpstream(addr, backendport, responses)
 }
 
-func NewTestGRPCUpstream(glooFilesDir string) *TestUpstream {
+func NewTestGRPCUpstream(addr string, glooFilesDir string) *TestUpstream {
 	srv := testgrpcservice.RunServer()
 	received := make(chan *ReceivedRequest)
 	go func() {
@@ -100,7 +100,7 @@ func NewTestGRPCUpstream(glooFilesDir string) *TestUpstream {
 	if err := ioutil.WriteFile(filepath.Join(glooFilesDir, "proto.pb"), protobytes, 0644); err != nil {
 		panic(err)
 	}
-	us := newTestUpstream(srv.Port, received)
+	us := newTestUpstream(addr, srv.Port, received)
 	us.Upstream.ServiceInfo = &v1.ServiceInfo{
 		Type: grpc.ServiceTypeGRPC,
 		Properties: grpc.EncodeServiceProperties(grpc.ServiceProperties{
@@ -111,10 +111,10 @@ func NewTestGRPCUpstream(glooFilesDir string) *TestUpstream {
 	return us
 }
 
-func newTestUpstream(port uint32, responses <-chan *ReceivedRequest) *TestUpstream {
+func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest) *TestUpstream {
 	serviceSpec := service.UpstreamSpec{
 		Hosts: []service.Host{{
-			Addr: "localhost",
+			Addr: addr,
 			Port: port,
 		}},
 	}

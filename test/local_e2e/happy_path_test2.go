@@ -26,8 +26,8 @@ var _ = Describe("HappyPath2Upstreams", func() {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		tu := NewTestHttpUpstream(ctx)
-		tu2 := NewTestHttpUpstream(ctx)
+		tu := NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+		tu2 := NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 		err = glooInstance.AddUpstream(tu.Upstream)
 		Expect(err).NotTo(HaveOccurred())
 		err = glooInstance.AddUpstream(tu2.Upstream)
