@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -59,6 +60,9 @@ var _ = Describe("Copilot", func() {
 		// this is mostly copied from here:
 		// https://github.com/cloudfoundry/copilot/blob/5cf2cbdd5277752bada9870d1a3026a65f224138/integration/integration_test.go
 
+		if runtime.GOOS == "darwin" {
+			Skip("skipping CF test on macOS")
+		}
 		copilotPath = os.Getenv("COPILOT_BINARY")
 		if copilotPath == "" {
 			Skip("must set COPILOT_BINARY to run CF tests. e.g.  COPILOT_BINARY=$GOPATH/src/code.cloudfoundry.org/copilot/copilot-server ginkgo ")
