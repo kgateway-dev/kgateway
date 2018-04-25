@@ -29,7 +29,7 @@ func (h hasher) ID(node *core.Node) string {
 type logger struct{}
 
 func (*logger) Infof(format string, args ...interface{}) {
-	log.Printf(format, args...)
+	log.GreyPrintf(format, args...)
 }
 func (*logger) Errorf(format string, args ...interface{}) {
 	log.Warnf(format, args...)
