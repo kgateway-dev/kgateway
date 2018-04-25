@@ -119,6 +119,10 @@ func (gi *GlooInstance) EnvoyPort() uint32 {
 	return 8080
 }
 
+func (gi *GlooInstance) EnvoySSLPort() uint32 {
+	return 8443
+}
+
 func (gi *GlooInstance) AddUpstream(u *v1.Upstream) error {
 	_, err := gi.store.V1().Upstreams().Create(u)
 	return err
