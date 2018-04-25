@@ -6,7 +6,7 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: soloio/jenkins:latest
+      - image: soloio/circleci:latest
 
     working_directory: /go/src/github.com/solo-io/gloo
     steps:

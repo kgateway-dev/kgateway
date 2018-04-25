@@ -24,6 +24,14 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bi
 
 RUN curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash 
 
+# Stuff necessary to build protos
+RUN apt install -y unzip
+RUN curl -OL https://github.com/google/protobuf/releases/download/v3.3.0/protoc-3.3.0-linux-x86_64.zip && \
+    unzip protoc-3.3.0-linux-x86_64.zip -d protoc3 && \
+    mv protoc3/bin/* /usr/local/bin/ && \
+    mv protoc3/include/* /usr/local/include/
+RUN go get -v github.com/gogo/protobuf/...
+RUN go get -v github.com/ilackarms/protoc-gen-doc/cmd/protoc-gen-doc
 
 # Run dep ensure to fill in the cache:
 RUN mkdir -p ${GOPATH}/src/github.com/solo-io/ && \

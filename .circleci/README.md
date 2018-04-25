@@ -20,7 +20,7 @@ tar cvf secrets.tar secrets
 encrypt with
 
 ```
-docker run -ti -v ${PWD}:/foo soloio/jenkins \
+docker run -ti -v ${PWD}:/foo soloio/circleci \
     openssl aes-256-cbc -e \
     -in /foo/secrets.tar \
     -out /foo/secrets.tar.enc \
