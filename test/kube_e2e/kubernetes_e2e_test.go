@@ -36,42 +36,42 @@ func getNamespace() string {
 var gloo storage.Interface
 var kube kubernetes.Interface
 
-var _ = Describe("Kubernetes Deployment", func() {
-	BeforeSuite(func() {
-		log.Printf("USING IMAGE TAG %v", ImageTag)
+var _ = BeforeSuite(func() {
+	log.Printf("USING IMAGE TAG %v", ImageTag)
 
-		// are we on minikube? set docket env vars and push to false
-		push := true
-		debug := false
-		if setupMinikubeEnvVars() {
-			push = false
-		}
-		if os.Getenv("DEBUG_IMAGES") == "1" {
-			debug = true
-		}
+	// are we on minikube? set docket env vars and push to false
+	push := true
+	debug := false
+	if setupMinikubeEnvVars() {
+		push = false
+	}
+	if os.Getenv("DEBUG_IMAGES") == "1" {
+		debug = true
+	}
 
-		log.Debugf("SetupKubeForE2eTest: push =  %v \t namespace = %v", push, namespace)
+	log.Debugf("SetupKubeForE2eTest: push =  %v \t namespace = %v", push, namespace)
 
-		err := SetupKubeForE2eTest(namespace, true, push, debug)
-		Must(err)
-		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-		masterUrl := ""
-		Must(err)
-		cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
-		Must(err)
-		gloo, err = crd.NewStorage(cfg, namespace, time.Minute)
-		Must(err)
-		kube, err = kubernetes.NewForConfig(cfg)
-		Must(err)
-	})
-	AfterSuite(func() {
-		TeardownKubeE2E(namespace)
-	})
-	// clean up function discovery's cached upstream names
-	AfterEach(func() {
-		_, err := KubectlOut("delete", "pod", "-l", "gloo=function-discovery")
-		Must(err)
-	})
+	err := SetupKubeForE2eTest(namespace, true, push, debug)
+	Must(err)
+	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	masterUrl := ""
+	Must(err)
+	cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+	Must(err)
+	gloo, err = crd.NewStorage(cfg, namespace, time.Minute)
+	Must(err)
+	kube, err = kubernetes.NewForConfig(cfg)
+	Must(err)
+})
+
+var _ = AfterSuite(func() {
+	TeardownKubeE2E(namespace)
+})
+
+// clean up function discovery's cached upstream names
+var _ = BeforeEach(func() {
+	_, err := KubectlOut("delete", "pod", "-l", "gloo=function-discovery")
+	Must(err)
 })
 
 type curlOpts struct {
