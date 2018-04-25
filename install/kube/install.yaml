@@ -309,7 +309,7 @@ metadata:
   labels:
     gloo: ingress
 spec:
-  type: NodePort
+  type: LoadBalnacer
   ports:
     - port: 8080
       protocol: TCP

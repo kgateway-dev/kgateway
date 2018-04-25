@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 ingress:
-  type: NodePort
+  type: LoadBalnacer
   replicaCount: 1
   port: 8080
   securePort: 8443
