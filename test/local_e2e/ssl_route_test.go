@@ -35,7 +35,7 @@ var _ = Describe("SSL Route", func() {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		tu := NewTestHttpUpstream(ctx)
+		tu := NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 		err = glooInstance.AddUpstream(tu.Upstream)
 		Expect(err).NotTo(HaveOccurred())
 		sslCertChain, err := ioutil.ReadFile(ServerCert())
