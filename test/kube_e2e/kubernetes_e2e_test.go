@@ -67,6 +67,11 @@ var _ = Describe("Kubernetes Deployment", func() {
 	AfterSuite(func() {
 		TeardownKubeE2E(namespace)
 	})
+	// clean up function discovery's cached upstream names
+	AfterEach(func() {
+		_, err := KubectlOut("delete", "pod", "-l", "gloo=function-discovery")
+		Must(err)
+	})
 })
 
 type curlOpts struct {
