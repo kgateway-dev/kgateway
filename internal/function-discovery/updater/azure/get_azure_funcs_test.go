@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/azure"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -17,11 +18,15 @@ var _ = Describe("GetAzureFuncs", func() {
 		if targetFunctionName == "" {
 			Skip("must set AZURE_FUNCTION_NAME to run this test")
 		}
+		targetFunctionAppName := os.Getenv("AZURE_FUNCTION_APP")
+		if targetFunctionAppName == "" {
+			Skip("must set AZURE_FUNCTION_APP to run this test")
+		}
 		ref := "secret_ref"
 		us := &v1.Upstream{
 			Name: "whatever",
 			Spec: azure.EncodeUpstreamSpec(azure.UpstreamSpec{
-				FunctionAppName: os.Getenv("AZURE_FUNCTION_APP"),
+				FunctionAppName: targetFunctionAppName,
 			}),
 			Metadata: &v1.Metadata{
 				Annotations: map[string]string{annotationKey: ref},
@@ -30,9 +35,16 @@ var _ = Describe("GetAzureFuncs", func() {
 		secrets := secretwatcher.SecretMap{ref: {Ref: ref, Data: map[string]string{
 			publishProfileKey: helpers.AzureProfileString(),
 		}}}
-		funcs, secret, err := GetFuncsAndSecret(us, secrets)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(funcs)).To(BeNumerically(">=", 1))
+
+		var funcs []*v1.Function
+		var secret *dependencies.Secret
+		var err error
+
+		Eventually(func() []*v1.Function {
+			funcs, secret, err = GetFuncsAndSecret(us, secrets)
+			return funcs
+		}, "1m", "5s").Should(Not(BeEmpty()))
+
 		var testPassed bool
 		for _, fn := range funcs {
 			if fn.Name != targetFunctionName {
