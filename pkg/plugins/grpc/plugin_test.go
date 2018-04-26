@@ -15,21 +15,6 @@ import (
 )
 
 var _ = Describe("Plugin", func() {
-	//FIt("unmarshal file descriptor", func() {
-	//	b, err := ioutil.ReadFile("grpc-test-service/descriptors/proto.pb")
-	//	Expect(err).NotTo(HaveOccurred())
-	//	descriptor, err := convertProto(b)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	log.Printf("%v", FuncsForProto("Bookstore", descriptor))
-	//})
-	//It("unmarshal file descriptor", func() {
-	//	b, err := ioutil.ReadFile("grpc-test-service/descriptors/proto.pb")
-	//	Expect(err).NotTo(HaveOccurred())
-	//	descriptor, err := convertProto(b)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	//addHttpRulesToProto("my-upstream", "Bookstore", descriptor)
-	//	log.Printf("%v", FuncsForProto("Bookstore", descriptor))
-	//})
 	It("returns a dependency with a file ref for each descriptor file "+
 		"specified in the spec", func() {
 		us := &v1.Upstream{
