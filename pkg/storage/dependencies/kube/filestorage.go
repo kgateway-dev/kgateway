@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"k8s.io/api/core/v1"
+	kuberrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -40,6 +41,9 @@ func (s *configMapStorage) Create(file *dependencies.File) (*dependencies.File, 
 	}
 	cm, err = s.kube.CoreV1().ConfigMaps(s.namespace).Create(cm)
 	if err != nil {
+		if kuberrs.IsAlreadyExists(err) {
+			return nil, storage.NewAlreadyExistsErr(errors.Errorf("file %v", file.Ref))
+		}
 		return nil, errors.Wrap(err, "kube api call")
 	}
 	newFile, err := ConfigMapToFile(cm)
