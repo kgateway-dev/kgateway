@@ -93,7 +93,7 @@ var _ = Describe("Azure Functions", func() {
 
 		funcSpec := azure.FunctionSpec{
 			FunctionName: azureFunction,
-			AuthLevel:    "anonymous",
+			AuthLevel:    "function",
 		}
 
 		v1FSpec, err := protoutil.MarshalStruct(funcSpec)
