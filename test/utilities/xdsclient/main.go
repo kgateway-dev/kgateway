@@ -50,6 +50,7 @@ func main() {
 
 	listRoutes(ctx, conn, routes)
 
+	listendpoints(ctx, conn)
 }
 
 func listClusters(ctx context.Context, conn *grpc.ClientConn) []v2.Cluster {
@@ -69,7 +70,23 @@ func listClusters(ctx context.Context, conn *grpc.ClientConn) []v2.Cluster {
 		pp.Printf("%v\n", cluster)
 	}
 	return clusters
+}
 
+func listendpoints(ctx context.Context, conn *grpc.ClientConn) []v2.ClusterLoadAssignment {
+	eds := v2.NewEndpointDiscoveryServiceClient(conn)
+	dresp, err := eds.FetchEndpoints(ctx, &dr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var clas []v2.ClusterLoadAssignment
+
+	for _, anyCla := range dresp.Resources {
+
+		var cla v2.ClusterLoadAssignment
+		cla.Unmarshal(anyCla.Value)
+		pp.Printf("%v\n", cla)
+	}
+	return clas
 }
 
 func listListeners(ctx context.Context, conn *grpc.ClientConn) []v2.Listener {
