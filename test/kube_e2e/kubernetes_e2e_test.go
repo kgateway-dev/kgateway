@@ -70,8 +70,7 @@ var _ = AfterSuite(func() {
 
 // clean up function discovery's cached upstream names
 var _ = BeforeEach(func() {
-	_, err := KubectlOut("delete", "pod", "-l", "gloo=function-discovery")
-	Must(err)
+	KubectlOut("delete", "pod", "-l", "gloo=function-discovery")
 })
 
 type curlOpts struct {
