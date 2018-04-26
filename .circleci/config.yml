@@ -29,7 +29,7 @@ jobs:
           command: dep ensure -v
       - run:
           name: Docker login
-          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+          command: echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
       - run:
           name: Test
           command: ginkgo -r -v .
