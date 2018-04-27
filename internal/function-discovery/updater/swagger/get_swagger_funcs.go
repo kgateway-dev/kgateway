@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins/rest"
 )
 
 func GetFuncs(us *v1.Upstream) ([]*v1.Function, error) {
@@ -76,7 +76,7 @@ func createFunctionForOpertaion(method string, basePath, functionPath string, op
 		// sort parameters by the template they will go into
 		switch param.In {
 		case "query":
-			queryParams = append(queryParams, fmt.Sprintf("%v={{%v}}", param.Name, param.Name))
+			queryParams = append(queryParams, fmt.Sprintf("%v={{default(%v, \"\")}}", param.Name, param.Name))
 		case "header":
 			headerParams = append(headerParams, param.Name)
 		case "path":
@@ -99,7 +99,7 @@ func createFunctionForOpertaion(method string, basePath, functionPath string, op
 		headersTemplate["Content-Type"] = "application/json"
 	}
 	for _, name := range headerParams {
-		headersTemplate[name] = fmt.Sprintf("{{%v}}", name)
+		headersTemplate[name] = fmt.Sprintf("{{default(%v, \"\")}}", name)
 	}
 
 	fnName := operation.ID
@@ -164,8 +164,8 @@ func getDefinitionFor(ref spec.Ref, definitions spec.Definitions) *spec.Schema {
 }
 
 func swaggerPathToJinjaTemplate(path string) string {
-	path = strings.Replace(path, "{", "{{", -1)
-	path = strings.Replace(path, "}", "}}", -1)
+	path = strings.Replace(path, "{", "{{ default(", -1)
+	path = strings.Replace(path, "}", ", \"\") }}", -1)
 	return path
 }
 
