@@ -28,6 +28,7 @@ job "testing-resources" {
       driver = "raw_exec"
       config {
         command = "{{ .OutputDirectory }}/grpc-test-service"
+        args = ["-p=${NOMAD_PORT_http}"]
       }
       resources {
         cpu = 500
@@ -53,7 +54,7 @@ job "testing-resources" {
       driver = "raw_exec"
       config {
         command = "{{ .OutputDirectory }}/helloservice"
-        args = ["--reply=expected-reply-2"]
+        args = ["--reply=expected-reply-2", "-p=${NOMAD_PORT_http}"]
       }
       resources {
         cpu = 500
@@ -79,7 +80,7 @@ job "testing-resources" {
       driver = "raw_exec"
       config {
         command = "{{ .OutputDirectory }}/helloservice"
-        args = ["--reply=expected-reply-1"]
+        args = ["--reply=expected-reply-1", "-p=${NOMAD_PORT_http}"]
       }
       resources {
         cpu = 500
@@ -105,6 +106,7 @@ job "testing-resources" {
       driver = "raw_exec"
       config {
         command = "{{ .OutputDirectory }}/petstore"
+        args = ["-p=${NOMAD_PORT_http}"]
       }
       resources {
         cpu = 500
@@ -130,9 +132,7 @@ job "testing-resources" {
       driver = "raw_exec"
       config {
         command = "{{ .OutputDirectory }}/nats-streaming-server"
-        port_map {
-          nats = 4222
-        }
+        args = ["-p=${NOMAD_PORT_nats}"]
       }
       resources {
         cpu = 500

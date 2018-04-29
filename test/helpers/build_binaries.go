@@ -8,12 +8,16 @@ import (
 	"github.com/onsi/ginkgo"
 
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // builds binaries
 func BuildBinaries(outputDirectory string, debug bool) error {
 	if os.Getenv("SKIP_BUILD") == "1" {
 		return nil
+	}
+	if outputDirectory != "" {
+		os.Setenv("OUTPUT_DIR", outputDirectory)
 	}
 	// make the gloo containers
 	for _, component := range []string{"control-plane", "function-discovery", "kube-ingress-controller", "upstream-discovery"} {
@@ -27,11 +31,8 @@ func BuildBinaries(outputDirectory string, debug bool) error {
 		cmd.Dir = GlooSoloDirectory()
 		cmd.Stdout = ginkgo.GinkgoWriter
 		cmd.Stderr = ginkgo.GinkgoWriter
-		if outputDirectory != "" {
-			cmd.Env = append(cmd.Env, "OUTPUT_DIR="+outputDirectory)
-		}
 		if err := cmd.Run(); err != nil {
-			return err
+			return errors.Wrap(err, "building gloo binaries")
 		}
 	}
 
@@ -48,17 +49,9 @@ func BuildBinaries(outputDirectory string, debug bool) error {
 		cmd.Dir = path
 		cmd.Stdout = ginkgo.GinkgoWriter
 		cmd.Stderr = ginkgo.GinkgoWriter
-		if outputDirectory != "" {
-			cmd.Env = append(cmd.Env, "OUTPUT_DIR="+outputDirectory)
-		}
 		if err := cmd.Run(); err != nil {
-			return err
+			return errors.Wrap(err, "building test binary "+path)
 		}
-		cmd = exec.Command("make", "clean")
-		cmd.Dir = path
-		cmd.Stdout = ginkgo.GinkgoWriter
-		cmd.Stderr = ginkgo.GinkgoWriter
-		cmd.Run()
 	}
 	return nil
 }

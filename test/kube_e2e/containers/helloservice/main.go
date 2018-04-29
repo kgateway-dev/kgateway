@@ -28,7 +28,7 @@ func serve(port uint) {
 }
 
 func main() {
-	port := flag.Uint("port", 8080, "listener port")
+	port := flag.Uint("p", 8080, "listener port")
 	flag.StringVar(&hello, "reply", "Hi there\n", "reply for requests")
 	flag.Parse()
 	serve(*port)

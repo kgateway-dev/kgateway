@@ -10,7 +10,7 @@ import (
 
 func downloadPetstore(destDir string) (string, error) {
 	// get us some petstores
-	petstoreUrl := "https://s3.amazonaws.com/new-cool-gloo-bucket/petstore"
+	petstoreUrl := "https://raw.githubusercontent.com/ilackarms/go-swagger/master/examples/2.0/petstore/server/petstore"
 
 	resp, err := http.Get(petstoreUrl)
 	if err != nil {
@@ -26,6 +26,7 @@ func downloadPetstore(destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer petstoreOut.Close()
 
 	if _, err := io.Copy(petstoreOut, resp.Body); err != nil {
 		return "", err
