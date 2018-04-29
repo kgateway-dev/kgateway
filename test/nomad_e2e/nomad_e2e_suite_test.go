@@ -47,8 +47,6 @@ func TestConsul(t *testing.T) {
 
 		log.Printf("\n****************************************" +
 			"\nLOGS FROM THE BOYS: \n\n" + logs + "\n************************************")
-
-		time.Sleep(time.Minute)
 	})
 
 	helpers.RegisterCommonFailHandlers()
