@@ -1,0 +1,3 @@
+store petstore binary on ec2
+fix test resources deployment nomad job to use raw_exec
+u
