@@ -125,6 +125,11 @@ docker rm $CID
 	}
 }
 
+func (ef *EnvoyFactory) EnvoyPath() string {
+	return ef.envoypath
+}
+
+
 func (ef *EnvoyFactory) Clean() error {
 	if ef == nil {
 		return nil

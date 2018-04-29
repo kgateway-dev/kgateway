@@ -2,12 +2,12 @@ SOURCES := $(shell find . -name "*.go")
 
 BINARY:=upstream-for-events
 IMAGE_TAG?=v0.1
-OUTPUT_DIRECTORY ?= .
+OUTPUT_DIR ?= .
 
 build: $(BINARY)
 
 $(BINARY): $(SOURCES)
-	GOOS=linux go build -v -i -o $(OUTPUT_DIRECTORY)/$@ *.go
+	GOOS=linux go build -v -i -o $(OUTPUT_DIR)/$@ *.go
 
 docker: $(BINARY)
 	docker build -t soloio/$(BINARY):$(IMAGE_TAG) .

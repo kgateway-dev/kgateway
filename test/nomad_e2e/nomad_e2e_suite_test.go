@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/dependencies/vault"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/helpers/local"
+	"io/ioutil"
 )
 
 func TestConsul(t *testing.T) {
@@ -55,6 +56,8 @@ func TestConsul(t *testing.T) {
 }
 
 var (
+	envoyFactory *localhelpers.EnvoyFactory
+
 	vaultFactory  *localhelpers.VaultFactory
 	vaultInstance *localhelpers.VaultInstance
 
@@ -67,10 +70,14 @@ var (
 	gloo    storage.Interface
 	secrets dependencies.SecretStorage
 
-	err error
+	outputDirectory string
+	err             error
 )
 
 var _ = BeforeSuite(func() {
+	envoyFactory, err = localhelpers.NewEnvoyFactory()
+	helpers.Must(err)
+
 	vaultFactory, err = localhelpers.NewVaultFactory()
 	helpers.Must(err)
 	vaultInstance, err = vaultFactory.NewVaultInstance()
@@ -105,7 +112,10 @@ var _ = BeforeSuite(func() {
 
 	secrets = vault.NewSecretStorage(cli, "gloo", time.Second)
 
-	err = nomadInstance.SetupNomadForE2eTest(true)
+	// TODO: set outputDirectory from something more variable
+	outputDirectory, err = ioutil.TempDir(os.Getenv("HELPER_TMP"), "gloo-nomad-e2e")
+	helpers.Must(err)
+	err = nomadInstance.SetupNomadForE2eTest(envoyFactory.EnvoyPath(), outputDirectory, true)
 	helpers.Must(err)
 })
 
@@ -113,6 +123,7 @@ var _ = AfterSuite(func() {
 	if err := nomadInstance.TeardownNomadE2e(); err != nil {
 		log.Warnf("FAILED TEARING DOWN: %v", err)
 	}
+	envoyFactory.Clean()
 
 	vaultInstance.Clean()
 	vaultFactory.Clean()
@@ -123,4 +134,5 @@ var _ = AfterSuite(func() {
 	nomadInstance.Clean()
 	nomadFactory.Clean()
 
+	os.RemoveAll(outputDirectory)
 })

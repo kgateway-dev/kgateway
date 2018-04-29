@@ -11,7 +11,7 @@ import (
 )
 
 // builds binaries
-func BuildBinaries(debug bool) error {
+func BuildBinaries(outputDirectory string, debug bool) error {
 	if os.Getenv("SKIP_BUILD") == "1" {
 		return nil
 	}
@@ -27,6 +27,9 @@ func BuildBinaries(debug bool) error {
 		cmd.Dir = GlooSoloDirectory()
 		cmd.Stdout = ginkgo.GinkgoWriter
 		cmd.Stderr = ginkgo.GinkgoWriter
+		if outputDirectory != "" {
+			cmd.Env = append(cmd.Env, "OUTPUT_DIR="+outputDirectory)
+		}
 		if err := cmd.Run(); err != nil {
 			return err
 		}
@@ -40,15 +43,14 @@ func BuildBinaries(debug bool) error {
 		//filepath.Join(KubeE2eDirectory(), "containers", "upstream-for-events"),
 		filepath.Join(KubeE2eDirectory(), "containers", "grpc-test-service"),
 	} {
-		dockerOrg := os.Getenv("DOCKER_ORG")
-		if dockerOrg == "" {
-			dockerOrg = "soloio"
-		}
-		log.Debugf("TEST: building fullImage %v", path)
+		log.Debugf("TEST: building binary %v", path)
 		cmd := exec.Command("make", "build")
 		cmd.Dir = path
 		cmd.Stdout = ginkgo.GinkgoWriter
 		cmd.Stderr = ginkgo.GinkgoWriter
+		if outputDirectory != "" {
+			cmd.Env = append(cmd.Env, "OUTPUT_DIR="+outputDirectory)
+		}
 		if err := cmd.Run(); err != nil {
 			return err
 		}

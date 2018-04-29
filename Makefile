@@ -2,7 +2,7 @@ ROOTDIR := $(shell pwd)
 PROTOS := $(shell find api/v1 -name "*.proto")
 SOURCES := $(shell find . -name "*.go" | grep -v test)
 GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go") docs/api.json
-OUTPUT := _output
+OUTPUT_DIR ?= _output
 #----------------------------------------------------------------------------------
 # Build
 #----------------------------------------------------------------------------------
@@ -37,13 +37,13 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	$(ROOTDIR)/pkg/api/types/v1 \
 	./*.proto
 
-$(OUTPUT):
-	mkdir -p $(OUTPUT)
+$(OUTPUT_DIR):
+	mkdir -p $@
 
 define BINARY_TARGETS
 $(eval VERSION := $(shell cat cmd/$(BINARY)/version))
 $(eval IMAGE_TAG ?= $(VERSION))
-$(eval OUTPUT_BINARY := $(OUTPUT)/$(BINARY))
+$(eval OUTPUT_BINARY := $(OUTPUT_DIR)/$(BINARY))
 
 .PHONY: $(BINARY)
 .PHONY: $(BINARY)-debug
@@ -57,16 +57,16 @@ $(BINARY): $(OUTPUT_BINARY)
 $(BINARY)-debug: $(OUTPUT_BINARY)-debug
 
 # go build
-$(OUTPUT_BINARY): $(OUTPUT) $(PREREQUISITES)
+$(OUTPUT_BINARY): $(OUTPUT_DIR) $(PREREQUISITES)
 	CGO_ENABLED=0 GOOS=linux go build -v -o $(OUTPUT_BINARY) cmd/$(BINARY)/main.go
-$(OUTPUT_BINARY)-debug: $(OUTPUT) $(PREREQUISITES)
+$(OUTPUT_BINARY)-debug: $(OUTPUT_DIR) $(PREREQUISITES)
 	go build -i -gcflags "-N -l" -o $(OUTPUT_BINARY)-debug cmd/$(BINARY)/main.go
 
 # docker
 $(BINARY)-docker: $(OUTPUT_BINARY)
-	docker build -t $(DOCKER_ORG)/$(BINARY):$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile
+	docker build -t $(DOCKER_ORG)/$(BINARY):$(IMAGE_TAG) $(OUTPUT_DIR) -f - < cmd/$(BINARY)/Dockerfile
 $(BINARY)-docker-debug: $(OUTPUT_BINARY)-debug
-	docker build -t $(DOCKER_ORG)/$(BINARY)-debug:$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile.debug
+	docker build -t $(DOCKER_ORG)/$(BINARY)-debug:$(IMAGE_TAG) $(OUTPUT_DIR) -f - < cmd/$(BINARY)/Dockerfile.debug
 $(BINARY)-docker-push: $(BINARY)-docker
 	docker push $(DOCKER_ORG)/$(BINARY):$(IMAGE_TAG)
 $(BINARY)-docker-push-debug: $(BINARY)-docker-debug
@@ -78,7 +78,7 @@ PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES)
 $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 
 clean:
-	rm -rf $(OUTPUT)
+	rm -rf $(OUTPUT_DIR)
 
 
 #----------------------------------------------------------------------------------

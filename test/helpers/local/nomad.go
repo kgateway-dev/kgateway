@@ -178,20 +178,24 @@ func (i *NomadInstance) Exec(args ...string) (string, error) {
 	return string(out), err
 }
 
-func (i *NomadInstance) SetupNomadForE2eTest(envoyPath string, buildBinaries bool) error {
+func (i *NomadInstance) SetupNomadForE2eTest(envoyPath, outputDirectory string, buildBinaries bool) error {
 	if buildBinaries {
-		if err := helpers.BuildPushContainers(false, false); err != nil {
-			return err
+		if _, err := downloadNats(outputDirectory); err != nil {
+			return errors.Wrap(err, "downloading nats")
+		}
+		if _, err := downloadPetstore(outputDirectory); err != nil {
+			return errors.Wrap(err, "downloading petstore")
+		}
+
+		if err := helpers.BuildBinaries(outputDirectory, false); err != nil {
+			return errors.Wrap(err, "building binaries")
 		}
 	}
 	nomadResourcesDir := filepath.Join(helpers.NomadE2eDirectory(), "nomad_resources")
 
-	// TODO: set outputDirectory from something more variable
-	outputDirectory := filepath.Join(helpers.GlooSoloDirectory(), "_output")
-
 	data := &struct {
-		OutputDirectory string
-		EnvoyPath       string
+		OutputDirectory   string
+		EnvoyPath         string
 	}{OutputDirectory: outputDirectory, EnvoyPath: envoyPath}
 
 	tmpl, err := template.New("Test_Resources").ParseFiles(filepath.Join(nomadResourcesDir, "install.nomad.tmpl"))

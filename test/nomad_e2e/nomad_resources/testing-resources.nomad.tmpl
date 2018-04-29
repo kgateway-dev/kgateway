@@ -25,12 +25,9 @@ job "testing-resources" {
     }
 
     task "grpc-test-service" {
-      driver = "docker"
+      driver = "raw_exec"
       config {
-        image = "soloio/grpc-test-service:{{ .ImageTag }}"
-        port_map {
-          http = 8080
-        }
+        command = "{{ .OutputDirectory }}/grpc-test-service"
       }
       resources {
         cpu = 500
@@ -53,12 +50,9 @@ job "testing-resources" {
     }
 
     task "helloservice-2" {
-      driver = "docker"
+      driver = "raw_exec"
       config {
-        image = "soloio/helloservice:{{ .ImageTag }}"
-        port_map {
-          http = 8080
-        }
+        command = "{{ .OutputDirectory }}/helloservice"
         args = ["--reply=expected-reply-2"]
       }
       resources {
@@ -82,12 +76,9 @@ job "testing-resources" {
     }
 
     task "helloservice" {
-      driver = "docker"
+      driver = "raw_exec"
       config {
-        image = "soloio/helloservice:{{ .ImageTag }}"
-        port_map {
-          http = 8080
-        }
+        command = "{{ .OutputDirectory }}/helloservice"
         args = ["--reply=expected-reply-1"]
       }
       resources {
@@ -111,12 +102,9 @@ job "testing-resources" {
     }
 
     task "petstore" {
-      driver = "docker"
+      driver = "raw_exec"
       config {
-        image = "soloio/petstore-example:latest"
-        port_map {
-          http = 8080
-        }
+        command = "{{ .OutputDirectory }}/petstore"
       }
       resources {
         cpu = 500
@@ -139,9 +127,9 @@ job "testing-resources" {
     }
 
     task "nats-streaming" {
-      driver = "docker"
+      driver = "raw_exec"
       config {
-        image = "nats-streaming:latest"
+        command = "{{ .OutputDirectory }}/nats-streaming-server"
         port_map {
           nats = 4222
         }

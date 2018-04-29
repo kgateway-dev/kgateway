@@ -23,7 +23,7 @@ type NatsStreamingFactory struct {
 	tmpdir string
 }
 
-func downloadNats(tmpdir string) (string, error) {
+func downloadNats(destDir string) (string, error) {
 	// get us some natsss
 	natsurl := fmt.Sprintf("https://github.com/nats-io/nats-streaming-server/releases/download/v0.9.0/nats-streaming-server-v0.9.0-%s-amd64.zip",
 		runtime.GOOS)
@@ -48,7 +48,7 @@ func downloadNats(tmpdir string) (string, error) {
 
 	for _, f := range r.File {
 		if strings.HasSuffix(f.Name, "nats-streaming-server") {
-			natsfile := filepath.Join(tmpdir, "nats-streaming-server")
+			natsfile := filepath.Join(destDir, "nats-streaming-server")
 			natsout, err := os.OpenFile(natsfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 			if err != nil {
 				return "", err
@@ -80,7 +80,7 @@ func NewNatsStreamingFactory() (*NatsStreamingFactory, error) {
 		_, err := exec.LookPath(nats)
 		if err != nil {
 
-			tmpdir, err = ioutil.TempDir(os.Getenv("HELPER_TMP"), "envoy")
+			tmpdir, err = ioutil.TempDir(os.Getenv("HELPER_TMP"), "nats")
 			if err != nil {
 				return nil, err
 			}
