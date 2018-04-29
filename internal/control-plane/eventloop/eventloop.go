@@ -35,11 +35,11 @@ type eventLoop struct {
 }
 
 func translatorConfig(opts bootstrap.Options) translator.TranslatorConfig {
-	var cfg translator.TranslatorConfig
-	cfg.IngressBindAddress = opts.IngressOptions.BindAddress
-	cfg.IngressPort = uint32(opts.IngressOptions.Port)
-	cfg.IngressSecurePort = uint32(opts.IngressOptions.SecurePort)
-	return cfg
+	return translator.TranslatorConfig{
+		IngressBindAddress: opts.IngressOptions.BindAddress,
+		IngressPort:        uint32(opts.IngressOptions.Port),
+		IngressSecurePort:  uint32(opts.IngressOptions.SecurePort),
+	}
 }
 
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {

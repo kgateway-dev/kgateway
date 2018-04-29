@@ -18,7 +18,7 @@ import (
 )
 
 func newTranslator() *Translator {
-	return NewTranslator(TranslatorConfig{"::"}, []plugins.TranslatorPlugin{&service.Plugin{}})
+	return NewTranslator(TranslatorConfig{"::", 8080, 8443}, []plugins.TranslatorPlugin{&service.Plugin{}})
 }
 
 var _ = Describe("Translator", func() {
