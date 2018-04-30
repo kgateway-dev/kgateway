@@ -135,6 +135,7 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 			return nil
 		}
 		var (
+			virtualMeshes   []*v1.VirtualMesh
 			virtualServices []*v1.VirtualService
 			upstreams       []*v1.Upstream
 			files           []*dependencies.File
@@ -150,10 +151,12 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 				upstreams = append(upstreams, item.Upstream)
 			case item.VirtualService != nil:
 				virtualServices = append(virtualServices, item.VirtualService)
+			case item.VirtualMesh != nil:
+				virtualMeshes = append(virtualMeshes, item.VirtualMesh)
 			case item.File != nil:
 				files = append(files, item.File)
 			default:
-				panic("virtual service, file or upstream must be set")
+				panic("virtual service, virtual mesh, file or upstream must be set")
 
 			}
 		}
@@ -167,6 +170,10 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 		case len(virtualServices) > 0:
 			for _, h := range handlers {
 				h.VirtualServiceEventHandler.OnUpdate(virtualServices, nil)
+			}
+		case len(virtualMeshes) > 0:
+			for _, h := range handlers {
+				h.VirtualMeshEventHandler.OnUpdate(virtualMeshes, nil)
 			}
 		case len(files) > 0:
 			for _, h := range handlers {

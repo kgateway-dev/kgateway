@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/solo-io/gloo/test/helpers"
 	"path/filepath"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/pkg/errors"
@@ -44,10 +43,12 @@ var clients = []clientType{
 }
 
 func main() {
-	baseDir := filepath.Join(helpers.GlooSoloDirectory(), "pkg", "storage", "crd")
-	inputFile := flag.String("f", filepath.Join(baseDir, "solo.io", "client_template.go.tmpl"), "input client template")
-	outputDirectory := flag.String("o", baseDir, "output directory for client files")
+	inputFile := flag.String("f", "", "input client template")
+	outputDirectory := flag.String("o", "", "output directory for client files")
 	flag.Parse()
+	if *inputFile == "" || *outputDirectory == "" {
+		log.Fatalf("must specify -f and -o")
+	}
 	if err := writeClientTemplates(*inputFile, *outputDirectory); err != nil {
 		log.Fatalf("failed generating client templates: %s", err.Error())
 	}
