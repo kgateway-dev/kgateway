@@ -19,133 +19,133 @@ import (
 
 // TODO: evaluate efficiency of LSing a whole dir on every op
 // so far this is preferable to caring what files are named
-type virtualServicesClient struct {
+type virtualMeshesClient struct {
 	dir           string
 	syncFrequency time.Duration
 }
 
-func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualService, error) {
+func (c *virtualMeshesClient) Create(item *v1.VirtualMesh) (*v1.VirtualMesh, error) {
 	// set resourceversion on clone
-	virtualServiceClone, ok := proto.Clone(item).(*v1.VirtualService)
+	virtualMeshClone, ok := proto.Clone(item).(*v1.VirtualMesh)
 	if !ok {
 		return nil, errors.New("internal error: output of proto.Clone was not expected type")
 	}
-	if virtualServiceClone.Metadata == nil {
-		virtualServiceClone.Metadata = &v1.Metadata{}
+	if virtualMeshClone.Metadata == nil {
+		virtualMeshClone.Metadata = &v1.Metadata{}
 	}
-	virtualServiceClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualServiceClone.Metadata.ResourceVersion)
-	virtualServiceFiles, err := c.pathsToVirtualServices()
+	virtualMeshClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualMeshClone.Metadata.ResourceVersion)
+	virtualMeshFiles, err := c.pathsToVirtualMeshes()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualService dir")
+		return nil, errors.Wrap(err, "failed to read virtualMesh dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualServiceFiles {
+	for file, existingUps := range virtualMeshFiles {
 		if existingUps.Name == item.Name {
-			return nil, storage.NewAlreadyExistsErr(errors.Errorf("virtualService %v already defined in %s", item.Name, file))
+			return nil, storage.NewAlreadyExistsErr(errors.Errorf("virtualMesh %v already defined in %s", item.Name, file))
 		}
 	}
 	filename := filepath.Join(c.dir, item.Name+".yml")
-	err = WriteToFile(filename, virtualServiceClone)
+	err = WriteToFile(filename, virtualMeshClone)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating file")
 	}
-	return virtualServiceClone, nil
+	return virtualMeshClone, nil
 }
 
-func (c *virtualServicesClient) Update(item *v1.VirtualService) (*v1.VirtualService, error) {
+func (c *virtualMeshesClient) Update(item *v1.VirtualMesh) (*v1.VirtualMesh, error) {
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}
-	virtualServiceFiles, err := c.pathsToVirtualServices()
+	virtualMeshFiles, err := c.pathsToVirtualMeshes()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualService dir")
+		return nil, errors.Wrap(err, "failed to read virtualMesh dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualServiceFiles {
+	for file, existingUps := range virtualMeshFiles {
 		if existingUps.Name != item.Name {
 			continue
 		}
 		if existingUps.Metadata != nil && lessThan(item.Metadata.ResourceVersion, existingUps.Metadata.ResourceVersion) {
 			return nil, errors.Errorf("resource version outdated for %v", item.Name)
 		}
-		virtualServiceClone, ok := proto.Clone(item).(*v1.VirtualService)
+		virtualMeshClone, ok := proto.Clone(item).(*v1.VirtualMesh)
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
-		virtualServiceClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualServiceClone.Metadata.ResourceVersion)
+		virtualMeshClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualMeshClone.Metadata.ResourceVersion)
 
-		err = WriteToFile(file, virtualServiceClone)
+		err = WriteToFile(file, virtualMeshClone)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed creating file")
 		}
 
-		return virtualServiceClone, nil
+		return virtualMeshClone, nil
 	}
-	return nil, errors.Errorf("virtualService %v not found", item.Name)
+	return nil, errors.Errorf("virtualMesh %v not found", item.Name)
 }
 
-func (c *virtualServicesClient) Delete(name string) error {
-	virtualServiceFiles, err := c.pathsToVirtualServices()
+func (c *virtualMeshesClient) Delete(name string) error {
+	virtualMeshFiles, err := c.pathsToVirtualMeshes()
 	if err != nil {
-		return errors.Wrap(err, "failed to read virtualService dir")
+		return errors.Wrap(err, "failed to read virtualMesh dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualServiceFiles {
+	for file, existingUps := range virtualMeshFiles {
 		if existingUps.Name == name {
 			return os.Remove(file)
 		}
 	}
-	return errors.Errorf("file not found for virtualService %v", name)
+	return errors.Errorf("file not found for virtualMesh %v", name)
 }
 
-func (c *virtualServicesClient) Get(name string) (*v1.VirtualService, error) {
-	virtualServiceFiles, err := c.pathsToVirtualServices()
+func (c *virtualMeshesClient) Get(name string) (*v1.VirtualMesh, error) {
+	virtualMeshFiles, err := c.pathsToVirtualMeshes()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualService dir")
+		return nil, errors.Wrap(err, "failed to read virtualMesh dir")
 	}
 	// error if exists already
-	for _, existingUps := range virtualServiceFiles {
+	for _, existingUps := range virtualMeshFiles {
 		if existingUps.Name == name {
 			return existingUps, nil
 		}
 	}
-	return nil, errors.Errorf("file not found for virtualService %v", name)
+	return nil, errors.Errorf("file not found for virtualMesh %v", name)
 }
 
-func (c *virtualServicesClient) List() ([]*v1.VirtualService, error) {
-	virtualServicePaths, err := c.pathsToVirtualServices()
+func (c *virtualMeshesClient) List() ([]*v1.VirtualMesh, error) {
+	virtualMeshPaths, err := c.pathsToVirtualMeshes()
 	if err != nil {
 		return nil, err
 	}
-	var virtualServices []*v1.VirtualService
-	for _, up := range virtualServicePaths {
-		virtualServices = append(virtualServices, up)
+	var virtualMeshes []*v1.VirtualMesh
+	for _, up := range virtualMeshPaths {
+		virtualMeshes = append(virtualMeshes, up)
 	}
-	return virtualServices, nil
+	return virtualMeshes, nil
 }
 
-func (c *virtualServicesClient) pathsToVirtualServices() (map[string]*v1.VirtualService, error) {
+func (c *virtualMeshesClient) pathsToVirtualMeshes() (map[string]*v1.VirtualMesh, error) {
 	files, err := ioutil.ReadDir(c.dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read dir")
 	}
-	virtualServices := make(map[string]*v1.VirtualService)
+	virtualMeshes := make(map[string]*v1.VirtualMesh)
 	for _, f := range files {
 		path := filepath.Join(c.dir, f.Name())
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var virtualService v1.VirtualService
-		err := ReadFileInto(path, &virtualService)
+		var virtualMesh v1.VirtualMesh
+		err := ReadFileInto(path, &virtualMesh)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as virtualService")
+			return nil, errors.Wrap(err, "unable to parse .yml file as virtualMesh")
 		}
-		virtualServices[path] = &virtualService
+		virtualMeshes[path] = &virtualMesh
 	}
-	return virtualServices, nil
+	return virtualMeshes, nil
 }
 
-func (u *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHandler) (*storage.Watcher, error) {
+func (u *virtualMeshesClient) Watch(handlers ...storage.VirtualMeshEventHandler) (*storage.Watcher, error) {
 	w := watcher.New()
 	w.SetMaxEvents(0)
 	w.FilterOps(watcher.Create, watcher.Write, watcher.Remove)
@@ -188,7 +188,7 @@ func (u *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHan
 	}), nil
 }
 
-func (u *virtualServicesClient) onEvent(event watcher.Event, handlers ...storage.VirtualServiceEventHandler) error {
+func (u *virtualMeshesClient) onEvent(event watcher.Event, handlers ...storage.VirtualMeshEventHandler) error {
 	log.Debugf("file event: %v [%v]", event.Path, event.Op)
 	current, err := u.List()
 	if err != nil {
@@ -200,7 +200,7 @@ func (u *virtualServicesClient) onEvent(event watcher.Event, handlers ...storage
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.VirtualService
+			var created v1.VirtualMesh
 			err := ReadFileInto(event.Path, &created)
 			if err != nil {
 				return err
@@ -209,7 +209,7 @@ func (u *virtualServicesClient) onEvent(event watcher.Event, handlers ...storage
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.VirtualService
+			var updated v1.VirtualMesh
 			err := ReadFileInto(event.Path, &updated)
 			if err != nil {
 				return err

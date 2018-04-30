@@ -414,4 +414,192 @@ var _ = Describe("ConsulStorageClient", func() {
 			})
 		})
 	})
+	Describe("VirtualMeshes", func() {
+		Describe("create", func() {
+			It("creates the virtualmesh as a consul key", func() {
+				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+				Expect(err).NotTo(HaveOccurred())
+				input := &v1.VirtualMesh{
+					Name:            "myvirtualmesh",
+					VirtualServices: []string{"foo"},
+				}
+				vs, err := client.V1().VirtualMeshes().Create(input)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(vs).NotTo(Equal(input))
+				p, _, err := consul.KV().Get(rootPath+"/virtualmeshes/"+input.Name, nil)
+				Expect(err).NotTo(HaveOccurred())
+				var unmarshalledVirtualMesh v1.VirtualMesh
+				err = proto.Unmarshal(p.Value, &unmarshalledVirtualMesh)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(&unmarshalledVirtualMesh).To(Equal(input))
+				resourceVersion := fmt.Sprintf("%v", p.CreateIndex)
+				Expect(vs.Metadata.ResourceVersion).To(Equal(resourceVersion))
+				input.Metadata = vs.Metadata
+				Expect(vs).To(Equal(input))
+			})
+			It("errors when creating the same virtualmesh twice", func() {
+				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+				Expect(err).NotTo(HaveOccurred())
+				input := &v1.VirtualMesh{
+					Name:            "myvirtualmesh",
+					VirtualServices: []string{"foo"},
+				}
+				_, err = client.V1().VirtualMeshes().Create(input)
+				Expect(err).NotTo(HaveOccurred())
+				_, err = client.V1().VirtualMeshes().Create(input)
+				Expect(err).To(HaveOccurred())
+			})
+			Describe("update", func() {
+				It("fails if the virtualmesh doesn't exist", func() {
+					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+					Expect(err).NotTo(HaveOccurred())
+					input := &v1.VirtualMesh{
+						Name:            "myvirtualmesh",
+						VirtualServices: []string{"foo"},
+					}
+					vs, err := client.V1().VirtualMeshes().Update(input)
+					Expect(err).To(HaveOccurred())
+					Expect(vs).To(BeNil())
+				})
+				It("fails if the resourceversion is not up to date", func() {
+					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+					Expect(err).NotTo(HaveOccurred())
+					input := &v1.VirtualMesh{
+						Name:            "myvirtualmesh",
+						VirtualServices: []string{"foo"},
+					}
+					_, err = client.V1().VirtualMeshes().Create(input)
+					Expect(err).NotTo(HaveOccurred())
+					v, err := client.V1().VirtualMeshes().Update(input)
+					Expect(v).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("resource version"))
+				})
+				It("updates the virtualmesh", func() {
+					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+					Expect(err).NotTo(HaveOccurred())
+					input := &v1.VirtualMesh{
+						Name:            "myvirtualmesh",
+						VirtualServices: []string{"foo"},
+					}
+					vs, err := client.V1().VirtualMeshes().Create(input)
+					Expect(err).NotTo(HaveOccurred())
+					changed := proto.Clone(input).(*v1.VirtualMesh)
+					changed.VirtualServices = []string{"bar"}
+					// match resource version
+					changed.Metadata = vs.Metadata
+					out, err := client.V1().VirtualMeshes().Update(changed)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(out.VirtualServices).To(Equal(changed.VirtualServices))
+				})
+				Describe("get", func() {
+					It("fails if the virtualmesh doesn't exist", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						vs, err := client.V1().VirtualMeshes().Get("foo")
+						Expect(err).To(HaveOccurred())
+						Expect(vs).To(BeNil())
+					})
+					It("returns the virtualmesh", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						input := &v1.VirtualMesh{
+							Name:            "myvirtualmesh",
+							VirtualServices: []string{"foo"},
+						}
+						vs, err := client.V1().VirtualMeshes().Create(input)
+						Expect(err).NotTo(HaveOccurred())
+						out, err := client.V1().VirtualMeshes().Get(input.Name)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(out).To(Equal(vs))
+						input.Metadata = out.Metadata
+						Expect(out).To(Equal(input))
+					})
+				})
+				Describe("list", func() {
+					It("returns all existing virtualmeshes", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						input1 := &v1.VirtualMesh{
+							Name:            "myvirtualmesh1",
+							VirtualServices: []string{"foo"},
+						}
+						input2 := &v1.VirtualMesh{
+							Name:            "myvirtualmesh2",
+							VirtualServices: []string{"foo"},
+						}
+						input3 := &v1.VirtualMesh{
+							Name:            "myvirtualmesh3",
+							VirtualServices: []string{"foo"},
+						}
+						vs1, err := client.V1().VirtualMeshes().Create(input1)
+						Expect(err).NotTo(HaveOccurred())
+						time.Sleep(time.Second)
+						vs2, err := client.V1().VirtualMeshes().Create(input2)
+						Expect(err).NotTo(HaveOccurred())
+						time.Sleep(time.Second)
+						vs3, err := client.V1().VirtualMeshes().Create(input3)
+						Expect(err).NotTo(HaveOccurred())
+						out, err := client.V1().VirtualMeshes().List()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(out).To(ContainElement(vs1))
+						Expect(out).To(ContainElement(vs2))
+						Expect(out).To(ContainElement(vs3))
+					})
+				})
+				Describe("watch", func() {
+					It("watches", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						lists := make(chan []*v1.VirtualMesh, 3)
+						stop := make(chan struct{})
+						defer close(stop)
+						errs := make(chan error)
+						w, err := client.V1().VirtualMeshes().Watch(&storage.VirtualMeshEventHandlerFuncs{
+							UpdateFunc: func(updatedList []*v1.VirtualMesh, _ *v1.VirtualMesh) {
+								lists <- updatedList
+							},
+						})
+						Expect(err).NotTo(HaveOccurred())
+						go func() {
+							w.Run(stop, errs)
+						}()
+						input1 := &v1.VirtualMesh{
+							Name:            "myvirtualmesh1",
+							VirtualServices: []string{"foo"},
+						}
+						input2 := &v1.VirtualMesh{
+							Name:            "myvirtualmesh2",
+							VirtualServices: []string{"foo"},
+						}
+						input3 := &v1.VirtualMesh{
+							Name:            "myvirtualmesh3",
+							VirtualServices: []string{"foo"},
+						}
+						vs1, err := client.V1().VirtualMeshes().Create(input1)
+						Expect(err).NotTo(HaveOccurred())
+						vs2, err := client.V1().VirtualMeshes().Create(input2)
+						Expect(err).NotTo(HaveOccurred())
+						vs3, err := client.V1().VirtualMeshes().Create(input3)
+						Expect(err).NotTo(HaveOccurred())
+
+						var list []*v1.VirtualMesh
+						Eventually(func() []*v1.VirtualMesh {
+							select {
+							default:
+								return nil
+							case l := <-lists:
+								list = l
+								return l
+							}
+						}).Should(HaveLen(3))
+						Expect(list).To(HaveLen(3))
+						Expect(list).To(ContainElement(vs1))
+						Expect(list).To(ContainElement(vs2))
+						Expect(list).To(ContainElement(vs3))
+					})
+				})
+			})
+		})
+	})
 })

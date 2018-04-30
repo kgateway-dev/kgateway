@@ -32,6 +32,9 @@ func NewStorage(cfg *api.Config, rootPath string, syncFrequency time.Duration) (
 			virtualServices: &virtualServicesClient{
 				base: base.NewConsulStorageClient(rootPath+"/virtualservices", client),
 			},
+			virtualMeshes: &virtualMeshesClient{
+				base: base.NewConsulStorageClient(rootPath+"/virtualmeshes", client),
+			},
 		},
 	}, nil
 }

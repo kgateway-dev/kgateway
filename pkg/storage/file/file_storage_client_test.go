@@ -99,6 +99,32 @@ var _ = Describe("CrdStorageClient", func() {
 			Expect(created2).To(Equal(vService2))
 		})
 	})
+	Describe("Create2Update vMesh", func() {
+		It("creates and updates", func() {
+			client, err := NewStorage(dir, resync)
+			Expect(err).NotTo(HaveOccurred())
+			err = client.V1().Register()
+			Expect(err).NotTo(HaveOccurred())
+			vMesh := NewTestVirtualMesh("v1")
+			vMesh, err = client.V1().VirtualMeshes().Create(vMesh)
+			vMesh2 := NewTestVirtualMesh("v2")
+			vMesh2, err = client.V1().VirtualMeshes().Create(vMesh2)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = client.V1().VirtualMeshes().Update(vMesh)
+			Expect(err).NotTo(HaveOccurred())
+
+			created1, err := client.V1().VirtualMeshes().Get(vMesh.Name)
+			Expect(err).NotTo(HaveOccurred())
+			vMesh.Metadata = created1.Metadata
+			Expect(created1).To(Equal(vMesh))
+
+			created2, err := client.V1().VirtualMeshes().Get(vMesh2.Name)
+			Expect(err).NotTo(HaveOccurred())
+			vMesh2.Metadata = created2.Metadata
+			Expect(created2).To(Equal(vMesh2))
+		})
+	})
 	Describe("Get", func() {
 		It("gets a file from the name", func() {
 			client, err := NewStorage(dir, resync)
