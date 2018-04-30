@@ -3,14 +3,16 @@ package v1;
 
 import "upstream.proto";
 import "virtualservice.proto";
+import "virtualmesh.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 /**
- * Config is a top-level config object. It is used internally by gloo as a container for the entire user config.
+ * Config is a top-level config object. It is used internally by gloo as a container for the entire set of config objects.
  */
 message Config {
     repeated Upstream upstreams = 1; // The list of all upstreams defined by the user.
     repeated VirtualService virtual_services = 2; // the list of all virtual services defined by the user.
+    repeated VirtualMesh virtual_meshes = 3; // the list virtual meshes defined by the user
 }

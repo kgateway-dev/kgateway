@@ -35,10 +35,6 @@ message VirtualService {
     // If left empty, the virtual service will listen on the HTTP listener port (default :8080)
     SSLConfig ssl_config = 4;
 
-    // Node Groups declare which nodes in the mesh the virtual service is visible to.
-    // domains must be unique amongst virtual services within a node group.
-    repeated string node_groups = 7;
-
     // Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation
     Status status = 5 [(gogoproto.moretags) = "testdiff:\"ignore\""];
 
