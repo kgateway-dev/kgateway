@@ -257,6 +257,15 @@
               "defaultValue": ""
             },
             {
+              "name": "service_info",
+              "description": "Service Info contains information about the service running on the upstream\nService Info is optional, but is used by certain plugins (such as the gRPC plugin)\nas well as discovery services to provide sophistocated routing features for well-known\ntypes of services",
+              "label": "",
+              "type": "ServiceInfo",
+              "longType": "ServiceInfo",
+              "fullType": "v1.ServiceInfo",
+              "defaultValue": ""
+            },
+            {
               "name": "status",
               "description": "Status indicates the validation status of the upstream resource. Status is read-only by clients, and set by gloo during validation",
               "label": "",
@@ -272,15 +281,6 @@
               "type": "Metadata",
               "longType": "Metadata",
               "fullType": "v1.Metadata",
-              "defaultValue": ""
-            },
-            {
-              "name": "service_info",
-              "description": "Service Info contains information about the service running on the upstream\nService Info is optional, but is used by certain plugins (such as the gRPC plugin)\nas well as discovery services to provide sophistocated routing features for well-known\ntypes of services",
-              "label": "",
-              "type": "ServiceInfo",
-              "longType": "ServiceInfo",
-              "fullType": "v1.ServiceInfo",
               "defaultValue": ""
             }
           ]
@@ -400,6 +400,15 @@
               "type": "SSLConfig",
               "longType": "SSLConfig",
               "fullType": "v1.SSLConfig",
+              "defaultValue": ""
+            },
+            {
+              "name": "node_groups",
+              "description": "Node Groups declare which nodes in the mesh the virtual service is visible to.\ndomains must be unique amongst virtual services within a node group.",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
               "defaultValue": ""
             },
             {

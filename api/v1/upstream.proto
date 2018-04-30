@@ -35,15 +35,17 @@ message Upstream {
     // Permits routing to AWS lambda function].
     // [routes](virtualservice.md#Route) on virtualservices can specify function destinations to route to specific functions.
     repeated Function functions = 5;
-    // Status indicates the validation status of the upstream resource. Status is read-only by clients, and set by gloo during validation
-    Status status = 6 [(gogoproto.moretags) = "testdiff:\"ignore\""];
-    // Metadata contains the resource metadata for the upstream
-    Metadata metadata = 7;
+
     // Service Info contains information about the service running on the upstream
     // Service Info is optional, but is used by certain plugins (such as the gRPC plugin)
     // as well as discovery services to provide sophistocated routing features for well-known
     // types of services
     ServiceInfo service_info = 8;
+
+    // Status indicates the validation status of the upstream resource. Status is read-only by clients, and set by gloo during validation
+    Status status = 6 [(gogoproto.moretags) = "testdiff:\"ignore\""];
+    // Metadata contains the resource metadata for the upstream
+    Metadata metadata = 7;
 }
 
 message ServiceInfo {
