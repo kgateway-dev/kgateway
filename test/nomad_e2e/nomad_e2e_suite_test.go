@@ -6,6 +6,8 @@ import (
 
 	"time"
 
+	"io/ioutil"
+
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
@@ -16,7 +18,6 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/dependencies/vault"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/helpers/local"
-	"io/ioutil"
 )
 
 func TestConsul(t *testing.T) {
@@ -28,13 +29,18 @@ func TestConsul(t *testing.T) {
 
 	helpers.RegisterPreFailHandler(func() {
 		var logs string
-		for _, task := range []string{"control-plane", "ingress", "grpc-test-service", 
-			"helloservice-2", "helloservice", "petstore", "nats-streaming"} {
-			if nomadInstance != nil {
-				l, err := nomadInstance.Logs("gloo", task)
-				logs += l + "\n"
-				if err != nil {
-					logs += "error getting logs for " + task + ": " + err.Error()
+		for job, tasks := range map[string][]string{
+			"gloo": []string{"control-plane", "ingress"},
+			"testing-resources": []string{"grpc-test-service",
+				"helloservice-2", "helloservice", "petstore", "nats-streaming"},
+		} {
+			for _, task := range tasks {
+				if nomadInstance != nil {
+					l, err := nomadInstance.Logs(job, task)
+					logs += l + "\n"
+					if err != nil {
+						logs += "error getting logs for " + job + ":" + task + ": " + err.Error()
+					}
 				}
 			}
 		}
