@@ -13,7 +13,7 @@ import (
 
 //go:generate mkdir -p glootest
 //go:generate mkdir -p descriptors
-//go:generate protoc -I. --go_out=plugins=grpc:glootest  --descriptor_set_out=descriptors/proto.pb protos/glootest.proto
+//go:generate protoc -I. --gogo_out=plugins=grpc:glootest  --descriptor_set_out=descriptors/proto.pb protos/glootest.proto
 
 func RunServer() *TestGRPCServer {
 	lis, err := net.Listen("tcp", ":0")

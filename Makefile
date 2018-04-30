@@ -58,7 +58,7 @@ generated-code:
 
 $(OUTPUT):
 	mkdir -p $(OUTPUT)
-
+	
 define BINARY_TARGETS
 $(eval VERSION := $(shell cat cmd/$(BINARY)/version))
 $(eval IMAGE_TAG ?= $(VERSION))
