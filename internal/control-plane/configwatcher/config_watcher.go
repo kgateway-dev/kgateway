@@ -34,11 +34,17 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		log.Warnf("Startup: failed to read virtual services from storage: %v", err)
 		initialVirtualServices = []*v1.VirtualService{}
 	}
+	initialVirtualMeshes, err := storageClient.V1().VirtualMeshes().List()
+	if err != nil {
+		log.Warnf("Startup: failed to read virtual services from storage: %v", err)
+		initialVirtualMeshes = []*v1.VirtualMesh{}
+	}
 	configs := make(chan *v1.Config)
 	// do a first time read
 	cache := &v1.Config{
 		Upstreams:       initialUpstreams,
 		VirtualServices: initialVirtualServices,
+		VirtualMeshes: initialVirtualMeshes,
 	}
 	// throw it down the channel to get things going
 	go func() {
@@ -67,6 +73,7 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create watcher for upstreams")
 	}
+
 	syncvServices := func(updatedList []*v1.VirtualService, _ *v1.VirtualService) {
 		sort.SliceStable(updatedList, func(i, j int) bool {
 			return updatedList[i].GetName() < updatedList[j].GetName()
@@ -90,8 +97,32 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		return nil, errors.Wrap(err, "failed to create watcher for virtualservices")
 	}
 
+
+	syncvMeshes := func(updatedList []*v1.VirtualMesh, _ *v1.VirtualMesh) {
+		sort.SliceStable(updatedList, func(i, j int) bool {
+			return updatedList[i].GetName() < updatedList[j].GetName()
+		})
+
+		diff, equal := messagediff.PrettyDiff(cache.VirtualMeshes, updatedList)
+		if equal {
+			return
+		}
+		log.GreyPrintf("change detected in virtualservices: %v", diff)
+
+		cache.VirtualMeshes = updatedList
+		configs <- cache
+	}
+	vMeshWatcher, err := storageClient.V1().VirtualMeshes().Watch(&storage.VirtualMeshEventHandlerFuncs{
+		AddFunc:    syncvMeshes,
+		UpdateFunc: syncvMeshes,
+		DeleteFunc: syncvMeshes,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create watcher for virtualservices")
+	}
+
 	return &configWatcher{
-		watchers: []*storage.Watcher{vServiceWatcher, upstreamWatcher},
+		watchers: []*storage.Watcher{vServiceWatcher, vMeshWatcher, upstreamWatcher},
 		configs:  configs,
 		errs:     make(chan error),
 	}, nil

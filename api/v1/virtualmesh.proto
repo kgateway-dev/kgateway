@@ -14,7 +14,7 @@ import "metadata.proto";
  * A Virtual Mesh is a container for a set of Virtual Services that will be used to generate a single proxy config
  * to be applied to one or more Envoy nodes. The Virtual Mesh is best understood as an in-mesh application's localized view
  * of the rest of the mesh.
- * Each domains for each Virtual Services contained in a Virtual Mesh cannot appear more than once, or the Virtual Mesh
+ * Each domain for each Virtual Service contained in a Virtual Mesh cannot appear more than once, or the Virtual Mesh
  * will be invalid.
  */
 message VirtualMesh {
@@ -28,7 +28,7 @@ message VirtualMesh {
     // One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
     string name = 1;
 
-    // the list of names of the virtual services this vmesh includes.
+    // the list of names of the virtual services this vmesh encapsulates.
     repeated string virtual_services = 2;
 
     // Status indicates the validation status of the virtual mesh resource.
