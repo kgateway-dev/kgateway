@@ -34,9 +34,9 @@ jobs:
           name: Test
           command: ginkgo -r -v .
           environment:
-            # TODO: re-enabled these once we stablize
             RUN_CONSUL_TESTS: "1"
             RUN_VAULT_TESTS: "1"
-            RUN_NOMAD_TESTS: "1"
+            # Nomand can't run on docker ci
+            # RUN_NOMAD_TESTS: "1"
             RUN_KUBE_TESTS: "1"
             ENVOY_IMAGE_TAG: "v0.1.6-127"
