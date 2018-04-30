@@ -11,6 +11,7 @@ type V1 interface {
 	Register() error
 	Upstreams() Upstreams
 	VirtualServices() VirtualServices
+	VirtualMeshes() VirtualMeshes
 }
 
 type Upstreams interface {
@@ -29,4 +30,13 @@ type VirtualServices interface {
 	Get(name string) (*v1.VirtualService, error)
 	List() ([]*v1.VirtualService, error)
 	Watch(...VirtualServiceEventHandler) (*Watcher, error)
+}
+
+type VirtualMeshes interface {
+	Create(*v1.VirtualMesh) (*v1.VirtualMesh, error)
+	Update(*v1.VirtualMesh) (*v1.VirtualMesh, error)
+	Delete(name string) error
+	Get(name string) (*v1.VirtualMesh, error)
+	List() ([]*v1.VirtualMesh, error)
+	Watch(...VirtualMeshEventHandler) (*Watcher, error)
 }

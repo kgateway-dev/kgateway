@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/pkg/protoutil"
 	. "github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/solo-io/gloo/test/helpers"
+	crdv1 "github.com/solo-io/gloo/pkg/storage/crd/solo.io/v1"
 )
 
 var _ = Describe("Conversion", func() {
@@ -18,13 +19,12 @@ var _ = Describe("Conversion", func() {
 			us.Metadata = &v1.Metadata{
 				Annotations: annotations,
 			}
-			upCrd, err := UpstreamToCrd("foo", us)
+			upCrd, err := ConfigObjectToCrd("foo", us)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(upCrd.Name).To(Equal(us.Name))
-			Expect(upCrd.Namespace).To(Equal("foo"))
-			Expect(upCrd.Annotations).To(Equal(annotations))
-			Expect(upCrd.Spec).NotTo(BeNil())
-			spec := *upCrd.Spec
+			Expect(upCrd.GetName()).To(Equal(us.Name))
+			Expect(upCrd.GetNamespace()).To(Equal("foo"))
+			Expect(upCrd.GetAnnotations()).To(Equal(annotations))
+			spec := *upCrd.(*crdv1.Upstream).Spec
 			// removed parts
 			Expect(spec["name"]).To(BeNil())
 			Expect(spec["metadata"]).To(BeNil())
@@ -55,13 +55,12 @@ var _ = Describe("Conversion", func() {
 			vService.Metadata = &v1.Metadata{
 				Annotations: annotations,
 			}
-			vsCrd, err := VirtualServiceToCrd("foo", vService)
+			vsCrd, err := ConfigObjectToCrd("foo", vService)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(vsCrd.Name).To(Equal(vService.Name))
-			Expect(vsCrd.Namespace).To(Equal("foo"))
-			Expect(vsCrd.Spec).NotTo(BeNil())
-			Expect(vsCrd.Annotations).To(Equal(annotations))
-			spec := *vsCrd.Spec
+			Expect(vsCrd.GetName()).To(Equal(vService.Name))
+			Expect(vsCrd.GetNamespace()).To(Equal("foo"))
+			Expect(vsCrd.GetAnnotations()).To(Equal(annotations))
+			spec := *vsCrd.(*crdv1.VirtualService).Spec
 			// removed parts
 			Expect(spec["name"]).To(BeNil())
 			Expect(spec["metadata"]).To(BeNil())
@@ -72,40 +71,6 @@ var _ = Describe("Conversion", func() {
 			vServiceMap, err := protoutil.MarshalMap(vService)
 			Expect(err).To(BeNil())
 			Expect(spec["routes"]).To(Equal(vServiceMap["routes"]))
-		})
-	})
-	Describe("VirtualServiceFromCrd", func() {
-		It("Converts a gloo virtualservice to crd", func() {
-			vService := helpers.NewTestVirtualService("foo", helpers.NewTestRoute1())
-			annotations := map[string]string{"foo": "bar"}
-			vService.Metadata = &v1.Metadata{
-				Annotations: annotations,
-			}
-			vsCrd, err := VirtualServiceToCrd("foo", vService)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(vsCrd.Name).To(Equal(vService.Name))
-			Expect(vsCrd.Namespace).To(Equal("foo"))
-			Expect(vsCrd.Spec).NotTo(BeNil())
-			spec := *vsCrd.Spec
-			// removed parts
-			Expect(spec["name"]).To(BeNil())
-			Expect(spec["metadata"]).To(BeNil())
-			Expect(spec["status"]).To(BeNil())
-
-			//// shifted parts
-			vServiceMap, err := protoutil.MarshalMap(vService)
-			Expect(err).To(BeNil())
-			Expect(spec["routes"]).To(Equal(vServiceMap["routes"]))
-
-			// bring it back now
-			outvService, err := VirtualServiceFromCrd(vsCrd)
-			vService.Metadata = &v1.Metadata{
-				ResourceVersion: vsCrd.ResourceVersion,
-				Namespace:       vsCrd.Namespace,
-				Annotations:     annotations,
-			}
-			Expect(err).To(BeNil())
-			Expect(outvService).To(Equal(vService))
 		})
 	})
 })

@@ -165,3 +165,13 @@ func NewTestRouteWithCORS() *v1.Route {
 		Extensions: extensions,
 	}
 }
+
+func NewTestVirtualMesh(name string, vServices ... string) *v1.VirtualMesh {
+	return &v1.VirtualMesh{
+		Name:            name,
+		VirtualServices: vServices,
+		Metadata: &v1.Metadata{
+			Annotations: map[string]string{"my_annotation": "value"},
+		},
+	}
+}
