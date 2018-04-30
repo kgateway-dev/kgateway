@@ -26,6 +26,14 @@ type UpstreamListerExpansion interface{}
 // UpstreamNamespaceLister.
 type UpstreamNamespaceListerExpansion interface{}
 
+// VirtualMeshListerExpansion allows custom methods to be added to
+// VirtualMeshLister.
+type VirtualMeshListerExpansion interface{}
+
+// VirtualMeshNamespaceListerExpansion allows custom methods to be added to
+// VirtualMeshNamespaceLister.
+type VirtualMeshNamespaceListerExpansion interface{}
+
 // VirtualServiceListerExpansion allows custom methods to be added to
 // VirtualServiceLister.
 type VirtualServiceListerExpansion interface{}

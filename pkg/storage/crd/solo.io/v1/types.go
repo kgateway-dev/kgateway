@@ -54,6 +54,31 @@ type VirtualServiceList struct {
 	Items           []VirtualService `json:"items"`
 }
 
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// VirtualMesh is the generic Kubernetes API object wrapper for Gloo VirtualMeshs
+type VirtualMesh struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Status            *v1.Status `json:"status"`
+	Spec              *Spec      `json:"spec"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// VirtualMeshList is the generic Kubernetes API object wrapper
+type VirtualMeshList struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ListMeta `json:"metadata"`
+	metav1.Status   `json:"status,omitempty"`
+	Items           []VirtualMesh `json:"items"`
+}
+
 // spec implements deepcopy
 type Spec map[string]interface{}
 

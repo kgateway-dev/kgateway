@@ -13,25 +13,39 @@ const (
 
 var (
 	UpstreamCRD = crd{
-		Plural:  "upstreams",
-		Group:   GroupName,
-		Version: Version,
-		Kind:    "Upstream",
+		Plural:    "upstreams",
+		Group:     GroupName,
+		Version:   Version,
+		Kind:      "Upstream",
+		ShortName: "us",
 	}
 	VirtualServiceCRD = crd{
-		Plural:  "virtualservices",
-		Group:   GroupName,
-		Version: Version,
-		Kind:    "VirtualService",
+		Plural:    "virtualservices",
+		Group:     GroupName,
+		Version:   Version,
+		Kind:      "VirtualService",
+		ShortName: "vs",
 	}
-	KnownCRDs = []crd{UpstreamCRD, VirtualServiceCRD}
+	VirtualMeshCRD = crd{
+		Plural:    "virtualmeshes",
+		Group:     GroupName,
+		Version:   Version,
+		Kind:      "VirtualMesh",
+		ShortName: "vm",
+	}
+	KnownCRDs = []crd{
+		UpstreamCRD,
+		VirtualServiceCRD,
+		VirtualMeshCRD,
+	}
 )
 
 type crd struct {
-	Plural  string
-	Group   string
-	Version string
-	Kind    string
+	Plural    string
+	Group     string
+	Version   string
+	Kind      string
+	ShortName string
 }
 
 func (d crd) FullName() string {
@@ -63,6 +77,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&UpstreamList{},
 		&VirtualService{},
 		&VirtualServiceList{},
+		&VirtualMesh{},
+		&VirtualMeshList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

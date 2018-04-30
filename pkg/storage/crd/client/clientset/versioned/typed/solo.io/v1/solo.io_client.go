@@ -28,6 +28,7 @@ import (
 type GlooV1Interface interface {
 	RESTClient() rest.Interface
 	UpstreamsGetter
+	VirtualMeshesGetter
 	VirtualServicesGetter
 }
 
@@ -38,6 +39,10 @@ type GlooV1Client struct {
 
 func (c *GlooV1Client) Upstreams(namespace string) UpstreamInterface {
 	return newUpstreams(c, namespace)
+}
+
+func (c *GlooV1Client) VirtualMeshes(namespace string) VirtualMeshInterface {
+	return newVirtualMeshes(c, namespace)
 }
 
 func (c *GlooV1Client) VirtualServices(namespace string) VirtualServiceInterface {

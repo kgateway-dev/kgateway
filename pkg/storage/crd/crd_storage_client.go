@@ -88,8 +88,9 @@ func (c *v1client) Register() error {
 				Version: crd.Version,
 				Scope:   v1beta1.NamespaceScoped,
 				Names: v1beta1.CustomResourceDefinitionNames{
-					Plural: crd.Plural,
-					Kind:   crd.Kind,
+					Plural:     crd.Plural,
+					Kind:       crd.Kind,
+					ShortNames: []string{crd.ShortName},
 				},
 			},
 		}

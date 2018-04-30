@@ -20,4 +20,6 @@ package v1
 
 type UpstreamExpansion interface{}
 
+type VirtualMeshExpansion interface{}
+
 type VirtualServiceExpansion interface{}

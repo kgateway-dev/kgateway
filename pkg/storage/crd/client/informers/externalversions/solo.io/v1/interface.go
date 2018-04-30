@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// Upstreams returns a UpstreamInformer.
 	Upstreams() UpstreamInformer
+	// VirtualMeshes returns a VirtualMeshInformer.
+	VirtualMeshes() VirtualMeshInformer
 	// VirtualServices returns a VirtualServiceInformer.
 	VirtualServices() VirtualServiceInformer
 }
@@ -44,6 +46,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Upstreams returns a UpstreamInformer.
 func (v *version) Upstreams() UpstreamInformer {
 	return &upstreamInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// VirtualMeshes returns a VirtualMeshInformer.
+func (v *version) VirtualMeshes() VirtualMeshInformer {
+	return &virtualMeshInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // VirtualServices returns a VirtualServiceInformer.
