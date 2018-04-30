@@ -34,6 +34,13 @@ var clients = []clientType{
 		UppercaseName:       "VirtualService",
 		UppercasePluralName: "VirtualServices",
 	},
+	{
+		FilenamePrefix: "virtual_meshes",
+		LowercaseName:       "virtualMesh",
+		LowercasePluralName: "virtualMeshes",
+		UppercaseName:       "VirtualMesh",
+		UppercasePluralName: "VirtualMeshes",
+	},
 }
 
 func main() {

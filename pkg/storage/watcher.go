@@ -26,6 +26,12 @@ type VirtualServiceEventHandler interface {
 	OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService)
 }
 
+type VirtualMeshEventHandler interface {
+	OnAdd(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
+	OnUpdate(updatedList []*v1.VirtualMesh, newObj *v1.VirtualMesh)
+	OnDelete(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
+}
+
 // UpstreamEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
 // UpstreamEventHandler.
@@ -81,6 +87,36 @@ func (r VirtualServiceEventHandlerFuncs) OnUpdate(updatedList []*v1.VirtualServi
 
 // OnDelete calls DeleteFunc if it's not nil.
 func (r VirtualServiceEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService) {
+	if r.DeleteFunc != nil {
+		r.DeleteFunc(updatedList, obj)
+	}
+}
+
+// VirtualMeshEventHandlerFuncs is an adaptor to let you easily specify as many or
+// as few of the notification functions as you want while still implementing
+// VirtualMeshEventHandler.
+type VirtualMeshEventHandlerFuncs struct {
+	AddFunc    func(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
+	UpdateFunc func(updatedList []*v1.VirtualMesh, newObj *v1.VirtualMesh)
+	DeleteFunc func(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
+}
+
+// OnAdd calls AddFunc if it's not nil.
+func (r VirtualMeshEventHandlerFuncs) OnAdd(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh) {
+	if r.AddFunc != nil {
+		r.AddFunc(updatedList, obj)
+	}
+}
+
+// OnUpdate calls UpdateFunc if it's not nil.
+func (r VirtualMeshEventHandlerFuncs) OnUpdate(updatedList []*v1.VirtualMesh, newObj *v1.VirtualMesh) {
+	if r.UpdateFunc != nil {
+		r.UpdateFunc(updatedList, newObj)
+	}
+}
+
+// OnDelete calls DeleteFunc if it's not nil.
+func (r VirtualMeshEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh) {
 	if r.DeleteFunc != nil {
 		r.DeleteFunc(updatedList, obj)
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/crud"
 	kuberrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 type {{ .LowercasePluralName }}Client struct {
@@ -42,11 +43,15 @@ func (c *{{ .LowercasePluralName }}Client) Get(name string) (*v1.{{ .UppercaseNa
 	if err != nil {
 		return nil, errors.Wrap(err, "failed performing get api request")
 	}
-	returned{{ .UppercaseName }}, err := {{ .UppercaseName }}FromCrd(crd{{ .UppercaseName }})
-	if err != nil {
+	var returned{{ .UppercaseName }} v1.{{ .UppercaseName }}
+	if err := ConfigObjectFromCrd(
+		crd{{ .UppercaseName }}.ObjectMeta,
+		crd{{ .UppercaseName }}.Spec,
+		crd{{ .UppercaseName }}.Status,
+		&returned{{ .UppercaseName }}); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}")
 	}
-	return returned{{ .UppercaseName }}, nil
+	return &returned{{ .UppercaseName }}, nil
 }
 
 func (c *{{ .LowercasePluralName }}Client) List() ([]*v1.{{ .UppercaseName }}, error) {
@@ -56,11 +61,15 @@ func (c *{{ .LowercasePluralName }}Client) List() ([]*v1.{{ .UppercaseName }}, e
 	}
 	var returned{{ .UppercasePluralName }} []*v1.{{ .UppercaseName }}
 	for _, crd{{ .UppercaseName }} := range crdList.Items {
-		{{ .LowercaseName }}, err := {{ .UppercaseName }}FromCrd(&crd{{ .UppercaseName }})
-		if err != nil {
+		var returned{{ .UppercaseName }} v1.{{ .UppercaseName }}
+		if err := ConfigObjectFromCrd(
+			crd{{ .UppercaseName }}.ObjectMeta,
+			crd{{ .UppercaseName }}.Spec,
+			crd{{ .UppercaseName }}.Status,
+			&returned{{ .UppercaseName }}); err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}")
 		}
-		returned{{ .UppercasePluralName }} = append(returned{{ .UppercasePluralName }}, {{ .LowercaseName }})
+		returned{{ .UppercasePluralName }} = append(returned{{ .UppercasePluralName }}, &returned{{ .UppercaseName }})
 	}
 	return returned{{ .UppercasePluralName }}, nil
 }
@@ -77,15 +86,15 @@ func (u *{{ .LowercasePluralName }}Client) Watch(handlers ...storage.{{ .Upperca
 }
 
 func (c *{{ .LowercasePluralName }}Client) createOrUpdate{{ .UppercaseName }}Crd({{ .LowercaseName }} *v1.{{ .UppercaseName }}, op crud.Operation) (*v1.{{ .UppercaseName }}, error) {
-	{{ .LowercaseName }}Crd, err := {{ .UppercaseName }}ToCrd(c.namespace, {{ .LowercaseName }})
+	{{ .LowercaseName }}Crd, err := ConfigObjectToCrd(c.namespace, {{ .LowercaseName }})
 	if err != nil {
 		return nil, errors.Wrap(err, "converting gloo object to crd")
 	}
-	{{ .LowercasePluralName }} := c.crds.GlooV1().{{ .UppercasePluralName }}({{ .LowercaseName }}Crd.Namespace)
+	{{ .LowercasePluralName }} := c.crds.GlooV1().{{ .UppercasePluralName }}({{ .LowercaseName }}Crd.GetNamespace())
 	var returnedCrd *crdv1.{{ .UppercaseName }}
 	switch op {
 	case crud.OperationCreate:
-		returnedCrd, err = {{ .LowercasePluralName }}.Create({{ .LowercaseName }}Crd)
+		returnedCrd, err = {{ .LowercasePluralName }}.Create({{ .LowercaseName }}Crd.(*crdv1.{{ .UppercaseName }}))
 		if err != nil {
 			if kuberrs.IsAlreadyExists(err) {
 				return nil, storage.NewAlreadyExistsErr(err)
@@ -94,22 +103,26 @@ func (c *{{ .LowercasePluralName }}Client) createOrUpdate{{ .UppercaseName }}Crd
 		}
 	case crud.OperationUpdate:
 		// need to make sure we preserve labels
-		currentCrd, err := {{ .LowercasePluralName }}.Get({{ .LowercaseName }}Crd.Name, metav1.GetOptions{ResourceVersion: {{ .LowercaseName }}Crd.ResourceVersion})
+		currentCrd, err := {{ .LowercasePluralName }}.Get({{ .LowercaseName }}Crd.GetName(), metav1.GetOptions{ResourceVersion: {{ .LowercaseName }}Crd.GetResourceVersion()})
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes get api request")
 		}
 		// copy labels
-		{{ .LowercaseName }}Crd.Labels = currentCrd.Labels
-		returnedCrd, err = {{ .LowercasePluralName }}.Update({{ .LowercaseName }}Crd)
+		{{ .LowercaseName }}Crd.SetLabels(currentCrd.Labels)
+		returnedCrd, err = {{ .LowercasePluralName }}.Update({{ .LowercaseName }}Crd.(*crdv1.{{ .UppercaseName }}))
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes update api request")
 		}
 	}
-	returned{{ .UppercaseName }}, err := {{ .UppercaseName }}FromCrd(returnedCrd)
-	if err != nil {
+	var returned{{ .UppercaseName }} v1.{{ .UppercaseName }}
+	if err := ConfigObjectFromCrd(
+		returnedCrd.ObjectMeta,
+		returnedCrd.Spec,
+		returnedCrd.Status,
+		&returned{{ .UppercaseName }}); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}")
 	}
-	return returned{{ .UppercaseName }}, nil
+	return &returned{{ .UppercaseName }}, nil
 }
 
 // implements the kubernetes ResourceEventHandler interface
@@ -126,11 +139,15 @@ func (eh *{{ .LowercaseName }}EventHandler) getUpdatedList() []*v1.{{ .Uppercase
 		if !ok {
 			continue
 		}
-		updated{{ .UppercaseName }}, err := {{ .UppercaseName }}FromCrd({{ .LowercaseName }}Crd)
-		if err != nil {
-			continue
+		var returned{{ .UppercaseName }} v1.{{ .UppercaseName }}
+		if err := ConfigObjectFromCrd(
+			{{ .LowercaseName }}Crd.ObjectMeta,
+			{{ .LowercaseName }}Crd.Spec,
+			{{ .LowercaseName }}Crd.Status,
+			&returned{{ .UppercaseName }}); err != nil {
+			log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}"))
 		}
-		updated{{ .UppercaseName }}List = append(updated{{ .UppercaseName }}List, updated{{ .UppercaseName }})
+		updated{{ .UppercaseName }}List = append(updated{{ .UppercaseName }}List, &returned{{ .UppercaseName }})
 	}
 	return updated{{ .UppercaseName }}List
 }
@@ -140,11 +157,16 @@ func convert{{ .UppercaseName }}(obj interface{}) (*v1.{{ .UppercaseName }}, boo
 	if !ok {
 		return nil, ok
 	}
-	{{ .LowercaseName }}, err := {{ .UppercaseName }}FromCrd({{ .LowercaseName }}Crd)
-	if err != nil {
+	var returned{{ .UppercaseName }} v1.{{ .UppercaseName }}
+	if err := ConfigObjectFromCrd(
+		{{ .LowercaseName }}Crd.ObjectMeta,
+		{{ .LowercaseName }}Crd.Spec,
+		{{ .LowercaseName }}Crd.Status,
+		&returned{{ .UppercaseName }}); err != nil {
+		log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}"))
 		return nil, false
 	}
-	return {{ .LowercaseName }}, ok
+	return &returned{{ .UppercaseName }}, true
 }
 
 func (eh *{{ .LowercaseName }}EventHandler) OnAdd(obj interface{}) {

@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/crud"
 	kuberrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 type virtualServicesClient struct {
@@ -42,11 +43,15 @@ func (c *virtualServicesClient) Get(name string) (*v1.VirtualService, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed performing get api request")
 	}
-	returnedVirtualService, err := VirtualServiceFromCrd(crdVirtualService)
-	if err != nil {
+	var returnedVirtualService v1.VirtualService
+	if err := ConfigObjectFromCrd(
+		crdVirtualService.ObjectMeta,
+		crdVirtualService.Spec,
+		crdVirtualService.Status,
+		&returnedVirtualService); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to virtualService")
 	}
-	return returnedVirtualService, nil
+	return &returnedVirtualService, nil
 }
 
 func (c *virtualServicesClient) List() ([]*v1.VirtualService, error) {
@@ -56,11 +61,15 @@ func (c *virtualServicesClient) List() ([]*v1.VirtualService, error) {
 	}
 	var returnedVirtualServices []*v1.VirtualService
 	for _, crdVirtualService := range crdList.Items {
-		virtualService, err := VirtualServiceFromCrd(&crdVirtualService)
-		if err != nil {
+		var returnedVirtualService v1.VirtualService
+		if err := ConfigObjectFromCrd(
+			crdVirtualService.ObjectMeta,
+			crdVirtualService.Spec,
+			crdVirtualService.Status,
+			&returnedVirtualService); err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to virtualService")
 		}
-		returnedVirtualServices = append(returnedVirtualServices, virtualService)
+		returnedVirtualServices = append(returnedVirtualServices, &returnedVirtualService)
 	}
 	return returnedVirtualServices, nil
 }
@@ -77,15 +86,15 @@ func (u *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHan
 }
 
 func (c *virtualServicesClient) createOrUpdateVirtualServiceCrd(virtualService *v1.VirtualService, op crud.Operation) (*v1.VirtualService, error) {
-	virtualServiceCrd, err := VirtualServiceToCrd(c.namespace, virtualService)
+	virtualServiceCrd, err := ConfigObjectToCrd(c.namespace, virtualService)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting gloo object to crd")
 	}
-	virtualServices := c.crds.GlooV1().VirtualServices(virtualServiceCrd.Namespace)
+	virtualServices := c.crds.GlooV1().VirtualServices(virtualServiceCrd.GetNamespace())
 	var returnedCrd *crdv1.VirtualService
 	switch op {
 	case crud.OperationCreate:
-		returnedCrd, err = virtualServices.Create(virtualServiceCrd)
+		returnedCrd, err = virtualServices.Create(virtualServiceCrd.(*crdv1.VirtualService))
 		if err != nil {
 			if kuberrs.IsAlreadyExists(err) {
 				return nil, storage.NewAlreadyExistsErr(err)
@@ -94,22 +103,26 @@ func (c *virtualServicesClient) createOrUpdateVirtualServiceCrd(virtualService *
 		}
 	case crud.OperationUpdate:
 		// need to make sure we preserve labels
-		currentCrd, err := virtualServices.Get(virtualServiceCrd.Name, metav1.GetOptions{ResourceVersion: virtualServiceCrd.ResourceVersion})
+		currentCrd, err := virtualServices.Get(virtualServiceCrd.GetName(), metav1.GetOptions{ResourceVersion: virtualServiceCrd.GetResourceVersion()})
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes get api request")
 		}
 		// copy labels
-		virtualServiceCrd.Labels = currentCrd.Labels
-		returnedCrd, err = virtualServices.Update(virtualServiceCrd)
+		virtualServiceCrd.SetLabels(currentCrd.Labels)
+		returnedCrd, err = virtualServices.Update(virtualServiceCrd.(*crdv1.VirtualService))
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes update api request")
 		}
 	}
-	returnedVirtualService, err := VirtualServiceFromCrd(returnedCrd)
-	if err != nil {
+	var returnedVirtualService v1.VirtualService
+	if err := ConfigObjectFromCrd(
+		returnedCrd.ObjectMeta,
+		returnedCrd.Spec,
+		returnedCrd.Status,
+		&returnedVirtualService); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to virtualService")
 	}
-	return returnedVirtualService, nil
+	return &returnedVirtualService, nil
 }
 
 // implements the kubernetes ResourceEventHandler interface
@@ -126,11 +139,15 @@ func (eh *virtualServiceEventHandler) getUpdatedList() []*v1.VirtualService {
 		if !ok {
 			continue
 		}
-		updatedVirtualService, err := VirtualServiceFromCrd(virtualServiceCrd)
-		if err != nil {
-			continue
+		var returnedVirtualService v1.VirtualService
+		if err := ConfigObjectFromCrd(
+			virtualServiceCrd.ObjectMeta,
+			virtualServiceCrd.Spec,
+			virtualServiceCrd.Status,
+			&returnedVirtualService); err != nil {
+			log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to virtualService"))
 		}
-		updatedVirtualServiceList = append(updatedVirtualServiceList, updatedVirtualService)
+		updatedVirtualServiceList = append(updatedVirtualServiceList, &returnedVirtualService)
 	}
 	return updatedVirtualServiceList
 }
@@ -140,11 +157,16 @@ func convertVirtualService(obj interface{}) (*v1.VirtualService, bool) {
 	if !ok {
 		return nil, ok
 	}
-	virtualService, err := VirtualServiceFromCrd(virtualServiceCrd)
-	if err != nil {
+	var returnedVirtualService v1.VirtualService
+	if err := ConfigObjectFromCrd(
+		virtualServiceCrd.ObjectMeta,
+		virtualServiceCrd.Spec,
+		virtualServiceCrd.Status,
+		&returnedVirtualService); err != nil {
+		log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to virtualService"))
 		return nil, false
 	}
-	return virtualService, ok
+	return &returnedVirtualService, true
 }
 
 func (eh *virtualServiceEventHandler) OnAdd(obj interface{}) {
