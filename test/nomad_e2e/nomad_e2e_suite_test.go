@@ -28,7 +28,8 @@ func TestConsul(t *testing.T) {
 
 	helpers.RegisterPreFailHandler(func() {
 		var logs string
-		for _, task := range []string{"control-plane", "ingress"} {
+		for _, task := range []string{"control-plane", "ingress", "grpc-test-service", 
+			"helloservice-2", "helloservice", "petstore", "nats-streaming"} {
 			if nomadInstance != nil {
 				l, err := nomadInstance.Logs("gloo", task)
 				logs += l + "\n"
