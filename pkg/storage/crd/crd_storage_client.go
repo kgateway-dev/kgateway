@@ -18,6 +18,7 @@ import (
 	crdv1 "github.com/solo-io/gloo/pkg/storage/crd/solo.io/v1"
 )
 
+//go:generate go run ${GOPATH}/src/github.com/solo-io/gloo/pkg/storage/crd/solo.io/generate_clients.go
 type Client struct {
 	v1 *v1client
 }

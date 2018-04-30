@@ -52,6 +52,10 @@ clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 		$(PACKAGE_PATH)/pkg/storage/crd \
 		"solo.io:v1"
 
+.PHONY: generated-code
+generated-code:
+	go generate ./...
+
 $(OUTPUT):
 	mkdir -p $(OUTPUT)
 

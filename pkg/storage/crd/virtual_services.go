@@ -25,38 +25,38 @@ type virtualServicesClient struct {
 	syncFrequency time.Duration
 }
 
-func (v *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualService, error) {
-	return v.createOrUpdateVirtualServiceCrd(item, crud.OperationCreate)
+func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualService, error) {
+	return c.createOrUpdateVirtualServiceCrd(item, crud.OperationCreate)
 }
 
-func (v *virtualServicesClient) Update(item *v1.VirtualService) (*v1.VirtualService, error) {
-	return v.createOrUpdateVirtualServiceCrd(item, crud.OperationUpdate)
+func (c *virtualServicesClient) Update(item *v1.VirtualService) (*v1.VirtualService, error) {
+	return c.createOrUpdateVirtualServiceCrd(item, crud.OperationUpdate)
 }
 
-func (v *virtualServicesClient) Delete(name string) error {
-	return v.crds.GlooV1().VirtualServices(v.namespace).Delete(name, nil)
+func (c *virtualServicesClient) Delete(name string) error {
+	return c.crds.GlooV1().VirtualServices(c.namespace).Delete(name, nil)
 }
 
-func (v *virtualServicesClient) Get(name string) (*v1.VirtualService, error) {
-	crdVh, err := v.crds.GlooV1().VirtualServices(v.namespace).Get(name, metav1.GetOptions{})
+func (c *virtualServicesClient) Get(name string) (*v1.VirtualService, error) {
+	crdVirtualService, err := c.crds.GlooV1().VirtualServices(c.namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed performing get api request")
 	}
-	returnedVirtualService, err := VirtualServiceFromCrd(crdVh)
+	returnedVirtualService, err := VirtualServiceFromCrd(crdVirtualService)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to virtualService")
 	}
 	return returnedVirtualService, nil
 }
 
-func (v *virtualServicesClient) List() ([]*v1.VirtualService, error) {
-	crdList, err := v.crds.GlooV1().VirtualServices(v.namespace).List(metav1.ListOptions{})
+func (c *virtualServicesClient) List() ([]*v1.VirtualService, error) {
+	crdList, err := c.crds.GlooV1().VirtualServices(c.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed performing list api request")
 	}
 	var returnedVirtualServices []*v1.VirtualService
-	for _, crdVh := range crdList.Items {
-		virtualService, err := VirtualServiceFromCrd(&crdVh)
+	for _, crdVirtualService := range crdList.Items {
+		virtualService, err := VirtualServiceFromCrd(&crdVirtualService)
 		if err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to virtualService")
 		}
@@ -65,9 +65,9 @@ func (v *virtualServicesClient) List() ([]*v1.VirtualService, error) {
 	return returnedVirtualServices, nil
 }
 
-func (v *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHandler) (*storage.Watcher, error) {
-	lw := cache.NewListWatchFromClient(v.crds.GlooV1().RESTClient(), crdv1.VirtualServiceCRD.Plural, v.namespace, fields.Everything())
-	sw := cache.NewSharedInformer(lw, new(crdv1.VirtualService), v.syncFrequency)
+func (u *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHandler) (*storage.Watcher, error) {
+	lw := cache.NewListWatchFromClient(u.crds.GlooV1().RESTClient(), crdv1.VirtualServiceCRD.Plural, u.namespace, fields.Everything())
+	sw := cache.NewSharedInformer(lw, new(crdv1.VirtualService), u.syncFrequency)
 	for _, h := range handlers {
 		sw.AddEventHandler(&virtualServiceEventHandler{handler: h, store: sw.GetStore()})
 	}
@@ -76,41 +76,40 @@ func (v *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHan
 	}), nil
 }
 
-func (v *virtualServicesClient) createOrUpdateVirtualServiceCrd(virtualService *v1.VirtualService, op crud.Operation) (*v1.VirtualService, error) {
-	vServiceCrd, err := VirtualServiceToCrd(v.namespace, virtualService)
+func (c *virtualServicesClient) createOrUpdateVirtualServiceCrd(virtualService *v1.VirtualService, op crud.Operation) (*v1.VirtualService, error) {
+	virtualServiceCrd, err := VirtualServiceToCrd(c.namespace, virtualService)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting gloo object to crd")
 	}
-	vServices := v.crds.GlooV1().VirtualServices(vServiceCrd.Namespace)
+	virtualServices := c.crds.GlooV1().VirtualServices(virtualServiceCrd.Namespace)
 	var returnedCrd *crdv1.VirtualService
 	switch op {
 	case crud.OperationCreate:
-		returnedCrd, err = vServices.Create(vServiceCrd)
+		returnedCrd, err = virtualServices.Create(virtualServiceCrd)
 		if err != nil {
 			if kuberrs.IsAlreadyExists(err) {
 				return nil, storage.NewAlreadyExistsErr(err)
 			}
-			err = errors.Wrap(err, "kubernetes create api request")
-			return nil, err
+			return nil, errors.Wrap(err, "kubernetes create api request")
 		}
 	case crud.OperationUpdate:
-		// need to make sure we preserve labels and annotations
-		currentCrd, err := vServices.Get(vServiceCrd.Name, metav1.GetOptions{ResourceVersion: vServiceCrd.ResourceVersion})
+		// need to make sure we preserve labels
+		currentCrd, err := virtualServices.Get(virtualServiceCrd.Name, metav1.GetOptions{ResourceVersion: virtualServiceCrd.ResourceVersion})
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes get api request")
 		}
 		// copy labels
-		vServiceCrd.Labels = currentCrd.Labels
-		returnedCrd, err = vServices.Update(vServiceCrd)
+		virtualServiceCrd.Labels = currentCrd.Labels
+		returnedCrd, err = virtualServices.Update(virtualServiceCrd)
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes update api request")
 		}
 	}
-	returnedvService, err := VirtualServiceFromCrd(returnedCrd)
+	returnedVirtualService, err := VirtualServiceFromCrd(returnedCrd)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to virtualService")
 	}
-	return returnedvService, nil
+	return returnedVirtualService, nil
 }
 
 // implements the kubernetes ResourceEventHandler interface
@@ -123,11 +122,11 @@ func (eh *virtualServiceEventHandler) getUpdatedList() []*v1.VirtualService {
 	updatedList := eh.store.List()
 	var updatedVirtualServiceList []*v1.VirtualService
 	for _, updated := range updatedList {
-		vsCrd, ok := updated.(*crdv1.VirtualService)
+		virtualServiceCrd, ok := updated.(*crdv1.VirtualService)
 		if !ok {
 			continue
 		}
-		updatedVirtualService, err := VirtualServiceFromCrd(vsCrd)
+		updatedVirtualService, err := VirtualServiceFromCrd(virtualServiceCrd)
 		if err != nil {
 			continue
 		}
@@ -136,37 +135,37 @@ func (eh *virtualServiceEventHandler) getUpdatedList() []*v1.VirtualService {
 	return updatedVirtualServiceList
 }
 
-func convertVh(obj interface{}) (*v1.VirtualService, bool) {
-	vsCrd, ok := obj.(*crdv1.VirtualService)
+func convertVirtualService(obj interface{}) (*v1.VirtualService, bool) {
+	virtualServiceCrd, ok := obj.(*crdv1.VirtualService)
 	if !ok {
-		return nil, false
+		return nil, ok
 	}
-	vs, err := VirtualServiceFromCrd(vsCrd)
+	virtualService, err := VirtualServiceFromCrd(virtualServiceCrd)
 	if err != nil {
 		return nil, false
 	}
-	return vs, ok
+	return virtualService, ok
 }
 
 func (eh *virtualServiceEventHandler) OnAdd(obj interface{}) {
-	vs, ok := convertVh(obj)
+	virtualService, ok := convertVirtualService(obj)
 	if !ok {
 		return
 	}
-	eh.handler.OnAdd(eh.getUpdatedList(), vs)
+	eh.handler.OnAdd(eh.getUpdatedList(), virtualService)
 }
 func (eh *virtualServiceEventHandler) OnUpdate(_, newObj interface{}) {
-	newVh, ok := convertVh(newObj)
+	newVirtualService, ok := convertVirtualService(newObj)
 	if !ok {
 		return
 	}
-	eh.handler.OnUpdate(eh.getUpdatedList(), newVh)
+	eh.handler.OnUpdate(eh.getUpdatedList(), newVirtualService)
 }
 
 func (eh *virtualServiceEventHandler) OnDelete(obj interface{}) {
-	vs, ok := convertVh(obj)
+	virtualService, ok := convertVirtualService(obj)
 	if !ok {
 		return
 	}
-	eh.handler.OnDelete(eh.getUpdatedList(), vs)
+	eh.handler.OnDelete(eh.getUpdatedList(), virtualService)
 }

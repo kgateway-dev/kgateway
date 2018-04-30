@@ -38,11 +38,11 @@ func (c *upstreamsClient) Delete(name string) error {
 }
 
 func (c *upstreamsClient) Get(name string) (*v1.Upstream, error) {
-	crdUs, err := c.crds.GlooV1().Upstreams(c.namespace).Get(name, metav1.GetOptions{})
+	crdUpstream, err := c.crds.GlooV1().Upstreams(c.namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed performing get api request")
 	}
-	returnedUpstream, err := UpstreamFromCrd(crdUs)
+	returnedUpstream, err := UpstreamFromCrd(crdUpstream)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to upstream")
 	}
@@ -55,8 +55,8 @@ func (c *upstreamsClient) List() ([]*v1.Upstream, error) {
 		return nil, errors.Wrap(err, "failed performing list api request")
 	}
 	var returnedUpstreams []*v1.Upstream
-	for _, crdUs := range crdList.Items {
-		upstream, err := UpstreamFromCrd(&crdUs)
+	for _, crdUpstream := range crdList.Items {
+		upstream, err := UpstreamFromCrd(&crdUpstream)
 		if err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to upstream")
 		}
@@ -122,11 +122,11 @@ func (eh *upstreamEventHandler) getUpdatedList() []*v1.Upstream {
 	updatedList := eh.store.List()
 	var updatedUpstreamList []*v1.Upstream
 	for _, updated := range updatedList {
-		usCrd, ok := updated.(*crdv1.Upstream)
+		upstreamCrd, ok := updated.(*crdv1.Upstream)
 		if !ok {
 			continue
 		}
-		updatedUpstream, err := UpstreamFromCrd(usCrd)
+		updatedUpstream, err := UpstreamFromCrd(upstreamCrd)
 		if err != nil {
 			continue
 		}
@@ -135,37 +135,37 @@ func (eh *upstreamEventHandler) getUpdatedList() []*v1.Upstream {
 	return updatedUpstreamList
 }
 
-func convertUs(obj interface{}) (*v1.Upstream, bool) {
-	usCrd, ok := obj.(*crdv1.Upstream)
+func convertUpstream(obj interface{}) (*v1.Upstream, bool) {
+	upstreamCrd, ok := obj.(*crdv1.Upstream)
 	if !ok {
 		return nil, ok
 	}
-	us, err := UpstreamFromCrd(usCrd)
+	upstream, err := UpstreamFromCrd(upstreamCrd)
 	if err != nil {
 		return nil, false
 	}
-	return us, ok
+	return upstream, ok
 }
 
 func (eh *upstreamEventHandler) OnAdd(obj interface{}) {
-	us, ok := convertUs(obj)
+	upstream, ok := convertUpstream(obj)
 	if !ok {
 		return
 	}
-	eh.handler.OnAdd(eh.getUpdatedList(), us)
+	eh.handler.OnAdd(eh.getUpdatedList(), upstream)
 }
 func (eh *upstreamEventHandler) OnUpdate(_, newObj interface{}) {
-	newUs, ok := convertUs(newObj)
+	newUpstream, ok := convertUpstream(newObj)
 	if !ok {
 		return
 	}
-	eh.handler.OnUpdate(eh.getUpdatedList(), newUs)
+	eh.handler.OnUpdate(eh.getUpdatedList(), newUpstream)
 }
 
 func (eh *upstreamEventHandler) OnDelete(obj interface{}) {
-	us, ok := convertUs(obj)
+	upstream, ok := convertUpstream(obj)
 	if !ok {
 		return
 	}
-	eh.handler.OnDelete(eh.getUpdatedList(), us)
+	eh.handler.OnDelete(eh.getUpdatedList(), upstream)
 }
