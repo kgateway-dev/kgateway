@@ -41,6 +41,37 @@ func WithBackoff(fn func() error, stop chan struct{}) error {
 	}
 }
 
+func WithBackoffWithContext(fn func() error, maxBackoff time.Duration, ctx context.Context) error {
+	// first try
+	var err error
+	if err = fn(); err == nil {
+		return nil
+	}
+	tilNextRetry := defaultInitialInterval
+	var elapsed time.Duration
+	for {
+		select {
+		// stopped by another goroutine
+		case <-ctx.Done():
+			return err
+		case <-time.After(tilNextRetry):
+			elapsed += tilNextRetry
+
+			tilNextRetry *= 2
+
+			if tilNextRetry >= backoffCap {
+				tilNextRetry = backoffCap
+				log.Warnf("reached maximum backoff with error: %v", err)
+			}
+
+			err = fn()
+			if err == nil {
+				return nil
+			}
+		}
+	}
+}
+
 // does not return until success
 func UntilSuccess(fn func() error, ctx context.Context) {
 	// first try

@@ -1,6 +1,7 @@
 package localhelpers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,7 +26,7 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 )
 
-const defualtNomadDockerImage = "djenriquez/nomad"
+const defualtNomadDockerImage = "djenriquez/nomad@sha256:31f63da9ad07b349e02f5d71bd3def416bac72cfcfd79323fd2e99abaaccdd0f"
 
 type NomadFactory struct {
 	nomadpath string
@@ -233,14 +234,16 @@ func (i *NomadInstance) SetupNomadForE2eTest(buildImages bool) error {
 		return errors.Wrap(err, "setting vault policy")
 	}
 
-	err = backoff.WithBackoff(func() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	err = backoff.WithBackoffWithContext(func() error {
 		// test stuff first
 		if _, err := i.Exec("run", filepath.Join(nomadResourcesDir, "testing-resources.nomad")); err != nil {
 			return errors.Wrapf(err, "creating nomad resource from testing-resources.nomad")
 		}
 		i.cleanupJobs = append(i.cleanupJobs, "testing-resources")
 		return nil
-	}, nil)
+	}, time.Minute, ctx)
+	cancel()
 
 	if err != nil {
 		return errors.Wrap(err, "creating job for testing-resources")
@@ -261,14 +264,16 @@ func (i *NomadInstance) SetupNomadForE2eTest(buildImages bool) error {
 
 	var ingressAddr string
 
-	err = backoff.WithBackoff(func() error {
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
+	err = backoff.WithBackoffWithContext(func() error {
 		addr, err := helpers.ConsulServiceAddress("ingress", "admin")
 		if err != nil {
 			return errors.Wrap(err, "getting ingress addr")
 		}
 		ingressAddr = addr
 		return nil
-	}, nil)
+	}, time.Minute, ctx)
+	cancel()
 
 	if err != nil {
 		return errors.Wrap(err, "creating getting ingress addr")

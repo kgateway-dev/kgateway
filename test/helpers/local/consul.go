@@ -13,7 +13,7 @@ import (
 	"github.com/onsi/ginkgo"
 )
 
-const defualtConsulDockerImage = "consul"
+const defualtConsulDockerImage = "consul@sha256:6ffe55dcc1000126a6e874b298fe1f1b87f556fb344781af60681932e408ec6a" // this is 1.0.6
 
 type ConsulFactory struct {
 	consulpath string

@@ -12,13 +12,6 @@ job "gloo" {
     canary = 0
   }
 
-  migrate {
-    max_parallel = 1
-    health_check = "checks"
-    min_healthy_time = "10s"
-    healthy_deadline = "5m"
-  }
-
   group "gloo" {
     count = 1
     restart {
