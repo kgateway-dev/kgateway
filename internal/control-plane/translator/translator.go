@@ -29,6 +29,7 @@ import (
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 )
 
 const (
@@ -42,14 +43,9 @@ const (
 	routerFilter  = "envoy.router"
 )
 
-type TranslatorConfig struct {
-	IngressBindAddress             string
-	IngressPort, IngressSecurePort uint32
-}
-
 type Translator struct {
 	plugins []plugins.TranslatorPlugin
-	config  TranslatorConfig
+	config  bootstrap.IngressOptions
 }
 
 // all built-in plugins should go here
@@ -59,15 +55,7 @@ var corePlugins = []plugins.TranslatorPlugin{
 	&service.Plugin{},
 }
 
-func addDefaults(cfg TranslatorConfig) TranslatorConfig {
-	if cfg.IngressBindAddress == "" {
-		cfg.IngressBindAddress = "::"
-	}
-
-	return cfg
-}
-
-func NewTranslator(cfg TranslatorConfig, translatorPlugins []plugins.TranslatorPlugin) *Translator {
+func NewTranslator(opts bootstrap.IngressOptions, translatorPlugins []plugins.TranslatorPlugin) *Translator {
 	translatorPlugins = append(corePlugins, translatorPlugins...)
 	// special routing must be done for upstream plugins that support functions
 	var functionPlugins []plugins.FunctionPlugin
@@ -93,7 +81,7 @@ func NewTranslator(cfg TranslatorConfig, translatorPlugins []plugins.TranslatorP
 
 	return &Translator{
 		plugins: translatorPlugins,
-		config:  addDefaults(cfg),
+		config:  opts,
 	}
 }
 
@@ -144,7 +132,7 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "constructing http filter chain %v", noSslListenerName)
 	}
-	noSslListener := t.constructHttpListener(noSslListenerName, t.config.IngressPort, noSslFilters)
+	noSslListener := t.constructHttpListener(noSslListenerName, t.config.Port, noSslFilters)
 
 	// https filters
 	sslRouteConfig := &envoyapi.RouteConfiguration{
@@ -159,7 +147,7 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 
 	// finally, the listeners
 	httpsListener, err := t.constructHttpsListener(sslListenerName,
-		t.config.IngressSecurePort,
+		t.config.SecurePort,
 		sslFilters,
 		cfg.VirtualServices,
 		virtualServiceReports,
@@ -589,7 +577,7 @@ func (t *Translator) constructHttpListener(name string, port uint32, filters []e
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  t.config.IngressBindAddress,
+					Address:  t.config.BindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
@@ -638,7 +626,7 @@ func (t *Translator) constructHttpsListener(name string,
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  t.config.IngressBindAddress,
+					Address:  t.config.BindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},

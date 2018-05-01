@@ -34,14 +34,6 @@ type eventLoop struct {
 	startFuncs []func() error
 }
 
-func translatorConfig(opts bootstrap.Options) translator.TranslatorConfig {
-	return translator.TranslatorConfig{
-		IngressBindAddress: opts.IngressOptions.BindAddress,
-		IngressPort:        uint32(opts.IngressOptions.Port),
-		IngressSecurePort:  uint32(opts.IngressOptions.SecurePort),
-	}
-}
-
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
 	store, err := configstorage.Bootstrap(opts.Options)
 	if err != nil {
@@ -63,10 +55,8 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
 
-	translatorOpts := translatorConfig(opts)
-
 	// create a snapshot to give to misconfigured envoy instances
-	badNodeSnapshot := xds.BadNodeSnapshot(translatorOpts.IngressBindAddress, translatorOpts.IngressPort)
+	badNodeSnapshot := xds.BadNodeSnapshot(opts.IngressOptions.BindAddress, opts.IngressOptions.Port)
 
 	xdsConfig, _, err := xds.RunXDS(xdsPort, badNodeSnapshot)
 	if err != nil {
@@ -75,7 +65,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 
 	plugs := plugins.RegisteredPlugins()
 
-	trans := translator.NewTranslator(translatorOpts, plugs)
+	trans := translator.NewTranslator(opts.IngressOptions, plugs)
 
 	e := &eventLoop{
 		configWatcher:   cfgWatcher,

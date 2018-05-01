@@ -11,6 +11,6 @@ type Options struct {
 
 type IngressOptions struct {
 	BindAddress string
-	Port        int
-	SecurePort  int
+	Port        uint32
+	SecurePort  uint32
 }

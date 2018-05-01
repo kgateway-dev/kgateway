@@ -89,6 +89,7 @@ func BadNodeSnapshot(bindAddress string, port uint32) cache.Snapshot {
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
+					Ipv4Compat: true,
 				},
 			},
 		},
