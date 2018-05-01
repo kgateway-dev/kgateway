@@ -54,12 +54,12 @@ var _ = Describe("Xds", func() {
 			It("successfully bootstraps the envoy proxy", func() {
 				Eventually(envoyInstance.Logs, time.Second*30).Should(ContainSubstring("lds: add/update listener 'listener-for-invalid-envoy'"))
 			})
-			FIt("has a 500 route with body 'Invalid Envoy Bootstrap Configuration. Please refer to Gloo documentation https://gloo.solo.io/'", func() {
+			It("has a 500 route with body 'Invalid Envoy Bootstrap Configuration. Please refer to Gloo documentation https://gloo.solo.io/'", func() {
 				Eventually(func() error {
-					_, err := http.Get("http://"+envoyInstance.LocalAddr() + ":1234/")
+					_, err := http.Get("http://" + envoyInstance.LocalAddr() + ":1234/")
 					return err
 				}).Should(Not(HaveOccurred()))
-				res, err := http.Get("http://"+envoyInstance.LocalAddr() + ":1234/")
+				res, err := http.Get("http://" + envoyInstance.LocalAddr() + ":1234/")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(res.StatusCode).To(Equal(500))
 				Expect(res.Body).NotTo(BeNil())
@@ -86,7 +86,11 @@ var _ = Describe("Xds", func() {
 				Eventually(envoyInstance.Logs, time.Second*30).Should(ContainSubstring("lds: add/update listener '" + listenerName))
 			})
 			It("works with the test route", func() {
-				res, err := http.Get("http://"+envoyInstance.LocalAddr() + ":1234/")
+				Eventually(func() error {
+					_, err := http.Get("http://" + envoyInstance.LocalAddr() + ":1234/")
+					return err
+				}).Should(Not(HaveOccurred()))
+				res, err := http.Get("http://" + envoyInstance.LocalAddr() + ":1234/")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(res.StatusCode).To(Equal(200))
 				Expect(res.Body).NotTo(BeNil())
@@ -147,6 +151,11 @@ func createSnapshot(routeConfigName, listenerName string) (cache.Snapshot, error
 				RouteConfigName: routeConfigName,
 			},
 		},
+		HttpFilters: []*envoyhttpconnectionmanager.HttpFilter{
+			{
+				Name: "envoy.router",
+			},
+		},
 	}
 	pbst, err := util.MessageToStruct(manager)
 	if err != nil {
@@ -171,9 +180,6 @@ func createSnapshot(routeConfigName, listenerName string) (cache.Snapshot, error
 				{
 					Name:   "envoy.http_connection_manager",
 					Config: pbst,
-				},
-				{
-					Name: "envoy.router",
 				},
 			},
 		}},

@@ -21,14 +21,14 @@ const (
 	containerName = "e2e_envoy"
 )
 
-func buildBootstrap(glooAddr string, xdsPort uint32) []byte {
-	return []byte(fmt.Sprintf(envoyConfigTemplate, glooAddr, xdsPort))
+func buildBootstrap(nodeId, glooAddr string, xdsPort uint32) []byte {
+	return []byte(fmt.Sprintf(envoyConfigTemplate, nodeId, glooAddr, xdsPort))
 }
 
 const envoyConfigTemplate = `
 node:
  cluster: ingress
- id: testnode
+ id: %s
 
 static_resources:
   clusters:
@@ -195,13 +195,16 @@ func (ei *EnvoyInstance) Run() error {
 }
 
 func (ei *EnvoyInstance) runWithPort(id string, port uint32) error {
-	err := ioutil.WriteFile(ei.envoycfgpath, buildBootstrap(ei.localAddr, port), 0644)
+	if id == "" {
+		id = "testingress"
+	}
+	err := ioutil.WriteFile(ei.envoycfgpath, buildBootstrap(id, ei.localAddr, port), 0644)
 	if err != nil {
 		return err
 	}
 
 	if ei.useDocker {
-		err := runContainer(ei.envoycfgpath, id)
+		err := runContainer(ei.envoycfgpath)
 		if err != nil {
 			return err
 		}
@@ -209,9 +212,6 @@ func (ei *EnvoyInstance) runWithPort(id string, port uint32) error {
 	}
 
 	args := []string{"-c", ei.envoycfgpath, "--v2-config-only"}
-	if id != "" {
-		args = append(args, "--service-node", id)
-	}
 
 	// run directly
 	cmd := exec.Command(ei.envoypath, args...)
@@ -255,7 +255,7 @@ func (ei *EnvoyInstance) Clean() error {
 	return nil
 }
 
-func runContainer(cfgpath, id string) error {
+func runContainer(cfgpath string) error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {
 		envoyImageTag = "latest"
@@ -270,9 +270,6 @@ func runContainer(cfgpath, id string) error {
 		image,
 		"/usr/local/bin/envoy", "--v2-config-only",
 		"-c", "/etc/config/" + filepath.Base(cfgpath),
-	}
-	if id != "" {
-		args = append(args, "--service-node", id)
 	}
 
 	fmt.Fprintln(ginkgo.GinkgoWriter, args)
