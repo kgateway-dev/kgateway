@@ -43,4 +43,8 @@ RUN mkdir -p ${GOPATH}/src/github.com/solo-io/ && \
     rm -rf ${GOPATH}/src/github.com/solo-io/
 
 
+RUN go get github.com/paulvollmer/2gobytes
+RUN mkdir -p ${HOME}/workspace && \
+    git clone https://github.com/googleapis/googleapis ${HOME}/workspace/googleapis
+
 CMD ["/bin/bash"]
