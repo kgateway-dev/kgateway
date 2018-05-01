@@ -273,7 +273,7 @@ func (e *eventLoop) errors() <-chan error {
 	for _, ed := range e.endpointDiscoveries {
 		go func() {
 			for err := range ed.Error() {
-				aggregatedErrorsChan <- err
+				aggregatedErrorsChan <-  errors.Wrap(err, "endpoint discovery encountered an error")
 			}
 		}()
 	}
