@@ -15,10 +15,11 @@ import (
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
 	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 )
 
 func newTranslator() *Translator {
-	return NewTranslator(TranslatorConfig{"::", 8080, 8443}, []plugins.TranslatorPlugin{&service.Plugin{}})
+	return NewTranslator(bootstrap.IngressOptions{"::", 8080, 8443}, []plugins.TranslatorPlugin{&service.Plugin{}})
 }
 
 var _ = Describe("Translator", func() {
