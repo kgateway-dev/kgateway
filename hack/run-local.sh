@@ -38,7 +38,7 @@ GLOO_IP=127.0.0.1
 cat > ${CONFIG_DIR}/envoy.yaml <<EOF
 node:
   cluster: ingress
-  id: ingress
+  id: ingress~1
 
 static_resources:
   clusters:

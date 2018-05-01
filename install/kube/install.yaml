@@ -46,7 +46,7 @@ data:
   envoy.yaml: |
     node:
       cluster: ingress
-      id: NODE_ID_PLACE_HOLDER
+      id: ingress~NODE_ID_PLACE_HOLDER
     static_resources:
       clusters:
       - name: xds_cluster

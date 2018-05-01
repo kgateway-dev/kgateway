@@ -105,7 +105,7 @@ job "gloo" {
         data = <<EOF
 node:
   cluster: ingress
-  id: {{ env "NOMAD_ALLOC_ID" }}
+  id: ingress~{{ env "NOMAD_ALLOC_ID" }}
 
 static_resources:
   clusters:

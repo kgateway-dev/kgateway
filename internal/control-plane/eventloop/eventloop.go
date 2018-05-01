@@ -227,8 +227,8 @@ func (e *eventLoop) updateXds(cache *cache) {
 		}
 	}
 
-	log.Debugf("FINAL: XDS Snapshot: %v", snapshot)
-	e.xdsConfig.SetSnapshot(xds.NodeKey, *snapshot)
+	log.Debugf("Setting xDS Snapshot for Virtual Mesh %v: %v", "ingress", snapshot)
+	e.xdsConfig.SetSnapshot("ingress", *snapshot)
 }
 
 // fan out to cover all endpoint discovery services
