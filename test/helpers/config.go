@@ -14,14 +14,14 @@ func NewTestConfig() *v1.Config {
 		NewTestVirtualService("my-vservice", NewTestRoute1(), NewTestRoute2()),
 		NewTestVirtualService("my-vservice-2", NewTestRoute1(), NewTestRoute2()),
 	}
-	virtualMeshes := []*v1.VirtualMesh{
-		NewTestVirtualMesh("my-mesh", "my-vservice"),
-		NewTestVirtualMesh("my-mesh-2", "my-vservice-2"),
+	roles := []*v1.Role{
+		NewTestRole("my-role", "my-vservice"),
+		NewTestRole("my-role-2", "my-vservice-2"),
 	}
 	return &v1.Config{
 		Upstreams:       upstreams,
 		VirtualServices: virtualServices,
-		VirtualMeshes:   virtualMeshes,
+		Roles:   roles,
 	}
 }
 
@@ -171,8 +171,8 @@ func NewTestRouteWithCORS() *v1.Route {
 	}
 }
 
-func NewTestVirtualMesh(name string, vServices ... string) *v1.VirtualMesh {
-	return &v1.VirtualMesh{
+func NewTestRole(name string, vServices ... string) *v1.Role {
+	return &v1.Role{
 		Name:            name,
 		VirtualServices: vServices,
 		Metadata: &v1.Metadata{

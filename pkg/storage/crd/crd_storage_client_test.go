@@ -218,7 +218,7 @@ var _ = Describe("CrdStorageClient", func() {
 			})
 		})
 	})
-	Describe("virtualmeshes", func() {
+	Describe("roles", func() {
 		Describe("Create", func() {
 			It("creates a crd from the item", func() {
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
@@ -227,11 +227,11 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				virtualMesh := NewTestVirtualMesh("something", "hi")
-				createdUpstream, err := client.V1().VirtualMeshes().Create(virtualMesh)
+				role := NewTestRole("something", "hi")
+				createdUpstream, err := client.V1().Roles().Create(role)
 				Expect(err).NotTo(HaveOccurred())
-				virtualMesh.Metadata = createdUpstream.GetMetadata()
-				Expect(virtualMesh).To(Equal(createdUpstream))
+				role.Metadata = createdUpstream.GetMetadata()
+				Expect(role).To(Equal(createdUpstream))
 			})
 		})
 		Describe("Get", func() {
@@ -242,13 +242,13 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				vMesh := NewTestVirtualMesh("something", "hi")
-				_, err = client.V1().VirtualMeshes().Create(vMesh)
+				role := NewTestRole("something", "hi")
+				_, err = client.V1().Roles().Create(role)
 				Expect(err).NotTo(HaveOccurred())
-				created, err := client.V1().VirtualMeshes().Get(vMesh.Name)
+				created, err := client.V1().Roles().Get(role.Name)
 				Expect(err).NotTo(HaveOccurred())
-				vMesh.Metadata = created.Metadata
-				Expect(created).To(Equal(vMesh))
+				role.Metadata = created.Metadata
+				Expect(created).To(Equal(role))
 			})
 		})
 		Describe("Update", func() {
@@ -259,17 +259,17 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				vMesh := NewTestVirtualMesh("something", "hi")
-				created, err := client.V1().VirtualMeshes().Create(vMesh)
+				role := NewTestRole("something", "hi")
+				created, err := client.V1().Roles().Create(role)
 				Expect(err).NotTo(HaveOccurred())
 				// need to set resource ver
-				vMesh.Metadata = created.GetMetadata()
-				vMesh.Metadata.Annotations["just_for_this_test"] = "bar"
-				updated, err := client.V1().VirtualMeshes().Update(vMesh)
+				role.Metadata = created.GetMetadata()
+				role.Metadata.Annotations["just_for_this_test"] = "bar"
+				updated, err := client.V1().Roles().Update(role)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(updated.Metadata.Annotations).To(HaveKey("just_for_this_test"))
-				vMesh.Metadata = updated.GetMetadata()
-				Expect(updated).To(Equal(vMesh))
+				role.Metadata = updated.GetMetadata()
+				Expect(updated).To(Equal(role))
 			})
 		})
 		Describe("Delete", func() {
@@ -280,12 +280,12 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = client.V1().Register()
 				Expect(err).NotTo(HaveOccurred())
-				vMesh := NewTestVirtualMesh("something", "hi")
-				_, err = client.V1().VirtualMeshes().Create(vMesh)
+				role := NewTestRole("something", "hi")
+				_, err = client.V1().Roles().Create(role)
 				Expect(err).NotTo(HaveOccurred())
-				err = client.V1().VirtualMeshes().Delete(vMesh.Name)
+				err = client.V1().Roles().Delete(role.Name)
 				Expect(err).NotTo(HaveOccurred())
-				_, err = client.V1().VirtualMeshes().Get(vMesh.Name)
+				_, err = client.V1().Roles().Get(role.Name)
 				Expect(err).To(HaveOccurred())
 			})
 		})

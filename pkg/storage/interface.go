@@ -11,7 +11,7 @@ type V1 interface {
 	Register() error
 	Upstreams() Upstreams
 	VirtualServices() VirtualServices
-	VirtualMeshes() VirtualMeshes
+	Roles() Roles
 }
 
 type Upstreams interface {
@@ -32,11 +32,11 @@ type VirtualServices interface {
 	Watch(...VirtualServiceEventHandler) (*Watcher, error)
 }
 
-type VirtualMeshes interface {
-	Create(*v1.VirtualMesh) (*v1.VirtualMesh, error)
-	Update(*v1.VirtualMesh) (*v1.VirtualMesh, error)
+type Roles interface {
+	Create(*v1.Role) (*v1.Role, error)
+	Update(*v1.Role) (*v1.Role, error)
 	Delete(name string) error
-	Get(name string) (*v1.VirtualMesh, error)
-	List() ([]*v1.VirtualMesh, error)
-	Watch(...VirtualMeshEventHandler) (*Watcher, error)
+	Get(name string) (*v1.Role, error)
+	List() ([]*v1.Role, error)
+	Watch(...RoleEventHandler) (*Watcher, error)
 }

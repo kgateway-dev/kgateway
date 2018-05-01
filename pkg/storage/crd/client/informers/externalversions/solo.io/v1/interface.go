@@ -24,10 +24,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// Roles returns a RoleInformer.
+	Roles() RoleInformer
 	// Upstreams returns a UpstreamInformer.
 	Upstreams() UpstreamInformer
-	// VirtualMeshes returns a VirtualMeshInformer.
-	VirtualMeshes() VirtualMeshInformer
 	// VirtualServices returns a VirtualServiceInformer.
 	VirtualServices() VirtualServiceInformer
 }
@@ -43,14 +43,14 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// Roles returns a RoleInformer.
+func (v *version) Roles() RoleInformer {
+	return &roleInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // Upstreams returns a UpstreamInformer.
 func (v *version) Upstreams() UpstreamInformer {
 	return &upstreamInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// VirtualMeshes returns a VirtualMeshInformer.
-func (v *version) VirtualMeshes() VirtualMeshInformer {
-	return &virtualMeshInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // VirtualServices returns a VirtualServiceInformer.

@@ -94,7 +94,7 @@ var _ = Describe("KubeConfigWatcher", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 		})
-		It("watches kube virtual mesh crds", func() {
+		It("watches kube role crds", func() {
 			cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -105,8 +105,8 @@ var _ = Describe("KubeConfigWatcher", func() {
 			Must(err)
 			go func() { watcher.Run(make(chan struct{})) }()
 
-			virtualMesh := NewTestVirtualMesh("something", "foo")
-			created, err := storageClient.V1().VirtualMeshes().Create(virtualMesh)
+			role := NewTestRole("something", "foo")
+			created, err := storageClient.V1().Roles().Create(role)
 			Expect(err).NotTo(HaveOccurred())
 
 			// give controller time to register
@@ -116,10 +116,10 @@ var _ = Describe("KubeConfigWatcher", func() {
 			case <-time.After(time.Second * 5):
 				Expect(fmt.Errorf("expected to have received resource event before 5s")).NotTo(HaveOccurred())
 			case cfg := <-watcher.Config():
-				Expect(len(cfg.VirtualMeshes)).To(Equal(1))
-				Expect(cfg.VirtualMeshes[0]).To(Equal(created))
-				Expect(len(cfg.VirtualMeshes[0].VirtualServices)).To(Equal(1))
-				Expect(cfg.VirtualMeshes[0].VirtualServices[0]).To(Equal(created.VirtualServices[0]))
+				Expect(len(cfg.Roles)).To(Equal(1))
+				Expect(cfg.Roles[0]).To(Equal(created))
+				Expect(len(cfg.Roles[0].VirtualServices)).To(Equal(1))
+				Expect(cfg.Roles[0].VirtualServices[0]).To(Equal(created.VirtualServices[0]))
 			case err := <-watcher.Error():
 				Expect(err).NotTo(HaveOccurred())
 			}

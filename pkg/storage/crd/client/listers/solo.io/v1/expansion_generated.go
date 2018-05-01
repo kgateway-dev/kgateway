@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1
 
+// RoleListerExpansion allows custom methods to be added to
+// RoleLister.
+type RoleListerExpansion interface{}
+
+// RoleNamespaceListerExpansion allows custom methods to be added to
+// RoleNamespaceLister.
+type RoleNamespaceListerExpansion interface{}
+
 // UpstreamListerExpansion allows custom methods to be added to
 // UpstreamLister.
 type UpstreamListerExpansion interface{}
@@ -25,14 +33,6 @@ type UpstreamListerExpansion interface{}
 // UpstreamNamespaceListerExpansion allows custom methods to be added to
 // UpstreamNamespaceLister.
 type UpstreamNamespaceListerExpansion interface{}
-
-// VirtualMeshListerExpansion allows custom methods to be added to
-// VirtualMeshLister.
-type VirtualMeshListerExpansion interface{}
-
-// VirtualMeshNamespaceListerExpansion allows custom methods to be added to
-// VirtualMeshNamespaceLister.
-type VirtualMeshNamespaceListerExpansion interface{}
 
 // VirtualServiceListerExpansion allows custom methods to be added to
 // VirtualServiceLister.

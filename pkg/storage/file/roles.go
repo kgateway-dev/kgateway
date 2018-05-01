@@ -19,133 +19,133 @@ import (
 
 // TODO: evaluate efficiency of LSing a whole dir on every op
 // so far this is preferable to caring what files are named
-type virtualMeshesClient struct {
+type rolesClient struct {
 	dir           string
 	syncFrequency time.Duration
 }
 
-func (c *virtualMeshesClient) Create(item *v1.VirtualMesh) (*v1.VirtualMesh, error) {
+func (c *rolesClient) Create(item *v1.Role) (*v1.Role, error) {
 	// set resourceversion on clone
-	virtualMeshClone, ok := proto.Clone(item).(*v1.VirtualMesh)
+	roleClone, ok := proto.Clone(item).(*v1.Role)
 	if !ok {
 		return nil, errors.New("internal error: output of proto.Clone was not expected type")
 	}
-	if virtualMeshClone.Metadata == nil {
-		virtualMeshClone.Metadata = &v1.Metadata{}
+	if roleClone.Metadata == nil {
+		roleClone.Metadata = &v1.Metadata{}
 	}
-	virtualMeshClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualMeshClone.Metadata.ResourceVersion)
-	virtualMeshFiles, err := c.pathsToVirtualMeshes()
+	roleClone.Metadata.ResourceVersion = newOrIncrementResourceVer(roleClone.Metadata.ResourceVersion)
+	roleFiles, err := c.pathsToRoles()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualMesh dir")
+		return nil, errors.Wrap(err, "failed to read role dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualMeshFiles {
+	for file, existingUps := range roleFiles {
 		if existingUps.Name == item.Name {
-			return nil, storage.NewAlreadyExistsErr(errors.Errorf("virtualMesh %v already defined in %s", item.Name, file))
+			return nil, storage.NewAlreadyExistsErr(errors.Errorf("role %v already defined in %s", item.Name, file))
 		}
 	}
 	filename := filepath.Join(c.dir, item.Name+".yml")
-	err = WriteToFile(filename, virtualMeshClone)
+	err = WriteToFile(filename, roleClone)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating file")
 	}
-	return virtualMeshClone, nil
+	return roleClone, nil
 }
 
-func (c *virtualMeshesClient) Update(item *v1.VirtualMesh) (*v1.VirtualMesh, error) {
+func (c *rolesClient) Update(item *v1.Role) (*v1.Role, error) {
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}
-	virtualMeshFiles, err := c.pathsToVirtualMeshes()
+	roleFiles, err := c.pathsToRoles()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualMesh dir")
+		return nil, errors.Wrap(err, "failed to read role dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualMeshFiles {
+	for file, existingUps := range roleFiles {
 		if existingUps.Name != item.Name {
 			continue
 		}
 		if existingUps.Metadata != nil && lessThan(item.Metadata.ResourceVersion, existingUps.Metadata.ResourceVersion) {
 			return nil, errors.Errorf("resource version outdated for %v", item.Name)
 		}
-		virtualMeshClone, ok := proto.Clone(item).(*v1.VirtualMesh)
+		roleClone, ok := proto.Clone(item).(*v1.Role)
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
-		virtualMeshClone.Metadata.ResourceVersion = newOrIncrementResourceVer(virtualMeshClone.Metadata.ResourceVersion)
+		roleClone.Metadata.ResourceVersion = newOrIncrementResourceVer(roleClone.Metadata.ResourceVersion)
 
-		err = WriteToFile(file, virtualMeshClone)
+		err = WriteToFile(file, roleClone)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed creating file")
 		}
 
-		return virtualMeshClone, nil
+		return roleClone, nil
 	}
-	return nil, errors.Errorf("virtualMesh %v not found", item.Name)
+	return nil, errors.Errorf("role %v not found", item.Name)
 }
 
-func (c *virtualMeshesClient) Delete(name string) error {
-	virtualMeshFiles, err := c.pathsToVirtualMeshes()
+func (c *rolesClient) Delete(name string) error {
+	roleFiles, err := c.pathsToRoles()
 	if err != nil {
-		return errors.Wrap(err, "failed to read virtualMesh dir")
+		return errors.Wrap(err, "failed to read role dir")
 	}
 	// error if exists already
-	for file, existingUps := range virtualMeshFiles {
+	for file, existingUps := range roleFiles {
 		if existingUps.Name == name {
 			return os.Remove(file)
 		}
 	}
-	return errors.Errorf("file not found for virtualMesh %v", name)
+	return errors.Errorf("file not found for role %v", name)
 }
 
-func (c *virtualMeshesClient) Get(name string) (*v1.VirtualMesh, error) {
-	virtualMeshFiles, err := c.pathsToVirtualMeshes()
+func (c *rolesClient) Get(name string) (*v1.Role, error) {
+	roleFiles, err := c.pathsToRoles()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read virtualMesh dir")
+		return nil, errors.Wrap(err, "failed to read role dir")
 	}
 	// error if exists already
-	for _, existingUps := range virtualMeshFiles {
+	for _, existingUps := range roleFiles {
 		if existingUps.Name == name {
 			return existingUps, nil
 		}
 	}
-	return nil, errors.Errorf("file not found for virtualMesh %v", name)
+	return nil, errors.Errorf("file not found for role %v", name)
 }
 
-func (c *virtualMeshesClient) List() ([]*v1.VirtualMesh, error) {
-	virtualMeshPaths, err := c.pathsToVirtualMeshes()
+func (c *rolesClient) List() ([]*v1.Role, error) {
+	rolePaths, err := c.pathsToRoles()
 	if err != nil {
 		return nil, err
 	}
-	var virtualMeshes []*v1.VirtualMesh
-	for _, up := range virtualMeshPaths {
-		virtualMeshes = append(virtualMeshes, up)
+	var roles []*v1.Role
+	for _, up := range rolePaths {
+		roles = append(roles, up)
 	}
-	return virtualMeshes, nil
+	return roles, nil
 }
 
-func (c *virtualMeshesClient) pathsToVirtualMeshes() (map[string]*v1.VirtualMesh, error) {
+func (c *rolesClient) pathsToRoles() (map[string]*v1.Role, error) {
 	files, err := ioutil.ReadDir(c.dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read dir")
 	}
-	virtualMeshes := make(map[string]*v1.VirtualMesh)
+	roles := make(map[string]*v1.Role)
 	for _, f := range files {
 		path := filepath.Join(c.dir, f.Name())
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var virtualMesh v1.VirtualMesh
-		err := ReadFileInto(path, &virtualMesh)
+		var role v1.Role
+		err := ReadFileInto(path, &role)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as virtualMesh")
+			return nil, errors.Wrap(err, "unable to parse .yml file as role")
 		}
-		virtualMeshes[path] = &virtualMesh
+		roles[path] = &role
 	}
-	return virtualMeshes, nil
+	return roles, nil
 }
 
-func (u *virtualMeshesClient) Watch(handlers ...storage.VirtualMeshEventHandler) (*storage.Watcher, error) {
+func (u *rolesClient) Watch(handlers ...storage.RoleEventHandler) (*storage.Watcher, error) {
 	w := watcher.New()
 	w.SetMaxEvents(0)
 	w.FilterOps(watcher.Create, watcher.Write, watcher.Remove)
@@ -188,7 +188,7 @@ func (u *virtualMeshesClient) Watch(handlers ...storage.VirtualMeshEventHandler)
 	}), nil
 }
 
-func (u *virtualMeshesClient) onEvent(event watcher.Event, handlers ...storage.VirtualMeshEventHandler) error {
+func (u *rolesClient) onEvent(event watcher.Event, handlers ...storage.RoleEventHandler) error {
 	log.Debugf("file event: %v [%v]", event.Path, event.Op)
 	current, err := u.List()
 	if err != nil {
@@ -200,7 +200,7 @@ func (u *virtualMeshesClient) onEvent(event watcher.Event, handlers ...storage.V
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.VirtualMesh
+			var created v1.Role
 			err := ReadFileInto(event.Path, &created)
 			if err != nil {
 				return err
@@ -209,7 +209,7 @@ func (u *virtualMeshesClient) onEvent(event watcher.Event, handlers ...storage.V
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.VirtualMesh
+			var updated v1.Role
 			err := ReadFileInto(event.Path, &updated)
 			if err != nil {
 				return err

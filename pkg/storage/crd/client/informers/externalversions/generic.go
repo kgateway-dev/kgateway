@@ -53,10 +53,10 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=gloo.solo.io, Version=v1
+	case v1.SchemeGroupVersion.WithResource("roles"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gloo().V1().Roles().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("upstreams"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gloo().V1().Upstreams().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("virtualmeshes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Gloo().V1().VirtualMeshes().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("virtualservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gloo().V1().VirtualServices().Informer()}, nil
 

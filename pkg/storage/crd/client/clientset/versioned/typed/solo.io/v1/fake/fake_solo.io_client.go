@@ -28,12 +28,12 @@ type FakeGlooV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeGlooV1) Upstreams(namespace string) v1.UpstreamInterface {
-	return &FakeUpstreams{c, namespace}
+func (c *FakeGlooV1) Roles(namespace string) v1.RoleInterface {
+	return &FakeRoles{c, namespace}
 }
 
-func (c *FakeGlooV1) VirtualMeshes(namespace string) v1.VirtualMeshInterface {
-	return &FakeVirtualMeshes{c, namespace}
+func (c *FakeGlooV1) Upstreams(namespace string) v1.UpstreamInterface {
+	return &FakeUpstreams{c, namespace}
 }
 
 func (c *FakeGlooV1) VirtualServices(namespace string) v1.VirtualServiceInterface {

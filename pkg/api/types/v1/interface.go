@@ -44,14 +44,14 @@ func (item *VirtualService) SetMetadata(meta *Metadata) {
 	item.Metadata = meta
 }
 
-func (item *VirtualMesh) SetName(name string) {
+func (item *Role) SetName(name string) {
 	item.Name = name
 }
 
-func (item *VirtualMesh) SetStatus(status *Status) {
+func (item *Role) SetStatus(status *Status) {
 	item.Status = status
 }
 
-func (item *VirtualMesh) SetMetadata(meta *Metadata) {
+func (item *Role) SetMetadata(meta *Metadata) {
 	item.Metadata = meta
 }

@@ -47,9 +47,9 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
-	case *v1.VirtualMesh:
+	case *v1.Role:
 		// clone and remove fields
-		clone, ok = proto.Clone(item).(*v1.VirtualMesh)
+		clone, ok = proto.Clone(item).(*v1.Role)
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
@@ -88,8 +88,8 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 			Status:     status,
 			Spec:       &copySpec,
 		}
-	case *v1.VirtualMesh:
-		crdObject = &crdv1.VirtualMesh{
+	case *v1.Role:
+		crdObject = &crdv1.Role{
 			ObjectMeta: meta,
 			Status:     status,
 			Spec:       &copySpec,

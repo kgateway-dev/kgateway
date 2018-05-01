@@ -39,12 +39,12 @@
               "defaultValue": ""
             },
             {
-              "name": "virtual_meshes",
-              "description": "the list virtual meshes defined by the user",
+              "name": "roles",
+              "description": "the list roles defined by the user",
               "label": "repeated",
-              "type": "VirtualMesh",
-              "longType": "VirtualMesh",
-              "fullType": "v1.VirtualMesh",
+              "type": "Role",
+              "longType": "Role",
+              "fullType": "v1.Role",
               "defaultValue": ""
             }
           ]
@@ -126,6 +126,67 @@
               "type": "string",
               "longType": "string",
               "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "role.proto",
+      "description": "",
+      "package": "v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "Role",
+          "longName": "Role",
+          "fullName": "v1.Role",
+          "description": "A Role is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Role is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Role cannot appear more than once, or the Role\nwill be invalid.",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "name",
+              "description": "Name of the role. Envoy nodes will be assigned a config corresponding with role they are assigned.\nEnvoy instances must specify the role they belong to when they register to Gloo.\n\nCurrently this is done by specifying the name of the role as a prefix to the Envoy's Node ID\nwhich can be specified with the `--service-node` flag, or in the Envoy instance's bootstrap config.\n\nNames must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "virtual_services",
+              "description": "the list of names of the virtual services this role encapsulates.",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "status",
+              "description": "Status indicates the validation status of the role resource.\nStatus is read-only by clients, and set by gloo during validation",
+              "label": "",
+              "type": "Status",
+              "longType": "Status",
+              "fullType": "v1.Status",
+              "defaultValue": ""
+            },
+            {
+              "name": "metadata",
+              "description": "Metadata contains the resource metadata for the role",
+              "label": "",
+              "type": "Metadata",
+              "longType": "Metadata",
+              "fullType": "v1.Metadata",
               "defaultValue": ""
             }
           ]
@@ -348,67 +409,6 @@
               "type": "Struct",
               "longType": "google.protobuf.Struct",
               "fullType": "google.protobuf.Struct",
-              "defaultValue": ""
-            }
-          ]
-        }
-      ],
-      "services": []
-    },
-    {
-      "name": "virtualmesh.proto",
-      "description": "",
-      "package": "v1",
-      "hasEnums": false,
-      "hasExtensions": false,
-      "hasMessages": true,
-      "hasServices": false,
-      "enums": [],
-      "extensions": [],
-      "messages": [
-        {
-          "name": "VirtualMesh",
-          "longName": "VirtualMesh",
-          "fullName": "v1.VirtualMesh",
-          "description": "A Virtual Mesh is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Virtual Mesh is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Virtual Mesh cannot appear more than once, or the Virtual Mesh\nwill be invalid.",
-          "hasExtensions": false,
-          "hasFields": true,
-          "extensions": [],
-          "fields": [
-            {
-              "name": "name",
-              "description": "Name of the virtual mesh. Envoy nodes will be assigned a config corresponding with virtual mesh they are assigned.\nEnvoy instances must specify the virtual mesh they belong to when they register to Gloo.\n\nCurrently this is done by specifying the name of the virtual mesh as a prefix to the Envoy's Node ID\nwhich can be specified with the `--service-node` flag, or in the Envoy instance's bootstrap config.\n\nNames must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
-              "label": "",
-              "type": "string",
-              "longType": "string",
-              "fullType": "string",
-              "defaultValue": ""
-            },
-            {
-              "name": "virtual_services",
-              "description": "the list of names of the virtual services this vmesh encapsulates.",
-              "label": "repeated",
-              "type": "string",
-              "longType": "string",
-              "fullType": "string",
-              "defaultValue": ""
-            },
-            {
-              "name": "status",
-              "description": "Status indicates the validation status of the virtual mesh resource.\nStatus is read-only by clients, and set by gloo during validation",
-              "label": "",
-              "type": "Status",
-              "longType": "Status",
-              "fullType": "v1.Status",
-              "defaultValue": ""
-            },
-            {
-              "name": "metadata",
-              "description": "Metadata contains the resource metadata for the virtual mesh",
-              "label": "",
-              "type": "Metadata",
-              "longType": "Metadata",
-              "fullType": "v1.Metadata",
               "defaultValue": ""
             }
           ]

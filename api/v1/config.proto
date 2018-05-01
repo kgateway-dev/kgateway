@@ -3,7 +3,7 @@ package v1;
 
 import "upstream.proto";
 import "virtualservice.proto";
-import "virtualmesh.proto";
+import "role.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
@@ -14,5 +14,5 @@ option (gogoproto.equal_all) = true;
 message Config {
     repeated Upstream upstreams = 1; // The list of all upstreams defined by the user.
     repeated VirtualService virtual_services = 2; // the list of all virtual services defined by the user.
-    repeated VirtualMesh virtual_meshes = 3; // the list virtual meshes defined by the user
+    repeated Role roles = 3; // the list roles defined by the user
 }

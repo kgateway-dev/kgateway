@@ -26,10 +26,10 @@ type VirtualServiceEventHandler interface {
 	OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService)
 }
 
-type VirtualMeshEventHandler interface {
-	OnAdd(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
-	OnUpdate(updatedList []*v1.VirtualMesh, newObj *v1.VirtualMesh)
-	OnDelete(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
+type RoleEventHandler interface {
+	OnAdd(updatedList []*v1.Role, obj *v1.Role)
+	OnUpdate(updatedList []*v1.Role, newObj *v1.Role)
+	OnDelete(updatedList []*v1.Role, obj *v1.Role)
 }
 
 // UpstreamEventHandlerFuncs is an adaptor to let you easily specify as many or
@@ -92,31 +92,31 @@ func (r VirtualServiceEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualServi
 	}
 }
 
-// VirtualMeshEventHandlerFuncs is an adaptor to let you easily specify as many or
+// RoleEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
-// VirtualMeshEventHandler.
-type VirtualMeshEventHandlerFuncs struct {
-	AddFunc    func(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
-	UpdateFunc func(updatedList []*v1.VirtualMesh, newObj *v1.VirtualMesh)
-	DeleteFunc func(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh)
+// RoleEventHandler.
+type RoleEventHandlerFuncs struct {
+	AddFunc    func(updatedList []*v1.Role, obj *v1.Role)
+	UpdateFunc func(updatedList []*v1.Role, newObj *v1.Role)
+	DeleteFunc func(updatedList []*v1.Role, obj *v1.Role)
 }
 
 // OnAdd calls AddFunc if it's not nil.
-func (r VirtualMeshEventHandlerFuncs) OnAdd(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh) {
+func (r RoleEventHandlerFuncs) OnAdd(updatedList []*v1.Role, obj *v1.Role) {
 	if r.AddFunc != nil {
 		r.AddFunc(updatedList, obj)
 	}
 }
 
 // OnUpdate calls UpdateFunc if it's not nil.
-func (r VirtualMeshEventHandlerFuncs) OnUpdate(updatedList []*v1.VirtualMesh, newObj *v1.VirtualMesh) {
+func (r RoleEventHandlerFuncs) OnUpdate(updatedList []*v1.Role, newObj *v1.Role) {
 	if r.UpdateFunc != nil {
 		r.UpdateFunc(updatedList, newObj)
 	}
 }
 
 // OnDelete calls DeleteFunc if it's not nil.
-func (r VirtualMeshEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualMesh, obj *v1.VirtualMesh) {
+func (r RoleEventHandlerFuncs) OnDelete(updatedList []*v1.Role, obj *v1.Role) {
 	if r.DeleteFunc != nil {
 		r.DeleteFunc(updatedList, obj)
 	}

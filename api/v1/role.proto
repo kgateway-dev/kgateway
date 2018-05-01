@@ -1,0 +1,40 @@
+syntax = "proto3";
+package v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/duration.proto";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+import "status.proto";
+import "metadata.proto";
+
+/**
+ * A Role is a container for a set of Virtual Services that will be used to generate a single proxy config
+ * to be applied to one or more Envoy nodes. The Role is best understood as an in-mesh application's localized view
+ * of the rest of the mesh.
+ * Each domain for each Virtual Service contained in a Role cannot appear more than once, or the Role
+ * will be invalid.
+ */
+message Role {
+    // Name of the role. Envoy nodes will be assigned a config corresponding with role they are assigned.
+    // Envoy instances must specify the role they belong to when they register to Gloo.
+    //
+    // Currently this is done by specifying the name of the role as a prefix to the Envoy's Node ID
+    // which can be specified with the `--service-node` flag, or in the Envoy instance's bootstrap config.
+    //
+    // Names must be unique and follow the following syntax rules:
+    // One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
+    string name = 1;
+
+    // the list of names of the virtual services this role encapsulates.
+    repeated string virtual_services = 2;
+
+    // Status indicates the validation status of the role resource.
+    // Status is read-only by clients, and set by gloo during validation
+    Status status = 6 [(gogoproto.moretags) = "testdiff:\"ignore\""];
+
+    // Metadata contains the resource metadata for the role
+    Metadata metadata = 7;
+}

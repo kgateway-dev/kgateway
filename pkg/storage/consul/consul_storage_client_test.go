@@ -414,102 +414,102 @@ var _ = Describe("ConsulStorageClient", func() {
 			})
 		})
 	})
-	Describe("VirtualMeshes", func() {
+	Describe("Roles", func() {
 		Describe("create", func() {
-			It("creates the virtualmesh as a consul key", func() {
+			It("creates the role as a consul key", func() {
 				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 				Expect(err).NotTo(HaveOccurred())
-				input := &v1.VirtualMesh{
-					Name:            "myvirtualmesh",
+				input := &v1.Role{
+					Name:            "myrole",
 					VirtualServices: []string{"foo"},
 				}
-				vs, err := client.V1().VirtualMeshes().Create(input)
+				vs, err := client.V1().Roles().Create(input)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(vs).NotTo(Equal(input))
-				p, _, err := consul.KV().Get(rootPath+"/virtualmeshes/"+input.Name, nil)
+				p, _, err := consul.KV().Get(rootPath+"/roles/"+input.Name, nil)
 				Expect(err).NotTo(HaveOccurred())
-				var unmarshalledVirtualMesh v1.VirtualMesh
-				err = proto.Unmarshal(p.Value, &unmarshalledVirtualMesh)
+				var unmarshalledRole v1.Role
+				err = proto.Unmarshal(p.Value, &unmarshalledRole)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(&unmarshalledVirtualMesh).To(Equal(input))
+				Expect(&unmarshalledRole).To(Equal(input))
 				resourceVersion := fmt.Sprintf("%v", p.CreateIndex)
 				Expect(vs.Metadata.ResourceVersion).To(Equal(resourceVersion))
 				input.Metadata = vs.Metadata
 				Expect(vs).To(Equal(input))
 			})
-			It("errors when creating the same virtualmesh twice", func() {
+			It("errors when creating the same role twice", func() {
 				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 				Expect(err).NotTo(HaveOccurred())
-				input := &v1.VirtualMesh{
-					Name:            "myvirtualmesh",
+				input := &v1.Role{
+					Name:            "myrole",
 					VirtualServices: []string{"foo"},
 				}
-				_, err = client.V1().VirtualMeshes().Create(input)
+				_, err = client.V1().Roles().Create(input)
 				Expect(err).NotTo(HaveOccurred())
-				_, err = client.V1().VirtualMeshes().Create(input)
+				_, err = client.V1().Roles().Create(input)
 				Expect(err).To(HaveOccurred())
 			})
 			Describe("update", func() {
-				It("fails if the virtualmesh doesn't exist", func() {
+				It("fails if the role doesn't exist", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
-					input := &v1.VirtualMesh{
-						Name:            "myvirtualmesh",
+					input := &v1.Role{
+						Name:            "myrole",
 						VirtualServices: []string{"foo"},
 					}
-					vs, err := client.V1().VirtualMeshes().Update(input)
+					vs, err := client.V1().Roles().Update(input)
 					Expect(err).To(HaveOccurred())
 					Expect(vs).To(BeNil())
 				})
 				It("fails if the resourceversion is not up to date", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
-					input := &v1.VirtualMesh{
-						Name:            "myvirtualmesh",
+					input := &v1.Role{
+						Name:            "myrole",
 						VirtualServices: []string{"foo"},
 					}
-					_, err = client.V1().VirtualMeshes().Create(input)
+					_, err = client.V1().Roles().Create(input)
 					Expect(err).NotTo(HaveOccurred())
-					v, err := client.V1().VirtualMeshes().Update(input)
+					v, err := client.V1().Roles().Update(input)
 					Expect(v).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("resource version"))
 				})
-				It("updates the virtualmesh", func() {
+				It("updates the role", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
-					input := &v1.VirtualMesh{
-						Name:            "myvirtualmesh",
+					input := &v1.Role{
+						Name:            "myrole",
 						VirtualServices: []string{"foo"},
 					}
-					vs, err := client.V1().VirtualMeshes().Create(input)
+					vs, err := client.V1().Roles().Create(input)
 					Expect(err).NotTo(HaveOccurred())
-					changed := proto.Clone(input).(*v1.VirtualMesh)
+					changed := proto.Clone(input).(*v1.Role)
 					changed.VirtualServices = []string{"bar"}
 					// match resource version
 					changed.Metadata = vs.Metadata
-					out, err := client.V1().VirtualMeshes().Update(changed)
+					out, err := client.V1().Roles().Update(changed)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(out.VirtualServices).To(Equal(changed.VirtualServices))
 				})
 				Describe("get", func() {
-					It("fails if the virtualmesh doesn't exist", func() {
+					It("fails if the role doesn't exist", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						vs, err := client.V1().VirtualMeshes().Get("foo")
+						vs, err := client.V1().Roles().Get("foo")
 						Expect(err).To(HaveOccurred())
 						Expect(vs).To(BeNil())
 					})
-					It("returns the virtualmesh", func() {
+					It("returns the role", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						input := &v1.VirtualMesh{
-							Name:            "myvirtualmesh",
+						input := &v1.Role{
+							Name:            "myrole",
 							VirtualServices: []string{"foo"},
 						}
-						vs, err := client.V1().VirtualMeshes().Create(input)
+						vs, err := client.V1().Roles().Create(input)
 						Expect(err).NotTo(HaveOccurred())
-						out, err := client.V1().VirtualMeshes().Get(input.Name)
+						out, err := client.V1().Roles().Get(input.Name)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(out).To(Equal(vs))
 						input.Metadata = out.Metadata
@@ -517,30 +517,30 @@ var _ = Describe("ConsulStorageClient", func() {
 					})
 				})
 				Describe("list", func() {
-					It("returns all existing virtualmeshes", func() {
+					It("returns all existing roles", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						input1 := &v1.VirtualMesh{
-							Name:            "myvirtualmesh1",
+						input1 := &v1.Role{
+							Name:            "myrole1",
 							VirtualServices: []string{"foo"},
 						}
-						input2 := &v1.VirtualMesh{
-							Name:            "myvirtualmesh2",
+						input2 := &v1.Role{
+							Name:            "myrole2",
 							VirtualServices: []string{"foo"},
 						}
-						input3 := &v1.VirtualMesh{
-							Name:            "myvirtualmesh3",
+						input3 := &v1.Role{
+							Name:            "myrole3",
 							VirtualServices: []string{"foo"},
 						}
-						vs1, err := client.V1().VirtualMeshes().Create(input1)
+						vs1, err := client.V1().Roles().Create(input1)
 						Expect(err).NotTo(HaveOccurred())
 						time.Sleep(time.Second)
-						vs2, err := client.V1().VirtualMeshes().Create(input2)
+						vs2, err := client.V1().Roles().Create(input2)
 						Expect(err).NotTo(HaveOccurred())
 						time.Sleep(time.Second)
-						vs3, err := client.V1().VirtualMeshes().Create(input3)
+						vs3, err := client.V1().Roles().Create(input3)
 						Expect(err).NotTo(HaveOccurred())
-						out, err := client.V1().VirtualMeshes().List()
+						out, err := client.V1().Roles().List()
 						Expect(err).NotTo(HaveOccurred())
 						Expect(out).To(ContainElement(vs1))
 						Expect(out).To(ContainElement(vs2))
@@ -551,12 +551,12 @@ var _ = Describe("ConsulStorageClient", func() {
 					It("watches", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						lists := make(chan []*v1.VirtualMesh, 3)
+						lists := make(chan []*v1.Role, 3)
 						stop := make(chan struct{})
 						defer close(stop)
 						errs := make(chan error)
-						w, err := client.V1().VirtualMeshes().Watch(&storage.VirtualMeshEventHandlerFuncs{
-							UpdateFunc: func(updatedList []*v1.VirtualMesh, _ *v1.VirtualMesh) {
+						w, err := client.V1().Roles().Watch(&storage.RoleEventHandlerFuncs{
+							UpdateFunc: func(updatedList []*v1.Role, _ *v1.Role) {
 								lists <- updatedList
 							},
 						})
@@ -564,27 +564,27 @@ var _ = Describe("ConsulStorageClient", func() {
 						go func() {
 							w.Run(stop, errs)
 						}()
-						input1 := &v1.VirtualMesh{
-							Name:            "myvirtualmesh1",
+						input1 := &v1.Role{
+							Name:            "myrole1",
 							VirtualServices: []string{"foo"},
 						}
-						input2 := &v1.VirtualMesh{
-							Name:            "myvirtualmesh2",
+						input2 := &v1.Role{
+							Name:            "myrole2",
 							VirtualServices: []string{"foo"},
 						}
-						input3 := &v1.VirtualMesh{
-							Name:            "myvirtualmesh3",
+						input3 := &v1.Role{
+							Name:            "myrole3",
 							VirtualServices: []string{"foo"},
 						}
-						vs1, err := client.V1().VirtualMeshes().Create(input1)
+						vs1, err := client.V1().Roles().Create(input1)
 						Expect(err).NotTo(HaveOccurred())
-						vs2, err := client.V1().VirtualMeshes().Create(input2)
+						vs2, err := client.V1().Roles().Create(input2)
 						Expect(err).NotTo(HaveOccurred())
-						vs3, err := client.V1().VirtualMeshes().Create(input3)
+						vs3, err := client.V1().Roles().Create(input3)
 						Expect(err).NotTo(HaveOccurred())
 
-						var list []*v1.VirtualMesh
-						Eventually(func() []*v1.VirtualMesh {
+						var list []*v1.Role
+						Eventually(func() []*v1.Role {
 							select {
 							default:
 								return nil

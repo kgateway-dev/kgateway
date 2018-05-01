@@ -222,7 +222,7 @@ func (e *eventLoop) updateXds(cache *cache) {
 		}
 	}
 
-	log.Debugf("Setting xDS Snapshot for Virtual Mesh %v: %v", "ingress", snapshot)
+	log.Debugf("Setting xDS Snapshot for Role %v: %v", "ingress", snapshot)
 	e.xdsConfig.SetSnapshot("ingress", *snapshot)
 }
 

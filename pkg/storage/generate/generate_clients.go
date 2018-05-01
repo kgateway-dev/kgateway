@@ -35,11 +35,11 @@ var clients = []clientType{
 		UppercasePluralName: "VirtualServices",
 	},
 	{
-		FilenamePrefix:      "virtual_meshes",
-		LowercaseName:       "virtualMesh",
-		LowercasePluralName: "virtualMeshes",
-		UppercaseName:       "VirtualMesh",
-		UppercasePluralName: "VirtualMeshes",
+		FilenamePrefix: "roles",
+		LowercaseName:       "role",
+		LowercasePluralName: "roles",
+		UppercaseName:       "Role",
+		UppercasePluralName: "Roles",
 	},
 }
 
