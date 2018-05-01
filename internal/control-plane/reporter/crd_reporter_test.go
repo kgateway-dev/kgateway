@@ -44,6 +44,7 @@ var _ = Describe("CrdReporter", func() {
 			reports         []ConfigObjectReport
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
+			virtualMeshes []*v1.VirtualMesh
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
@@ -67,6 +68,13 @@ var _ = Describe("CrdReporter", func() {
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, vService)
 				}
+				virtualMeshes = testCfg.VirtualMeshes
+				for _, vMesh := range virtualMeshes {
+					_, err := glooClient.V1().VirtualMeshes().Create(vMesh)
+					Expect(err).NotTo(HaveOccurred())
+
+					storables = append(storables, vMesh)
+				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
 						CfgObject: storable,
@@ -89,6 +97,12 @@ var _ = Describe("CrdReporter", func() {
 				Expect(updatedvServices).To(HaveLen(len(upstreams)))
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Accepted))
+				}
+				updatedvMeshes, err := glooClient.V1().VirtualMeshes().List()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedvMeshes).To(HaveLen(len(upstreams)))
+				for _, updatedvMesh := range updatedvMeshes {
+					Expect(updatedvMesh.Status.State).To(Equal(v1.Status_Accepted))
 				}
 			})
 		})
@@ -114,6 +128,12 @@ var _ = Describe("CrdReporter", func() {
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, vService)
 				}
+				virtualMeshes = testCfg.VirtualMeshes
+				for _, vMesh := range virtualMeshes {
+					_, err := glooClient.V1().VirtualMeshes().Create(vMesh)
+					Expect(err).NotTo(HaveOccurred())
+					storables = append(storables, vMesh)
+				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
 						CfgObject: storable,
@@ -136,6 +156,12 @@ var _ = Describe("CrdReporter", func() {
 				Expect(updatedvServices).To(HaveLen(len(upstreams)))
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Rejected))
+				}
+				updatedvMeshes, err := glooClient.V1().VirtualMeshes().List()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedvMeshes).To(HaveLen(len(upstreams)))
+				for _, updatedvMesh := range updatedvMeshes {
+					Expect(updatedvMesh.Status.State).To(Equal(v1.Status_Rejected))
 				}
 			})
 		})

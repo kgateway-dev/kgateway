@@ -14,9 +14,14 @@ func NewTestConfig() *v1.Config {
 		NewTestVirtualService("my-vservice", NewTestRoute1(), NewTestRoute2()),
 		NewTestVirtualService("my-vservice-2", NewTestRoute1(), NewTestRoute2()),
 	}
+	virtualMeshes := []*v1.VirtualMesh{
+		NewTestVirtualMesh("my-mesh", "my-vservice"),
+		NewTestVirtualMesh("my-mesh-2", "my-vservice-2"),
+	}
 	return &v1.Config{
 		Upstreams:       upstreams,
 		VirtualServices: virtualServices,
+		VirtualMeshes:   virtualMeshes,
 	}
 }
 

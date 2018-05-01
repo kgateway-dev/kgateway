@@ -62,6 +62,19 @@ func (r *reporter) writeReport(report ConfigObjectReport) error {
 		if _, err := r.store.V1().VirtualServices().Update(virtualService); err != nil {
 			return errors.Wrapf(err, "failed to update virtualservice store with status report")
 		}
+	case *v1.VirtualMesh:
+		virtualMesh, err := r.store.V1().VirtualMeshes().Get(name)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find virtual mesh %v", name)
+		}
+		// only update if status doesn't match
+		if virtualMesh.Status.Equal(status) {
+			return nil
+		}
+		virtualMesh.Status = status
+		if _, err := r.store.V1().VirtualMeshes().Update(virtualMesh); err != nil {
+			return errors.Wrapf(err, "failed to update virtual mesh store with status report")
+		}
 	}
 	return nil
 }
