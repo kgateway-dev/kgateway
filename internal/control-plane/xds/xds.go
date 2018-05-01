@@ -31,7 +31,7 @@ func (h hasher) ID(node *core.Node) string {
 			"assigning error response virtual host", node)
 		return badNodeKey
 	}
-	log.Printf("node %v registered from role %v", parts[1], parts[0])
+	log.Printf("node %v registered with role %v", parts[1], parts[0])
 	return parts[0]
 }
 

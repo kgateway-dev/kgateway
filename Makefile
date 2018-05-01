@@ -93,7 +93,7 @@ $(BINARY)-docker-push-debug: $(BINARY)-docker-debug
 
 endef
 
-PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES)
+PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES) generated-code clientset
 $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 
 clean:
