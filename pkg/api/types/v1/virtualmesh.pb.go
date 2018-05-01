@@ -19,7 +19,7 @@ var _ = math.Inf
 // A Virtual Mesh is a container for a set of Virtual Services that will be used to generate a single proxy config
 // to be applied to one or more Envoy nodes. The Virtual Mesh is best understood as an in-mesh application's localized view
 // of the rest of the mesh.
-// Each domains for each Virtual Services contained in a Virtual Mesh cannot appear more than once, or the Virtual Mesh
+// Each domain for each Virtual Service contained in a Virtual Mesh cannot appear more than once, or the Virtual Mesh
 // will be invalid.
 type VirtualMesh struct {
 	// Name of the virtual mesh. Envoy nodes will be assigned a config corresponding with virtual mesh they are assigned.
@@ -31,7 +31,7 @@ type VirtualMesh struct {
 	// Names must be unique and follow the following syntax rules:
 	// One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// the list of names of the virtual services this vmesh includes.
+	// the list of names of the virtual services this vmesh encapsulates.
 	VirtualServices []string `protobuf:"bytes,2,rep,name=virtual_services,json=virtualServices" json:"virtual_services,omitempty"`
 	// Status indicates the validation status of the virtual mesh resource.
 	// Status is read-only by clients, and set by gloo during validation

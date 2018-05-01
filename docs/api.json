@@ -370,7 +370,7 @@
           "name": "VirtualMesh",
           "longName": "VirtualMesh",
           "fullName": "v1.VirtualMesh",
-          "description": "A Virtual Mesh is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Virtual Mesh is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domains for each Virtual Services contained in a Virtual Mesh cannot appear more than once, or the Virtual Mesh\nwill be invalid.",
+          "description": "A Virtual Mesh is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Virtual Mesh is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Virtual Mesh cannot appear more than once, or the Virtual Mesh\nwill be invalid.",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
@@ -386,7 +386,7 @@
             },
             {
               "name": "virtual_services",
-              "description": "the list of names of the virtual services this vmesh includes.",
+              "description": "the list of names of the virtual services this vmesh encapsulates.",
               "label": "repeated",
               "type": "string",
               "longType": "string",
