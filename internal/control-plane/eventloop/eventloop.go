@@ -63,14 +63,19 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
 
-	xdsConfig, _, err := xds.RunXDS(xdsPort)
+	translatorOpts := translatorConfig(opts)
+
+	// create a snapshot to give to misconfigured envoy instances
+	badNodeSnapshot := xds.BadNodeSnapshot(translatorOpts.IngressBindAddress, translatorOpts.IngressPort)
+
+	xdsConfig, _, err := xds.RunXDS(xdsPort, badNodeSnapshot)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start xds server")
 	}
 
 	plugs := plugins.RegisteredPlugins()
 
-	trans := translator.NewTranslator(translatorConfig(opts), plugs)
+	trans := translator.NewTranslator(translatorOpts, plugs)
 
 	e := &eventLoop{
 		configWatcher:   cfgWatcher,
