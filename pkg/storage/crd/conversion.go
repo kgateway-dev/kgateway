@@ -25,7 +25,7 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 		resourceVersion string
 		annotations     map[string]string
 	)
-	if item.GetMetadata != nil {
+	if item.GetMetadata() != nil {
 		resourceVersion = item.GetMetadata().ResourceVersion
 		if item.GetMetadata().Namespace != "" {
 			namespace = item.GetMetadata().Namespace
