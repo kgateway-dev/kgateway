@@ -168,13 +168,9 @@
     "envoy/api/v2/endpoint",
     "envoy/api/v2/listener",
     "envoy/api/v2/route",
-    "envoy/config/bootstrap/v2",
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
-    "envoy/config/metrics/v2",
-    "envoy/config/ratelimit/v2",
-    "envoy/config/trace/v2",
     "envoy/service/discovery/v2",
     "envoy/type",
     "pkg/cache",
@@ -1241,6 +1237,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c562f3c600110bc422057e99f9f32e3f006a02106e68dd8f7a9bdb1eff8027c0"
+  inputs-digest = "ba93629066671f994c151429828254244759be22247eb167007f4aab053c9c2a"
   solver-name = "gps-cdcl"
   solver-version = 1
