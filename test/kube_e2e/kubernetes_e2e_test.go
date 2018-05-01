@@ -152,6 +152,9 @@ func curl(opts curlOpts) (string, error) {
 }
 
 func setupMinikubeEnvVars() bool {
+	if os.Getenv("FORCE_PUSH") == "1" {
+		return false
+	}
 	// are we in minikube?
 	out, _ := exec.Command("kubectl", "config", "current-context").CombinedOutput()
 	if strings.Contains(string(out), "minikube") {
