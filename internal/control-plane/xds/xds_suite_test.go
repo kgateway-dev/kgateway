@@ -29,17 +29,3 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	envoyFactory.Clean()
 })
-
-var _ = BeforeEach(func() {
-	var err error
-	envoyInstance, err = envoyFactory.NewEnvoyInstance()
-	Expect(err).NotTo(HaveOccurred())
-	err = envoyInstance.Run()
-	Expect(err).NotTo(HaveOccurred())
-})
-
-var _ = AfterEach(func() {
-	if envoyInstance != nil {
-		envoyInstance.Clean()
-	}
-})
