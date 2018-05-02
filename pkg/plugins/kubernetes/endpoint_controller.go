@@ -214,7 +214,7 @@ func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service)
 				log.Warnf("WARNING: external name services are not supported for Kubernetes Endpoint Interface")
 			}
 			// if the service only has one port, just assume that's the one we want
-			// this way the user doesn't have to specify portname
+			// this way the user doesn't have to specify port
 			if len(svc.Spec.Ports) == 1 {
 				return svc.Spec.Ports[0].TargetPort.IntVal, nil
 			}
@@ -224,11 +224,18 @@ func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service)
 					log.Warnf("target port must be type int for kube endpoint discovery")
 					continue
 				}
-				if spec.ServicePort == port.TargetPort.IntVal {
-					return port.TargetPort.IntVal, nil
+				if spec.ServicePort == getPortVal(port) {
+					return spec.ServicePort , nil
 				}
 			}
 		}
 	}
 	return 0, fmt.Errorf("target port or service not found for service %v", spec.ServiceName)
+}
+
+func getPortVal(port kubev1resources.ServicePort) int32 {
+	if port.TargetPort.IntVal != 0 {
+		return port.TargetPort.IntVal
+	}
+	return port.Port
 }
