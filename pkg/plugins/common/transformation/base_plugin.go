@@ -102,11 +102,15 @@ func createRequestExtractors(params *Parameters) (map[string]*Extraction, error)
 	}
 	// headers we support submatching on
 	// custom as well as the path and authority/host header
-	if err := addHeaderExtractorFromParam(":path", params.Path, extractors); err != nil {
-		return nil, errors.Wrap(err, "error processing parameter")
+	if params.Path != nil {
+		if err := addHeaderExtractorFromParam(":path", *params.Path, extractors); err != nil {
+			return nil, errors.Wrap(err, "error processing parameter")
+		}
 	}
-	if err := addHeaderExtractorFromParam(":authority", params.Authority, extractors); err != nil {
-		return nil, errors.Wrap(err, "error processing parameter")
+	if params.Authority != nil {
+		if err := addHeaderExtractorFromParam(":authority", *params.Authority, extractors); err != nil {
+			return nil, errors.Wrap(err, "error processing parameter")
+		}
 	}
 	for headerName, headerValue := range params.Headers {
 		if err := addHeaderExtractorFromParam(headerName, headerValue, extractors); err != nil {
@@ -382,7 +386,6 @@ func (p *transformationPlugin) GetTransformationFilter() *plugins.StagedFilter {
 		log.Warnf("error in transformation plugin: %v", err)
 		return nil
 	}
-
 
 	return &plugins.StagedFilter{
 		HttpFilter: &envoyhttp.HttpFilter{

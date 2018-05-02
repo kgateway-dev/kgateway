@@ -24,9 +24,9 @@ type Parameters struct {
 		output:
 			body_template: "{\"path\": {{ path }}}"
 	*/
-	Headers   map[string]string `json:"headers"`
-	Path      string            `json:"path,omitempty"`
-	Authority string            `json:"authority"`
+	Headers   map[string]string `json:"headers,omitempty"`
+	Path      *string           `json:"path,omitempty"`
+	Authority *string           `json:"authority,omitempty"`
 	//TODO: support query params
 	//TODO: support form params
 }

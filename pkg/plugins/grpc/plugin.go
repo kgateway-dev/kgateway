@@ -148,9 +148,10 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 	if in.Extensions == nil {
 		matcher, ok := in.Matcher.(*v1.Route_RequestMatcher)
 		if ok {
+			path := getPath(matcher.RequestMatcher) + "?{query_string}"
 			in.Extensions = transformation.EncodeRouteExtension(transformation.RouteExtension{
 				Parameters: &transformation.Parameters{
-					Path: getPath(matcher.RequestMatcher) + "?{query_string}",
+					Path: &path,
 				},
 			})
 		}
