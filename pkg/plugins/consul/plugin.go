@@ -12,10 +12,10 @@ import (
 )
 
 func init() {
-	plugins.Register(&Plugin{}, createEndpointDiscovery)
+	plugins.Register(&Plugin{})
 }
 
-func createEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
+func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
 	cfg := opts.ConsulOptions.ToConsulConfig()
 	disc, err := newEndpointController(cfg)
 	if err != nil {

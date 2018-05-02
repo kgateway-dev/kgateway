@@ -17,7 +17,7 @@ const (
 )
 
 func init() {
-	plugins.Register(NewPlugin(), nil)
+	plugins.Register(NewPlugin())
 }
 
 func NewPlugin() *Plugin {

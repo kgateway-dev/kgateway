@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	plugins.Register(&Plugin{}, nil)
+	plugins.Register(&Plugin{})
 }
 
 type Plugin struct {

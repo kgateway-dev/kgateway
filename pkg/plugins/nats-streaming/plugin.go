@@ -18,7 +18,7 @@ import (
 //go:generate protoc -I=. -I=${GOPATH}/src/github.com/gogo/protobuf/ --gogo_out=. nats_streaming_filter.proto
 
 func init() {
-	plugins.Register(&Plugin{}, nil)
+	plugins.Register(&Plugin{})
 }
 
 type Plugin struct {

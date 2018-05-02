@@ -23,7 +23,7 @@ import (
 )
 
 func init() {
-	plugins.Register(NewPlugin(), nil)
+	plugins.Register(NewPlugin())
 }
 
 type ServiceAndDescriptors struct {

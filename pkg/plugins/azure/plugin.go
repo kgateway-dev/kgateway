@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	plugins.Register(&Plugin{apiKeys: make(map[string]string)}, nil)
+	plugins.Register(&Plugin{apiKeys: make(map[string]string)})
 }
 
 type Plugin struct {

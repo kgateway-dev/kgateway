@@ -1,5 +1,6 @@
 package eventloop
 
+
 import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/mitchellh/hashstructure"
@@ -19,19 +20,18 @@ import (
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
 )
 
 type eventLoop struct {
-	configWatcher       configwatcher.Interface
-	secretWatcher       secretwatcher.Interface
-	fileWatcher         filewatcher.Interface
-	endpointDiscoveries []endpointdiscovery.Interface
-	reporter            reporter.Interface
-	translator          *translator.Translator
-	xdsConfig           envoycache.SnapshotCache
-	getDependencies     func(cfg *v1.Config) []*plugins.Dependencies
-
-	startFuncs []func() error
+	configWatcher    configwatcher.Interface
+	secretWatcher    secretwatcher.Interface
+	fileWatcher      filewatcher.Interface
+	endpointsWatcher endpointdiscovery.Interface
+	reporter         reporter.Interface
+	translator       *translator.Translator
+	xdsConfig        envoycache.SnapshotCache
+	getDependencies  func(cfg *v1.Config) []*plugins.Dependencies
 }
 
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
@@ -55,6 +55,19 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
 
+	plugs := plugins.RegisteredPlugins()
+
+	var edPlugins []plugins.EndpointDiscoveryPlugin
+	for _, plug := range plugs {
+		if edp, ok := plug.(plugins.EndpointDiscoveryPlugin); ok {
+			edPlugins = append(edPlugins, edp)
+		}
+	}
+
+	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(opts.Options, edPlugins...)
+
+	trans := translator.NewTranslator(opts.IngressOptions, plugs)
+
 	// create a snapshot to give to misconfigured envoy instances
 	badNodeSnapshot := xds.BadNodeSnapshot(opts.IngressOptions.BindAddress, opts.IngressOptions.Port)
 
@@ -63,35 +76,17 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		return nil, errors.Wrap(err, "failed to start xds server")
 	}
 
-	plugs := plugins.RegisteredPlugins()
-
-	trans := translator.NewTranslator(opts.IngressOptions, plugs)
-
 	e := &eventLoop{
-		configWatcher:   cfgWatcher,
-		secretWatcher:   secretWatcher,
-		fileWatcher:     fileWatcher,
-		translator:      trans,
-		xdsConfig:       xdsConfig,
-		getDependencies: getDependenciesFor(plugs),
-		reporter:        reporter.NewReporter(store),
+		configWatcher:    cfgWatcher,
+		secretWatcher:    secretWatcher,
+		fileWatcher:      fileWatcher,
+		endpointsWatcher: endpointsWatcher,
+		translator:       trans,
+		xdsConfig:        xdsConfig,
+		getDependencies:  getDependenciesFor(plugs),
+		reporter:         reporter.NewReporter(store),
 	}
 
-	for _, endpointDiscoveryInitializer := range plugins.EndpointDiscoveryInitializers() {
-		startfunc := func(edi plugins.EndpointDiscoveryInitFunc) func() error {
-			return func() error {
-				discovery, err := edi(opts.Options)
-				if err != nil {
-					log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
-						"upstream type", err)
-					return nil
-				}
-				e.endpointDiscoveries = append(e.endpointDiscoveries, discovery)
-				return nil
-			}
-		}(endpointDiscoveryInitializer)
-		e.startFuncs = append(e.startFuncs, startfunc)
-	}
 	return e, nil
 }
 
@@ -118,20 +113,11 @@ func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
 }
 
 func (e *eventLoop) Run(stop <-chan struct{}) error {
-	for _, fn := range e.startFuncs {
-		if err := fn(); err != nil {
-			return err
-		}
-	}
-	for _, eds := range e.endpointDiscoveries {
-		go eds.Run(stop)
-	}
-
 	go e.configWatcher.Run(stop)
 	go e.fileWatcher.Run(stop)
 	go e.secretWatcher.Run(stop)
+	go e.endpointsWatcher.Run(stop)
 
-	endpointDiscovery := e.endpointDiscovery()
 	workerErrors := e.errors()
 
 	// cache the most recent read for any of these
@@ -164,11 +150,8 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 			}
 			go e.secretWatcher.TrackSecrets(secretRefs)
 			go e.fileWatcher.TrackFiles(fileRefs)
-			for _, discovery := range e.endpointDiscoveries {
-				go func(epd endpointdiscovery.Interface) {
-					epd.TrackUpstreams(cfg.Upstreams)
-				}(discovery)
-			}
+			go e.endpointsWatcher.TrackUpstreams(cfg.Upstreams)
+
 			sync(current)
 		case secrets := <-e.secretWatcher.Secrets():
 			log.Debugf("change triggered by secrets")
@@ -178,9 +161,9 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 			log.Debugf("change triggered by files")
 			current.files = files
 			sync(current)
-		case endpointTuple := <-endpointDiscovery:
+		case endpoints := <-e.endpointsWatcher.Endpoints():
 			log.Debugf("change triggered by endpoints")
-			current.endpoints[endpointTuple.discoveredBy] = endpointTuple.endpoints
+			current.endpoints = endpoints
 			sync(current)
 		case err := <-workerErrors:
 			log.Warnf("error in control plane event loop: %v", err)
@@ -194,17 +177,11 @@ func (e *eventLoop) updateXds(cache *cache) {
 		return
 	}
 
-	aggregatedEndpoints := make(endpointdiscovery.EndpointGroups)
-	for _, endpointGroups := range cache.endpoints {
-		for upstreamName, endpointSet := range endpointGroups {
-			aggregatedEndpoints[upstreamName] = endpointSet
-		}
-	}
 	snapshot, reports, err := e.translator.Translate(translator.Inputs{
 		Cfg:       cache.cfg,
 		Secrets:   cache.secrets,
 		Files:     cache.files,
-		Endpoints: aggregatedEndpoints,
+		Endpoints: cache.endpoints,
 	})
 	if err != nil {
 		// TODO: panic or handle these internal errors smartly
@@ -226,22 +203,6 @@ func (e *eventLoop) updateXds(cache *cache) {
 	e.xdsConfig.SetSnapshot("ingress", *snapshot)
 }
 
-// fan out to cover all endpoint discovery services
-func (e *eventLoop) endpointDiscovery() <-chan endpointTuple {
-	aggregatedEndpointsChan := make(chan endpointTuple)
-	for _, ed := range e.endpointDiscoveries {
-		go func(endpointDisc endpointdiscovery.Interface) {
-			for endpoints := range endpointDisc.Endpoints() {
-				aggregatedEndpointsChan <- endpointTuple{
-					endpoints:    endpoints,
-					discoveredBy: endpointDisc,
-				}
-			}
-		}(ed)
-	}
-	return aggregatedEndpointsChan
-}
-
 // fan out to cover all channels that return errors
 func (e *eventLoop) errors() <-chan error {
 	aggregatedErrorsChan := make(chan error)
@@ -260,13 +221,11 @@ func (e *eventLoop) errors() <-chan error {
 			aggregatedErrorsChan <- errors.Wrap(err, "file watcher encountered an error")
 		}
 	}()
-	for _, ed := range e.endpointDiscoveries {
-		go func() {
-			for err := range ed.Error() {
-				aggregatedErrorsChan <-  errors.Wrap(err, "endpoint discovery encountered an error")
-			}
-		}()
-	}
+	go func() {
+		for err := range e.endpointsWatcher.Error() {
+			aggregatedErrorsChan <- errors.Wrap(err, "endpoints watcher encountered an error")
+		}
+	}()
 	return aggregatedErrorsChan
 }
 
@@ -276,13 +235,11 @@ type cache struct {
 	secrets secretwatcher.SecretMap
 	files   filewatcher.Files
 	// need to separate endpoints by the service who discovered them
-	endpoints map[endpointdiscovery.Interface]endpointdiscovery.EndpointGroups
+	endpoints endpointdiscovery.EndpointGroups
 }
 
 func newCache() *cache {
-	return &cache{
-		endpoints: make(map[endpointdiscovery.Interface]endpointdiscovery.EndpointGroups),
-	}
+	return &cache{}
 }
 
 // ready doesn't necessarily tell us whetehr endpoints have been discovered yet
@@ -310,9 +267,4 @@ func (c *cache) hash() uint64 {
 	}
 	h := h0 + h1 + h2 + h3
 	return h
-}
-
-type endpointTuple struct {
-	discoveredBy endpointdiscovery.Interface
-	endpoints    endpointdiscovery.EndpointGroups
 }

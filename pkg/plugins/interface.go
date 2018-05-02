@@ -9,6 +9,8 @@ import (
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 )
 
 type Stage int
@@ -42,6 +44,12 @@ type UpstreamPluginParams struct {
 type UpstreamPlugin interface {
 	TranslatorPlugin
 	ProcessUpstream(params *UpstreamPluginParams, in *v1.Upstream, out *envoyapi.Cluster) error
+}
+
+
+type EndpointDiscoveryPlugin interface {
+	UpstreamPlugin
+	SetupEndpointDiscovery(options bootstrap.Options) (endpointdiscovery.Interface, error)
 }
 
 // Params for ParseFunctionSpec()

@@ -16,15 +16,14 @@ import (
 )
 
 func init() {
-	plugins.Register(&Plugin{}, createEndpointDiscovery)
+	plugins.Register(&Plugin{})
 }
 
 var _ plugins.UpstreamPlugin = &Plugin{}
 
-type Plugin struct {
-}
+type Plugin struct{}
 
-func createEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
+func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
 	istioclient, err := GetClientFromOptions(opts.CoPilotOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create copilot client")
