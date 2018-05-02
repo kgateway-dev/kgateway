@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/internal/function-discovery/nats-streaming"
 	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/options"
+	"github.com/solo-io/gloo/internal/function-discovery/projectfn"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/swagger"
 	"github.com/solo-io/gloo/internal/function-discovery/updater"
@@ -68,8 +69,12 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		detectors = append(detectors, nats.NewNatsDetector(""))
 	}
 
-	detectors = append(detectors, openfaas.NewFaaSDetector())
-
+	if discoveryOpts.AutoDiscoverFaaS {
+		detectors = append(detectors, openfaas.NewFaaSDetector())
+	}
+	if discoveryOpts.AutoDiscoverProjectFn {
+		detectors = append(detectors, projectfn.NewProjectFnDetector())
+	}
 	if discoveryOpts.AutoDiscoverFission {
 		detectors = append(detectors, fission.NewFissionDetector())
 	}
