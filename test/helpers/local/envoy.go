@@ -129,7 +129,6 @@ func (ef *EnvoyFactory) EnvoyPath() string {
 	return ef.envoypath
 }
 
-
 func (ef *EnvoyFactory) Clean() error {
 	if ef == nil {
 		return nil
@@ -257,6 +256,7 @@ func runContainer(cfgpath string, port uint32) error {
 	args := []string{"run", "-d", "--rm", "--name", containerName,
 		"-v", cfgDir + ":/etc/config/",
 		"-p", "8080:8080",
+		"-p", "8443:8443",
 		"-p", "19000:19000",
 		image,
 		"/usr/local/bin/envoy", "--v2-config-only",
