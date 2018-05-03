@@ -80,7 +80,7 @@ var _ = Describe("Project Fn Function Discovery Service Detection", func() {
 		gloo.V1().VirtualServices().Delete(vServiceName)
 	})
 
-	FIt("should receive hello world message", func() {
+	It("should receive hello world message", func() {
 		curlEventuallyShouldRespond(curlOpts{
 			path: funcPath,
 		}, "Hello from Fn", time.Minute*5)
