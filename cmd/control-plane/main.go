@@ -38,9 +38,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return errors.Wrap(err, "setting up event loop")
 		}
-		if err := eventLoop.Run(stop); err != nil {
-			return errors.Wrap(err, "failed running event loop")
-		}
+		eventLoop.Run(stop)
 		return nil
 	},
 }

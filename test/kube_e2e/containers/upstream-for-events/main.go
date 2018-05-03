@@ -19,17 +19,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func logRequest(r *http.Request) {
-	log.Printf("Got request with headers: ")
-	for k, v := range r.Header {
-		log.Printf("%v: %v", k, v)
-	}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error reading body: %v", err)
 		return
 	}
 	defer r.Body.Close()
-	log.Printf("received event: %s", data)
+	if len(data) > 0 {
+		log.Printf("received event: %s", data)
+	}
 }
 
 func serve(port uint) {

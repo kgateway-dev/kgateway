@@ -104,18 +104,24 @@ func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
 	return filewatcher.NewFileWatcher(store)
 }
 
-func (e *eventLoop) Run(stop <-chan struct{}) error {
+func (e *eventLoop) Run(stop <-chan struct{}) {
+	go e.snapshotEmitter.Run(stop)
+
 	// cache the most recent read for any of these
-	var hash uint64
+	var oldHash uint64
 	for {
 		select {
+		case <-stop:
+			log.Printf("event loop shutting down")
+			return
 		case snap := <-e.snapshotEmitter.Snapshot():
 			newHash := snap.Hash()
-			if newHash == hash {
+			log.Printf(	"\nold hash: %v\nnew hash: %v", oldHash, newHash)
+			if newHash == oldHash {
 				continue
 			}
-			log.Debugf("new snapshot")
-			hash = newHash
+			log.Debugf("new snapshot received")
+			oldHash = newHash
 			e.updateXds(snap)
 		case err := <-e.snapshotEmitter.Error():
 			log.Warnf("error in control plane event loop: %v", err)
@@ -128,6 +134,8 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		log.Debugf("snapshot is not ready for translation yet")
 		return
 	}
+
+	log.Debugf("Gloo Snapshot: %v", snap)
 
 	xdsSnapshot, reports, err := e.translator.Translate(snap)
 	if err != nil {

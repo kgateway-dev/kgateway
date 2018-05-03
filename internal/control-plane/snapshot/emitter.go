@@ -58,12 +58,10 @@ func (e *Emitter) Run(stop <-chan struct{}) {
 		case <-stop:
 			return
 		case cfg := <-e.configWatcher.Config():
-			log.GreyPrintf("change triggered by config")
-
-			log.Printf("old hash %v", latest.Hash())
+			log.Printf("change triggered by config")
 			latest.Cfg = cfg
-			log.Printf("new hash %v", latest.Hash())
 
+			// update everything we're tracking
 			dependencies := e.getDependencies(cfg)
 			var secretRefs, fileRefs []string
 			for _, dep := range dependencies {

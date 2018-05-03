@@ -40,7 +40,7 @@ func main() {
 			Time:    t,
 			Message: eventData,
 		}); err != nil {
-			log.Print("error emitting: %v", err)
+			log.Printf("error emitting: %v", err)
 		} else {
 			log.Printf("successful emit")
 		}

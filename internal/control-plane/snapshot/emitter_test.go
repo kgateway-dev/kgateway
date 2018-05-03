@@ -90,7 +90,7 @@ var _ = Describe("Emitter", func() {
 			AfterEach(func() {
 				helpers.TeardownKube(namespace)
 			})
-			FIt("sends snapshots down the channel", func() {
+			It("sends snapshots down the channel", func() {
 				cfgWatcher, err := configwatcher.NewConfigWatcher(store)
 				Expect(err).NotTo(HaveOccurred())
 				secretWatcher, err := secretwatchersetup.Bootstrap(opts)
