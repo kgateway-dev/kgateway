@@ -1,9 +1,7 @@
 package eventloop
 
-
 import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
-	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
@@ -16,22 +14,17 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
+	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 )
 
 type eventLoop struct {
-	configWatcher    configwatcher.Interface
-	secretWatcher    secretwatcher.Interface
-	fileWatcher      filewatcher.Interface
-	endpointsWatcher endpointdiscovery.Interface
-	reporter         reporter.Interface
-	translator       *translator.Translator
-	xdsConfig        envoycache.SnapshotCache
-	getDependencies  func(cfg *v1.Config) []*plugins.Dependencies
+	snapshotEmitter *snapshot.Emitter
+	reporter        reporter.Interface
+	translator      *translator.Translator
+	xdsConfig       envoycache.SnapshotCache
 }
 
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
@@ -66,6 +59,9 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 
 	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(opts.Options, edPlugins...)
 
+	snapshotEmitter := snapshot.NewEmitter(cfgWatcher, secretWatcher,
+		fileWatcher, endpointsWatcher, getDependenciesFor(plugs))
+
 	trans := translator.NewTranslator(opts.IngressOptions, plugs)
 
 	// create a snapshot to give to misconfigured envoy instances
@@ -77,14 +73,10 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 	}
 
 	e := &eventLoop{
-		configWatcher:    cfgWatcher,
-		secretWatcher:    secretWatcher,
-		fileWatcher:      fileWatcher,
-		endpointsWatcher: endpointsWatcher,
-		translator:       trans,
-		xdsConfig:        xdsConfig,
-		getDependencies:  getDependenciesFor(plugs),
-		reporter:         reporter.NewReporter(store),
+		snapshotEmitter: snapshotEmitter,
+		translator:      trans,
+		xdsConfig:       xdsConfig,
+		reporter:        reporter.NewReporter(store),
 	}
 
 	return e, nil
@@ -113,11 +105,6 @@ func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
 }
 
 func (e *eventLoop) Run(stop <-chan struct{}) error {
-	go e.configWatcher.Run(stop)
-	go e.fileWatcher.Run(stop)
-	go e.secretWatcher.Run(stop)
-	go e.endpointsWatcher.Run(stop)
-
 	workerErrors := e.errors()
 
 	// cache the most recent read for any of these
@@ -201,70 +188,4 @@ func (e *eventLoop) updateXds(cache *cache) {
 
 	log.Debugf("Setting xDS Snapshot for Role %v: %v", "ingress", snapshot)
 	e.xdsConfig.SetSnapshot("ingress", *snapshot)
-}
-
-// fan out to cover all channels that return errors
-func (e *eventLoop) errors() <-chan error {
-	aggregatedErrorsChan := make(chan error)
-	go func() {
-		for err := range e.configWatcher.Error() {
-			aggregatedErrorsChan <- errors.Wrap(err, "config watcher encountered an error")
-		}
-	}()
-	go func() {
-		for err := range e.secretWatcher.Error() {
-			aggregatedErrorsChan <- errors.Wrap(err, "secret watcher encountered an error")
-		}
-	}()
-	go func() {
-		for err := range e.fileWatcher.Error() {
-			aggregatedErrorsChan <- errors.Wrap(err, "file watcher encountered an error")
-		}
-	}()
-	go func() {
-		for err := range e.endpointsWatcher.Error() {
-			aggregatedErrorsChan <- errors.Wrap(err, "endpoints watcher encountered an error")
-		}
-	}()
-	return aggregatedErrorsChan
-}
-
-// cache contains the latest "gloo snapshot"
-type cache struct {
-	cfg     *v1.Config
-	secrets secretwatcher.SecretMap
-	files   filewatcher.Files
-	// need to separate endpoints by the service who discovered them
-	endpoints endpointdiscovery.EndpointGroups
-}
-
-func newCache() *cache {
-	return &cache{}
-}
-
-// ready doesn't necessarily tell us whetehr endpoints have been discovered yet
-// but that's okay. envoy won't mind
-func (c *cache) ready() bool {
-	return c.cfg != nil
-}
-
-func (c *cache) hash() uint64 {
-	h0, err := hashstructure.Hash(*c.cfg, nil)
-	if err != nil {
-		panic(err)
-	}
-	h1, err := hashstructure.Hash(c.secrets, nil)
-	if err != nil {
-		panic(err)
-	}
-	h2, err := hashstructure.Hash(c.endpoints, nil)
-	if err != nil {
-		panic(err)
-	}
-	h3, err := hashstructure.Hash(c.files, nil)
-	if err != nil {
-		panic(err)
-	}
-	h := h0 + h1 + h2 + h3
-	return h
 }
