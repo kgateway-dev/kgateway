@@ -224,8 +224,8 @@ func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service)
 					log.Warnf("target port must be type int for kube endpoint discovery")
 					continue
 				}
-				if spec.ServicePort == getPortVal(port) {
-					return spec.ServicePort, nil
+				if spec.ServicePort == port.Port {
+					return getPortVal(port), nil
 				}
 			}
 		}
