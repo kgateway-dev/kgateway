@@ -207,8 +207,9 @@ var _ = Describe("Projectfn", func() {
 			for _, f := range []string{"func", "func2"} {
 				for _, app := range []string{"app", "app2"} {
 					expected := Function{
-						Appname: app,
-						Route:   "/r/" + app + "/" + f,
+						Appname:  app,
+						Funcname: f,
+						Route:    "/r/" + app + "/" + f,
 					}
 					Expect(funcs).To(ContainElement(expected))
 				}
