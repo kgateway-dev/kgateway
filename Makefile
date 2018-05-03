@@ -145,13 +145,12 @@ hackrun: $(BINARY)
 	./hack/run-local.sh
 
 unit:
-	ginkgo -r -v pkg/ internal/
+	ginkgo -r pkg/ internal/
 
 e2e:
-	ginkgo -r -v test/
+	ginkgo -r test/
 
-test: e2e unit
-
+test: unit e2e
 
 
 
