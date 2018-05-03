@@ -47,7 +47,7 @@ func GetFuncsWithTransport(resolve resolver.Resolver, us *v1.Upstream, transport
 		return nil, errors.Wrap(err, "error getting fn service")
 	}
 
-	fr, err := NewFnRetreiver("http://" + addr)
+	fr, err := NewFnRetreiver("http://" + addr + "/v1")
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,6 @@ type FnRetreiver struct {
 }
 
 func createFunction(funk Function) *v1.Function {
-	// TODO is it reall post?
 	headersTemplate := map[string]string{":method": "POST"}
 
 	return &v1.Function{
@@ -129,11 +128,11 @@ func (fr *FnRetreiver) getAppNames() ([]string, error) {
 	var appnames []string
 	cursor := ""
 	for {
-		var params apps.GetAppsParams
+		params := apps.NewGetAppsParams()
 		if cursor != "" {
 			params.Cursor = &cursor
 		}
-		apppresp, err := fr.client.Apps.GetApps(&params)
+		apppresp, err := fr.client.Apps.GetApps(params)
 		if err != nil {
 			return nil, err
 		}
@@ -152,12 +151,13 @@ func (fr *FnRetreiver) getRoutesForApp(app string) ([]*models.Route, error) {
 
 	cursor := ""
 	for {
-		var routeParams routes.GetAppsAppRoutesParams
+		routeParams :=routes.NewGetAppsAppRoutesParams()
+		
 		routeParams.App = app
 		if cursor != "" {
 			routeParams.Cursor = &cursor
 		}
-		routeresp, err := fr.client.Routes.GetAppsAppRoutes(&routeParams)
+		routeresp, err := fr.client.Routes.GetAppsAppRoutes(routeParams)
 		if err != nil {
 			return nil, err
 		}
@@ -193,7 +193,7 @@ func getnames(resp *apps.GetAppsOK) []string {
 }
 
 type Function struct {
-	Appname string
+	Appname  string
 	Funcname string
-	Route   string
+	Route    string
 }
