@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/gogo/protobuf/proto"
 )
 
 type configWatcher struct {
@@ -63,7 +64,7 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		log.GreyPrintf("change detected in upstream: %v", diff)
 
 		cache.Upstreams = updatedList
-		configs <- cache
+		configs <- proto.Clone(cache).(*v1.Config)
 	}
 	upstreamWatcher, err := storageClient.V1().Upstreams().Watch(&storage.UpstreamEventHandlerFuncs{
 		AddFunc:    syncUpstreams,
@@ -86,7 +87,7 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		log.GreyPrintf("change detected in virtualservices: %v", diff)
 
 		cache.VirtualServices = updatedList
-		configs <- cache
+		configs <- proto.Clone(cache).(*v1.Config)
 	}
 	vServiceWatcher, err := storageClient.V1().VirtualServices().Watch(&storage.VirtualServiceEventHandlerFuncs{
 		AddFunc:    syncvServices,
@@ -110,7 +111,7 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		log.GreyPrintf("change detected in virtualservices: %v", diff)
 
 		cache.Roles = updatedList
-		configs <- cache
+		configs <- proto.Clone(cache).(*v1.Config)
 	}
 	roleWatcher, err := storageClient.V1().Roles().Watch(&storage.RoleEventHandlerFuncs{
 		AddFunc:    syncroles,
