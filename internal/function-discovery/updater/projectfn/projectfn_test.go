@@ -1,4 +1,4 @@
-package fission_test
+package projectfn_test
 
 import (
 	"fmt"

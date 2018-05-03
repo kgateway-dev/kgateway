@@ -1,4 +1,4 @@
-package fission
+package projectfn
 
 import (
 	"net/url"
@@ -33,11 +33,11 @@ func IsFnUpstream(us *v1.Upstream) bool {
 		return false
 	}
 
-	return strings.HasPrefix(spec.ServiceName, "fn-api")
+	return strings.HasSuffix(spec.ServiceName, "-fn-api")
 }
 
 func GetFuncs(resolve resolver.Resolver, us *v1.Upstream) ([]*v1.Function, error) {
-	return GetFuncsWithTransport(resolve, us,nil)
+	return GetFuncsWithTransport(resolve, us, nil)
 }
 
 func GetFuncsWithTransport(resolve resolver.Resolver, us *v1.Upstream, transport runtime.ClientTransport) ([]*v1.Function, error) {
@@ -93,7 +93,7 @@ func createFunction(funk Function) *v1.Function {
 	headersTemplate := map[string]string{":method": "POST"}
 
 	return &v1.Function{
-		Name: funk.Appname,
+		Name: funk.Appname +":" +funk.Funcname,
 		Spec: rest.EncodeFunctionSpec(rest.Template{
 			Path:            funk.Route,
 			Header:          headersTemplate,
@@ -175,7 +175,10 @@ func (fr *FnRetreiver) getFnApiPaths(app string, routeobjs []*models.Route) []Fu
 	var finalizedroutes []Function
 
 	for _, routeobj := range routeobjs {
-		finalizedroutes = append(finalizedroutes, Function{Appname: app, Route: path.Join(routePrefix, app, routeobj.Path)})
+		finalizedroutes = append(finalizedroutes, Function{
+			Appname: app, 
+			Funcname: strings.Replace(routeobj.Path,"/","",-1),
+			Route: path.Join(routePrefix, app, routeobj.Path)})
 	}
 	return finalizedroutes
 }
@@ -191,5 +194,6 @@ func getnames(resp *apps.GetAppsOK) []string {
 
 type Function struct {
 	Appname string
+	Funcname string
 	Route   string
 }

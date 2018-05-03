@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/internal/function-discovery/functiontypes"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/fission"
+	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/gcf"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/lambda"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/openfaas"
@@ -96,6 +97,11 @@ func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, secretSt
 		funcs, err = fission.GetFuncs(resolve, us)
 		if err != nil {
 			return errors.Wrap(err, "retreving fission functions")
+		}
+	case functiontypes.FunctionTypeProjectFn:
+		funcs, err = projectfn.GetFuncs(resolve, us)
+		if err != nil {
+			return errors.Wrap(err, "retreving projectfn functions")
 		}
 	case functiontypes.FunctionTypeAzure:
 		funcs, secret, err := azure.GetFuncsAndSecret(us, secrets)
