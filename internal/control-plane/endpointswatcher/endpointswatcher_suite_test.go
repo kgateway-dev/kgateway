@@ -31,11 +31,7 @@ func TestEndpointswatcher(t *testing.T) {
 
 }
 
-var opts = bootstrap.Options {
-	KubeOptions: bootstrap.KubeOptions{
-		KubeConfig: filepath.Join(os.Getenv("HOME"), ".kube", "config"),
-	},
-}
+var opts bootstrap.Options
 
 // consul vars
 var (
@@ -61,6 +57,13 @@ var _ = BeforeSuite(func() {
 	namespace = helpers.RandString(8)
 	err = helpers.SetupKubeForTest(namespace)
 	helpers.Must(err)
+
+	opts = bootstrap.Options{
+		KubeOptions: bootstrap.KubeOptions{
+			Namespace:  namespace,
+			KubeConfig: filepath.Join(os.Getenv("HOME"), ".kube", "config"),
+		},
+	}
 
 	cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 	Expect(err).NotTo(HaveOccurred())

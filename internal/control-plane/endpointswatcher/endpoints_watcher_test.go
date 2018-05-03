@@ -182,6 +182,7 @@ func createKubeResources() {
 	}
 	upstreams = append(upstreams, kubeUpstreams...)
 }
+
 func createConsulResources() {
 	cfg := api.DefaultConfig()
 
