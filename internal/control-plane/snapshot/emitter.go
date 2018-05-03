@@ -21,6 +21,7 @@ type Emitter struct {
 
 	getDependencies func(cfg *v1.Config) []*plugins.Dependencies
 	snapshots       chan *Cache
+	errors          chan error
 }
 
 func NewEmitter(configWatcher configwatcher.Interface,
@@ -49,6 +50,7 @@ func (e *Emitter) Run(stop <-chan struct{}) {
 	go e.fileWatcher.Run(stop)
 	go e.secretWatcher.Run(stop)
 	go e.endpointsWatcher.Run(stop)
+	e.errors = e.aggregateErrors()
 
 	latest := newCache()
 	for {
@@ -56,8 +58,12 @@ func (e *Emitter) Run(stop <-chan struct{}) {
 		case <-stop:
 			return
 		case cfg := <-e.configWatcher.Config():
-			log.Debugf("change triggered by config")
+			log.GreyPrintf("change triggered by config")
+
+			log.Printf("old hash %v", latest.Hash())
 			latest.Cfg = cfg
+			log.Printf("new hash %v", latest.Hash())
+
 			dependencies := e.getDependencies(cfg)
 			var secretRefs, fileRefs []string
 			for _, dep := range dependencies {
@@ -93,6 +99,10 @@ func (e *Emitter) Run(stop <-chan struct{}) {
 
 // fan out to cover all channels that return errors
 func (e *Emitter) Error() <-chan error {
+	return e.errors
+}
+
+func (e *Emitter) aggregateErrors() chan error {
 	aggregatedErrorsChan := make(chan error)
 	go func() {
 		for err := range e.configWatcher.Error() {

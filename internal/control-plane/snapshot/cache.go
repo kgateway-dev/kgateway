@@ -28,6 +28,9 @@ func (c *Cache) Ready() bool {
 }
 
 func (c *Cache) Hash() uint64 {
+	if !c.Ready() {
+		return 0
+	}
 	cfgForHashing := proto.Clone(c.Cfg).(*v1.Config)
 	for _, us := range cfgForHashing.Upstreams {
 		us.Status = nil
