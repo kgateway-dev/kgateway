@@ -30,6 +30,7 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
+	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 )
 
 const (
@@ -85,19 +86,12 @@ func NewTranslator(opts bootstrap.IngressOptions, translatorPlugins []plugins.Tr
 	}
 }
 
-type Inputs struct {
-	Cfg       *v1.Config
-	Secrets   secretwatcher.SecretMap
-	Files     filewatcher.Files
-	Endpoints endpointdiscovery.EndpointGroups
-}
-
 type pluginDependencies struct {
 	Secrets secretwatcher.SecretMap
 	Files   filewatcher.Files
 }
 
-func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
+func (t *Translator) Translate(inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
 	cfg := inputs.Cfg
 	dependencies := &pluginDependencies{Secrets: inputs.Secrets, Files: inputs.Files}
 	secrets := inputs.Secrets

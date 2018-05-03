@@ -105,71 +105,31 @@ func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
 }
 
 func (e *eventLoop) Run(stop <-chan struct{}) error {
-	workerErrors := e.errors()
-
 	// cache the most recent read for any of these
 	var hash uint64
-	current := newCache()
-	sync := func(current *cache) {
-		newHash := current.hash()
-		if hash == newHash {
-			return
-		}
-		hash = newHash
-		e.updateXds(current)
-	}
 	for {
 		select {
-		case cfg := <-e.configWatcher.Config():
-			log.Debugf("change triggered by config")
-			current.cfg = cfg
-			dependencies := e.getDependencies(cfg)
-			var secretRefs, fileRefs []string
-			for _, dep := range dependencies {
-				secretRefs = append(secretRefs, dep.SecretRefs...)
-				fileRefs = append(fileRefs, dep.FileRefs...)
+		case snap := <-e.snapshotEmitter.Snapshot():
+			newHash := snap.Hash()
+			if newHash == hash {
+				continue
 			}
-			// secrets for virtualservices
-			for _, vService := range cfg.VirtualServices {
-				if vService.SslConfig != nil && vService.SslConfig.SecretRef != "" {
-					secretRefs = append(secretRefs, vService.SslConfig.SecretRef)
-				}
-			}
-			go e.secretWatcher.TrackSecrets(secretRefs)
-			go e.fileWatcher.TrackFiles(fileRefs)
-			go e.endpointsWatcher.TrackUpstreams(cfg.Upstreams)
-
-			sync(current)
-		case secrets := <-e.secretWatcher.Secrets():
-			log.Debugf("change triggered by secrets")
-			current.secrets = secrets
-			sync(current)
-		case files := <-e.fileWatcher.Files():
-			log.Debugf("change triggered by files")
-			current.files = files
-			sync(current)
-		case endpoints := <-e.endpointsWatcher.Endpoints():
-			log.Debugf("change triggered by endpoints")
-			current.endpoints = endpoints
-			sync(current)
-		case err := <-workerErrors:
+			log.Debugf("new snapshot")
+			hash = newHash
+			e.updateXds(snap)
+		case err := <-e.snapshotEmitter.Error():
 			log.Warnf("error in control plane event loop: %v", err)
 		}
 	}
 }
 
-func (e *eventLoop) updateXds(cache *cache) {
-	if !cache.ready() {
-		log.Debugf("cache is not fully constructed to produce a first snapshot yet")
+func (e *eventLoop) updateXds(snap *snapshot.Cache) {
+	if !snap.Ready() {
+		log.Debugf("snapshot is not ready for translation yet")
 		return
 	}
 
-	snapshot, reports, err := e.translator.Translate(translator.Inputs{
-		Cfg:       cache.cfg,
-		Secrets:   cache.secrets,
-		Files:     cache.files,
-		Endpoints: cache.endpoints,
-	})
+	xdsSnapshot, reports, err := e.translator.Translate(snap)
 	if err != nil {
 		// TODO: panic or handle these internal errors smartly
 		log.Warnf("failed to translate based on the latest config: %v", err)
@@ -186,6 +146,6 @@ func (e *eventLoop) updateXds(cache *cache) {
 		}
 	}
 
-	log.Debugf("Setting xDS Snapshot for Role %v: %v", "ingress", snapshot)
-	e.xdsConfig.SetSnapshot("ingress", *snapshot)
+	log.Debugf("Setting xDS Snapshot for Role %v: %v", "ingress", xdsSnapshot)
+	e.xdsConfig.SetSnapshot("ingress", *xdsSnapshot)
 }
