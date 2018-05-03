@@ -125,6 +125,9 @@ func (c *UpstreamController) generateDesiredUpstreams() ([]*v1.Upstream, error) 
 			// annotate
 			annotations := map[string]string{}
 			for k, v := range svc.Annotations {
+				if k == "kubectl.kubernetes.io/last-applied-configuration" {
+					continue
+				}
 				annotations[k] = v
 			}
 			// copy annotations from the service = happy users
