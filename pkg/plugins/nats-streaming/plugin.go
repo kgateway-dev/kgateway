@@ -32,11 +32,15 @@ const (
 	filterName  = "io.solo.nats_streaming"
 	pluginStage = plugins.OutAuth
 
-	clusterId      = "cluster_id"
-	discoverPrefix = "discover_prefix"
+	// ClusterId key for NATS streaming
+	ClusterId = "cluster_id"
+	// DiscoverPrefix key for NATS streaming
+	DiscoverPrefix = "discover_prefix"
 
-	defaultClusterId      = "test-cluster"
-	defaultDiscoverPrefix = "_STAN.discover"
+	// DefaultClusterId default NATS streaming cluster ID
+	DefaultClusterId = "test-cluster"
+	// DefaultDiscoverPrefix default NATS streaming discover prefix
+	DefaultDiscoverPrefix = "_STAN.discover"
 )
 
 type ServiceProperties struct {
@@ -76,17 +80,17 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 
 	cid := props.ClusterID
 	if cid == "" {
-		cid = defaultClusterId
+		cid = DefaultClusterId
 	}
 	dp := props.DiscoverPrefix
 	if dp == "" {
-		dp = defaultDiscoverPrefix
+		dp = DefaultDiscoverPrefix
 	}
 	if out.Metadata == nil {
 		out.Metadata = &envoycore.Metadata{}
 	}
-	common.InitFilterMetadataField(filterName, clusterId, out.Metadata).Kind = &types.Value_StringValue{StringValue: defaultClusterId}
-	common.InitFilterMetadataField(filterName, discoverPrefix, out.Metadata).Kind = &types.Value_StringValue{StringValue: dp}
+	common.InitFilterMetadataField(filterName, ClusterId, out.Metadata).Kind = &types.Value_StringValue{StringValue: cid}
+	common.InitFilterMetadataField(filterName, DiscoverPrefix, out.Metadata).Kind = &types.Value_StringValue{StringValue: dp}
 
 	p.filters = append(p.filters, plugins.StagedFilter{HttpFilter: &envoyhttp.HttpFilter{Name: filterName, Config: natsConfig(out.Name)}, Stage: pluginStage})
 
