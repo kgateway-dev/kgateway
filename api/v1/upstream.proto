@@ -42,8 +42,6 @@ message Upstream {
     // types of services
     ServiceInfo service_info = 8;
 
-    // Status indicates the validation status of the upstream resource. Status is read-only by clients, and set by gloo during validation
-    Status status = 6 [(gogoproto.moretags) = "testdiff:\"ignore\""];
     // Metadata contains the resource metadata for the upstream
     Metadata metadata = 7;
 }
