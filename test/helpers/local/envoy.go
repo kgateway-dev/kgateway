@@ -196,7 +196,7 @@ func (ei *EnvoyInstance) Run() error {
 
 func (ei *EnvoyInstance) runWithPort(id string, port uint32) error {
 	if id == "" {
-		id = "testingress"
+		id = "ingress~for-testing"
 	}
 	err := ioutil.WriteFile(ei.envoycfgpath, buildBootstrap(id, ei.localAddr, port), 0644)
 	if err != nil {

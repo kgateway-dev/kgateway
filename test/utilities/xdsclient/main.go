@@ -17,7 +17,7 @@ var dr v2.DiscoveryRequest
 
 func init() {
 	dr.Node = new(envoy_api_v2_core1.Node)
-	dr.Node.Id = "oneid"
+	dr.Node.Id = "ingress~xdsclient"
 	dr.Node.Cluster = "ingress"
 }
 
