@@ -3,7 +3,7 @@ package v1;
 
 import "upstream.proto";
 import "virtualservice.proto";
-import "role.proto";
+import "report.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;

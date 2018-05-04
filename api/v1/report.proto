@@ -1,0 +1,61 @@
+syntax = "proto3";
+package v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/duration.proto";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+import "status.proto";
+import "metadata.proto";
+
+/**
+ * A Report contains config validation information for users.
+ * Gloo generates reports for every top-level config object (VirtualServices and Upstreams)
+ * indicating whether the resource was accepted by Gloo or rejected (due to an invalid configuration).
+ */
+message Report {
+    // a unique identifier for the report
+    string id = 1;
+
+    // reference to the object this report pertains to
+    ObjectReference object_reference = 2;
+
+    // the state the object is in
+    // can be eiher pending, accepted, or rejected
+    State state = 3;
+}
+
+message ObjectReference {
+    enum ObjectType {
+        Upstream = 0;
+        VirtualService = 1;
+    }
+    // type of the object
+    // can be Upstream or VirtualService
+    ObjectType object_type = 1;
+    // name of the object
+    string name = 2;
+    // optional namespace of the object
+    string namespace = 3;
+}
+
+/**
+ * Status indicates whether a config resource has been (in)validated by gloo
+ */
+message Status {
+    enum State {
+        // Pending status indicates the resource has not yet been validated
+        Pending = 0;
+        // Accepted indicates the resource has been validated
+        Accepted = 1;
+        // Rejected indicates an invalid configuration by the user
+        // Rejected resources may be propagated to the xDS server depending on their severity
+        Rejected = 2;
+    }
+    // State is the enum indicating the state of the resource
+    State state = 1;
+    // Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty
+    string reason = 2;
+}
