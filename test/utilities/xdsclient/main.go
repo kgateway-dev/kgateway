@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -17,14 +18,17 @@ var dr v2.DiscoveryRequest
 
 func init() {
 	dr.Node = new(envoy_api_v2_core1.Node)
-	dr.Node.Id = "ingress~xdsclient"
-	dr.Node.Cluster = "ingress"
 }
 
 func main() {
+	role := flag.String("r", "ingress~xdsclient", "role to register with")
+	flag.Parse()
+	dr.Node.Id = *role
+	dr.Node.Cluster = "my_cluster"
+
 	conn, err := grpc.Dial("localhost:8081", grpc.WithInsecure())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("dial err: %v",err)
 	}
 	ctx := context.Background()
 	listClusters(ctx, conn)
@@ -59,7 +63,7 @@ func listClusters(ctx context.Context, conn *grpc.ClientConn) []v2.Cluster {
 	cdsc := v2.NewClusterDiscoveryServiceClient(conn)
 	dresp, err := cdsc.FetchClusters(ctx, &dr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("clusters err: %v", err)
 	}
 	var clusters []v2.Cluster
 	for _, anyCluster := range dresp.Resources {
@@ -76,7 +80,7 @@ func listendpoints(ctx context.Context, conn *grpc.ClientConn) []v2.ClusterLoadA
 	eds := v2.NewEndpointDiscoveryServiceClient(conn)
 	dresp, err := eds.FetchEndpoints(ctx, &dr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("endpoints err: %v",err)
 	}
 	var clas []v2.ClusterLoadAssignment
 
@@ -95,7 +99,7 @@ func listListeners(ctx context.Context, conn *grpc.ClientConn) []v2.Listener {
 	ldsc := v2.NewListenerDiscoveryServiceClient(conn)
 	dresp, err := ldsc.FetchListeners(ctx, &dr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("listeners err: %v",err)
 	}
 	var listeners []v2.Listener
 
@@ -119,7 +123,7 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, routenames []string)
 
 	dresp, err := ldsc.FetchRoutes(ctx, &drr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("routes err: %v",err)
 	}
 	var routes []v2.RouteConfiguration
 

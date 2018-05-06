@@ -42,7 +42,7 @@ var _ = Describe("Xds", func() {
 	Describe("RunXDS Server", func() {
 		Context("with invalid node name", func() {
 			BeforeEach(func() {
-				err := envoyInstance.Run()
+				err := envoyInstance.RunWithId("badid")
 				Expect(err).NotTo(HaveOccurred())
 				_, grpcSrv, err := RunXDS(8081, badNodeSnapshot)
 				Expect(err).NotTo(HaveOccurred())
@@ -52,7 +52,7 @@ var _ = Describe("Xds", func() {
 				srv.Stop()
 			})
 			It("successfully bootstraps the envoy proxy", func() {
-				Eventually(envoyInstance.Logs, time.Second*30).Should(ContainSubstring("lds: add/update listener 'listener-for-invalid-envoy'"))
+				Eventually(envoyInstance.Logs, time.Second*10).Should(ContainSubstring("lds: add/update listener 'listener-for-invalid-envoy'"))
 			})
 			It("has a 500 route with body 'Invalid Envoy Bootstrap Configuration. Please refer to Gloo documentation https://gloo.solo.io/'", func() {
 				Eventually(func() error {
