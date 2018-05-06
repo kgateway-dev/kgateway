@@ -52,4 +52,7 @@ RUN go get -v github.com/golang/protobuf/...
 RUN mkdir -p ${GOPATH}/src/k8s.io && \
     git clone https://github.com/kubernetes/code-generator ${GOPATH}/src/k8s.io/code-generator
 
+RUN git clone https://github.com/kubernetes/apimachinery ${GOPATH}/src/k8s.io/apimachinery
+
+
 CMD ["/bin/bash"]
