@@ -76,10 +76,10 @@ func (e *endpointsAggregator) watchEdsForEndpoints(wg *sync.WaitGroup) {
 // start a goroutine that takes every new endpoints group received from an ed
 // and aggregates them to a single set of EndpointGroups which get passed to our own channel
 func (e *endpointsAggregator) aggregateReceivedEndpoints(wg *sync.WaitGroup, stop <-chan struct{}) {
-	// watch eds for new sets of endpoints
-	endpointsByDiscovery := make(map[endpointdiscovery.Interface]endpointdiscovery.EndpointGroups)
 	wg.Add(1)
 	go func() {
+		// watch eds for new sets of endpoints
+		endpointsByDiscovery := make(map[endpointdiscovery.Interface]endpointdiscovery.EndpointGroups)
 		defer wg.Done()
 		for {
 			select {
