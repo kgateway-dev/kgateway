@@ -20,6 +20,8 @@ import (
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 )
 
+const defaultRole = "ingress"
+
 type eventLoop struct {
 	snapshotEmitter *snapshot.Emitter
 	reporter        reporter.Interface
@@ -154,6 +156,6 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		}
 	}
 
-	log.Debugf("Setting xDS Snapshot for Role %v: %v", "ingress", xdsSnapshot)
-	e.xdsConfig.SetSnapshot("ingress", *xdsSnapshot)
+	log.Debugf("Setting xDS Snapshot for Role %v: %v", defaultRole, xdsSnapshot)
+	e.xdsConfig.SetSnapshot(defaultRole, *xdsSnapshot)
 }
