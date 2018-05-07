@@ -91,7 +91,7 @@ type pluginDependencies struct {
 	Files   filewatcher.Files
 }
 
-func (t *Translator) Translate(inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
+func (t *Translator) Translate(inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectError, error) {
 	cfg := inputs.Cfg
 	dependencies := &pluginDependencies{Secrets: inputs.Secrets, Files: inputs.Files}
 	secrets := inputs.Secrets
@@ -241,9 +241,9 @@ func loadAssignmentForCluster(clusterName string, addresses []endpointdiscovery.
 
 // Clusters
 
-func (t *Translator) computeClusters(cfg *v1.Config, dependencies *pluginDependencies, endpoints endpointdiscovery.EndpointGroups) ([]*envoyapi.Cluster, []reporter.ConfigObjectReport) {
+func (t *Translator) computeClusters(cfg *v1.Config, dependencies *pluginDependencies, endpoints endpointdiscovery.EndpointGroups) ([]*envoyapi.Cluster, []reporter.ConfigObjectError) {
 	var (
-		reports  []reporter.ConfigObjectReport
+		reports  []reporter.ConfigObjectError
 		clusters []*envoyapi.Cluster
 	)
 	for _, upstream := range cfg.Upstreams {
@@ -336,9 +336,9 @@ func dependenciesForPlugin(cfg *v1.Config, plug plugins.TranslatorPlugin, depend
 
 func (t *Translator) computeVirtualHosts(cfg *v1.Config,
 	erroredUpstreams map[string]bool,
-	secrets secretwatcher.SecretMap) ([]envoyroute.VirtualHost, []envoyroute.VirtualHost, []reporter.ConfigObjectReport) {
+	secrets secretwatcher.SecretMap) ([]envoyroute.VirtualHost, []envoyroute.VirtualHost, []reporter.ConfigObjectError) {
 	var (
-		reports           []reporter.ConfigObjectReport
+		reports           []reporter.ConfigObjectError
 		sslVirtualHosts   []envoyroute.VirtualHost
 		noSslVirtualHosts []envoyroute.VirtualHost
 	)
@@ -369,7 +369,7 @@ func (t *Translator) computeVirtualHosts(cfg *v1.Config,
 }
 
 // adds errors to report if virtualservice domains are not unique
-func virtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService, reports []reporter.ConfigObjectReport) map[string]error {
+func virtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService, reports []reporter.ConfigObjectError) map[string]error {
 	domainsToVirtualServices := make(map[string][]string) // this shouldbe a 1-1 mapping
 	// if len(domainsToVirtualServices[domain]) > 1, error
 	for _, vService := range virtualServices {
@@ -470,7 +470,7 @@ func validateRouteDestinations(upstreams []*v1.Upstream, route *v1.Route, errore
 	return errors.Errorf("must specify either 'single_destination' or 'multiple_destinations' for route")
 }
 
-func getErroredUpstreams(clusterReports []reporter.ConfigObjectReport) map[string]bool {
+func getErroredUpstreams(clusterReports []reporter.ConfigObjectError) map[string]bool {
 	erroredUpstreams := make(map[string]bool)
 	for _, report := range clusterReports {
 		upstream, ok := report.CfgObject.(*v1.Upstream)
@@ -594,7 +594,7 @@ func (t *Translator) constructHttpsListener(name string,
 	port uint32,
 	filters []envoylistener.Filter,
 	virtualServices []*v1.VirtualService,
-	virtualServiceReports []reporter.ConfigObjectReport,
+	virtualServiceReports []reporter.ConfigObjectError,
 	secrets secretwatcher.SecretMap) (*envoyapi.Listener, error) {
 
 	// create the base filter chain
@@ -745,8 +745,8 @@ func virtualHostName(virtualServiceName string) string {
 	return virtualServiceName
 }
 
-func createReport(cfgObject v1.ConfigObject, err error) reporter.ConfigObjectReport {
-	return reporter.ConfigObjectReport{
+func createReport(cfgObject v1.ConfigObject, err error) reporter.ConfigObjectError {
+	return reporter.ConfigObjectError{
 		CfgObject: cfgObject,
 		Err:       err,
 	}
