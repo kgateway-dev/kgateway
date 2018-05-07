@@ -21,7 +21,6 @@ limitations under the License.
 package v1
 
 import (
-	types_v1 "github.com/solo-io/gloo/pkg/api/types/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -40,15 +39,6 @@ func (in *Upstream) DeepCopyInto(out *Upstream) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	if in.Status != nil {
-		in, out := &in.Status, &out.Status
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(types_v1.Status)
-			**out = **in
-		}
-	}
 	if in.Spec != nil {
 		in, out := &in.Spec, &out.Spec
 		if *in == nil {
@@ -117,15 +107,6 @@ func (in *VirtualService) DeepCopyInto(out *VirtualService) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	if in.Status != nil {
-		in, out := &in.Status, &out.Status
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(types_v1.Status)
-			**out = **in
-		}
-	}
 	if in.Spec != nil {
 		in, out := &in.Spec, &out.Spec
 		if *in == nil {
@@ -161,7 +142,6 @@ func (in *VirtualServiceList) DeepCopyInto(out *VirtualServiceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	out.ListMeta = in.ListMeta
-	in.Status.DeepCopyInto(&out.Status)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]VirtualService, len(*in))

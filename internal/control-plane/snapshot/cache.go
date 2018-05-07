@@ -33,14 +33,12 @@ func (c *Cache) Hash() uint64 {
 	}
 	cfgForHashing := proto.Clone(c.Cfg).(*v1.Config)
 	for _, us := range cfgForHashing.Upstreams {
-		us.Status = nil
 		if us.Metadata != nil {
 			us.Metadata.ResourceVersion = ""
 		}
 		us.Metadata = nil
 	}
 	for _, vs := range cfgForHashing.VirtualServices {
-		vs.Status = nil
 		if vs.Metadata != nil {
 			vs.Metadata.ResourceVersion = ""
 		}

@@ -47,7 +47,6 @@ func (c *virtualServicesClient) Get(name string) (*v1.VirtualService, error) {
 	if err := ConfigObjectFromCrd(
 		crdVirtualService.ObjectMeta,
 		crdVirtualService.Spec,
-		crdVirtualService.Status,
 		&returnedVirtualService); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to virtualService")
 	}
@@ -65,7 +64,6 @@ func (c *virtualServicesClient) List() ([]*v1.VirtualService, error) {
 		if err := ConfigObjectFromCrd(
 			crdVirtualService.ObjectMeta,
 			crdVirtualService.Spec,
-			crdVirtualService.Status,
 			&returnedVirtualService); err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to virtualService")
 		}
@@ -118,7 +116,6 @@ func (c *virtualServicesClient) createOrUpdateVirtualServiceCrd(virtualService *
 	if err := ConfigObjectFromCrd(
 		returnedCrd.ObjectMeta,
 		returnedCrd.Spec,
-		returnedCrd.Status,
 		&returnedVirtualService); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to virtualService")
 	}
@@ -143,7 +140,6 @@ func (eh *virtualServiceEventHandler) getUpdatedList() []*v1.VirtualService {
 		if err := ConfigObjectFromCrd(
 			virtualServiceCrd.ObjectMeta,
 			virtualServiceCrd.Spec,
-			virtualServiceCrd.Status,
 			&returnedVirtualService); err != nil {
 			log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to virtualService"))
 		}
@@ -161,7 +157,6 @@ func convertVirtualService(obj interface{}) (*v1.VirtualService, bool) {
 	if err := ConfigObjectFromCrd(
 		virtualServiceCrd.ObjectMeta,
 		virtualServiceCrd.Spec,
-		virtualServiceCrd.Status,
 		&returnedVirtualService); err != nil {
 		log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to virtualService"))
 		return nil, false

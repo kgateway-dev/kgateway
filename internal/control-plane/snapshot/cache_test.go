@@ -37,18 +37,6 @@ var _ = Describe("Cache", func() {
 			c.Secrets = helpers.NewTestSecrets()
 			Expect(h1).To(Equal(c.Hash()))
 		})
-		It("ignores status on config objects", func() {
-			c := newCache()
-			c.Cfg = helpers.NewTestConfig()
-			h1 := c.Hash()
-			c.Cfg.Upstreams[0].Status = &v1.Status{
-				Reason: "idk",
-			}
-			c.Cfg.VirtualServices[0].Status = &v1.Status{
-				Reason: "idk",
-			}
-			Expect(h1).To(Equal(c.Hash()))
-		})
 		It("ignores resource version on config objects", func() {
 			c := newCache()
 			c.Cfg = helpers.NewTestConfig()

@@ -220,7 +220,6 @@ var _ = Describe("Emitter", func() {
 							},
 							Functions:   nil,
 							ServiceInfo: nil,
-							Status:      nil,
 							Metadata: &v1.Metadata{
 								Namespace: namespace,
 								Annotations: map[string]string{
@@ -251,7 +250,6 @@ var _ = Describe("Emitter", func() {
 							},
 							Functions:   nil,
 							ServiceInfo: nil,
-							Status:      nil,
 							Metadata: &v1.Metadata{
 								Namespace: namespace,
 								Annotations: map[string]string{
@@ -282,7 +280,6 @@ var _ = Describe("Emitter", func() {
 							},
 							Functions:   nil,
 							ServiceInfo: nil,
-							Status:      nil,
 							Metadata: &v1.Metadata{
 								Namespace: namespace,
 								Annotations: map[string]string{
