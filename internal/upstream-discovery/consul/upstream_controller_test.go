@@ -125,10 +125,16 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 					sort.SliceStable(us, func(i, j int) bool {
 						return us[i].Name < us[j].Name
 					})
+					for i, u := range us {
+						if u.Name == "consul" {
+							us = append(us[:i], us[i+1:]...)
+							break
+						}
+					}
 					ups = us
 					return us, err
 				}
-			}).Should(HaveLen(5))
+			}).Should(HaveLen(4))
 
 			Expect(ups).To(ContainElement(&v1.Upstream{
 				Name: "svc2",
