@@ -26,12 +26,6 @@ type VirtualServiceEventHandler interface {
 	OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService)
 }
 
-type RoleEventHandler interface {
-	OnAdd(updatedList []*v1.Role, obj *v1.Role)
-	OnUpdate(updatedList []*v1.Role, newObj *v1.Role)
-	OnDelete(updatedList []*v1.Role, obj *v1.Role)
-}
-
 // UpstreamEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
 // UpstreamEventHandler.
@@ -87,36 +81,6 @@ func (r VirtualServiceEventHandlerFuncs) OnUpdate(updatedList []*v1.VirtualServi
 
 // OnDelete calls DeleteFunc if it's not nil.
 func (r VirtualServiceEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService) {
-	if r.DeleteFunc != nil {
-		r.DeleteFunc(updatedList, obj)
-	}
-}
-
-// RoleEventHandlerFuncs is an adaptor to let you easily specify as many or
-// as few of the notification functions as you want while still implementing
-// RoleEventHandler.
-type RoleEventHandlerFuncs struct {
-	AddFunc    func(updatedList []*v1.Role, obj *v1.Role)
-	UpdateFunc func(updatedList []*v1.Role, newObj *v1.Role)
-	DeleteFunc func(updatedList []*v1.Role, obj *v1.Role)
-}
-
-// OnAdd calls AddFunc if it's not nil.
-func (r RoleEventHandlerFuncs) OnAdd(updatedList []*v1.Role, obj *v1.Role) {
-	if r.AddFunc != nil {
-		r.AddFunc(updatedList, obj)
-	}
-}
-
-// OnUpdate calls UpdateFunc if it's not nil.
-func (r RoleEventHandlerFuncs) OnUpdate(updatedList []*v1.Role, newObj *v1.Role) {
-	if r.UpdateFunc != nil {
-		r.UpdateFunc(updatedList, newObj)
-	}
-}
-
-// OnDelete calls DeleteFunc if it's not nil.
-func (r RoleEventHandlerFuncs) OnDelete(updatedList []*v1.Role, obj *v1.Role) {
 	if r.DeleteFunc != nil {
 		r.DeleteFunc(updatedList, obj)
 	}

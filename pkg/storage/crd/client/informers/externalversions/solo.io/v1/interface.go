@@ -24,8 +24,6 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Roles returns a RoleInformer.
-	Roles() RoleInformer
 	// Upstreams returns a UpstreamInformer.
 	Upstreams() UpstreamInformer
 	// VirtualServices returns a VirtualServiceInformer.
@@ -41,11 +39,6 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
-}
-
-// Roles returns a RoleInformer.
-func (v *version) Roles() RoleInformer {
-	return &roleInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Upstreams returns a UpstreamInformer.

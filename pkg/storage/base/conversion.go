@@ -57,13 +57,6 @@ func itemFromKVPair(rootPath string, p *api.KVPair) (*StorableItem, error) {
 			return nil, errors.Wrap(err, "unmarshalling value as virtual service")
 		}
 		item.VirtualService = &vs
-	case StorableItemTypeRole:
-		var r v1.Role
-		err := proto.Unmarshal(p.Value, &r)
-		if err != nil {
-			return nil, errors.Wrap(err, "unmarshalling value as role")
-		}
-		item.Role = &r
 	case StorableItemTypeFile:
 		item.File = &dependencies.File{
 			Ref:      strings.TrimPrefix(p.Key, rootPath+"/"),

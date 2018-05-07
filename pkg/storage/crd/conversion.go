@@ -15,12 +15,6 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 		status *v1.Status
 		ok     bool
 	)
-	if item.GetStatus() != nil {
-		status, ok = proto.Clone(item.GetStatus()).(*v1.Status)
-		if !ok {
-			return nil, errors.New("internal error: output of proto.Clone was not expected type")
-		}
-	}
 	var (
 		resourceVersion string
 		annotations     map[string]string
@@ -47,18 +41,11 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
-	case *v1.Role:
-		// clone and remove fields
-		clone, ok = proto.Clone(item).(*v1.Role)
-		if !ok {
-			return nil, errors.New("internal error: output of proto.Clone was not expected type")
-		}
 	default:
 		panic(errors.Errorf("unknown type: %v", item))
 	}
 	clone.SetMetadata(nil)
 	clone.SetName("")
-	clone.SetStatus(nil)
 
 	spec, err := protoutil.MarshalMap(clone)
 	if err != nil {
@@ -88,12 +75,6 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 			Status:     status,
 			Spec:       &copySpec,
 		}
-	case *v1.Role:
-		crdObject = &crdv1.Role{
-			ObjectMeta: meta,
-			Status:     status,
-			Spec:       &copySpec,
-		}
 	default:
 		panic(errors.Errorf("unknown type: %v", item))
 	}
@@ -103,7 +84,6 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 
 func ConfigObjectFromCrd(objectMeta metav1.ObjectMeta,
 	spec *crdv1.Spec,
-	status *v1.Status,
 	item v1.ConfigObject) error {
 	if spec != nil {
 		err := protoutil.UnmarshalMap(*spec, item)
@@ -118,6 +98,5 @@ func ConfigObjectFromCrd(objectMeta metav1.ObjectMeta,
 		Namespace:       objectMeta.Namespace,
 		Annotations:     objectMeta.Annotations,
 	})
-	item.SetStatus(status)
 	return nil
 }

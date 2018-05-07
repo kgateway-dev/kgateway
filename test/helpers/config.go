@@ -14,14 +14,9 @@ func NewTestConfig() *v1.Config {
 		NewTestVirtualService("my-vservice", NewTestRoute1(), NewTestRoute2()),
 		NewTestVirtualService("my-vservice-2", NewTestRoute1(), NewTestRoute2()),
 	}
-	roles := []*v1.Role{
-		NewTestRole("my-role", "my-vservice"),
-		NewTestRole("my-role-2", "my-vservice-2"),
-	}
 	return &v1.Config{
 		Upstreams:       upstreams,
 		VirtualServices: virtualServices,
-		Roles:   roles,
 	}
 }
 
@@ -168,15 +163,5 @@ func NewTestRouteWithCORS() *v1.Route {
 			},
 		},
 		Extensions: extensions,
-	}
-}
-
-func NewTestRole(name string, vServices ... string) *v1.Role {
-	return &v1.Role{
-		Name:            name,
-		VirtualServices: vServices,
-		Metadata: &v1.Metadata{
-			Annotations: map[string]string{"my_annotation": "value"},
-		},
 	}
 }

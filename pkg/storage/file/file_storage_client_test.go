@@ -99,32 +99,6 @@ var _ = Describe("CrdStorageClient", func() {
 			Expect(created2).To(Equal(vService2))
 		})
 	})
-	Describe("Create2Update role", func() {
-		It("creates and updates", func() {
-			client, err := NewStorage(dir, resync)
-			Expect(err).NotTo(HaveOccurred())
-			err = client.V1().Register()
-			Expect(err).NotTo(HaveOccurred())
-			role := NewTestRole("v1")
-			role, err = client.V1().Roles().Create(role)
-			role2 := NewTestRole("v2")
-			role2, err = client.V1().Roles().Create(role2)
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = client.V1().Roles().Update(role)
-			Expect(err).NotTo(HaveOccurred())
-
-			created1, err := client.V1().Roles().Get(role.Name)
-			Expect(err).NotTo(HaveOccurred())
-			role.Metadata = created1.Metadata
-			Expect(created1).To(Equal(role))
-
-			created2, err := client.V1().Roles().Get(role2.Name)
-			Expect(err).NotTo(HaveOccurred())
-			role2.Metadata = created2.Metadata
-			Expect(created2).To(Equal(role2))
-		})
-	})
 	Describe("Get", func() {
 		It("gets a file from the name", func() {
 			client, err := NewStorage(dir, resync)

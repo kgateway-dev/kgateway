@@ -44,7 +44,6 @@ var _ = Describe("CrdReporter", func() {
 			reports         []ConfigObjectReport
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
-			roles []*v1.Role
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
@@ -68,13 +67,6 @@ var _ = Describe("CrdReporter", func() {
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, vService)
 				}
-				roles = testCfg.Roles
-				for _, role := range roles {
-					_, err := glooClient.V1().Roles().Create(role)
-					Expect(err).NotTo(HaveOccurred())
-
-					storables = append(storables, role)
-				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
 						CfgObject: storable,
@@ -97,12 +89,6 @@ var _ = Describe("CrdReporter", func() {
 				Expect(updatedvServices).To(HaveLen(len(upstreams)))
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Accepted))
-				}
-				updatedroles, err := glooClient.V1().Roles().List()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedroles).To(HaveLen(len(upstreams)))
-				for _, updatedrole := range updatedroles {
-					Expect(updatedrole.Status.State).To(Equal(v1.Status_Accepted))
 				}
 			})
 		})
@@ -128,12 +114,6 @@ var _ = Describe("CrdReporter", func() {
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, vService)
 				}
-				roles = testCfg.Roles
-				for _, role := range roles {
-					_, err := glooClient.V1().Roles().Create(role)
-					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, role)
-				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
 						CfgObject: storable,
@@ -156,12 +136,6 @@ var _ = Describe("CrdReporter", func() {
 				Expect(updatedvServices).To(HaveLen(len(upstreams)))
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Rejected))
-				}
-				updatedroles, err := glooClient.V1().Roles().List()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedroles).To(HaveLen(len(upstreams)))
-				for _, updatedrole := range updatedroles {
-					Expect(updatedrole.Status.State).To(Equal(v1.Status_Rejected))
 				}
 			})
 		})

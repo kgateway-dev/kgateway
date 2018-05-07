@@ -27,7 +27,6 @@ import (
 
 type GlooV1Interface interface {
 	RESTClient() rest.Interface
-	RolesGetter
 	UpstreamsGetter
 	VirtualServicesGetter
 }
@@ -35,10 +34,6 @@ type GlooV1Interface interface {
 // GlooV1Client is used to interact with features provided by the gloo.solo.io group.
 type GlooV1Client struct {
 	restClient rest.Interface
-}
-
-func (c *GlooV1Client) Roles(namespace string) RoleInterface {
-	return newRoles(c, namespace)
 }
 
 func (c *GlooV1Client) Upstreams(namespace string) UpstreamInterface {
