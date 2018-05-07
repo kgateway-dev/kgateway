@@ -12,7 +12,6 @@ import (
 func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, error) {
 	name := item.GetName()
 	var (
-		status *v1.Status
 		ok     bool
 	)
 	var (
@@ -66,13 +65,11 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 	case *v1.Upstream:
 		crdObject = &crdv1.Upstream{
 			ObjectMeta: meta,
-			Status:     status,
 			Spec:       &copySpec,
 		}
 	case *v1.VirtualService:
 		crdObject = &crdv1.VirtualService{
 			ObjectMeta: meta,
-			Status:     status,
 			Spec:       &copySpec,
 		}
 	default:

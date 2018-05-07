@@ -16,7 +16,6 @@ type Upstream struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Status            *v1.Status `json:"status"`
 	Spec              *Spec      `json:"spec"`
 }
 
@@ -39,7 +38,6 @@ type VirtualService struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Status            *v1.Status `json:"status"`
 	Spec              *Spec      `json:"spec"`
 }
 
@@ -50,7 +48,6 @@ type VirtualServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ListMeta `json:"metadata"`
-	metav1.Status   `json:"status,omitempty"`
 	Items           []VirtualService `json:"items"`
 }
 
