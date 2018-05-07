@@ -135,6 +135,7 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 			return nil
 		}
 		var (
+			reports         []*v1.Report
 			virtualServices []*v1.VirtualService
 			upstreams       []*v1.Upstream
 			files           []*dependencies.File
@@ -150,10 +151,12 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 				upstreams = append(upstreams, item.Upstream)
 			case item.VirtualService != nil:
 				virtualServices = append(virtualServices, item.VirtualService)
+			case item.Report != nil:
+				reports = append(reports, item.Report)
 			case item.File != nil:
 				files = append(files, item.File)
 			default:
-				panic("virtual service, role, file or upstream must be set")
+				panic("virtual service, report, file or upstream must be set")
 
 			}
 		}
@@ -167,6 +170,10 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 		case len(virtualServices) > 0:
 			for _, h := range handlers {
 				h.VirtualServiceEventHandler.OnUpdate(virtualServices, nil)
+			}
+		case len(reports) > 0:
+			for _, h := range handlers {
+				h.ReportEventHandler.OnUpdate(reports, nil)
 			}
 		case len(files) > 0:
 			for _, h := range handlers {

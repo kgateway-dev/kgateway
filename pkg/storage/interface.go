@@ -11,6 +11,7 @@ type V1 interface {
 	Register() error
 	Upstreams() Upstreams
 	VirtualServices() VirtualServices
+	Reports() Reports
 }
 
 type Upstreams interface {
@@ -29,4 +30,13 @@ type VirtualServices interface {
 	Get(name string) (*v1.VirtualService, error)
 	List() ([]*v1.VirtualService, error)
 	Watch(...VirtualServiceEventHandler) (*Watcher, error)
+}
+
+type Reports interface {
+	Create(*v1.Report) (*v1.Report, error)
+	Update(*v1.Report) (*v1.Report, error)
+	Delete(name string) error
+	Get(name string) (*v1.Report, error)
+	List() ([]*v1.Report, error)
+	Watch(...ReportEventHandler) (*Watcher, error)
 }

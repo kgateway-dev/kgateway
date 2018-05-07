@@ -18,6 +18,8 @@ limitations under the License.
 
 package v1
 
+type ReportExpansion interface{}
+
 type UpstreamExpansion interface{}
 
 type VirtualServiceExpansion interface{}
