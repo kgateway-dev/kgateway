@@ -40,6 +40,12 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
+	case *v1.Report:
+		// clone and remove fields
+		clone, ok = proto.Clone(item).(*v1.Report)
+		if !ok {
+			return nil, errors.New("internal error: output of proto.Clone was not expected type")
+		}
 	default:
 		panic(errors.Errorf("unknown type: %v", item))
 	}
@@ -69,6 +75,11 @@ func ConfigObjectToCrd(namespace string, item v1.ConfigObject) (metav1.Object, e
 		}
 	case *v1.VirtualService:
 		crdObject = &crdv1.VirtualService{
+			ObjectMeta: meta,
+			Spec:       &copySpec,
+		}
+	case *v1.Report:
+		crdObject = &crdv1.Report{
 			ObjectMeta: meta,
 			Spec:       &copySpec,
 		}

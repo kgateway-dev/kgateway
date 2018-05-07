@@ -1,12 +1,11 @@
 package consul_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
+	"fmt"
 	"time"
 
-	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hashicorp/consul/api"
@@ -409,6 +408,160 @@ var _ = Describe("ConsulStorageClient", func() {
 						Expect(list).To(ContainElement(vs1))
 						Expect(list).To(ContainElement(vs2))
 						Expect(list).To(ContainElement(vs3))
+					})
+				})
+			})
+		})
+	})
+	Describe("Reports", func() {
+		Describe("create", func() {
+			It("creates the virtualservice as a consul key", func() {
+				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+				Expect(err).NotTo(HaveOccurred())
+				input := helpers.NewTestReport("myreport")
+				report, err := client.V1().Reports().Create(input)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(report).NotTo(Equal(input))
+				p, _, err := consul.KV().Get(rootPath+"/reports/"+input.Name, nil)
+				Expect(err).NotTo(HaveOccurred())
+				var unmarshalledReport v1.Report
+				err = proto.Unmarshal(p.Value, &unmarshalledReport)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(&unmarshalledReport).To(Equal(input))
+				resourceVersion := fmt.Sprintf("%v", p.CreateIndex)
+				Expect(report.Metadata.ResourceVersion).To(Equal(resourceVersion))
+				input.Metadata = report.Metadata
+				Expect(report).To(Equal(input))
+			})
+			It("errors when creating the same report twice", func() {
+				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+
+				Expect(err).NotTo(HaveOccurred())
+				input := helpers.NewTestReport("myreport")
+				_, err = client.V1().Reports().Create(input)
+				Expect(err).NotTo(HaveOccurred())
+				_, err = client.V1().Reports().Create(input)
+				Expect(err).To(HaveOccurred())
+			})
+			Describe("update", func() {
+				It("fails if the report doesn't exist", func() {
+					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+					Expect(err).NotTo(HaveOccurred())
+					input := helpers.NewTestReport("myreport")
+					report, err := client.V1().Reports().Update(input)
+					Expect(err).To(HaveOccurred())
+					Expect(report).To(BeNil())
+				})
+				It("fails if the resourceversion is not up to date", func() {
+					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+					Expect(err).NotTo(HaveOccurred())
+					input := helpers.NewTestReport("myreport")
+					_, err = client.V1().Reports().Create(input)
+					Expect(err).NotTo(HaveOccurred())
+					v, err := client.V1().Reports().Update(input)
+					Expect(v).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("resource version"))
+				})
+				It("updates the report", func() {
+					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+					Expect(err).NotTo(HaveOccurred())
+					input := helpers.NewTestReport("myreport")
+					report, err := client.V1().Reports().Create(input)
+					Expect(err).NotTo(HaveOccurred())
+					changed := proto.Clone(input).(*v1.Report)
+					changed.Status.State = v1.Status_Rejected
+					changed.Status.Reason = "because you smell funny"
+					// match resource version
+					changed.Metadata = report.Metadata
+					out, err := client.V1().Reports().Update(changed)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(out.Status).To(Equal(changed.Status))
+				})
+				Describe("get", func() {
+					It("fails if the report doesn't exist", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						report, err := client.V1().Reports().Get("foo")
+						Expect(err).To(HaveOccurred())
+						Expect(report).To(BeNil())
+					})
+					It("returns the report", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						input := helpers.NewTestReport("myreport")
+						report, err := client.V1().Reports().Create(input)
+						Expect(err).NotTo(HaveOccurred())
+						out, err := client.V1().Reports().Get(input.Name)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(out).To(Equal(report))
+						input.Metadata = out.Metadata
+						Expect(out).To(Equal(input))
+					})
+				})
+				Describe("list", func() {
+					It("returns all existing reports", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						input1 := helpers.NewTestReport("myreport1")
+						input2 := helpers.NewTestReport("myreport2")
+						input3 := helpers.NewTestReport("myreport3")
+						report1, err := client.V1().Reports().Create(input1)
+						Expect(err).NotTo(HaveOccurred())
+						time.Sleep(time.Second)
+						report2, err := client.V1().Reports().Create(input2)
+						Expect(err).NotTo(HaveOccurred())
+						time.Sleep(time.Second)
+						report3, err := client.V1().Reports().Create(input3)
+						Expect(err).NotTo(HaveOccurred())
+						out, err := client.V1().Reports().List()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(out).To(ContainElement(report1))
+						Expect(out).To(ContainElement(report2))
+						Expect(out).To(ContainElement(report3))
+					})
+				})
+				Describe("watch", func() {
+					It("watches", func() {
+						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+						Expect(err).NotTo(HaveOccurred())
+						lists := make(chan []*v1.Report, 3)
+						stop := make(chan struct{})
+						defer close(stop)
+						errs := make(chan error)
+						w, err := client.V1().Reports().Watch(&storage.ReportEventHandlerFuncs{
+							UpdateFunc: func(updatedList []*v1.Report, _ *v1.Report) {
+								lists <- updatedList
+							},
+						})
+						Expect(err).NotTo(HaveOccurred())
+						go func() {
+							w.Run(stop, errs)
+						}()
+						input1 := helpers.NewTestReport("myreport1")
+						input2 := helpers.NewTestReport("myreport2")
+						input3 := helpers.NewTestReport("myreport3")
+						report1, err := client.V1().Reports().Create(input1)
+						Expect(err).NotTo(HaveOccurred())
+						report2, err := client.V1().Reports().Create(input2)
+						Expect(err).NotTo(HaveOccurred())
+						report3, err := client.V1().Reports().Create(input3)
+						Expect(err).NotTo(HaveOccurred())
+
+						var list []*v1.Report
+						Eventually(func() []*v1.Report {
+							select {
+							default:
+								return nil
+							case l := <-lists:
+								list = l
+								return l
+							}
+						}).Should(HaveLen(3))
+						Expect(list).To(HaveLen(3))
+						Expect(list).To(ContainElement(report1))
+						Expect(list).To(ContainElement(report2))
+						Expect(list).To(ContainElement(report3))
 					})
 				})
 			})

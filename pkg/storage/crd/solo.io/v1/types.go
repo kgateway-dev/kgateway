@@ -3,7 +3,6 @@ package v1
 import (
 	"encoding/json"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -16,7 +15,7 @@ type Upstream struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              *Spec      `json:"spec"`
+	Spec *Spec        `json:"spec"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -25,8 +24,8 @@ type Upstream struct {
 type UpstreamList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta `json:"metadata"`
-	Items           []Upstream `json:"items"`
+	metav1.ListMeta  `json:"metadata"`
+	Items []Upstream `json:"items"`
 }
 
 // +genclient
@@ -38,7 +37,7 @@ type VirtualService struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              *Spec      `json:"spec"`
+	Spec *Spec        `json:"spec"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -47,8 +46,30 @@ type VirtualService struct {
 type VirtualServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
+	metav1.ListMeta        `json:"metadata"`
+	Items []VirtualService `json:"items"`
+}
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Report is the generic Kubernetes API object wrapper for Gloo Reports
+type Report struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec *Spec        `json:"spec"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ReportList is the generic Kubernetes API object wrapper
+type ReportList struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ListMeta `json:"metadata"`
-	Items           []VirtualService `json:"items"`
+	Items []Report  `json:"items"`
 }
 
 // spec implements deepcopy

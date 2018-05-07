@@ -28,6 +28,10 @@ type FakeGlooV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeGlooV1) Reports(namespace string) v1.ReportInterface {
+	return &FakeReports{c, namespace}
+}
+
 func (c *FakeGlooV1) Upstreams(namespace string) v1.UpstreamInterface {
 	return &FakeUpstreams{c, namespace}
 }

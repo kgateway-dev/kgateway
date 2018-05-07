@@ -34,6 +34,13 @@ var clients = []clientType{
 		UppercaseName:       "VirtualService",
 		UppercasePluralName: "VirtualServices",
 	},
+	{
+		FilenamePrefix:      "reports",
+		LowercaseName:       "report",
+		LowercasePluralName: "reports",
+		UppercaseName:       "Report",
+		UppercasePluralName: "Reports",
+	},
 }
 
 func main() {
