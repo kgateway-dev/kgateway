@@ -92,7 +92,7 @@ func createFunction(funk Function) *v1.Function {
 	headersTemplate := map[string]string{":method": "POST"}
 
 	return &v1.Function{
-		Name: funk.Appname +":" +funk.Funcname,
+		Name: funk.Appname + ":" + funk.Funcname,
 		Spec: rest.EncodeFunctionSpec(rest.Template{
 			Path:            funk.Route,
 			Header:          headersTemplate,
@@ -151,8 +151,8 @@ func (fr *FnRetreiver) getRoutesForApp(app string) ([]*models.Route, error) {
 
 	cursor := ""
 	for {
-		routeParams :=routes.NewGetAppsAppRoutesParams()
-		
+		routeParams := routes.NewGetAppsAppRoutesParams()
+
 		routeParams.App = app
 		if cursor != "" {
 			routeParams.Cursor = &cursor
@@ -176,9 +176,9 @@ func (fr *FnRetreiver) getFnApiPaths(app string, routeobjs []*models.Route) []Fu
 
 	for _, routeobj := range routeobjs {
 		finalizedroutes = append(finalizedroutes, Function{
-			Appname: app, 
-			Funcname: strings.Replace(routeobj.Path,"/","",-1),
-			Route: path.Join(routePrefix, app, routeobj.Path)})
+			Appname:  app,
+			Funcname: strings.Replace(routeobj.Path, "/", "", -1),
+			Route:    path.Join(routePrefix, app, routeobj.Path)})
 	}
 	return finalizedroutes
 }

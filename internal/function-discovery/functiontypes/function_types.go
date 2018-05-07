@@ -3,8 +3,8 @@ package functiontypes
 import (
 	"github.com/solo-io/gloo/internal/function-discovery/updater/fission"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/openfaas"
-	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn"
+	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/azure"
@@ -14,14 +14,14 @@ import (
 type FunctionType string
 
 const (
-	FunctionTypeLambda   FunctionType = "functionTypeLambda"
-	FunctionTypeGfuncs   FunctionType = "functionTypeGfuncs"
-	FunctionTypeSwagger  FunctionType = "functionTypeSwagger"
-	FunctionTypeOpenFaaS FunctionType = "functionTypeFaaS"
-	FunctionTypeAzure    FunctionType = "functionTypeAzure"
-	FunctionTypeFission  FunctionType = "functionTypeFission"
-	FunctionTypeProjectFn  FunctionType = "functionTypeProjectFn"
-	NonFunctional        FunctionType = "nonFunctional"
+	FunctionTypeLambda    FunctionType = "functionTypeLambda"
+	FunctionTypeGfuncs    FunctionType = "functionTypeGfuncs"
+	FunctionTypeSwagger   FunctionType = "functionTypeSwagger"
+	FunctionTypeOpenFaaS  FunctionType = "functionTypeFaaS"
+	FunctionTypeAzure     FunctionType = "functionTypeAzure"
+	FunctionTypeFission   FunctionType = "functionTypeFission"
+	FunctionTypeProjectFn FunctionType = "functionTypeProjectFn"
+	NonFunctional         FunctionType = "nonFunctional"
 )
 
 func GetFunctionType(us *v1.Upstream) FunctionType {
