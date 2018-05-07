@@ -165,3 +165,19 @@ func NewTestRouteWithCORS() *v1.Route {
 		Extensions: extensions,
 	}
 }
+
+func NewTestReport(name string) *v1.Report {
+	return &v1.Report{
+		Name: name,
+		ObjectReference: &v1.ObjectReference{
+			ObjectType: v1.ObjectReference_Upstream,
+			Name: "test-upstream",
+		},
+		Status: &v1.Status{
+			State: v1.Status_Accepted,
+		},
+		Metadata: &v1.Metadata{
+			Annotations: map[string]string{"foo": "bar"},
+		},
+	}
+}

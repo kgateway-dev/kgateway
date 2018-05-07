@@ -33,3 +33,11 @@ func (item *VirtualService) SetName(name string) {
 func (item *VirtualService) SetMetadata(meta *Metadata) {
 	item.Metadata = meta
 }
+
+func (item *Report) SetName(name string) {
+	item.Name = name
+}
+
+func (item *Report) SetMetadata(meta *Metadata) {
+	item.Metadata = meta
+}
