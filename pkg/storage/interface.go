@@ -11,7 +11,6 @@ type V1 interface {
 	Register() error
 	Upstreams() Upstreams
 	VirtualServices() VirtualServices
-	Roles() Roles
 }
 
 type Upstreams interface {
@@ -30,13 +29,4 @@ type VirtualServices interface {
 	Get(name string) (*v1.VirtualService, error)
 	List() ([]*v1.VirtualService, error)
 	Watch(...VirtualServiceEventHandler) (*Watcher, error)
-}
-
-type Roles interface {
-	Create(*v1.Role) (*v1.Role, error)
-	Update(*v1.Role) (*v1.Role, error)
-	Delete(name string) error
-	Get(name string) (*v1.Role, error)
-	List() ([]*v1.Role, error)
-	Watch(...RoleEventHandler) (*Watcher, error)
 }

@@ -18,8 +18,6 @@ limitations under the License.
 
 package v1
 
-type RoleExpansion interface{}
-
 type UpstreamExpansion interface{}
 
 type VirtualServiceExpansion interface{}

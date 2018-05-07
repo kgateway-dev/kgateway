@@ -1,14 +1,8 @@
 syntax = "proto3";
 package v1;
 
-import "google/protobuf/struct.proto";
-import "google/protobuf/duration.proto";
-
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
-
-import "status.proto";
-import "metadata.proto";
 
 /**
  * A Report contains config validation information for users.
@@ -22,9 +16,8 @@ message Report {
     // reference to the object this report pertains to
     ObjectReference object_reference = 2;
 
-    // the state the object is in
-    // can be eiher pending, accepted, or rejected
-    State state = 3;
+    // Status describes the status of the object
+    Status status = 3;
 }
 
 message ObjectReference {

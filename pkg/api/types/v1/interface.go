@@ -11,10 +11,8 @@ type FunctionSpec *types.Struct
 type ConfigObject interface {
 	proto.Message
 	GetName() string
-	GetStatus() *Status
 	GetMetadata() *Metadata
 	SetName(name string)
-	SetStatus(status *Status)
 	SetMetadata(meta *Metadata)
 }
 
@@ -22,10 +20,6 @@ type ConfigObject interface {
 
 func (item *Upstream) SetName(name string) {
 	item.Name = name
-}
-
-func (item *Upstream) SetStatus(status *Status) {
-	item.Status = status
 }
 
 func (item *Upstream) SetMetadata(meta *Metadata) {
@@ -36,22 +30,6 @@ func (item *VirtualService) SetName(name string) {
 	item.Name = name
 }
 
-func (item *VirtualService) SetStatus(status *Status) {
-	item.Status = status
-}
-
 func (item *VirtualService) SetMetadata(meta *Metadata) {
-	item.Metadata = meta
-}
-
-func (item *Role) SetName(name string) {
-	item.Name = name
-}
-
-func (item *Role) SetStatus(status *Status) {
-	item.Status = status
-}
-
-func (item *Role) SetMetadata(meta *Metadata) {
 	item.Metadata = meta
 }
