@@ -16,8 +16,8 @@ func NewReporter(store storage.Interface) *reporter {
 	return &reporter{store: store}
 }
 
-func (r *reporter) WriteReports(reports []ConfigObjectReport) error {
-	for _, report := range reports {
+func (r *reporter) WriteReports(cfgObjectErrs []ConfigObjectError) error {
+	for _, report := range cfgObjectErrs {
 		if err := r.writeReport(report); err != nil {
 			return errors.Wrapf(err, "failed to write report for config object %v", report.CfgObject)
 		}
@@ -26,42 +26,71 @@ func (r *reporter) WriteReports(reports []ConfigObjectReport) error {
 	return nil
 }
 
-func (r *reporter) writeReport(report ConfigObjectReport) error {
+func (r *reporter) writeReport(cfgObjectErr ConfigObjectError) error {
+	report := createReport(cfgObjectErr)
+	if existingReport, err := r.store.V1().Reports().Get(report.Name); err == nil {
+		// check if existing report equals the one we have, ignoring resource version
+		if existingReport.Metadata != nil {
+			report.Metadata.ResourceVersion = existingReport.Metadata.ResourceVersion
+			existingReport.Metadata.ResourceVersion = ""
+		}
+		if existingReport.Equal(report) {
+			// nothing to do
+			return nil
+		}
+		if _, err := r.store.V1().Reports().Update(report); err != nil {
+			return errors.Wrapf(err, "failed to update report "+report.Name)
+		}
+		return nil
+	}
+	if _, err := r.store.V1().Reports().Create(report); err != nil {
+		return errors.Wrapf(err, "failed to create report "+report.Name)
+	}
+	return nil
+}
+
+func createReport(cfgObjectErr ConfigObjectError) *v1.Report {
 	status := &v1.Status{
 		State: v1.Status_Accepted,
 	}
-	if report.Err != nil {
+	if cfgObjectErr.Err != nil {
 		status.State = v1.Status_Rejected
-		status.Reason = report.Err.Error()
+		status.Reason = cfgObjectErr.Err.Error()
 	}
-	name := report.CfgObject.GetName()
-	switch report.CfgObject.(type) {
+	return &v1.Report{
+		Name:            reportName(cfgObjectErr.CfgObject),
+		ObjectReference: objectReference(cfgObjectErr.CfgObject),
+		Status:          status,
+		Metadata: &v1.Metadata{
+			Namespace: namespace(cfgObjectErr.CfgObject),
+		},
+	}
+}
+
+func reportName(item v1.ConfigObject) string {
+	return item.GetName()
+}
+
+func objectReference(item v1.ConfigObject) *v1.ObjectReference {
+	var t v1.ObjectReference_ObjectType
+	switch item.(type) {
 	case *v1.Upstream:
-		us, err := r.store.V1().Upstreams().Get(report.CfgObject.GetName())
-		if err != nil {
-			return errors.Wrapf(err, "failed to find upstream %v", name)
-		}
-		// only update if status doesn't match
-		if us.Status.Equal(status) {
-			return nil
-		}
-		us.Status = status
-		if _, err := r.store.V1().Upstreams().Update(us); err != nil {
-			return errors.Wrapf(err, "failed to update upstream store with status report")
-		}
+		t = v1.ObjectReference_Upstream
 	case *v1.VirtualService:
-		virtualService, err := r.store.V1().VirtualServices().Get(name)
-		if err != nil {
-			return errors.Wrapf(err, "failed to find virtualservice %v", name)
-		}
-		// only update if status doesn't match
-		if virtualService.Status.Equal(status) {
-			return nil
-		}
-		virtualService.Status = status
-		if _, err := r.store.V1().VirtualServices().Update(virtualService); err != nil {
-			return errors.Wrapf(err, "failed to update virtualservice store with status report")
-		}
+		t = v1.ObjectReference_Upstream
+	default:
+		panic("invalid config object, cannot create a reference")
 	}
-	return nil
+	return &v1.ObjectReference{
+		ObjectType: t,
+		Name:       item.GetName(),
+		Namespace:  namespace(item),
+	}
+}
+
+func namespace(item v1.ConfigObject) string {
+	if meta := item.GetMetadata(); meta != nil {
+		return meta.Namespace
+	}
+	return ""
 }
