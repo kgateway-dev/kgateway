@@ -82,7 +82,7 @@ the component architecture
 * [Upstreams](docs/v1/upstream.md): API Specification for the Gloo Upstream Config Object
 * [Virtual](docs/v1/virtualservice.md): API Specification for the Gloo Virtual Service Config Object
 * [Metadata](docs/v1/metadata.md): API Specification for Gloo Config Object Metadata
-* [Status](docs/v1/status.md): API Specification for Gloo Config Object Status
+* [Report](docs/v1/report.md): API Specification for Gloo Config Object Reports
 
 
 Blogs & Demos
