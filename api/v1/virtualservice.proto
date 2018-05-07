@@ -38,6 +38,11 @@ message VirtualService {
     // Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation
     Status status = 5 [(gogoproto.moretags) = "testdiff:\"ignore\""];
 
+    // defines one or more roles this virtual service will be defined for
+    // role maps a virtual service to a group of proxies
+    // if left empty, Gloo will treat the role as a role for the ingress
+    repeated string roles = 7;
+
     // Metadata contains the resource metadata for the virtual service
     Metadata metadata = 6;
 }

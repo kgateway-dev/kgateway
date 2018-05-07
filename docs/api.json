@@ -482,6 +482,15 @@
               "defaultValue": ""
             },
             {
+              "name": "roles",
+              "description": "defines one or more roles this virtual service will be defined for\nrole maps a virtual service to a group of proxies\nif left empty, Gloo will treat the role as a role for the ingress",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
               "name": "metadata",
               "description": "Metadata contains the resource metadata for the virtual service",
               "label": "",
