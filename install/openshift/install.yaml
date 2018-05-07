@@ -240,7 +240,7 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: ingress
+  name: ingress 
   namespace: gloo-system
   labels:
     gloo: ingress
@@ -281,10 +281,10 @@ spec:
       - name: envoy
         image: "soloio/envoy:v0.1.6-127"
         imagePullPolicy: IfNotPresent
-        ports:
+        ports: 
         - containerPort: 8080
           name: http
-        - containerPort: 8443
+        - containerPort: 8443 
           name: https
         - containerPort: 19000
           name: admin
@@ -317,7 +317,7 @@ spec:
     - port: 8443
       protocol: TCP
       name: https
-
+    
   selector:
     gloo: ingress
 ---

@@ -105,7 +105,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: manifests
-manifests: install/kube/install.yaml
+manifests: install/kube/install.yaml install/openshift/install.yaml
 
 install/kube/install.yaml: $(shell find install/helm/ -name '*.yaml')
 	cat install/helm/bootstrap.yaml \
@@ -117,6 +117,11 @@ install/kube/install.yaml: $(shell find install/helm/ -name '*.yaml')
 		-n REMOVEME install/helm/gloo | \
 		sed s/REMOVEME-//g | \
 		sed '/^.*REMOVEME$$/d' >> $@
+
+install/openshift/install.yaml: install/kube/install.yaml
+	cat install/kube/install.yaml \
+	  | sed -e "s@apps/v1beta2@extensions/v1beta1@" \
+	  | sed -e "s@rbac.authorization.k8s.io/v1@rbac.authorization.k8s.io/v1beta1@" > $@
 
 #----------------------------------------------------------------------------------
 # Docs
