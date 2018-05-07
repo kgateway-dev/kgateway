@@ -43,6 +43,8 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
 * **Pub/Sub**: Publish HTTP requests to NATS
 * **JSON-to-gRPC transcoding**: Connect JSON clients to gRPC services
 
+[![Build Status](https://travis-ci.org/solo-io/gloo.svg?branch=master)](https://travis-ci.org/solo-io/gloo)
+
 ### About gloo:
 * [Introduction](docs/introduction/introduction.md): Introduction to Gloo with a basic overview of Gloo itself and its use cases 
 * [Concepts](docs/introduction/concepts.md): Explanation of the key concepts used in Gloo.
