@@ -78,10 +78,6 @@
   version = "0.5.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/golang/glog"
-
-[[constraint]]
   version = "v1.1.0"
   name = "github.com/golang/protobuf"
 
