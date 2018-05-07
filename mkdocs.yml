@@ -39,7 +39,7 @@ pages:
       - Upstreams: v1/upstream.md
       - Virtual Services: v1/virtualservice.md
       - Metadata: v1/metadata.md
-      - Status: v1/status.md
+      - Reports: v1/report.md
 repo_url: https://github.com/solo-io/gloo/
 site_author: gloo Project Authors
 copyright: © Copyright 2018, solo.io Inc.
