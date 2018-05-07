@@ -16,7 +16,7 @@ func NewReporter(store storage.Interface) Interface {
 	return &reporter{store: store}
 }
 
-func (r *reporter) WriteGlobalReports(cfgObjectErrs []ConfigObjectError) error {
+func (r *reporter) WriteGlobalReports(cfgObjectErrs []ConfigObjectReport) error {
 	for _, cfgObjectErr := range cfgObjectErrs {
 		report := createReport(cfgObjectErr)
 		if err := r.writeReport(report); err != nil {
@@ -27,7 +27,7 @@ func (r *reporter) WriteGlobalReports(cfgObjectErrs []ConfigObjectError) error {
 	return nil
 }
 
-func (r *reporter) WriteRoleReports(role string, cfgObjectErrs []ConfigObjectError) error {
+func (r *reporter) WriteRoleReports(role string, cfgObjectErrs []ConfigObjectReport) error {
 	for _, cfgObjectErr := range cfgObjectErrs {
 		report := createReportForRole(role, cfgObjectErr)
 		if err := r.writeReport(report); err != nil {
@@ -60,7 +60,7 @@ func (r *reporter) writeReport(report *v1.Report) error {
 	return nil
 }
 
-func createReport(cfgObjectErr ConfigObjectError) *v1.Report {
+func createReport(cfgObjectErr ConfigObjectReport) *v1.Report {
 	status := &v1.Status{
 		State: v1.Status_Accepted,
 	}
@@ -82,7 +82,7 @@ func reportName(item v1.ConfigObject) string {
 	return item.GetName()
 }
 
-func createReportForRole(role string, cfgObjectErr ConfigObjectError) *v1.Report {
+func createReportForRole(role string, cfgObjectErr ConfigObjectReport) *v1.Report {
 	status := &v1.Status{
 		State: v1.Status_Accepted,
 	}

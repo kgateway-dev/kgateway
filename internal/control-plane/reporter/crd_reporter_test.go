@@ -41,8 +41,8 @@ var _ = Describe("CrdReporter", func() {
 	Describe("writereports", func() {
 		var (
 			glooClient      storage.Interface
-			upstreamReports []ConfigObjectError
-			vServiceReports []ConfigObjectError
+			upstreamReports []ConfigObjectReport
+			vServiceReports []ConfigObjectReport
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
 		)
@@ -59,7 +59,7 @@ var _ = Describe("CrdReporter", func() {
 				for _, us := range upstreams {
 					_, err := glooClient.V1().Upstreams().Create(us)
 					Expect(err).NotTo(HaveOccurred())
-					upstreamReports = append(upstreamReports, ConfigObjectError{
+					upstreamReports = append(upstreamReports, ConfigObjectReport{
 						CfgObject: us,
 						Err:       nil,
 					})
@@ -68,7 +68,7 @@ var _ = Describe("CrdReporter", func() {
 				for _, vService := range virtualServices {
 					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
-					vServiceReports = append(vServiceReports, ConfigObjectError{
+					vServiceReports = append(vServiceReports, ConfigObjectReport{
 						CfgObject: vService,
 						Err:       nil,
 					})
@@ -106,7 +106,7 @@ var _ = Describe("CrdReporter", func() {
 				for _, us := range upstreams {
 					_, err := glooClient.V1().Upstreams().Create(us)
 					Expect(err).NotTo(HaveOccurred())
-					upstreamReports = append(upstreamReports, ConfigObjectError{
+					upstreamReports = append(upstreamReports, ConfigObjectReport{
 						CfgObject: us,
 						Err:       errors.New("oh no an error what did u do!"),
 					})
@@ -115,7 +115,7 @@ var _ = Describe("CrdReporter", func() {
 				for _, vService := range virtualServices {
 					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
-					vServiceReports = append(vServiceReports, ConfigObjectError{
+					vServiceReports = append(vServiceReports, ConfigObjectReport{
 						CfgObject: vService,
 						Err:       errors.New("oh no an error what did u do!"),
 					})

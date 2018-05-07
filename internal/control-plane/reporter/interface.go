@@ -4,12 +4,12 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 )
 
-type ConfigObjectError struct {
+type ConfigObjectReport struct {
 	CfgObject v1.ConfigObject
 	Err       error
 }
 
 type Interface interface {
-	WriteGlobalReports(cfgObjectErrs []ConfigObjectError) error
-	WriteRoleReports(role string, cfgObjectErrs []ConfigObjectError) error
+	WriteGlobalReports(cfgObjectErrs []ConfigObjectReport) error
+	WriteRoleReports(role string, cfgObjectErrs []ConfigObjectReport) error
 }

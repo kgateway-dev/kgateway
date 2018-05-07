@@ -21,10 +21,10 @@ func newCache() *Cache {
 	return &Cache{}
 }
 
-// ready doesn't necessarily tell us whetehr endpoints have been discovered yet
-// but that's okay. envoy won't mind
+// no need to configure anything until some routes (virtual services) exist
+// endpoints don't matter as far as envoy is concerned
 func (c *Cache) Ready() bool {
-	return c.Cfg != nil
+	return c.Cfg != nil || len(c.Cfg.VirtualServices) < 1
 }
 
 func (c *Cache) Hash() uint64 {
