@@ -12,8 +12,6 @@ import (
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn/imported/client/apps"
-	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn/imported/client/call"
-	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn/imported/client/operations"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn/imported/client/routes"
 )
 
@@ -59,10 +57,6 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Fn {
 	cli.Transport = transport
 
 	cli.Apps = apps.New(transport, formats)
-
-	cli.Call = call.New(transport, formats)
-
-	cli.Operations = operations.New(transport, formats)
 
 	cli.Routes = routes.New(transport, formats)
 
@@ -112,10 +106,6 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 type Fn struct {
 	Apps *apps.Client
 
-	Call *call.Client
-
-	Operations *operations.Client
-
 	Routes *routes.Client
 
 	Transport runtime.ClientTransport
@@ -126,10 +116,6 @@ func (c *Fn) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
 
 	c.Apps.SetTransport(transport)
-
-	c.Call.SetTransport(transport)
-
-	c.Operations.SetTransport(transport)
 
 	c.Routes.SetTransport(transport)
 

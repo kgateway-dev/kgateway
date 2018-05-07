@@ -25,36 +25,6 @@ type Client struct {
 }
 
 /*
-DeleteAppsApp deletes an app
-
-Delete an app.
-*/
-func (a *Client) DeleteAppsApp(params *DeleteAppsAppParams) (*DeleteAppsAppOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewDeleteAppsAppParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "DeleteAppsApp",
-		Method:             "DELETE",
-		PathPattern:        "/apps/{app}",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http", "https"},
-		Params:             params,
-		Reader:             &DeleteAppsAppReader{formats: a.formats},
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*DeleteAppsAppOK), nil
-
-}
-
-/*
 GetApps gets all app names
 
 Get a list of all the apps in the system, returned in alphabetical order.
@@ -81,96 +51,6 @@ func (a *Client) GetApps(params *GetAppsParams) (*GetAppsOK, error) {
 		return nil, err
 	}
 	return result.(*GetAppsOK), nil
-
-}
-
-/*
-GetAppsApp gets information for a app
-
-This gives more details about a app, such as statistics.
-*/
-func (a *Client) GetAppsApp(params *GetAppsAppParams) (*GetAppsAppOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewGetAppsAppParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "GetAppsApp",
-		Method:             "GET",
-		PathPattern:        "/apps/{app}",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http", "https"},
-		Params:             params,
-		Reader:             &GetAppsAppReader{formats: a.formats},
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*GetAppsAppOK), nil
-
-}
-
-/*
-PatchAppsApp updates an app
-
-You can set app level settings here.
-*/
-func (a *Client) PatchAppsApp(params *PatchAppsAppParams) (*PatchAppsAppOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewPatchAppsAppParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "PatchAppsApp",
-		Method:             "PATCH",
-		PathPattern:        "/apps/{app}",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http", "https"},
-		Params:             params,
-		Reader:             &PatchAppsAppReader{formats: a.formats},
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*PatchAppsAppOK), nil
-
-}
-
-/*
-PostApps posts new app
-
-Insert a new app
-*/
-func (a *Client) PostApps(params *PostAppsParams) (*PostAppsOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewPostAppsParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "PostApps",
-		Method:             "POST",
-		PathPattern:        "/apps",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http", "https"},
-		Params:             params,
-		Reader:             &PostAppsReader{formats: a.formats},
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*PostAppsOK), nil
 
 }
 
