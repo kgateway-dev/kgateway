@@ -149,7 +149,7 @@ func (fr *FnRetreiver) getRoutesForApp(app string) ([]*models.Route, error) {
 
 	var routeobjs []*models.Route
 
-	cursor := ""
+	var cursor string
 	for {
 		routeParams := routes.NewGetAppsAppRoutesParams()
 
