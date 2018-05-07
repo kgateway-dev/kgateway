@@ -63,6 +63,7 @@ func NewTestVirtualService(name string, routes ...*v1.Route) *v1.VirtualService 
 		Metadata: &v1.Metadata{
 			Annotations: map[string]string{"my_annotation": "value"},
 		},
+		Roles: []string{"ingress", "another-role"},
 	}
 }
 
@@ -171,7 +172,7 @@ func NewTestReport(name string) *v1.Report {
 		Name: name,
 		ObjectReference: &v1.ObjectReference{
 			ObjectType: v1.ObjectReference_Upstream,
-			Name: "test-upstream",
+			Name:       "test-upstream",
 		},
 		Status: &v1.Status{
 			State: v1.Status_Accepted,

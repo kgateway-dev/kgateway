@@ -12,22 +12,33 @@ type reporter struct {
 	store storage.Interface
 }
 
-func NewReporter(store storage.Interface) *reporter {
+func NewReporter(store storage.Interface) Interface {
 	return &reporter{store: store}
 }
 
-func (r *reporter) WriteReports(cfgObjectErrs []ConfigObjectError) error {
-	for _, report := range cfgObjectErrs {
+func (r *reporter) WriteGlobalReports(cfgObjectErrs []ConfigObjectError) error {
+	for _, cfgObjectErr := range cfgObjectErrs {
+		report := createReport(cfgObjectErr)
 		if err := r.writeReport(report); err != nil {
-			return errors.Wrapf(err, "failed to write report for config object %v", report.CfgObject)
+			return errors.Wrapf(err, "failed to write report for upstream %v", cfgObjectErr.CfgObject)
 		}
-		log.Debugf("wrote report for %v", report.CfgObject.GetName())
+		log.Debugf("wrote report for %v", cfgObjectErr.CfgObject.GetName())
 	}
 	return nil
 }
 
-func (r *reporter) writeReport(cfgObjectErr ConfigObjectError) error {
-	report := createReport(cfgObjectErr)
+func (r *reporter) WriteRoleReports(role string, cfgObjectErrs []ConfigObjectError) error {
+	for _, cfgObjectErr := range cfgObjectErrs {
+		report := createReportForRole(role, cfgObjectErr)
+		if err := r.writeReport(report); err != nil {
+			return errors.Wrapf(err, "failed to write report for config object %v", cfgObjectErr.CfgObject)
+		}
+		log.Debugf("wrote report for %v", cfgObjectErr.CfgObject.GetName())
+	}
+	return nil
+}
+
+func (r *reporter) writeReport(report *v1.Report) error {
 	if existingReport, err := r.store.V1().Reports().Get(report.Name); err == nil {
 		// check if existing report equals the one we have, ignoring resource version
 		if existingReport.Metadata != nil {
@@ -69,6 +80,28 @@ func createReport(cfgObjectErr ConfigObjectError) *v1.Report {
 
 func reportName(item v1.ConfigObject) string {
 	return item.GetName()
+}
+
+func createReportForRole(role string, cfgObjectErr ConfigObjectError) *v1.Report {
+	status := &v1.Status{
+		State: v1.Status_Accepted,
+	}
+	if cfgObjectErr.Err != nil {
+		status.State = v1.Status_Rejected
+		status.Reason = cfgObjectErr.Err.Error()
+	}
+	return &v1.Report{
+		Name:            reportNameForRole(role, cfgObjectErr.CfgObject),
+		ObjectReference: objectReference(cfgObjectErr.CfgObject),
+		Status:          status,
+		Metadata: &v1.Metadata{
+			Namespace: namespace(cfgObjectErr.CfgObject),
+		},
+	}
+}
+
+func reportNameForRole(role string, item v1.ConfigObject) string {
+	return role+"-"+item.GetName()
 }
 
 func objectReference(item v1.ConfigObject) *v1.ObjectReference {
