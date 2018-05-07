@@ -25,7 +25,7 @@ const badNodeKey = "misconfigured-node"
 type hasher struct{}
 
 func (h hasher) ID(node *core.Node) string {
-	parts := strings.Split(node.Id, "~")
+	parts := strings.SplitN(node.Id, "~", 2)
 	if len(parts) != 2 {
 		log.Warnf("node has registered with invalid config: %v\n " +
 			"assigning error response virtual host", node)
