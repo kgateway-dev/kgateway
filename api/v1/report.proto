@@ -4,20 +4,25 @@ package v1;
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+import "metadata.proto";
+
 /**
  * A Report contains config validation information for users.
  * Gloo generates reports for every top-level config object (VirtualServices and Upstreams)
  * indicating whether the resource was accepted by Gloo or rejected (due to an invalid configuration).
  */
 message Report {
-    // a unique identifier for the report
-    string id = 1;
+    // a unique name for the report
+    string name = 1;
 
     // reference to the object this report pertains to
     ObjectReference object_reference = 2;
 
     // Status describes the status of the object
     Status status = 3;
+
+    // Metadata is used primarily for resource versioning the report
+    Metadata metadata = 4;
 }
 
 message ObjectReference {

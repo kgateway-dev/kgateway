@@ -187,8 +187,8 @@
           "extensions": [],
           "fields": [
             {
-              "name": "id",
-              "description": "a unique identifier for the report",
+              "name": "name",
+              "description": "a unique name for the report",
               "label": "",
               "type": "string",
               "longType": "string",
@@ -211,6 +211,15 @@
               "type": "Status",
               "longType": "Status",
               "fullType": "v1.Status",
+              "defaultValue": ""
+            },
+            {
+              "name": "metadata",
+              "description": "Metadata is used primarily for resource versioning the report",
+              "label": "",
+              "type": "Metadata",
+              "longType": "Metadata",
+              "fullType": "v1.Metadata",
               "defaultValue": ""
             }
           ]
