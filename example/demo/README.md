@@ -31,8 +31,7 @@ kubectl create clusterrolebinding permissive-binding \
 
 ## Install Gloo
 ```shell
-kubectl apply \
-          -f https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml
+glooctl install kube
 ```
 
 Wait \ Verify that all the pods are in Running status:

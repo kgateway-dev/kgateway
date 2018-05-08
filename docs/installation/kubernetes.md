@@ -16,8 +16,7 @@
 Once your Kubernetes cluster is up and running, run the following command to deploy Gloo and Envoy to the `gloo-system` namespace:
 
 ```bash
-kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml
+glooctl install kube 
 ```
 
 Check that the Gloo pods and services have been created:

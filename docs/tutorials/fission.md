@@ -9,7 +9,7 @@ Setting up kubernetes: https://docs.fission.io/0.6.0/installation/kubernetessetu
 
 To install gloo, run:
 ```
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo-install/master/kube/install.yaml
+glooctl install kube 
 ```
 
 # Deploy Function

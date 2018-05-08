@@ -27,8 +27,7 @@
 
 1. Install Gloo:
 
-        kubectl apply \
-                  -f https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml
+        glooctl install kube
 
 
 1. Create a kubernetes secret with your AWS credentials:
