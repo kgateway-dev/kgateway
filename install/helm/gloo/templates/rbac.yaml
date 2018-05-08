@@ -15,7 +15,7 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["get", "create"]
 - apiGroups: ["gloo.solo.io"]
-  resources: ["upstreams", "virtualservices"]
+  resources: ["upstreams", "virtualservices", "reports"]
   verbs: ["*"]
 ---
 #rbac for function-discovery

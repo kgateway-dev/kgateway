@@ -150,6 +150,8 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		}
 	}
 
+	// translate each set of resources (grouped by role) individually
+	// and set the snapshot for that role
 	for role, virtualServices := range virtualServicesByRole {
 		// get only the upstreams required for these virtual services
 		upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
@@ -192,6 +194,11 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 			log.Warnf("error writing reports: %v", err)
 		}
 
+		// TODO: ensure that upstream reports always come out the same
+		// otherwise we may want to move this out to a single iteration after all
+		// the translations finish
+		// we can also optimize translation by eliminating errored upstreams from the
+		// cache the first time they are errored
 		if err := e.reporter.WriteGlobalReports(upstreamReports); err != nil {
 			log.Warnf("error writing reports: %v", err)
 		}
@@ -199,7 +206,6 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		log.Debugf("Setting xDS Snapshot for Role %v: %v", role, xdsSnapshot)
 		e.xdsConfig.SetSnapshot(role, *xdsSnapshot)
 	}
-
 }
 
 // gets the subset of upstreams which are destinations for at least one route in at least one

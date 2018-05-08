@@ -34,3 +34,18 @@ spec:
     singular: virtualservice
   scope: Namespaced
   version: v1
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: reports.gloo.solo.io
+spec:
+  group: gloo.solo.io
+  names:
+    kind: Report
+    listKind: ReportList
+    plural: reports
+    singular: report
+  scope: Namespaced
+  version: v1
