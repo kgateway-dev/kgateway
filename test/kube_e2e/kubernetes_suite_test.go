@@ -19,10 +19,14 @@ func TestKubernetes(t *testing.T) {
 
 	helpers.RegisterPreFailHandler(func() {
 		var logs string
-		limitLogLines := 250
 		for _, component := range []string{"control-plane", "ingress"} {
 			l, err := helpers.KubectlOut("logs", "-l", "gloo="+component)
-			l = strings.Join(strings.Split(l, "\n")[:limitLogLines], "\n")
+			limitLogLines := 250
+			split := strings.Split(l, "\n")
+			if limitLogLines > len(split) {
+				limitLogLines = len(split)
+			}
+			l = strings.Join(split[:limitLogLines], "\n")
 			logs += string(l) + "\n"
 			if err != nil {
 				logs += "error getting logs for " + component + ": " + err.Error()
