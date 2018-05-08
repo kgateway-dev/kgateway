@@ -165,7 +165,8 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	); err != nil {
 		return errors.Wrap(err, "waiting for pods to start")
 	}
-	_, err = TestRunner("curl", "test-ingress:19000/logging?config=debug")
+	time.Sleep(time.Second)
+	_, err = TestRunner("curl", "test-ingress:19000/logging?level=debug")
 	Must(err)
 	return nil
 }
