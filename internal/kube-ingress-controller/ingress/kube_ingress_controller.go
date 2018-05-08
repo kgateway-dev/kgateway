@@ -384,7 +384,7 @@ func (c *IngressController) addRoutesAndUpstreams(namespace string, rule v1beta1
 		if host == "" {
 			host = defaultVirtualService
 		}
-		routes[rule.Host] = append(routes[rule.Host], &v1.Route{
+		routes[host] = append(routes[host], &v1.Route{
 			Matcher: &v1.Route_RequestMatcher{
 				RequestMatcher: &v1.RequestMatcher{
 					Path: &v1.RequestMatcher_PathRegex{
