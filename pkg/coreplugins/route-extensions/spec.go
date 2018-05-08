@@ -17,6 +17,7 @@ type RouteExtensionSpec struct {
 	HostRewrite string        `json:"host_rewrite,omitempty"`
 
 	Cors *CorsPolicy `json:"cors",omitempty`
+	Gzip bool        `json:"enable_gzip,omitempty"`
 	//TODO: support RateLimit
 }
 

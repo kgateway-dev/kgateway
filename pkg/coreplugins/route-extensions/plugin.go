@@ -18,12 +18,14 @@ const (
 	connectionFailurePolicy = "connect-failure"
 	defaultRetryPolicy      = serverFailurePolicy
 
-	filterName  = "envoy.cors"
-	pluginStage = plugins.InAuth
+	corsFilterName = "envoy.cors"
+	gzipFilterName = "envoy.gzip"
+	pluginStage    = plugins.InAuth
 )
 
 type Plugin struct {
 	corsFilterNeeded bool
+	gzipFilterNeeded bool
 }
 
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
@@ -94,16 +96,30 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 			routeAction.Route.Cors.MaxAge = maxAge
 		}
 	}
+
+	if spec.Gzip {
+		p.gzipFilterNeeded = true
+	}
 	return nil
 }
 
 func (p *Plugin) HttpFilters(params *plugins.FilterPluginParams) []plugins.StagedFilter {
-	defer func() { p.corsFilterNeeded = false }()
+	defer func() {
+		p.corsFilterNeeded = false
+		p.gzipFilterNeeded = false
+	}()
 
+	var filters []plugins.StagedFilter
 	if p.corsFilterNeeded {
-		return []plugins.StagedFilter{{
-			HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage,
-		}}
+		filters = append(filters, plugins.StagedFilter{
+			HttpFilter: &envoyhttp.HttpFilter{Name: corsFilterName}, Stage: pluginStage,
+		})
 	}
-	return nil
+
+	if p.gzipFilterNeeded {
+		filters = append(filters, plugins.StagedFilter{
+			HttpFilter: &envoyhttp.HttpFilter{Name: gzipFilterName}, Stage: pluginStage,
+		})
+	}
+	return filters
 }

@@ -21,7 +21,7 @@ func NewTestConfig() *v1.Config {
 	return &v1.Config{
 		Upstreams:       upstreams,
 		VirtualServices: virtualServices,
-		Roles:   roles,
+		Roles:           roles,
 	}
 }
 
@@ -171,7 +171,39 @@ func NewTestRouteWithCORS() *v1.Route {
 	}
 }
 
-func NewTestRole(name string, vServices ... string) *v1.Role {
+func NewTestRouteWithGzip() *v1.Route {
+	extensions, _ := protoutil.MarshalStruct(map[string]interface{}{
+		"enable_gzip": true,
+		"auth": map[string]interface{}{
+			"credentials": struct {
+				Username, Password string
+			}{
+				Username: "alice",
+				Password: "bob",
+			},
+			"token": "my-12345",
+		}})
+	return &v1.Route{
+		Matcher: &v1.Route_RequestMatcher{
+			RequestMatcher: &v1.RequestMatcher{
+				Path: &v1.RequestMatcher_PathExact{
+					PathExact: "/bar",
+				},
+				Verbs: []string{"GET", "POST"},
+			},
+		},
+		SingleDestination: &v1.Destination{
+			DestinationType: &v1.Destination_Upstream{
+				Upstream: &v1.UpstreamDestination{
+					Name: "my-upstream",
+				},
+			},
+		},
+		Extensions: extensions,
+	}
+}
+
+func NewTestRole(name string, vServices ...string) *v1.Role {
 	return &v1.Role{
 		Name:            name,
 		VirtualServices: vServices,

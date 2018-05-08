@@ -63,4 +63,23 @@ cors:
 		Expect(specc.Cors.MaxAge).To(Equal(time.Duration(24 * time.Hour)))
 		log.Printf("%v", specc)
 	})
+	It("has gzip disabled by default", func() {
+		yam := `
+add_request_headers:
+- key: FOO
+  value: BAR
+- key: BOO
+  value: BAR
+  append: true
+max_retries: 1`
+		jsn, err := yaml.YAMLToJSON([]byte(yam))
+		Expect(err).NotTo(HaveOccurred())
+		var struc types.Struct
+		err = protoutil.Unmarshal(jsn, &struc)
+		Expect(err).NotTo(HaveOccurred())
+		specc, err := DecodeRouteExtensions(&struc)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(specc.Gzip).To(BeFalse())
+		log.Printf("%v", specc)
+	})
 })

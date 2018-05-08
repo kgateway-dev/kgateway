@@ -40,6 +40,13 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 			r.Body.Close()
 			rr.Body = body
 		}
+		contentType := r.Header.Get("content-type")
+		if contentType != "" {
+			rw.Header().Set("content-type", contentType)
+		}
+		if len(rr.Body) > 0 {
+			rw.Write(rr.Body)
+		}
 		bodychan <- &rr
 	}
 

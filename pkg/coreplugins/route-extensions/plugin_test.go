@@ -26,4 +26,33 @@ var _ = Describe("Plugin", func() {
 			Expect(out.GetRoute().Cors.MaxAge).To(Equal("86400"))
 		})
 	})
+
+	Describe("HTTPFilters", func() {
+		It("has Gzip filter when gzip is enabled", func() {
+			plug := &Plugin{}
+			route := NewTestRouteWithGzip()
+			out := &envoyroute.Route{
+				Action: &envoyroute.Route_Route{},
+			}
+			err := plug.ProcessRoute(nil, route, out)
+			Expect(err).NotTo(HaveOccurred())
+			filters := plug.HttpFilters(nil)
+			Expect(len(filters)).To(Equal(1))
+			Expect(filters[0].HttpFilter.Name).To(Equal("envoy.gzip"))
+		})
+
+		It("does not contain Gzip filter by default", func() {
+			plug := &Plugin{}
+			route := NewTestRouteWithCORS()
+			out := &envoyroute.Route{
+				Action: &envoyroute.Route_Route{},
+			}
+			err := plug.ProcessRoute(nil, route, out)
+			Expect(err).NotTo(HaveOccurred())
+			filters := plug.HttpFilters(nil)
+			for _, f := range filters {
+				Expect(f.HttpFilter.Name).NotTo(Equal("envoy.gzip"))
+			}
+		})
+	})
 })
