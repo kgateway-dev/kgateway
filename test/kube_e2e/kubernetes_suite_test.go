@@ -1,6 +1,8 @@
 package kube_e2e
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/helpers"
@@ -17,8 +19,10 @@ func TestKubernetes(t *testing.T) {
 
 	helpers.RegisterPreFailHandler(func() {
 		var logs string
+		limitLogLines := 250
 		for _, component := range []string{"control-plane", "ingress"} {
 			l, err := helpers.KubectlOut("logs", "-l", "gloo="+component)
+			l = strings.Join(strings.Split(l, "\n")[:limitLogLines], "\n")
 			logs += string(l) + "\n"
 			if err != nil {
 				logs += "error getting logs for " + component + ": " + err.Error()
