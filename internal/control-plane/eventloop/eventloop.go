@@ -1,6 +1,8 @@
 package eventloop
 
 import (
+	"time"
+
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
@@ -153,9 +155,13 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 	// translate each set of resources (grouped by role) individually
 	// and set the snapshot for that role
 	for role, virtualServices := range virtualServicesByRole {
+		if len(virtualServices) == 0 {
+			log.Printf("nothing to do yet for role %v", role)
+			continue
+		}
+
 		// get only the upstreams required for these virtual services
 		upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
-		endpoints := destinationEndpoints(upstreams, snap.Endpoints)
 		roleSnapshot := &snapshot.Cache{
 			Cfg: &v1.Config{
 				Upstreams:       upstreams,
@@ -163,10 +169,10 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 			},
 			Secrets:   snap.Secrets,
 			Files:     snap.Files,
-			Endpoints: endpoints,
+			Endpoints: snap.Endpoints,
 		}
 
-		log.Debugf("\nRole: %v\nGloo Snapshot: %v", role, snap)
+		log.Debugf("\nRole: %v\nGloo Snapshot (%v): %v", role, snap.Hash(), snap)
 
 		xdsSnapshot, reports, err := e.translator.Translate(roleSnapshot)
 		if err != nil {
@@ -178,8 +184,11 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		var upstreamReports []reporter.ConfigObjectReport
 		var virtualServiceReports []reporter.ConfigObjectReport
 
+		var invalidConfig bool
+
 		for _, rep := range reports {
 			if rep.Err != nil {
+				invalidConfig = true
 				log.Warnf("user config error: %v: %v", rep.CfgObject.GetName(), rep.Err.Error())
 			}
 			switch rep.CfgObject.(type) {
@@ -203,9 +212,15 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 			log.Warnf("error writing reports: %v", err)
 		}
 
+		if invalidConfig {
+			log.Warnf("skipping xds update for snapshot version %v, check error reports", xdsSnapshot.GetVersion(envoycache.RouteType))
+			continue
+		}
+
 		log.Debugf("Setting xDS Snapshot for Role %v: %v", role, xdsSnapshot)
 		e.xdsConfig.SetSnapshot(role, *xdsSnapshot)
 	}
+	time.Sleep(time.Second)
 }
 
 // gets the subset of upstreams which are destinations for at least one route in at least one
@@ -247,16 +262,4 @@ func getAllDestinations(route *v1.Route) []*v1.Destination {
 		dests = append(dests, dest.Destination)
 	}
 	return dests
-}
-
-func destinationEndpoints(upstreams []*v1.Upstream, allEndpoints endpointdiscovery.EndpointGroups) endpointdiscovery.EndpointGroups {
-	destinationEndpoints := make(endpointdiscovery.EndpointGroups)
-	for _, us := range upstreams {
-		eps, ok := allEndpoints[us.Name]
-		if !ok {
-			continue
-		}
-		destinationEndpoints[us.Name] = eps
-	}
-	return destinationEndpoints
 }

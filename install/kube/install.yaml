@@ -279,7 +279,7 @@ spec:
               fieldPath: metadata.namespace
       containers:
       - name: envoy
-        image: "soloio/envoy:v0.1.6-127"
+        image: "soloio/envoy:v0.1.6-131"
         imagePullPolicy: IfNotPresent
         ports: 
         - containerPort: 8080
