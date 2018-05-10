@@ -1,6 +1,8 @@
 package eventloop
 
 import (
+	"time"
+
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
@@ -156,6 +158,11 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 	// translate each set of resources (grouped by role) individually
 	// and set the snapshot for that role
 	for role, virtualServices := range virtualServicesByRole {
+		if len(virtualServices) == 0 {
+			log.Printf("nothing to do yet for role %v", role)
+			continue
+		}
+
 		// get only the upstreams required for these virtual services
 		upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
 		endpoints := destinationEndpoints(upstreams, snap.Endpoints)
@@ -169,7 +176,7 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 			Endpoints: endpoints,
 		}
 
-		log.Debugf("\nRole: %v\nGloo Snapshot: %v", role, snap)
+		log.Debugf("\nRole: %v\nGloo Snapshot (%v): %v", role, snap.Hash(), snap)
 
 		xdsSnapshot, reports, err := e.translator.Translate(roleSnapshot)
 		if err != nil {
