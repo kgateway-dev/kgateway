@@ -1,7 +1,7 @@
 # Installing on OpenShift
 
-- [Simple Installation](#Simple Installation)
-- [Advanced  Installation](#Advanced Installation)
+- [Simple Installation](#simple-installation)
+- [Advanced  Installation](#advanced-installation)
 
 
 

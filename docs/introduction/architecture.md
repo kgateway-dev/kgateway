@@ -1,8 +1,8 @@
 # Architecture
 
 - [Overview](#Overview)
-- [Component Architecture](#Component Architecture)
-- [Discovery Architecture](#Discovery Architecture)
+- [Component Architecture](#component-architecture)
+- [Discovery Architecture](#discovery-architecture)
 
 
 <a name="Overview"></a>
