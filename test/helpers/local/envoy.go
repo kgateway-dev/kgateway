@@ -3,6 +3,7 @@ package localhelpers
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -191,6 +192,13 @@ func (ei *EnvoyInstance) RunWithId(id string) error {
 
 func (ei *EnvoyInstance) Run() error {
 	return ei.runWithPort("", 8081)
+}
+
+func (ei *EnvoyInstance) DebugMode() error {
+
+	_, err := http.Get("http://localhost:19000/logging?level=debug")
+
+	return err
 }
 
 func (ei *EnvoyInstance) runWithPort(id string, port uint32) error {
