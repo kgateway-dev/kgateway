@@ -106,7 +106,7 @@ var _ = Describe("HappyPath EDS", func() {
 		doEDS(8)
 	})
 
-	FIt("Receive proxied from eds after non eds zbam mode", func() {
+	It("Receive proxied from eds after non eds zbam mode", func() {
 		fmt.Fprintln(GinkgoWriter, "Running Envoy")
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
