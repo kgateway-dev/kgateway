@@ -111,6 +111,8 @@ var _ = Describe("HappyPath EDS", func() {
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 
+		Eventually(envoyInstance.DebugMode, "60s", "1s").Should(BeNil())
+
 		fmt.Fprintln(GinkgoWriter, "Running Gloo")
 		err = glooInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
