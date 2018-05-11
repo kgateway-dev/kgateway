@@ -1,0 +1,41 @@
+version: '3'
+services:
+
+  control-plane:
+    image: "soloio/control-plane:0.2.4"
+    working_dir: /config/
+    command:
+    - "--storage.type=file"
+    - "--storage.refreshrate=1s"
+    - "--secrets.type=file"
+    - "--secrets.refreshrate=1s"
+    - "--files.type=file"
+    - "--files.refreshrate=1s"
+    - "--xds.port=8081"
+    volumes:
+    - ./:/config/
+
+  ingress:
+    image: soloio/envoy:v0.1.6-132
+    entrypoint: ["envoy"]
+    command: ["-c", "/config/envoy.yaml", "--v2-config-only"]
+    volumes:
+    - ./envoy-config.yaml:/config/envoy.yaml:ro
+    ports:
+    - "8080:8080"
+    - "8443:8443"
+    - "19000:19000"
+
+  function-discovery:
+    image: "soloio/function-discovery:0.2.4"
+    working_dir: /config/
+    command:
+    - "--storage.type=file"
+    - "--storage.refreshrate=1s"
+    - "--secrets.type=file"
+    - "--secrets.refreshrate=1s"
+    - "--files.type=file"
+    - "--files.refreshrate=1s"
+    volumes:
+    - ./:/config/
+

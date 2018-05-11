@@ -1,0 +1,28 @@
+node:
+  cluster: ingress
+  id: ingress~NODE_ID_PLACE_HOLDER
+static_resources:
+  clusters:
+  - name: xds_cluster
+    connect_timeout: 5.000s
+    hosts:
+    - socket_address:
+        address: control-plane
+        port_value: 8081
+    http2_protocol_options: {}
+    type: STRICT_DNS
+dynamic_resources:
+  ads_config:
+    api_type: GRPC
+    grpc_services:
+    - envoy_grpc: {cluster_name: xds_cluster}
+  cds_config:
+    ads: {}
+  lds_config:
+    ads: {}
+admin:
+  access_log_path: /dev/null
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 19000
