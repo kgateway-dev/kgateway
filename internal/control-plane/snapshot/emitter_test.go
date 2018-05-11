@@ -174,7 +174,11 @@ var _ = Describe("Emitter", func() {
 						s.ResourceVersion = ""
 					}
 					return endpoints, nil
-				}, time.Second*5, time.Millisecond*250).Should(HaveLen(3))
+				}, time.Second*5, time.Millisecond*250).Should(And(
+					HaveKey(namespace+"-test-service-8080"),
+					HaveKey(namespace+"-test-service-with-labels-8080"),
+					HaveKey(namespace+"-test-service-with-port-8080"),
+				))
 				Eventually(func() ([]endpointdiscovery.Endpoint, error) {
 					select {
 					case err := <-emitter.Error():
