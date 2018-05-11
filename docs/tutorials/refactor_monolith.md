@@ -182,7 +182,7 @@ glooctl route create --sort --path-exact /contact.html --upstream aws-lambda-us-
 Go to the contact page. Notice that you see json in stead of HTML. To fix that, we will attach a  transformation to the route:
 
 ```shell
-glooctl route update --path-exact /contact.html --upstream aws-lambda-us-east-1 --function 'processContact:$LATEST' --extensions ./yamls/transformation.yaml
+glooctl route update --old-path-exact /contact.html --old-upstream aws-lambda-us-east-1 --old-function 'processContact:$LATEST' --path-exact /contact.html --upstream aws-lambda-us-east-1 --function 'processContact:$LATEST' --extensions ./yamls/transformation.yaml
 ```
 
 Now the contact form will be presented! Post some messages through the contact form.
