@@ -1,6 +1,6 @@
 node:
   cluster: ingress
-  id: ingress~NODE_ID_PLACE_HOLDER
+  id: ingress~1
 static_resources:
   clusters:
   - name: xds_cluster

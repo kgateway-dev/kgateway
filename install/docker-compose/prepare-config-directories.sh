@@ -2,6 +2,7 @@
 
 mkdir -p ./{_gloo_config/upstreams,_gloo_config/virtualservices,_gloo_secrets,_gloo_files}
 mkdir -p ${HOME}/.glooctl/
+echo 'Warning: this script will overwrite your ~/.glooctl/config.yaml with defaults that will work with this setup'
 cat >${HOME}/.glooctl/config.yaml << EOF
 FileOptions:
   ConfigDir: ${PWD}/_gloo_config
