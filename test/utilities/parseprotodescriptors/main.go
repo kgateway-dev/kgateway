@@ -44,6 +44,9 @@ func logProtoMethodHttpRules(set *descriptor.FileDescriptorSet) {
 			log.Printf("service name: %v", svc.Name)
 			for _, method := range svc.Method {
 				log.Printf("method name: %v", method.Name)
+				if method.Options == nil {
+					method.Options = &descriptor.MethodOptions{}
+				}
 				g, err := proto.GetExtension(method.Options, api.E_Http)
 				if err != nil {
 					log.Printf("missing http option on the extensions, skipping: %v", *method.Name)

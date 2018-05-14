@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/internal/function-discovery/updater/fission"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/gcf"
+	"github.com/solo-io/gloo/internal/function-discovery/updater/grpc"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/lambda"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
@@ -57,7 +58,9 @@ func GetSecretRefsToWatch(upstreams []*v1.Upstream) []string {
 // we want to forceSync on every refreshDuration
 // on a config / secrets change, we don't want to force sync
 // else we can get into an update loop
-func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, secretStore dependencies.SecretStorage, upstreamName string, secrets secretwatcher.SecretMap) error {
+func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, secretStore dependencies.SecretStorage,
+	files dependencies.FileStorage,
+	upstreamName string, secrets secretwatcher.SecretMap) error {
 	us, err := gloo.V1().Upstreams().Get(upstreamName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get existing upstream with name %v", upstreamName)
@@ -87,6 +90,11 @@ func UpdateFunctions(resolve resolver.Resolver, gloo storage.Interface, secretSt
 		funcs, err = swagger.GetFuncs(us)
 		if err != nil {
 			return errors.Wrap(err, "retrieving swagger functions")
+		}
+	case functiontypes.FunctionTypeGRPC:
+		funcs, err = grpc.GetFuncs(files, us)
+		if err != nil {
+			return errors.Wrap(err, "retrieving grpc functions")
 		}
 	case functiontypes.FunctionTypeOpenFaaS:
 		funcs, err = openfaas.GetFuncs(resolve, us)

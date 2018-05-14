@@ -12,7 +12,7 @@ Example:
 
 ```
 # create a container for the petstore swagger
-docker run --name petstore docker-compose_default -d soloio/petstore-example:latest
+docker run --name petstore --net docker-compose_default -d soloio/petstore-example:latest
 
 # get its ip
 PETSTORE_IP=$(docker inspect petstore -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')

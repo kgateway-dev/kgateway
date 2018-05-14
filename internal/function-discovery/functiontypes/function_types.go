@@ -2,6 +2,7 @@ package functiontypes
 
 import (
 	"github.com/solo-io/gloo/internal/function-discovery/updater/fission"
+	"github.com/solo-io/gloo/internal/function-discovery/updater/grpc"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn"
 	"github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
@@ -22,6 +23,7 @@ const (
 	FunctionTypeFission   FunctionType = "functionTypeFission"
 	FunctionTypeProjectFn FunctionType = "functionTypeProjectFn"
 	NonFunctional         FunctionType = "nonFunctional"
+	FunctionTypeGRPC     FunctionType = "functionTypeGRPC"
 )
 
 func GetFunctionType(us *v1.Upstream) FunctionType {
@@ -34,6 +36,8 @@ func GetFunctionType(us *v1.Upstream) FunctionType {
 		return FunctionTypeAzure
 	case swagger.IsSwagger(us):
 		return FunctionTypeSwagger
+	case grpc.IsGRPC(us):
+		return FunctionTypeGRPC
 	case openfaas.IsOpenFaaSGateway(us):
 		return FunctionTypeOpenFaaS
 	case fission.IsFissionUpstream(us):

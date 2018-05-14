@@ -3,6 +3,7 @@ package grpc
 import (
 	"crypto/sha1"
 	"fmt"
+	"strings"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -26,22 +27,22 @@ func init() {
 	plugins.Register(NewPlugin())
 }
 
-type ServiceAndDescriptors struct {
-	FullServiceName string
-	Descriptors     *descriptor.FileDescriptorSet
+type ServicesAndDescriptor struct {
+	ServiceNames []string
+	PackageNames []string
+	Descriptors  *descriptor.FileDescriptorSet
 }
 
 func NewPlugin() *Plugin {
 	return &Plugin{
-		upstreamServices: make(map[string]ServiceAndDescriptors),
+		upstreamServices: make(map[string]ServicesAndDescriptor),
 		transformation:   transformation.NewTransformationPlugin(),
 	}
 }
 
 type Plugin struct {
-	// map service names to their descriptors
-	// keep track of which service belongs to which upstream
-	upstreamServices map[string]ServiceAndDescriptors
+	// keep track of which descriptor belongs to which upstream
+	upstreamServices map[string]ServicesAndDescriptor
 	transformation   transformation.Plugin
 }
 
@@ -100,17 +101,24 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 		return errors.Wrapf(err, "parsing file %v as a proto descriptor set", fileRef)
 	}
 
+	var packageNames []string
+
 	for _, serviceName := range serviceNames {
 		packageName, err := addHttpRulesToProto(in.Name, serviceName, descriptors)
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate http rules for service %s in proto descriptors", serviceName)
 		}
-		// cache the descriptors; we'll need then when we create our grpc filters
-		// need the package name as well, required by the transcoder filter
-		fullServiceName := genFullServiceName(in.Name, packageName, serviceName)
-		// keep track of which service belongs to which upstream
-		p.upstreamServices[in.Name] = ServiceAndDescriptors{
-			Descriptors: descriptors, FullServiceName: fullServiceName}
+		packageNames = append(packageNames, packageName)
+	}
+
+	// cache the descriptors; we'll need then when we create our grpc filters
+	// need the package name as well, required by the transcoder filter
+	// keep track of which descriptor and services belongs to which upstream
+	// note: the descriptor is the same
+	p.upstreamServices[in.Name] = ServicesAndDescriptor{
+		Descriptors:  descriptors,
+		PackageNames: packageNames,
+		ServiceNames: serviceNames,
 	}
 
 	addWellKnownProtos(descriptors)
@@ -122,7 +130,7 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 	return nil
 }
 
-func genFullServiceName(upstreamName, packageName, serviceName string) string {
+func genFullServiceName(packageName, serviceName string) string {
 	return packageName + "." + serviceName
 }
 
@@ -161,18 +169,46 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 
 func (p *Plugin) templateForFunction(dest *v1.Destination_Function) (*transformation.TransformationTemplate, error) {
 	upstreamName := dest.Function.UpstreamName
-	serviceAndDescriptor, ok := p.upstreamServices[upstreamName]
+	servicesAndDescriptor, ok := p.upstreamServices[upstreamName]
 	if !ok {
 		// the upstream is not a grpc desintation
 		return nil, nil
 	}
 
-	// method name should be function name in this case. TODO: document in the api
-	methodName := dest.Function.FunctionName
+	// get the package_name.service_name to generate the path that envoy wants
+	var (
+		fullServiceName string
+		methodName string
+	)
+
+	// for multi-service upstreams: format should be ServiceName.MethodName
+	// for single service upstreams, format can be MethodName without service name
+	serviceAndMethodName := dest.Function.FunctionName
+	split := strings.SplitN(serviceAndMethodName, ".", 2)
+	switch {
+	case len(split) == 2:
+		methodName = split[1]
+		for i, svcName := range servicesAndDescriptor.ServiceNames {
+			if svcName == split[0] {
+				fullServiceName = genFullServiceName(servicesAndDescriptor.PackageNames[i], svcName)
+				break
+			}
+		}
+		if fullServiceName == "" {
+			return nil, errors.Errorf("service %v was not found for grpc upstream %s", split[0], upstreamName)
+		}
+	default:
+		// if service name isn't included && the upstream only provides one service, we can use just the method name
+		methodName = serviceAndMethodName
+		if len(servicesAndDescriptor.ServiceNames) != 1 {
+			return nil, errors.Errorf("grpc upstream %v contains %v services. the route's function_name destination must follow"+
+				" the format 'ServiceName.MethodName'. available services for this upstream: %v", servicesAndDescriptor.ServiceNames)
+		}
+		fullServiceName = genFullServiceName(servicesAndDescriptor.PackageNames[0], servicesAndDescriptor.ServiceNames[0])
+	}
 
 	// create the transformation for the route
-
-	outPath := httpPath(upstreamName, serviceAndDescriptor.FullServiceName, methodName)
+	outPath := httpPath(upstreamName, fullServiceName, methodName)
 
 	// add query matcher to out path. kombina for now
 	// TODO: support query for matching
@@ -200,7 +236,10 @@ func addHttpRulesToProto(upstreamName, serviceName string, set *descriptor.FileD
 			if *svc.Name == serviceName {
 				for _, method := range svc.Method {
 					packageName = *file.Package
-					fullServiceName := genFullServiceName(upstreamName, packageName, serviceName)
+					fullServiceName := genFullServiceName(packageName, serviceName)
+					if method.Options == nil {
+						method.Options = &descriptor.MethodOptions{}
+					}
 					if err := proto.SetExtension(method.Options, api.E_Http, &api.HttpRule{
 						Pattern: &api.HttpRule_Post{
 							Post: httpPath(upstreamName, fullServiceName, *method.Name),
@@ -262,7 +301,7 @@ func httpPath(upstreamName, serviceName, methodName string) string {
 func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilter {
 	defer func() {
 		// clear cache
-		p.upstreamServices = make(map[string]ServiceAndDescriptors)
+		p.upstreamServices = make(map[string]ServicesAndDescriptor)
 	}()
 
 	if len(p.upstreamServices) == 0 {
@@ -282,12 +321,16 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 			log.Warnf("ERROR: marshaling proto descriptor: %v", err)
 			continue
 		}
-		//log.Debugf("service %v using descriptors %v", serviceName, protoDescriptor.File)
+		var fullServiceNames []string
+		for i := range serviceAndDescriptor.ServiceNames {
+			fullName := genFullServiceName(serviceAndDescriptor.PackageNames[i], serviceAndDescriptor.ServiceNames[i])
+			fullServiceNames = append(fullServiceNames, fullName)
+		}
 		filterConfig, err := util.MessageToStruct(&envoytranscoder.GrpcJsonTranscoder{
 			DescriptorSet: &envoytranscoder.GrpcJsonTranscoder_ProtoDescriptorBin{
 				ProtoDescriptorBin: descriptorBytes,
 			},
-			Services:                  []string{serviceAndDescriptor.FullServiceName},
+			Services:                  fullServiceNames,
 			MatchIncomingRequestRoute: true,
 		})
 		if err != nil {
@@ -314,8 +357,5 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 
 // just so the init plugin knows we're functional
 func (p *Plugin) ParseFunctionSpec(params *plugins.FunctionPluginParams, in v1.FunctionSpec) (*types.Struct, error) {
-	if params.ServiceType != ServiceTypeGRPC {
-		return nil, nil
-	}
-	return nil, errors.New("functions are not required for service type " + ServiceTypeGRPC)
+	return nil, nil
 }
