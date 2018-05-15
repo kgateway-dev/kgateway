@@ -18,8 +18,10 @@ import (
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
 
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/internal/control-plane/translator/defaults"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/matcher"
@@ -29,8 +31,6 @@ import (
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
-	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
-	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 )
 
 const (
@@ -91,7 +91,7 @@ type pluginDependencies struct {
 	Files   filewatcher.Files
 }
 
-func (t *Translator) Translate(inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
+func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
 	cfg := inputs.Cfg
 	dependencies := &pluginDependencies{Secrets: inputs.Secrets, Files: inputs.Files}
 	secrets := inputs.Secrets
@@ -108,7 +108,7 @@ func (t *Translator) Translate(inputs *snapshot.Cache) (*envoycache.Snapshot, []
 	errored := getErroredUpstreams(upstreamReports)
 
 	// envoy virtual hosts
-	sslVirtualHosts, noSslVirtualHosts, virtualServiceReports := t.computeVirtualHosts(cfg, errored, secrets)
+	sslVirtualHosts, noSslVirtualHosts, virtualServiceReports := t.computeVirtualHosts(role, cfg, errored, secrets)
 
 	noSslRouteConfig := &envoyapi.RouteConfiguration{
 		Name:         noSslRdsName,
@@ -187,12 +187,12 @@ func (t *Translator) Translate(inputs *snapshot.Cache) (*envoycache.Snapshot, []
 		return nil, nil, errors.Wrap(err, "constructing version hash for envoy snapshot components")
 	}
 	// construct snapshot
-	snapshot := envoycache.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
+	xdsSnapshot := envoycache.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
 
 	// aggregate reports
 	reports := append(upstreamReports, virtualServiceReports...)
 
-	return &snapshot, reports, nil
+	return &xdsSnapshot, reports, nil
 }
 
 // Endpoints
@@ -334,23 +334,28 @@ func dependenciesForPlugin(cfg *v1.Config, plug plugins.TranslatorPlugin, depend
 
 // VirtualServices
 
-func (t *Translator) computeVirtualHosts(cfg *v1.Config,
+func (t *Translator) computeVirtualHosts(role *v1.Role,
+	cfg *v1.Config,
 	erroredUpstreams map[string]bool,
 	secrets secretwatcher.SecretMap) ([]envoyroute.VirtualHost, []envoyroute.VirtualHost, []reporter.ConfigObjectReport) {
 	var (
 		reports           []reporter.ConfigObjectReport
 		sslVirtualHosts   []envoyroute.VirtualHost
 		noSslVirtualHosts []envoyroute.VirtualHost
+
+		// this applies to the whole role, not an individual virtual service
+		roleErr error
 	)
 
 	// check for bad domains, then add those errors to the vService error list
-	vServicesWithBadDomains := virtualServicesWithConflictingDomains(cfg.VirtualServices, reports)
+	vServicesWithBadDomains := findVirtualServicesWithConflictingDomains(cfg.VirtualServices)
 
 	for _, virtualService := range cfg.VirtualServices {
-		envoyVirtualHost, err := t.computeVirtualHost(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
 		if domainErr, invalidVService := vServicesWithBadDomains[virtualService.Name]; invalidVService {
-			err = multierror.Append(err, domainErr)
+			roleErr = multierror.Append(roleErr, domainErr)
 		}
+
+		envoyVirtualHost, err := t.computeVirtualHost(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
 		reports = append(reports, createReport(virtualService, err))
 		// don't append errored virtual services
 		if err != nil {
@@ -365,11 +370,14 @@ func (t *Translator) computeVirtualHosts(cfg *v1.Config,
 		}
 	}
 
+	// add report for the role
+	reports = append(reports, createReport(role, roleErr))
+
 	return sslVirtualHosts, noSslVirtualHosts, reports
 }
 
 // adds errors to report if virtualservice domains are not unique
-func virtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService, reports []reporter.ConfigObjectReport) map[string]error {
+func findVirtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService) map[string]error {
 	domainsToVirtualServices := make(map[string][]string) // this shouldbe a 1-1 mapping
 	// if len(domainsToVirtualServices[domain]) > 1, error
 	for _, vService := range virtualServices {

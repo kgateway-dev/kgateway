@@ -68,7 +68,7 @@ func (r *reporter) writeReport(report ConfigObjectReport) error {
 			// try to create the role
 			role, err = r.store.V1().Roles().Create(report.CfgObject.(*v1.Role))
 			if err != nil {
-				return errors.Wrapf(err, "failed to find role %v", name)
+				return errors.Wrapf(err, "failed to find or create role %v", name)
 			}
 		}
 		// only update if status doesn't match

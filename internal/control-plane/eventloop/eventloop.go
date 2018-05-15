@@ -176,7 +176,18 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 
 		log.Debugf("\nRole: %v\nGloo Snapshot (%v): %v", role, snap.Hash(), snap)
 
-		xdsSnapshot, reports, err := e.translator.Translate(roleSnapshot)
+		// create new role object
+		// this will be used to store the report for role-level errors
+		var vsNames []string
+		for _, vs := range virtualServices {
+			vsNames = append(vsNames, vs.Name)
+		}
+		roleObject := &v1.Role{
+			Name: role,
+			VirtualServices: vsNames,
+		}
+
+		xdsSnapshot, reports, err := e.translator.Translate(roleObject, roleSnapshot)
 		if err != nil {
 			// TODO: panic or handle these internal errors smartly
 			log.Warnf("INTERNAL ERROR: failed to run translator for role %v: %v", role, err)

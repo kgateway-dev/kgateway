@@ -48,6 +48,7 @@ var _ = Describe("CrdReporter", func() {
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
+				reports = nil
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 				Expect(err).NotTo(HaveOccurred())
 				glooClient, err = crd.NewStorage(cfg, namespace, time.Second)
@@ -108,6 +109,7 @@ var _ = Describe("CrdReporter", func() {
 		})
 		Context("writes status reports for cfg crds with SOME errors", func() {
 			BeforeEach(func() {
+				reports = nil
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 				Expect(err).NotTo(HaveOccurred())
 				glooClient, err = crd.NewStorage(cfg, namespace, time.Second)
@@ -168,6 +170,7 @@ var _ = Describe("CrdReporter", func() {
 
 		Context("creates the role crd if writing a report for a role that doesn't exist", func() {
 			BeforeEach(func() {
+				reports = nil
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 				Expect(err).NotTo(HaveOccurred())
 				glooClient, err = crd.NewStorage(cfg, namespace, time.Second)

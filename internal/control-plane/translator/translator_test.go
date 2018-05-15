@@ -28,7 +28,7 @@ var _ = Describe("Translator", func() {
 		Context("domains are not unique amongst virtual services", func() {
 			cfg := InvalidConfigSharedDomains()
 			t := newTranslator()
-			snap, reports, err := t.Translate(&snapshot.Cache{Cfg: cfg})
+			snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
 			It("returns four reports, one for each upstream, one for each virtualservice", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(3))
@@ -56,7 +56,7 @@ var _ = Describe("Translator", func() {
 		Context("one valid route, one invalid route", func() {
 			cfg := PartiallyValidConfig()
 			t := newTranslator()
-			snap, reports, err := t.Translate(&snapshot.Cache{Cfg: cfg})
+			snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
 			It("returns four reports, one for each upstream, one for each virtualservice", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(4))
@@ -88,7 +88,7 @@ var _ = Describe("Translator", func() {
 			cfg := InvalidConfigNoUpstream()
 			t := newTranslator()
 			It("returns report for the error and no virtual services", func() {
-				snap, reports, err := t.Translate(&snapshot.Cache{Cfg: cfg})
+				snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(2))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
@@ -110,7 +110,7 @@ var _ = Describe("Translator", func() {
 			cfg := ValidConfigNoSsl()
 			t := newTranslator()
 			It("returns an empty ssl routeconfig and a len 1 nossl routeconfig", func() {
-				snap, reports, err := t.Translate(&snapshot.Cache{Cfg: cfg})
+				snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(reports).To(HaveLen(2))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
@@ -132,7 +132,7 @@ var _ = Describe("Translator", func() {
 			t := newTranslator()
 			Context("the desired ssl secret not present in the secret map", func() {
 				It("returns an error for the not found secretref", func() {
-					_, reports, err := t.Translate(&snapshot.Cache{Cfg: cfg})
+					_, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(reports).To(HaveLen(2))
 					Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
@@ -144,7 +144,7 @@ var _ = Describe("Translator", func() {
 			})
 			Context("the desired ssl secret not present in the secret map", func() {
 				It("returns an empty ssl routeconfig and a len 1 nossl routeconfig", func() {
-					snap, reports, err := t.Translate(&snapshot.Cache{
+					snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{
 						Cfg: cfg,
 						Secrets: secretwatcher.SecretMap{
 							"ssl-secret-ref": &dependencies.Secret{Ref: "ssl-secret-ref", Data: map[string]string{
