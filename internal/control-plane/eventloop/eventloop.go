@@ -5,6 +5,7 @@ import (
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 
 	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
