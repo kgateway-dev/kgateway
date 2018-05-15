@@ -14,6 +14,8 @@ services:
     - "--xds.port=8081"
     volumes:
     - ./:/config/
+    ports:
+    - "8081:8081"
 
   ingress:
     image: soloio/envoy:v0.1.6-132
