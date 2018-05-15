@@ -153,6 +153,8 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 	// aggregate reports across all the roles
 	allReports := make(map[string]reporter.ConfigObjectReport)
 
+	// translate each set of resources (grouped by role) individually
+	// and set the snapshot for that role
 	for role, virtualServices := range virtualServicesByRole {
 		// get only the upstreams required for these virtual services
 		upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
