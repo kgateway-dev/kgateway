@@ -44,7 +44,7 @@ var _ = Describe("CrdReporter", func() {
 			reports         []ConfigObjectReport
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
-			roles []*v1.Role
+			roles           []*v1.Role
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
@@ -162,6 +162,47 @@ var _ = Describe("CrdReporter", func() {
 				Expect(updatedroles).To(HaveLen(len(upstreams)))
 				for _, updatedrole := range updatedroles {
 					Expect(updatedrole.Status.State).To(Equal(v1.Status_Rejected))
+				}
+			})
+		})
+
+		Context("creates the role crd if writing a report for a role that doesn't exist", func() {
+			BeforeEach(func() {
+				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+				Expect(err).NotTo(HaveOccurred())
+				glooClient, err = crd.NewStorage(cfg, namespace, time.Second)
+				Expect(err).NotTo(HaveOccurred())
+				rptr = NewReporter(glooClient)
+
+				var storables []v1.ConfigObject
+				roles = NewTestConfig().Roles
+				for _, role := range roles {
+					storables = append(storables, role)
+				}
+				for _, storable := range storables {
+					reports = append(reports, ConfigObjectReport{
+						CfgObject: storable,
+						Err:       errors.New("oh no an error what did u do!"),
+					})
+				}
+			})
+
+			It("writes an rejected status for each crd", func() {
+				err := rptr.WriteReports(reports)
+				Expect(err).NotTo(HaveOccurred())
+				roleList, err := glooClient.V1().Roles().List()
+				Expect(err).NotTo(HaveOccurred())
+				// zero out fields we dont care about & expect to be different
+				for _, role := range roleList {
+					role.Metadata = &v1.Metadata{}
+				}
+				for _, role := range roles {
+					role.Status = &v1.Status{
+						State:  v1.Status_Rejected,
+						Reason: "oh no an error what did u do!",
+					}
+					role.Metadata = &v1.Metadata{}
+					Expect(roleList).To(ContainElement(role))
 				}
 			})
 		})

@@ -65,7 +65,11 @@ func (r *reporter) writeReport(report ConfigObjectReport) error {
 	case *v1.Role:
 		role, err := r.store.V1().Roles().Get(name)
 		if err != nil {
-			return errors.Wrapf(err, "failed to find role %v", name)
+			// try to create the role
+			role, err = r.store.V1().Roles().Create(report.CfgObject.(*v1.Role))
+			if err != nil {
+				return errors.Wrapf(err, "failed to find role %v", name)
+			}
 		}
 		// only update if status doesn't match
 		if role.Status.Equal(status) {
