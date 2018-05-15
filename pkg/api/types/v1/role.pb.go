@@ -21,17 +21,20 @@ var _ = math.Inf
 // of the rest of the mesh.
 // Each domain for each Virtual Service contained in a Role cannot appear more than once, or the Role
 // will be invalid.
+// In the current implementation, Roles are read-only objects created by Gloo for the puprose of reporting.
+// In the future, Gloo will support fields in Roles that can be written to for the purpose of applying policy
+// to groups of Virtual Services.
 type Role struct {
-	// Name of the role. Envoy nodes will be assigned a config corresponding with role they are assigned.
-	// Envoy instances must specify the role they belong to when they register to Gloo.
+	// Name of the role. Envoy nodes will be assigned a config matching the role they report to Gloo when registering
+	// Envoy instances must specify their role in the prefix for their Node ID when they register to Gloo.
 	//
-	// Currently this is done by specifying the name of the role as a prefix to the Envoy's Node ID
+	// Currently this is done in the format <Role>~<this portion is ignored>
 	// which can be specified with the `--service-node` flag, or in the Envoy instance's bootstrap config.
 	//
-	// Names must be unique and follow the following syntax rules:
+	// Role Names must be unique and follow the following syntax rules:
 	// One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// the list of names of the virtual services this role encapsulates.
+	// a list of virtual services that reference this role
 	VirtualServices []string `protobuf:"bytes,2,rep,name=virtual_services,json=virtualServices" json:"virtual_services,omitempty"`
 	// Status indicates the validation status of the role resource.
 	// Status is read-only by clients, and set by gloo during validation

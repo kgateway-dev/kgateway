@@ -148,14 +148,14 @@
           "name": "Role",
           "longName": "Role",
           "fullName": "v1.Role",
-          "description": "A Role is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Role is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Role cannot appear more than once, or the Role\nwill be invalid.",
+          "description": "A Role is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Role is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Role cannot appear more than once, or the Role\nwill be invalid.\nIn the current implementation, Roles are read-only objects created by Gloo for the puprose of reporting.\nIn the future, Gloo will support fields in Roles that can be written to for the purpose of applying policy\nto groups of Virtual Services.",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
           "fields": [
             {
               "name": "name",
-              "description": "Name of the role. Envoy nodes will be assigned a config corresponding with role they are assigned.\nEnvoy instances must specify the role they belong to when they register to Gloo.\n\nCurrently this is done by specifying the name of the role as a prefix to the Envoy's Node ID\nwhich can be specified with the `--service-node` flag, or in the Envoy instance's bootstrap config.\n\nNames must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
+              "description": "Name of the role. Envoy nodes will be assigned a config matching the role they report to Gloo when registering\nEnvoy instances must specify their role in the prefix for their Node ID when they register to Gloo.\n\nCurrently this is done in the format \u003cRole\u003e~\u003cthis portion is ignored\u003e\nwhich can be specified with the `--service-node` flag, or in the Envoy instance's bootstrap config.\n\nRole Names must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
               "label": "",
               "type": "string",
               "longType": "string",
@@ -164,7 +164,7 @@
             },
             {
               "name": "virtual_services",
-              "description": "the list of names of the virtual services this role encapsulates.",
+              "description": "a list of virtual services that reference this role",
               "label": "repeated",
               "type": "string",
               "longType": "string",

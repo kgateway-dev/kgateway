@@ -72,7 +72,7 @@ type v1client struct {
 	kubeclient      kubernetes.Interface
 	upstreams       *upstreamsClient
 	virtualServices *virtualServicesClient
-	roles   *rolesClient
+	roles           *rolesClient
 	namespace       string
 }
 
