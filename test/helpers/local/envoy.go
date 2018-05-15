@@ -68,7 +68,6 @@ type EnvoyFactory struct {
 }
 
 func NewEnvoyFactory() (*EnvoyFactory, error) {
-
 	// if an envoy binary is explicitly specified
 	// use it
 	envoypath := os.Getenv("ENVOY_BINARY")
