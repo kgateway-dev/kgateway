@@ -21,6 +21,9 @@ func GetFuncs(us *v1.Upstream) ([]*v1.Function, error) {
 		return nil, err
 	}
 	var consumesJson bool
+	if len(swaggerSpec.Consumes) == 0 {
+		consumesJson = true
+	}
 	for _, contentType := range swaggerSpec.Consumes {
 		if contentType == "application/json" {
 			consumesJson = true
