@@ -209,7 +209,7 @@ type Annotations struct {
 }
 
 func IsSwagger(us *v1.Upstream) bool {
-	return us.Metadata.Annotations[AnnotationKeySwaggerURL] != "" || us.Metadata.Annotations[AnnotationKeySwaggerDoc] != ""
+	return us.Metadata != nil && us.Metadata.Annotations != nil && (us.Metadata.Annotations[AnnotationKeySwaggerURL] != "" || us.Metadata.Annotations[AnnotationKeySwaggerDoc] != "")
 }
 
 func RetrieveSwaggerDocFromUrl(url string) (*spec.Swagger, error) {
