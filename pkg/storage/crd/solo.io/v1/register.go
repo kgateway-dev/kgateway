@@ -26,17 +26,17 @@ var (
 		Kind:      "VirtualService",
 		ShortName: "vs",
 	}
-	RoleCRD = crd{
-		Plural:    "roles",
+	ReportCRD = crd{
+		Plural:    "reports",
 		Group:     GroupName,
 		Version:   Version,
-		Kind:      "Role",
-		ShortName: "r",
+		Kind:      "Report",
+		ShortName: "rp",
 	}
 	KnownCRDs = []crd{
 		UpstreamCRD,
 		VirtualServiceCRD,
-		RoleCRD,
+		ReportCRD,
 	}
 )
 
@@ -77,8 +77,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&UpstreamList{},
 		&VirtualService{},
 		&VirtualServiceList{},
-		&Role{},
-		&RoleList{},
+		&Report{},
+		&ReportList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

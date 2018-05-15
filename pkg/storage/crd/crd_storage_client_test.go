@@ -3,7 +3,6 @@ package crd_test
 import (
 	"os"
 	"path/filepath"
-
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -217,76 +216,76 @@ var _ = Describe("CrdStorageClient", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
-	})
-	Describe("roles", func() {
-		Describe("Create", func() {
-			It("creates a crd from the item", func() {
-				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
-				Expect(err).NotTo(HaveOccurred())
-				client, err := NewStorage(cfg, namespace, syncFreq)
-				Expect(err).NotTo(HaveOccurred())
-				err = client.V1().Register()
-				Expect(err).NotTo(HaveOccurred())
-				role := NewTestRole("something", "hi")
-				createdUpstream, err := client.V1().Roles().Create(role)
-				Expect(err).NotTo(HaveOccurred())
-				role.Metadata = createdUpstream.GetMetadata()
-				Expect(role).To(Equal(createdUpstream))
+		Describe("reports", func() {
+			Describe("Create", func() {
+				It("creates a crd from the item", func() {
+					cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+					Expect(err).NotTo(HaveOccurred())
+					client, err := NewStorage(cfg, namespace, syncFreq)
+					Expect(err).NotTo(HaveOccurred())
+					err = client.V1().Register()
+					Expect(err).NotTo(HaveOccurred())
+					report := NewTestReport("something")
+					createdUpstream, err := client.V1().Reports().Create(report)
+					Expect(err).NotTo(HaveOccurred())
+					report.Metadata = createdUpstream.GetMetadata()
+					Expect(report).To(Equal(createdUpstream))
+				})
 			})
-		})
-		Describe("Get", func() {
-			It("gets a crd from the name", func() {
-				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
-				Expect(err).NotTo(HaveOccurred())
-				client, err := NewStorage(cfg, namespace, syncFreq)
-				Expect(err).NotTo(HaveOccurred())
-				err = client.V1().Register()
-				Expect(err).NotTo(HaveOccurred())
-				role := NewTestRole("something", "hi")
-				_, err = client.V1().Roles().Create(role)
-				Expect(err).NotTo(HaveOccurred())
-				created, err := client.V1().Roles().Get(role.Name)
-				Expect(err).NotTo(HaveOccurred())
-				role.Metadata = created.Metadata
-				Expect(created).To(Equal(role))
+			Describe("Get", func() {
+				It("gets a crd from the name", func() {
+					cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+					Expect(err).NotTo(HaveOccurred())
+					client, err := NewStorage(cfg, namespace, syncFreq)
+					Expect(err).NotTo(HaveOccurred())
+					err = client.V1().Register()
+					Expect(err).NotTo(HaveOccurred())
+					report := NewTestReport("something")
+					_, err = client.V1().Reports().Create(report)
+					Expect(err).NotTo(HaveOccurred())
+					created, err := client.V1().Reports().Get(report.Name)
+					Expect(err).NotTo(HaveOccurred())
+					report.Metadata = created.Metadata
+					Expect(created).To(Equal(report))
+				})
 			})
-		})
-		Describe("Update", func() {
-			It("updates a crd from the item", func() {
-				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
-				Expect(err).NotTo(HaveOccurred())
-				client, err := NewStorage(cfg, namespace, syncFreq)
-				Expect(err).NotTo(HaveOccurred())
-				err = client.V1().Register()
-				Expect(err).NotTo(HaveOccurred())
-				role := NewTestRole("something", "hi")
-				created, err := client.V1().Roles().Create(role)
-				Expect(err).NotTo(HaveOccurred())
-				// need to set resource ver
-				role.Metadata = created.GetMetadata()
-				role.Metadata.Annotations["just_for_this_test"] = "bar"
-				updated, err := client.V1().Roles().Update(role)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(updated.Metadata.Annotations).To(HaveKey("just_for_this_test"))
-				role.Metadata = updated.GetMetadata()
-				Expect(updated).To(Equal(role))
+			Describe("Update", func() {
+				It("updates a crd from the item", func() {
+					cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+					Expect(err).NotTo(HaveOccurred())
+					client, err := NewStorage(cfg, namespace, syncFreq)
+					Expect(err).NotTo(HaveOccurred())
+					err = client.V1().Register()
+					Expect(err).NotTo(HaveOccurred())
+					report := NewTestReport("something")
+					created, err := client.V1().Reports().Create(report)
+					Expect(err).NotTo(HaveOccurred())
+					// need to set resource ver
+					report.Metadata = created.GetMetadata()
+					report.Metadata.Annotations["just_for_this_test"] = "bar"
+					updated, err := client.V1().Reports().Update(report)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(updated.Metadata.Annotations).To(HaveKey("just_for_this_test"))
+					report.Metadata = updated.GetMetadata()
+					Expect(updated).To(Equal(report))
+				})
 			})
-		})
-		Describe("Delete", func() {
-			It("deletes a crd from the name", func() {
-				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
-				Expect(err).NotTo(HaveOccurred())
-				client, err := NewStorage(cfg, namespace, syncFreq)
-				Expect(err).NotTo(HaveOccurred())
-				err = client.V1().Register()
-				Expect(err).NotTo(HaveOccurred())
-				role := NewTestRole("something", "hi")
-				_, err = client.V1().Roles().Create(role)
-				Expect(err).NotTo(HaveOccurred())
-				err = client.V1().Roles().Delete(role.Name)
-				Expect(err).NotTo(HaveOccurred())
-				_, err = client.V1().Roles().Get(role.Name)
-				Expect(err).To(HaveOccurred())
+			Describe("Delete", func() {
+				It("deletes a crd from the name", func() {
+					cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+					Expect(err).NotTo(HaveOccurred())
+					client, err := NewStorage(cfg, namespace, syncFreq)
+					Expect(err).NotTo(HaveOccurred())
+					err = client.V1().Register()
+					Expect(err).NotTo(HaveOccurred())
+					report := NewTestReport("something")
+					_, err = client.V1().Reports().Create(report)
+					Expect(err).NotTo(HaveOccurred())
+					err = client.V1().Reports().Delete(report.Name)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = client.V1().Reports().Get(report.Name)
+					Expect(err).To(HaveOccurred())
+				})
 			})
 		})
 	})

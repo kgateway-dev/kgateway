@@ -19,133 +19,133 @@ import (
 
 // TODO: evaluate efficiency of LSing a whole dir on every op
 // so far this is preferable to caring what files are named
-type rolesClient struct {
+type reportsClient struct {
 	dir           string
 	syncFrequency time.Duration
 }
 
-func (c *rolesClient) Create(item *v1.Role) (*v1.Role, error) {
+func (c *reportsClient) Create(item *v1.Report) (*v1.Report, error) {
 	// set resourceversion on clone
-	roleClone, ok := proto.Clone(item).(*v1.Role)
+	reportClone, ok := proto.Clone(item).(*v1.Report)
 	if !ok {
 		return nil, errors.New("internal error: output of proto.Clone was not expected type")
 	}
-	if roleClone.Metadata == nil {
-		roleClone.Metadata = &v1.Metadata{}
+	if reportClone.Metadata == nil {
+		reportClone.Metadata = &v1.Metadata{}
 	}
-	roleClone.Metadata.ResourceVersion = newOrIncrementResourceVer(roleClone.Metadata.ResourceVersion)
-	roleFiles, err := c.pathsToRoles()
+	reportClone.Metadata.ResourceVersion = newOrIncrementResourceVer(reportClone.Metadata.ResourceVersion)
+	reportFiles, err := c.pathsToReports()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read role dir")
+		return nil, errors.Wrap(err, "failed to read report dir")
 	}
 	// error if exists already
-	for file, existingUps := range roleFiles {
+	for file, existingUps := range reportFiles {
 		if existingUps.Name == item.Name {
-			return nil, storage.NewAlreadyExistsErr(errors.Errorf("role %v already defined in %s", item.Name, file))
+			return nil, storage.NewAlreadyExistsErr(errors.Errorf("report %v already defined in %s", item.Name, file))
 		}
 	}
 	filename := filepath.Join(c.dir, item.Name+".yml")
-	err = WriteToFile(filename, roleClone)
+	err = WriteToFile(filename, reportClone)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed creating file")
 	}
-	return roleClone, nil
+	return reportClone, nil
 }
 
-func (c *rolesClient) Update(item *v1.Role) (*v1.Role, error) {
+func (c *reportsClient) Update(item *v1.Report) (*v1.Report, error) {
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}
-	roleFiles, err := c.pathsToRoles()
+	reportFiles, err := c.pathsToReports()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read role dir")
+		return nil, errors.Wrap(err, "failed to read report dir")
 	}
 	// error if exists already
-	for file, existingUps := range roleFiles {
+	for file, existingUps := range reportFiles {
 		if existingUps.Name != item.Name {
 			continue
 		}
 		if existingUps.Metadata != nil && lessThan(item.Metadata.ResourceVersion, existingUps.Metadata.ResourceVersion) {
 			return nil, errors.Errorf("resource version outdated for %v", item.Name)
 		}
-		roleClone, ok := proto.Clone(item).(*v1.Role)
+		reportClone, ok := proto.Clone(item).(*v1.Report)
 		if !ok {
 			return nil, errors.New("internal error: output of proto.Clone was not expected type")
 		}
-		roleClone.Metadata.ResourceVersion = newOrIncrementResourceVer(roleClone.Metadata.ResourceVersion)
+		reportClone.Metadata.ResourceVersion = newOrIncrementResourceVer(reportClone.Metadata.ResourceVersion)
 
-		err = WriteToFile(file, roleClone)
+		err = WriteToFile(file, reportClone)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed creating file")
 		}
 
-		return roleClone, nil
+		return reportClone, nil
 	}
-	return nil, errors.Errorf("role %v not found", item.Name)
+	return nil, errors.Errorf("report %v not found", item.Name)
 }
 
-func (c *rolesClient) Delete(name string) error {
-	roleFiles, err := c.pathsToRoles()
+func (c *reportsClient) Delete(name string) error {
+	reportFiles, err := c.pathsToReports()
 	if err != nil {
-		return errors.Wrap(err, "failed to read role dir")
+		return errors.Wrap(err, "failed to read report dir")
 	}
 	// error if exists already
-	for file, existingUps := range roleFiles {
+	for file, existingUps := range reportFiles {
 		if existingUps.Name == name {
 			return os.Remove(file)
 		}
 	}
-	return errors.Errorf("file not found for role %v", name)
+	return errors.Errorf("file not found for report %v", name)
 }
 
-func (c *rolesClient) Get(name string) (*v1.Role, error) {
-	roleFiles, err := c.pathsToRoles()
+func (c *reportsClient) Get(name string) (*v1.Report, error) {
+	reportFiles, err := c.pathsToReports()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read role dir")
+		return nil, errors.Wrap(err, "failed to read report dir")
 	}
 	// error if exists already
-	for _, existingUps := range roleFiles {
+	for _, existingUps := range reportFiles {
 		if existingUps.Name == name {
 			return existingUps, nil
 		}
 	}
-	return nil, errors.Errorf("file not found for role %v", name)
+	return nil, errors.Errorf("file not found for report %v", name)
 }
 
-func (c *rolesClient) List() ([]*v1.Role, error) {
-	rolePaths, err := c.pathsToRoles()
+func (c *reportsClient) List() ([]*v1.Report, error) {
+	reportPaths, err := c.pathsToReports()
 	if err != nil {
 		return nil, err
 	}
-	var roles []*v1.Role
-	for _, up := range rolePaths {
-		roles = append(roles, up)
+	var reports []*v1.Report
+	for _, up := range reportPaths {
+		reports = append(reports, up)
 	}
-	return roles, nil
+	return reports, nil
 }
 
-func (c *rolesClient) pathsToRoles() (map[string]*v1.Role, error) {
+func (c *reportsClient) pathsToReports() (map[string]*v1.Report, error) {
 	files, err := ioutil.ReadDir(c.dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read dir")
 	}
-	roles := make(map[string]*v1.Role)
+	reports := make(map[string]*v1.Report)
 	for _, f := range files {
 		path := filepath.Join(c.dir, f.Name())
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var role v1.Role
-		err := ReadFileInto(path, &role)
+		var report v1.Report
+		err := ReadFileInto(path, &report)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as role")
+			return nil, errors.Wrap(err, "unable to parse .yml file as report")
 		}
-		roles[path] = &role
+		reports[path] = &report
 	}
-	return roles, nil
+	return reports, nil
 }
 
-func (u *rolesClient) Watch(handlers ...storage.RoleEventHandler) (*storage.Watcher, error) {
+func (u *reportsClient) Watch(handlers ...storage.ReportEventHandler) (*storage.Watcher, error) {
 	w := watcher.New()
 	w.SetMaxEvents(0)
 	w.FilterOps(watcher.Create, watcher.Write, watcher.Remove)
@@ -188,7 +188,7 @@ func (u *rolesClient) Watch(handlers ...storage.RoleEventHandler) (*storage.Watc
 	}), nil
 }
 
-func (u *rolesClient) onEvent(event watcher.Event, handlers ...storage.RoleEventHandler) error {
+func (u *reportsClient) onEvent(event watcher.Event, handlers ...storage.ReportEventHandler) error {
 	log.Debugf("file event: %v [%v]", event.Path, event.Op)
 	current, err := u.List()
 	if err != nil {
@@ -200,7 +200,7 @@ func (u *rolesClient) onEvent(event watcher.Event, handlers ...storage.RoleEvent
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.Role
+			var created v1.Report
 			err := ReadFileInto(event.Path, &created)
 			if err != nil {
 				return err
@@ -209,7 +209,7 @@ func (u *rolesClient) onEvent(event watcher.Event, handlers ...storage.RoleEvent
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.Role
+			var updated v1.Report
 			err := ReadFileInto(event.Path, &updated)
 			if err != nil {
 				return err

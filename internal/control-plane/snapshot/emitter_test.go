@@ -3,6 +3,7 @@ package snapshot_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -173,10 +174,59 @@ var _ = Describe("Emitter", func() {
 						s.ResourceVersion = ""
 					}
 					return endpoints, nil
-				}, time.Second*5, time.Millisecond*250).Should(HaveLen(3))
-				Expect(endpoints[namespace+"-test-service-8080"]).To(HaveLen(2))
-				Expect(endpoints[namespace+"-test-service-with-labels-8080"]).To(HaveLen(2))
-				Expect(endpoints[namespace+"-test-service-8080"]).To(HaveLen(2))
+				}, time.Second*5, time.Millisecond*250).Should(And(
+					HaveKey(namespace+"-test-service-8080"),
+					HaveKey(namespace+"-test-service-with-labels-8080"),
+					HaveKey(namespace+"-test-service-with-port-8080"),
+				))
+				Eventually(func() ([]endpointdiscovery.Endpoint, error) {
+					select {
+					case err := <-emitter.Error():
+						return nil, err
+					case snap = <-emitter.Snapshot():
+						endpoints = snap.Endpoints
+					case <-time.After(time.Second):
+					}
+					for _, s := range secrets {
+						s.ResourceVersion = ""
+					}
+					if endpoints == nil {
+						return nil, errors.New("timed out")
+					}
+					return endpoints[namespace+"-test-service-8080"], nil
+				}, time.Second*5, time.Millisecond*250).Should(HaveLen(2))
+				Eventually(func() ([]endpointdiscovery.Endpoint, error) {
+					select {
+					case err := <-emitter.Error():
+						return nil, err
+					case snap = <-emitter.Snapshot():
+						endpoints = snap.Endpoints
+					case <-time.After(time.Second):
+					}
+					for _, s := range secrets {
+						s.ResourceVersion = ""
+					}
+					if endpoints == nil {
+						return nil, errors.New("timed out")
+					}
+					return endpoints[namespace+"-test-service-with-labels-8080"], nil
+				}, time.Second*5, time.Millisecond*250).Should(HaveLen(2))
+				Eventually(func() ([]endpointdiscovery.Endpoint, error) {
+					select {
+					case err := <-emitter.Error():
+						return nil, err
+					case snap = <-emitter.Snapshot():
+						endpoints = snap.Endpoints
+					case <-time.After(time.Second):
+					}
+					for _, s := range secrets {
+						s.ResourceVersion = ""
+					}
+					if endpoints == nil {
+						return nil, errors.New("timed out")
+					}
+					return endpoints[namespace+"-test-service-with-port-8080"], nil
+				}, time.Second*5, time.Millisecond*250).Should(HaveLen(2))
 				cfg := snap.Cfg
 				Eventually(func() (*v1.Config, error) {
 					select {
@@ -220,7 +270,6 @@ var _ = Describe("Emitter", func() {
 							},
 							Functions:   nil,
 							ServiceInfo: nil,
-							Status:      nil,
 							Metadata: &v1.Metadata{
 								Namespace: namespace,
 								Annotations: map[string]string{
@@ -251,7 +300,6 @@ var _ = Describe("Emitter", func() {
 							},
 							Functions:   nil,
 							ServiceInfo: nil,
-							Status:      nil,
 							Metadata: &v1.Metadata{
 								Namespace: namespace,
 								Annotations: map[string]string{
@@ -282,7 +330,6 @@ var _ = Describe("Emitter", func() {
 							},
 							Functions:   nil,
 							ServiceInfo: nil,
-							Status:      nil,
 							Metadata: &v1.Metadata{
 								Namespace: namespace,
 								Annotations: map[string]string{

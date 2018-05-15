@@ -47,7 +47,6 @@ func (c *{{ .LowercasePluralName }}Client) Get(name string) (*v1.{{ .UppercaseNa
 	if err := ConfigObjectFromCrd(
 		crd{{ .UppercaseName }}.ObjectMeta,
 		crd{{ .UppercaseName }}.Spec,
-		crd{{ .UppercaseName }}.Status,
 		&returned{{ .UppercaseName }}); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}")
 	}
@@ -65,7 +64,6 @@ func (c *{{ .LowercasePluralName }}Client) List() ([]*v1.{{ .UppercaseName }}, e
 		if err := ConfigObjectFromCrd(
 			crd{{ .UppercaseName }}.ObjectMeta,
 			crd{{ .UppercaseName }}.Spec,
-			crd{{ .UppercaseName }}.Status,
 			&returned{{ .UppercaseName }}); err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}")
 		}
@@ -118,7 +116,6 @@ func (c *{{ .LowercasePluralName }}Client) createOrUpdate{{ .UppercaseName }}Crd
 	if err := ConfigObjectFromCrd(
 		returnedCrd.ObjectMeta,
 		returnedCrd.Spec,
-		returnedCrd.Status,
 		&returned{{ .UppercaseName }}); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}")
 	}
@@ -143,7 +140,6 @@ func (eh *{{ .LowercaseName }}EventHandler) getUpdatedList() []*v1.{{ .Uppercase
 		if err := ConfigObjectFromCrd(
 			{{ .LowercaseName }}Crd.ObjectMeta,
 			{{ .LowercaseName }}Crd.Spec,
-			{{ .LowercaseName }}Crd.Status,
 			&returned{{ .UppercaseName }}); err != nil {
 			log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}"))
 		}
@@ -161,7 +157,6 @@ func convert{{ .UppercaseName }}(obj interface{}) (*v1.{{ .UppercaseName }}, boo
 	if err := ConfigObjectFromCrd(
 		{{ .LowercaseName }}Crd.ObjectMeta,
 		{{ .LowercaseName }}Crd.Spec,
-		{{ .LowercaseName }}Crd.Status,
 		&returned{{ .UppercaseName }}); err != nil {
 		log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to {{ .LowercaseName }}"))
 		return nil, false

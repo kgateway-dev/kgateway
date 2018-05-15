@@ -51,7 +51,7 @@ func NewStorage(cfg *rest.Config, namespace string, syncFrequency time.Duration)
 				namespace:     namespace,
 				syncFrequency: syncFrequency,
 			},
-			roles: &rolesClient{
+			reports: &reportsClient{
 				crds:          crdClient,
 				namespace:     namespace,
 				syncFrequency: syncFrequency,
@@ -72,7 +72,7 @@ type v1client struct {
 	kubeclient      kubernetes.Interface
 	upstreams       *upstreamsClient
 	virtualServices *virtualServicesClient
-	roles   *rolesClient
+	reports *reportsClient
 	namespace       string
 }
 
@@ -116,6 +116,7 @@ func (c *v1client) VirtualServices() storage.VirtualServices {
 	return c.virtualServices
 }
 
-func (c *v1client) Roles() storage.Roles {
-	return c.roles
+
+func (c *v1client) Reports() storage.Reports {
+	return c.reports
 }

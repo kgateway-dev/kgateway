@@ -41,4 +41,4 @@ jobs:
             # Nomand can't run on docker ci
             # RUN_NOMAD_TESTS: "1"
             RUN_KUBE_TESTS: "1"
-            ENVOY_IMAGE_TAG: "v0.1.6-127"
+            ENVOY_IMAGE_TAG: "v0.1.6-132"

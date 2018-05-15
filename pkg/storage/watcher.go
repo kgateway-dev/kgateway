@@ -20,18 +20,6 @@ type UpstreamEventHandler interface {
 	OnDelete(updatedList []*v1.Upstream, obj *v1.Upstream)
 }
 
-type VirtualServiceEventHandler interface {
-	OnAdd(updatedList []*v1.VirtualService, obj *v1.VirtualService)
-	OnUpdate(updatedList []*v1.VirtualService, newObj *v1.VirtualService)
-	OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService)
-}
-
-type RoleEventHandler interface {
-	OnAdd(updatedList []*v1.Role, obj *v1.Role)
-	OnUpdate(updatedList []*v1.Role, newObj *v1.Role)
-	OnDelete(updatedList []*v1.Role, obj *v1.Role)
-}
-
 // UpstreamEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
 // UpstreamEventHandler.
@@ -60,6 +48,12 @@ func (r UpstreamEventHandlerFuncs) OnDelete(updatedList []*v1.Upstream, obj *v1.
 	if r.DeleteFunc != nil {
 		r.DeleteFunc(updatedList, obj)
 	}
+}
+
+type VirtualServiceEventHandler interface {
+	OnAdd(updatedList []*v1.VirtualService, obj *v1.VirtualService)
+	OnUpdate(updatedList []*v1.VirtualService, newObj *v1.VirtualService)
+	OnDelete(updatedList []*v1.VirtualService, obj *v1.VirtualService)
 }
 
 // VirtualServiceEventHandlerFuncs is an adaptor to let you easily specify as many or
@@ -92,31 +86,38 @@ func (r VirtualServiceEventHandlerFuncs) OnDelete(updatedList []*v1.VirtualServi
 	}
 }
 
-// RoleEventHandlerFuncs is an adaptor to let you easily specify as many or
+
+type ReportEventHandler interface {
+	OnAdd(updatedList []*v1.Report, obj *v1.Report)
+	OnUpdate(updatedList []*v1.Report, newObj *v1.Report)
+	OnDelete(updatedList []*v1.Report, obj *v1.Report)
+}
+
+// ReportEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
-// RoleEventHandler.
-type RoleEventHandlerFuncs struct {
-	AddFunc    func(updatedList []*v1.Role, obj *v1.Role)
-	UpdateFunc func(updatedList []*v1.Role, newObj *v1.Role)
-	DeleteFunc func(updatedList []*v1.Role, obj *v1.Role)
+// ReportEventHandler.
+type ReportEventHandlerFuncs struct {
+	AddFunc    func(updatedList []*v1.Report, obj *v1.Report)
+	UpdateFunc func(updatedList []*v1.Report, newObj *v1.Report)
+	DeleteFunc func(updatedList []*v1.Report, obj *v1.Report)
 }
 
 // OnAdd calls AddFunc if it's not nil.
-func (r RoleEventHandlerFuncs) OnAdd(updatedList []*v1.Role, obj *v1.Role) {
+func (r ReportEventHandlerFuncs) OnAdd(updatedList []*v1.Report, obj *v1.Report) {
 	if r.AddFunc != nil {
 		r.AddFunc(updatedList, obj)
 	}
 }
 
 // OnUpdate calls UpdateFunc if it's not nil.
-func (r RoleEventHandlerFuncs) OnUpdate(updatedList []*v1.Role, newObj *v1.Role) {
+func (r ReportEventHandlerFuncs) OnUpdate(updatedList []*v1.Report, newObj *v1.Report) {
 	if r.UpdateFunc != nil {
 		r.UpdateFunc(updatedList, newObj)
 	}
 }
 
 // OnDelete calls DeleteFunc if it's not nil.
-func (r RoleEventHandlerFuncs) OnDelete(updatedList []*v1.Role, obj *v1.Role) {
+func (r ReportEventHandlerFuncs) OnDelete(updatedList []*v1.Report, obj *v1.Report) {
 	if r.DeleteFunc != nil {
 		r.DeleteFunc(updatedList, obj)
 	}

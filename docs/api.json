@@ -37,15 +37,6 @@
               "longType": "VirtualService",
               "fullType": "v1.VirtualService",
               "defaultValue": ""
-            },
-            {
-              "name": "roles",
-              "description": "the list roles defined by the user",
-              "label": "repeated",
-              "type": "Role",
-              "longType": "Role",
-              "fullType": "v1.Role",
-              "defaultValue": ""
             }
           ]
         }
@@ -134,68 +125,7 @@
       "services": []
     },
     {
-      "name": "role.proto",
-      "description": "",
-      "package": "v1",
-      "hasEnums": false,
-      "hasExtensions": false,
-      "hasMessages": true,
-      "hasServices": false,
-      "enums": [],
-      "extensions": [],
-      "messages": [
-        {
-          "name": "Role",
-          "longName": "Role",
-          "fullName": "v1.Role",
-          "description": "A Role is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Role is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Role cannot appear more than once, or the Role\nwill be invalid.",
-          "hasExtensions": false,
-          "hasFields": true,
-          "extensions": [],
-          "fields": [
-            {
-              "name": "name",
-              "description": "Name of the role. Envoy nodes will be assigned a config corresponding with role they are assigned.\nEnvoy instances must specify the role they belong to when they register to Gloo.\n\nCurrently this is done by specifying the name of the role as a prefix to the Envoy's Node ID\nwhich can be specified with the `--service-node` flag, or in the Envoy instance's bootstrap config.\n\nNames must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
-              "label": "",
-              "type": "string",
-              "longType": "string",
-              "fullType": "string",
-              "defaultValue": ""
-            },
-            {
-              "name": "virtual_services",
-              "description": "the list of names of the virtual services this role encapsulates.",
-              "label": "repeated",
-              "type": "string",
-              "longType": "string",
-              "fullType": "string",
-              "defaultValue": ""
-            },
-            {
-              "name": "status",
-              "description": "Status indicates the validation status of the role resource.\nStatus is read-only by clients, and set by gloo during validation",
-              "label": "",
-              "type": "Status",
-              "longType": "Status",
-              "fullType": "v1.Status",
-              "defaultValue": ""
-            },
-            {
-              "name": "metadata",
-              "description": "Metadata contains the resource metadata for the role",
-              "label": "",
-              "type": "Metadata",
-              "longType": "Metadata",
-              "fullType": "v1.Metadata",
-              "defaultValue": ""
-            }
-          ]
-        }
-      ],
-      "services": []
-    },
-    {
-      "name": "status.proto",
+      "name": "report.proto",
       "description": "",
       "package": "v1",
       "hasEnums": false,
@@ -203,6 +133,24 @@
       "hasMessages": true,
       "hasServices": false,
       "enums": [
+        {
+          "name": "ObjectType",
+          "longName": "ObjectReference.ObjectType",
+          "fullName": "v1.ObjectReference.ObjectType",
+          "description": "",
+          "values": [
+            {
+              "name": "Upstream",
+              "number": "0",
+              "description": ""
+            },
+            {
+              "name": "VirtualService",
+              "number": "1",
+              "description": ""
+            }
+          ]
+        },
         {
           "name": "State",
           "longName": "Status.State",
@@ -230,10 +178,95 @@
       "extensions": [],
       "messages": [
         {
+          "name": "Report",
+          "longName": "Report",
+          "fullName": "v1.Report",
+          "description": "A Report contains config validation information for users.\nGloo generates reports for every top-level config object (VirtualServices and Upstreams)\nindicating whether the resource was accepted by Gloo or rejected (due to an invalid configuration).",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "name",
+              "description": "a unique name for the report",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "object_reference",
+              "description": "reference to the object this report pertains to",
+              "label": "",
+              "type": "ObjectReference",
+              "longType": "ObjectReference",
+              "fullType": "v1.ObjectReference",
+              "defaultValue": ""
+            },
+            {
+              "name": "status",
+              "description": "Status describes the status of the object",
+              "label": "",
+              "type": "Status",
+              "longType": "Status",
+              "fullType": "v1.Status",
+              "defaultValue": ""
+            },
+            {
+              "name": "metadata",
+              "description": "Metadata is used primarily for resource versioning the report",
+              "label": "",
+              "type": "Metadata",
+              "longType": "Metadata",
+              "fullType": "v1.Metadata",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "ObjectReference",
+          "longName": "ObjectReference",
+          "fullName": "v1.ObjectReference",
+          "description": "",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "object_type",
+              "description": "type of the object\ncan be Upstream or VirtualService",
+              "label": "",
+              "type": "ObjectType",
+              "longType": "ObjectReference.ObjectType",
+              "fullType": "v1.ObjectReference.ObjectType",
+              "defaultValue": ""
+            },
+            {
+              "name": "name",
+              "description": "name of the object",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "namespace",
+              "description": "optional namespace of the object",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
           "name": "Status",
           "longName": "Status",
           "fullName": "v1.Status",
-          "description": "Status indicates whether a config resource (currently only [virtualservices](../introduction/concepts.md) and [upstreams](../introduction/concepts.md)) has been (in)validated by gloo",
+          "description": "Status indicates whether a config resource has been (in)validated by gloo",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
@@ -333,15 +366,6 @@
               "type": "ServiceInfo",
               "longType": "ServiceInfo",
               "fullType": "v1.ServiceInfo",
-              "defaultValue": ""
-            },
-            {
-              "name": "status",
-              "description": "Status indicates the validation status of the upstream resource. Status is read-only by clients, and set by gloo during validation",
-              "label": "",
-              "type": "Status",
-              "longType": "Status",
-              "fullType": "v1.Status",
               "defaultValue": ""
             },
             {
@@ -473,12 +497,12 @@
               "defaultValue": ""
             },
             {
-              "name": "status",
-              "description": "Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation",
-              "label": "",
-              "type": "Status",
-              "longType": "Status",
-              "fullType": "v1.Status",
+              "name": "roles",
+              "description": "defines one or more roles this virtual service will be defined for\nrole maps a virtual service to a group of proxies\nif left empty, Gloo will treat the role as a role for the ingress",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
               "defaultValue": ""
             },
             {

@@ -10,5 +10,6 @@ type ConfigObjectReport struct {
 }
 
 type Interface interface {
-	WriteReports(statuses []ConfigObjectReport) error
+	WriteGlobalReports(cfgObjectErrs []ConfigObjectReport) error
+	WriteRoleReports(role string, cfgObjectErrs []ConfigObjectReport) error
 }

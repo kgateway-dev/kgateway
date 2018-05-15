@@ -2,13 +2,10 @@ package log
 
 import (
 	"fmt"
-	"os"
-	"runtime"
-
-	"regexp"
-
 	"io"
-
+	"os"
+	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/k0kubun/pp"
@@ -34,21 +31,21 @@ func GreyPrintf(format string, a ...interface{}) {
 }
 
 func Printf(format string, a ...interface{}) {
-	pp.Fprintf(DefaultOut, "%v\t"+format+"\n", append([]interface{}{line()}, a...)...)
+	fmt.Fprintln(DefaultOut, Sprintf(format, a...))
 }
 
 func Warnf(format string, a ...interface{}) {
-	pp.Fprintf(DefaultOut, "WARNING: %v\t"+format+"\n", append([]interface{}{line()}, a...)...)
+	fmt.Fprintln(DefaultOut, Sprintf("WARNING: %v\t"+format+"\n", a...))
 }
 
 func Debugf(format string, a ...interface{}) {
 	if debugMode {
-		pp.Fprintf(DefaultOut, "%v\t"+format+"\n", append([]interface{}{line()}, a...)...)
+		fmt.Fprintln(DefaultOut, Sprintf(format, a...))
 	}
 }
 
 func Fatalf(format string, a ...interface{}) {
-	pp.Fprintf(DefaultOut, "%v\t"+format+"\n", append([]interface{}{line()}, a...)...)
+	fmt.Fprintln(DefaultOut, Sprintf(format, a...))
 	os.Exit(1)
 }
 

@@ -12,10 +12,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage/crud"
 	kuberrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 type upstreamsClient struct {
@@ -47,7 +47,6 @@ func (c *upstreamsClient) Get(name string) (*v1.Upstream, error) {
 	if err := ConfigObjectFromCrd(
 		crdUpstream.ObjectMeta,
 		crdUpstream.Spec,
-		crdUpstream.Status,
 		&returnedUpstream); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to upstream")
 	}
@@ -65,7 +64,6 @@ func (c *upstreamsClient) List() ([]*v1.Upstream, error) {
 		if err := ConfigObjectFromCrd(
 			crdUpstream.ObjectMeta,
 			crdUpstream.Spec,
-			crdUpstream.Status,
 			&returnedUpstream); err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to upstream")
 		}
@@ -118,7 +116,6 @@ func (c *upstreamsClient) createOrUpdateUpstreamCrd(upstream *v1.Upstream, op cr
 	if err := ConfigObjectFromCrd(
 		returnedCrd.ObjectMeta,
 		returnedCrd.Spec,
-		returnedCrd.Status,
 		&returnedUpstream); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to upstream")
 	}
@@ -143,7 +140,6 @@ func (eh *upstreamEventHandler) getUpdatedList() []*v1.Upstream {
 		if err := ConfigObjectFromCrd(
 			upstreamCrd.ObjectMeta,
 			upstreamCrd.Spec,
-			upstreamCrd.Status,
 			&returnedUpstream); err != nil {
 			log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to upstream"))
 		}
@@ -161,7 +157,6 @@ func convertUpstream(obj interface{}) (*v1.Upstream, bool) {
 	if err := ConfigObjectFromCrd(
 		upstreamCrd.ObjectMeta,
 		upstreamCrd.Spec,
-		upstreamCrd.Status,
 		&returnedUpstream); err != nil {
 		log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to upstream"))
 		return nil, false

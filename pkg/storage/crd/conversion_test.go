@@ -28,7 +28,6 @@ var _ = Describe("Conversion", func() {
 			// removed parts
 			Expect(spec["name"]).To(BeNil())
 			Expect(spec["metadata"]).To(BeNil())
-			Expect(spec["status"]).To(BeNil())
 			Expect(spec["annotations"]).To(BeNil())
 
 			// shifted parts
@@ -64,7 +63,6 @@ var _ = Describe("Conversion", func() {
 			// removed parts
 			Expect(spec["name"]).To(BeNil())
 			Expect(spec["metadata"]).To(BeNil())
-			Expect(spec["status"]).To(BeNil())
 			Expect(spec["annotations"]).To(BeNil())
 
 			//// shifted parts

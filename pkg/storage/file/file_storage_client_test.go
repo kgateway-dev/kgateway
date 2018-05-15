@@ -99,30 +99,80 @@ var _ = Describe("CrdStorageClient", func() {
 			Expect(created2).To(Equal(vService2))
 		})
 	})
-	Describe("Create2Update role", func() {
+	Describe("Get", func() {
+		It("gets a file from the name", func() {
+			client, err := NewStorage(dir, resync)
+			Expect(err).NotTo(HaveOccurred())
+			err = client.V1().Register()
+			Expect(err).NotTo(HaveOccurred())
+			upstream := NewTestUpstream1()
+			_, err = client.V1().Upstreams().Create(upstream)
+			Expect(err).NotTo(HaveOccurred())
+			created, err := client.V1().Upstreams().Get(upstream.Name)
+			Expect(err).NotTo(HaveOccurred())
+			upstream.Metadata = created.Metadata
+			Expect(created).To(Equal(upstream))
+		})
+	})
+	Describe("Update", func() {
+		It("updates a file from the item", func() {
+			client, err := NewStorage(dir, resync)
+			Expect(err).NotTo(HaveOccurred())
+			err = client.V1().Register()
+			Expect(err).NotTo(HaveOccurred())
+			upstream := NewTestUpstream1()
+			created, err := client.V1().Upstreams().Create(upstream)
+			Expect(err).NotTo(HaveOccurred())
+			upstream.Type = "something-else"
+			_, err = client.V1().Upstreams().Update(upstream)
+			// need to set resource ver
+			Expect(err).To(HaveOccurred())
+			upstream.Metadata = created.GetMetadata()
+			updated, err := client.V1().Upstreams().Update(upstream)
+			Expect(err).NotTo(HaveOccurred())
+			upstream.Metadata = updated.GetMetadata()
+			Expect(updated).To(Equal(upstream))
+		})
+	})
+	Describe("Delete", func() {
+		It("deletes a file from the name", func() {
+			client, err := NewStorage(dir, resync)
+			Expect(err).NotTo(HaveOccurred())
+			err = client.V1().Register()
+			Expect(err).NotTo(HaveOccurred())
+			upstream := NewTestUpstream1()
+			_, err = client.V1().Upstreams().Create(upstream)
+			Expect(err).NotTo(HaveOccurred())
+			err = client.V1().Upstreams().Delete(upstream.Name)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.V1().Upstreams().Get(upstream.Name)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+	Describe("Create2Update report", func() {
 		It("creates and updates", func() {
 			client, err := NewStorage(dir, resync)
 			Expect(err).NotTo(HaveOccurred())
 			err = client.V1().Register()
 			Expect(err).NotTo(HaveOccurred())
-			role := NewTestRole("v1")
-			role, err = client.V1().Roles().Create(role)
-			role2 := NewTestRole("v2")
-			role2, err = client.V1().Roles().Create(role2)
+			report := NewTestReport("v1")
+			report, err = client.V1().Reports().Create(report)
+			report2 := NewTestReport("v2")
+			report2, err = client.V1().Reports().Create(report2)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = client.V1().Roles().Update(role)
+			_, err = client.V1().Reports().Update(report)
 			Expect(err).NotTo(HaveOccurred())
 
-			created1, err := client.V1().Roles().Get(role.Name)
+			created1, err := client.V1().Reports().Get(report.Name)
 			Expect(err).NotTo(HaveOccurred())
-			role.Metadata = created1.Metadata
-			Expect(created1).To(Equal(role))
+			report.Metadata = created1.Metadata
+			Expect(created1).To(Equal(report))
 
-			created2, err := client.V1().Roles().Get(role2.Name)
+			created2, err := client.V1().Reports().Get(report2.Name)
 			Expect(err).NotTo(HaveOccurred())
-			role2.Metadata = created2.Metadata
-			Expect(created2).To(Equal(role2))
+			report2.Metadata = created2.Metadata
+			Expect(created2).To(Equal(report2))
 		})
 	})
 	Describe("Get", func() {

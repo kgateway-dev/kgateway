@@ -10,7 +10,7 @@ ingress:
   exposeAdminPort: false
   adminPort: 19000
   image: soloio/envoy
-  imageTag: v0.1.6-127
+  imageTag: v0.1.6-132
   imagePullPolicy: IfNotPresent
 
 control_plane:

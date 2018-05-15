@@ -18,7 +18,7 @@ limitations under the License.
 
 package v1
 
-type RoleExpansion interface{}
+type ReportExpansion interface{}
 
 type UpstreamExpansion interface{}
 

@@ -41,10 +41,10 @@ var _ = Describe("CrdReporter", func() {
 	Describe("writereports", func() {
 		var (
 			glooClient      storage.Interface
-			reports         []ConfigObjectReport
+			upstreamReports []ConfigObjectReport
+			vServiceReports []ConfigObjectReport
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
-			roles []*v1.Role
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
@@ -56,57 +56,42 @@ var _ = Describe("CrdReporter", func() {
 
 				testCfg := NewTestConfig()
 				upstreams = testCfg.Upstreams
-				var storables []v1.ConfigObject
 				for _, us := range upstreams {
 					_, err := glooClient.V1().Upstreams().Create(us)
 					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, us)
+					upstreamReports = append(upstreamReports, ConfigObjectReport{
+						CfgObject: us,
+						Err:       nil,
+					})
 				}
 				virtualServices = testCfg.VirtualServices
 				for _, vService := range virtualServices {
 					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, vService)
-				}
-				roles = testCfg.Roles
-				for _, role := range roles {
-					_, err := glooClient.V1().Roles().Create(role)
-					Expect(err).NotTo(HaveOccurred())
-
-					storables = append(storables, role)
-				}
-				for _, storable := range storables {
-					reports = append(reports, ConfigObjectReport{
-						CfgObject: storable,
+					vServiceReports = append(vServiceReports, ConfigObjectReport{
+						CfgObject: vService,
 						Err:       nil,
 					})
 				}
 			})
 
-			It("writes an acceptance status for each crd", func() {
-				err := rptr.WriteReports(reports)
+			It("writes an acceptance status for each cfg object", func() {
+				err := rptr.WriteGlobalReports(upstreamReports)
 				Expect(err).NotTo(HaveOccurred())
-				updatedUpstreams, err := glooClient.V1().Upstreams().List()
+				err = rptr.WriteRoleReports("myrole", vServiceReports)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedUpstreams).To(HaveLen(len(upstreams)))
-				for _, updatedUpstream := range updatedUpstreams {
-					Expect(updatedUpstream.Status.State).To(Equal(v1.Status_Accepted))
-				}
-				updatedvServices, err := glooClient.V1().VirtualServices().List()
+				reports, err := glooClient.V1().Reports().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedvServices).To(HaveLen(len(upstreams)))
-				for _, updatedvService := range updatedvServices {
-					Expect(updatedvService.Status.State).To(Equal(v1.Status_Accepted))
-				}
-				updatedroles, err := glooClient.V1().Roles().List()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedroles).To(HaveLen(len(upstreams)))
-				for _, updatedrole := range updatedroles {
-					Expect(updatedrole.Status.State).To(Equal(v1.Status_Accepted))
+				Expect(reports).To(HaveLen(len(upstreams)+len(virtualServices)))
+				for _, report := range reports {
+					if report.ObjectReference.ObjectType == v1.ObjectReference_VirtualService {
+						Expect(report.Name).To(HavePrefix("myrole-"))
+					}
+					Expect(report.Status.State).To(Equal(v1.Status_Accepted))
 				}
 			})
 		})
-		Context("writes status reports for cfg crds with SOME errors", func() {
+		Context("writes status reports for cfg cfg objects with SOME errors", func() {
 			BeforeEach(func() {
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 				Expect(err).NotTo(HaveOccurred())
@@ -116,52 +101,40 @@ var _ = Describe("CrdReporter", func() {
 
 				testCfg := NewTestConfig()
 				upstreams = testCfg.Upstreams
-				var storables []v1.ConfigObject
+
+				upstreams = testCfg.Upstreams
 				for _, us := range upstreams {
 					_, err := glooClient.V1().Upstreams().Create(us)
 					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, us)
+					upstreamReports = append(upstreamReports, ConfigObjectReport{
+						CfgObject: us,
+						Err:       errors.New("oh no an error what did u do!"),
+					})
 				}
 				virtualServices = testCfg.VirtualServices
 				for _, vService := range virtualServices {
 					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, vService)
-				}
-				roles = testCfg.Roles
-				for _, role := range roles {
-					_, err := glooClient.V1().Roles().Create(role)
-					Expect(err).NotTo(HaveOccurred())
-					storables = append(storables, role)
-				}
-				for _, storable := range storables {
-					reports = append(reports, ConfigObjectReport{
-						CfgObject: storable,
+					vServiceReports = append(vServiceReports, ConfigObjectReport{
+						CfgObject: vService,
 						Err:       errors.New("oh no an error what did u do!"),
 					})
 				}
 			})
 
-			It("writes an rejected status for each crd", func() {
-				err := rptr.WriteReports(reports)
+			It("writes an rejected status for each cfg object", func() {
+				err := rptr.WriteGlobalReports(upstreamReports)
 				Expect(err).NotTo(HaveOccurred())
-				updatedUpstreams, err := glooClient.V1().Upstreams().List()
+				err = rptr.WriteRoleReports("myrole", vServiceReports)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedUpstreams).To(HaveLen(len(upstreams)))
-				for _, updatedUpstream := range updatedUpstreams {
-					Expect(updatedUpstream.Status.State).To(Equal(v1.Status_Rejected))
-				}
-				updatedvServices, err := glooClient.V1().VirtualServices().List()
+				reports, err := glooClient.V1().Reports().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedvServices).To(HaveLen(len(upstreams)))
-				for _, updatedvService := range updatedvServices {
-					Expect(updatedvService.Status.State).To(Equal(v1.Status_Rejected))
-				}
-				updatedroles, err := glooClient.V1().Roles().List()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedroles).To(HaveLen(len(upstreams)))
-				for _, updatedrole := range updatedroles {
-					Expect(updatedrole.Status.State).To(Equal(v1.Status_Rejected))
+				Expect(reports).To(HaveLen(len(upstreams)+len(virtualServices)))
+				for _, report := range reports {
+					if report.ObjectReference.ObjectType == v1.ObjectReference_VirtualService {
+						Expect(report.Name).To(HavePrefix("myrole-"))
+					}
+					Expect(report.Status.State).To(Equal(v1.Status_Rejected))
 				}
 			})
 		})

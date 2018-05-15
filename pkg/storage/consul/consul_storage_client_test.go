@@ -1,12 +1,11 @@
 package consul_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
+	"fmt"
 	"time"
 
-	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hashicorp/consul/api"
@@ -414,149 +413,124 @@ var _ = Describe("ConsulStorageClient", func() {
 			})
 		})
 	})
-	Describe("Roles", func() {
+	Describe("Reports", func() {
 		Describe("create", func() {
-			It("creates the role as a consul key", func() {
+			It("creates the virtualservice as a consul key", func() {
 				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 				Expect(err).NotTo(HaveOccurred())
-				input := &v1.Role{
-					Name:            "myrole",
-					VirtualServices: []string{"foo"},
-				}
-				vs, err := client.V1().Roles().Create(input)
+				input := helpers.NewTestReport("myreport")
+				report, err := client.V1().Reports().Create(input)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(vs).NotTo(Equal(input))
-				p, _, err := consul.KV().Get(rootPath+"/roles/"+input.Name, nil)
+				Expect(report).NotTo(Equal(input))
+				p, _, err := consul.KV().Get(rootPath+"/reports/"+input.Name, nil)
 				Expect(err).NotTo(HaveOccurred())
-				var unmarshalledRole v1.Role
-				err = proto.Unmarshal(p.Value, &unmarshalledRole)
+				var unmarshalledReport v1.Report
+				err = proto.Unmarshal(p.Value, &unmarshalledReport)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(&unmarshalledRole).To(Equal(input))
+				Expect(&unmarshalledReport).To(Equal(input))
 				resourceVersion := fmt.Sprintf("%v", p.CreateIndex)
-				Expect(vs.Metadata.ResourceVersion).To(Equal(resourceVersion))
-				input.Metadata = vs.Metadata
-				Expect(vs).To(Equal(input))
+				Expect(report.Metadata.ResourceVersion).To(Equal(resourceVersion))
+				input.Metadata = report.Metadata
+				Expect(report).To(Equal(input))
 			})
-			It("errors when creating the same role twice", func() {
+			It("errors when creating the same report twice", func() {
 				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
+
 				Expect(err).NotTo(HaveOccurred())
-				input := &v1.Role{
-					Name:            "myrole",
-					VirtualServices: []string{"foo"},
-				}
-				_, err = client.V1().Roles().Create(input)
+				input := helpers.NewTestReport("myreport")
+				_, err = client.V1().Reports().Create(input)
 				Expect(err).NotTo(HaveOccurred())
-				_, err = client.V1().Roles().Create(input)
+				_, err = client.V1().Reports().Create(input)
 				Expect(err).To(HaveOccurred())
 			})
 			Describe("update", func() {
-				It("fails if the role doesn't exist", func() {
+				It("fails if the report doesn't exist", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
-					input := &v1.Role{
-						Name:            "myrole",
-						VirtualServices: []string{"foo"},
-					}
-					vs, err := client.V1().Roles().Update(input)
+					input := helpers.NewTestReport("myreport")
+					report, err := client.V1().Reports().Update(input)
 					Expect(err).To(HaveOccurred())
-					Expect(vs).To(BeNil())
+					Expect(report).To(BeNil())
 				})
 				It("fails if the resourceversion is not up to date", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
-					input := &v1.Role{
-						Name:            "myrole",
-						VirtualServices: []string{"foo"},
-					}
-					_, err = client.V1().Roles().Create(input)
+					input := helpers.NewTestReport("myreport")
+					_, err = client.V1().Reports().Create(input)
 					Expect(err).NotTo(HaveOccurred())
-					v, err := client.V1().Roles().Update(input)
+					v, err := client.V1().Reports().Update(input)
 					Expect(v).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("resource version"))
 				})
-				It("updates the role", func() {
+				It("updates the report", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
-					input := &v1.Role{
-						Name:            "myrole",
-						VirtualServices: []string{"foo"},
-					}
-					vs, err := client.V1().Roles().Create(input)
+					input := helpers.NewTestReport("myreport")
+					report, err := client.V1().Reports().Create(input)
 					Expect(err).NotTo(HaveOccurred())
-					changed := proto.Clone(input).(*v1.Role)
-					changed.VirtualServices = []string{"bar"}
+					changed := proto.Clone(input).(*v1.Report)
+					changed.Status.State = v1.Status_Rejected
+					changed.Status.Reason = "because you smell funny"
 					// match resource version
-					changed.Metadata = vs.Metadata
-					out, err := client.V1().Roles().Update(changed)
+					changed.Metadata = report.Metadata
+					out, err := client.V1().Reports().Update(changed)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(out.VirtualServices).To(Equal(changed.VirtualServices))
+					Expect(out.Status).To(Equal(changed.Status))
 				})
 				Describe("get", func() {
-					It("fails if the role doesn't exist", func() {
+					It("fails if the report doesn't exist", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						vs, err := client.V1().Roles().Get("foo")
+						report, err := client.V1().Reports().Get("foo")
 						Expect(err).To(HaveOccurred())
-						Expect(vs).To(BeNil())
+						Expect(report).To(BeNil())
 					})
-					It("returns the role", func() {
+					It("returns the report", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						input := &v1.Role{
-							Name:            "myrole",
-							VirtualServices: []string{"foo"},
-						}
-						vs, err := client.V1().Roles().Create(input)
+						input := helpers.NewTestReport("myreport")
+						report, err := client.V1().Reports().Create(input)
 						Expect(err).NotTo(HaveOccurred())
-						out, err := client.V1().Roles().Get(input.Name)
+						out, err := client.V1().Reports().Get(input.Name)
 						Expect(err).NotTo(HaveOccurred())
-						Expect(out).To(Equal(vs))
+						Expect(out).To(Equal(report))
 						input.Metadata = out.Metadata
 						Expect(out).To(Equal(input))
 					})
 				})
 				Describe("list", func() {
-					It("returns all existing roles", func() {
+					It("returns all existing reports", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						input1 := &v1.Role{
-							Name:            "myrole1",
-							VirtualServices: []string{"foo"},
-						}
-						input2 := &v1.Role{
-							Name:            "myrole2",
-							VirtualServices: []string{"foo"},
-						}
-						input3 := &v1.Role{
-							Name:            "myrole3",
-							VirtualServices: []string{"foo"},
-						}
-						vs1, err := client.V1().Roles().Create(input1)
+						input1 := helpers.NewTestReport("myreport1")
+						input2 := helpers.NewTestReport("myreport2")
+						input3 := helpers.NewTestReport("myreport3")
+						report1, err := client.V1().Reports().Create(input1)
 						Expect(err).NotTo(HaveOccurred())
 						time.Sleep(time.Second)
-						vs2, err := client.V1().Roles().Create(input2)
+						report2, err := client.V1().Reports().Create(input2)
 						Expect(err).NotTo(HaveOccurred())
 						time.Sleep(time.Second)
-						vs3, err := client.V1().Roles().Create(input3)
+						report3, err := client.V1().Reports().Create(input3)
 						Expect(err).NotTo(HaveOccurred())
-						out, err := client.V1().Roles().List()
+						out, err := client.V1().Reports().List()
 						Expect(err).NotTo(HaveOccurred())
-						Expect(out).To(ContainElement(vs1))
-						Expect(out).To(ContainElement(vs2))
-						Expect(out).To(ContainElement(vs3))
+						Expect(out).To(ContainElement(report1))
+						Expect(out).To(ContainElement(report2))
+						Expect(out).To(ContainElement(report3))
 					})
 				})
 				Describe("watch", func() {
 					It("watches", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
-						lists := make(chan []*v1.Role, 3)
+						lists := make(chan []*v1.Report, 3)
 						stop := make(chan struct{})
 						defer close(stop)
 						errs := make(chan error)
-						w, err := client.V1().Roles().Watch(&storage.RoleEventHandlerFuncs{
-							UpdateFunc: func(updatedList []*v1.Role, _ *v1.Role) {
+						w, err := client.V1().Reports().Watch(&storage.ReportEventHandlerFuncs{
+							UpdateFunc: func(updatedList []*v1.Report, _ *v1.Report) {
 								lists <- updatedList
 							},
 						})
@@ -564,27 +538,18 @@ var _ = Describe("ConsulStorageClient", func() {
 						go func() {
 							w.Run(stop, errs)
 						}()
-						input1 := &v1.Role{
-							Name:            "myrole1",
-							VirtualServices: []string{"foo"},
-						}
-						input2 := &v1.Role{
-							Name:            "myrole2",
-							VirtualServices: []string{"foo"},
-						}
-						input3 := &v1.Role{
-							Name:            "myrole3",
-							VirtualServices: []string{"foo"},
-						}
-						vs1, err := client.V1().Roles().Create(input1)
+						input1 := helpers.NewTestReport("myreport1")
+						input2 := helpers.NewTestReport("myreport2")
+						input3 := helpers.NewTestReport("myreport3")
+						report1, err := client.V1().Reports().Create(input1)
 						Expect(err).NotTo(HaveOccurred())
-						vs2, err := client.V1().Roles().Create(input2)
+						report2, err := client.V1().Reports().Create(input2)
 						Expect(err).NotTo(HaveOccurred())
-						vs3, err := client.V1().Roles().Create(input3)
+						report3, err := client.V1().Reports().Create(input3)
 						Expect(err).NotTo(HaveOccurred())
 
-						var list []*v1.Role
-						Eventually(func() []*v1.Role {
+						var list []*v1.Report
+						Eventually(func() []*v1.Report {
 							select {
 							default:
 								return nil
@@ -594,9 +559,9 @@ var _ = Describe("ConsulStorageClient", func() {
 							}
 						}).Should(HaveLen(3))
 						Expect(list).To(HaveLen(3))
-						Expect(list).To(ContainElement(vs1))
-						Expect(list).To(ContainElement(vs2))
-						Expect(list).To(ContainElement(vs3))
+						Expect(list).To(ContainElement(report1))
+						Expect(list).To(ContainElement(report2))
+						Expect(list).To(ContainElement(report3))
 					})
 				})
 			})

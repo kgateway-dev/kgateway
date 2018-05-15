@@ -14,14 +14,9 @@ func NewTestConfig() *v1.Config {
 		NewTestVirtualService("my-vservice", NewTestRoute1(), NewTestRoute2()),
 		NewTestVirtualService("my-vservice-2", NewTestRoute1(), NewTestRoute2()),
 	}
-	roles := []*v1.Role{
-		NewTestRole("my-role", "my-vservice"),
-		NewTestRole("my-role-2", "my-vservice-2"),
-	}
 	return &v1.Config{
 		Upstreams:       upstreams,
 		VirtualServices: virtualServices,
-		Roles:   roles,
 	}
 }
 
@@ -68,6 +63,7 @@ func NewTestVirtualService(name string, routes ...*v1.Route) *v1.VirtualService 
 		Metadata: &v1.Metadata{
 			Annotations: map[string]string{"my_annotation": "value"},
 		},
+		Roles: []string{"ingress", "another-role"},
 	}
 }
 
@@ -171,12 +167,18 @@ func NewTestRouteWithCORS() *v1.Route {
 	}
 }
 
-func NewTestRole(name string, vServices ... string) *v1.Role {
-	return &v1.Role{
-		Name:            name,
-		VirtualServices: vServices,
+func NewTestReport(name string) *v1.Report {
+	return &v1.Report{
+		Name: name,
+		ObjectReference: &v1.ObjectReference{
+			ObjectType: v1.ObjectReference_Upstream,
+			Name:       "test-upstream",
+		},
+		Status: &v1.Status{
+			State: v1.Status_Accepted,
+		},
 		Metadata: &v1.Metadata{
-			Annotations: map[string]string{"my_annotation": "value"},
+			Annotations: map[string]string{"foo": "bar"},
 		},
 	}
 }
