@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("HappyPath EDS", func() {
-
 	It("Receive proxied from eds", func() {
 		fmt.Fprintln(GinkgoWriter, "Running Envoy")
 		err := envoyInstance.Run()
