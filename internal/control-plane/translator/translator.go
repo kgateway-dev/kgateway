@@ -358,7 +358,7 @@ func (t *Translator) computeVirtualHosts(role *v1.Role,
 		envoyVirtualHost, err := t.computeVirtualHost(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
 		reports = append(reports, createReport(virtualService, err))
 		// don't append errored virtual services
-		if err != nil {
+		if err != nil || roleErr != nil {
 			continue
 		}
 		if virtualService.SslConfig != nil && virtualService.SslConfig.SecretRef != "" {

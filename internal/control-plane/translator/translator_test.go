@@ -24,26 +24,28 @@ func newTranslator() *Translator {
 }
 
 var _ = Describe("Translator", func() {
+	role := &v1.Role{Name: "myrole"}
 	Context("invalid config", func() {
 		Context("domains are not unique amongst virtual services", func() {
 			cfg := InvalidConfigSharedDomains()
 			t := newTranslator()
-			snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
-			It("returns four reports, one for each upstream, one for each virtualservice", func() {
+			snap, reports, err := t.Translate(role, &snapshot.Cache{Cfg: cfg})
+			It("returns five reports, one for each upstream, one for each virtualservice", func() {
 				Expect(err).NotTo(HaveOccurred())
-				Expect(reports).To(HaveLen(3))
+				Expect(reports).To(HaveLen(4))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
 				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
 				Expect(reports[2].CfgObject).To(Equal(cfg.VirtualServices[1]))
+				Expect(reports[3].CfgObject).To(Equal(role))
 			})
 			It("returns no error report for the cluster", func() {
 				Expect(reports[0].Err).To(BeNil())
 			})
-			It("returns an error report for each virtual service", func() {
-				Expect(reports[1].Err).NotTo(BeNil())
-				Expect(reports[2].Err).NotTo(BeNil())
-				Expect(reports[1].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
-				Expect(reports[2].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
+			It("returns a valid report for each virtual service, and an error for the role", func() {
+				Expect(reports[1].Err).To(BeNil())
+				Expect(reports[2].Err).To(BeNil())
+				Expect(reports[3]).NotTo(BeNil())
+				Expect(reports[3].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
 			})
 			It("returns only the valid cluster", func() {
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
@@ -56,20 +58,22 @@ var _ = Describe("Translator", func() {
 		Context("one valid route, one invalid route", func() {
 			cfg := PartiallyValidConfig()
 			t := newTranslator()
-			snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
+			snap, reports, err := t.Translate(role, &snapshot.Cache{Cfg: cfg})
 			It("returns four reports, one for each upstream, one for each virtualservice", func() {
 				Expect(err).NotTo(HaveOccurred())
-				Expect(reports).To(HaveLen(4))
+				Expect(reports).To(HaveLen(5))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
 				Expect(reports[1].CfgObject).To(Equal(cfg.Upstreams[1]))
 				Expect(reports[2].CfgObject).To(Equal(cfg.VirtualServices[0]))
 				Expect(reports[3].CfgObject).To(Equal(cfg.VirtualServices[1]))
+				Expect(reports[4].CfgObject).To(Equal(role))
 			})
 			It("returns an error report for the bad cluster and the bad route", func() {
 				Expect(reports[0].Err).To(BeNil())
 				Expect(reports[1].Err).NotTo(BeNil())
 				Expect(reports[2].Err).To(BeNil())
 				Expect(reports[3].Err).NotTo(BeNil())
+				Expect(reports[4].Err).To(BeNil())
 				Expect(reports[1].Err.Error()).To(ContainSubstring("ip cannot be empty"))
 				Expect(reports[3].Err.Error()).To(ContainSubstring("upstream invalid-service was not found or had errors for function destination"))
 			})
@@ -88,15 +92,17 @@ var _ = Describe("Translator", func() {
 			cfg := InvalidConfigNoUpstream()
 			t := newTranslator()
 			It("returns report for the error and no virtual services", func() {
-				snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
+				snap, reports, err := t.Translate(role, &snapshot.Cache{Cfg: cfg})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(reports).To(HaveLen(2))
+				Expect(reports).To(HaveLen(3))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
 				Expect(reports[0].Err).To(BeNil())
 				Expect(reports[1].Err).NotTo(BeNil())
 				Expect(reports[1].Err.Error()).To(ContainSubstring("upstream invalid-service was not found or had " +
 					"errors for upstream destination"))
 				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
+				Expect(reports[2].Err).To(BeNil())
+				Expect(reports[2].CfgObject).To(Equal(role))
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
 				Expect(clas).To(HaveLen(0))
 				Expect(clusters).To(HaveLen(1))
@@ -110,13 +116,15 @@ var _ = Describe("Translator", func() {
 			cfg := ValidConfigNoSsl()
 			t := newTranslator()
 			It("returns an empty ssl routeconfig and a len 1 nossl routeconfig", func() {
-				snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
+				snap, reports, err := t.Translate(role, &snapshot.Cache{Cfg: cfg})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(reports).To(HaveLen(2))
+				Expect(reports).To(HaveLen(3))
 				Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
 				Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
+				Expect(reports[2].CfgObject).To(Equal(role))
 				Expect(reports[0].Err).To(BeNil())
 				Expect(reports[1].Err).To(BeNil())
+				Expect(reports[2].Err).To(BeNil())
 				clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
 				Expect(clas).To(HaveLen(0))
 				Expect(clusters).To(HaveLen(1))
@@ -132,19 +140,21 @@ var _ = Describe("Translator", func() {
 			t := newTranslator()
 			Context("the desired ssl secret not present in the secret map", func() {
 				It("returns an error for the not found secretref", func() {
-					_, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{Cfg: cfg})
+					_, reports, err := t.Translate(role, &snapshot.Cache{Cfg: cfg})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(reports).To(HaveLen(2))
+					Expect(reports).To(HaveLen(3))
 					Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
 					Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
+					Expect(reports[2].CfgObject).To(Equal(role))
 					Expect(reports[0].Err).To(BeNil())
 					Expect(reports[1].Err).NotTo(BeNil())
 					Expect(reports[1].Err.Error()).To(ContainSubstring("secret not found for ref ssl-secret-ref"))
+					Expect(reports[2].Err).To(BeNil())
 				})
 			})
 			Context("the desired ssl secret not present in the secret map", func() {
 				It("returns an empty ssl routeconfig and a len 1 nossl routeconfig", func() {
-					snap, reports, err := t.Translate(&v1.Role{}, &snapshot.Cache{
+					snap, reports, err := t.Translate(role, &snapshot.Cache{
 						Cfg: cfg,
 						Secrets: secretwatcher.SecretMap{
 							"ssl-secret-ref": &dependencies.Secret{Ref: "ssl-secret-ref", Data: map[string]string{
@@ -154,11 +164,13 @@ var _ = Describe("Translator", func() {
 							}},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(reports).To(HaveLen(2))
+					Expect(reports).To(HaveLen(3))
 					Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
 					Expect(reports[1].CfgObject).To(Equal(cfg.VirtualServices[0]))
+					Expect(reports[2].CfgObject).To(Equal(role))
 					Expect(reports[0].Err).To(BeNil())
 					Expect(reports[1].Err).To(BeNil())
+					Expect(reports[2].Err).To(BeNil())
 					clas, clusters, routeConfigs, listeners := getSnapshotResources(snap)
 					Expect(clas).To(HaveLen(0))
 					Expect(clusters).To(HaveLen(1))
