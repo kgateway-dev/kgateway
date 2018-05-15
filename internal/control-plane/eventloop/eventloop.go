@@ -3,11 +3,14 @@ package eventloop
 import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 
 	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
+	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/internal/control-plane/translator"
 	"github.com/solo-io/gloo/internal/control-plane/xds"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -16,8 +19,6 @@ import (
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
-	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 )
 
 const defaultRole = "ingress"
@@ -118,7 +119,7 @@ func (e *eventLoop) Run(stop <-chan struct{}) {
 			return
 		case snap := <-e.snapshotEmitter.Snapshot():
 			newHash := snap.Hash()
-			log.Printf(	"\nold hash: %v\nnew hash: %v", oldHash, newHash)
+			log.Printf("\nold hash: %v\nnew hash: %v", oldHash, newHash)
 			if newHash == oldHash {
 				continue
 			}
@@ -137,25 +138,123 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		return
 	}
 
-	log.Debugf("Gloo Snapshot: %v", snap)
+	// map each virtual service to one or more roles
+	// if no roles are defined, we fall back to the default Role, which is 'ingress'
+	virtualServicesByRole := make(map[string][]*v1.VirtualService)
+	for _, vs := range snap.Cfg.VirtualServices {
+		if len(vs.Roles) == 0 {
+			virtualServicesByRole[defaultRole] = append(virtualServicesByRole[defaultRole], vs)
+		}
+		for _, role := range vs.Roles {
+			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
+		}
+	}
 
-	xdsSnapshot, reports, err := e.translator.Translate(snap)
-	if err != nil {
-		// TODO: panic or handle these internal errors smartly
-		log.Warnf("failed to translate based on the latest config: %v", err)
-		return
+	// aggregate reports across all the roles
+	allReports := make(map[string]reporter.ConfigObjectReport)
+
+	for role, virtualServices := range virtualServicesByRole {
+		// get only the upstreams required for these virtual services
+		upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
+		endpoints := destinationEndpoints(upstreams, snap.Endpoints)
+		roleSnapshot := &snapshot.Cache{
+			Cfg: &v1.Config{
+				Upstreams:       upstreams,
+				VirtualServices: virtualServices,
+			},
+			Secrets:   snap.Secrets,
+			Files:     snap.Files,
+			Endpoints: endpoints,
+		}
+
+		log.Debugf("\nRole: %v\nGloo Snapshot: %v", role, snap)
+
+		xdsSnapshot, reports, err := e.translator.Translate(roleSnapshot)
+		if err != nil {
+			// TODO: panic or handle these internal errors smartly
+			log.Warnf("INTERNAL ERROR: failed to run translator for role %v: %v", role, err)
+			continue
+		}
+
+		var roleRejected bool
+		// merge reports them together
+		for _, rep := range reports {
+			allReports[rep.CfgObject.GetName()] = rep
+
+			if rep.Err != nil {
+				log.Warnf("user config in role %v failed with err %v", role, rep.Err.Error())
+				roleRejected = true
+			}
+		}
+
+		if roleRejected {
+			log.Warnf("role %v rejected", role)
+			continue
+		}
+
+		log.Debugf("Setting xDS Snapshot for Role %v: %v", role, xdsSnapshot)
+		e.xdsConfig.SetSnapshot(role, *xdsSnapshot)
+	}
+
+	var reports []reporter.ConfigObjectReport
+	for _, rep := range allReports {
+		reports = append(reports, rep)
 	}
 
 	if err := e.reporter.WriteReports(reports); err != nil {
 		log.Warnf("error writing reports: %v", err)
 	}
+}
 
-	for _, st := range reports {
-		if st.Err != nil {
-			log.Warnf("user config error: %v: %v", st.CfgObject.GetName(), st.Err)
+// gets the subset of upstreams which are destinations for at least one route in at least one
+// virtual service
+func destinationUpstreams(allUpstreams []*v1.Upstream, virtualServices []*v1.VirtualService) []*v1.Upstream {
+	destinationUpstreamNames := make(map[string]bool)
+	for _, vs := range virtualServices {
+		for _, route := range vs.Routes {
+			dests := getAllDestinations(route)
+			for _, dest := range dests {
+				var upstreamName string
+				switch typedDest := dest.DestinationType.(type) {
+				case *v1.Destination_Upstream:
+					upstreamName = typedDest.Upstream.Name
+				case *v1.Destination_Function:
+					upstreamName = typedDest.Function.UpstreamName
+				default:
+					panic("unknown destination type")
+				}
+				destinationUpstreamNames[upstreamName] = true
+			}
 		}
 	}
+	var destinationUpstreams []*v1.Upstream
+	for _, us := range allUpstreams {
+		if _, ok := destinationUpstreamNames[us.Name]; ok {
+			destinationUpstreams = append(destinationUpstreams, us)
+		}
+	}
+	return destinationUpstreams
+}
 
-	log.Debugf("Setting xDS Snapshot for Role %v: %v", defaultRole, xdsSnapshot)
-	e.xdsConfig.SetSnapshot(defaultRole, *xdsSnapshot)
+func getAllDestinations(route *v1.Route) []*v1.Destination {
+	var dests []*v1.Destination
+	if route.SingleDestination != nil {
+		dests = append(dests, route.SingleDestination)
+	}
+	for _, dest := range route.MultipleDestinations {
+		dests = append(dests, dest.Destination)
+	}
+	return dests
+}
+
+func destinationEndpoints(upstreams []*v1.Upstream, allEndpoints endpointdiscovery.EndpointGroups) endpointdiscovery.EndpointGroups {
+	destinationEndpoints := make(endpointdiscovery.EndpointGroups)
+	for _, us := range upstreams {
+		eps, ok := allEndpoints[us.Name]
+		if !ok {
+			continue
+		}
+		destinationEndpoints[us.Name] = eps
+	}
+	return destinationEndpoints
 }

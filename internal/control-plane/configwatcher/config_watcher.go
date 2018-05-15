@@ -119,7 +119,7 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		DeleteFunc: syncroles,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create watcher for virtualservices")
+		return nil, errors.Wrap(err, "failed to create watcher for roles")
 	}
 
 	return &configWatcher{
