@@ -1,8 +1,6 @@
 package eventloop
 
 import (
-	"time"
-
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
