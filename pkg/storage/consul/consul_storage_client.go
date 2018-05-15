@@ -32,8 +32,8 @@ func NewStorage(cfg *api.Config, rootPath string, syncFrequency time.Duration) (
 			virtualServices: &virtualServicesClient{
 				base: base.NewConsulStorageClient(rootPath+"/virtualservices", client),
 			},
-			roles: &rolesClient{
-				base: base.NewConsulStorageClient(rootPath+"/roles", client),
+			reports: &reportsClient{
+				base: base.NewConsulStorageClient(rootPath+"/reports", client),
 			},
 		},
 	}, nil
@@ -46,7 +46,7 @@ func (c *Client) V1() storage.V1 {
 type v1client struct {
 	upstreams       *upstreamsClient
 	virtualServices *virtualServicesClient
-	roles *rolesClient
+	reports         *reportsClient
 }
 
 func (c *v1client) Register() error {
@@ -61,6 +61,6 @@ func (c *v1client) VirtualServices() storage.VirtualServices {
 	return c.virtualServices
 }
 
-func (c *v1client) Roles() storage.Roles {
-	return c.roles
+func (c *v1client) Reports() storage.Reports {
+	return c.reports
 }

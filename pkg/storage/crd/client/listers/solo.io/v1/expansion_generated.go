@@ -18,13 +18,13 @@ limitations under the License.
 
 package v1
 
-// RoleListerExpansion allows custom methods to be added to
-// RoleLister.
-type RoleListerExpansion interface{}
+// ReportListerExpansion allows custom methods to be added to
+// ReportLister.
+type ReportListerExpansion interface{}
 
-// RoleNamespaceListerExpansion allows custom methods to be added to
-// RoleNamespaceLister.
-type RoleNamespaceListerExpansion interface{}
+// ReportNamespaceListerExpansion allows custom methods to be added to
+// ReportNamespaceLister.
+type ReportNamespaceListerExpansion interface{}
 
 // UpstreamListerExpansion allows custom methods to be added to
 // UpstreamLister.

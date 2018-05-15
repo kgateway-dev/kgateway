@@ -34,7 +34,6 @@ name: string
 domains: [string]
 routes: [{Route}]
 ssl_config: {SSLConfig}
-status: (read only)
 metadata: {Metadata}
 
 ```
@@ -44,7 +43,6 @@ metadata: {Metadata}
 | domains | string | repeated | Domains represent the list of domains (host/authority header) that will match for all routes on this virtual service. As in Envoy: wildcard hosts are supported in the form of “*.foo.com” or “*-bar.foo.com”. If domains is empty, gloo will set the domain to &#34;*&#34;, making that virtual service the &#34;default&#34; virtualservice. The default virtualservice will be the fallback virtual service for all requests that do not match a domain on an existing virtual service. Only one default virtual service can be defined (either with an empty domain list, or a domain list that includes &#34;*&#34;) |
 | routes | [Route](virtualservice.md#v1.Route) | repeated | Routes define the list of [routes](../) that live on this virtual service. |
 | ssl_config | [SSLConfig](virtualservice.md#v1.SSLConfig) |  | SSL Config is optional for the virtual service. If provided, the virtual service will listen on the envoy HTTPS listener port (default :8443) If left empty, the virtual service will listen on the HTTP listener port (default :8080) |
-| status | [Status](status.md#v1.Status) |  | Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation |
 | metadata | [Metadata](metadata.md#v1.Metadata) |  | Metadata contains the resource metadata for the virtual service |
 
 

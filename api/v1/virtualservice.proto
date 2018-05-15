@@ -6,7 +6,6 @@ import "google/protobuf/struct.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "status.proto";
 import "metadata.proto";
 
 /**
@@ -34,9 +33,6 @@ message VirtualService {
     // SSL Config is optional for the virtual service. If provided, the virtual service will listen on the envoy HTTPS listener port (default :8443)
     // If left empty, the virtual service will listen on the HTTP listener port (default :8080)
     SSLConfig ssl_config = 4;
-
-    // Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation
-    Status status = 5 [(gogoproto.moretags) = "testdiff:\"ignore\""];
 
     // Metadata contains the resource metadata for the virtual service
     Metadata metadata = 6;

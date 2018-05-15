@@ -29,7 +29,6 @@ connection_timeout: {google.protobuf.Duration}
 spec: {google.protobuf.Struct}
 functions: [{Function}]
 service_info: {ServiceInfo}
-status: (read only)
 metadata: {Metadata}
 
 ```
@@ -41,7 +40,6 @@ metadata: {Metadata}
 | spec | [google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  | Spec contains properties that are specific to the upstream type. The spec is always required, but the expected content is specified by the [upstream plugin] for the given upstream type. Most often the upstream spec will be a map&lt;string, string&gt; |
 | functions | [Function](upstream.md#v1.Function) | repeated | Certain upstream types support (and may require) [functions](../introduction/concepts.md#Functions). Functions allow function-level routing to be done. For example, the [AWS lambda](../plugins/aws.md) upstream type Permits routing to AWS lambda function]. [routes](virtualservice.md#Route) on virtualservices can specify function destinations to route to specific functions. |
 | service_info | [ServiceInfo](upstream.md#v1.ServiceInfo) |  | Service Info contains information about the service running on the upstream Service Info is optional, but is used by certain plugins (such as the gRPC plugin) as well as discovery services to provide sophistocated routing features for well-known types of services |
-| status | [Status](status.md#v1.Status) |  | Status indicates the validation status of the upstream resource. Status is read-only by clients, and set by gloo during validation |
 | metadata | [Metadata](metadata.md#v1.Metadata) |  | Metadata contains the resource metadata for the upstream |
 
 
