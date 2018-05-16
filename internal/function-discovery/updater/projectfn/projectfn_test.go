@@ -1,4 +1,4 @@
-package projectfn_test
+package projectfn
 
 import (
 	"fmt"
@@ -14,8 +14,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/solo-io/gloo/internal/function-discovery/updater/projectfn"
 )
 
 type mockTransport struct {
@@ -94,7 +92,7 @@ var _ = Describe("Projectfn", func() {
 				}),
 			}
 
-			funcs, err := GetFuncsWithTransport(mockResolver, us, transport)
+			funcs, err := getFuncsWithTransport(mockResolver, us, transport)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(funcs).To(HaveLen(1))
 			t, err := rest.DecodeFunctionSpec(funcs[0].Spec)

@@ -37,10 +37,10 @@ func IsFnUpstream(us *v1.Upstream) bool {
 }
 
 func GetFuncs(resolve resolver.Resolver, us *v1.Upstream) ([]*v1.Function, error) {
-	return GetFuncsWithTransport(resolve, us, nil)
+	return getFuncsWithTransport(resolve, us, nil)
 }
 
-func GetFuncsWithTransport(resolve resolver.Resolver, us *v1.Upstream, transport runtime.ClientTransport) ([]*v1.Function, error) {
+func getFuncsWithTransport(resolve resolver.Resolver, us *v1.Upstream, transport runtime.ClientTransport) ([]*v1.Function, error) {
 
 	addr, err := resolve.Resolve(us)
 	if err != nil {
