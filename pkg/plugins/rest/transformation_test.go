@@ -130,7 +130,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "([\\.\\-_[:alnum:]]+)",
+																					StringValue: `([\-._[:alnum:]]+)`,
 																				},
 																			},
 																		},
@@ -148,7 +148,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "([\\.\\-_[:alnum:]]+)",
+																					StringValue: `([\-._[:alnum:]]+)`,
 																				},
 																			},
 																			"subgroup": {
@@ -171,7 +171,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "application/([\\.\\-_[:alnum:]]+)",
+																					StringValue: `application/([\-._[:alnum:]]+)`,
 																				},
 																			},
 																			"subgroup": {
@@ -199,7 +199,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "/u\\(se\\)rs/([\\.\\-_[:alnum:]]+)/accounts/([\\.\\-_[:alnum:]]+)",
+																					StringValue: `/u\(se\)rs/([\-._[:alnum:]]+)/accounts/([\-._[:alnum:]]+)`,
 																				},
 																			},
 																		},
@@ -217,7 +217,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "([\\.\\-_[:alnum:]]+)",
+																					StringValue: `([\-._[:alnum:]]+)`,
 																				},
 																			},
 																			"subgroup": {
@@ -240,7 +240,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "([\\.\\-_[:alnum:]]+)",
+																					StringValue: `([\-._[:alnum:]]+)`,
 																				},
 																			},
 																			"subgroup": {
@@ -263,7 +263,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "/u\\(se\\)rs/([\\.\\-_[:alnum:]]+)/accounts/([\\.\\-_[:alnum:]]+)",
+																					StringValue: `/u\(se\)rs/([\-._[:alnum:]]+)/accounts/([\-._[:alnum:]]+)`,
 																				},
 																			},
 																			"subgroup": {
@@ -286,7 +286,7 @@ var _ = Describe("Transformation", func() {
 																			},
 																			"regex": {
 																				Kind: &types.Value_StringValue{
-																					StringValue: "([\\.\\-_[:alnum:]]+)",
+																					StringValue: `([\-._[:alnum:]]+)`,
 																				},
 																			},
 																			"subgroup": {
@@ -405,7 +405,7 @@ var _ = Describe("Transformation", func() {
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(params, in, out)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("f{foo/bar} is not valid syntax. {} braces must be closed and variable names must satisfy regex ([\\.\\-_[:alnum:]]+)"))
+		Expect(err.Error()).To(ContainSubstring(`f{foo/bar} is not valid syntax. {} braces must be closed and variable names must satisfy regex ([\-._[:alnum:]]+)`))
 	})
 })
 
