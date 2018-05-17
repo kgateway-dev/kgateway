@@ -54,5 +54,6 @@ RUN mkdir -p ${GOPATH}/src/k8s.io && \
 
 RUN git clone https://github.com/kubernetes/apimachinery ${GOPATH}/src/k8s.io/apimachinery
 
+RUN go get -v github.com/go-swagger/go-swagger/cmd/swagger
 
 CMD ["/bin/bash"]
