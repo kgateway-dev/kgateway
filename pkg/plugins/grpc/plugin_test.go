@@ -5,7 +5,6 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"io/ioutil"
 
 	"github.com/gogo/protobuf/types"
@@ -165,7 +164,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -188,7 +187,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -211,7 +210,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "/test\\?([\\.\\-_[:alnum:]]+)",
+																						StringValue: `/test\?([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -234,7 +233,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -257,7 +256,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
