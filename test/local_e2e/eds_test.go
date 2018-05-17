@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins/fake"
 
 	. "github.com/onsi/ginkgo"
@@ -16,6 +18,10 @@ import (
 )
 
 var _ = Describe("HappyPath EDS", func() {
+	if os.Getenv("SKIP_EDS_TEST") == "1" {
+		log.Printf("This test has been disabled. To enable, set SKIP_EDS_TEST=0 in your env.")
+		return
+	}
 	It("Receive proxied from eds", func() {
 		fmt.Fprintln(GinkgoWriter, "Running Envoy")
 		err := envoyInstance.Run()
