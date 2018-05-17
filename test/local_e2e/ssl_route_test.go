@@ -24,7 +24,7 @@ const (
 )
 
 var _ = Describe("SSL Route", func() {
-	It("Receive proxied request", func() {
+	It("Receive proxied ssl request", func() {
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 

@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("HappyPath2Upstreams", func() {
 
-	It("Receive proxied request", func() {
+	It("Receive proxied request for weighted upstreams", func() {
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 

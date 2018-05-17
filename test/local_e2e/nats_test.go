@@ -18,7 +18,7 @@ import (
 
 var _ = Describe("Nats streaming test", func() {
 
-	It("Receive proxied request", func() {
+	It("Receive proxied nats request", func() {
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 

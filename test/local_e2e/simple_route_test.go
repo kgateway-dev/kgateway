@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("HappyPath", func() {
 
-	It("Receive proxied request", func() {
+	It("Receive proxied simple route request", func() {
 		fmt.Fprintln(ginkgo.GinkgoWriter, "Running Envoy")
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
