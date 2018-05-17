@@ -1,8 +1,20 @@
 #!/bin/bash
 
-mkdir -p ./{_gloo_config/upstreams,_gloo_config/virtualservices,_gloo_secrets,_gloo_files}
-mkdir -p ${HOME}/.glooctl/
-echo 'Warning: this script will overwrite your ~/.glooctl/config.yaml with defaults that will work with this setup'
+# thanks https://stackoverflow.com/questions/25809999/press-y-to-continue-any-other-key-to-exit-shell-script
+asksure() {
+    while read -r -n 1 -s answer; do
+      if [[ $answer = [YyNn] ]]; then
+        [[ $answer = [Yy] ]] && retval=0
+        [[ $answer = [Nn] ]] && retval=1
+        break
+      fi
+    done
+
+    echo # just a final linefeed, optics...
+
+    return $retval
+}
+overwrite() {
 cat >${HOME}/.glooctl/config.yaml << EOF
 FileOptions:
   ConfigDir: ${PWD}/_gloo_config
@@ -18,3 +30,19 @@ SecretStorageOptions:
   SyncFrequency: 100000
   Type: file
 EOF
+}
+
+echo "creating gloo storage directories"
+mkdir -p ./{_gloo_config/upstreams,_gloo_config/virtualservices,_gloo_secrets,_gloo_files}
+
+mkdir -p ${HOME}/.glooctl/
+
+if [ -f ${HOME}/.glooctl/config.yaml ]; then
+    echo -n "Do you wish to edit ${HOME}/.glooctl/config.yaml to set defaults to docker-compose storage (Y/N)? "
+    ### using it
+    if asksure; then
+      echo "Modifying ${HOME}/.glooctl/config.yaml"
+      overwrite
+    fi
+fi
+
