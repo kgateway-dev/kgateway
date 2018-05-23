@@ -12,7 +12,8 @@ glooctl install docker [folder]
 
 The command will create the `folder` if it doesn't already exist and
 write out the necessary docker-compose files.
-  3. Run `gloo` by running:
+
+ 3. Run `gloo` by running:
 
 ```
 docker-compose up`
