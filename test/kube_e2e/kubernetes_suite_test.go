@@ -11,6 +11,8 @@ import (
 	"testing"
 )
 
+const maxLogLines = 250
+
 func TestKubernetes(t *testing.T) {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
@@ -21,13 +23,13 @@ func TestKubernetes(t *testing.T) {
 		var logs string
 		for _, component := range []string{"control-plane", "ingress"} {
 			l, err := helpers.KubectlOut("logs", "-l", "gloo="+component)
-			limitLogLines := 250
+
 			split := strings.Split(l, "\n")
-			if limitLogLines > len(split) {
-				limitLogLines = len(split)
+			if len(split) > maxLogLines {
+				l = strings.Join(split[len(split)-maxLogLines:], "\n")
 			}
-			l = strings.Join(split[:limitLogLines], "\n")
-			logs += string(l) + "\n"
+
+			logs += l + "\n"
 			if err != nil {
 				logs += "error getting logs for " + component + ": " + err.Error()
 			}
