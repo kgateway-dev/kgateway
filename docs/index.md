@@ -60,9 +60,12 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
 * [Architecture](introduction/architecture.md): Overview of Gloo's architecture. Covers architecture at a high level, and 
 the component architecture
 ### Installation:
+* [Installing on Docker](installation/docker.md): Installation guide for Docker
 * [Installing on Kubernetes](installation/kubernetes.md): Installation guide for Kubernetes (recommended) 
 * [Installing on OpenShift](installation/openshift.md): Installation guide for OpenShift
 ### Getting Started:
+* [Getting Started on Docker](getting_started/docker/1.md): Getting started with Docker
+* [Function Routing on Docker](getting_started/docker/2.md): Introduction to Function Routing with Gloo (Docker version)
 * [Getting Started on Kubernetes](getting_started/kubernetes/1.md): Getting started with Kubernetes (recommended for first time users)
 * [Function Routing on Kubernetes](getting_started/kubernetes/2.md): Introduction to Function Routing with Gloo
 * [Getting Started on OpenShift](getting_started/openshift/1.md): Getting started with OpenShift
@@ -80,7 +83,7 @@ the component architecture
 
 ### v1 API reference:
 * [Upstreams](v1/upstream.md): API Specification for the Gloo Upstream Config Object
-* [Virtual](v1/virtualservice.md): API Specification for the Gloo Virtual Service Config Object
+* [Virtual Service](v1/virtualservice.md): API Specification for the Gloo Virtual Service Config Object
 * [Metadata](v1/metadata.md): API Specification for Gloo Config Object Metadata
 * [Status](v1/status.md): API Specification for Gloo Config Object Status
 

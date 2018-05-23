@@ -6,10 +6,14 @@ pages:
       - Concepts: introduction/concepts.md
       - Architecture: introduction/architecture.md
     - Installation:
+      - Installing on Docker: installation/docker.md
       - Installing on Kubernetes: installation/kubernetes.md
       - Installing on OpenShift: installation/openshift.md
 #      - Installing on Local Docker: installation/docker.md
     - Getting Started:
+      - Docker:
+        - Basic Routing: getting_started/docker/1.md
+        - Function Routing: getting_started/docker/2.md
       - Kubernetes:
         - Basic Routing: getting_started/kubernetes/1.md
         - Function Routing: getting_started/kubernetes/2.md
