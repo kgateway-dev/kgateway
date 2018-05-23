@@ -1,5 +1,25 @@
 # Install Gloo using Docker-Compose
 
+## Using glooctl
+
+ 1. Make sure you have version 0.2.6 or above of `glooctl` installed.
+    Please visit https://github.com/solo-io/glooctl to get latest version
+ 2. Install gloo with the following command:
+
+```
+glooctl install docker [folder]
+```
+
+The command will create the `folder` if it doesn't already exist and
+write out the necessary docker-compose files.
+  3. Run `gloo` by running:
+
+```
+docker-compose up`
+```
+
+## Manually
+
 1. Run `./prepare-config-directories.sh`
 2. Run `docker compose up`
 3. `glooctl` commands should be run from this directory to interact with gloo
