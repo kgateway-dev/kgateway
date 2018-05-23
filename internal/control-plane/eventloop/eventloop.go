@@ -183,7 +183,7 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 			vsNames = append(vsNames, vs.Name)
 		}
 		roleObject := &v1.Role{
-			Name: role,
+			Name:            role,
 			VirtualServices: vsNames,
 		}
 

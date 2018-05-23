@@ -79,7 +79,7 @@ $(BINARY)-debug: $(OUTPUT_BINARY)-debug
 $(OUTPUT_BINARY): $(OUTPUT_DIR) $(PREREQUISITES)
 	CGO_ENABLED=0 GOOS=linux go build -v -o $(OUTPUT_BINARY) cmd/$(BINARY)/main.go
 $(OUTPUT_BINARY)-debug: $(OUTPUT_DIR) $(PREREQUISITES)
-	go build -i -gcflags "-N -l" -o $(OUTPUT_BINARY)-debug cmd/$(BINARY)/main.go
+	go build -i -gcflags "all=-N -l" -o $(OUTPUT_BINARY)-debug cmd/$(BINARY)/main.go
 
 # docker
 $(BINARY)-docker: $(OUTPUT_BINARY)
