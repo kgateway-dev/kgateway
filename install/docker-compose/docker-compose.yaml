@@ -2,7 +2,7 @@ version: '3'
 services:
 
   control-plane:
-    image: "soloio/control-plane:0.2.5"
+    image: "soloio/control-plane:0.2.6"
     working_dir: /config/
     command:
     - "--storage.type=file"
@@ -29,7 +29,7 @@ services:
     - "19000:19000"
 
   function-discovery:
-    image: "soloio/function-discovery:0.2.5"
+    image: "soloio/function-discovery:0.2.6"
     working_dir: /config/
     command:
     - "--storage.type=file"

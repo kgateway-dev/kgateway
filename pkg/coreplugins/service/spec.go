@@ -7,7 +7,9 @@ import (
 )
 
 type UpstreamSpec struct {
-	Hosts []Host `json:"hosts"`
+	Hosts      []Host `json:"hosts"`
+	EnableIPv6 bool   `json:"enable_ipv6"`
+	TLS        *bool   `json:"tls"`
 }
 
 type Host struct {

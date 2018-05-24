@@ -4,6 +4,7 @@ import (
 	"net"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/pkg/errors"
 
@@ -31,12 +32,17 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 	if err != nil {
 		return errors.Wrap(err, "invalid service upstream spec")
 	}
+	var foundSslPort bool
+	var addr string
 	for _, host := range spec.Hosts {
 		if host.Addr == "" {
 			return errors.New("addr cannot be empty for host")
 		}
 		if host.Port == 0 {
 			return errors.New("port cannot be empty for host")
+		}
+		if host.Port == 443 {
+			foundSslPort = true
 		}
 		ip := net.ParseIP(host.Addr)
 		if ip != nil {
@@ -55,6 +61,17 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 				},
 			},
 		})
+		// fix issue where ipv6 addr cannot bind
+		if !spec.EnableIPv6 {
+			out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
+		}
+		// if host port is 443 && spec.TLS == nil we will use TLS
+		// or if the user wants it
+		if (spec.TLS != nil && *spec.TLS) || foundSslPort {
+			out.TlsContext = &envoyauth.UpstreamTlsContext{
+				Sni: hostname,
+			}
+		}
 	}
 	return nil
 }
