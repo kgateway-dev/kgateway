@@ -33,7 +33,7 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 		return errors.Wrap(err, "invalid service upstream spec")
 	}
 	var foundSslPort bool
-	var addr string
+	var hostname string
 	for _, host := range spec.Hosts {
 		if host.Addr == "" {
 			return errors.New("addr cannot be empty for host")
@@ -49,6 +49,8 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 			out.Type = envoyapi.Cluster_STATIC
 		} else {
 			out.Type = envoyapi.Cluster_STRICT_DNS
+			// for sni
+			hostname = host.Addr
 		}
 		out.Hosts = append(out.Hosts, &envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{
