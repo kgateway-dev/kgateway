@@ -163,7 +163,7 @@ spec:
     spec:
       containers:
       - name: control-plane
-        image: "soloio/control-plane:0.2.4"
+        image: "soloio/control-plane:0.2.6"
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081
@@ -219,7 +219,7 @@ spec:
     spec:
       containers:
       - name: function-discovery
-        image: "soloio/function-discovery:0.2.4"
+        image: "soloio/function-discovery:0.2.6"
         imagePullPolicy: IfNotPresent
         env:
         - name: GRPC_TRACE
@@ -341,7 +341,7 @@ spec:
         gloo: kube-ingress-controller
     spec:
       containers:
-      - image: "soloio/kube-ingress-controller:0.2.4"
+      - image: "soloio/kube-ingress-controller:0.2.6"
         imagePullPolicy: IfNotPresent
         name: kube-ingress-controller
         env:
@@ -376,7 +376,7 @@ spec:
         gloo: upstream-discovery
     spec:
       containers:
-      - image: soloio/upstream-discovery:0.2.4
+      - image: soloio/upstream-discovery:0.2.6
         imagePullPolicy: IfNotPresent
         name: upstream-discovery
         env:
