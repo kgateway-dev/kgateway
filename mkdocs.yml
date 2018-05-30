@@ -23,7 +23,6 @@ pages:
       - AWS:
         - Basic Lambda with Gloo: getting_started/aws/lambda.md
     - Tutorials:
-#      - Extending Microservices with Serverless: tutorials/extend_microservice.md
       - Refactoring Monoliths with Microservices and Serverless: tutorials/refactor_monolith.md
       - Sourcing NATS Messages from HTTP Requests: tutorials/source_events_from_github.md
     - Plugins:
@@ -35,7 +34,6 @@ pages:
       - Install: thetool/install.md
       - Quick Start: thetool/quickstart.md
       - Building Custom Gloo: thetool/custom.md
-#      - Getting Started on Local Docker: installation/docker.md
     - Advanced:
       - Bootstrap Options: advanced/bootstrap_options.md
     - v1 API reference:
@@ -49,7 +47,7 @@ site_author: gloo Project Authors
 copyright: © Copyright 2018, solo.io Inc.
 google_analytics: ['UA-101654320-1', 'gloo.solo.io']
 theme:
-  name: 'rtd-dropdown'
+  name: 'material'
 extra_css: [extra.css]
 extra:
     version: 0.1.1
