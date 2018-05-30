@@ -20,7 +20,7 @@ import (
 )
 
 func newTranslator() *Translator {
-	return NewTranslator(bootstrap.IngressOptions{"::", 8080, 8443}, []plugins.TranslatorPlugin{&service.Plugin{}})
+	return NewTranslator(bootstrap.IngressOptions{"::", 8080, 8443}, []plugins.TranslatorPlugin{service.NewPlugin()})
 }
 
 var _ = Describe("Translator", func() {

@@ -53,7 +53,7 @@ type Translator struct {
 var corePlugins = []plugins.TranslatorPlugin{
 	&matcher.Plugin{},
 	&extensions.Plugin{},
-	&service.Plugin{},
+	service.NewPlugin(),
 }
 
 func NewTranslator(opts bootstrap.IngressOptions, translatorPlugins []plugins.TranslatorPlugin) *Translator {
