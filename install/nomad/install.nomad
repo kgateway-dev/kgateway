@@ -88,7 +88,7 @@ job "gloo" {
 
       driver = "docker"
       config {
-        image = "soloio/envoy:v0.1.6-132"
+        image = "soloio/envoy:0.2.26"
         port_map {
           http = 8080
           https = 8443

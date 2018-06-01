@@ -374,14 +374,14 @@ func doEDS(howmany int) {
 	Eventually(tu.C, "5s", time.Second/2).Should(Receive(Equal(expectedResponse)))
 }
 
-// reset; DEBUG=1 ENVOY_IMAGE_TAG="v0.1.6-132" ginkgo  -v
+// reset; DEBUG=1 ENVOY_IMAGE_TAG="0.2.26" ginkgo  -v
 // echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
-// reset; USE_GDBSERVER_ENVOY=2345 DEBUG=1 ENVOY_IMAGE_TAG="v0.1.6-132" ginkgo  -v
+// reset; USE_GDBSERVER_ENVOY=2345 DEBUG=1 ENVOY_IMAGE_TAG="0.2.26" ginkgo  -v
 /*
 
-reset; ENVOY_BINARY=/home/yuval/nobackup/src/envoy/bazel-bin/source/exe/envoy-static  DEBUG=1 ENVOY_IMAGE_TAG="v0.1.6-132" ginkgo  -v
-reset; USE_GDBSERVER_ENVOY=2345 ENVOY_BINARY=/home/yuval/nobackup/src/envoy/bazel-bin/source/exe/envoy-static  DEBUG=1 ENVOY_IMAGE_TAG="v0.1.6-132" ginkgo  -v
-reset; USE_DEBUGGER_ENVOY=1 ENVOY_BINARY=/home/yuval/.cache/bazel/_bazel_yuval/f99e15bcd233f918bee00107c646e5b0/execroot/envoy/bazel-out/k8-dbg/bin/source/exe/envoy-static  DEBUG=1 ENVOY_IMAGE_TAG="v0.1.6-132" ginkgo  -v
+reset; ENVOY_BINARY=/home/yuval/nobackup/src/envoy/bazel-bin/source/exe/envoy-static  DEBUG=1 ENVOY_IMAGE_TAG="0.2.26" ginkgo  -v
+reset; USE_GDBSERVER_ENVOY=2345 ENVOY_BINARY=/home/yuval/nobackup/src/envoy/bazel-bin/source/exe/envoy-static  DEBUG=1 ENVOY_IMAGE_TAG="0.2.26" ginkgo  -v
+reset; USE_DEBUGGER_ENVOY=1 ENVOY_BINARY=/home/yuval/.cache/bazel/_bazel_yuval/f99e15bcd233f918bee00107c646e5b0/execroot/envoy/bazel-out/k8-dbg/bin/source/exe/envoy-static  DEBUG=1 ENVOY_IMAGE_TAG="0.2.26" ginkgo  -v
 
 
 */

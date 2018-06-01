@@ -2,7 +2,7 @@
 
 ## Using glooctl
 
- 1. Make sure you have version 0.2.6 or above of `glooctl` installed.
+ 1. Make sure you have version 0.2.26 or above of `glooctl` installed.
     Please visit https://github.com/solo-io/glooctl to get latest version
  2. Install gloo with the following command:
 
