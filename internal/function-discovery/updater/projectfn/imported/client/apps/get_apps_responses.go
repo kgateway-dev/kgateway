@@ -13,7 +13,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/solo-io/gloo/internal/function-discovery/updater/projectfn/imported/models"
+	models "github.com/solo-io/gloo/internal/function-discovery/updater/projectfn/imported/models"
 )
 
 // GetAppsReader is a Reader for the GetApps structure.

@@ -69,6 +69,11 @@ type Route struct {
 func (m *Route) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateCreatedAt(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
 	if err := m.validateFormat(formats); err != nil {
 		// prop
 		res = append(res, err)
@@ -84,9 +89,27 @@ func (m *Route) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateUpdatedAt(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *Route) validateCreatedAt(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.CreatedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("created_at", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -103,10 +126,13 @@ func init() {
 }
 
 const (
+
 	// RouteFormatDefault captures enum value "default"
 	RouteFormatDefault string = "default"
+
 	// RouteFormatHTTP captures enum value "http"
 	RouteFormatHTTP string = "http"
+
 	// RouteFormatJSON captures enum value "json"
 	RouteFormatJSON string = "json"
 )
@@ -139,10 +165,6 @@ func (m *Route) validateHeaders(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if swag.IsZero(m.Headers) { // not required
-		return nil
-	}
-
 	return nil
 }
 
@@ -159,8 +181,10 @@ func init() {
 }
 
 const (
+
 	// RouteTypeSync captures enum value "sync"
 	RouteTypeSync string = "sync"
+
 	// RouteTypeAsync captures enum value "async"
 	RouteTypeAsync string = "async"
 )
@@ -181,6 +205,19 @@ func (m *Route) validateType(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateTypeEnum("type", "body", m.Type); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Route) validateUpdatedAt(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.UpdatedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("updated_at", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
 		return err
 	}
 

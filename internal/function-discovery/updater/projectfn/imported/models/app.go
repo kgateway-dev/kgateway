@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
 )
 
 // App app
@@ -43,9 +44,45 @@ type App struct {
 func (m *App) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateCreatedAt(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateUpdatedAt(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *App) validateCreatedAt(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.CreatedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("created_at", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *App) validateUpdatedAt(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.UpdatedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("updated_at", "body", "date-time", m.UpdatedAt.String(), formats); err != nil {
+		return err
+	}
+
 	return nil
 }
 
