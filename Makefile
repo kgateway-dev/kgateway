@@ -1,7 +1,7 @@
 ROOTDIR := $(shell pwd)
 PROTOS := $(shell find api/v1 -name "*.proto")
 SOURCES := $(shell find . -name "*.go" | grep -v test)
-GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go") docs/api.json
+GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go")
 OUTPUT_DIR ?= _output
 
 PACKAGE_PATH:=github.com/solo-io/gloo
@@ -12,21 +12,20 @@ PACKAGE_PATH:=github.com/solo-io/gloo
 
 # Generated code
 
+.PHONY: all
+all: build
+
+.PHONY: proto
 proto: $(GENERATED_PROTO_FILES)
 
 $(GENERATED_PROTO_FILES): $(PROTOS)
-	export DISABLE_SORT=1 && \
 	cd api/v1/ && \
 	mkdir -p $(ROOTDIR)/pkg/api/types/v1 && \
 	protoc \
 	-I=. \
 	-I=$(GOPATH)/src \
 	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
-	--plugin=protoc-gen-doc=$(GOPATH)/bin/protoc-gen-doc \
-    --doc_out=$(ROOTDIR)/docs/ \
-    --doc_opt=json,api.json \
-	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types:\
-	$(ROOTDIR)/pkg/api/types/v1 \
+	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types:$(ROOTDIR)/pkg/api/types/v1 \
 	./*.proto
 
 $(OUTPUT_DIR):
@@ -141,9 +140,21 @@ install/openshift/install.yaml: install/kube/install.yaml
 # Docs
 #----------------------------------------------------------------------------------
 
-doc: proto
+docs/api.json: $(PROTOS)
+	export DISABLE_SORT=1 && \
+	cd api/v1/ && \
+	mkdir -p $(ROOTDIR)/pkg/api/types/v1 && \
+	protoc \
+	-I=. \
+	-I=$(GOPATH)/src \
+	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
+	--plugin=protoc-gen-doc=$(GOPATH)/bin/protoc-gen-doc \
+    --doc_out=$(ROOTDIR)/docs/ \
+    --doc_opt=json,api.json \
+	./*.proto
+
+doc: docs/api.json
 	go run docs/gen_docs.go
-#	godocdown pkg/api/types/v1/ > docs/go.md
 
 site: doc
 	mkdocs build

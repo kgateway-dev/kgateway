@@ -16,11 +16,11 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-// requires https://github.com/googleapis/googleapis to be in ${HOME}/workspace/googleapis
+// requires https://github.com/googleapis/googleapis to be in ${GOOGLE_PROTOS_HOME}
 
 //go:generate mkdir -p bookstore
 //go:generate mkdir -p descriptors
-//go:generate protoc -I${HOME}/workspace/googleapis -I. --include_source_info --go_out=plugins=grpc:bookstore  --include_imports --descriptor_set_out=descriptors/proto.pb protos/bookstore.proto
+//go:generate protoc -I${GOOGLE_PROTOS_HOME} -I. --include_source_info --go_out=plugins=grpc:bookstore  --include_imports --descriptor_set_out=descriptors/proto.pb protos/bookstore.proto
 
 func main() {
 	port := flag.Int("p", 8080, "port")

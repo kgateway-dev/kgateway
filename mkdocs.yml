@@ -22,6 +22,7 @@ pages:
         - Function Routing: getting_started/openshift/2.md
       - AWS:
         - Basic Lambda with Gloo: getting_started/aws/lambda.md
+    - Dev Guide: dev/README.md
     - Tutorials:
 #      - Extending Microservices with Serverless: tutorials/extend_microservice.md
       - Refactoring Monoliths with Microservices and Serverless: tutorials/refactor_monolith.md
@@ -49,7 +50,7 @@ site_author: gloo Project Authors
 copyright: © Copyright 2018, solo.io Inc.
 google_analytics: ['UA-101654320-1', 'gloo.solo.io']
 theme:
-  name: 'rtd-dropdown'
+  name: 'material'
 extra_css: [extra.css]
 extra:
     version: 0.1.1
