@@ -6,16 +6,16 @@ Note: only Linux is supported at this time for local installations.
 
 Prerequisites:
 
-- Go (tested with 1.9.x and 1.10.x)
-- Dep
-- protoc v3+
-- gogo/protobuf
-- golang/protobuf
-- Google's Well-known Proto types: googleapis downloaded
-- paulvollmer/2gobytes
-- kubernetes/code-generator 
-- kubernetes/apimachinery
-- go-swagger   
+- [Go](https://golang.org/) (tested with 1.9.x and 1.10.x)
+- [Dep](https://github.com/golang/dep)
+- [protoc](https://developers.google.com/protocol-buffers/docs/proto) v3+
+- [gogo/protobuf](https://github.com/gogo/protobuf)
+- [golang/protobuf](https://github.com/golang/protobuf) (yes you'll need both)
+- [Google's Well-known Proto types](https://github.com/googleapis/googleapis) (googleapis)
+- [paulvollmer/2gobytes](https://github.com/paulvollmer/2gobytes) used for baking in static assets 
+- [kubernetes/code-generator](https://github.com/kubernetes/code-generator) used for code generation 
+- [kubernetes/apimachinery](https://github.com/kubernetes/apimachinery) dependency of `code-generator`
+- [go-swagger](https://github.com/go-swagger/go-swagger) used for code generation
 
 Install them all with the following:
 
