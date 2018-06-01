@@ -10,19 +10,8 @@ PACKAGE_PATH:=github.com/solo-io/gloo
 # Build
 #----------------------------------------------------------------------------------
 
-BINARIES ?= control-plane function-discovery kube-ingress-controller upstream-discovery
-DEBUG_BINARIES = $(foreach BINARY,$(BINARIES),$(BINARY)-debug)
+# Generated code
 
-DOCKER_ORG=soloio
-
-.PHONY: build
-build: $(BINARIES)
-
-.PHONY: debug-build
-debug-build: $(DEBUG_BINARIES)
-
-docker: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker))
-docker-push: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker-push))
 proto: $(GENERATED_PROTO_FILES)
 
 $(GENERATED_PROTO_FILES): $(PROTOS)
@@ -58,6 +47,22 @@ generated-code:
 
 $(OUTPUT):
 	mkdir -p $(OUTPUT)
+
+# Core Binaries
+
+BINARIES ?= control-plane function-discovery kube-ingress-controller upstream-discovery
+DEBUG_BINARIES = $(foreach BINARY,$(BINARIES),$(BINARY)-debug)
+
+DOCKER_ORG=soloio
+
+.PHONY: build
+build: $(BINARIES)
+
+.PHONY: debug-build
+debug-build: $(DEBUG_BINARIES)
+
+docker: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker))
+docker-push: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker-push))
 
 define BINARY_TARGETS
 $(eval VERSION := $(shell cat version))
@@ -95,6 +100,15 @@ endef
 
 PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES) generated-code clientset
 $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
+
+# localgloo
+.PHONY: localgloo
+localgloo: $(OUTPUT_DIR)/localgloo
+
+$(OUTPUT_DIR)/localgloo:  $(OUTPUT_DIR) $(PREREQUISITES)
+	go build -i -gcflags "all=-N -l" -o $@ cmd/localgloo/main.go
+
+# clean
 
 clean:
 	rm -rf $(OUTPUT_DIR)
