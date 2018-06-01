@@ -42,4 +42,3 @@ jobs:
             # RUN_NOMAD_TESTS: "1"
             RUN_KUBE_TESTS: "1"
             ENVOY_IMAGE_TAG: "0.2.26"
-            GOOGLE_PROTOS: "~/workspace/googleapis"

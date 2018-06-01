@@ -56,4 +56,6 @@ RUN git clone https://github.com/kubernetes/apimachinery ${GOPATH}/src/k8s.io/ap
 
 RUN go get -v github.com/go-swagger/go-swagger/cmd/swagger
 
+ENV GOOGLE_PROTOS_HOME=${HOME}/workspace/googleapis
+
 CMD ["/bin/bash"]
