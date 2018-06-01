@@ -1,140 +1,240 @@
+# Developer Guide
+
+Note: only Linux is supported at this time for local installations.
+
+## Building Gloo from Source 
+
+Prerequisites:
+
+- Go (tested with 1.9.x and 1.10.x)
+- Dep
+- protoc v3+
+- gogo/protobuf
+- golang/protobuf
+- Google's Well-known Proto types: googleapis downloaded
+- paulvollmer/2gobytes
+- kubernetes/code-generator 
+- kubernetes/apimachinery
+- go-swagger   
+
+Install them all with the following:
+
+```bash
+# Dep
+go get -u github.com/golang/dep/cmd/dep
+
+# Proto dependencies
+curl -OL https://github.com/google/protobuf/releases/download/v3.3.0/protoc-3.3.0-linux-x86_64.zip && \
+    unzip protoc-3.3.0-linux-x86_64.zip -d protoc3 && \
+    sudo mv protoc3/bin/* /usr/local/bin/ && \
+    sudo mv protoc3/include/* /usr/local/include/
+
+export GOOGLE_PROTOS_HOME=${some_dir}
+
+git clone https://github.com/googleapis/googleapis ${GOOGLE_PROTOS_HOME}
+
+go get -v github.com/golang/protobuf/...    
+
+go get -v github.com/gogo/protobuf/...
+
+# Other tools used for code generation
+go get github.com/paulvollmer/2gobytes
+
+mkdir -p ${GOPATH}/src/k8s.io && \
+    git clone https://github.com/kubernetes/code-generator ${GOPATH}/src/k8s.io/code-generator
+
+git clone https://github.com/kubernetes/apimachinery ${GOPATH}/src/k8s.io/apimachinery
+
+go get -v github.com/go-swagger/go-swagger/cmd/swagger
+
+```
+
+Components:
+
+* localgloo
+
+  \- or -
+
+* control-plane
+* upstream-discovery
+* function-discovery
+
+### localgloo
+
+`localgloo` is recommended as the easiest way of running Gloo locally. `localgloo` is simply the `control-plane`, 
+`upstream-discovery`, and `function-discovery` components run as seperate goroutines within the same process rather than
+separate processes. 
+
+`localgloo` still requires that Envoy be run as a separate process.
+
+To build `localgloo`:
+
+```bash
+make localgloo
+```
+
+### control-plane
+
+`control-plane` and `envoy` are the only required components for running Gloo. `control-plane` is the configuration 
+server that manages Envoy. By default, `control-plane` listens for Envoy discovery requests on port 8081. 
+
+To build `control-plane`:
+
+```bash
+make control-plane
+```
+
+### upstream-discovery
+
+To build `upstream-discovery`:
+
+```bash
+make upstream-discovery
+```
+
+### function-discovery
+
+To build `function-discovery`:
+
+```bash
+make function-discovery
+```
+
+## Building Envoy from Source
+
+This section coming soon. For now, please see [https://github.com/solo-io/gloo/releases](https://github.com/solo-io/gloo/releases) 
+to download the latest Envoy binary for use with Gloo.
 
 
-<h1 align="center">
-    <img src="docs/Gloo-01.png" alt="Gloo" width="200" height="242">
-  <br>
-  The Function Gateway
-</h1>
 
-### What is Gloo?
+## Running Gloo with Simple Options
 
-Gloo is a high-performance, plugin-extendable, platform-agnostic function Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
+To run with simple options (file-based storage, no upstream discovery enabled):
 
-<BR>
-<p align="center">
-<img src="docs/introduction/high_level_architecture.png" alt="Gloo" width="676" height="400">
-</p>    
-<BR>
-    
-## Features
+You'll want to configure `glooctl` to store configuration on the local filesystem:
 
-**Microservice Platform Integrations with Service Discovery**:
-* Kubernetes
-* OpenShift
-* HashiCorp Stack (Vault, Consul, Nomad)
-* Cloud Foundry
+```bash
+export GLOO_CONFIG_HOME=${PWD}/gloo # or a directory of your choosing
 
-**Serverless Platform Integrations with Function Discovery**:
-* AWS Lambda
-* Microsoft Azure Functions
-* Google Cloud Platform Functions
-* Fission
-* OpenFaaS
-* ProjectFn
+# create config directories
+mkdir -p ${GLOO_CONFIG_HOME}/{_gloo_config/upstreams,_gloo_config/virtualservices,_gloo_secrets,_gloo_files}
 
-**Routing Features**:
-* **Dynamic Load Balancing**: Load balance traffic across multiple upstream services.
-* **Health Checks**: Active and passive monitoring of your upstream services.
-* **OpenTracing**: Monitor requests using the well-supported OpenTracing standard
-* **Monitoring**: Export HTTP metrics to Prometheus or Statsd
-* **SSL**: Highly customizable options for adding SSL encryption to upstream services with full support for SNI.
-* **Transformations**: Add, remove, or manipulate HTTP requests and responses.
-* **Automated API Translation**: Automatically transform client requests to upstream API calls using Gloo’s Function Discovery
-* **CLI**: Control your Gloo cluster from the command line.
-* **Declarative API**: Gloo features a declarative YAML-based API; store your configuration as code and commit it with your projects.
-* **Failure Recovery**: Gloo is completely stateless and will immediately return to the desired configuration at boot time.
-* **Scalability**: Gloo acts as a control plane for Envoy, allowing Envoy instances and Gloo instances to be scaled independently. Both Gloo and Envoy are stateless.
-* **Performance**: Gloo leverages Envoy for its high performance and low footprint.
-* **Plugins**: Extendable architecture for adding functionality and integrations to Gloo.
-* **Tooling**: Build and Deployment tool for customized builds and deployment options
-* **Events**: Invoke APIs using CloudEvents.
-* **Pub/Sub**: Publish HTTP requests to NATS
-* **JSON-to-gRPC transcoding**: Connect JSON clients to gRPC services
+# configure glooctl to store configuration in ${GLOO_CONFIG_HOME}/_gloo_* directories 
+mkdir -p ${HOME}/.glooctl
+cat >${HOME}/.glooctl/config.yaml << EOF
+FileOptions:
+  ConfigDir: ${GLOO_CONFIG_HOME}/_gloo_config
+  FilesDir: ${GLOO_CONFIG_HOME}/_gloo_files
+  SecretDir: ${GLOO_CONFIG_HOME}/_gloo_secrets
+ConfigStorageOptions:
+  SyncFrequency: 1000000000
+  Type: file
+FileStorageOptions:
+  SyncFrequency: 1000000
+  Type: file
+SecretStorageOptions:
+  SyncFrequency: 100000
+  Type: file
+EOF
+```
 
-## Documentation
+You'll additionally need to create the bootstrap config for Envoy:
 
-### About gloo:
-* [Introduction](docs/introduction/introduction.md): Introduction to Gloo with a basic overview of Gloo itself and its use cases 
-* [Concepts](docs/introduction/concepts.md): Explanation of the key concepts used in Gloo.
-* [Architecture](docs/introduction/architecture.md): Overview of Gloo's architecture. Covers architecture at a high level, and 
-the component architecture
-### Installation:
-* [Installing on Kubernetes](docs/installation/kubernetes.md): Installation guide for Kubernetes (recommended)
-* [Installing on OpenShift](docs/installation/openshift.md): Installation guide for OpenShift
-### Getting Started:
-* [Getting Started on Kubernetes](docs/getting_started/kubernetes/1.md): Getting started with Kubernetes (recommended for first time users)
-* [Function Routing on Kubernetes](docs/getting_started/kubernetes/2.md): Introduction to Function Routing with Gloo
-* [Getting Started on OpenShift](docs/getting_started/openshift/1.md): Getting started with OpenShift
-* [Function Routing on OpenShift](docs/getting_started/openshift/2.md): Introduction to Function Routing with Gloo (OpenShift version)
-* [AWS Lambda](docs/getting_started/aws/lambda.md): Basic AWS Lambda with Gloo
-### Tutorials
-* [Refactoring Monoliths with Gloo](docs/tutorials/refactor_monolith.md): Using Gloo to refactor monolithic apps
-<!--* [Extending microservices with AWS Lambda](docs/tutorials/extend_microservice.md): Using Gloo to refactor monolithic apps-->
-* [Converting webhooks to NATS Messages with Gloo](docs/tutorials/source_events_from_github.md): Using Gloo to convert webhooks to NATS messages for event-driven architectures.
+```bash
+cat >${GLOO_CONFIG_HOME}/envoy.yaml << EOF
+node:
+  cluster: ingress
+  id: ingress~1
+static_resources:
+  clusters:
+  - name: xds_cluster
+    connect_timeout: 5.000s
+    hosts:
+    - socket_address:
+        address: 127.0.0.1
+        port_value: 8081
+    http2_protocol_options: {}
+    type: STATIC
+dynamic_resources:
+  ads_config:
+    api_type: GRPC
+    grpc_services:
+    - envoy_grpc: {cluster_name: xds_cluster}
+  cds_config:
+    ads: {}
+  lds_config:
+    ads: {}
+admin:
+  access_log_path: /dev/null
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 19000
+EOF
 
-### Plugins:
-* [AWS Lambda Plugin](docs/plugins/aws.md): Description of the AWS Lambda Plugin and config rules for AWS Lambda Upstreams and Functions 
-* [Kubernetes Plugin](docs/plugins/kubernetes.md): Description of the Kubernetes Plugin and config rules for Kubernetes Upstreams  
-* [Service Plugin](docs/plugins/service.md): Description of the Service Plugin and config rules for Service Upstreams
-* [Request Transformation Plugin](docs/plugins/request_transformation.md): Description of the Request Transformation Plugin and config rules for Request Transformation Routes and Functions 
+```
 
-### v1 API reference:
-* [Upstreams](docs/v1/upstream.md): API Specification for the Gloo Upstream Config Object
-* [Virtual](docs/v1/virtualservice.md): API Specification for the Gloo Virtual Service Config Object
-* [Metadata](docs/v1/metadata.md): API Specification for Gloo Config Object Metadata
-* [Status](docs/v1/status.md): API Specification for Gloo Config Object Status
+### localgloo
+
+```bash
+localgloo \
+  --storage.type file \
+  --secrets.type file \
+  --files.type file \
+  --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+```
+
+### control-plane
+
+```bash
+control-plane \
+  --storage.type file \
+  --secrets.type file \
+  --files.type file \
+  --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+```
+
+### upstream-discovery
+
+```bash
+upstream-discovery \
+  --storage.type file \
+  --secrets.type file \
+  --files.type file \
+  --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+```
+
+### function-discovery
+
+```bash
+function-discovery \
+  --storage.type file \
+  --secrets.type file \
+  --files.type file \
+  --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+```
 
 
-Blogs & Demos
------
-* [Announcement Blog](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600)
-* [Building hybrid app demo](https://www.youtube.com/watch?time_continue=1&v=ISR3G0CAZM0)
+### Envoy
+
+```bash
+envoy \
+    -c ${GLOO_CONFIG_HOME}/envoy.yaml \
+    --v2-config-only
+```
 
 
-Community
------
-Join us on our slack channel: [https://slack.solo.io/](https://slack.solo.io/)
+## Running Gloo with Advanced Options
 
----
-
-### Thanks
-
-**Gloo** would not be possible without the valuable open-source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io).
+See `<binary-name> --help` for details on more advanced configuration options including discovery
 
 
 
-<!--# Features
-- GCF plugin
-- Openapi upstream extension
-- Route extensions plugin
-- Transformation plugin
-- Ingress Controller
-- kubernetes service discovery
-- gloo config
-  - kubernetes
-  - vault secret watcher
-  - file
-- gloo event plugin / gateway
-- gloo-sdk-go
-- gloo-sdk-node
-- SNI config
-- Detailed virtualservice rules
-- Detailed upstream rules
-- glooctl
-- thetool
-- function discovery
-- building without the tool
-- deployment without the tool
-
-- getting started in cluster
-- getting started out of cluster no kube
-- geting started with istio
-- getting started using discovery services
-- getting started hybrid app example
-- getting started multiplexing example
-- getting started event gateway
-- architecture
-- writing plugins (all different kinds of plugins)
-  - plugin stages
-# document that we call GetFilters after the other plugins (maybe document the order of everything)
--->
