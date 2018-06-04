@@ -1,5 +1,6 @@
 syntax = "proto3";
 package v1;
+option go_package = "github.com/solo-io/gloo/pkg/api/types/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
