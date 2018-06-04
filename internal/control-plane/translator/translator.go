@@ -359,6 +359,11 @@ func (t *Translator) computeVirtualHosts(role *v1.Role,
 		reports = append(reports, createReport(virtualService, err))
 		// don't append errored virtual services
 		if err != nil || roleErr != nil {
+			// report the role e rr on the virtualservice too
+			// TODO: find a way to connect errors from roles to the virtualservice
+			// the virtualservice might be valid in other roles, this will force all roles to exclude
+			// this virtualservice
+			reports = append(reports, createReport(virtualService, roleErr))
 			continue
 		}
 		if virtualService.SslConfig != nil && virtualService.SslConfig.SecretRef != "" {
