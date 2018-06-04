@@ -1,3 +1,6 @@
+# Change this if your googleapis is in a different directory
+export GOOGLE_PROTOS_HOME=$(HOME)/workspace/googleapis
+
 ROOTDIR := $(shell pwd)
 PROTOS := $(shell find api/v1 -name "*.proto")
 SOURCES := $(shell find . -name "*.go" | grep -v test)
