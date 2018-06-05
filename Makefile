@@ -1,5 +1,7 @@
 # Change this if your googleapis is in a different directory
+ifndef GOOGLE_PROTOS_HOME
 export GOOGLE_PROTOS_HOME=$(HOME)/workspace/googleapis
+endif
 
 ROOTDIR := $(shell pwd)
 PROTOS := $(shell find api/v1 -name "*.proto")
