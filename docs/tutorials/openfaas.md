@@ -1,5 +1,5 @@
 This document shows how to access your OpenFaaS functions securly via Gloo. We will deploy everything
-to minikube. With minor adjustments can be applied to any kubernets cluster.
+to minikube. With minor adjustments can be applied to any Kubernetes cluster.
 
 # Deploy OpenFaaS & Gloo
 The official OpenFaaS install guide is here: https://docs.openfaas.com/deployment/kubernetes/
@@ -11,6 +11,8 @@ git clone https://github.com/openfaas/faas-netes
 cd faas-netes && \
 kubectl apply -f ./namespaces.yml,./yaml
 ```
+
+> You can also install OpenFaaS with helm.
 
 To install gloo, run:
 ```
@@ -101,4 +103,4 @@ Handle this -> https://google.com
 https://google.com => 200
 ```
 
-Your function will respond and say hi!
+Your function will respond with the HTTP status code for the URL!
