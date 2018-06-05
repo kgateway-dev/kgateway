@@ -44,8 +44,7 @@ RUN mkdir -p ${GOPATH}/src/github.com/solo-io/ && \
 
 
 RUN go get github.com/paulvollmer/2gobytes
-RUN mkdir -p ${HOME}/workspace && \
-    git clone https://github.com/googleapis/googleapis ${HOME}/workspace/googleapis
+RUN git clone https://github.com/googleapis/googleapis /googleapis
 
 RUN go get -v github.com/golang/protobuf/...
 
@@ -56,6 +55,6 @@ RUN git clone https://github.com/kubernetes/apimachinery ${GOPATH}/src/k8s.io/ap
 
 RUN go get -v github.com/go-swagger/go-swagger/cmd/swagger
 
-ENV GOOGLE_PROTOS_HOME=${HOME}/workspace/googleapis
+ENV GOOGLE_PROTOS_HOME=/googleapis
 
 CMD ["/bin/bash"]
