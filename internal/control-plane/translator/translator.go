@@ -351,28 +351,28 @@ func (t *Translator) computeVirtualHosts(role *v1.Role,
 	vServicesWithBadDomains := findVirtualServicesWithConflictingDomains(cfg.VirtualServices)
 
 	for _, virtualService := range cfg.VirtualServices {
-		if domainErr, invalidVService := vServicesWithBadDomains[virtualService.Name]; invalidVService {
-			roleErr = multierror.Append(roleErr, domainErr)
-		}
+		roleErr = vServicesWithBadDomains[virtualService.Name]
 
 		envoyVirtualHost, err := t.computeVirtualHost(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
-		reports = append(reports, createReport(virtualService, err))
-		// don't append errored virtual services
-		if err != nil || roleErr != nil {
-			// report the role e rr on the virtualservice too
+		if roleErr != nil {
+			// report the role err on the virtualservice too
 			// TODO: find a way to connect errors from roles to the virtualservice
 			// the virtualservice might be valid in other roles, this will force all roles to exclude
 			// this virtualservice
-			reports = append(reports, createReport(virtualService, roleErr))
+			err = multierror.Append(err, roleErr)
+		}
+		reports = append(reports, createReport(virtualService, err))
+		// don't append errored virtual services to the success list
+		if err != nil {
 			continue
 		}
 		if virtualService.SslConfig != nil && virtualService.SslConfig.SecretRef != "" {
 			// TODO: allow user to specify require ALL tls or just external
 			envoyVirtualHost.RequireTls = envoyroute.VirtualHost_ALL
 			sslVirtualHosts = append(sslVirtualHosts, envoyVirtualHost)
-		} else {
-			noSslVirtualHosts = append(noSslVirtualHosts, envoyVirtualHost)
+			continue
 		}
+		noSslVirtualHosts = append(noSslVirtualHosts, envoyVirtualHost)
 	}
 
 	// add report for the role

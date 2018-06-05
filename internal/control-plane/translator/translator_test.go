@@ -42,9 +42,11 @@ var _ = Describe("Translator", func() {
 				Expect(reports[0].Err).To(BeNil())
 			})
 			It("returns a valid report for each virtual service, and an error for the role", func() {
-				Expect(reports[1].Err).To(BeNil())
-				Expect(reports[2].Err).To(BeNil())
+				Expect(reports[1].Err).NotTo(BeNil())
+				Expect(reports[2].Err).NotTo(BeNil())
 				Expect(reports[3]).NotTo(BeNil())
+				Expect(reports[1].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
+				Expect(reports[2].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
 				Expect(reports[3].Err.Error()).To(ContainSubstring("is shared by the following virtual services: [invalid-vservice-1 invalid-vservice-2]"))
 			})
 			It("returns only the valid cluster", func() {
