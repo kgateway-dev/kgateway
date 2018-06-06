@@ -11,6 +11,9 @@ type {{ .LowercasePluralName }}Client struct {
 }
 
 func (c *{{ .LowercasePluralName }}Client) Create(item *v1.{{ .UppercaseName }}) (*v1.{{ .UppercaseName }}, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	out, err := c.base.Create(&base.StorableItem{{"{"}}{{ .UppercaseName }}: item})
 	if err != nil {
 		return nil, err
@@ -19,6 +22,9 @@ func (c *{{ .LowercasePluralName }}Client) Create(item *v1.{{ .UppercaseName }})
 }
 
 func (c *{{ .LowercasePluralName }}Client) Update(item *v1.{{ .UppercaseName }}) (*v1.{{ .UppercaseName }}, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	out, err := c.base.Update(&base.StorableItem{{"{"}}{{ .UppercaseName }}: item})
 	if err != nil {
 		return nil, err

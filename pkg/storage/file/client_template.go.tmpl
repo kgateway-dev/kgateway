@@ -25,6 +25,9 @@ type {{ .LowercasePluralName }}Client struct {
 }
 
 func (c *{{ .LowercasePluralName }}Client) Create(item *v1.{{ .UppercaseName }}) (*v1.{{ .UppercaseName }}, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	// set resourceversion on clone
 	{{ .LowercaseName }}Clone, ok := proto.Clone(item).(*v1.{{ .UppercaseName }})
 	if !ok {
@@ -53,6 +56,9 @@ func (c *{{ .LowercasePluralName }}Client) Create(item *v1.{{ .UppercaseName }})
 }
 
 func (c *{{ .LowercasePluralName }}Client) Update(item *v1.{{ .UppercaseName }}) (*v1.{{ .UppercaseName }}, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}
