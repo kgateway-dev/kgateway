@@ -141,14 +141,30 @@ func (c *{{ .LowercasePluralName }}Client) pathsTo{{ .UppercasePluralName }}() (
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var {{ .LowercaseName }} v1.{{ .UppercaseName }}
-		err := ReadFileInto(path, &{{ .LowercaseName }})
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as {{ .LowercaseName }}")
-		}
-		{{ .LowercasePluralName }}[path] = &{{ .LowercaseName }}
+
+		{{ .LowercaseName }}, err := pathTo{{ .UppercaseName }}(path)
+        if err != nil {
+            return nil, errors.Wrap(err, "unable to parse .yml file as {{ .LowercaseName }}")
+        }
+
+        {{ .LowercasePluralName }}[path] = {{ .LowercaseName }}
 	}
 	return {{ .LowercasePluralName }}, nil
+}
+
+func pathTo{{ .UppercaseName }}(path string) (*v1.{{ .UppercaseName }}, error) {
+	var {{ .LowercaseName }} v1.{{ .UppercaseName }}
+	err := ReadFileInto(path, &{{ .LowercaseName }})
+	if err != nil {
+		return nil, err
+	}
+	if {{ .LowercaseName }}.Metadata == nil {
+		{{ .LowercaseName }}.Metadata = &v1.Metadata{}
+	}
+	if {{ .LowercaseName }}.Metadata.ResourceVersion == "" {
+		{{ .LowercaseName }}.Metadata.ResourceVersion = "1"
+	}
+	return &{{ .LowercaseName }}, nil
 }
 
 func (u *{{ .LowercasePluralName }}Client) Watch(handlers ...storage.{{ .UppercaseName }}EventHandler) (*storage.Watcher, error) {
@@ -206,21 +222,19 @@ func (u *{{ .LowercasePluralName }}Client) onEvent(event watcher.Event, handlers
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.{{ .UppercaseName }}
-			err := ReadFileInto(event.Path, &created)
+			created, err := pathTo{{ .UppercaseName }}(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnAdd(current, &created)
+			h.OnAdd(current, created)
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.{{ .UppercaseName }}
-			err := ReadFileInto(event.Path, &updated)
+			updated, err := pathTo{{ .UppercaseName }}(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnUpdate(current, &updated)
+			h.OnUpdate(current, updated)
 		}
 	case watcher.Remove:
 		for _, h := range handlers {

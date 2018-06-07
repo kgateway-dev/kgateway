@@ -141,14 +141,30 @@ func (c *upstreamsClient) pathsToUpstreams() (map[string]*v1.Upstream, error) {
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var upstream v1.Upstream
-		err := ReadFileInto(path, &upstream)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as upstream")
-		}
-		upstreams[path] = &upstream
+
+		upstream, err := pathToUpstream(path)
+        if err != nil {
+            return nil, errors.Wrap(err, "unable to parse .yml file as upstream")
+        }
+
+        upstreams[path] = upstream
 	}
 	return upstreams, nil
+}
+
+func pathToUpstream(path string) (*v1.Upstream, error) {
+	var upstream v1.Upstream
+	err := ReadFileInto(path, &upstream)
+	if err != nil {
+		return nil, err
+	}
+	if upstream.Metadata == nil {
+		upstream.Metadata = &v1.Metadata{}
+	}
+	if upstream.Metadata.ResourceVersion == "" {
+		upstream.Metadata.ResourceVersion = "1"
+	}
+	return &upstream, nil
 }
 
 func (u *upstreamsClient) Watch(handlers ...storage.UpstreamEventHandler) (*storage.Watcher, error) {
@@ -206,21 +222,19 @@ func (u *upstreamsClient) onEvent(event watcher.Event, handlers ...storage.Upstr
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.Upstream
-			err := ReadFileInto(event.Path, &created)
+			created, err := pathToUpstream(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnAdd(current, &created)
+			h.OnAdd(current, created)
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.Upstream
-			err := ReadFileInto(event.Path, &updated)
+			updated, err := pathToUpstream(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnUpdate(current, &updated)
+			h.OnUpdate(current, updated)
 		}
 	case watcher.Remove:
 		for _, h := range handlers {

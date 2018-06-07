@@ -141,14 +141,30 @@ func (c *rolesClient) pathsToRoles() (map[string]*v1.Role, error) {
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var role v1.Role
-		err := ReadFileInto(path, &role)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as role")
-		}
-		roles[path] = &role
+
+		role, err := pathToRole(path)
+        if err != nil {
+            return nil, errors.Wrap(err, "unable to parse .yml file as role")
+        }
+
+        roles[path] = role
 	}
 	return roles, nil
+}
+
+func pathToRole(path string) (*v1.Role, error) {
+	var role v1.Role
+	err := ReadFileInto(path, &role)
+	if err != nil {
+		return nil, err
+	}
+	if role.Metadata == nil {
+		role.Metadata = &v1.Metadata{}
+	}
+	if role.Metadata.ResourceVersion == "" {
+		role.Metadata.ResourceVersion = "1"
+	}
+	return &role, nil
 }
 
 func (u *rolesClient) Watch(handlers ...storage.RoleEventHandler) (*storage.Watcher, error) {
@@ -206,21 +222,19 @@ func (u *rolesClient) onEvent(event watcher.Event, handlers ...storage.RoleEvent
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.Role
-			err := ReadFileInto(event.Path, &created)
+			created, err := pathToRole(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnAdd(current, &created)
+			h.OnAdd(current, created)
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.Role
-			err := ReadFileInto(event.Path, &updated)
+			updated, err := pathToRole(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnUpdate(current, &updated)
+			h.OnUpdate(current, updated)
 		}
 	case watcher.Remove:
 		for _, h := range handlers {
