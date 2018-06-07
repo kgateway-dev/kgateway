@@ -124,8 +124,8 @@ mkdir -p ${HOME}/.glooctl
 cat >${HOME}/.glooctl/config.yaml << EOF
 FileOptions:
   ConfigDir: ${GLOO_CONFIG_HOME}/_gloo_config
-  FilesDir: ${GLOO_CONFIG_HOME}/_gloo_files
-  SecretDir: ${GLOO_CONFIG_HOME}/_gloo_secrets
+  FilesDir: ${GLOO_CONFIG_HOME}/_gloo_config/files
+  SecretDir: ${GLOO_CONFIG_HOME}/_gloo_config/secrets
 ConfigStorageOptions:
   SyncFrequency: 1000000000
   Type: file
@@ -182,8 +182,8 @@ localgloo \
   --secrets.type file \
   --files.type file \
   --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
-  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
-  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_config/files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_config/secrets
 ```
 
 ### control-plane
@@ -194,8 +194,8 @@ control-plane \
   --secrets.type file \
   --files.type file \
   --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
-  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
-  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_config/files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_config/secrets
 ```
 
 ### upstream-discovery
@@ -206,8 +206,8 @@ upstream-discovery \
   --secrets.type file \
   --files.type file \
   --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
-  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
-  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_config/files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_config/secrets
 ```
 
 ### function-discovery
@@ -218,8 +218,8 @@ function-discovery \
   --secrets.type file \
   --files.type file \
   --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
-  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_files \
-  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_secrets
+  --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_config/files \
+  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_config/secrets
 ```
 
 

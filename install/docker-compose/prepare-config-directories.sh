@@ -18,8 +18,8 @@ overwrite() {
 cat >${HOME}/.glooctl/config.yaml << EOF
 FileOptions:
   ConfigDir: ${PWD}/_gloo_config
-  FilesDir: ${PWD}/_gloo_files
-  SecretDir: ${PWD}/_gloo_secrets
+  FilesDir: ${PWD}/_gloo_config/files
+  SecretDir: ${PWD}/_gloo_config/secrets
 ConfigStorageOptions:
   SyncFrequency: 1000000000
   Type: file
@@ -33,7 +33,7 @@ EOF
 }
 
 echo "creating gloo storage directories"
-mkdir -p ./{_gloo_config/upstreams,_gloo_config/virtualservices,_gloo_secrets,_gloo_files}
+mkdir -p ./_gloo_config/{upstreams,virtualservices,roles,secrets,files}
 
 mkdir -p ${HOME}/.glooctl/
 

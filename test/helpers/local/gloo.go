@@ -159,7 +159,8 @@ func (gi *GlooInstance) AddSecret(name string, secret map[string]string) error {
 
 func (gi *GlooInstance) initStorage() error {
 	dir := gi.tmpdir
-	client, err := file.NewStorage(filepath.Join(dir, "_gloo_config"), time.Hour)
+	configRoot := filepath.Join(dir, "_gloo_config")
+	client, err := file.NewStorage(configRoot, time.Hour)
 	if err != nil {
 		return errors.New("failed to start file config watcher for directory " + dir)
 	}
@@ -168,11 +169,11 @@ func (gi *GlooInstance) initStorage() error {
 		return errors.New("failed to register file config watcher for directory " + dir)
 	}
 	// enable file storage
-	if err := os.MkdirAll(filepath.Join(gi.tmpdir, "_gloo_files"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(configRoot, "files"), 0755); err != nil {
 		return err
 	}
 	// enable secret storage
-	if err := os.MkdirAll(filepath.Join(gi.tmpdir, "_gloo_secrets"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(configRoot, "secrets"), 0755); err != nil {
 		return err
 	}
 	gi.store = client
