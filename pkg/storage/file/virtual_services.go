@@ -25,6 +25,9 @@ type virtualServicesClient struct {
 }
 
 func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualService, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	// set resourceversion on clone
 	virtualServiceClone, ok := proto.Clone(item).(*v1.VirtualService)
 	if !ok {
@@ -53,6 +56,9 @@ func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualServ
 }
 
 func (c *virtualServicesClient) Update(item *v1.VirtualService) (*v1.VirtualService, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}

@@ -1,6 +1,8 @@
 package consul
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/base"
@@ -11,6 +13,9 @@ type upstreamsClient struct {
 }
 
 func (c *upstreamsClient) Create(item *v1.Upstream) (*v1.Upstream, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	out, err := c.base.Create(&base.StorableItem{Upstream: item})
 	if err != nil {
 		return nil, err
@@ -19,6 +24,9 @@ func (c *upstreamsClient) Create(item *v1.Upstream) (*v1.Upstream, error) {
 }
 
 func (c *upstreamsClient) Update(item *v1.Upstream) (*v1.Upstream, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	out, err := c.base.Update(&base.StorableItem{Upstream: item})
 	if err != nil {
 		return nil, err

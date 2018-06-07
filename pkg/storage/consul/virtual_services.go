@@ -1,6 +1,8 @@
 package consul
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/base"
@@ -11,6 +13,9 @@ type virtualServicesClient struct {
 }
 
 func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualService, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	out, err := c.base.Create(&base.StorableItem{VirtualService: item})
 	if err != nil {
 		return nil, err
@@ -19,6 +24,9 @@ func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualServ
 }
 
 func (c *virtualServicesClient) Update(item *v1.VirtualService) (*v1.VirtualService, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	out, err := c.base.Update(&base.StorableItem{VirtualService: item})
 	if err != nil {
 		return nil, err

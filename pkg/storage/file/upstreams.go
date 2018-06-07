@@ -25,6 +25,9 @@ type upstreamsClient struct {
 }
 
 func (c *upstreamsClient) Create(item *v1.Upstream) (*v1.Upstream, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	// set resourceversion on clone
 	upstreamClone, ok := proto.Clone(item).(*v1.Upstream)
 	if !ok {
@@ -53,6 +56,9 @@ func (c *upstreamsClient) Create(item *v1.Upstream) (*v1.Upstream, error) {
 }
 
 func (c *upstreamsClient) Update(item *v1.Upstream) (*v1.Upstream, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}

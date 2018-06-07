@@ -25,6 +25,9 @@ type rolesClient struct {
 }
 
 func (c *rolesClient) Create(item *v1.Role) (*v1.Role, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	// set resourceversion on clone
 	roleClone, ok := proto.Clone(item).(*v1.Role)
 	if !ok {
@@ -53,6 +56,9 @@ func (c *rolesClient) Create(item *v1.Role) (*v1.Role, error) {
 }
 
 func (c *rolesClient) Update(item *v1.Role) (*v1.Role, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}
