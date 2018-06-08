@@ -69,7 +69,7 @@ var _ = Describe("Azure Functions", func() {
 			"publish_profile": helpers.AzureProfileString(),
 		})
 
-		err = functionDiscoveryInstance.Run(glooInstance.ConfigDir())
+		err = functionDiscoveryInstance.Run(glooInstance.TmpDir())
 		Expect(err).NotTo(HaveOccurred())
 
 		envoyPort = glooInstance.EnvoyPort()

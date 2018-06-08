@@ -94,7 +94,7 @@ var _ = Describe("Google functions", func() {
 		secret["json_key_file"] = string(secretFile)
 		glooInstance.AddSecret(GoogleSecretRef, secret)
 
-		err = functionDiscoveryInstance.Run(glooInstance.ConfigDir())
+		err = functionDiscoveryInstance.Run(glooInstance.TmpDir())
 		Expect(err).NotTo(HaveOccurred())
 
 		envoyPort := glooInstance.EnvoyPort()
