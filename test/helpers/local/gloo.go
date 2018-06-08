@@ -108,11 +108,11 @@ func (gi *GlooInstance) ConfigDir() string {
 }
 
 func (gi *GlooInstance) FilesDir() string {
-	return filepath.Join(gi.tmpdir, "_gloo_files")
+	return filepath.Join(gi.ConfigDir(), "files")
 }
 
 func (gi *GlooInstance) SecretsDir() string {
-	return filepath.Join(gi.tmpdir, "_gloo_secrets")
+	return filepath.Join(gi.ConfigDir(), "secrets")
 }
 
 func (gi *GlooInstance) EnvoyPort() uint32 {
@@ -146,9 +146,8 @@ func (gi *GlooInstance) DeletevService(name string) error {
 }
 
 func (gi *GlooInstance) AddSecret(name string, secret map[string]string) error {
-	secretdir := filepath.Join(gi.tmpdir, "_gloo_secrets")
-	os.Mkdir(secretdir, 0755)
-	secretfile := filepath.Join(secretdir, name)
+	os.Mkdir(gi.SecretsDir(), 0755)
+	secretfile := filepath.Join(gi.SecretsDir(), name)
 
 	data, err := yaml.Marshal(&secret)
 	if err != nil {

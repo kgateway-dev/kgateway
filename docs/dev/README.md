@@ -117,7 +117,7 @@ You'll want to configure `glooctl` to store configuration on the local filesyste
 export GLOO_CONFIG_HOME=${PWD}/gloo # or a directory of your choosing
 
 # create config directories
-mkdir -p ${GLOO_CONFIG_HOME}/{_gloo_config/upstreams,_gloo_config/virtualservices,_gloo_secrets,_gloo_files}
+mkdir -p ${GLOO_CONFIG_HOME}/{_gloo_config/upstreams,_gloo_config/virtualservices,_gloo_config/secrets,_gloo_config/files}
 
 # configure glooctl to store configuration in ${GLOO_CONFIG_HOME}/_gloo_* directories 
 mkdir -p ${HOME}/.glooctl

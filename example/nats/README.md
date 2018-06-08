@@ -20,9 +20,9 @@ $ docker-compose up --build
 
 Initialize gloo upstreams:
 ```
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_secrets/ upstream create  -f nats-upstream.yaml
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_secrets/ upstream create  -f website-upstream.yaml
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_secrets/ upstream create  -f analytics.yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_config/secrets/ upstream create  -f nats-upstream.yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_config/secrets/ upstream create  -f website-upstream.yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_config/secrets/ upstream create  -f analytics.yaml
 ```
 
 Initialize gloo virtualservice:
