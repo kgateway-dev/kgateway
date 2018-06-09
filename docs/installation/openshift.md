@@ -17,7 +17,7 @@ Once your OpenShift cluster is up and running, run the following command to depl
 
 ```bash
 oc apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo-install/master/openshift/install.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/master/install/openshift/install.yaml
 ```
 
 Check that the Gloo pods and services have been created:

@@ -20,7 +20,7 @@ Here you will find installation scripts, files, and charts for various deploymen
 The simplest and most well-tested of these lives at `kube/install.yaml`. Try deploying this to a kubernetes cluster with
 ```bash
 kubectl apply \
-  --filename https://raw.githubusercontent.com/gloo-install/kube/master/install.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/master/install/kube/install.yaml
 ```
 to get started quickly.
 
