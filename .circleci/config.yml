@@ -34,7 +34,7 @@ jobs:
           command: echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
       - run:
           name: Test
-          command: ginkgo -r -v .
+          command: ginkgo -r -v -skipPackage build-envoy .
           environment:
             RUN_CONSUL_TESTS: "1"
             RUN_VAULT_TESTS: "1"

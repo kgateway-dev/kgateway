@@ -15,4 +15,10 @@
 	url = https://github.com/solo-io/envoy-azure-functions
 [submodule "pkg/plugins/connect/envoy"]
 	path = pkg/plugins/connect/envoy
-	url = https://github.com/solo-io/envoy-client-certificate-restriction
+	url = https://github.com/solo-io/envoy-consul-connect
+[submodule "build-envoy/envoy-common"]
+	path = build-envoy/envoy-common
+	url = https://github.com/solo-io/envoy-common
+[submodule "build-envoy/envoy"]
+	path = build-envoy/envoy
+	url = https://github.com/envoyproxy/envoy
