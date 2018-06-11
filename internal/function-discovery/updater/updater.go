@@ -240,20 +240,20 @@ func UpdateServiceInfo(gloo storage.Interface,
 		return errors.Wrapf(err, "failed to get existing upstream with name %v", upstreamName)
 	}
 
-	svcInfo, annotations, err := marker.DetectFunctionalUpstream(us)
+	svcInfo, annotations, err := marker.DetectFunctionalServiceType(us)
 	if err != nil {
 		return errors.Wrapf(err, "failed to discover whether %v is a functional upstream", upstreamName)
+	}
+
+	// not a functional service type
+	if svcInfo == nil && annotations == nil {
+		return nil
 	}
 
 	return backoff.WithBackoff(func() error {
 		usToUpdate, err := gloo.V1().Upstreams().Get(upstreamName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get existing upstream with name %v", upstreamName)
-		}
-
-		// detection skipped this upstream, probably already detected for it
-		if svcInfo == nil && annotations == nil {
-			return nil
 		}
 
 		// no update to do

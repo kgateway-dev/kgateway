@@ -103,10 +103,14 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 	updateUpstream := func(us *v1.Upstream, secrets secretwatcher.SecretMap) {
 		log.Debugf("attempting update for %v", us.Name)
 		if err := updater.UpdateServiceInfo(store, us.Name, marker); err != nil {
-			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
+			go func() {
+				errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
+			}()
 		}
 		if err := updater.UpdateFunctions(resolve, store, secretStore, files, us.Name, secrets); err != nil {
-			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
+			go func() {
+				errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
+			}()
 		}
 	}
 

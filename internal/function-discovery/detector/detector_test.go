@@ -26,7 +26,7 @@ var _ = Describe("Marker", func() {
 					{Addr: "localhost", Port: 8000},
 				},
 			})
-			svcInfo, annotations, err := marker.DetectFunctionalUpstream(us)
+			svcInfo, annotations, err := marker.DetectFunctionalServiceType(us)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(svcInfo).To(Equal(&v1.ServiceInfo{Type: "mock_service"}))
 			Expect(annotations).To(Equal(map[string]string{"foo": "bar"}))
