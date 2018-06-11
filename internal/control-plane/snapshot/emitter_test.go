@@ -1,36 +1,37 @@
 package snapshot_test
 
 import (
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	kubev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
+	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
+	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	. "github.com/solo-io/gloo/internal/control-plane/snapshot"
+	kubeupstreamdiscovery "github.com/solo-io/gloo/internal/upstream-discovery/kube"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
-	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
-	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
-	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
-	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
-	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"path/filepath"
-	"os"
-	"github.com/solo-io/gloo/test/helpers"
-	"k8s.io/client-go/tools/clientcmd"
-	kube "k8s.io/client-go/kubernetes"
-	"github.com/gogo/protobuf/types"
-	"k8s.io/apimachinery/pkg/labels"
-	"time"
-	"log"
-	kubeupstreamdiscovery "github.com/solo-io/gloo/internal/upstream-discovery/kube"
+	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/solo-io/gloo/test/helpers"
+	kubev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	kube "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -227,129 +228,130 @@ var _ = Describe("Emitter", func() {
 					}
 					return endpoints[namespace+"-test-service-with-port-8080"], nil
 				}, time.Second*5, time.Millisecond*250).Should(HaveLen(2))
+
 				cfg := snap.Cfg
-				Eventually(func() (*v1.Config, error) {
-					select {
-					case err := <-emitter.Error():
-						return nil, err
-					case snap = <-emitter.Snapshot():
-						cfg = snap.Cfg
-					case <-time.After(time.Second):
-					}
-					if cfg != nil {
-						for _, u := range cfg.Upstreams {
-							u.Metadata.ResourceVersion = ""
-						}
-						for _, v := range cfg.VirtualServices {
-							v.Metadata.ResourceVersion = ""
-						}
-					}
-					return cfg, nil
-				}, time.Second*5, time.Millisecond*250).Should(Equal(&v1.Config{
-					Upstreams: []*v1.Upstream{
-						{
-							Name:              namespace + "-test-service-8080",
-							Type:              "kubernetes",
-							ConnectionTimeout: 0,
-							Spec: &types.Struct{
-								Fields: map[string]*types.Value{
-									"service_name": {
-										Kind: &types.Value_StringValue{
-											StringValue: "test-service",
-										},
-									},
-									"service_namespace": {
-										Kind: &types.Value_StringValue{
-											StringValue: namespace,
-										},
-									},
-									"service_port": {
-										Kind: &types.Value_NumberValue{NumberValue: 8080},
+
+				for _, expected := range []*v1.Upstream{
+					{
+						Name:              namespace + "-test-service-8080",
+						Type:              "kubernetes",
+						ConnectionTimeout: 0,
+						Spec: &types.Struct{
+							Fields: map[string]*types.Value{
+								"service_name": {
+									Kind: &types.Value_StringValue{
+										StringValue: "test-service",
 									},
 								},
-							},
-							Functions:   nil,
-							ServiceInfo: nil,
-							Status:      nil,
-							Metadata: &v1.Metadata{
-								Namespace: namespace,
-								Annotations: map[string]string{
-									"generated_by": "kubernetes-upstream-discovery",
+								"service_namespace": {
+									Kind: &types.Value_StringValue{
+										StringValue: namespace,
+									},
+								},
+								"service_port": {
+									Kind: &types.Value_NumberValue{NumberValue: 8080},
 								},
 							},
 						},
-						{
-							Name:              namespace + "-test-service-with-labels-8080",
-							Type:              "kubernetes",
-							ConnectionTimeout: 0,
-							Spec: &types.Struct{
-								Fields: map[string]*types.Value{
-									"service_name": {
-										Kind: &types.Value_StringValue{
-											StringValue: "test-service-with-labels",
-										},
-									},
-									"service_namespace": {
-										Kind: &types.Value_StringValue{
-											StringValue: namespace,
-										},
-									},
-									"service_port": {
-										Kind: &types.Value_NumberValue{NumberValue: 8080},
-									},
-								},
-							},
-							Functions:   nil,
-							ServiceInfo: nil,
-							Status:      nil,
-							Metadata: &v1.Metadata{
-								Namespace: namespace,
-								Annotations: map[string]string{
-									"generated_by": "kubernetes-upstream-discovery",
-								},
-							},
-						},
-						{
-							Name:              namespace + "-test-service-with-port-8080",
-							Type:              "kubernetes",
-							ConnectionTimeout: 0,
-							Spec: &types.Struct{
-								Fields: map[string]*types.Value{
-									"service_name": {
-										Kind: &types.Value_StringValue{
-											StringValue: "test-service-with-port",
-										},
-									},
-									"service_namespace": {
-										Kind: &types.Value_StringValue{
-											StringValue: namespace,
-										},
-									},
-									"service_port": {
-										Kind: &types.Value_NumberValue{NumberValue: 8080},
-									},
-								},
-							},
-							Functions:   nil,
-							ServiceInfo: nil,
-							Status:      nil,
-							Metadata: &v1.Metadata{
-								Namespace: namespace,
-								Annotations: map[string]string{
-									"generated_by": "kubernetes-upstream-discovery",
-								},
+						Functions:   nil,
+						ServiceInfo: nil,
+						Status:      nil,
+						Metadata: &v1.Metadata{
+							Namespace: namespace,
+							Annotations: map[string]string{
+								"generated_by": "kubernetes-upstream-discovery",
 							},
 						},
 					},
-					VirtualServices: []*v1.VirtualService{
-						{
-							Name:      "foo",
-							Metadata: &v1.Metadata{
-								Namespace: namespace,
+					{
+						Name:              namespace + "-test-service-with-labels-8080",
+						Type:              "kubernetes",
+						ConnectionTimeout: 0,
+						Spec: &types.Struct{
+							Fields: map[string]*types.Value{
+								"service_name": {
+									Kind: &types.Value_StringValue{
+										StringValue: "test-service-with-labels",
+									},
+								},
+								"service_namespace": {
+									Kind: &types.Value_StringValue{
+										StringValue: namespace,
+									},
+								},
+								"service_port": {
+									Kind: &types.Value_NumberValue{NumberValue: 8080},
+								},
+							},
+						},
+						Functions:   nil,
+						ServiceInfo: nil,
+						Status:      nil,
+						Metadata: &v1.Metadata{
+							Namespace: namespace,
+							Annotations: map[string]string{
+								"generated_by": "kubernetes-upstream-discovery",
 							},
 						},
 					},
-				}))
+					{
+						Name:              namespace + "-test-service-with-port-8080",
+						Type:              "kubernetes",
+						ConnectionTimeout: 0,
+						Spec: &types.Struct{
+							Fields: map[string]*types.Value{
+								"service_name": {
+									Kind: &types.Value_StringValue{
+										StringValue: "test-service-with-port",
+									},
+								},
+								"service_namespace": {
+									Kind: &types.Value_StringValue{
+										StringValue: namespace,
+									},
+								},
+								"service_port": {
+									Kind: &types.Value_NumberValue{NumberValue: 8080},
+								},
+							},
+						},
+						Functions:   nil,
+						ServiceInfo: nil,
+						Status:      nil,
+						Metadata: &v1.Metadata{
+							Namespace: namespace,
+							Annotations: map[string]string{
+								"generated_by": "kubernetes-upstream-discovery",
+							},
+						},
+					},
+				} {
+					Eventually(func() ([]*v1.Upstream, error) {
+						select {
+						case err := <-emitter.Error():
+							return nil, err
+						case snap = <-emitter.Snapshot():
+							cfg = snap.Cfg
+						case <-time.After(time.Second):
+						}
+						if cfg != nil {
+							for _, u := range cfg.Upstreams {
+								u.Metadata.ResourceVersion = ""
+							}
+							for _, v := range cfg.VirtualServices {
+								v.Metadata.ResourceVersion = ""
+							}
+						}
+						return cfg.Upstreams, nil
+					}, time.Second*5, time.Millisecond*250).Should(ContainElement(expected))
+				}
+				Expect(cfg.VirtualServices).To(ContainElement(
+					&v1.VirtualService{
+						Name: "foo",
+						Metadata: &v1.Metadata{
+							Namespace: namespace,
+						},
+					}))
 			})
 		})
 	})
