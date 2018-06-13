@@ -561,11 +561,18 @@ func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string,
 	}
 	certChain, ok := sslSecrets.Data[sslCertificateChainKey]
 	if !ok {
-		return "", "", errors.Errorf("key %v not found in ssl secrets", sslCertificateChainKey)
+		certChain, ok = sslSecrets.Data[kubeSslCertificateChainKey]
+		if !ok {
+			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslCertificateChainKey, kubeSslCertificateChainKey)
+		}
 	}
+
 	privateKey, ok := sslSecrets.Data[sslPrivateKeyKey]
 	if !ok {
-		return "", "", errors.Errorf("key %v not found in ssl secrets", sslPrivateKeyKey)
+		privateKey, ok = sslSecrets.Data[kubeSslPrivateKeyKey]
+		if !ok {
+			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslPrivateKeyKey, kubeSslPrivateKeyKey)
+		}
 	}
 	return certChain, privateKey, nil
 }
@@ -599,8 +606,10 @@ func (t *Translator) constructHttpListener(name string, port uint32, filters []e
 }
 
 const (
-	sslCertificateChainKey = "ca_chain"
-	sslPrivateKeyKey       = "private_key"
+	sslCertificateChainKey     = "ca_chain"
+	kubeSslCertificateChainKey = "tls.crt"
+	sslPrivateKeyKey           = "private_key"
+	kubeSslPrivateKeyKey       = "tls.key"
 )
 
 func (t *Translator) constructHttpsListener(name string,

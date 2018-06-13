@@ -11,12 +11,13 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
+	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
 	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
-	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
-	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 )
 
 func newTranslator() *Translator {
@@ -154,9 +155,14 @@ var _ = Describe("Translator", func() {
 					Expect(reports[2].Err).To(BeNil())
 				})
 			})
-			Context("the desired ssl secret not present in the secret map", func() {
-				It("returns an empty ssl routeconfig and a len 1 nossl routeconfig", func() {
-					snap, reports, err := t.Translate(role, &snapshot.Cache{
+			Context("the desired ssl secret is present in the secret map", func() {
+				var (
+					err     error
+					reports []reporter.ConfigObjectReport
+					snap    *envoycache.Snapshot
+				)
+				It("returns a non empty ssl routeconfig and a len 1 nossl routeconfig", func() {
+					snap, reports, err = t.Translate(role, &snapshot.Cache{
 						Cfg: cfg,
 						Secrets: secretwatcher.SecretMap{
 							"ssl-secret-ref": &dependencies.Secret{Ref: "ssl-secret-ref", Data: map[string]string{
@@ -165,6 +171,21 @@ var _ = Describe("Translator", func() {
 							},
 							}},
 					})
+				})
+
+				It("returns a non empty ssl routeconfig and a len 1 nossl routeconfig", func() {
+					snap, reports, err = t.Translate(role, &snapshot.Cache{
+						Cfg: cfg,
+						Secrets: secretwatcher.SecretMap{
+							"ssl-secret-ref": &dependencies.Secret{Ref: "ssl-secret-ref", Data: map[string]string{
+								"tls.crt": "1111",
+								"tls.key": "1111",
+							},
+							}},
+					})
+				})
+
+				AfterEach(func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(reports).To(HaveLen(3))
 					Expect(reports[0].CfgObject).To(Equal(cfg.Upstreams[0]))
