@@ -38,19 +38,22 @@ $(OUTPUT_DIR):
 
 # kubernetes custom clientsets
 .PHONY: clientset
-clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
+clientset: $(OUTPUT_DIR)/.clientset
+
+$(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 	cd ${GOPATH}/src/k8s.io/code-generator && \
 	./generate-groups.sh all \
 		$(PACKAGE_PATH)/pkg/storage/crd/client \
 		$(PACKAGE_PATH)/pkg/storage/crd \
 		"solo.io:v1"
+	touch $@
 
 .PHONY: generated-code
-generated-code:
-	go generate ./...
+generated-code: $(OUTPUT_DIR)/.generated-code
 
-$(OUTPUT):
-	mkdir -p $(OUTPUT)
+$(OUTPUT_DIR)/.generated-code:
+	go generate ./pkg/... ./internal/...
+	touch $@
 
 # Core Binaries
 
