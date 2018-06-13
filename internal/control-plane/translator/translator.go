@@ -561,17 +561,17 @@ func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string,
 	}
 	certChain, ok := sslSecrets.Data[sslCertificateChainKey]
 	if !ok {
-		certChain, ok = sslSecrets.Data[kubeSslCertificateChainKey]
+		certChain, ok = sslSecrets.Data[deprecatedSslCertificateChainKey]
 		if !ok {
-			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslCertificateChainKey, kubeSslCertificateChainKey)
+			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslCertificateChainKey, deprecatedSslCertificateChainKey)
 		}
 	}
 
 	privateKey, ok := sslSecrets.Data[sslPrivateKeyKey]
 	if !ok {
-		privateKey, ok = sslSecrets.Data[kubeSslPrivateKeyKey]
+		privateKey, ok = sslSecrets.Data[deprecatedSslPrivateKeyKey]
 		if !ok {
-			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslPrivateKeyKey, kubeSslPrivateKeyKey)
+			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslPrivateKeyKey, deprecatedSslPrivateKeyKey)
 		}
 	}
 	return certChain, privateKey, nil
@@ -606,10 +606,10 @@ func (t *Translator) constructHttpListener(name string, port uint32, filters []e
 }
 
 const (
-	sslCertificateChainKey     = "ca_chain"
-	kubeSslCertificateChainKey = "tls.crt"
-	sslPrivateKeyKey           = "private_key"
-	kubeSslPrivateKeyKey       = "tls.key"
+	sslCertificateChainKey           = "tls.crt"
+	deprecatedSslCertificateChainKey = "ca_chain"
+	sslPrivateKeyKey                 = "tls.key"
+	deprecatedSslPrivateKeyKey       = "private_key"
 )
 
 func (t *Translator) constructHttpsListener(name string,
