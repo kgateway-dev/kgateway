@@ -183,7 +183,7 @@ localgloo \
   --files.type file \
   --file.config.dir ${GLOO_CONFIG_HOME}/_gloo_config \
   --file.files.dir ${GLOO_CONFIG_HOME}/_gloo_config/files \
-  --file.secrets.dir ${GLOO_CONFIG_HOME}/_gloo_config/secrets
+  --file.secret.dir ${GLOO_CONFIG_HOME}/_gloo_config/secrets
 ```
 
 ### control-plane
@@ -229,6 +229,11 @@ function-discovery \
 envoy \
     -c ${GLOO_CONFIG_HOME}/envoy.yaml \
     --v2-config-only
+```
+
+To enable envoy debug logs, do:
+```
+curl localhost:19000/logging?level=debug
 ```
 
 
