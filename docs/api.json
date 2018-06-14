@@ -148,7 +148,7 @@
           "name": "Role",
           "longName": "Role",
           "fullName": "gloo.api.v1.Role",
-          "description": "A Role is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Role is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Role cannot appear more than once, or the Role\nwill be invalid.\nIn the current implementation, Roles are read-only objects created by Gloo for the puprose of reporting.\nIn the future, Gloo will support fields in Roles that can be written to for the purpose of applying policy\nto groups of Virtual Services.",
+          "description": "A Role is a container for a set of Virtual Services that will be used to generate a single proxy config\nto be applied to one or more Envoy nodes. The Role is best understood as an in-mesh application's localized view\nof the rest of the mesh.\nEach domain for each Virtual Service contained in a Role cannot appear more than once, or the Role\nwill be invalid.\nRoles contain a config field which can be written to for the purpose of applying configuration and policy\nto groupings of Virtual Services.",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
@@ -169,6 +169,15 @@
               "type": "string",
               "longType": "string",
               "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "config",
+              "description": "Config contains top-level config to be applied to a Role\nAll Vitrual Services within a Role will share the Role config\nConfiguration such as compression, bind address(es) for the proxy,\nRoot CAs are defined here",
+              "label": "",
+              "type": "Struct",
+              "longType": "google.protobuf.Struct",
+              "fullType": "google.protobuf.Struct",
               "defaultValue": ""
             },
             {

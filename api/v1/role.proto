@@ -16,9 +16,8 @@ import "metadata.proto";
  * of the rest of the mesh.
  * Each domain for each Virtual Service contained in a Role cannot appear more than once, or the Role
  * will be invalid.
- * In the current implementation, Roles are read-only objects created by Gloo for the puprose of reporting.
- * In the future, Gloo will support fields in Roles that can be written to for the purpose of applying policy
- * to groups of Virtual Services.
+ * Roles contain a config field which can be written to for the purpose of applying configuration and policy
+ * to groupings of Virtual Services.
  */
 message Role {
     // Name of the role. Envoy nodes will be assigned a config matching the role they report to Gloo when registering
