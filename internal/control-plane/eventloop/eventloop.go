@@ -5,6 +5,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 
+	"sort"
+
 	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
 	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
@@ -177,13 +179,23 @@ func virtualServicesByRole(roles []*v1.Role, virtualServices []*v1.VirtualServic
 	for _, vs := range virtualServices {
 		if len(vs.Roles) == 0 {
 			role := rolesByName[defaultRole]
+			role.VirtualServices = append(role.VirtualServices, vs.Name)
 			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
 		}
 		for _, roleName := range vs.Roles {
 			role := rolesByName[roleName]
+			role.VirtualServices = append(role.VirtualServices, vs.Name)
 			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
 		}
 	}
+
+	// sort the virtualservices on the roles; idempotency
+	for role := range virtualServicesByRole {
+		sort.SliceStable(role.VirtualServices, func(i, j int) bool {
+			return role.VirtualServices[i] < role.VirtualServices[j]
+		})
+	}
+
 	return virtualServicesByRole
 }
 
