@@ -3,7 +3,6 @@ package gloo.api.v1;
 option go_package = "github.com/solo-io/gloo/pkg/api/types/v1";
 
 import "google/protobuf/struct.proto";
-import "google/protobuf/duration.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
@@ -34,6 +33,12 @@ message Role {
 
     // a list of virtual services that reference this role
     repeated string virtual_services = 2;
+
+    // Config contains top-level config to be applied to a Role
+    // All Vitrual Services within a Role will share the Role config
+    // Configuration such as compression, bind address(es) for the proxy,
+    // Root CAs are defined here
+    google.protobuf.Struct config = 4;
 
     // Status indicates the validation status of the role resource.
     // Status is read-only by clients, and set by gloo during validation

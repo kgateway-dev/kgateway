@@ -132,6 +132,61 @@ func (e *eventLoop) Run(stop <-chan struct{}) {
 	}
 }
 
+func rolesByName(roles []*v1.Role, virtualServices []*v1.VirtualService) map[string]*v1.Role {
+	rolesByName := make(map[string]*v1.Role)
+	for _, r := range roles {
+		rolesByName[r.Name] = r
+	}
+	// create default if it doesn't exist
+	if _, ok := rolesByName[defaultRole]; !ok {
+		role := &v1.Role{
+			Name: defaultRole,
+			Metadata: &v1.Metadata{
+				Annotations: map[string]string{"generated_by": "control-plane"},
+			},
+		}
+		rolesByName[defaultRole] = role
+	}
+	// create any other roles that dont exist
+	for _, vs := range virtualServices {
+		for _, roleName := range vs.Roles {
+			if _, ok := rolesByName[roleName]; !ok {
+				role := &v1.Role{
+					Name: roleName,
+					Metadata: &v1.Metadata{
+						Annotations: map[string]string{"generated_by": "control-plane"},
+					},
+				}
+				rolesByName[roleName] = role
+			}
+		}
+	}
+	return rolesByName
+}
+
+func virtualServicesByRole(roles []*v1.Role, virtualServices []*v1.VirtualService) map[*v1.Role][]*v1.VirtualService {
+	// clear prior virtual service ownership list
+	for _, r := range roles {
+		r.VirtualServices = nil
+	}
+
+	// get existing roles and create ones that don't exist yet
+	rolesByName := rolesByName(roles, virtualServices)
+
+	virtualServicesByRole := make(map[*v1.Role][]*v1.VirtualService)
+	for _, vs := range virtualServices {
+		if len(vs.Roles) == 0 {
+			role := rolesByName[defaultRole]
+			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
+		}
+		for _, roleName := range vs.Roles {
+			role := rolesByName[roleName]
+			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
+		}
+	}
+	return virtualServicesByRole
+}
+
 func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 	if !snap.Ready() {
 		log.Debugf("snapshot is not ready for translation yet")
@@ -140,15 +195,7 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 
 	// map each virtual service to one or more roles
 	// if no roles are defined, we fall back to the default Role, which is 'ingress'
-	virtualServicesByRole := make(map[string][]*v1.VirtualService)
-	for _, vs := range snap.Cfg.VirtualServices {
-		if len(vs.Roles) == 0 {
-			virtualServicesByRole[defaultRole] = append(virtualServicesByRole[defaultRole], vs)
-		}
-		for _, role := range vs.Roles {
-			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
-		}
-	}
+	virtualServicesByRole := virtualServicesByRole(snap.Cfg.Roles, snap.Cfg.VirtualServices)
 
 	// aggregate reports across all the roles
 	allReports := make(map[string]reporter.ConfigObjectReport)
@@ -182,12 +229,8 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		for _, vs := range virtualServices {
 			vsNames = append(vsNames, vs.Name)
 		}
-		roleObject := &v1.Role{
-			Name:            role,
-			VirtualServices: vsNames,
-		}
 
-		xdsSnapshot, reports, err := e.translator.Translate(roleObject, roleSnapshot)
+		xdsSnapshot, reports, err := e.translator.Translate(role, roleSnapshot)
 		if err != nil {
 			// TODO: panic or handle these internal errors smartly
 			log.Warnf("INTERNAL ERROR: failed to run translator for role %v: %v", role, err)
@@ -211,7 +254,7 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		}
 
 		log.Debugf("Setting xDS Snapshot for Role %v: %v", role, xdsSnapshot)
-		e.xdsConfig.SetSnapshot(role, *xdsSnapshot)
+		e.xdsConfig.SetSnapshot(role.Name, *xdsSnapshot)
 	}
 
 	var reports []reporter.ConfigObjectReport
