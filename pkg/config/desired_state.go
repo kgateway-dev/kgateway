@@ -72,7 +72,12 @@ func (c *UpstreamSyncer) syncUpstreams(desiredUpstreams, actualUpstreams []*v1.U
 		for i, actualUpstream := range actualUpstreams {
 			if desiredUpstream.Name == actualUpstream.Name {
 				// modify existing upstream
-				desiredUpstream.Metadata = actualUpstream.GetMetadata()
+				// set metadata if it's nil
+				if desiredUpstream.Metadata == nil {
+					desiredUpstream.Metadata = &v1.Metadata{}
+				}
+				// update resource version
+				desiredUpstream.Metadata.ResourceVersion = actualUpstream.Metadata.ResourceVersion
 				update = true
 				if !desiredUpstream.Equal(actualUpstream) {
 					// only actually update if the spec has changed
