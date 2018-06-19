@@ -301,7 +301,7 @@
             },
             {
               "name": "type",
-              "description": "Type indicates the type of the upstream. Examples include service\u003c!--(TODO)--\u003e, kubernetes\u003c!--(TODO)--\u003e, and [aws](../plugins/aws.md)\nTypes are defined by the plugin\u003c!--(TODO)--\u003e associated with them.",
+              "description": "Type indicates the type of the upstream. Examples include static\u003c!--(TODO)--\u003e, kubernetes\u003c!--(TODO)--\u003e, and [aws](../plugins/aws.md)\nTypes are defined by the plugin\u003c!--(TODO)--\u003e associated with them.",
               "label": "",
               "type": "string",
               "longType": "string",
