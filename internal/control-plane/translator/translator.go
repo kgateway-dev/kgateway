@@ -140,15 +140,12 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 	}
 
 	// finally, the listeners
-	httpsListener, err := t.constructHttpsListener(sslListenerName,
+	httpsListener := t.constructHttpsListener(sslListenerName,
 		t.config.SecurePort,
 		sslFilters,
 		cfg.VirtualServices,
 		virtualServiceReports,
 		secrets)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "constructing https listener %v", sslListenerName)
-	}
 
 	// proto-ify everything
 	var endpointsProto []envoycache.Resource
@@ -617,7 +614,7 @@ func (t *Translator) constructHttpsListener(name string,
 	filters []envoylistener.Filter,
 	virtualServices []*v1.VirtualService,
 	virtualServiceReports []reporter.ConfigObjectReport,
-	secrets secretwatcher.SecretMap) (*envoyapi.Listener, error) {
+	secrets secretwatcher.SecretMap) *envoyapi.Listener {
 
 	// create the base filter chain
 	// we will copy the filter chain for each virtualservice that specifies an ssl config
@@ -651,7 +648,7 @@ func (t *Translator) constructHttpsListener(name string,
 			},
 		},
 		FilterChains: filterChains,
-	}, nil
+	}
 }
 
 func newSslFilterChain(certChain, privateKey string, filters []envoylistener.Filter) envoylistener.FilterChain {
