@@ -26,7 +26,7 @@ docker-compose up`
 3. `glooctl` commands should be run from this directory to interact with gloo
 
 Note: you will want to manually register your upstreams with `glooctl`
-(using `glooctl upstream create`). Their **Upstream Type** should be `service`
+(using `glooctl upstream create`). Their **Upstream Type** should be `static`
 (which requires statically listing IP/port combinations for the upstream).
 
 Example:
@@ -40,7 +40,7 @@ PETSTORE_IP=$(docker inspect petstore -f '{{range .NetworkSettings.Networks}}{{.
 
 # create the upstream manually
 cat <<EOF | glooctl upstream create -f -
-type: service
+type: static
 name: petstore
 spec:
   hosts:
@@ -59,7 +59,7 @@ curl localhost:8080/petstore/findPet
 ```
 
 Documentation for [upstream spec](../../docs/v1/upstream.md) and
-the [service type](../../docs/plugins/service.md) can explain in more detail
+the [static type](../../docs/plugins/static.md) can explain in more detail
 how to create upstreams you need.
 
 When service discovery is supported on Docker this step will no longer be necessary.

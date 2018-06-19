@@ -52,7 +52,7 @@ func NewTestUpstream1() *v1.Upstream {
 func NewTestUpstream2() *v1.Upstream {
 	return &v1.Upstream{
 		Name: "localhost-python",
-		// TODO: revert this to using service plugin, and move this file to its own package
+		// TODO: revert this to using static plugin, and move this file to its own package
 		// to prevent cyclical imports
 		Type: "service",
 		Metadata: &v1.Metadata{

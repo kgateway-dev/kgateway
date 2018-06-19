@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/backoff"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
@@ -43,10 +43,10 @@ func NewMarker(detectors []Interface, resolver resolver.Resolver) *Marker {
 	}
 }
 
-// should only be called for k8s, consul, and service type upstreams
+// should only be called for k8s, consul, and static type upstreams
 func (m *Marker) DetectFunctionalServiceType(us *v1.Upstream) (*v1.ServiceInfo, map[string]string, error) {
 	if us.Type != kubernetes.UpstreamTypeKube &&
-		us.Type != service.UpstreamTypeService &&
+		us.Type != static.UpstreamTypeService &&
 		us.Type != consul.UpstreamTypeConsul {
 		// don't run detection for these types of upstreams
 		return nil, nil, nil

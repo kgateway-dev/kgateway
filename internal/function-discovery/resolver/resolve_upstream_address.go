@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/consul/api"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	serviceplugin "github.com/solo-io/gloo/pkg/coreplugins/service"
+	staticplugin "github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/plugins/consul"
 	kubeplugin "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +31,7 @@ func (r *resolver) Resolve(us *v1.Upstream) (string, error) {
 	switch us.Type {
 	case kubeplugin.UpstreamTypeKube:
 		return resolveKubeUpstream(r.Kube, us)
-	case serviceplugin.UpstreamTypeService:
+	case staticplugin.UpstreamTypeService:
 		return resolveServiceUpstream(us)
 	case consul.UpstreamTypeConsul:
 		return resolveConsulUpstream(r.Consul, us)
@@ -65,7 +65,7 @@ func resolveKubeUpstream(kube kubernetes.Interface, us *v1.Upstream) (string, er
 }
 
 func resolveServiceUpstream(us *v1.Upstream) (string, error) {
-	spec, err := serviceplugin.DecodeUpstreamSpec(us.Spec)
+	spec, err := staticplugin.DecodeUpstreamSpec(us.Spec)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing service upstream spec")
 	}

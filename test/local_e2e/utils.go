@@ -14,7 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/plugins/grpc"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/local_e2e/test_grpc_service"
@@ -112,8 +112,8 @@ func NewTestGRPCUpstream(addr string, glooFilesDir string) *TestUpstream {
 }
 
 func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest) *TestUpstream {
-	serviceSpec := service.UpstreamSpec{
-		Hosts: []service.Host{{
+	serviceSpec := static.UpstreamSpec{
+		Hosts: []static.Host{{
 			Addr: addr,
 			Port: port,
 		}},
@@ -122,7 +122,7 @@ func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest
 	u := &v1.Upstream{
 		Name: fmt.Sprintf("local-%d", id),
 		Type: "service",
-		Spec: service.EncodeUpstreamSpec(serviceSpec),
+		Spec: static.EncodeUpstreamSpec(serviceSpec),
 	}
 
 	return &TestUpstream{

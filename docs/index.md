@@ -78,7 +78,7 @@ the component architecture
 ### Plugins:
 * [AWS Lambda Plugin](plugins/aws.md): Description of the AWS Lambda Plugin and config rules for AWS Lambda Upstreams and Functions 
 * [Kubernetes Plugin](plugins/kubernetes.md): Description of the Kubernetes Plugin and config rules for Kubernetes Upstreams  
-* [Service Plugin](plugins/service.md): Description of the Service Plugin and config rules for Service Upstreams
+* [Service Plugin](plugins/static.md): Description of the Service Plugin and config rules for Service Upstreams
 * [Request Transformation Plugin](plugins/request_transformation.md): Description of the Request Transformation Plugin and config rules for Request Transformation Routes and Functions 
 
 ### v1 API reference:

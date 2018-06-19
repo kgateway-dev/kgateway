@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/pborman/uuid"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	. "github.com/solo-io/gloo/test/helpers"
 )
 
@@ -20,9 +20,9 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
-				Type: service.UpstreamTypeService,
-				Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-					Hosts: []service.Host{
+				Type: static.UpstreamTypeService,
+				Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+					Hosts: []static.Host{
 						{
 							Addr: helloService,
 							Port: servicePort,
@@ -33,9 +33,9 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 			Must(err)
 			_, err = gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService2,
-				Type: service.UpstreamTypeService,
-				Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-					Hosts: []service.Host{
+				Type: static.UpstreamTypeService,
+				Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+					Hosts: []static.Host{
 						{
 							Addr: helloService2,
 							Port: servicePort,

@@ -30,7 +30,7 @@ pages:
       - AWS Lambda Plugin: plugins/aws.md
       - Kubernetes Plugin: plugins/kubernetes.md
       - Request Transformation Plugin: plugins/request_transformation.md
-      - External Service Plugin: plugins/service.md
+      - Static Upstream Plugin: plugins/static.md
     - thetool:
       - Install: thetool/install.md
       - Quick Start: thetool/quickstart.md

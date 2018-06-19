@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 )
@@ -137,9 +137,9 @@ func NewTestConfig() v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: upstreamName,
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{Addr: upstreamHost, Port: upstreamPort},
 				},
 			}),

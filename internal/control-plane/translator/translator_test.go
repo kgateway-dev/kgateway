@@ -16,12 +16,12 @@ import (
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 func newTranslator() *Translator {
-	return NewTranslator(bootstrap.IngressOptions{"::", 8080, 8443}, []plugins.TranslatorPlugin{service.NewPlugin()})
+	return NewTranslator(bootstrap.IngressOptions{"::", 8080, 8443}, []plugins.TranslatorPlugin{static.NewPlugin()})
 }
 
 var _ = Describe("Translator", func() {
@@ -235,9 +235,9 @@ func ValidConfigNoSsl() *v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: "valid-service",
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: "localhost",
 						Port: 1234,
@@ -295,9 +295,9 @@ func InvalidConfigSharedDomains() *v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: "valid-service",
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: "localhost",
 						Port: 1234,
@@ -365,9 +365,9 @@ func ValidConfigSsl() *v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: "valid-service",
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: "localhost",
 						Port: 1234,
@@ -428,9 +428,9 @@ func PartiallyValidConfig() *v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: "valid-service",
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: "localhost",
 						Port: 1234,
@@ -440,9 +440,9 @@ func PartiallyValidConfig() *v1.Config {
 		},
 		{
 			Name: "invalid-service",
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: "", //not a valid addr
 						Port: 1234,
@@ -526,9 +526,9 @@ func InvalidConfigNoFuncPlugin() *v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: "valid-service",
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: "localhost",
 						Port: 1234,
@@ -592,9 +592,9 @@ func InvalidConfigNoUpstream() *v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: "valid-service",
-			Type: service.UpstreamTypeService,
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Type: static.UpstreamTypeService,
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: "localhost",
 						Port: 1234,

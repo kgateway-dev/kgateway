@@ -7,7 +7,7 @@ import (
 	"github.com/pborman/uuid"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	extensions "github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	. "github.com/solo-io/gloo/test/helpers"
 )
 
@@ -21,9 +21,9 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
-				Type: service.UpstreamTypeService,
-				Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-					Hosts: []service.Host{
+				Type: static.UpstreamTypeService,
+				Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+					Hosts: []static.Host{
 						{
 							Addr: helloService,
 							Port: servicePort,

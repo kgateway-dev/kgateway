@@ -8,7 +8,7 @@ import (
 	. "github.com/solo-io/gloo/internal/function-discovery/detector"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -21,8 +21,8 @@ var _ = Describe("Marker", func() {
 				&mockDetector{id: "succeeding", triesBeforeSucceding: 3},
 			}, resolve)
 			us := helpers.NewTestUpstream2()
-			us.Spec = service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			us.Spec = static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{Addr: "localhost", Port: 8000},
 				},
 			})

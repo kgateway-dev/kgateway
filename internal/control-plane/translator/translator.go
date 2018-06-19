@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/matcher"
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
@@ -53,7 +53,7 @@ type Translator struct {
 var corePlugins = []plugins.TranslatorPlugin{
 	&matcher.Plugin{},
 	&extensions.Plugin{},
-	service.NewPlugin(),
+	static.NewPlugin(),
 }
 
 func NewTranslator(opts bootstrap.IngressOptions, translatorPlugins []plugins.TranslatorPlugin) *Translator {

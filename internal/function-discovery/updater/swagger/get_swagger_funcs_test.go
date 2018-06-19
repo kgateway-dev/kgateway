@@ -12,7 +12,7 @@ import (
 
 	. "github.com/solo-io/gloo/internal/function-discovery/updater/swagger"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 )
 
@@ -35,12 +35,12 @@ var _ = Describe("GetSwaggerFuncs", func() {
 
 		us := &v1.Upstream{
 			Name: "something",
-			Type: service.UpstreamTypeService,
+			Type: static.UpstreamTypeService,
 			Metadata: &v1.Metadata{Annotations: map[string]string{
 				AnnotationKeySwaggerURL: srv.URL + "/anything",
 			}},
-			Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-				Hosts: []service.Host{
+			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
+				Hosts: []static.Host{
 					{
 						Addr: addr,
 						Port: uint32(port),

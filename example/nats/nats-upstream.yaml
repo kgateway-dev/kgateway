@@ -1,4 +1,4 @@
-type: service
+type: static
 name: nats-streaming
 metadata:
   annotations:

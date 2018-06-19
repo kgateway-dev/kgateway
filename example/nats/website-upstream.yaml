@@ -1,4 +1,4 @@
-type: service
+type: static
 name: website
 spec:
   hosts:

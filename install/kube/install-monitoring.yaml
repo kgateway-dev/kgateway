@@ -3000,7 +3000,7 @@ spec:
     hosts:
     - addr: envoy
       port: 19000
-  type: service
+  type: static
 
 ---
 apiVersion: gloo.solo.io/v1
