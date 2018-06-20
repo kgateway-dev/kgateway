@@ -99,7 +99,7 @@ func initFunctionDiscovery() {
 }
 
 func runControlPlane(stop <-chan struct{}) error {
-	eventLoop, err := eventloop.Setup(controlPlaneOpts, xdsPort, stop)
+	eventLoop, err := eventloop.Setup(controlPlaneOpts, xdsPort)
 	if err != nil {
 		return errors.Wrap(err, "setting up event loop")
 	}
