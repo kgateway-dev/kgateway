@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 	Short: "runs the gloo control plane to manage Envoy as a Function Gateway",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		stop := signals.SetupSignalHandler()
-		eventLoop, err := eventloop.Setup(opts, xdsPort, stop)
+		eventLoop, err := eventloop.Setup(opts, xdsPort)
 		if err != nil {
 			return errors.Wrap(err, "setting up event loop")
 		}

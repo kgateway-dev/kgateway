@@ -46,7 +46,6 @@ const (
 
 type Translator struct {
 	plugins []plugins.TranslatorPlugin
-	config  bootstrap.IngressOptions
 }
 
 // all built-in plugins should go here
@@ -56,7 +55,7 @@ var corePlugins = []plugins.TranslatorPlugin{
 	static.NewPlugin(),
 }
 
-func NewTranslator(opts bootstrap.IngressOptions, translatorPlugins []plugins.TranslatorPlugin) *Translator {
+func NewTranslator(translatorPlugins []plugins.TranslatorPlugin) *Translator {
 	translatorPlugins = append(corePlugins, translatorPlugins...)
 	// special routing must be done for upstream plugins that support functions
 	var functionPlugins []plugins.FunctionPlugin
@@ -82,7 +81,6 @@ func NewTranslator(opts bootstrap.IngressOptions, translatorPlugins []plugins.Tr
 
 	return &Translator{
 		plugins: translatorPlugins,
-		config:  opts,
 	}
 }
 

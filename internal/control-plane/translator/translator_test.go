@@ -11,7 +11,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -21,7 +20,7 @@ import (
 )
 
 func newTranslator() *Translator {
-	return NewTranslator(bootstrap.IngressOptions{"::", 8080, 8443}, []plugins.TranslatorPlugin{static.NewPlugin()})
+	return NewTranslator([]plugins.TranslatorPlugin{static.NewPlugin()})
 }
 
 var _ = Describe("Translator", func() {
