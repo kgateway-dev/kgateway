@@ -16,6 +16,7 @@ It has these top-level messages:
 	Config
 	Metadata
 	Role
+	Listener
 	Status
 	Upstream
 	ServiceInfo

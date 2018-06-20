@@ -61,14 +61,13 @@ message Listener {
     // ports numbers must be unique for listeners within a role
     uint32 bind_port = 3;
 
-    // defines the set of virtual services that will be accessible through this listener.
+    // defines the set of virtual services that will be accessible by clients connecting to this listener.
     // at least one virtual service must be specifiedfor HTTP-level features to be applied at the listener level
     repeated string virtual_services = 4;
 
     // Config contains top-level config to be applied to a listener
     // Listener config is applied to all TCP/HTTP traffic that
     // initiates via this listener.
-    // Configuration such as gzip compression
+    // Configuration such as gzip compression and TLS authentication is specified here
     google.protobuf.Struct config = 5;
-
 }

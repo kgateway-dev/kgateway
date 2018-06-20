@@ -36,6 +36,11 @@ message VirtualService {
     // If left empty, the virtual service will listen on the HTTP listener port (default :8080)
     SSLConfig ssl_config = 4;
 
+    // indicates whether or not this virtual service should be assigned to gateway roles automatically
+    // TODO: eventually this flag will be deprecated; gateway roles will have to explicitly state the virtual services
+    // they have access to.
+    bool enable_for_gateways = 7;
+
     // Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation
     Status status = 5 [(gogoproto.moretags) = "testdiff:\"ignore\""];
 
