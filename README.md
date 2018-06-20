@@ -3,12 +3,12 @@
 <h1 align="center">
     <img src="docs/Gloo-01.png" alt="Gloo" width="200" height="242">
   <br>
-  The Function Gateway
+  The Enterprise Function Gateway
 </h1>
 
-### What is Gloo?
+### What is Gloo-Enterprise?
 
-Gloo is a high-performance, plugin-extendable, platform-agnostic function Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
+Gloo-Enterprise is a high-performance, plugin-extendable, platform-agnostic function Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
 
 <BR>
 <p align="center">
