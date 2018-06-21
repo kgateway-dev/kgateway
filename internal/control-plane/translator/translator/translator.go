@@ -78,9 +78,12 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 	}
 }
 
-func (t *Translator) translateListenerResources(listener *v1.Listener, inputs *snapshot.Cache) *listenerResources {
-
+func (t *Translator) translateListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache) *listenerResources {
+	configErrs := make(configErrors)
+	inputs = trimSnapshot(role, listener, inputs, configErrs)
+	clusters := t.computeClusters(inputs, configErrs)
 }
+
 
 // utility functions
 
