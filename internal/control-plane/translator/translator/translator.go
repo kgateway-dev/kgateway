@@ -1,8 +1,12 @@
 package translator
 
 import (
+	"fmt"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
+	"github.com/mitchellh/hashstructure"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
@@ -60,7 +64,7 @@ func NewTranslator(translatorPlugins []plugins.TranslatorPlugin) *Translator {
 	}
 }
 
-func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
+func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport) {
 	log.Printf("Translation loop starting")
 
 	var (
@@ -73,17 +77,74 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 	// endpoints are computed independently of the listeners
 	endpoints = computeClusterEndpoints(inputs.Cfg.Upstreams, inputs.Endpoints)
 
-	for _, listener := range role.Listeners {
+	// aggregate config errors by the cfg object that caused them
+	configErrs := make(configErrors)
 
+	for _, listener := range role.Listeners {
+		envoyResources := t.computeListenerResources(role, listener, inputs, configErrs)
+		clusters = append(clusters, envoyResources.clusters...)
+		routeConfigs = append(routeConfigs, envoyResources.routeConfig)
+		listeners = append(listeners, envoyResources.listener)
+	}
+
+	clusters = deduplicateClusters(clusters)
+
+	xdsSnapshot := generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
+
+	return &xdsSnapshot, configErrs.reports()
+}
+
+func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, configErrs configErrors) *listenerResources {
+	rdsName := routeConfigName(listener)
+	inputs = trimSnapshot(role, listener, inputs, configErrs)
+
+	configErrs.initializeKeys(inputs.Cfg)
+
+	clusters := t.computeClusters(inputs, configErrs)
+	routeConfig := t.computeRouteConfig(role, listener.Name, rdsName, inputs, configErrs)
+	return &listenerResources{
+		clusters:     clusters,
+		listener:     t.computeListener(listener, inputs),
+		routeConfig:  routeConfig,
+		configErrors: configErrs,
 	}
 }
 
-func (t *Translator) translateListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache) *listenerResources {
-	configErrs := make(configErrors)
-	inputs = trimSnapshot(role, listener, inputs, configErrs)
-	clusters := t.computeClusters(inputs, configErrs)
-}
+func generateXDSSnapshot(clusters []*envoyapi.Cluster,
+	endpoints []*envoyapi.ClusterLoadAssignment,
+	routeConfigs []*envoyapi.RouteConfiguration,
+	listeners []*envoyapi.Listener) envoycache.Snapshot {
+	var endpointsProto, clustersProto, routesProto, listenersProto []envoycache.Resource
+	for _, ep := range endpoints {
+		endpointsProto = append(endpointsProto, ep)
+	}
+	for _, cluster := range clusters {
+		endpointsProto = append(clustersProto, cluster)
+	}
+	for _, routeCfg := range routeConfigs {
+		endpointsProto = append(routesProto, routeCfg)
+	}
+	for _, listener := range listeners {
+		// don't add empty listeners, envoy will complain
+		if len(listener.FilterChains) < 1 {
+			continue
+		}
+		endpointsProto = append(listenersProto, listener)
+	}
+	// construct version
+	// TODO: investigate whether we need a more sophisticated versionining algorithm
+	version, err := hashstructure.Hash([][]envoycache.Resource{
+		endpointsProto,
+		clustersProto,
+		routesProto,
+		listenersProto,
+	}, nil)
+	if err != nil {
+		panic(errors.Wrap(err, "constructing version hash for envoy snapshot components"))
+	}
 
+	return envoycache.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
+}
 
 // utility functions
 
@@ -92,8 +153,8 @@ func dependenciesForPlugin(inputs *snapshot.Cache, plug plugins.TranslatorPlugin
 	if dependencyRefs == nil {
 		return nil, nil
 	}
- 	secrets := make(secretwatcher.SecretMap)
-	files :=   make(filewatcher.Files)
+	secrets := make(secretwatcher.SecretMap)
+	files := make(filewatcher.Files)
 	for _, ref := range dependencyRefs.SecretRefs {
 		item, ok := inputs.Secrets[ref]
 		if ok {
@@ -108,7 +169,6 @@ func dependenciesForPlugin(inputs *snapshot.Cache, plug plugins.TranslatorPlugin
 	}
 	return secrets, files
 }
-
 
 func deduplicateClusters(clusters []*envoyapi.Cluster) []*envoyapi.Cluster {
 	mapped := make(map[string]bool)
