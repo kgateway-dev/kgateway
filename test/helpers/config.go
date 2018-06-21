@@ -174,7 +174,6 @@ func NewTestRouteWithCORS() *v1.Route {
 func NewTestRole(name string, vServices ... string) *v1.Role {
 	return &v1.Role{
 		Name:            name,
-		VirtualServices: vServices,
 		Metadata: &v1.Metadata{
 			Annotations: map[string]string{"my_annotation": "value"},
 		},
