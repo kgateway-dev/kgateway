@@ -5,10 +5,8 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
-	"github.com/hashicorp/go-multierror"
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
-
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
@@ -66,104 +64,73 @@ func NewTranslator(translatorPlugins []plugins.TranslatorPlugin) *Translator {
 	}
 }
 
-type pluginDependencies struct {
-	Secrets secretwatcher.SecretMap
-	Files   filewatcher.Files
-}
-
-func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
+func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport) {
 	log.Printf("Translation loop starting")
 
-	dependencies := &pluginDependencies{Secrets: inputs.Secrets, Files: inputs.Files}
-	secrets := inputs.Secrets
-
-	var roleErrs error
-
 	var (
-		allClusters  []*envoyapi.Cluster
+		clusters     []*envoyapi.Cluster
+		endpoints    []*envoyapi.ClusterLoadAssignment
 		routeConfigs []*envoyapi.RouteConfiguration
-
-		reports []reporter.ConfigObjectReport
+		listeners    []*envoyapi.Listener
 	)
 
-	// compute each listener independently
+	// endpoints are computed independently of the listeners
+	endpoints = computeClusterEndpoints(inputs.Cfg.Upstreams, inputs.Endpoints)
+
+	// aggregate config errors by the cfg object that caused them
+	configErrs := make(configErrors)
+
 	for _, listener := range role.Listeners {
-		virtualServices, err := virtualServicesForListener(listener, inputs.Cfg.VirtualServices)
-		if err != nil {
-			roleErrs = multierror.Append(roleErrs, err)
-			continue
-		}
-		upstreams := destinationUpstreams(inputs.Cfg.Upstreams, virtualServices)
-		endpoints := destinationEndpoints(upstreams, inputs.Endpoints)
-
-		cfg := &v1.Config{
-			Upstreams:       upstreams,
-			VirtualServices: virtualServices,
-		}
-
-		// clusters
-		clusters, upstreamReports := t.computeClusters(cfg, dependencies, endpoints)
-
-		allClusters = append(allClusters, clusters...)
-		reports = append(reports, upstreamReports...)
-
-		// mark errored upstreams; routes that point to them are considered invalid
-		errored := getErroredUpstreams(upstreamReports)
-
-		// envoy virtual hosts
-		virtualHosts, virtualServiceReports := t.computeVirtualHosts(role, cfg, errored, secrets)
-		reports = append(reports, virtualServiceReports...)
-
-		rdsName := listener.Name+"-routes"
-
-		routeConfigs = append(routeConfigs, &envoyapi.RouteConfiguration{
-			Name:         rdsName,
-			VirtualHosts: virtualHosts,
-		})
-
-		// filters
-		tcpFilters, err := t.constructFilters(rdsName, t.createHttpFilters())
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "constructing tcp filter chain for %v", listener.Name)
-		}
-
-		// finally, the listeners
-		httpsListener := t.constructHttpsListener(listener.Name,
-			t.config.SecurePort,
-			sslFilters,
-			cfg.VirtualServices,
-			virtualServiceReports,
-			secrets)
+		envoyResources := t.computeListenerResources(role, listener, inputs, configErrs)
+		clusters = append(clusters, envoyResources.clusters...)
+		routeConfigs = append(routeConfigs, envoyResources.routeConfig)
+		listeners = append(listeners, envoyResources.listener)
 	}
 
-	// endpoints
-	clusterLoadAssignments := computeClusterEndpoints(inputs.Cfg.Upstreams, inputs.Endpoints)
+	clusters = deduplicateClusters(clusters)
 
-	// proto-ify everything
-	var endpointsProto []envoycache.Resource
-	for _, cla := range clusterLoadAssignments {
-		endpointsProto = append(endpointsProto, cla)
+	xdsSnapshot := generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
+
+	return &xdsSnapshot, configErrs.reports()
+}
+
+func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, configErrs configErrors) *listenerResources {
+	rdsName := routeConfigName(listener)
+	inputs = trimSnapshot(role, listener, inputs, configErrs)
+
+	configErrs.initializeKeys(inputs.Cfg)
+
+	clusters := t.computeClusters(inputs, configErrs)
+	routeConfig := t.computeRouteConfig(role, listener.Name, rdsName, inputs, configErrs)
+	return &listenerResources{
+		clusters:     clusters,
+		listener:     t.computeListener(listener, inputs),
+		routeConfig:  routeConfig,
+		configErrors: configErrs,
 	}
+}
 
-	var clustersProto []envoycache.Resource
-	for _, cluster := range deduplicateClusters(allClusters) {
+func generateXDSSnapshot(clusters []*envoyapi.Cluster,
+	endpoints []*envoyapi.ClusterLoadAssignment,
+	routeConfigs []*envoyapi.RouteConfiguration,
+	listeners []*envoyapi.Listener) envoycache.Snapshot {
+	var endpointsProto, clustersProto, routesProto, listenersProto []envoycache.Resource
+	for _, ep := range endpoints {
+		endpointsProto = append(endpointsProto, ep)
+	}
+	for _, cluster := range clusters {
 		clustersProto = append(clustersProto, cluster)
 	}
-
-	var listenersProto, routesProto []envoycache.Resource
-
-	// only add http listener and route config if we have no ssl vServices
-	if len(envoyListener.FilterChains) > 0 {
-		listenersProto = append(listenersProto, envoyListener)
-		routesProto = append(routesProto,  )
+	for _, routeCfg := range routeConfigs {
+		routesProto = append(routesProto, routeCfg)
 	}
-
-	// only add https listener and route config if we have ssl vServices
-	if len(sslVirtualHosts) > 0 && len(httpsListener.FilterChains) > 0 {
-		listenersProto = append(listenersProto, httpsListener)
-		routesProto = append(routesProto, sslRouteConfig)
+	for _, listener := range listeners {
+		// don't add empty listeners, envoy will complain
+		if len(listener.FilterChains) < 1 {
+			continue
+		}
+		listenersProto = append(listenersProto, listener)
 	}
-
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versionining algorithm
 	version, err := hashstructure.Hash([][]envoycache.Resource{
@@ -173,19 +140,44 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 		listenersProto,
 	}, nil)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "constructing version hash for envoy snapshot components")
+		panic(errors.Wrap(err, "constructing version hash for envoy snapshot components"))
 	}
-	// construct snapshot
-	xdsSnapshot := envoycache.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
 
-	reports = append(reports, createReport(role, roleErrs))
-
-	return &xdsSnapshot, reports, nil
+	return envoycache.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
 }
 
-func createReport(cfgObject v1.ConfigObject, err error) reporter.ConfigObjectReport {
-	return reporter.ConfigObjectReport{
-		CfgObject: cfgObject,
-		Err:       err,
+// utility functions
+
+func dependenciesForPlugin(inputs *snapshot.Cache, plug plugins.TranslatorPlugin) (secretwatcher.SecretMap, filewatcher.Files) {
+	dependencyRefs := plug.GetDependencies(inputs.Cfg)
+	if dependencyRefs == nil {
+		return nil, nil
 	}
+	secrets := make(secretwatcher.SecretMap)
+	files := make(filewatcher.Files)
+	for _, ref := range dependencyRefs.SecretRefs {
+		item, ok := inputs.Secrets[ref]
+		if ok {
+			secrets[ref] = item
+		}
+	}
+	for _, ref := range dependencyRefs.FileRefs {
+		item, ok := inputs.Files[ref]
+		if ok {
+			files[ref] = item
+		}
+	}
+	return secrets, files
+}
+
+func deduplicateClusters(clusters []*envoyapi.Cluster) []*envoyapi.Cluster {
+	mapped := make(map[string]bool)
+	var deduped []*envoyapi.Cluster
+	for _, c := range clusters {
+		if _, added := mapped[c.Name]; added {
+			continue
+		}
+		deduped = append(deduped, c)
+	}
+	return deduped
 }

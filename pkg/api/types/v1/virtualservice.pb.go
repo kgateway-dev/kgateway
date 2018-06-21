@@ -38,7 +38,7 @@ type VirtualService struct {
 	// indicates whether or not this virtual service should be assigned to gateway roles automatically
 	// TODO: eventually this flag will be deprecated; gateway roles will have to explicitly state the virtual services
 	// they have access to.
-	EnableForGateways bool `protobuf:"varint,7,opt,name=enable_for_gateways,json=enableForGateways,proto3" json:"enable_for_gateways,omitempty"`
+	DisableForGateways bool `protobuf:"varint,7,opt,name=enable_for_gateways,json=enableForGateways,proto3" json:"enable_for_gateways,omitempty"`
 	// Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation
 	Status *Status `protobuf:"bytes,5,opt,name=status" json:"status,omitempty" testdiff:"ignore"`
 	// Metadata contains the resource metadata for the virtual service
@@ -80,7 +80,7 @@ func (m *VirtualService) GetSslConfig() *SSLConfig {
 
 func (m *VirtualService) GetEnableForGateways() bool {
 	if m != nil {
-		return m.EnableForGateways
+		return m.DisableForGateways
 	}
 	return false
 }
@@ -728,7 +728,7 @@ func (this *VirtualService) Equal(that interface{}) bool {
 	if !this.SslConfig.Equal(that1.SslConfig) {
 		return false
 	}
-	if this.EnableForGateways != that1.EnableForGateways {
+	if this.DisableForGateways != that1.DisableForGateways {
 		return false
 	}
 	if !this.Status.Equal(that1.Status) {

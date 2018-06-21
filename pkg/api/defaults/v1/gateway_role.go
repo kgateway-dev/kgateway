@@ -44,7 +44,7 @@ func AssignGatewayVirtualServices(insecureListener, secureListener *v1.Listener,
 		secureVirtualServices   []string
 	)
 	for _, vs := range virtualServices {
-		if vs.EnableForGateways {
+		if !vs.DisableForGateways {
 			if vs.SslConfig == nil {
 				insecureVirtualServices = append(insecureVirtualServices, vs.Name)
 			} else {
