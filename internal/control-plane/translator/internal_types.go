@@ -53,6 +53,7 @@ func (e configErrors) reports() []reporter.ConfigObjectReport {
 // the top level Translate function should aggregate these into a finished snapshot
 type listenerResources struct {
 	clusters     []*envoyapi.Cluster
+	endpoints    []*envoyapi.ClusterLoadAssignment
 	routeConfig  *envoyapi.RouteConfiguration
 	listener     *envoyapi.Listener
 	configErrors configErrors

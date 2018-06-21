@@ -74,20 +74,19 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 		listeners    []*envoyapi.Listener
 	)
 
-	// endpoints are computed independently of the listeners
-	endpoints = computeClusterEndpoints(inputs.Cfg.Upstreams, inputs.Endpoints)
-
 	// aggregate config errors by the cfg object that caused them
 	configErrs := make(configErrors)
 
 	for _, listener := range role.Listeners {
 		envoyResources := t.computeListenerResources(role, listener, inputs, configErrs)
 		clusters = append(clusters, envoyResources.clusters...)
+		endpoints = append(endpoints, envoyResources.endpoints...)
 		routeConfigs = append(routeConfigs, envoyResources.routeConfig)
 		listeners = append(listeners, envoyResources.listener)
 	}
 
 	clusters = deduplicateClusters(clusters)
+	endpoints = deduplicateEndpoints(endpoints)
 
 	xdsSnapshot := generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
 
@@ -100,10 +99,14 @@ func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listen
 
 	configErrs.initializeKeys(inputs.Cfg)
 
+	// endpoints are computed independently of the listeners
+	endpoints := computeClusterEndpoints(inputs.Cfg.Upstreams, inputs.Endpoints)
+
 	clusters := t.computeClusters(inputs, configErrs)
 	routeConfig := t.computeRouteConfig(role, listener.Name, rdsName, inputs, configErrs)
 	return &listenerResources{
 		clusters:     clusters,
+		endpoints:    endpoints,
 		listener:     t.computeListener(listener, inputs),
 		routeConfig:  routeConfig,
 		configErrors: configErrs,
@@ -182,6 +185,18 @@ func deduplicateClusters(clusters []*envoyapi.Cluster) []*envoyapi.Cluster {
 			continue
 		}
 		deduped = append(deduped, c)
+	}
+	return deduped
+}
+
+func deduplicateEndpoints(endpoints []*envoyapi.ClusterLoadAssignment) []*envoyapi.ClusterLoadAssignment{
+	mapped := make(map[string]bool)
+	var deduped []*envoyapi.ClusterLoadAssignment
+	for _, ep := range endpoints {
+		if _, added := mapped[ep.String()]; added {
+			continue
+		}
+		deduped = append(deduped, ep)
 	}
 	return deduped
 }
