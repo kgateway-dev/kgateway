@@ -20,7 +20,7 @@ func (t *Translator) computeClusters(inputs *snapshot.Cache, configErrs configEr
 	for _, upstream := range inputs.Cfg.Upstreams {
 		cluster, err := t.computeCluster(inputs, upstream)
 		if err != nil {
-			configErrs[upstream] = multierror.Append(configErrs[upstream], err)
+			configErrs.addError(upstream, err)
 			continue
 		}
 		// only append valid clusters
