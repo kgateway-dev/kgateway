@@ -166,27 +166,9 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 	// translate each set of resources (grouped by role) individually
 	// and set the snapshot for that role
 	for _, role := range roles {
-		//// get only the upstreams required for these virtual services
-		//upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
-		//endpoints := destinationEndpoints(upstreams, snap.Endpoints)
-		//roleSnapshot := &snapshot.Cache{
-		//	Cfg: &v1.Config{
-		//		Upstreams:       upstreams,
-		//		VirtualServices: virtualServices,
-		//	},
-		//	Secrets:   snap.Secrets,
-		//	Files:     snap.Files,
-		//	Endpoints: endpoints,
-		//}
-
 		log.Debugf("\nRole: %v\nGloo Snapshot (%v): %v", role.Name, snap.Hash(), snap)
 
-		xdsSnapshot, reports, err := e.translator.Translate(role, snap)
-		if err != nil {
-			// TODO: panic or handle these internal errors smartly
-			log.Warnf("INTERNAL ERROR: failed to run translator for role %v: %v", role, err)
-			continue
-		}
+		xdsSnapshot, reports := e.translator.Translate(role, snap)
 
 		var roleRejected bool
 		// merge reports them together
