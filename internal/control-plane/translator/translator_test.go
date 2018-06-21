@@ -43,7 +43,7 @@ func ValidConfigSsl() *v1.Config {
 	}
 	virtualServices := []*v1.VirtualService{
 		{
-			Name: "valid-vservice",
+			Name: "valid-vservice-1",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -82,44 +82,8 @@ func ValidConfigSsl() *v1.Config {
 				SecretRef: "ssl-secret-ref",
 			},
 		},
-	}
-	return &v1.Config{
-		Upstreams:       upstreams,
-		VirtualServices: virtualServices,
-	}
-}
-
-func PartiallyValidConfig() *v1.Config {
-	upstreams := []*v1.Upstream{
 		{
-			Name: "valid-service",
-			Type: static.UpstreamTypeService,
-			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-				Hosts: []static.Host{
-					{
-						Addr: "localhost",
-						Port: 1234,
-					},
-				},
-			}),
-		},
-		{
-			Name: "invalid-service",
-			Type: static.UpstreamTypeService,
-			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-				Hosts: []static.Host{
-					{
-						Addr: "", //not a valid addr
-						Port: 1234,
-					},
-				},
-			}),
-		},
-	}
-	virtualServices := []*v1.VirtualService{
-		{
-			Name:    "valid-vService",
-			Domains: []string{"foo.example.com"},
+			Name: "valid-vservice-2",
 			Routes: []*v1.Route{
 				{
 					Matcher: &v1.Route_RequestMatcher{
@@ -135,31 +99,6 @@ func PartiallyValidConfig() *v1.Config {
 						DestinationType: &v1.Destination_Upstream{
 							Upstream: &v1.UpstreamDestination{
 								Name: "valid-service",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:    "invalid-vService",
-			Domains: []string{"bar.example.com"},
-			Routes: []*v1.Route{
-				{
-					Matcher: &v1.Route_RequestMatcher{
-						RequestMatcher: &v1.RequestMatcher{
-							Path: &v1.RequestMatcher_PathPrefix{
-								PathPrefix: "/foo",
-							},
-							Headers: map[string]string{"x-foo-bar": ""},
-							Verbs:   []string{"GET", "POST"},
-						},
-					},
-					SingleDestination: &v1.Destination{
-						DestinationType: &v1.Destination_Function{
-							Function: &v1.FunctionDestination{
-								FunctionName: "invalid-func",
-								UpstreamName: "invalid-service",
 							},
 						},
 					},

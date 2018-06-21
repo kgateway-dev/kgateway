@@ -122,6 +122,10 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		clustersProto = append(clustersProto, cluster)
 	}
 	for _, routeCfg := range routeConfigs {
+		// don't add empty route configs, envoy will complain
+		if len(routeCfg.VirtualHosts) < 1 {
+			continue
+		}
 		routesProto = append(routesProto, routeCfg)
 	}
 	for _, listener := range listeners {
