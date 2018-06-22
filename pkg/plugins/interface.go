@@ -2,6 +2,7 @@ package plugins
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/types"
@@ -89,11 +90,16 @@ type HttpFilterPlugin interface {
 	HttpFilters(params *HttpFilterPluginParams) []StagedHttpFilter
 }
 
-// Params for ProessListener()
-type ListenerPluginParams struct{}
+// Params for ListenerFilters()
+type ListenerFilterPluginParams struct{}
 
-// Plugins for processing Listeners
-type ListenerPlugin interface {
+type StagedListenerFilter struct {
+	ListenerFilter *envoylistener.Filter
+	Stage          Stage
+}
+
+// Plugins for creating network filters for listeners
+type ListenerFilterPlugin interface {
 	TranslatorPlugin
-	ProcessListener(params *ListenerPluginParams, in *v1.Listener, out *envoyapi.Listener) error
+	ListenerFilters(params *ListenerFilterPluginParams, in *v1.Listener) ([]StagedListenerFilter, error)
 }
