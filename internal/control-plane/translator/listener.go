@@ -1,6 +1,8 @@
 package translator
 
 import (
+	"sort"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -15,41 +17,9 @@ import (
 
 func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *envoyapi.Listener {
 	validateListenerPorts(role, cfgErrs)
-	rdsName := routeConfigName(listener)
 
-	var networkFilters []envoylistener.Filter
-	// only add the http connection manager if listener has any virtual services
-	if len(inputs.Cfg.VirtualServices) > 0 {
-		httpConnMgr := t.computeHttpConnectionManager(rdsName)
-		// TODO (ilacakrms): add more network filters here
-		networkFilters = append(networkFilters, httpConnMgr)
-	}
-
-	// if there are any insecure virtual services, need an insecure filter chain
-	// that will match for them
-	var addInsecureFilterChain bool
-
-	var filterChains []envoylistener.FilterChain
-	for _, virtualService := range inputs.Cfg.VirtualServices {
-		if virtualService.SslConfig == nil || virtualService.SslConfig.SecretRef == "" {
-			addInsecureFilterChain = true
-			continue
-		}
-		ref := virtualService.SslConfig.SecretRef
-		certChain, privateKey, err := getSslSecrets(ref, inputs.Secrets)
-		if err != nil {
-			log.Warnf("skipping ssl vService with invalid secrets: %v", virtualService.Name)
-			continue
-		}
-		filterChain := newSslFilterChain(certChain, privateKey, virtualService.Domains, networkFilters)
-		filterChains = append(filterChains, filterChain)
-	}
-
-	if addInsecureFilterChain {
-		filterChains = append(filterChains, envoylistener.FilterChain{
-			Filters: networkFilters,
-		})
-	}
+	listenerFilters := t.computeListenerFilters(role, listener, cfgErrs)
+	filterChains := createListenerFilterChains(inputs, listenerFilters)
 
 	out := &envoyapi.Listener{
 		Name: listener.Name,
@@ -68,18 +38,37 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 		FilterChains: filterChains,
 	}
 
-	for _, plug := range t.plugins {
-		listenerPlugin, ok := plug.(plugins.ListenerPlugin)
-		if !ok {
+	return out
+}
+
+// create a duplicate of the listener filter chain for each ssl cert we want to serve
+// plus one if there's an insecure one
+func createListenerFilterChains(inputs *snapshot.Cache, listenerFilters []envoylistener.Filter) []envoylistener.FilterChain {
+	// if there are any insecure virtual services, need an insecure filter chain
+	// that will match for them
+	var addInsecureFilterChain bool
+	var filterChains []envoylistener.FilterChain
+	for _, virtualService := range inputs.Cfg.VirtualServices {
+		if virtualService.SslConfig == nil || virtualService.SslConfig.SecretRef == "" {
+			addInsecureFilterChain = true
 			continue
 		}
-		params := &plugins.ListenerPluginParams{}
-		if err := listenerPlugin.ProcessListener(params, listener, out); err != nil {
-			cfgErrs.addError(role, errors.Wrap(err, "invalid listener %v"))
+		ref := virtualService.SslConfig.SecretRef
+		certChain, privateKey, err := getSslSecrets(ref, inputs.Secrets)
+		if err != nil {
+			log.Warnf("skipping ssl vService with invalid secrets: %v", virtualService.Name)
+			continue
 		}
+		filterChain := newSslFilterChain(certChain, privateKey, virtualService.Domains, listenerFilters)
+		filterChains = append(filterChains, filterChain)
 	}
 
-	return out
+	if addInsecureFilterChain {
+		filterChains = append(filterChains, envoylistener.FilterChain{
+			Filters: listenerFilters,
+		})
+	}
+	return filterChains
 }
 
 func validateListenerPorts(role *v1.Role, cfgErrs configErrors) {
@@ -95,12 +84,12 @@ func validateListenerPorts(role *v1.Role, cfgErrs configErrors) {
 	}
 }
 
-func newSslFilterChain(certChain, privateKey string, sniDomains []string, networkFilters []envoylistener.Filter) envoylistener.FilterChain {
+func newSslFilterChain(certChain, privateKey string, sniDomains []string, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
 	return envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			SniDomains: sniDomains,
 		},
-		Filters: networkFilters,
+		Filters: listenerFilters,
 		TlsContext: &envoyauth.DownstreamTlsContext{
 			CommonTlsContext: &envoyauth.CommonTlsContext{
 				// default params
@@ -123,4 +112,58 @@ func newSslFilterChain(certChain, privateKey string, sniDomains []string, networ
 			},
 		},
 	}
+}
+
+func (t *Translator) computeListenerFilters(role *v1.Role, listener *v1.Listener, cfgErrs configErrors) []envoylistener.Filter {
+	var listenerFilters []plugins.StagedListenerFilter
+	for _, plug := range t.plugins {
+		filterPlugin, ok := plug.(plugins.ListenerFilterPlugin)
+		if !ok {
+			continue
+		}
+		params := &plugins.ListenerFilterPluginParams{}
+		stagedFilters, err := filterPlugin.ListenerFilters(params, listener)
+		if err != nil {
+			cfgErrs.addError(role, err)
+		}
+		for _, httpFilter := range stagedFilters {
+			listenerFilters = append(listenerFilters, httpFilter)
+		}
+	}
+
+
+	// only add the http connection manager if listener has any virtual services
+	if len(listener.VirtualServices) > 0 {
+		// add the http connection manager filter after all the InAuth Listener Filters
+		rdsName := routeConfigName(listener)
+		httpConnMgr := t.computeHttpConnectionManager(rdsName)
+		listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
+			ListenerFilter: &httpConnMgr,
+			Stage: plugins.PostInAuth,
+		})
+	}
+
+
+	// sort filters by stage
+	return sortListenerFilters(listenerFilters)
+}
+
+func sortListenerFilters(filters []plugins.StagedListenerFilter) []envoylistener.Filter {
+	// sort them first by stage, then by name.
+	less := func(i, j int) bool {
+		filteri := filters[i]
+		filterj := filters[j]
+		if filteri.Stage != filterj.Stage {
+			return filteri.Stage < filterj.Stage
+		}
+		return filteri.ListenerFilter.Name < filterj.ListenerFilter.Name
+	}
+	sort.SliceStable(filters, less)
+
+	var sortedFilters []envoylistener.Filter
+	for _, filter := range filters {
+		sortedFilters = append(sortedFilters, *filter.ListenerFilter)
+	}
+
+	return sortedFilters
 }
