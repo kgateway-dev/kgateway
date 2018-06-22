@@ -14,6 +14,7 @@ import (
 )
 
 func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *envoyapi.Listener {
+	validateListenerPorts(role, cfgErrs)
 	rdsName := routeConfigName(listener)
 
 	var networkFilters []envoylistener.Filter
@@ -79,6 +80,19 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 	}
 
 	return out
+}
+
+func validateListenerPorts(role *v1.Role, cfgErrs configErrors) {
+	listenersByPort := make(map[uint32][]string)
+	for _, listener := range role.Listeners {
+		listenersByPort[listener.BindPort] = append(listenersByPort[listener.BindPort], listener.Name)
+	}
+	for port, listeners := range listenersByPort {
+		if len(listeners) == 1 {
+			continue
+		}
+		cfgErrs.addError(role, errors.Errorf("port %v is shared by listeners %v", port, listeners))
+	}
 }
 
 func newSslFilterChain(certChain, privateKey string, sniDomains []string, networkFilters []envoylistener.Filter) envoylistener.FilterChain {
