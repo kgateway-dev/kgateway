@@ -75,14 +75,29 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 	)
 
 	// aggregate config errors by the cfg object that caused them
-	configErrs := make(configErrors)
+	cfgErrs := make(configErrors)
 
 	for _, listener := range role.Listeners {
-		envoyResources := t.computeListenerResources(role, listener, inputs, configErrs)
+		envoyResources := t.computeListenerResources(role, listener, inputs, cfgErrs)
 		clusters = append(clusters, envoyResources.clusters...)
 		endpoints = append(endpoints, envoyResources.endpoints...)
 		routeConfigs = append(routeConfigs, envoyResources.routeConfig)
 		listeners = append(listeners, envoyResources.listener)
+	}
+
+	// some plugins generate resources that exist independently from user config
+	var generatedClusters []*envoyapi.Cluster
+	for _, plug := range t.plugins {
+		clusterGeneratorPlugin, ok := plug.(plugins.ClusterGeneratorPlugin)
+		if !ok {
+			continue
+		}
+		params := &plugins.ClusterGeneratorPluginParams{}
+		generated, err := clusterGeneratorPlugin.GeneratedClusters(params)
+		if err != nil {
+			cfgErrs.addError(role, err)
+		}
+		generatedClusters = append(generatedClusters, generated...)
 	}
 
 	clusters = deduplicateClusters(clusters)
@@ -90,7 +105,7 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 
 	xdsSnapshot := generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
 
-	return &xdsSnapshot, configErrs.reports()
+	return &xdsSnapshot, cfgErrs.reports()
 }
 
 func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *listenerResources {

@@ -18,7 +18,7 @@ import (
 func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *envoyapi.Listener {
 	validateListenerPorts(role, cfgErrs)
 
-	listenerFilters := t.computeListenerFilters(role, listener, cfgErrs)
+	listenerFilters := t.computeListenerFilters(role, listener, inputs, cfgErrs)
 
 	filterChains := createListenerFilterChains(role, inputs, listener, listenerFilters, cfgErrs)
 
@@ -137,14 +137,17 @@ func newSslFilterChain(certChain, privateKey string, sniDomains []string, listen
 	}
 }
 
-func (t *Translator) computeListenerFilters(role *v1.Role, listener *v1.Listener, cfgErrs configErrors) []envoylistener.Filter {
+func (t *Translator) computeListenerFilters(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) []envoylistener.Filter {
 	var listenerFilters []plugins.StagedListenerFilter
 	for _, plug := range t.plugins {
 		filterPlugin, ok := plug.(plugins.ListenerFilterPlugin)
 		if !ok {
 			continue
 		}
-		params := &plugins.ListenerFilterPluginParams{}
+		params := &plugins.ListenerFilterPluginParams{
+			EnvoyNameForUpstream: clusterName,
+			Config:               inputs.Cfg,
+		}
 		stagedFilters, err := filterPlugin.ListenerFilters(params, listener)
 		if err != nil {
 			cfgErrs.addError(role, err)
