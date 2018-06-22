@@ -1,0 +1,40 @@
+syntax = "proto3";
+package gloo.api.v1;
+
+option go_package = "github.com/solo-io/gloo-enterprise/pkg/plugins/connect";
+
+import "envoy/api/envoy/config/filter/network/client_certificate_restriction/v2/client_certificate_restriction.proto";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Plugin Name = "connect.gloo.solo.io"
+
+// the listenerConfig must be either an InboundListener or an OutboundListener
+message ListenerConfig {
+    oneof config {
+        InboundListenerConfig inbound = 1;
+        OutboundListenerConfig outbound = 2;
+    }
+}
+
+// configuration for the inbound listener
+// this listener does authentication and connects
+// clients to the local service
+message InboundListenerConfig {
+    // configuration for tls-based auth filter
+    envoy.config.filter.network.client_certificate_restriction.v2.ClientCertificateRestriction auth_config = 1;
+    // configuration for the tcp proxy filter
+    TcpProxyConfig proxy_config = 2;
+}
+
+// The configuration for the outbound listeners which serve as "tcp routes"
+message OutboundListenerConfig {
+    // configuration for the tcp proxy filter
+    TcpProxyConfig proxy_config = 1;
+}
+
+message TcpProxyConfig {
+    // The name of the destination upstream for the listener
+    string destination_upstream = 1;
+}
