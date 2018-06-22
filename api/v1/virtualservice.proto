@@ -143,13 +143,15 @@ message UpstreamDestination {
     string name = 1;
 }
 
-// SSLConfig contains the options necessary to configure a virtualservice to use TLS
+// SSLConfig contains the options necessary to configure a virtualservice or listener to use TLS
 message SSLConfig {
-    /** SecretRef contains the secret ref<!--(TODO)--> to a gloo secret<!--(TODO)--> containing the following structure:
+    /** SecretRef contains the secret ref to a gloo secret containing the following structure:
     {
-        "ca_chain": <ca chain data...>,
-        "private key": <private key data...>
+        "tls.crt": <ca chain data...>,
+        "tls.key": <private key data...>
     }
     */
     string secret_ref = 1;
+    // optional. the SNI domains that should be considered for TLS connections
+    repeated string sni_domains = 2;
 }

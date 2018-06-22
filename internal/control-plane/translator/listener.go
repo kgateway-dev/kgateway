@@ -19,7 +19,8 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 	validateListenerPorts(role, cfgErrs)
 
 	listenerFilters := t.computeListenerFilters(role, listener, cfgErrs)
-	filterChains := createListenerFilterChains(inputs, listenerFilters)
+
+	filterChains := createListenerFilterChains(role, inputs, listener, listenerFilters, cfgErrs)
 
 	return &envoyapi.Listener{
 		Name: listener.Name,
@@ -41,7 +42,14 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // plus one if there's an insecure one
-func createListenerFilterChains(inputs *snapshot.Cache, listenerFilters []envoylistener.Filter) []envoylistener.FilterChain {
+func createListenerFilterChains(role *v1.Role, inputs *snapshot.Cache, listener *v1.Listener, listenerFilters []envoylistener.Filter, cfgErrs configErrors) []envoylistener.FilterChain {
+	// no filters = no filter chains
+	// TODO(ilackarms): find another way to prevent the xds server from serving listeners with 0 filters
+	// currently the translator does not add listeners with 0 filters to the xds snapshot
+	if len(listenerFilters) == 0 {
+		return nil
+	}
+
 	// if there are any insecure virtual services, need an insecure filter chain
 	// that will match for them
 	var addInsecureFilterChain bool
@@ -57,15 +65,32 @@ func createListenerFilterChains(inputs *snapshot.Cache, listenerFilters []envoyl
 			log.Warnf("skipping ssl vService with invalid secrets: %v", virtualService.Name)
 			continue
 		}
-		filterChain := newSslFilterChain(certChain, privateKey, virtualService.Domains, listenerFilters)
+		domains := virtualService.SslConfig.SniDomains
+		if len(domains) == 0 {
+			domains = virtualService.Domains
+		}
+		filterChain := newSslFilterChain(certChain, privateKey, domains, listenerFilters)
 		filterChains = append(filterChains, filterChain)
 	}
 
-	if addInsecureFilterChain {
+	if listener.SslConfig != nil {
+		ref := listener.SslConfig.SecretRef
+		certChain, privateKey, err := getSslSecrets(ref, inputs.Secrets)
+		if err != nil {
+			cfgErrs.addError(role, errors.Wrapf(err, "listener %v has invalid secret", listener.Name))
+		}
+		filterChain := newSslFilterChain(certChain, privateKey, listener.SslConfig.SniDomains, listenerFilters)
+		filterChains = append(filterChains, filterChain)
+	}
+
+	// if 0 virtualservices are defined and no ssl config is provided for the listener
+	// create a filter chain with no tls
+	if addInsecureFilterChain || len(filterChains) == 0{
 		filterChains = append(filterChains, envoylistener.FilterChain{
 			Filters: listenerFilters,
 		})
 	}
+
 	return filterChains
 }
 
