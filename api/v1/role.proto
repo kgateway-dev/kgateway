@@ -9,6 +9,7 @@ option (gogoproto.equal_all) = true;
 
 import "status.proto";
 import "metadata.proto";
+import "virtualservice.proto";
 
 /**
  * A Role is a container for a set of Virtual Services that will be used to generate a single proxy config
@@ -70,4 +71,10 @@ message Listener {
     // initiates via this listener.
     // Configuration such as gzip compression and TLS authentication is specified here
     google.protobuf.Struct config = 5;
+
+    // SSL Config is optional for the role. If provided, the listener will serve TLS for connections on this port
+    // this is useful when there are no virtual services assigned to this listener, e.g. for the purpose of
+    // securing a Listener functioning as a TCP Proxy
+    // if no virtual services are defined and ssl_config is nil, the proxy will serve tcp connections insecurely on this port
+    SSLConfig ssl_config = 6;
 }
