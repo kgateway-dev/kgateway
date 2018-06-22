@@ -17,7 +17,7 @@ import (
 type Stage int
 
 const (
-	PreInAuth Stage = iota
+	PreInAuth  Stage = iota
 	InAuth
 	PostInAuth
 	PreOutAuth
@@ -91,7 +91,10 @@ type HttpFilterPlugin interface {
 }
 
 // Params for ListenerFilters()
-type ListenerFilterPluginParams struct{}
+type ListenerFilterPluginParams struct {
+	EnvoyNameForUpstream EnvoyNameForUpstream
+	Config               *v1.Config
+}
 
 type StagedListenerFilter struct {
 	ListenerFilter envoylistener.Filter
@@ -103,3 +106,12 @@ type ListenerFilterPlugin interface {
 	TranslatorPlugin
 	ListenerFilters(params *ListenerFilterPluginParams, in *v1.Listener) ([]StagedListenerFilter, error)
 }
+
+// Plugins that create additional resources
+type ClusterGeneratorPlugin interface {
+	TranslatorPlugin
+	GeneratedClusters(params *ClusterGeneratorPluginParams) ([]*envoyapi.Cluster, error)
+}
+
+// Params for GeneratedClusters()
+type ClusterGeneratorPluginParams struct {}
