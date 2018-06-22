@@ -94,7 +94,7 @@ type HttpFilterPlugin interface {
 type ListenerFilterPluginParams struct{}
 
 type StagedListenerFilter struct {
-	ListenerFilter *envoylistener.Filter
+	ListenerFilter envoylistener.Filter
 	Stage          Stage
 }
 
