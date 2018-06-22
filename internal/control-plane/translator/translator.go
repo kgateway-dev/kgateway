@@ -93,23 +93,23 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 	return &xdsSnapshot, configErrs.reports()
 }
 
-func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, configErrs configErrors) *listenerResources {
+func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *listenerResources {
 	rdsName := routeConfigName(listener)
-	inputs = trimSnapshot(role, listener, inputs, configErrs)
+	inputs = trimSnapshot(role, listener, inputs, cfgErrs)
 
-	configErrs.initializeKeys(inputs.Cfg)
+	cfgErrs.initializeKeys(inputs.Cfg)
 
-	// endpoints are computed independently of the listeners
 	endpoints := computeClusterEndpoints(inputs.Cfg.Upstreams, inputs.Endpoints)
+	clusters := t.computeClusters(inputs, cfgErrs)
+	routeConfig := t.computeRouteConfig(role, listener.Name, rdsName, inputs, cfgErrs)
+	envoyListener := t.computeListener(role, listener, inputs, cfgErrs)
 
-	clusters := t.computeClusters(inputs, configErrs)
-	routeConfig := t.computeRouteConfig(role, listener.Name, rdsName, inputs, configErrs)
 	return &listenerResources{
 		clusters:     clusters,
 		endpoints:    endpoints,
-		listener:     t.computeListener(listener, inputs),
+		listener:     envoyListener,
 		routeConfig:  routeConfig,
-		configErrors: configErrs,
+		configErrors: cfgErrs,
 	}
 }
 
