@@ -11,4 +11,6 @@ import (
 	_ "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	_ "github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 	_ "github.com/solo-io/gloo/pkg/plugins/rest"
+
+	_ "github.com/solo-io/gloo/pkg/plugins/connect"
 )
