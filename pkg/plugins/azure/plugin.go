@@ -60,14 +60,14 @@ func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 	return deps
 }
 
-func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilter {
+func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
 	defer func() {
 		p.isNeeded = false
 		p.apiKeys = make(map[string]string)
 	}()
 
 	if p.isNeeded {
-		return []plugins.StagedFilter{{HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage}}
+		return []plugins.StagedHttpFilter{{HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage}}
 	}
 	return nil
 }

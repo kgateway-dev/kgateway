@@ -38,7 +38,7 @@ type Plugin interface {
 	ActivateFilterForCluster(out *envoyapi.Cluster)
 	AddRequestTransformationsToRoute(getTemplate GetTransformationFunction, in *v1.Route, out *envoyroute.Route) error
 	AddResponseTransformationsToRoute(in *v1.Route, out *envoyroute.Route) error
-	GetTransformationFilter() *plugins.StagedFilter
+	GetTransformationFilter() *plugins.StagedHttpFilter
 }
 
 func NewTransformationPlugin() Plugin {
@@ -370,7 +370,7 @@ func (p *transformationPlugin) setResponseTransformationForRoute(template Templa
 	return nil
 }
 
-func (p *transformationPlugin) GetTransformationFilter() *plugins.StagedFilter {
+func (p *transformationPlugin) GetTransformationFilter() *plugins.StagedHttpFilter {
 	if len(p.cachedTransformations) == 0 {
 		return nil
 	}
@@ -387,7 +387,7 @@ func (p *transformationPlugin) GetTransformationFilter() *plugins.StagedFilter {
 		return nil
 	}
 
-	return &plugins.StagedFilter{
+	return &plugins.StagedHttpFilter{
 		HttpFilter: &envoyhttp.HttpFilter{
 			Name:   filterName,
 			Config: filterConfig,

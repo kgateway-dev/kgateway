@@ -41,13 +41,13 @@ func (t *Translator) computeHttpConnectionManager(rdsName string) envoylistener.
 }
 
 func (t *Translator) computeHttpFilters() []*envoyhttp.HttpFilter {
-	var httpFilters []plugins.StagedFilter
+	var httpFilters []plugins.StagedHttpFilter
 	for _, plug := range t.plugins {
-		filterPlugin, ok := plug.(plugins.FilterPlugin)
+		filterPlugin, ok := plug.(plugins.HttpFilterPlugin)
 		if !ok {
 			continue
 		}
-		params := &plugins.FilterPluginParams{}
+		params := &plugins.HttpFilterPluginParams{}
 		stagedFilters := filterPlugin.HttpFilters(params)
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.HttpFilter == nil {
@@ -64,7 +64,7 @@ func (t *Translator) computeHttpFilters() []*envoyhttp.HttpFilter {
 	return envoyHttpFilters
 }
 
-func sortFilters(filters []plugins.StagedFilter) []*envoyhttp.HttpFilter {
+func sortFilters(filters []plugins.StagedHttpFilter) []*envoyhttp.HttpFilter {
 	// sort them first by stage, then by name.
 	less := func(i, j int) bool {
 		filteri := filters[i]
