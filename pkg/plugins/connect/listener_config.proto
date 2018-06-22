@@ -24,8 +24,13 @@ message ListenerConfig {
 message InboundListenerConfig {
     // configuration for tls-based auth filter
     envoy.config.filter.network.client_certificate_restriction.v2.ClientCertificateRestriction auth_config = 1;
-    // configuration for the tcp proxy filter
-    TcpProxyConfig proxy_config = 2;
+
+    // the name of the local upstream being proxied
+    // the service being proxied must be reachable by Envoy via 'localhost'
+    string local_upstream_name = 2;
+
+    // the port the local service is listening on
+    uint32 local_service_port = 3;
 }
 
 // The configuration for the outbound listeners which serve as "tcp routes"
