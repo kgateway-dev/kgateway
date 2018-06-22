@@ -21,7 +21,7 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 	listenerFilters := t.computeListenerFilters(role, listener, cfgErrs)
 	filterChains := createListenerFilterChains(inputs, listenerFilters)
 
-	out := &envoyapi.Listener{
+	return &envoyapi.Listener{
 		Name: listener.Name,
 		Address: envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{
@@ -37,8 +37,6 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 		},
 		FilterChains: filterChains,
 	}
-
-	return out
 }
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
@@ -131,18 +129,16 @@ func (t *Translator) computeListenerFilters(role *v1.Role, listener *v1.Listener
 		}
 	}
 
-
 	// only add the http connection manager if listener has any virtual services
 	if len(listener.VirtualServices) > 0 {
 		// add the http connection manager filter after all the InAuth Listener Filters
 		rdsName := routeConfigName(listener)
 		httpConnMgr := t.computeHttpConnectionManager(rdsName)
 		listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
-			ListenerFilter: &httpConnMgr,
+			ListenerFilter: httpConnMgr,
 			Stage: plugins.PostInAuth,
 		})
 	}
-
 
 	// sort filters by stage
 	return sortListenerFilters(listenerFilters)
@@ -162,7 +158,7 @@ func sortListenerFilters(filters []plugins.StagedListenerFilter) []envoylistener
 
 	var sortedFilters []envoylistener.Filter
 	for _, filter := range filters {
-		sortedFilters = append(sortedFilters, *filter.ListenerFilter)
+		sortedFilters = append(sortedFilters, filter.ListenerFilter)
 	}
 
 	return sortedFilters
