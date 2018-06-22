@@ -3,7 +3,6 @@ package translator
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
@@ -13,26 +12,20 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
-func (t *Translator) computeClusters(inputs *snapshot.Cache, configErrs configErrors) []*envoyapi.Cluster {
+func (t *Translator) computeClusters(inputs *snapshot.Cache, cfgErrs configErrors) []*envoyapi.Cluster {
 	var (
 		clusters []*envoyapi.Cluster
 	)
 	for _, upstream := range inputs.Cfg.Upstreams {
-		cluster, err := t.computeCluster(inputs, upstream)
-		if err != nil {
-			configErrs.addError(upstream, err)
-			continue
-		}
-		// only append valid clusters
+		cluster := t.computeCluster(inputs, upstream, cfgErrs)
 		clusters = append(clusters, cluster)
 	}
 	return clusters
 }
 
-func (t *Translator) computeCluster(inputs *snapshot.Cache, upstream *v1.Upstream) (*envoyapi.Cluster, error) {
+func (t *Translator) computeCluster(inputs *snapshot.Cache, upstream *v1.Upstream, cfgErrs configErrors) *envoyapi.Cluster {
 	out := initializeCluster(upstream, inputs.Endpoints)
 
-	var upstreamErrors error
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
 		if !ok {
@@ -41,18 +34,18 @@ func (t *Translator) computeCluster(inputs *snapshot.Cache, upstream *v1.Upstrea
 		secrets, files := dependenciesForPlugin(inputs, upstreamPlugin)
 		params := &plugins.UpstreamPluginParams{
 			EnvoyNameForUpstream: clusterName,
-			Secrets: secrets,
-			Files: files,
+			Secrets:              secrets,
+			Files:                files,
 		}
 
 		if err := upstreamPlugin.ProcessUpstream(params, upstream, out); err != nil {
-			upstreamErrors = multierror.Append(upstreamErrors, err)
+			cfgErrs.addError(upstream, err)
 		}
 	}
 	if err := validateCluster(out); err != nil {
-		upstreamErrors = multierror.Append(upstreamErrors, err)
+		cfgErrs.addError(upstream, err)
 	}
-	return out, upstreamErrors
+	return out
 }
 
 func initializeCluster(upstream *v1.Upstream, endpoints endpointdiscovery.EndpointGroups) *envoyapi.Cluster {
