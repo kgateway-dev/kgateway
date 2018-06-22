@@ -55,7 +55,7 @@ func (p *Plugin) ListenerFilters(params *plugins.ListenerFilterPluginParams, in 
 	case *ListenerConfig_Inbound:
 		return p.inboundListenerFilters(params, in, listenerType.Inbound)
 	case *ListenerConfig_Outbound:
-		//return p.outboundListenerFilters(params, in, listenerType.Outbound)
+		return p.outboundListenerFilters(params, in, listenerType.Outbound)
 	}
 	return nil, errors.Wrapf(err, "%v: unknown config type for listener %v", pluginName, in.Name)
 
@@ -115,6 +115,32 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 			ListenerFilter: createAuthFilter(cfg),
 			Stage:          plugins.InAuth,
 		},
+		{
+			ListenerFilter: tcpProxyFilter,
+			Stage:          plugins.PostInAuth,
+		},
+	}, nil
+}
+
+func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginParams, listener *v1.Listener, cfg *OutboundListenerConfig) ([]plugins.StagedListenerFilter, error) {
+	if err := validateProxyConfig(cfg.ProxyConfig); err != nil {
+		return nil, err
+	}
+	if err := validateListener(listener, cfg.ProxyConfig.DestinationUpstream, params.Config.VirtualServices); err != nil {
+		return nil, err
+	}
+	tcpProxyFilterConfig := &envoytcpproxy.TcpProxy{
+		Cluster: params.EnvoyNameForUpstream(cfg.ProxyConfig.DestinationUpstream),
+	}
+	tcpProxyFilterConfigStruct, err := protoutil.MarshalStruct(tcpProxyFilterConfig)
+	if err != nil {
+		panic("unexpected error marsahlling filter config: " + err.Error())
+	}
+	tcpProxyFilter := envoylistener.Filter{
+		Name:   util.TCPProxy,
+		Config: tcpProxyFilterConfigStruct,
+	}
+	return []plugins.StagedListenerFilter{
 		{
 			ListenerFilter: tcpProxyFilter,
 			Stage:          plugins.PostInAuth,
