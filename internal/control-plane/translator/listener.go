@@ -13,10 +13,14 @@ import (
 
 func (t *Translator) computeListener(listener *v1.Listener, inputs *snapshot.Cache) *envoyapi.Listener {
 	rdsName := routeConfigName(listener)
-	httpConnMgr := t.computeHttpConnectionManager(rdsName)
 
-	// TODO (ilacakrms): add more network filters here
-	networkFilters := []envoylistener.Filter{httpConnMgr}
+	var networkFilters []envoylistener.Filter
+	// only add the http connection manager if listener has any virtual services
+	if len(inputs.Cfg.VirtualServices) > 0 {
+		httpConnMgr := t.computeHttpConnectionManager(rdsName)
+		// TODO (ilacakrms): add more network filters here
+		networkFilters = append(networkFilters, httpConnMgr)
+	}
 
 	// if there are any insecure virtual services, need an insecure filter chain
 	// that will match for them
