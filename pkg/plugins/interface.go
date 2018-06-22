@@ -88,3 +88,12 @@ type HttpFilterPlugin interface {
 	TranslatorPlugin
 	HttpFilters(params *HttpFilterPluginParams) []StagedHttpFilter
 }
+
+// Params for ProessListener()
+type ListenerPluginParams struct{}
+
+// Plugins for processing Listeners
+type ListenerPlugin interface {
+	TranslatorPlugin
+	ProcessListener(params *ListenerPluginParams, in *v1.Listener, out *envoyapi.Listener) error
+}
