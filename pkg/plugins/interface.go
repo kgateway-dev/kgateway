@@ -77,14 +77,14 @@ type RoutePlugin interface {
 }
 
 // Params for HttpFilters()
-type FilterPluginParams struct{}
+type HttpFilterPluginParams struct{}
 
-type StagedFilter struct {
+type StagedHttpFilter struct {
 	HttpFilter *envoyhttp.HttpFilter
 	Stage      Stage
 }
 
-type FilterPlugin interface {
+type HttpFilterPlugin interface {
 	TranslatorPlugin
-	HttpFilters(params *FilterPluginParams) []StagedFilter
+	HttpFilters(params *HttpFilterPluginParams) []StagedHttpFilter
 }
