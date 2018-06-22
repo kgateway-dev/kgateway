@@ -5,13 +5,15 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
+	"github.com/solo-io/gloo/pkg/plugins"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
 )
 
-func (t *Translator) computeListener(listener *v1.Listener, inputs *snapshot.Cache) *envoyapi.Listener {
+func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *envoyapi.Listener {
 	rdsName := routeConfigName(listener)
 
 	var networkFilters []envoylistener.Filter
@@ -48,7 +50,7 @@ func (t *Translator) computeListener(listener *v1.Listener, inputs *snapshot.Cac
 		})
 	}
 
-	return &envoyapi.Listener{
+	out := &envoyapi.Listener{
 		Name: listener.Name,
 		Address: envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{
@@ -64,6 +66,19 @@ func (t *Translator) computeListener(listener *v1.Listener, inputs *snapshot.Cac
 		},
 		FilterChains: filterChains,
 	}
+
+	for _, plug := range t.plugins {
+		listenerPlugin, ok := plug.(plugins.ListenerPlugin)
+		if !ok {
+			continue
+		}
+		params := &plugins.ListenerPluginParams{}
+		if err := listenerPlugin.ProcessListener(params, listener, out); err != nil {
+			cfgErrs.addError(role, errors.Wrap(err, "invalid listener %v"))
+		}
+	}
+
+	return out
 }
 
 func newSslFilterChain(certChain, privateKey string, sniDomains []string, networkFilters []envoylistener.Filter) envoylistener.FilterChain {
