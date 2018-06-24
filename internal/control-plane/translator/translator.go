@@ -86,7 +86,6 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 	}
 
 	// some plugins generate resources that exist independently from user config
-	var generatedClusters []*envoyapi.Cluster
 	for _, plug := range t.plugins {
 		clusterGeneratorPlugin, ok := plug.(plugins.ClusterGeneratorPlugin)
 		if !ok {
@@ -97,7 +96,7 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 		if err != nil {
 			cfgErrs.addError(role, err)
 		}
-		generatedClusters = append(generatedClusters, generated...)
+		clusters = append(clusters, generated...)
 	}
 
 	clusters = deduplicateClusters(clusters)
