@@ -54,11 +54,8 @@ message AuthConfig {
 
 // The configuration for the outbound listeners which serve as "tcp routes"
 message OutboundListenerConfig {
-    // configuration for the tcp proxy filter
-    TcpProxyConfig proxy_config = 1;
-}
-
-message TcpProxyConfig {
-    // The name of the destination upstream for the listener
-    string destination_upstream = 1;
+    // The name of the consul service which is the destination for the listener
+    string destination_consul_service = 1;
+    // TODO (ilackarms): support destination type in Consul Connect API
+    string destination_consul_type = 2;
 }

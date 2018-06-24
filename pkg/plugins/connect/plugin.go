@@ -11,7 +11,9 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/pkg/protoutil"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -138,14 +140,18 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 }
 
 func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginParams, listener *v1.Listener, cfg *OutboundListenerConfig) ([]plugins.StagedListenerFilter, error) {
-	if err := validateProxyConfig(cfg.ProxyConfig); err != nil {
+	if cfg.DestinationConsulService == "" {
+		return nil, errors.Errorf("destination service cannot be empty")
+	}
+	if err := validateListener(listener, cfg.DestinationConsulService, params.Config.VirtualServices); err != nil {
 		return nil, err
 	}
-	if err := validateListener(listener, cfg.ProxyConfig.DestinationUpstream, params.Config.VirtualServices); err != nil {
+	destinationUpstream, err := findUpstreamForService(params.Config.Upstreams, cfg.DestinationConsulService)
+	if err != nil {
 		return nil, err
 	}
 	tcpProxyFilterConfig := &envoytcpproxy.TcpProxy{
-		Cluster: params.EnvoyNameForUpstream(cfg.ProxyConfig.DestinationUpstream),
+		Cluster: params.EnvoyNameForUpstream(destinationUpstream.Name),
 	}
 	tcpProxyFilterConfigStruct, err := protoutil.MarshalStruct(tcpProxyFilterConfig)
 	if err != nil {
@@ -161,6 +167,24 @@ func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginPar
 			Stage:          plugins.PostInAuth,
 		},
 	}, nil
+}
+
+// TODO (ilackarms): support tags, structured queries, etc.
+func findUpstreamForService(upstreams []*v1.Upstream, serviceName string) (*v1.Upstream, error) {
+	for _, us := range upstreams {
+		if us.Type != consul.UpstreamTypeConsul {
+			continue
+		}
+		spec, err := consul.DecodeUpstreamSpec(us.Spec)
+		if err != nil {
+			log.Warnf("failed to decode consul upstream %s's spec: %v", us.Name, err)
+			continue
+		}
+		if serviceName == spec.ServiceName {
+			return us, nil
+		}
+	}
+	return nil, errors.Errorf("upstream not found for consul service %s", serviceName)
 }
 
 func (p *Plugin) GeneratedClusters(_ *plugins.ClusterGeneratorPluginParams) ([]*envoyapi.Cluster, error) {
@@ -273,13 +297,6 @@ func DecodeListenerConfig(config *types.Struct) (*ListenerConfig, error) {
 		return nil, err
 	}
 	return cfg, nil
-}
-
-func validateProxyConfig(cfg *TcpProxyConfig) error {
-	if cfg.DestinationUpstream == "" {
-		return errors.Errorf("destination upstream cannot be empty")
-	}
-	return nil
 }
 
 func validateAuthConfig(cfg *AuthConfig) error {
