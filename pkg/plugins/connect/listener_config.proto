@@ -1,10 +1,10 @@
 syntax = "proto3";
 package gloo.api.v1;
 
-option go_package = "github.com/solo-io/gloo-enterprise/pkg/plugins/connect";
+option go_package = "github.com/solo-io/gloo/pkg/plugins/connect";
 
-import "envoy/api/envoy/config/filter/network/client_certificate_restriction/v2/client_certificate_restriction.proto";
-
+import "validate/validate.proto";
+import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
@@ -23,7 +23,7 @@ message ListenerConfig {
 // clients to the local service
 message InboundListenerConfig {
     // configuration for tls-based auth filter
-    envoy.config.filter.network.client_certificate_restriction.v2.ClientCertificateRestriction auth_config = 1;
+    AuthConfig auth_config = 1;
 
     // the name of the local upstream being proxied
     // the service being proxied must be reachable by Envoy via 'localhost'
@@ -31,6 +31,25 @@ message InboundListenerConfig {
 
     // the port the local service is listening on
     uint32 local_service_port = 3;
+}
+
+// AuthConfig contains information necessary to
+// communicate with the Authentication Server (Consul Agent)
+message AuthConfig {
+    // The name of the service who owns this proxy
+    // Target must be delivered by the filter as part of the authorize request payload
+    string target = 1 [(validate.rules).string.min_bytes = 1];
+
+    // the hostname of the authorization REST service
+    string authorize_hostname = 2 [(validate.rules).string.min_bytes = 1];
+    // the port of the authorization REST service
+    uint32 authorize_port = 3 [(validate.rules).string.min_bytes = 1];
+    // the request path for the authorization REST service
+    // NOTE: currently ignored by the plugin and filter
+    string authorize_path = 4 [(validate.rules).string.min_bytes = 1];
+    // Connection Timeout tells the filter to set a timeout for unresponsive connections created to this upstream.
+    // If not provided by the user, it will set to a default value
+    google.protobuf.Duration request_timeout = 5 [(gogoproto.stdduration) = true];
 }
 
 // The configuration for the outbound listeners which serve as "tcp routes"

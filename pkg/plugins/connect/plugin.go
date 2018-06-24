@@ -1,19 +1,20 @@
 package connect
 
 import (
-	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/protoutil"
-	"github.com/gogo/protobuf/types"
-	"github.com/pkg/errors"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	"fmt"
 	"time"
+
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcpproxy "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/pkg/protoutil"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"fmt"
 )
 
 // this is the key the plugin will search for in the listener config
@@ -33,7 +34,7 @@ func init() {
 	plugins.Register(&Plugin{})
 }
 
-type Plugin struct{
+type Plugin struct {
 	// these clusters are the destination clusters for the tcp proxy on the inbound listener
 	// they're just localhost:port; only the local envoy needs to know them
 	clustersToGenerate []*envoyapi.Cluster
@@ -58,13 +59,6 @@ func (p *Plugin) ListenerFilters(params *plugins.ListenerFilterPluginParams, in 
 		return p.outboundListenerFilters(params, in, listenerType.Outbound)
 	}
 	return nil, errors.Wrapf(err, "%v: unknown config type for listener %v", pluginName, in.Name)
-
-	return []plugins.StagedListenerFilter{
-		{
-			ListenerFilter: createAuthFilter(cfg),
-			Stage:          plugins.InAuth,
-		},
-	}, nil
 }
 
 func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginParams, listener *v1.Listener, cfg *InboundListenerConfig) ([]plugins.StagedListenerFilter, error) {
@@ -80,8 +74,8 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 	if err := validateListener(listener, cfg.LocalUpstreamName, params.Config.VirtualServices); err != nil {
 		return nil, err
 	}
-	generatedCluster := &envoyapi.Cluster{
-		Name: fmt.Sprintf("localhost-%v-%v", cfg.LocalUpstreamName, cfg.LocalServicePort),
+	localServiceCluster := &envoyapi.Cluster{
+		Name: fmt.Sprintf("local-service-%v-%v", cfg.LocalUpstreamName, cfg.LocalServicePort),
 		Type: envoyapi.Cluster_STRICT_DNS,
 		Hosts: []*envoycore.Address{
 			{
@@ -98,21 +92,42 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 		},
 		DnsLookupFamily: envoyapi.Cluster_V4_ONLY,
 	}
-	p.clustersToGenerate = append(p.clustersToGenerate, generatedCluster)
-	tcpProxyFilterConfig := &envoytcpproxy.TcpProxy{
-		Cluster: generatedCluster.Name,
+	consulAgentCluster := &envoyapi.Cluster{
+		Name: fmt.Sprintf("local-consul-agent"),
+		Type: envoyapi.Cluster_STRICT_DNS,
+		Hosts: []*envoycore.Address{
+			{
+				Address: &envoycore.Address_SocketAddress{
+					SocketAddress: &envoycore.SocketAddress{
+						Protocol: envoycore.TCP,
+						Address:  cfg.AuthConfig.AuthorizeHostname,
+						PortSpecifier: &envoycore.SocketAddress_PortValue{
+							PortValue: cfg.AuthConfig.AuthorizePort,
+						},
+					},
+				},
+			},
+		},
+		DnsLookupFamily: envoyapi.Cluster_V4_ONLY,
 	}
-	tcpProxyFilterConfigStruct, err := protoutil.MarshalStruct(tcpProxyFilterConfig)
+	generatedClusters := []*envoyapi.Cluster{
+		localServiceCluster,
+		consulAgentCluster,
+	}
+	p.clustersToGenerate = append(p.clustersToGenerate, generatedClusters...)
+	inboundTcpProxy, err := protoutil.MarshalStruct(&envoytcpproxy.TcpProxy{
+		Cluster: localServiceCluster.Name,
+	})
 	if err != nil {
 		panic("unexpected error marsahlling filter config: " + err.Error())
 	}
 	tcpProxyFilter := envoylistener.Filter{
 		Name:   util.TCPProxy,
-		Config: tcpProxyFilterConfigStruct,
+		Config: inboundTcpProxy,
 	}
 	return []plugins.StagedListenerFilter{
 		{
-			ListenerFilter: createAuthFilter(cfg),
+			ListenerFilter: createAuthFilter(consulAgentCluster.Name, cfg.AuthConfig),
 			Stage:          plugins.InAuth,
 		},
 		{
@@ -176,7 +191,7 @@ func validateListener(listener *v1.Listener, destinationUpstream string, virtual
 		destinationUpstreams = append(destinationUpstreams, allDestinationUpstreams(destinationVirtualService)...)
 	}
 	if len(destinationUpstreams) > 1 || destinationUpstreams[0] != destinationUpstream {
-		return errors.Errorf("%v is an invalid virtualservice list for this listener. " +
+		return errors.Errorf("%v is an invalid virtualservice list for this listener. "+
 			"%v is the only valid destination for routes on this listener", listener.VirtualServices, destinationUpstream)
 	}
 	return nil
@@ -214,11 +229,17 @@ func destinationUpstream(dest *v1.Destination) string {
 	panic("invalid destination")
 }
 
-func createAuthFilter(auth *ClientCertificateRestriction) envoylistener.Filter {
+func createAuthFilter(authClusterName string, auth *AuthConfig) envoylistener.Filter {
 	if auth.RequestTimeout == nil || *auth.RequestTimeout == 0 {
 		auth.RequestTimeout = &defaultTimeout
 	}
-	filterConfigStruct, err := protoutil.MarshalStruct(auth)
+	filterConfig := &ClientCertificateRestriction{
+		Target:               auth.Target,
+		AuthorizeHostname:    auth.AuthorizeHostname,
+		AuthorizeClusterName: authClusterName,
+		RequestTimeout:       auth.RequestTimeout,
+	}
+	filterConfigStruct, err := protoutil.MarshalStruct(filterConfig)
 	if err != nil {
 		panic("unexpected error marshalling proto to struct: " + err.Error())
 	}
@@ -226,6 +247,17 @@ func createAuthFilter(auth *ClientCertificateRestriction) envoylistener.Filter {
 		Name:   filterName,
 		Config: filterConfigStruct,
 	}
+}
+
+func EncodeListenerConfig(config *ListenerConfig) *types.Struct {
+	if config == nil {
+		return nil
+	}
+	s, err := protoutil.MarshalStruct(config)
+	if err != nil {
+		panic("failed to encode listener config: " + err.Error())
+	}
+	return s
 }
 
 func DecodeListenerConfig(config *types.Struct) (*ListenerConfig, error) {
@@ -250,18 +282,21 @@ func validateProxyConfig(cfg *TcpProxyConfig) error {
 	return nil
 }
 
-func validateAuthConfig(cfg *ClientCertificateRestriction) error {
+func validateAuthConfig(cfg *AuthConfig) error {
 	if cfg == nil {
 		return errors.Errorf("must provide AuthConfig")
 	}
 	if cfg.Target == "" {
 		return errors.Errorf("must provide AuthConfig.Target")
 	}
-	if cfg.AuthorizeClusterName == "" {
-		return errors.Errorf("must provide AuthConfig.AuthorizeClusterName")
+	if cfg.AuthorizePort == 0 {
+		return errors.Errorf("must provide AuthConfig.AuthorizePort")
 	}
 	if cfg.AuthorizeHostname == "" {
 		return errors.Errorf("must provide AuthConfig.AuthorizeHostname")
+	}
+	if cfg.AuthorizePath == "" {
+		return errors.Errorf("must provide AuthConfig.AuthorizePath")
 	}
 	return nil
 }
