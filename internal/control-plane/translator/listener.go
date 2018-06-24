@@ -149,8 +149,8 @@ func (t *Translator) computeListenerFilters(role *v1.Role, listener *v1.Listener
 		if err != nil {
 			cfgErrs.addError(role, err)
 		}
-		for _, httpFilter := range stagedFilters {
-			listenerFilters = append(listenerFilters, httpFilter)
+		for _, listenerFilter := range stagedFilters {
+			listenerFilters = append(listenerFilters, listenerFilter)
 		}
 	}
 
