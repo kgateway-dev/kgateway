@@ -143,7 +143,7 @@ func destinationUpstream(dest *v1.Destination) string {
 }
 
 // just use HttpFilters to clear cache
-func (p *Plugin) HttpFilters(params *plugins.FilterPluginParams) []plugins.StagedFilter {
+func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
 	p.hostRewriteUpstreams = make(map[string]bool)
 	return nil
 }

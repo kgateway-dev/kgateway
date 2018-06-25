@@ -1,16 +1,13 @@
-package translator
+package translator_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"testing"
 
-	"github.com/solo-io/gloo/pkg/log"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func TestTranslator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	log.DefaultOut = GinkgoWriter
 	RunSpecs(t, "Translator Suite")
 }

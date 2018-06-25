@@ -298,7 +298,7 @@ func httpPath(upstreamName, serviceName, methodName string) string {
 	return "/" + fmt.Sprintf("%x", h.Sum(nil))[:8] + "/" + upstreamName + "/" + serviceName + "/" + methodName
 }
 
-func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilter {
+func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
 	defer func() {
 		// clear cache
 		p.upstreamServices = make(map[string]ServicesAndDescriptor)
@@ -314,7 +314,7 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 		return nil
 	}
 
-	var filters []plugins.StagedFilter
+	var filters []plugins.StagedHttpFilter
 	for _, serviceAndDescriptor := range p.upstreamServices {
 		descriptorBytes, err := proto.Marshal(serviceAndDescriptor.Descriptors)
 		if err != nil {
@@ -337,7 +337,7 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 			log.Warnf("ERROR: marshaling GrpcJsonTranscoder config: %v", err)
 			return nil
 		}
-		filters = append(filters, plugins.StagedFilter{
+		filters = append(filters, plugins.StagedHttpFilter{
 			HttpFilter: &envoyhttp.HttpFilter{
 				Name:   filterName,
 				Config: filterConfig,
@@ -350,7 +350,7 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 		log.Warnf("ERROR: no valid GrpcJsonTranscoder available")
 		return nil
 	}
-	filters = append([]plugins.StagedFilter{*transformationFilter}, filters...)
+	filters = append([]plugins.StagedHttpFilter{*transformationFilter}, filters...)
 
 	return filters
 }

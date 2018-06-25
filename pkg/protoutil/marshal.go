@@ -36,6 +36,14 @@ func UnmarshalStruct(structuredData *types.Struct, into interface{}) error {
 	return json.Unmarshal(data, into)
 }
 
+func UnmarshalValue(value *types.Value, into interface{}) error {
+	switch kind := value.Kind.(type) {
+	case *types.Value_StructValue:
+		return UnmarshalStruct(kind.StructValue, into)
+	}
+	return errors.Errorf("cannot call UnmarshalValue on non-struct values")
+}
+
 func Unmarshal(data []byte, into proto.Message) error {
 	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
 }
