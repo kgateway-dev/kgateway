@@ -78,14 +78,6 @@
   version = "0.5.0"
 
 [[constraint]]
-  version = "v1.1.0"
-  name = "github.com/golang/protobuf"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/grpc-ecosystem/go-grpc-middleware"
-
-[[constraint]]
   name = "github.com/hashicorp/consul"
   version = "1.0.6"
 

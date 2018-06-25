@@ -20,7 +20,7 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/lyft/protoc-gen-validate/validate"
 import _ "github.com/golang/protobuf/ptypes/duration"
-import _ "gogoproto"
+import _ "github.com/gogo/protobuf/gogoproto"
 
 import time "time"
 
