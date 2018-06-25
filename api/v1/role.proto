@@ -30,14 +30,14 @@ message Role {
     // One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
     string name = 1;
 
-    // a list of virtual services that reference this role
-    repeated string virtual_services = 2;
-
-    // Config contains top-level config to be applied to a Role
-    // All Vitrual Services within a Role will share the Role config
-    // Configuration such as compression, bind address(es) for the proxy,
-    // Root CAs are defined here
-    google.protobuf.Struct config = 4;
+    // define each listener the proxy will create
+    // listeners define a set of behaviors for a single address:port
+    // where the proxy will listen
+    // if no listeners are specified, the role will behave as a gateway
+    // see (pkg/api/defaults/v1)[https://github.com/solo-io/gloo/tree/master/pkg/api/defaults/v1]
+    // to see the default listeners that will be created for Gateway proxies
+    // binding to the default HTTP (8080) and HTTPS (8443) ports on 0.0.0.0 (all interfaces)
+    repeated Listener listeners = 2;
 
     // Status indicates the validation status of the role resource.
     // Status is read-only by clients, and set by gloo during validation
@@ -45,4 +45,29 @@ message Role {
 
     // Metadata contains the resource metadata for the role
     Metadata metadata = 7;
+}
+
+// Listeners define the address:port where the proxy will listen for incoming connections
+// Each listener defines a unique set of TCP and HTTP behaviors
+message Listener {
+    // the name of the listener. names must be unique for listeners within a role
+    string name = 1;
+
+    // the bind address for the listener.
+    // both ipv4 and ipv6 formats are supported
+    string bind_address = 2;
+
+    // the port to bind on
+    // ports numbers must be unique for listeners within a role
+    uint32 bind_port = 3;
+
+    // defines the set of virtual services that will be accessible by clients connecting to this listener.
+    // at least one virtual service must be specifiedfor HTTP-level features to be applied at the listener level
+    repeated string virtual_services = 4;
+
+    // Config contains top-level config to be applied to a listener
+    // Listener config is applied to all TCP/HTTP traffic that
+    // initiates via this listener.
+    // Configuration such as gzip compression and TLS authentication is specified here
+    google.protobuf.Struct config = 5;
 }

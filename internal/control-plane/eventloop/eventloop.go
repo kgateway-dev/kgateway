@@ -3,10 +3,6 @@ package eventloop
 import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
-
-	"sort"
-
 	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
 	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
@@ -15,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/internal/control-plane/translator"
 	"github.com/solo-io/gloo/internal/control-plane/xds"
+	defaultv1 "github.com/solo-io/gloo/pkg/api/defaults/v1"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
@@ -23,16 +20,15 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
-const defaultRole = "ingress"
-
 type eventLoop struct {
 	snapshotEmitter *snapshot.Emitter
 	reporter        reporter.Interface
 	translator      *translator.Translator
 	xdsConfig       envoycache.SnapshotCache
+	opts            bootstrap.IngressOptions
 }
 
-func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
+func Setup(opts bootstrap.Options, xdsPort int) (*eventLoop, error) {
 	store, err := configstorage.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create config store client")
@@ -67,7 +63,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 	snapshotEmitter := snapshot.NewEmitter(cfgWatcher, secretWatcher,
 		fileWatcher, endpointsWatcher, getDependenciesFor(plugs))
 
-	trans := translator.NewTranslator(opts.IngressOptions, plugs)
+	trans := translator.NewTranslator(plugs)
 
 	// create a snapshot to give to misconfigured envoy instances
 	badNodeSnapshot := xds.BadNodeSnapshot(opts.IngressOptions.BindAddress, opts.IngressOptions.Port)
@@ -82,6 +78,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		translator:      trans,
 		xdsConfig:       xdsConfig,
 		reporter:        reporter.NewReporter(store),
+		opts:            opts.IngressOptions,
 	}
 
 	return e, nil
@@ -134,120 +131,44 @@ func (e *eventLoop) Run(stop <-chan struct{}) {
 	}
 }
 
-func rolesByName(roles []*v1.Role, virtualServices []*v1.VirtualService) map[string]*v1.Role {
-	rolesByName := make(map[string]*v1.Role)
-	for _, r := range roles {
-		rolesByName[r.Name] = r
-	}
-	// create default if it doesn't exist
-	if _, ok := rolesByName[defaultRole]; !ok {
-		role := &v1.Role{
-			Name: defaultRole,
-			Metadata: &v1.Metadata{
-				Annotations: map[string]string{"generated_by": "control-plane"},
-			},
-		}
-		rolesByName[defaultRole] = role
-	}
-	// create any other roles that dont exist
-	for _, vs := range virtualServices {
-		for _, roleName := range vs.Roles {
-			if _, ok := rolesByName[roleName]; !ok {
-				role := &v1.Role{
-					Name: roleName,
-					Metadata: &v1.Metadata{
-						Annotations: map[string]string{"generated_by": "control-plane"},
-					},
-				}
-				rolesByName[roleName] = role
-			}
-		}
-	}
-	return rolesByName
-}
-
-func virtualServicesByRole(roles []*v1.Role, virtualServices []*v1.VirtualService) map[*v1.Role][]*v1.VirtualService {
-	// clear prior virtual service ownership list
-	for _, r := range roles {
-		r.VirtualServices = nil
-	}
-
-	// get existing roles and create ones that don't exist yet
-	rolesByName := rolesByName(roles, virtualServices)
-
-	virtualServicesByRole := make(map[*v1.Role][]*v1.VirtualService)
-	for _, vs := range virtualServices {
-		if len(vs.Roles) == 0 {
-			role := rolesByName[defaultRole]
-			role.VirtualServices = append(role.VirtualServices, vs.Name)
-			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
-		}
-		for _, roleName := range vs.Roles {
-			role := rolesByName[roleName]
-			role.VirtualServices = append(role.VirtualServices, vs.Name)
-			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
-		}
-	}
-
-	// sort the virtualservices on the roles; idempotency
-	for role := range virtualServicesByRole {
-		sort.SliceStable(role.VirtualServices, func(i, j int) bool {
-			return role.VirtualServices[i] < role.VirtualServices[j]
-		})
-	}
-
-	return virtualServicesByRole
-}
-
 func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 	if !snap.Ready() {
 		log.Debugf("snapshot is not ready for translation yet")
 		return
 	}
 
-	// map each virtual service to one or more roles
-	// if no roles are defined, we fall back to the default Role, which is 'ingress'
-	virtualServicesByRole := virtualServicesByRole(snap.Cfg.Roles, snap.Cfg.VirtualServices)
-
 	// aggregate reports across all the roles
 	allReports := make(map[string]reporter.ConfigObjectReport)
 
+	roles := snap.Cfg.Roles
+
+	var gatewayRole *v1.Role
+	for i, role := range roles {
+		if role.Name == defaultv1.GatewayRoleName {
+			gatewayRole = role
+			if len(gatewayRole.Listeners) != 2 {
+				gatewayRole = defaultv1.GatewayRole(e.opts.BindAddress, e.opts.Port, e.opts.SecurePort)
+				roles[i] = gatewayRole
+			}
+			break
+		}
+	}
+
+	// if the gateway role is not predefined, create it
+	if gatewayRole == nil {
+		gatewayRole = defaultv1.GatewayRole(e.opts.BindAddress, e.opts.Port, e.opts.SecurePort)
+		roles = append(roles, gatewayRole)
+	}
+
+	// ensure the gateway role contains the latest
+	defaultv1.AssignGatewayVirtualServices(gatewayRole.Listeners[0], gatewayRole.Listeners[1], snap.Cfg.VirtualServices)
+
 	// translate each set of resources (grouped by role) individually
 	// and set the snapshot for that role
-	for role, virtualServices := range virtualServicesByRole {
-		if len(virtualServices) == 0 {
-			log.Printf("nothing to do yet for role %v", role)
-			continue
-		}
+	for _, role := range roles {
+		log.Debugf("\nRole: %v\nGloo Snapshot (%v): %v", role.Name, snap.Hash(), snap)
 
-		// get only the upstreams required for these virtual services
-		upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
-		endpoints := destinationEndpoints(upstreams, snap.Endpoints)
-		roleSnapshot := &snapshot.Cache{
-			Cfg: &v1.Config{
-				Upstreams:       upstreams,
-				VirtualServices: virtualServices,
-			},
-			Secrets:   snap.Secrets,
-			Files:     snap.Files,
-			Endpoints: endpoints,
-		}
-
-		log.Debugf("\nRole: %v\nGloo Snapshot (%v): %v", role, snap.Hash(), snap)
-
-		// create new role object
-		// this will be used to store the report for role-level errors
-		var vsNames []string
-		for _, vs := range virtualServices {
-			vsNames = append(vsNames, vs.Name)
-		}
-
-		xdsSnapshot, reports, err := e.translator.Translate(role, roleSnapshot)
-		if err != nil {
-			// TODO: panic or handle these internal errors smartly
-			log.Warnf("INTERNAL ERROR: failed to run translator for role %v: %v", role, err)
-			continue
-		}
+		xdsSnapshot, reports := e.translator.Translate(role, snap)
 
 		var roleRejected bool
 		// merge reports them together
@@ -279,55 +200,3 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 	}
 }
 
-// gets the subset of upstreams which are destinations for at least one route in at least one
-// virtual service
-func destinationUpstreams(allUpstreams []*v1.Upstream, virtualServices []*v1.VirtualService) []*v1.Upstream {
-	destinationUpstreamNames := make(map[string]bool)
-	for _, vs := range virtualServices {
-		for _, route := range vs.Routes {
-			dests := getAllDestinations(route)
-			for _, dest := range dests {
-				var upstreamName string
-				switch typedDest := dest.DestinationType.(type) {
-				case *v1.Destination_Upstream:
-					upstreamName = typedDest.Upstream.Name
-				case *v1.Destination_Function:
-					upstreamName = typedDest.Function.UpstreamName
-				default:
-					panic("unknown destination type")
-				}
-				destinationUpstreamNames[upstreamName] = true
-			}
-		}
-	}
-	var destinationUpstreams []*v1.Upstream
-	for _, us := range allUpstreams {
-		if _, ok := destinationUpstreamNames[us.Name]; ok {
-			destinationUpstreams = append(destinationUpstreams, us)
-		}
-	}
-	return destinationUpstreams
-}
-
-func getAllDestinations(route *v1.Route) []*v1.Destination {
-	var dests []*v1.Destination
-	if route.SingleDestination != nil {
-		dests = append(dests, route.SingleDestination)
-	}
-	for _, dest := range route.MultipleDestinations {
-		dests = append(dests, dest.Destination)
-	}
-	return dests
-}
-
-func destinationEndpoints(upstreams []*v1.Upstream, allEndpoints endpointdiscovery.EndpointGroups) endpointdiscovery.EndpointGroups {
-	destinationEndpoints := make(endpointdiscovery.EndpointGroups)
-	for _, us := range upstreams {
-		eps, ok := allEndpoints[us.Name]
-		if !ok {
-			continue
-		}
-		destinationEndpoints[us.Name] = eps
-	}
-	return destinationEndpoints
-}

@@ -158,7 +158,7 @@ func addHeaderExtractorFromParam(header, parameter string, extractors map[string
 	}
 	// remember that the order of the param names correlates with their order in the regex
 	paramNames, regexMatcher := getNamesAndRegexFromParamString(parameter)
-	log.Debugf("transformation pluginN: extraction for header %v: parameters: %v regex matcher: %v", header, paramNames, regexMatcher)
+	//log.Debugf("transformation pluginN: extraction for header %v: parameters: %v regex matcher: %v", header, paramNames, regexMatcher)
 	// if no regex, this is a "default variable" that the user gets for free
 	if len(paramNames) == 0 {
 		// extract everything

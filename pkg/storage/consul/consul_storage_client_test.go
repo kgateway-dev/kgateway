@@ -1,12 +1,11 @@
 package consul_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
+	"fmt"
 	"time"
 
-	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/hashicorp/consul/api"
@@ -420,8 +419,10 @@ var _ = Describe("ConsulStorageClient", func() {
 				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 				Expect(err).NotTo(HaveOccurred())
 				input := &v1.Role{
-					Name:            "myrole",
-					VirtualServices: []string{"foo"},
+					Name: "myrole",
+					Listeners: []*v1.Listener{
+						{Name: "foo"},
+					},
 				}
 				vs, err := client.V1().Roles().Create(input)
 				Expect(err).NotTo(HaveOccurred())
@@ -441,8 +442,10 @@ var _ = Describe("ConsulStorageClient", func() {
 				client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 				Expect(err).NotTo(HaveOccurred())
 				input := &v1.Role{
-					Name:            "myrole",
-					VirtualServices: []string{"foo"},
+					Name: "myrole",
+					Listeners: []*v1.Listener{
+						{Name: "foo"},
+					},
 				}
 				_, err = client.V1().Roles().Create(input)
 				Expect(err).NotTo(HaveOccurred())
@@ -454,8 +457,10 @@ var _ = Describe("ConsulStorageClient", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
 					input := &v1.Role{
-						Name:            "myrole",
-						VirtualServices: []string{"foo"},
+						Name: "myrole",
+						Listeners: []*v1.Listener{
+							{Name: "foo"},
+						},
 					}
 					vs, err := client.V1().Roles().Update(input)
 					Expect(err).To(HaveOccurred())
@@ -465,8 +470,10 @@ var _ = Describe("ConsulStorageClient", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
 					input := &v1.Role{
-						Name:            "myrole",
-						VirtualServices: []string{"foo"},
+						Name: "myrole",
+						Listeners: []*v1.Listener{
+							{Name: "foo"},
+						},
 					}
 					_, err = client.V1().Roles().Create(input)
 					Expect(err).NotTo(HaveOccurred())
@@ -479,18 +486,22 @@ var _ = Describe("ConsulStorageClient", func() {
 					client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 					Expect(err).NotTo(HaveOccurred())
 					input := &v1.Role{
-						Name:            "myrole",
-						VirtualServices: []string{"foo"},
+						Name: "myrole",
+						Listeners: []*v1.Listener{
+							{Name: "foo"},
+						},
 					}
 					vs, err := client.V1().Roles().Create(input)
 					Expect(err).NotTo(HaveOccurred())
 					changed := proto.Clone(input).(*v1.Role)
-					changed.VirtualServices = []string{"bar"}
+					changed.Listeners = []*v1.Listener{
+						{Name: "bar"},
+					}
 					// match resource version
 					changed.Metadata = vs.Metadata
 					out, err := client.V1().Roles().Update(changed)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(out.VirtualServices).To(Equal(changed.VirtualServices))
+					Expect(out.Listeners).To(Equal(changed.Listeners))
 				})
 				Describe("get", func() {
 					It("fails if the role doesn't exist", func() {
@@ -504,8 +515,9 @@ var _ = Describe("ConsulStorageClient", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
 						input := &v1.Role{
-							Name:            "myrole",
-							VirtualServices: []string{"foo"},
+							Name: "myrole", Listeners: []*v1.Listener{
+								{Name: "foo"},
+							},
 						}
 						vs, err := client.V1().Roles().Create(input)
 						Expect(err).NotTo(HaveOccurred())
@@ -521,16 +533,19 @@ var _ = Describe("ConsulStorageClient", func() {
 						client, err := NewStorage(api.DefaultConfig(), rootPath, time.Second)
 						Expect(err).NotTo(HaveOccurred())
 						input1 := &v1.Role{
-							Name:            "myrole1",
-							VirtualServices: []string{"foo"},
+							Name: "myrole1", Listeners: []*v1.Listener{
+								{Name: "foo"},
+							},
 						}
 						input2 := &v1.Role{
-							Name:            "myrole2",
-							VirtualServices: []string{"foo"},
+							Name: "myrole2", Listeners: []*v1.Listener{
+								{Name: "foo"},
+							},
 						}
 						input3 := &v1.Role{
-							Name:            "myrole3",
-							VirtualServices: []string{"foo"},
+							Name: "myrole3", Listeners: []*v1.Listener{
+								{Name: "foo"},
+							},
 						}
 						vs1, err := client.V1().Roles().Create(input1)
 						Expect(err).NotTo(HaveOccurred())
@@ -565,16 +580,19 @@ var _ = Describe("ConsulStorageClient", func() {
 							w.Run(stop, errs)
 						}()
 						input1 := &v1.Role{
-							Name:            "myrole1",
-							VirtualServices: []string{"foo"},
+							Name: "myrole1", Listeners: []*v1.Listener{
+								{Name: "foo"},
+							},
 						}
 						input2 := &v1.Role{
-							Name:            "myrole2",
-							VirtualServices: []string{"foo"},
+							Name: "myrole2", Listeners: []*v1.Listener{
+								{Name: "foo"},
+							},
 						}
 						input3 := &v1.Role{
-							Name:            "myrole3",
-							VirtualServices: []string{"foo"},
+							Name: "myrole3", Listeners: []*v1.Listener{
+								{Name: "foo"},
+							},
 						}
 						vs1, err := client.V1().Roles().Create(input1)
 						Expect(err).NotTo(HaveOccurred())

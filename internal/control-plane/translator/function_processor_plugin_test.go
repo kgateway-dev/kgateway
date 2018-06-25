@@ -14,7 +14,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/log"
 )
 
 var _ = Describe("FinalizerPlugin", func() {
@@ -55,7 +54,6 @@ var _ = Describe("FinalizerPlugin", func() {
 		err := finalizerPlugin.ProcessUpstream(params, in, &out)
 		pp.Fprintln(GinkgoWriter, out)
 		Expect(err).NotTo(HaveOccurred())
-		log.Printf("%v", out)
 		Expect(out.Metadata).To(Equal(&envoycore.Metadata{
 			FilterMetadata: map[string]*types.Struct{
 				"io.solo.function_router": {
