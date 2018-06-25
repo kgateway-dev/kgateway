@@ -27,7 +27,7 @@ type Upstream struct {
 	// Name of the upstream. Names must be unique and follow the following syntax rules:
 	// One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Type indicates the type of the upstream. Examples include service<!--(TODO)-->, kubernetes<!--(TODO)-->, and [aws](../plugins/aws.md)
+	// Type indicates the type of the upstream. Examples include static<!--(TODO)-->, kubernetes<!--(TODO)-->, and [aws](../plugins/aws.md)
 	// Types are defined by the plugin<!--(TODO)--> associated with them.
 	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	// Connection Timeout tells gloo to set a timeout for unresponsive connections created to this upstream.

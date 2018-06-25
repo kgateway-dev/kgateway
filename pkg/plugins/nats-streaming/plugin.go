@@ -22,7 +22,7 @@ func init() {
 }
 
 type Plugin struct {
-	filters []plugins.StagedFilter
+	filters []plugins.StagedHttpFilter
 }
 
 const (
@@ -60,7 +60,7 @@ func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params *plugins.FilterPluginParams) []plugins.StagedFilter {
+func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
 	filters := p.filters
 	p.filters = nil
 	return filters
@@ -92,7 +92,7 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 	common.InitFilterMetadataField(filterName, ClusterId, out.Metadata).Kind = &types.Value_StringValue{StringValue: cid}
 	common.InitFilterMetadataField(filterName, DiscoverPrefix, out.Metadata).Kind = &types.Value_StringValue{StringValue: dp}
 
-	p.filters = append(p.filters, plugins.StagedFilter{HttpFilter: &envoyhttp.HttpFilter{Name: filterName, Config: natsConfig(out.Name)}, Stage: pluginStage})
+	p.filters = append(p.filters, plugins.StagedHttpFilter{HttpFilter: &envoyhttp.HttpFilter{Name: filterName, Config: natsConfig(out.Name)}, Stage: pluginStage})
 
 	return nil
 }

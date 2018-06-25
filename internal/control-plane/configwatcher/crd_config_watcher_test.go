@@ -118,8 +118,6 @@ var _ = Describe("KubeConfigWatcher", func() {
 			case cfg := <-watcher.Config():
 				Expect(len(cfg.Roles)).To(Equal(1))
 				Expect(cfg.Roles[0]).To(Equal(created))
-				Expect(len(cfg.Roles[0].VirtualServices)).To(Equal(1))
-				Expect(cfg.Roles[0].VirtualServices[0]).To(Equal(created.VirtualServices[0]))
 			case err := <-watcher.Error():
 				Expect(err).NotTo(HaveOccurred())
 			}
