@@ -25,12 +25,12 @@ message InboundListenerConfig {
     // configuration for tls-based auth filter
     AuthConfig auth_config = 1;
 
-    // the name of the local upstream being proxied
-    // the service being proxied must be reachable by Envoy via 'localhost'
-    string local_upstream_name = 2;
+    // the address of the local upstream being proxied
+    // the service being proxied must be reachable by Envoy
+    string local_service_address = 2;
 
-    // the port the local service is listening on
-    uint32 local_service_port = 3;
+    // the name of the local consul service being proxied
+    string local_service_name = 3;
 }
 
 // AuthConfig contains information necessary to

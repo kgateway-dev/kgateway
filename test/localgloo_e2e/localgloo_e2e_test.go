@@ -28,7 +28,11 @@ var (
 			SecurePort:  uint32(xdsPort + 1),
 		},
 	}
-	upstreamDiscoveryOpts upstreamdiscbootstrap.Options
+	upstreamDiscoveryOpts  = upstreamdiscbootstrap.Options{
+		UpstreamDiscoveryOptions: upstreamdiscbootstrap.UpstreamDiscoveryOptions{
+			EnableDiscoveryForConsul: true,
+		},
+	}
 	functionDiscoveryOpts = functiondiscoveryopts.DiscoveryOptions{
 		//AutoDiscoverSwagger:   true,
 		//AutoDiscoverNATS:      true,

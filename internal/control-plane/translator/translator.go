@@ -203,7 +203,7 @@ func deduplicateClusters(clusters []*envoyapi.Cluster) []*envoyapi.Cluster {
 	return deduped
 }
 
-func deduplicateEndpoints(endpoints []*envoyapi.ClusterLoadAssignment) []*envoyapi.ClusterLoadAssignment{
+func deduplicateEndpoints(endpoints []*envoyapi.ClusterLoadAssignment) []*envoyapi.ClusterLoadAssignment {
 	mapped := make(map[string]bool)
 	var deduped []*envoyapi.ClusterLoadAssignment
 	for _, ep := range endpoints {

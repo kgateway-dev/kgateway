@@ -2,6 +2,8 @@ package connect
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -21,7 +23,7 @@ import (
 
 // this is the key the plugin will search for in the listener config
 const (
-	pluginName = "connect.gloo.solo.io"
+	PluginName = "connect.gloo.solo.io"
 	filterName = "io.solo.filters.network.client_certificate_restriction"
 )
 
@@ -49,7 +51,7 @@ func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
 func (p *Plugin) ListenerFilters(params *plugins.ListenerFilterPluginParams, in *v1.Listener) ([]plugins.StagedListenerFilter, error) {
 	cfg, err := DecodeListenerConfig(in.Config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%v: invalid listener config for listener %v", pluginName, in.Name)
+		return nil, errors.Wrapf(err, "%v: invalid listener config for listener %v", PluginName, in.Name)
 	}
 	if cfg == nil {
 		return nil, nil
@@ -60,33 +62,46 @@ func (p *Plugin) ListenerFilters(params *plugins.ListenerFilterPluginParams, in 
 	case *ListenerConfig_Outbound:
 		return p.outboundListenerFilters(params, in, listenerType.Outbound)
 	}
-	return nil, errors.Wrapf(err, "%v: unknown config type for listener %v", pluginName, in.Name)
+	return nil, errors.Wrapf(err, "%v: unknown config type for listener %v", PluginName, in.Name)
 }
 
 func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginParams, listener *v1.Listener, cfg *InboundListenerConfig) ([]plugins.StagedListenerFilter, error) {
 	if err := validateAuthConfig(cfg.AuthConfig); err != nil {
 		return nil, err
 	}
-	if cfg.LocalServicePort == 0 {
-		return nil, errors.Errorf("must define local_service_port")
+	if cfg.LocalServiceAddress == "" {
+		return nil, errors.Errorf("must define local_service_address")
 	}
-	if cfg.LocalUpstreamName == "" {
-		return nil, errors.Errorf("must define local_upstream_name")
-	}
-	if err := validateListener(listener, cfg.LocalUpstreamName, params.Config.VirtualServices); err != nil {
+
+	localUpstream, err := findUpstreamForService(params.Config.Upstreams, cfg.LocalServiceName)
+	if err != nil {
 		return nil, err
 	}
+	if err := validateListener(listener, localUpstream.Name, params.Config.VirtualServices); err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(cfg.LocalServiceAddress, ":")
+	addr := parts[0]
+	port := uint32(80)
+	if len(parts) == 2 {
+		p, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, err
+		}
+		port = uint32(p)
+	}
 	localServiceCluster := &envoyapi.Cluster{
-		Name: fmt.Sprintf("local-service-%v-%v", cfg.LocalUpstreamName, cfg.LocalServicePort),
+		Name: fmt.Sprintf("local-service-%v-%v", localUpstream.Name, cfg.LocalServiceAddress),
 		Type: envoyapi.Cluster_STRICT_DNS,
 		Hosts: []*envoycore.Address{
 			{
 				Address: &envoycore.Address_SocketAddress{
 					SocketAddress: &envoycore.SocketAddress{
 						Protocol: envoycore.TCP,
-						Address:  "localhost",
+						Address:  addr,
 						PortSpecifier: &envoycore.SocketAddress_PortValue{
-							PortValue: cfg.LocalServicePort,
+							PortValue: port,
 						},
 					},
 				},
@@ -273,11 +288,25 @@ func createAuthFilter(authClusterName string, auth *AuthConfig) envoylistener.Fi
 	}
 }
 
+func SetListenerConfig(listener *v1.Listener, config *ListenerConfig) {
+	protoStruct := EncodeListenerConfig(config)
+	if listener.Config == nil {
+		listener.Config = &types.Struct{
+			Fields: make(map[string]*types.Value),
+		}
+	}
+	listener.Config.Fields[PluginName] = &types.Value{
+		Kind: &types.Value_StructValue{
+			StructValue: protoStruct,
+		},
+	}
+}
+
 func EncodeListenerConfig(config *ListenerConfig) *types.Struct {
 	if config == nil {
 		return nil
 	}
-	s, err := protoutil.MarshalStruct(config)
+	s, err := util.MessageToStruct(config)
 	if err != nil {
 		panic("failed to encode listener config: " + err.Error())
 	}
@@ -288,12 +317,12 @@ func DecodeListenerConfig(config *types.Struct) (*ListenerConfig, error) {
 	if config == nil {
 		return nil, nil
 	}
-	pluginConfig, ok := config.Fields[pluginName]
+	pluginConfig, ok := config.Fields[PluginName]
 	if !ok {
 		return nil, nil
 	}
 	cfg := new(ListenerConfig)
-	if err := protoutil.UnmarshalValue(pluginConfig, cfg); err != nil {
+	if err := util.StructToMessage(pluginConfig.Kind.(*types.Value_StructValue).StructValue, cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil

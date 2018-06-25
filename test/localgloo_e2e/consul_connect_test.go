@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 type ConsulService struct {
@@ -97,8 +98,11 @@ var _ = Describe("ConsulConnect", func() {
 			fmt.Sprintf("%v", xdsPort),
 			"--conf-dir",
 			bridgeConfigDir,
-			"--envoypath",
+			"--envoy-path",
 			envoypath,
+			"--storage.type=file",
+			"--storage.refreshrate=1s",
+			"--file.config.dir="+baseOpts.FileOptions.ConfigDir,
 		}
 		svc := ConsulService{
 			Service: Service{
@@ -111,8 +115,8 @@ var _ = Describe("ConsulConnect", func() {
 						Config: Config{
 							Upstreams: []Upstream{
 								{
-									DestinationName: "redis",
-									LocalBindPort: 1234,
+									DestinationName: "consul",
+									LocalBindPort: 8500,
 								},
 							},
 						},
@@ -148,6 +152,7 @@ var _ = Describe("ConsulConnect", func() {
 	}
 
 	It("should start envoy", func() {
+		log.Printf("test config dir: %v", baseOpts.FileOptions.ConfigDir)
 		runConsul()
 		time.Sleep(1 * time.Second)
 		Expect(consulSession).ShouldNot(gexec.Exit())
