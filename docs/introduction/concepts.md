@@ -86,7 +86,7 @@ fallback routes (e.g. matching any request for path `/` with a custom 404 page) 
 
 #### Matchers
 
-Matchers currently have two types supported types of requests to match on:
+Matchers currently support two types of requests:
 
 * **Request Matchers** match on properties of HTTP requests. This includes the request path (`:path` header in HTTP 2.0),
 method (`:method` in HTTP 2.0) headers (their keys and optionally their values), and query parameters.

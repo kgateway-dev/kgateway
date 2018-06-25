@@ -51,8 +51,7 @@ updates and responding immediately with v2 gRPC updates to Envoy.
 Endpoint Discovery is plugin-specific. For example, the Kubernetes Plugin<!--(TODO)--> runs its own Endpoint Discovery goroutine.
 * The **Translator** receives notifications from the 3 different classes of watchers and initiates a new *translation cycle*,
 creating a new Envoy xDS Snapshot.
-    1. The translation cycle starts by creating **[Envoy clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster)** f
-    rom all configured upstreams. Each upstream has a **type**,
+    1. The translation cycle starts by creating **[Envoy clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster)** from all configured upstreams. Each upstream has a **type**,
     indicating which upstream plugin<!--(TODO)--> is responsible for processing that upstream object. Correctly configured upstreams are 
     converted into Envoy clusters by their respective plugins. Plugins may set cluster metadata on the cluster object.
     1. The next step in the translation cycle is to process all the functions on each upstream. Functional plugins<!--(TODO)--> process
@@ -89,7 +88,7 @@ gloo with upstreams and functions to simplify routing for users and self-service
 Discovery services act as automated Gloo clients, automatically populating the storage layer with upstreams and functions
 to facilitate easy routing for users.
 
-Discovery is optional, but when enabled, will attempt to discover available upsrteams and functions.
+Discovery is optional, but when enabled, will attempt to discover available upstreams and functions.
 
 Currently supported:
 
