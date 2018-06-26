@@ -71,14 +71,20 @@ var _ = Describe("ConsulConnect", func() {
 	var pathToGlooBridge string
 
 	BeforeEach(func() {
-		pathToGlooBridge, err = gexec.Build("github.com/solo-io/gloo-consul-bridge/cmd")
+
+		bridge := filepath.Join(os.Getenv("GOPATH"), "src", "github.com/solo-io/gloo-connect/cmd")
+		_, err := os.Stat(bridge)
+		if os.IsNotExist(err) {
+			Skip("no bridge available skipping test")
+		}
+
+		pathToGlooBridge, err = gexec.Build("github.com/solo-io/gloo-connect/cmd")
 		Expect(err).ShouldNot(HaveOccurred())
 
 		envoypath := os.Getenv("ENVOY_PATH")
 		Expect(envoypath).ToNot(BeEmpty())
 		// generate the template
 
-		var err error
 		tmpdir, err = ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -102,7 +108,7 @@ var _ = Describe("ConsulConnect", func() {
 			envoypath,
 			"--storage.type=file",
 			"--storage.refreshrate=1s",
-			"--file.config.dir="+baseOpts.FileOptions.ConfigDir,
+			"--file.config.dir=" + baseOpts.FileOptions.ConfigDir,
 		}
 		svc := ConsulService{
 			Service: Service{
@@ -111,12 +117,12 @@ var _ = Describe("ConsulConnect", func() {
 				Connect: Connect{
 					Proxy: Proxy{
 						ExecMode: "daemon",
-						Command: args,
+						Command:  args,
 						Config: Config{
 							Upstreams: []Upstream{
 								{
 									DestinationName: "consul",
-									LocalBindPort: 1234,
+									LocalBindPort:   1234,
 								},
 							},
 						},
@@ -127,7 +133,6 @@ var _ = Describe("ConsulConnect", func() {
 
 		data, err := json.Marshal(svc)
 		Expect(err).NotTo(HaveOccurred())
-
 
 		err = ioutil.WriteFile(filepath.Join(consulConfigDir, "service.json"), data, 0644)
 		Expect(err).NotTo(HaveOccurred())
