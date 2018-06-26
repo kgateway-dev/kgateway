@@ -9,10 +9,9 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
-	"github.com/solo-io/gloo/pkg/plugins"
-
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins"
 )
 
 func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *envoyapi.Listener {
@@ -20,7 +19,7 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 
 	listenerFilters := t.computeListenerFilters(role, listener, inputs, cfgErrs)
 
-	filterChains := createListenerFilterChains(role, inputs, listener, listenerFilters, cfgErrs)
+	filterChains := createListenerFilterChains(inputs, listener, listenerFilters, cfgErrs)
 
 	return &envoyapi.Listener{
 		Name: listener.Name,
@@ -42,7 +41,7 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // plus one if there's an insecure one
-func createListenerFilterChains(role *v1.Role, inputs *snapshot.Cache, listener *v1.Listener, listenerFilters []envoylistener.Filter, cfgErrs configErrors) []envoylistener.FilterChain {
+func createListenerFilterChains(inputs *snapshot.Cache, listener *v1.Listener, listenerFilters []envoylistener.Filter, cfgErrs configErrors) []envoylistener.FilterChain {
 	// no filters = no filter chains
 	// TODO(ilackarms): find another way to prevent the xds server from serving listeners with 0 filters
 	// currently the translator does not add listeners with 0 filters to the xds snapshot
@@ -55,37 +54,59 @@ func createListenerFilterChains(role *v1.Role, inputs *snapshot.Cache, listener 
 	var addInsecureFilterChain bool
 	var filterChains []envoylistener.FilterChain
 	for _, virtualService := range inputs.Cfg.VirtualServices {
-		if virtualService.SslConfig == nil || virtualService.SslConfig.SecretRef == "" {
+		if virtualService.SslConfig == nil || virtualService.SslConfig.SslSecrets == nil {
 			addInsecureFilterChain = true
 			continue
 		}
-		ref := virtualService.SslConfig.SecretRef
-		certChain, privateKey, err := getSslSecrets(ref, inputs.Secrets)
-		if err != nil {
-			log.Warnf("skipping ssl vService with invalid secrets: %v", virtualService.Name)
-			continue
+		var filterChain envoylistener.FilterChain
+		// TODO(ilackarms): un-copypaste this bit
+		switch sslSecrets := virtualService.SslConfig.SslSecrets.(type) {
+		case *v1.SSLConfig_SecretRef:
+			ref := sslSecrets.SecretRef
+			certChain, privateKey, rootCa, err := getSslSecrets(ref, inputs.Secrets)
+			if err != nil {
+				log.Warnf("skipping ssl vService with invalid secrets: %v", virtualService.Name)
+				continue
+			}
+			domains := virtualService.SslConfig.SniDomains
+			if len(domains) == 0 {
+				domains = virtualService.Domains
+			}
+			filterChain = newSslFilterChain(certChain, privateKey, rootCa, true, domains, listenerFilters)
+		case *v1.SSLConfig_SslFiles:
+			certChain, privateKey, rootCa := sslSecrets.SslFiles.TlsCert, sslSecrets.SslFiles.TlsKey, sslSecrets.SslFiles.RootCa
+			domains := virtualService.SslConfig.SniDomains
+			if len(domains) == 0 {
+				domains = virtualService.Domains
+			}
+			filterChain = newSslFilterChain(certChain, privateKey, rootCa, false, domains, listenerFilters)
 		}
-		domains := virtualService.SslConfig.SniDomains
-		if len(domains) == 0 {
-			domains = virtualService.Domains
-		}
-		filterChain := newSslFilterChain(certChain, privateKey, domains, listenerFilters)
 		filterChains = append(filterChains, filterChain)
 	}
 
 	if listener.SslConfig != nil {
-		ref := listener.SslConfig.SecretRef
-		certChain, privateKey, err := getSslSecrets(ref, inputs.Secrets)
-		if err != nil {
-			cfgErrs.addError(role, errors.Wrapf(err, "listener %v has invalid secret", listener.Name))
+		var filterChain envoylistener.FilterChain
+		switch sslSecrets := listener.SslConfig.SslSecrets.(type) {
+		case *v1.SSLConfig_SecretRef:
+			ref := sslSecrets.SecretRef
+			certChain, privateKey, rootCa, err := getSslSecrets(ref, inputs.Secrets)
+			if err != nil {
+				log.Warnf("skipping ssl listener with invalid secrets: %v", listener.Name)
+			} else {
+				domains := listener.SslConfig.SniDomains
+				filterChain = newSslFilterChain(certChain, privateKey, rootCa, true, domains, listenerFilters)
+			}
+		case *v1.SSLConfig_SslFiles:
+			certChain, privateKey, rootCa := sslSecrets.SslFiles.TlsCert, sslSecrets.SslFiles.TlsKey, sslSecrets.SslFiles.RootCa
+			domains := listener.SslConfig.SniDomains
+			filterChain = newSslFilterChain(certChain, privateKey, rootCa, false, domains, listenerFilters)
 		}
-		filterChain := newSslFilterChain(certChain, privateKey, listener.SslConfig.SniDomains, listenerFilters)
 		filterChains = append(filterChains, filterChain)
 	}
 
 	// if 0 virtualservices are defined and no ssl config is provided for the listener
 	// create a filter chain with no tls
-	if addInsecureFilterChain || len(filterChains) == 0{
+	if addInsecureFilterChain || len(filterChains) == 0 {
 		filterChains = append(filterChains, envoylistener.FilterChain{
 			Filters: listenerFilters,
 		})
@@ -107,11 +128,49 @@ func validateListenerPorts(role *v1.Role, cfgErrs configErrors) {
 	}
 }
 
-func newSslFilterChain(certChain, privateKey string, sniDomains []string, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
+func newSslFilterChain(certChain, privateKey, rootCa string, inline bool, sniDomains []string, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
+	var certChainData, privateKeyData, rootCaData *envoycore.DataSource
+	if !inline {
+		certChainData = &envoycore.DataSource{
+			Specifier: &envoycore.DataSource_Filename{
+				Filename: certChain,
+			},
+		}
+		privateKeyData = &envoycore.DataSource{
+			Specifier: &envoycore.DataSource_Filename{
+				Filename: privateKey,
+			},
+		}
+		rootCaData = &envoycore.DataSource{
+			Specifier: &envoycore.DataSource_Filename{
+				Filename: rootCa,
+			},
+		}
+	} else {
+		certChainData = &envoycore.DataSource{
+			Specifier: &envoycore.DataSource_InlineString{
+				InlineString: certChain,
+			},
+		}
+		privateKeyData = &envoycore.DataSource{
+			Specifier: &envoycore.DataSource_InlineString{
+				InlineString: privateKey,
+			},
+		}
+		rootCaData = &envoycore.DataSource{
+			Specifier: &envoycore.DataSource_InlineString{
+				InlineString: rootCa,
+			},
+		}
+	}
+	var validationContext *envoyauth.CertificateValidationContext
+	if rootCa != "" && false {
+		validationContext = &envoyauth.CertificateValidationContext{
+			TrustedCa: rootCaData,
+		}
+	}
+
 	return envoylistener.FilterChain{
-		FilterChainMatch: &envoylistener.FilterChainMatch{
-			SniDomains: sniDomains,
-		},
 		Filters: listenerFilters,
 		TlsContext: &envoyauth.DownstreamTlsContext{
 			CommonTlsContext: &envoyauth.CommonTlsContext{
@@ -120,18 +179,11 @@ func newSslFilterChain(certChain, privateKey string, sniDomains []string, listen
 				// TODO: configure client certificates
 				TlsCertificates: []*envoyauth.TlsCertificate{
 					{
-						CertificateChain: &envoycore.DataSource{
-							Specifier: &envoycore.DataSource_InlineString{
-								InlineString: certChain,
-							},
-						},
-						PrivateKey: &envoycore.DataSource{
-							Specifier: &envoycore.DataSource_InlineString{
-								InlineString: privateKey,
-							},
-						},
+						CertificateChain: certChainData,
+						PrivateKey:       privateKeyData,
 					},
 				},
+				ValidationContext: validationContext,
 			},
 		},
 	}
@@ -164,7 +216,7 @@ func (t *Translator) computeListenerFilters(role *v1.Role, listener *v1.Listener
 		httpConnMgr := t.computeHttpConnectionManager(rdsName)
 		listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
 			ListenerFilter: httpConnMgr,
-			Stage: plugins.PostInAuth,
+			Stage:          plugins.PostInAuth,
 		})
 	}
 

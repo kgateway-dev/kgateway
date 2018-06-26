@@ -357,7 +357,7 @@ var _ = Describe("KubeIngressController", func() {
 					for _, host := range tls.Hosts {
 						vService := expectedVirtualServices[host]
 						vService.SslConfig = &v1.SSLConfig{
-							SecretRef: tls.SecretName,
+							SslSecrets: &v1.SSLConfig_SecretRef{SecretRef:tls.SecretName},
 						}
 						expectedVirtualServices[host] = vService
 					}

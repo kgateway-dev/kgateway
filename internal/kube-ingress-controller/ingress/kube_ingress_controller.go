@@ -172,10 +172,12 @@ func (c *IngressController) generateDesiredResources() ([]*v1.Upstream, []*v1.Vi
 		// configure ssl for each host
 		for _, tls := range ingress.Spec.TLS {
 			if len(tls.Hosts) == 0 {
-				sslsByHostName[defaultVirtualService] = &v1.SSLConfig{SecretRef: tls.SecretName}
+				sslsByHostName[defaultVirtualService] = &v1.SSLConfig{
+					SslSecrets: &v1.SSLConfig_SecretRef{SecretRef: tls.SecretName},
+				}
 			}
 			for _, host := range tls.Hosts {
-				sslsByHostName[host] = &v1.SSLConfig{SecretRef: tls.SecretName}
+				sslsByHostName[host] = &v1.SSLConfig{SslSecrets: &v1.SSLConfig_SecretRef{SecretRef: tls.SecretName}}
 			}
 		}
 		// default virtualservice

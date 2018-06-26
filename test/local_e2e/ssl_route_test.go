@@ -67,7 +67,7 @@ var _ = Describe("SSL Route", func() {
 				},
 			}},
 			SslConfig: &v1.SSLConfig{
-				SecretRef: secretName,
+				SslSecrets: &v1.SSLConfig_SecretRef{SecretRef: secretName},
 			},
 		}
 

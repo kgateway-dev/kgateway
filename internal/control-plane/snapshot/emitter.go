@@ -70,8 +70,12 @@ func (e *Emitter) Run(stop <-chan struct{}) {
 			}
 			// secrets for virtual services
 			for _, vService := range cfg.VirtualServices {
-				if vService.SslConfig != nil && vService.SslConfig.SecretRef != "" {
-					secretRefs = append(secretRefs, vService.SslConfig.SecretRef)
+				if vService.SslConfig != nil && vService.SslConfig.SslSecrets != nil {
+					secretRef, ok := vService.SslConfig.SslSecrets.(*v1.SSLConfig_SecretRef)
+					if !ok {
+						panic("ssl files are not currenty supported for vservices")
+					}
+					secretRefs = append(secretRefs, secretRef.SecretRef)
 				}
 			}
 			go e.secretWatcher.TrackSecrets(secretRefs)

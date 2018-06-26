@@ -136,7 +136,7 @@ func ValidConfig() *v1.Config {
 				},
 			},
 			SslConfig: &v1.SSLConfig{
-				SecretRef: "ssl-secret-ref",
+				SslSecrets: &v1.SSLConfig_SecretRef{SecretRef: "ssl-secret-ref"},
 			},
 		},
 		{

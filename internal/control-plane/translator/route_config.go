@@ -185,10 +185,10 @@ func stringInSlice(slice []string, s string) bool {
 }
 
 func validateVirtualServiceSSLConfig(virtualService *v1.VirtualService, secrets secretwatcher.SecretMap) error {
-	if virtualService.SslConfig == nil || virtualService.SslConfig.SecretRef == "" {
+	if virtualService.SslConfig == nil || virtualService.SslConfig.SslSecrets == nil {
 		return nil
 	}
-	_, _, err := getSslSecrets(virtualService.SslConfig.SecretRef, secrets)
+	_, _, _, err := getSslSecrets(virtualService.SslConfig.SslSecrets.(*v1.SSLConfig_SecretRef).SecretRef, secrets)
 	return err
 }
 
@@ -197,18 +197,19 @@ const (
 	deprecatedSslCertificateChainKey = "ca_chain"
 	sslPrivateKeyKey                 = "tls.key"
 	deprecatedSslPrivateKeyKey       = "private_key"
+	sslRootCaKey                     = "tls.root"
 )
 
-func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string, error) {
+func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string, string, error) {
 	sslSecrets, ok := secrets[ref]
 	if !ok {
-		return "", "", errors.Errorf("ssl secret not found for ref %v", ref)
+		return "", "","", errors.Errorf("ssl secret not found for ref %v", ref)
 	}
 	certChain, ok := sslSecrets.Data[sslCertificateChainKey]
 	if !ok {
 		certChain, ok = sslSecrets.Data[deprecatedSslCertificateChainKey]
 		if !ok {
-			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslCertificateChainKey, deprecatedSslCertificateChainKey)
+			return "", "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslCertificateChainKey, deprecatedSslCertificateChainKey)
 		}
 	}
 
@@ -216,8 +217,10 @@ func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string,
 	if !ok {
 		privateKey, ok = sslSecrets.Data[deprecatedSslPrivateKeyKey]
 		if !ok {
-			return "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslPrivateKeyKey, deprecatedSslPrivateKeyKey)
+			return "", "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslPrivateKeyKey, deprecatedSslPrivateKeyKey)
 		}
 	}
-	return certChain, privateKey, nil
+
+	rootCa := sslSecrets.Data[sslRootCaKey]
+	return certChain, privateKey, rootCa, nil
 }

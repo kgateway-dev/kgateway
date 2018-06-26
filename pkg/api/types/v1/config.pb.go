@@ -30,6 +30,7 @@ It has these top-level messages:
 	FunctionDestination
 	UpstreamDestination
 	SSLConfig
+	SSLFiles
 */
 package v1
 
