@@ -4,4 +4,5 @@ bazel test  -c dbg \
     @aws_lambda//test/... \
     @nats_streaming_filter//test/... \
     @azure_functions_filter//test/... \
+    @consul_connect//test/... \
     @google_functions//test/...

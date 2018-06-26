@@ -31,7 +31,7 @@ var (
 	defaultTimeout = time.Second * 30
 )
 
-//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/ --gogo_out=${GOPATH}/src/ envoy/api/envoy/config/filter/network/client_certificate_restriction/v2/client_certificate_restriction.proto
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/ --gogo_out=${GOPATH}/src/ envoy/api/envoy/config/filter/network/consul_connect/v2/consul_connect.proto
 //go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/ --gogo_out=${GOPATH}/src/ listener_config.proto
 
 func init() {
@@ -109,7 +109,7 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 			},
 		},
 		DnsLookupFamily: envoyapi.Cluster_V4_ONLY,
-		ConnectTimeout: time.Second * 15,
+		ConnectTimeout:  time.Second * 15,
 	}
 	consulAgentCluster := &envoyapi.Cluster{
 		Name: fmt.Sprintf("local-consul-agent"),
@@ -128,7 +128,7 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 			},
 		},
 		DnsLookupFamily: envoyapi.Cluster_V4_ONLY,
-		ConnectTimeout: time.Second * 15,
+		ConnectTimeout:  time.Second * 15,
 	}
 	generatedClusters := []*envoyapi.Cluster{
 		localServiceCluster,
@@ -136,8 +136,8 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 	}
 	p.clustersToGenerate = append(p.clustersToGenerate, generatedClusters...)
 	inboundTcpProxy, err := protoutil.MarshalStruct(&envoytcpproxy.TcpProxy{
-		StatPrefix: "inbound-tcp-proxy-"+localServiceCluster.Name,
-		Cluster: localServiceCluster.Name,
+		StatPrefix: "inbound-tcp-proxy-" + localServiceCluster.Name,
+		Cluster:    localServiceCluster.Name,
 	})
 	if err != nil {
 		panic("unexpected error marsahlling filter config: " + err.Error())
@@ -170,8 +170,8 @@ func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginPar
 		return nil, err
 	}
 	tcpProxyFilterConfig := &envoytcpproxy.TcpProxy{
-		StatPrefix: "outbound-tcp-proxy-"+destinationUpstream.Name,
-		Cluster: params.EnvoyNameForUpstream(destinationUpstream.Name),
+		StatPrefix: "outbound-tcp-proxy-" + destinationUpstream.Name,
+		Cluster:    params.EnvoyNameForUpstream(destinationUpstream.Name),
 	}
 	tcpProxyFilterConfigStruct, err := protoutil.MarshalStruct(tcpProxyFilterConfig)
 	if err != nil {

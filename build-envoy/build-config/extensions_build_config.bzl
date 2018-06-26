@@ -93,10 +93,11 @@ EXTENSIONS = {
 
 
     # solo stuff
-    "io.solo.filters.http.transformation":                  "@transformation_filter//:filter_lib",
+    "io.solo.filters.http.transformation":              "@transformation_filter//:filter_lib",
     "io.solo.filters.http.aws_lambda":                  "@aws_lambda//:filter_lib",
-    "io.solo.filters.http.nats_streaming":                  "@nats_streaming_filter//:filter_lib",
-    "io.solo.filters.http.google_function":                  "@google_functions//:filter_lib",
-    "io.solo.filters.http.azure_function":                  "@azure_functions_filter//:filter_lib",
+    "io.solo.filters.http.nats_streaming":              "@nats_streaming_filter//:filter_lib",
+    "io.solo.filters.http.google_function":             "@google_functions//:filter_lib",
+    "io.solo.filters.http.azure_function":              "@azure_functions_filter//:filter_lib",
+    "io.solo.filters.network.consul_connect_filter":    "@consul_connect_filter//source/extensions/filters/network/consul_connect:config",
 
 }

@@ -41,6 +41,10 @@ local_repository(
     path = "../pkg/plugins/google/envoy",
 )
 
+local_repository(
+    name = "consul_connect_filter",
+    path = "../pkg/plugins/connect/envoy",
+)
 
 JSON_SHA = "c8ea63a31bbcf652d61490b0ccd86771538f8c6b"
 
