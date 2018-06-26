@@ -10,6 +10,7 @@
   - [FunctionDestination](#gloo.api.v1.FunctionDestination)
   - [UpstreamDestination](#gloo.api.v1.UpstreamDestination)
   - [SSLConfig](#gloo.api.v1.SSLConfig)
+  - [SSLFiles](#gloo.api.v1.SSLFiles)
 
 
 
@@ -34,8 +35,8 @@ name: string
 domains: [string]
 routes: [{Route}]
 ssl_config: {SSLConfig}
+disable_for_gateways: bool
 status: (read only)
-roles: [string]
 metadata: {Metadata}
 
 ```
@@ -45,8 +46,8 @@ metadata: {Metadata}
 | domains | string | repeated | Domains represent the list of domains (host/authority header) that will match for all routes on this virtual service. As in Envoy: wildcard hosts are supported in the form of “*.foo.com” or “*-bar.foo.com”. If domains is empty, gloo will set the domain to &#34;*&#34;, making that virtual service the &#34;default&#34; virtualservice. The default virtualservice will be the fallback virtual service for all requests that do not match a domain on an existing virtual service. Only one default virtual service can be defined (either with an empty domain list, or a domain list that includes &#34;*&#34;) |
 | routes | [Route](virtualservice.md#gloo.api.v1.Route) | repeated | Routes define the list of [routes](../) that live on this virtual service. |
 | ssl_config | [SSLConfig](virtualservice.md#gloo.api.v1.SSLConfig) |  | SSL Config is optional for the virtual service. If provided, the virtual service will listen on the envoy HTTPS listener port (default :8443) If left empty, the virtual service will listen on the HTTP listener port (default :8080) |
+| disable_for_gateways | bool |  | indicates whether or not this virtual service should be assigned to gateway roles automatically TODO: eventually this flag will be deprecated; gateway roles will have to explicitly state the virtual services they have access to. |
 | status | [Status](status.md#gloo.api.v1.Status) |  | Status indicates the validation status of the virtual service resource. Status is read-only by clients, and set by gloo during validation |
-| roles | string | repeated | defines one or more roles this virtual service will be defined for role maps a virtual service to a group of proxies if left empty, Gloo will treat the role as a role for the ingress |
 | metadata | [Metadata](metadata.md#gloo.api.v1.Metadata) |  | Metadata contains the resource metadata for the virtual service |
 
 
@@ -219,16 +220,43 @@ name: string
 <a name="gloo.api.v1.SSLConfig"></a>
 
 ### SSLConfig
-SSLConfig contains the options necessary to configure a virtualservice to use TLS
+SSLConfig contains the options necessary to configure a virtualservice or listener to use TLS
 
 
 ```yaml
 secret_ref: string
+ssl_files: {SSLFiles}
+sni_domains: [string]
 
 ```
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| secret_ref | string |  | SecretRef contains the secret ref&lt;!--(TODO)--&gt; to a gloo secret&lt;!--(TODO)--&gt; containing the following structure: { &#34;ca_chain&#34;: &lt;ca chain data...&gt;, &#34;private key&#34;: &lt;private key data...&gt; } |
+| secret_ref | string |  | SecretRef contains the secret ref to a gloo secret containing the following structure: { &#34;tls.crt&#34;: &lt;ca chain data...&gt;, &#34;tls.key&#34;: &lt;private key data...&gt; } |
+| ssl_files | [SSLFiles](virtualservice.md#gloo.api.v1.SSLFiles) |  | SSLFiles reference paths to certificates which are local to the proxy |
+| sni_domains | string | repeated | optional. the SNI domains that should be considered for TLS connections |
+
+
+
+
+
+
+<a name="gloo.api.v1.SSLFiles"></a>
+
+### SSLFiles
+SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
+
+
+```yaml
+tls_cert: string
+tls_key: string
+root_ca: string
+
+```
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tls_cert | string |  |  |
+| tls_key | string |  |  |
+| root_ca | string |  | for client cert validation. optional |
 
 
 
