@@ -24,7 +24,7 @@ import (
 // this is the key the plugin will search for in the listener config
 const (
 	PluginName = "connect.gloo.solo.io"
-	filterName = "io.solo.filters.network.client_certificate_restriction"
+	filterName = "io.solo.filters.network.consul_connect"
 )
 
 var (
@@ -108,6 +108,7 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 			},
 		},
 		DnsLookupFamily: envoyapi.Cluster_V4_ONLY,
+		ConnectTimeout: time.Second * 15,
 	}
 	consulAgentCluster := &envoyapi.Cluster{
 		Name: fmt.Sprintf("local-consul-agent"),
@@ -126,6 +127,7 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 			},
 		},
 		DnsLookupFamily: envoyapi.Cluster_V4_ONLY,
+		ConnectTimeout: time.Second * 15,
 	}
 	generatedClusters := []*envoyapi.Cluster{
 		localServiceCluster,
@@ -133,6 +135,7 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 	}
 	p.clustersToGenerate = append(p.clustersToGenerate, generatedClusters...)
 	inboundTcpProxy, err := protoutil.MarshalStruct(&envoytcpproxy.TcpProxy{
+		StatPrefix: "inbound-tcp-proxy-"+localServiceCluster.Name,
 		Cluster: localServiceCluster.Name,
 	})
 	if err != nil {
@@ -166,6 +169,7 @@ func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginPar
 		return nil, err
 	}
 	tcpProxyFilterConfig := &envoytcpproxy.TcpProxy{
+		StatPrefix: "outbound-tcp-proxy-"+destinationUpstream.Name,
 		Cluster: params.EnvoyNameForUpstream(destinationUpstream.Name),
 	}
 	tcpProxyFilterConfigStruct, err := protoutil.MarshalStruct(tcpProxyFilterConfig)
@@ -278,7 +282,7 @@ func createAuthFilter(authClusterName string, auth *AuthConfig) envoylistener.Fi
 		AuthorizeClusterName: authClusterName,
 		RequestTimeout:       auth.RequestTimeout,
 	}
-	filterConfigStruct, err := protoutil.MarshalStruct(filterConfig)
+	filterConfigStruct, err := util.MessageToStruct(filterConfig)
 	if err != nil {
 		panic("unexpected error marshalling proto to struct: " + err.Error())
 	}

@@ -116,7 +116,7 @@ var _ = Describe("ConsulConnect", func() {
 							Upstreams: []Upstream{
 								{
 									DestinationName: "consul",
-									LocalBindPort: 8500,
+									LocalBindPort: 1234,
 								},
 							},
 						},
