@@ -73,13 +73,14 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 		return nil, errors.Errorf("must define local_service_address")
 	}
 
-	localUpstream, err := findUpstreamForService(params.Config.Upstreams, cfg.LocalServiceName)
-	if err != nil {
-		return nil, err
-	}
-	if err := validateListener(listener, localUpstream.Name, params.Config.VirtualServices); err != nil {
-		return nil, err
-	}
+	// TODO (ilackarms): support virtual service on inbound listener
+	//localUpstream, err := FindUpstreamForService(params.Config.Upstreams, cfg.LocalServiceName)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//if err := validateListener(listener, localUpstream.Name, params.Config.VirtualServices); err != nil {
+	//	return nil, err
+	//}
 
 	parts := strings.Split(cfg.LocalServiceAddress, ":")
 	addr := parts[0]
@@ -92,7 +93,7 @@ func (p *Plugin) inboundListenerFilters(params *plugins.ListenerFilterPluginPara
 		port = uint32(p)
 	}
 	localServiceCluster := &envoyapi.Cluster{
-		Name: fmt.Sprintf("local-service-%v-%v", localUpstream.Name, cfg.LocalServiceAddress),
+		Name: fmt.Sprintf("local-service-%v-%v", cfg.LocalServiceName, cfg.LocalServiceAddress),
 		Type: envoyapi.Cluster_STRICT_DNS,
 		Hosts: []*envoycore.Address{
 			{
@@ -164,7 +165,7 @@ func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginPar
 	if err := validateListener(listener, cfg.DestinationConsulService, params.Config.VirtualServices); err != nil {
 		return nil, err
 	}
-	destinationUpstream, err := findUpstreamForService(params.Config.Upstreams, cfg.DestinationConsulService)
+	destinationUpstream, err := FindUpstreamForService(params.Config.Upstreams, cfg.DestinationConsulService)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +190,8 @@ func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginPar
 }
 
 // TODO (ilackarms): support tags, structured queries, etc.
-func findUpstreamForService(upstreams []*v1.Upstream, serviceName string) (*v1.Upstream, error) {
+// TODO (ilackarms): revert to private when we break the translator dependency
+func FindUpstreamForService(upstreams []*v1.Upstream, serviceName string) (*v1.Upstream, error) {
 	for _, us := range upstreams {
 		if us.Type != consul.UpstreamTypeConsul {
 			continue

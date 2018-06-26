@@ -4,9 +4,9 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
-
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/solo-io/gloo/pkg/plugins/connect"
 )
 
 // trim the snapshot config to contain only what the listener needs to know
@@ -16,6 +16,20 @@ func trimSnapshot(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, 
 		configErrs.addError(role, err)
 	}
 	upstreams := destinationUpstreams(inputs.Cfg.Upstreams, virtualServices)
+
+	tcpDestination := tcpProxyDestinationUpstream(inputs.Cfg.Upstreams, listener)
+	if tcpDestination != nil {
+		var alreadyExists bool
+		for _, us := range upstreams {
+			if us.Name == tcpDestination.Name {
+				alreadyExists = true
+				break
+			}
+		}
+		if !alreadyExists {
+			upstreams = append(upstreams, tcpDestination)
+		}
+	}
 
 	return &snapshot.Cache{
 		Cfg: &v1.Config{
@@ -27,6 +41,21 @@ func trimSnapshot(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, 
 		Secrets:   inputs.Secrets,
 		Files:     inputs.Files,
 	}
+}
+
+func tcpProxyDestinationUpstream(upstreams []*v1.Upstream, listener *v1.Listener) *v1.Upstream {
+	// TODO (ilackarms): we are going to move the tcp proxy logic out of the plugin
+	// remove connect logic here
+	connectConfig, _ := connect.DecodeListenerConfig(listener.Config)
+	if connectConfig == nil {
+		return nil
+	}
+	outbound, isOutbound := connectConfig.Config.(*connect.ListenerConfig_Outbound)
+	if !isOutbound {
+		return nil
+	}
+	us, _ := connect.FindUpstreamForService(upstreams, outbound.Outbound.DestinationConsulService)
+	return us
 }
 
 // filter virtual services for the listener
