@@ -46,9 +46,13 @@ func (c *Cache) Hash() uint64 {
 		}
 		vs.Metadata = nil
 	}
-
-	// role is currently ignored
-	cfgForHashing.Roles = nil
+	for _, role := range cfgForHashing.Roles {
+		role.Status = nil
+		if role.Metadata != nil {
+			role.Metadata.ResourceVersion = ""
+		}
+		role.Metadata = nil
+	}
 
 	h0, err := hashstructure.Hash(*cfgForHashing, nil)
 	if err != nil {
