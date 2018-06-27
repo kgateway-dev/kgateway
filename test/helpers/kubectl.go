@@ -142,7 +142,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	if err := Kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "testing-resources.yml")); err != nil {
 		return errors.Wrapf(err, "creating kube resource from testing-resources.yml")
 	}
-	if err := waitPodsRunning(
+	if err := WaitPodsRunning(
 		testrunner,
 		helloservice,
 		helloservice2,
@@ -156,7 +156,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	if err := Kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "install.yml")); err != nil {
 		return errors.Wrapf(err, "creating kube resource from install.yml")
 	}
-	if err := waitPodsRunning(
+	if err := WaitPodsRunning(
 		envoy,
 		gloo,
 		kubeIngressController,
@@ -231,13 +231,13 @@ func KubectlOutAsync(args ...string) (*bytes.Buffer, chan struct{}, error) {
 	return buf, done, err
 }
 
-// waitPodsRunning waits for all pods to be running
-func waitPodsRunning(podNames ...string) error {
+// WaitPodsRunning waits for all pods to be running
+func WaitPodsRunning(podNames ...string) error {
 	finished := func(output string) bool {
 		return strings.Contains(output, "Running")
 	}
 	for _, pod := range podNames {
-		if err := waitPodStatus(pod, "Running", finished); err != nil {
+		if err := WaitPodStatus(pod, "Running", finished); err != nil {
 			return err
 		}
 	}
@@ -245,12 +245,12 @@ func waitPodsRunning(podNames ...string) error {
 }
 
 // waitPodsTerminated waits for all pods to be terminated
-func waitPodsTerminated(podNames ...string) error {
+func WaitPodsTerminated(podNames ...string) error {
 	for _, pod := range podNames {
 		finished := func(output string) bool {
 			return !strings.Contains(output, pod)
 		}
-		if err := waitPodStatus(pod, "terminated", finished); err != nil {
+		if err := WaitPodStatus(pod, "terminated", finished); err != nil {
 			return err
 		}
 	}
@@ -270,7 +270,7 @@ func TestRunnerAsync(args ...string) (*bytes.Buffer, chan struct{}, error) {
 	return KubectlOutAsync(args...)
 }
 
-func waitPodStatus(pod, status string, finished func(output string) bool) error {
+func WaitPodStatus(pod, status string, finished func(output string) bool) error {
 	timeout := time.Second * 20
 	interval := time.Millisecond * 1000
 	tick := time.Tick(interval)
@@ -308,7 +308,7 @@ func KubeLogs(pod string) string {
 	return out
 }
 
-func waitNamespaceStatus(namespace, status string, finished func(output string) bool) error {
+func WaitNamespaceStatus(namespace, status string, finished func(output string) bool) error {
 	timeout := time.Second * 20
 	interval := time.Millisecond * 1000
 	tick := time.Tick(interval)
