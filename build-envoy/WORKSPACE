@@ -20,7 +20,6 @@ local_repository(
     path = "../pkg/plugins/common/transformation/envoy",
 )
 
-
 local_repository(
     name = "aws_lambda",
     path = "../pkg/plugins/aws/envoy",

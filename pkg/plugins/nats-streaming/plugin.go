@@ -15,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
-//go:generate protoc -I=. -I=${GOPATH}/src/github.com/gogo/protobuf/ --gogo_out=. nats_streaming_filter.proto
+//go:generate protoc --gogo_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:. -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf -I=.  nats_streaming_filter.proto
 
 func init() {
 	plugins.Register(&Plugin{})

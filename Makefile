@@ -27,10 +27,10 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	cd api/v1/ && \
 	mkdir -p $(ROOTDIR)/pkg/api/types/v1 && \
 	protoc \
-	-I=. \
-	-I=$(GOPATH)/src \
+	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:$(GOPATH)/src/ \
 	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
-	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types:$(GOPATH)/src/ \
+	-I=$(GOPATH)/src/github.com/gogo/protobuf/protobuf/ \
+	-I=. \
 	./*.proto
 
 $(OUTPUT_DIR):

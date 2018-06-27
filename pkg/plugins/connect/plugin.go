@@ -31,8 +31,8 @@ var (
 	defaultTimeout = time.Second * 30
 )
 
-//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/ --gogo_out=${GOPATH}/src/ envoy/api/envoy/config/filter/network/consul_connect/v2/consul_connect.proto
-//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/ --gogo_out=${GOPATH}/src/ listener_config.proto
+//go:generate protoc --proto_path=./envoy/api/envoy/config/filter/network/consul_connect/v2/  -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/  -I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/  --gogo_out=import_path=connect,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:. ./envoy/api/envoy/config/filter/network/consul_connect/v2/consul_connect.proto
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ -I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/ --gogo_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:${GOPATH}/src listener_config.proto
 
 func init() {
 	plugins.Register(&Plugin{})
@@ -278,7 +278,7 @@ func createAuthFilter(authClusterName string, auth *AuthConfig) envoylistener.Fi
 	if auth.RequestTimeout == nil || *auth.RequestTimeout == 0 {
 		auth.RequestTimeout = &defaultTimeout
 	}
-	filterConfig := &ClientCertificateRestriction{
+	filterConfig := &ConsulConnect{
 		Target:               auth.Target,
 		AuthorizeHostname:    auth.AuthorizeHostname,
 		AuthorizeClusterName: authClusterName,

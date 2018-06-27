@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
-//go:generate protoc -I=./envoy/ -I=${GOPATH}/src/github.com/gogo/protobuf/ --gogo_out=. envoy/transformation_filter.proto
+//go:generate protoc -I=./envoy/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=. envoy/transformation_filter.proto
 
 const (
 	filterName          = "io.solo.transformation"

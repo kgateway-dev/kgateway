@@ -1,3 +1,5 @@
+# This file was copied from: https://github.com/envoyproxy/envoy/blob/master/source/extensions/extensions_build_config.bzl
+
 # See bazel/README.md for details on how this system works.
 EXTENSIONS = {
     #
@@ -99,5 +101,6 @@ EXTENSIONS = {
     "io.solo.filters.http.google_function":             "@google_functions//:filter_lib",
     "io.solo.filters.http.azure_function":              "@azure_functions_filter//:filter_lib",
     "io.solo.filters.network.consul_connect_filter":    "@consul_connect_filter//source/extensions/filters/network/consul_connect:config",
+",
 
 }

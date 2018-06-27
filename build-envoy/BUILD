@@ -9,7 +9,7 @@ load(
 envoy_package()
 
 
-# TODO: allow a non stamped version till we figure out why stamping doesn't work..
+# TODO(yuval-k): allow a non stamped version till we figure out why stamping doesn't work..
 
 envoy_cc_binary(
     name = "envoy",
