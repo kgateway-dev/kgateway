@@ -18,6 +18,10 @@ import (
 func Bootstrap(opts bootstrap.Options) (dependencies.SecretStorage, error) {
 	switch opts.SecretStorageOptions.Type {
 	case bootstrap.WatcherTypeFile:
+		err := os.MkdirAll(opts.FileOptions.SecretDir, 0755)
+		if err != nil && err != os.ErrExist {
+			return nil, errors.Wrap(err, "creating secret dir")
+		}
 		return file.NewSecretStorage(opts.FileOptions.SecretDir, opts.SecretStorageOptions.SyncFrequency)
 	case bootstrap.WatcherTypeKube:
 		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)

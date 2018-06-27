@@ -1,6 +1,8 @@
 package artifactstorage
 
 import (
+	"os"
+
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
@@ -17,6 +19,10 @@ func Bootstrap(opts bootstrap.Options) (dependencies.FileStorage, error) {
 		dir := opts.FileOptions.FilesDir
 		if dir == "" {
 			return nil, errors.New("must provide directory for file file storage client")
+		}
+		err := os.MkdirAll(dir, 0755)
+		if err != nil && err != os.ErrExist {
+			return nil, errors.Wrap(err, "creating files dir")
 		}
 		store, err := filestorage.NewFileStorage(dir, opts.FileStorageOptions.SyncFrequency)
 		if err != nil {

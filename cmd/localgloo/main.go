@@ -39,14 +39,20 @@ var (
 	xdsPort               int
 )
 
+func lethal(f func() error) {
+	if err := f(); err != nil {
+		log.Fatalf("error: %v", err)
+	}
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "localgloo",
 	Short: "runs the gloo control plane, upstream discovery, and function discovery in a single binary",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		stop := signals.SetupSignalHandler()
-		go runControlPlane(stop)
+		go lethal(func() error { return runControlPlane(stop) })
 		go runUpstreamDiscovery(stop)
-		go runFunctionDiscovery(stop)
+		go lethal(func() error { return runFunctionDiscovery(stop) })
 		<-stop
 		return nil
 	},
@@ -69,11 +75,10 @@ func init() {
 	initUpstreamDiscovery()
 	initFunctionDiscovery()
 
-	controlPlaneOpts.Options = baseOpts
-	upstreamDiscoveryOpts.Options = baseOpts
 }
 
 func initControlPlane() {
+
 	// xds port
 	rootCmd.PersistentFlags().IntVar(&xdsPort, "xds.port", 8081, "port to serve envoy xDS services. this port should be specified in your envoy's static config")
 
@@ -99,6 +104,8 @@ func initFunctionDiscovery() {
 }
 
 func runControlPlane(stop <-chan struct{}) error {
+	controlPlaneOpts.Options = baseOpts
+
 	eventLoop, err := eventloop.Setup(controlPlaneOpts, xdsPort)
 	if err != nil {
 		return errors.Wrap(err, "setting up event loop")
@@ -123,6 +130,8 @@ func runFunctionDiscovery(stop <-chan struct{}) error {
 	return <-finished
 }
 func runUpstreamDiscovery(stop <-chan struct{}) error {
+	upstreamDiscoveryOpts.Options = baseOpts
+
 	store, err := configstorage.Bootstrap(upstreamDiscoveryOpts.Options)
 	if err != nil {
 		return errors.Wrap(err, "failed to create config store client")
