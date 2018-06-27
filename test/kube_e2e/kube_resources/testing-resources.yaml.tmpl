@@ -288,8 +288,10 @@ metadata:
     sevice: petstore
 spec:
   ports:
-  - port: 8080
+  # service port is different to test kube EDS
+  - port: 9090
     protocol: TCP
+    targetPort: 8080
   selector:
     app: petstore
 

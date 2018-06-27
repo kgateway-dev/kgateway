@@ -144,6 +144,9 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 		// if targetport is empty, skip this upstream
 		targetPort, err := portForUpstream(spec, serviceList)
 		if err != nil || targetPort == 0 {
+			if err == nil {
+				err = errors.Errorf("could not find port %v on service ")
+			}
 			log.Warnf("error in kubernetes endpoint controller: %v", err)
 			continue
 		}
@@ -224,7 +227,7 @@ func portForUpstream(spec *UpstreamSpec, serviceList []*kubev1resources.Service)
 					log.Warnf("target port must be type int for kube endpoint discovery")
 					continue
 				}
-				if spec.ServicePort == port.Port {
+				if spec.ServicePort == port.TargetPort.IntVal {
 					return getPortVal(port), nil
 				}
 			}

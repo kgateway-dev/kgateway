@@ -28,7 +28,7 @@ var _ = Describe("Function Discovery Service Detection", func() {
 		},
 		{
 			description:         "swagger",
-			upstreamName:        namespace + "-petstore-8080",
+			upstreamName:        namespace + "-petstore-9090",
 			expectedServiceInfo: &v1.ServiceInfo{Type: rest.ServiceTypeREST},
 		},
 	} {
