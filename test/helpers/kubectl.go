@@ -45,19 +45,19 @@ func SetupKubeForTest(namespace string) error {
 	}
 	// TODO(yuval-k): this changes the context for the user? can we do this less intrusive? maybe add it to
 	// each kubectl command?
-	if err := kubectl("config", "set-context", context, "--namespace="+namespace); err != nil {
+	if err := Kubectl("config", "set-context", context, "--namespace="+namespace); err != nil {
 		return errors.Wrap(err, "setting context")
 	}
-	return kubectl("create", "namespace", namespace)
+	return Kubectl("create", "namespace", namespace)
 }
 
 func TeardownKube(namespace string) error {
-	return kubectl("delete", "namespace", namespace)
+	return Kubectl("delete", "namespace", namespace)
 }
 func TeardownKubeE2E(namespace string) error {
 	TeardownKube(namespace)
-	kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "install.yml"))
-	return kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "testing-resources.yml"))
+	Kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "install.yml"))
+	return Kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "testing-resources.yml"))
 }
 
 func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error {
@@ -139,7 +139,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	}
 
 	// test stuff first
-	if err := kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "testing-resources.yml")); err != nil {
+	if err := Kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "testing-resources.yml")); err != nil {
 		return errors.Wrapf(err, "creating kube resource from testing-resources.yml")
 	}
 	if err := waitPodsRunning(
@@ -153,7 +153,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 		return errors.Wrap(err, "waiting for pods to start")
 	}
 
-	if err := kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "install.yml")); err != nil {
+	if err := Kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "install.yml")); err != nil {
 		return errors.Wrapf(err, "creating kube resource from install.yml")
 	}
 	if err := waitPodsRunning(
@@ -171,7 +171,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	return nil
 }
 
-func kubectl(args ...string) error {
+func Kubectl(args ...string) error {
 	cmd := exec.Command("kubectl", args...)
 	log.Debugf("k command: %v", cmd.Args)
 	cmd.Env = os.Environ()
