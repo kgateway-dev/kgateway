@@ -143,11 +143,12 @@ func (c *endpointController) getUpdatedEndpoints() (endpointdiscovery.EndpointGr
 		// find the targetport for our service
 		// if targetport is empty, skip this upstream
 		targetPort, err := portForUpstream(spec, serviceList)
-		if err != nil || targetPort == 0 {
-			if err == nil {
-				err = errors.Errorf("could not find port %v on service ")
-			}
+		if err != nil {
 			log.Warnf("error in kubernetes endpoint controller: %v", err)
+			continue
+		}
+		if targetPort == 0 {
+			log.Warnf("could not find port %v on service", spec.ServicePort)
 			continue
 		}
 		for _, endpoint := range endpointList {
