@@ -7,6 +7,8 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	gogo_types "github.com/gogo/protobuf/types"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -164,7 +166,9 @@ func newSslFilterChain(certChain, privateKey, rootCa string, inline bool, sniDom
 		}
 	}
 	var validationContext *envoyauth.CertificateValidationContext
-	if rootCa != "" && false {
+	var requireClientCert *gogo_types.BoolValue
+	if rootCa != "" {
+		requireClientCert = &gogo_types.BoolValue{Value: true}
 		validationContext = &envoyauth.CertificateValidationContext{
 			TrustedCa: rootCaData,
 		}
@@ -173,6 +177,7 @@ func newSslFilterChain(certChain, privateKey, rootCa string, inline bool, sniDom
 	return envoylistener.FilterChain{
 		Filters: listenerFilters,
 		TlsContext: &envoyauth.DownstreamTlsContext{
+			RequireClientCertificate: requireClientCert,
 			CommonTlsContext: &envoyauth.CommonTlsContext{
 				// default params
 				TlsParams: &envoyauth.TlsParameters{},
