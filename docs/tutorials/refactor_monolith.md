@@ -194,7 +194,7 @@ aws s3 ls $BUCKET
 ```
 
 # Cleanup
-## Cloud reosurces
+## Cloud resources
 
 ```shell
 aws lambda delete-function --function-name processContact
