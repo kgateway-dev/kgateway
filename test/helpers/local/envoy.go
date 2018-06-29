@@ -16,6 +16,8 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
+
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 const (
@@ -72,6 +74,16 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 	// use it
 	envoypath := os.Getenv("ENVOY_BINARY")
 	if envoypath != "" {
+		log.Printf("Using envoy from environment variable: %s", envoypath)
+		return &EnvoyFactory{
+			envoypath: envoypath,
+		}, nil
+	}
+
+	// maybe it is in the path?!
+	envoypath, err := exec.LookPath("envoy")
+	if err == nil {
+		log.Printf("Using envoy from PATH: %s", envoypath)
 		return &EnvoyFactory{
 			envoypath: envoypath,
 		}, nil
@@ -79,6 +91,8 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 
 	switch runtime.GOOS {
 	case "darwin":
+		log.Printf("Using docker to run envoy")
+
 		return &EnvoyFactory{useDocker: true}, nil
 	case "linux":
 		// try to grab one form docker...
@@ -91,6 +105,7 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 		if envoyImageTag == "" {
 			envoyImageTag = "latest"
 		}
+		log.Printf("Using envoy docker image tag: %s", envoyImageTag)
 
 		bash := fmt.Sprintf(`
 set -ex

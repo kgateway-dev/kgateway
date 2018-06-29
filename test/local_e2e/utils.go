@@ -38,7 +38,9 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 		if r.Body != nil {
 			body, _ := ioutil.ReadAll(r.Body)
 			r.Body.Close()
-			rr.Body = body
+			if len(body) != 0 {
+				rr.Body = body
+			}
 		}
 		bodychan <- &rr
 	}

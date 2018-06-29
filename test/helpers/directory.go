@@ -38,3 +38,10 @@ func ServerCert() string {
 func ServerKey() string {
 	return filepath.Join(CertsDirectory(), "root.key")
 }
+
+func ClientCert() string {
+	return filepath.Join(CertsDirectory(), "clientcert.crt")
+}
+func ClientKey() string {
+	return filepath.Join(CertsDirectory(), "clientcert.key")
+}
