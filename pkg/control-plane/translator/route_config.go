@@ -5,6 +5,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	defaultv1 "github.com/solo-io/gloo/pkg/api/defaults/v1"
 
 	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -193,11 +194,8 @@ func validateVirtualServiceSSLConfig(virtualService *v1.VirtualService, secrets 
 }
 
 const (
-	sslCertificateChainKey           = "tls.crt"
 	deprecatedSslCertificateChainKey = "ca_chain"
-	sslPrivateKeyKey                 = "tls.key"
 	deprecatedSslPrivateKeyKey       = "private_key"
-	sslRootCaKey                     = "tls.root"
 )
 
 func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string, string, error) {
@@ -205,22 +203,22 @@ func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string,
 	if !ok {
 		return "", "","", errors.Errorf("ssl secret not found for ref %v", ref)
 	}
-	certChain, ok := sslSecrets.Data[sslCertificateChainKey]
+	certChain, ok := sslSecrets.Data[defaultv1.SslCertificateChainKey]
 	if !ok {
 		certChain, ok = sslSecrets.Data[deprecatedSslCertificateChainKey]
 		if !ok {
-			return "", "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslCertificateChainKey, deprecatedSslCertificateChainKey)
+			return "", "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", defaultv1.SslCertificateChainKey, deprecatedSslCertificateChainKey)
 		}
 	}
 
-	privateKey, ok := sslSecrets.Data[sslPrivateKeyKey]
+	privateKey, ok := sslSecrets.Data[defaultv1.SslPrivateKeyKey]
 	if !ok {
 		privateKey, ok = sslSecrets.Data[deprecatedSslPrivateKeyKey]
 		if !ok {
-			return "", "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", sslPrivateKeyKey, deprecatedSslPrivateKeyKey)
+			return "", "", "", errors.Errorf("neither %v nor %v key not found in ssl secrets", defaultv1.SslPrivateKeyKey, deprecatedSslPrivateKeyKey)
 		}
 	}
 
-	rootCa := sslSecrets.Data[sslRootCaKey]
+	rootCa := sslSecrets.Data[defaultv1.SslRootCaKey]
 	return certChain, privateKey, rootCa, nil
 }
