@@ -7,14 +7,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
-	internalflags "github.com/solo-io/gloo/internal/control-plane/bootstrap/flags"
-	"github.com/solo-io/gloo/internal/control-plane/eventloop"
+	"github.com/solo-io/gloo/pkg/control-plane/bootstrap"
+	internalflags "github.com/solo-io/gloo/pkg/control-plane/bootstrap/flags"
+	"github.com/solo-io/gloo/pkg/control-plane/eventloop"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/signals"
 
 	//register plugins
-	_ "github.com/solo-io/gloo/internal/control-plane/install"
+	_ "github.com/solo-io/gloo/pkg/control-plane/install"
 )
 
 func main() {

@@ -8,9 +8,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	controlplanebootstrap "github.com/solo-io/gloo/internal/control-plane/bootstrap"
-	functiondiscoveryopts "github.com/solo-io/gloo/internal/function-discovery/options"
-	upstreamdiscbootstrap "github.com/solo-io/gloo/internal/upstream-discovery/bootstrap"
+	controlplanebootstrap "github.com/solo-io/gloo/pkg/control-plane/bootstrap"
+	functiondiscoveryopts "github.com/solo-io/gloo/pkg/function-discovery/options"
+	upstreamdiscbootstrap "github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/localgloo"
 )

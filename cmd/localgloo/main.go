@@ -5,14 +5,14 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	controlplanebootstrap "github.com/solo-io/gloo/internal/control-plane/bootstrap"
-	internalflags "github.com/solo-io/gloo/internal/control-plane/bootstrap/flags"
-	"github.com/solo-io/gloo/internal/control-plane/eventloop"
-	functiondiscovery "github.com/solo-io/gloo/internal/function-discovery/eventloop"
-	functiondiscoveryopts "github.com/solo-io/gloo/internal/function-discovery/options"
-	"github.com/solo-io/gloo/internal/upstream-discovery"
-	upstreamdiscbootstrap "github.com/solo-io/gloo/internal/upstream-discovery/bootstrap"
-	upstreamdiscoveryflags "github.com/solo-io/gloo/internal/upstream-discovery/bootstrap/flags"
+	controlplanebootstrap "github.com/solo-io/gloo/pkg/control-plane/bootstrap"
+	internalflags "github.com/solo-io/gloo/pkg/control-plane/bootstrap/flags"
+	"github.com/solo-io/gloo/pkg/control-plane/eventloop"
+	functiondiscovery "github.com/solo-io/gloo/pkg/function-discovery/eventloop"
+	functiondiscoveryopts "github.com/solo-io/gloo/pkg/function-discovery/options"
+	"github.com/solo-io/gloo/pkg/upstream-discovery"
+	upstreamdiscbootstrap "github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap"
+	upstreamdiscoveryflags "github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	//register plugins
-	_ "github.com/solo-io/gloo/internal/control-plane/install"
+	_ "github.com/solo-io/gloo/pkg/control-plane/install"
 )
 
 func main() {

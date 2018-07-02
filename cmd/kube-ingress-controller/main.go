@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/solo-io/gloo/internal/kube-ingress-controller/ingress"
+	"github.com/solo-io/gloo/pkg/kube-ingress-controller/ingress"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"

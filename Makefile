@@ -52,7 +52,7 @@ $(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
 generated-code: $(OUTPUT_DIR)/.generated-code
 
 $(OUTPUT_DIR)/.generated-code:
-	go generate ./pkg/... ./internal/...
+	go generate ./pkg/...
 	touch $@
 
 # Core Binaries
@@ -178,7 +178,7 @@ hackrun: $(BINARY)
 	./hack/run-local.sh
 
 unit:
-	ginkgo -r pkg/ internal/
+	ginkgo -r pkg/
 
 e2e:
 	ginkgo -r test/

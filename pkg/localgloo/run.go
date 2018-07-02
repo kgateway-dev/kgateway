@@ -2,17 +2,17 @@ package localgloo
 
 import (
 	"github.com/pkg/errors"
-	controlplanebootstrap "github.com/solo-io/gloo/internal/control-plane/bootstrap"
-	"github.com/solo-io/gloo/internal/control-plane/eventloop"
-	functiondiscovery "github.com/solo-io/gloo/internal/function-discovery/eventloop"
-	functiondiscoveryopts "github.com/solo-io/gloo/internal/function-discovery/options"
-	"github.com/solo-io/gloo/internal/upstream-discovery"
-	upstreamdiscbootstrap "github.com/solo-io/gloo/internal/upstream-discovery/bootstrap"
+	controlplanebootstrap "github.com/solo-io/gloo/pkg/control-plane/bootstrap"
+	"github.com/solo-io/gloo/pkg/control-plane/eventloop"
+	functiondiscovery "github.com/solo-io/gloo/pkg/function-discovery/eventloop"
+	functiondiscoveryopts "github.com/solo-io/gloo/pkg/function-discovery/options"
+	"github.com/solo-io/gloo/pkg/upstream-discovery"
+	upstreamdiscbootstrap "github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/gloo/pkg/log"
 	//register plugins
-	_ "github.com/solo-io/gloo/internal/control-plane/install"
+	_ "github.com/solo-io/gloo/pkg/control-plane/install"
 )
 
 func Run(stop <-chan struct{}, xdsPort int, baseOpts bootstrap.Options, controlPlaneOpts controlplanebootstrap.Options, upstreamDiscoveryOpts upstreamdiscbootstrap.Options, functionDiscoveryOpts functiondiscoveryopts.DiscoveryOptions) {
