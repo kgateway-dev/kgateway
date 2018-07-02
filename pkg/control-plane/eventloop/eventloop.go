@@ -3,6 +3,11 @@ package eventloop
 import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
+	defaultv1 "github.com/solo-io/gloo/pkg/api/defaults/v1"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
 	"github.com/solo-io/gloo/pkg/control-plane/bootstrap"
 	"github.com/solo-io/gloo/pkg/control-plane/configwatcher"
 	"github.com/solo-io/gloo/pkg/control-plane/endpointswatcher"
@@ -11,13 +16,11 @@ import (
 	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/control-plane/translator"
 	"github.com/solo-io/gloo/pkg/control-plane/xds"
-	defaultv1 "github.com/solo-io/gloo/pkg/api/defaults/v1"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
-	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
-	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 type eventLoop struct {
@@ -34,17 +37,31 @@ func Setup(opts bootstrap.Options, xdsPort int) (*eventLoop, error) {
 		return nil, errors.Wrap(err, "failed to create config store client")
 	}
 
+	secrets, err := secretstorage.Bootstrap(opts.Options)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating secret storage client")
+	}
+
+	files, err := artifactstorage.Bootstrap(opts.Options)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating file storage client")
+	}
+
+	return SetupWithStorage(opts, store, secrets, files, xdsPort)
+}
+
+func SetupWithStorage(opts bootstrap.Options, store storage.Interface, secrets dependencies.SecretStorage, files dependencies.FileStorage, xdsPort int) (*eventLoop, error) {
 	cfgWatcher, err := configwatcher.NewConfigWatcher(store)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	secretWatcher, err := secretwatchersetup.Bootstrap(opts.Options)
+	secretWatcher, err := secretwatcher.NewSecretWatcher(secrets)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to set up secret watcher")
+		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	fileWatcher, err := setupFileWatcher(opts)
+	fileWatcher, err := filewatcher.NewFileWatcher(files)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
@@ -60,8 +77,13 @@ func Setup(opts bootstrap.Options, xdsPort int) (*eventLoop, error) {
 
 	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(opts.Options, edPlugins...)
 
-	snapshotEmitter := snapshot.NewEmitter(cfgWatcher, secretWatcher,
-		fileWatcher, endpointsWatcher, getDependenciesFor(plugs))
+	snapshotEmitter := snapshot.NewEmitter(
+		cfgWatcher,
+		secretWatcher,
+		fileWatcher,
+		endpointsWatcher,
+		getDependenciesFor(plugs),
+	)
 
 	trans := translator.NewTranslator(plugs)
 
@@ -96,14 +118,6 @@ func getDependenciesFor(translatorPlugins []plugins.TranslatorPlugin) func(cfg *
 		}
 		return dependencies
 	}
-}
-
-func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
-	store, err := artifactstorage.Bootstrap(opts.Options)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating file storage client")
-	}
-	return filewatcher.NewFileWatcher(store)
 }
 
 func (e *eventLoop) Run(stop <-chan struct{}) {
@@ -199,4 +213,3 @@ func (e *eventLoop) updateXds(snap *snapshot.Cache) {
 		log.Warnf("error writing reports: %v", err)
 	}
 }
-
