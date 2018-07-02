@@ -1,4 +1,4 @@
-package detector
+package detector_test
 
 import (
 	. "github.com/onsi/ginkgo"

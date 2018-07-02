@@ -1,4 +1,4 @@
-package nats
+package nats_test
 
 import (
 	. "github.com/onsi/ginkgo"

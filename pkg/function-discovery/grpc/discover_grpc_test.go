@@ -1,4 +1,4 @@
-package grpc
+package grpc_test
 
 import (
 	. "github.com/onsi/ginkgo"

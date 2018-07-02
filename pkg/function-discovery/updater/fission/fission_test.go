@@ -1,4 +1,4 @@
-package fission
+package fission_test
 
 import (
 	. "github.com/onsi/ginkgo"

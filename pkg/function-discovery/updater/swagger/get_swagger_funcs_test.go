@@ -1,4 +1,4 @@
-package swagger
+package swagger_test
 
 import (
 	. "github.com/onsi/ginkgo"
