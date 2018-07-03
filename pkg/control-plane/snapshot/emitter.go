@@ -1,14 +1,14 @@
 package snapshot
 
 import (
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/control-plane/configwatcher"
-	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/secretwatcher"
 )
 
 // the snapshot emitter wraps various config sources
@@ -73,9 +73,21 @@ func (e *Emitter) Run(stop <-chan struct{}) {
 				if vService.SslConfig != nil && vService.SslConfig.SslSecrets != nil {
 					secretRef, ok := vService.SslConfig.SslSecrets.(*v1.SSLConfig_SecretRef)
 					if !ok {
-						panic("ssl files are not currenty supported for vservices")
+						continue
 					}
 					secretRefs = append(secretRefs, secretRef.SecretRef)
+				}
+			}
+			// secrets for roles
+			for _, role := range cfg.Roles {
+				for _, listener := range role.Listeners {
+					if listener.SslConfig != nil && listener.SslConfig.SslSecrets != nil {
+						secretRef, ok := listener.SslConfig.SslSecrets.(*v1.SSLConfig_SecretRef)
+						if !ok {
+							continue
+						}
+						secretRefs = append(secretRefs, secretRef.SecretRef)
+					}
 				}
 			}
 			go e.secretWatcher.TrackSecrets(secretRefs)
