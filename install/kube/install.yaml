@@ -48,6 +48,20 @@ spec:
     singular: role
   scope: Namespaced
   version: v1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: attributes.gloo.solo.io
+spec:
+  group: gloo.solo.io
+  names:
+    kind: Attribute
+    listKind: AttributeList
+    plural: attributes
+    singular: attribute
+  scope: Namespaced
+  version: v1
 
 ---
 # Source: gloo/templates/ingress-configmap.yaml
@@ -106,7 +120,7 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["get", "create"]
 - apiGroups: ["gloo.solo.io"]
-  resources: ["upstreams", "virtualservices", "roles"]
+  resources: ["upstreams", "virtualservices", "roles", "attributes"]
   verbs: ["*"]
 ---
 #rbac for function-discovery
