@@ -45,6 +45,7 @@ var _ = Describe("CrdReporter", func() {
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
 			roles           []*v1.Role
+			attributes           []*v1.Attribute
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
@@ -76,6 +77,13 @@ var _ = Describe("CrdReporter", func() {
 
 					storables = append(storables, role)
 				}
+				attributes = testCfg.Attributes
+				for _, attribute := range attributes {
+					_, err := glooClient.V1().Attributes().Create(attribute)
+					Expect(err).NotTo(HaveOccurred())
+
+					storables = append(storables, attribute)
+				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
 						CfgObject: storable,
@@ -95,15 +103,21 @@ var _ = Describe("CrdReporter", func() {
 				}
 				updatedvServices, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedvServices).To(HaveLen(len(upstreams)))
+				Expect(updatedvServices).To(HaveLen(len(virtualServices)))
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Accepted))
 				}
 				updatedroles, err := glooClient.V1().Roles().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedroles).To(HaveLen(len(upstreams)))
+				Expect(updatedroles).To(HaveLen(len(roles)))
 				for _, updatedrole := range updatedroles {
 					Expect(updatedrole.Status.State).To(Equal(v1.Status_Accepted))
+				}
+				updatedattributes, err := glooClient.V1().Attributes().List()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedattributes).To(HaveLen(len(attributes)))
+				for _, updatedattribute := range updatedattributes {
+					Expect(updatedattribute.Status.State).To(Equal(v1.Status_Accepted))
 				}
 			})
 		})
@@ -136,6 +150,12 @@ var _ = Describe("CrdReporter", func() {
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, role)
 				}
+				attributes = testCfg.Attributes
+				for _, attribute := range attributes {
+					_, err := glooClient.V1().Attributes().Create(attribute)
+					Expect(err).NotTo(HaveOccurred())
+					storables = append(storables, attribute)
+				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
 						CfgObject: storable,
@@ -155,15 +175,21 @@ var _ = Describe("CrdReporter", func() {
 				}
 				updatedvServices, err := glooClient.V1().VirtualServices().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedvServices).To(HaveLen(len(upstreams)))
+				Expect(updatedvServices).To(HaveLen(len(virtualServices)))
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Rejected))
 				}
 				updatedroles, err := glooClient.V1().Roles().List()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(updatedroles).To(HaveLen(len(upstreams)))
+				Expect(updatedroles).To(HaveLen(len(roles)))
 				for _, updatedrole := range updatedroles {
 					Expect(updatedrole.Status.State).To(Equal(v1.Status_Rejected))
+				}
+				updatedattributes, err := glooClient.V1().Attributes().List()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedattributes).To(HaveLen(len(attributes)))
+				for _, updatedattribute := range updatedattributes {
+					Expect(updatedattribute.Status.State).To(Equal(v1.Status_Rejected))
 				}
 			})
 		})

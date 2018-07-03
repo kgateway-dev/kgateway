@@ -18,10 +18,15 @@ func NewTestConfig() *v1.Config {
 		NewTestRole("my-role", "my-vservice"),
 		NewTestRole("my-role-2", "my-vservice-2"),
 	}
+	attributes := []*v1.Attribute{
+		NewTestAttribute("my-attribute-1"),
+		NewTestAttribute("my-attribute-2"),
+	}
 	return &v1.Config{
 		Upstreams:       upstreams,
 		VirtualServices: virtualServices,
-		Roles:   roles,
+		Roles:           roles,
+		Attributes:      attributes,
 	}
 }
 
@@ -173,7 +178,21 @@ func NewTestRouteWithCORS() *v1.Route {
 
 func NewTestRole(name string, vServices ... string) *v1.Role {
 	return &v1.Role{
-		Name:            name,
+		Name: name,
+		Metadata: &v1.Metadata{
+			Annotations: map[string]string{"my_annotation": "value"},
+		},
+	}
+}
+
+func NewTestAttribute(name string) *v1.Attribute {
+	return &v1.Attribute{
+		Name: name,
+		AttributeType: &v1.Attribute_ListenerAttribute{
+			ListenerAttribute: &v1.ListenerAttribute{
+
+			},
+		},
 		Metadata: &v1.Metadata{
 			Annotations: map[string]string{"my_annotation": "value"},
 		},

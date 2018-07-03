@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1
 
+// AttributeListerExpansion allows custom methods to be added to
+// AttributeLister.
+type AttributeListerExpansion interface{}
+
+// AttributeNamespaceListerExpansion allows custom methods to be added to
+// AttributeNamespaceLister.
+type AttributeNamespaceListerExpansion interface{}
+
 // RoleListerExpansion allows custom methods to be added to
 // RoleLister.
 type RoleListerExpansion interface{}

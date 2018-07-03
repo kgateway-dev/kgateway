@@ -28,6 +28,10 @@ type FakeGlooV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeGlooV1) Attributes(namespace string) v1.AttributeInterface {
+	return &FakeAttributes{c, namespace}
+}
+
 func (c *FakeGlooV1) Roles(namespace string) v1.RoleInterface {
 	return &FakeRoles{c, namespace}
 }

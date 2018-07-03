@@ -12,6 +12,7 @@ type V1 interface {
 	Upstreams() Upstreams
 	VirtualServices() VirtualServices
 	Roles() Roles
+	Attributes() Attributes
 }
 
 type Upstreams interface {
@@ -39,4 +40,14 @@ type Roles interface {
 	Get(name string) (*v1.Role, error)
 	List() ([]*v1.Role, error)
 	Watch(...RoleEventHandler) (*Watcher, error)
+}
+
+
+type Attributes interface {
+	Create(*v1.Attribute) (*v1.Attribute, error)
+	Update(*v1.Attribute) (*v1.Attribute, error)
+	Delete(name string) error
+	Get(name string) (*v1.Attribute, error)
+	List() ([]*v1.Attribute, error)
+	Watch(...AttributeEventHandler) (*Watcher, error)
 }

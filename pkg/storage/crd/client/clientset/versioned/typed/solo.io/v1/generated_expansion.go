@@ -18,6 +18,8 @@ limitations under the License.
 
 package v1
 
+type AttributeExpansion interface{}
+
 type RoleExpansion interface{}
 
 type UpstreamExpansion interface{}

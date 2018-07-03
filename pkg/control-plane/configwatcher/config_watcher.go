@@ -40,12 +40,18 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		log.Warnf("Startup: failed to read virtual services from storage: %v", err)
 		initialRoles = []*v1.Role{}
 	}
+	initialAttributes, err := storageClient.V1().Attributes().List()
+	if err != nil {
+		log.Warnf("Startup: failed to read virtual services from storage: %v", err)
+		initialAttributes = []*v1.Attribute{}
+	}
 	configs := make(chan *v1.Config)
 	// do a first time read
 	cache := &v1.Config{
 		Upstreams:       initialUpstreams,
 		VirtualServices: initialVirtualServices,
 		Roles: initialRoles,
+		Attributes: initialAttributes,
 	}
 	// throw it down the channel to get things going
 	go func() {
@@ -98,7 +104,6 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		return nil, errors.Wrap(err, "failed to create watcher for virtualservices")
 	}
 
-
 	syncroles := func(updatedList []*v1.Role, _ *v1.Role) {
 		sort.SliceStable(updatedList, func(i, j int) bool {
 			return updatedList[i].GetName() < updatedList[j].GetName()
@@ -122,8 +127,31 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 		return nil, errors.Wrap(err, "failed to create watcher for roles")
 	}
 
+	syncattributes := func(updatedList []*v1.Attribute, _ *v1.Attribute) {
+		sort.SliceStable(updatedList, func(i, j int) bool {
+			return updatedList[i].GetName() < updatedList[j].GetName()
+		})
+
+		diff, equal := messagediff.PrettyDiff(cache.Attributes, updatedList)
+		if equal {
+			return
+		}
+		log.GreyPrintf("change detected in virtualservices: %v", diff)
+
+		cache.Attributes = updatedList
+		configs <- proto.Clone(cache).(*v1.Config)
+	}
+	attributeWatcher, err := storageClient.V1().Attributes().Watch(&storage.AttributeEventHandlerFuncs{
+		AddFunc:    syncattributes,
+		UpdateFunc: syncattributes,
+		DeleteFunc: syncattributes,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create watcher for attributes")
+	}
+
 	return &configWatcher{
-		watchers: []*storage.Watcher{vServiceWatcher, roleWatcher, upstreamWatcher},
+		watchers: []*storage.Watcher{vServiceWatcher, roleWatcher, attributeWatcher, upstreamWatcher},
 		configs:  configs,
 		errs:     make(chan error),
 	}, nil

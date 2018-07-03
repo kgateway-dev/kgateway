@@ -6,6 +6,7 @@ option go_package = "github.com/solo-io/gloo/pkg/api/types/v1";
 import "upstream.proto";
 import "virtualservice.proto";
 import "role.proto";
+import "attribute.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
@@ -17,4 +18,5 @@ message Config {
     repeated Upstream upstreams = 1; // The list of all upstreams defined by the user.
     repeated VirtualService virtual_services = 2; // the list of all virtual services defined by the user.
     repeated Role roles = 3; // the list roles defined by the user
+    repeated Attribute attributes = 4; // the list attributes defined by the user
 }

@@ -72,6 +72,10 @@ message Listener {
     // Configuration such as gzip compression and TLS authentication is specified here
     google.protobuf.Struct config = 5;
 
+    // Apply Listener Attributes to listeners with selectors matching these label keys and values
+    // If empty or not present, the Listener will inherit no configuration from Attributes.
+    map<string, string> labels = 7;
+
     // SSL Config is optional for the role. If provided, the listener will serve TLS for connections on this port
     // this is useful when there are no virtual services assigned to this listener, e.g. for the purpose of
     // securing a Listener functioning as a TCP Proxy

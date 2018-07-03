@@ -56,6 +56,11 @@ func NewStorage(cfg *rest.Config, namespace string, syncFrequency time.Duration)
 				namespace:     namespace,
 				syncFrequency: syncFrequency,
 			},
+			attributes: &attributesClient{
+				crds:          crdClient,
+				namespace:     namespace,
+				syncFrequency: syncFrequency,
+			},
 			apiexts:    apiextClient,
 			kubeclient: kubeClient,
 			namespace:  namespace,
@@ -73,6 +78,7 @@ type v1client struct {
 	upstreams       *upstreamsClient
 	virtualServices *virtualServicesClient
 	roles           *rolesClient
+	attributes      *attributesClient
 	namespace       string
 }
 
@@ -100,10 +106,14 @@ func (c *v1client) Register() error {
 				},
 			},
 		}
-		log.Debugf("registering crd %v", crd)
-		if _, err := c.apiexts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister); err != nil && !apierrors.IsAlreadyExists(err) {
-			return fmt.Errorf("failed to create crd: %v", err)
+		log.Debugf("registering crd %v", crd.Kind)
+		if _, err := c.apiexts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(toRegister); err != nil {
+			if apierrors.IsAlreadyExists(err) {
+				continue
+			}
+			return fmt.Errorf("failed to register crd: %v", err)
 		}
+		log.Debugf("registered crd %v", crd)
 	}
 	return nil
 }
@@ -118,4 +128,8 @@ func (c *v1client) VirtualServices() storage.VirtualServices {
 
 func (c *v1client) Roles() storage.Roles {
 	return c.roles
+}
+
+func (c *v1client) Attributes() storage.Attributes {
+	return c.attributes
 }

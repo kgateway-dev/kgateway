@@ -35,11 +35,18 @@ var clients = []clientType{
 		UppercasePluralName: "VirtualServices",
 	},
 	{
-		FilenamePrefix: "roles",
+		FilenamePrefix:      "roles",
 		LowercaseName:       "role",
 		LowercasePluralName: "roles",
 		UppercaseName:       "Role",
 		UppercasePluralName: "Roles",
+	},
+	{
+		FilenamePrefix:      "attributes",
+		LowercaseName:       "attribute",
+		LowercasePluralName: "attributes",
+		UppercaseName:       "Attribute",
+		UppercasePluralName: "Attributes",
 	},
 }
 

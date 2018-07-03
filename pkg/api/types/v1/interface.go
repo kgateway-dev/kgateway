@@ -55,3 +55,15 @@ func (item *Role) SetStatus(status *Status) {
 func (item *Role) SetMetadata(meta *Metadata) {
 	item.Metadata = meta
 }
+
+func (item *Attribute) SetName(name string) {
+	item.Name = name
+}
+
+func (item *Attribute) SetStatus(status *Status) {
+	item.Status = status
+}
+
+func (item *Attribute) SetMetadata(meta *Metadata) {
+	item.Metadata = meta
+}

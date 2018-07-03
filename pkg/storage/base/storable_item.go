@@ -10,7 +10,8 @@ import (
 type StorableItem struct {
 	Upstream       *v1.Upstream
 	VirtualService *v1.VirtualService
-	Role    *v1.Role
+	Role           *v1.Role
+	Attribute           *v1.Attribute
 	File           *dependencies.File
 }
 
@@ -22,6 +23,8 @@ func (item *StorableItem) GetName() string {
 		return item.VirtualService.GetName()
 	case item.Role != nil:
 		return item.Role.GetName()
+	case item.Attribute != nil:
+		return item.Attribute.GetName()
 	case item.File != nil:
 		return item.File.Ref
 	default:
@@ -46,6 +49,11 @@ func (item *StorableItem) GetResourceVersion() string {
 			return ""
 		}
 		return item.Role.GetMetadata().GetResourceVersion()
+	case item.Attribute != nil:
+		if item.Attribute.GetMetadata() == nil {
+			return ""
+		}
+		return item.Attribute.GetMetadata().GetResourceVersion()
 	case item.File != nil:
 		return item.File.ResourceVersion
 	default:
@@ -70,6 +78,11 @@ func (item *StorableItem) SetResourceVersion(rv string) {
 			item.Role.Metadata = &v1.Metadata{}
 		}
 		item.Role.Metadata.ResourceVersion = rv
+	case item.Attribute != nil:
+		if item.Attribute.GetMetadata() == nil {
+			item.Attribute.Metadata = &v1.Metadata{}
+		}
+		item.Attribute.Metadata.ResourceVersion = rv
 	case item.File != nil:
 		item.File.ResourceVersion = rv
 	default:
@@ -85,6 +98,8 @@ func (item *StorableItem) GetBytes() ([]byte, error) {
 		return proto.Marshal(item.VirtualService)
 	case item.Role != nil:
 		return proto.Marshal(item.Role)
+	case item.Attribute != nil:
+		return proto.Marshal(item.Attribute)
 	case item.File != nil:
 		return item.File.Contents, nil
 	default:
@@ -100,6 +115,8 @@ func (item *StorableItem) GetTypeFlag() StorableItemType {
 		return StorableItemTypeVirtualService
 	case item.Role != nil:
 		return StorableItemTypeRole
+	case item.Attribute != nil:
+		return StorableItemTypeAttribute
 	case item.File != nil:
 		return StorableItemTypeFile
 	default:
@@ -110,15 +127,17 @@ func (item *StorableItem) GetTypeFlag() StorableItemType {
 type StorableItemType uint64
 
 const (
-	StorableItemTypeUpstream StorableItemType = iota
+	StorableItemTypeUpstream       StorableItemType = iota
 	StorableItemTypeVirtualService
 	StorableItemTypeRole
+	StorableItemTypeAttribute
 	StorableItemTypeFile
 )
 
 type StorableItemEventHandler struct {
 	UpstreamEventHandler       storage.UpstreamEventHandler
 	VirtualServiceEventHandler storage.VirtualServiceEventHandler
-	RoleEventHandler    storage.RoleEventHandler
+	RoleEventHandler           storage.RoleEventHandler
+	AttributeEventHandler      storage.AttributeEventHandler
 	FileEventHandler           dependencies.FileEventHandler
 }

@@ -122,5 +122,33 @@ var _ = Describe("KubeConfigWatcher", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 		})
+		It("watches kube attribute crds", func() {
+			cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			storageClient, err := crd.NewStorage(cfg, namespace, time.Second)
+			Expect(err).NotTo(HaveOccurred())
+
+			watcher, err := NewConfigWatcher(storageClient)
+			Must(err)
+			go func() { watcher.Run(make(chan struct{})) }()
+
+			attribute := NewTestAttribute("something")
+			created, err := storageClient.V1().Attributes().Create(attribute)
+			Expect(err).NotTo(HaveOccurred())
+
+			// give controller time to register
+			time.Sleep(time.Second * 2)
+
+			select {
+			case <-time.After(time.Second * 5):
+				Expect(fmt.Errorf("expected to have received resource event before 5s")).NotTo(HaveOccurred())
+			case cfg := <-watcher.Config():
+				Expect(len(cfg.Attributes)).To(Equal(1))
+				Expect(cfg.Attributes[0]).To(Equal(created))
+			case err := <-watcher.Error():
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
 	})
 })

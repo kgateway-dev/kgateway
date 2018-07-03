@@ -79,6 +79,23 @@ func (r *reporter) writeReport(report ConfigObjectReport) error {
 		if _, err := r.store.V1().Roles().Update(role); err != nil {
 			return errors.Wrapf(err, "failed to update role store with status report")
 		}
+	case *v1.Attribute:
+		attribute, err := r.store.V1().Attributes().Get(name)
+		if err != nil {
+			// try to create the attribute
+			attribute, err = r.store.V1().Attributes().Create(report.CfgObject.(*v1.Attribute))
+			if err != nil {
+				return errors.Wrapf(err, "failed to find or create attribute %v", name)
+			}
+		}
+		// only update if status doesn't match
+		if attribute.Status.Equal(status) {
+			return nil
+		}
+		attribute.Status = status
+		if _, err := r.store.V1().Attributes().Update(attribute); err != nil {
+			return errors.Wrapf(err, "failed to update attribute store with status report")
+		}
 	}
 	return nil
 }

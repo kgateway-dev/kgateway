@@ -53,6 +53,13 @@ func (c *Cache) Hash() uint64 {
 		}
 		role.Metadata = nil
 	}
+	for _, attribute := range cfgForHashing.Attributes {
+		attribute.Status = nil
+		if attribute.Metadata != nil {
+			attribute.Metadata.ResourceVersion = ""
+		}
+		attribute.Metadata = nil
+	}
 
 	h0, err := hashstructure.Hash(*cfgForHashing, nil)
 	if err != nil {

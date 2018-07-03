@@ -23,6 +23,9 @@ func (e configErrors) initializeKeys(cfg *v1.Config) {
 	for _, obj := range cfg.Roles {
 		cfgObjects = append(cfgObjects, obj)
 	}
+	for _, obj := range cfg.Attributes {
+		cfgObjects = append(cfgObjects, obj)
+	}
 
 	for _, obj := range cfgObjects {
 		if _, ok := e[obj]; !ok {
