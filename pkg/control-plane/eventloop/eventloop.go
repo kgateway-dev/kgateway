@@ -1,6 +1,8 @@
 package eventloop
 
 import (
+	"net"
+
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/pkg/errors"
 	defaultv1 "github.com/solo-io/gloo/pkg/api/defaults/v1"
@@ -23,6 +25,25 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
+// Config for the event loop. The event loop receives events from various sources, and triggers regeneration
+// of and xDS snapshot via the *translator.Translator.
+type Config struct {
+	// Configuration options for endpoint discovery and xDS
+	Options bootstrap.Options
+	// Storage to read upstreams and vhosts, and to write reports
+	Store storage.Interface
+	// Secrets to watch for changes
+	Secrets dependencies.SecretStorage
+	// Config files to watch for changes
+	Files dependencies.FileStorage
+	// The address the xDS server should bind to
+	XdsBindAddress net.Addr
+}
+
+type EventLoop interface {
+	Run(stop <-chan struct{})
+}
+
 type eventLoop struct {
 	snapshotEmitter *snapshot.Emitter
 	reporter        reporter.Interface
@@ -31,7 +52,7 @@ type eventLoop struct {
 	opts            bootstrap.IngressOptions
 }
 
-func Setup(opts bootstrap.Options, xdsPort int) (*eventLoop, error) {
+func Setup(opts bootstrap.Options, xdsPort int) (EventLoop, error) {
 	store, err := configstorage.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create config store client")
@@ -46,22 +67,29 @@ func Setup(opts bootstrap.Options, xdsPort int) (*eventLoop, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "creating file storage client")
 	}
+	cfg := Config{
+		Options:        opts,
+		Store:          store,
+		Secrets:        secrets,
+		Files:          files,
+		XdsBindAddress: &net.TCPAddr{Port: xdsPort},
+	}
 
-	return SetupWithStorage(opts, store, secrets, files, xdsPort)
+	return SetupWithConfig(cfg)
 }
 
-func SetupWithStorage(opts bootstrap.Options, store storage.Interface, secrets dependencies.SecretStorage, files dependencies.FileStorage, xdsPort int) (*eventLoop, error) {
-	cfgWatcher, err := configwatcher.NewConfigWatcher(store)
+func SetupWithConfig(cfg Config) (EventLoop, error) {
+	cfgWatcher, err := configwatcher.NewConfigWatcher(cfg.Store)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	secretWatcher, err := secretwatcher.NewSecretWatcher(secrets)
+	secretWatcher, err := secretwatcher.NewSecretWatcher(cfg.Secrets)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	fileWatcher, err := filewatcher.NewFileWatcher(files)
+	fileWatcher, err := filewatcher.NewFileWatcher(cfg.Files)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
@@ -75,7 +103,7 @@ func SetupWithStorage(opts bootstrap.Options, store storage.Interface, secrets d
 		}
 	}
 
-	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(opts.Options, edPlugins...)
+	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(cfg.Options.Options, edPlugins...)
 
 	snapshotEmitter := snapshot.NewEmitter(
 		cfgWatcher,
@@ -88,9 +116,9 @@ func SetupWithStorage(opts bootstrap.Options, store storage.Interface, secrets d
 	trans := translator.NewTranslator(plugs)
 
 	// create a snapshot to give to misconfigured envoy instances
-	badNodeSnapshot := xds.BadNodeSnapshot(opts.IngressOptions.BindAddress, opts.IngressOptions.Port)
+	badNodeSnapshot := xds.BadNodeSnapshot(cfg.Options.IngressOptions.BindAddress, cfg.Options.IngressOptions.Port)
 
-	xdsConfig, _, err := xds.RunXDS(xdsPort, badNodeSnapshot)
+	xdsConfig, _, err := xds.RunXDS(cfg.XdsBindAddress, badNodeSnapshot)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start xds server")
 	}
@@ -99,8 +127,8 @@ func SetupWithStorage(opts bootstrap.Options, store storage.Interface, secrets d
 		snapshotEmitter: snapshotEmitter,
 		translator:      trans,
 		xdsConfig:       xdsConfig,
-		reporter:        reporter.NewReporter(store),
-		opts:            opts.IngressOptions,
+		reporter:        reporter.NewReporter(cfg.Store),
+		opts:            cfg.Options.IngressOptions,
 	}
 
 	return e, nil

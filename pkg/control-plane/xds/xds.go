@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	"strings"
+
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
@@ -15,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/pkg/log"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 // used to let nodes know they have a bad config
@@ -27,7 +28,7 @@ type hasher struct{}
 func (h hasher) ID(node *core.Node) string {
 	parts := strings.SplitN(node.Id, "~", 2)
 	if len(parts) != 2 {
-		log.Warnf("node has registered with invalid config: %v\n " +
+		log.Warnf("node has registered with invalid config: %v\n "+
 			"assigning error response virtual host", node)
 		return badNodeKey
 	}
@@ -44,8 +45,8 @@ func (*logger) Errorf(format string, args ...interface{}) {
 	log.Warnf(format, args...)
 }
 
-func RunXDS(port int, badNodeSnapshot envoycache.Snapshot) (envoycache.SnapshotCache, *grpc.Server, error) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func RunXDS(addr net.Addr, badNodeSnapshot envoycache.Snapshot) (envoycache.SnapshotCache, *grpc.Server, error) {
+	lis, err := net.Listen(addr.Network(), addr.String())
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to listen: %v", err)
 	}
@@ -71,7 +72,7 @@ func RunXDS(port int, badNodeSnapshot envoycache.Snapshot) (envoycache.SnapshotC
 	envoyCache.SetSnapshot(badNodeKey, badNodeSnapshot)
 
 	go func() {
-		log.Debugf("xDS server listening on %s", port)
+		log.Debugf("xDS server listening on %v", addr)
 		if err = grpcServer.Serve(lis); err != nil {
 			log.Fatalf("failed to serve grpc: %v", err)
 		}

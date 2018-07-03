@@ -1,21 +1,24 @@
 package xds_test
 
 import (
+	"net"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"google.golang.org/grpc"
-	"time"
-	. "github.com/solo-io/gloo/pkg/control-plane/xds"
-	"net/http"
 	"io/ioutil"
+	"net/http"
+	"time"
+
+	. "github.com/solo-io/gloo/pkg/control-plane/xds"
+	"google.golang.org/grpc"
 )
 
 var _ = Describe("Xds", func() {
@@ -44,7 +47,7 @@ var _ = Describe("Xds", func() {
 			BeforeEach(func() {
 				err := envoyInstance.RunWithId("badid")
 				Expect(err).NotTo(HaveOccurred())
-				_, grpcSrv, err := RunXDS(8081, badNodeSnapshot)
+				_, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot)
 				Expect(err).NotTo(HaveOccurred())
 				srv = grpcSrv
 			})
@@ -72,7 +75,7 @@ var _ = Describe("Xds", func() {
 			BeforeEach(func() {
 				err := envoyInstance.RunWithId(nodeGroup + "~12345")
 				Expect(err).NotTo(HaveOccurred())
-				cache, grpcSrv, err := RunXDS(8081, badNodeSnapshot)
+				cache, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot)
 				Expect(err).NotTo(HaveOccurred())
 				srv = grpcSrv
 				snapshot, err := createSnapshot(routeConfigName, listenerName)
