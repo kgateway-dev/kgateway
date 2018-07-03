@@ -3,8 +3,8 @@ package translator
 import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/plugins/connect"
 )
