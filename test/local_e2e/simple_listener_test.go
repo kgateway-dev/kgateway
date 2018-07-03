@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Listener Test", func() {
+var _ = Describe("Listener Test", func() {
 	It("Proxies HTTP using Listeners and Attributes", func() {
 		fmt.Fprintln(ginkgo.GinkgoWriter, "Running Envoy")
 		roleName := "listener-test-role"
