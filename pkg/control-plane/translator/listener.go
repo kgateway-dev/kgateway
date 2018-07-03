@@ -8,8 +8,6 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	gogo_types "github.com/gogo/protobuf/types"
-	"k8s.io/apimachinery/pkg/labels"
-
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
@@ -18,7 +16,6 @@ import (
 )
 
 func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *envoyapi.Listener {
-	addListenerAttributes(listener, inputs.Cfg.Attributes)
 	validateListenerPorts(role, cfgErrs)
 
 	listenerFilters := t.computeListenerFilters(role, listener, inputs, cfgErrs)
@@ -41,49 +38,6 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 		},
 		FilterChains: filterChains,
 	}
-}
-
-func addListenerAttributes(listener *v1.Listener, attributes []*v1.Attribute) {
-	listenerAttributes := attributesForListener(listener, attributes)
-	for _, attr := range listenerAttributes {
-		// only overwrite listener virtual services if they aren't set
-		if len(attr.VirtualServices) > 0 && len(listener.VirtualServices) == 0 {
-			listener.VirtualServices = attr.VirtualServices
-		}
-		// merge the two configs together with the listener config taking precedence
-		if attr.Config != nil {
-			switch {
-			case listener.Config == nil:
-				listener.Config = attr.Config
-			default:
-				for key, val := range attr.Config.Fields {
-					if _, exists := listener.Config.Fields[key]; exists {
-						continue
-					}
-					listener.Config.Fields[key] = val
-				}
-			}
-		}
-	}
-}
-
-func attributesForListener(listener *v1.Listener, attributes []*v1.Attribute) []*v1.ListenerAttribute {
-	listenerLabels := labels.Set(listener.Labels)
-	if len(listenerLabels) == 0 {
-		return nil
-	}
-	var listenerAttributes []*v1.ListenerAttribute
-	for _, attr := range attributes {
-		listenerAttr, ok := attr.AttributeType.(*v1.Attribute_ListenerAttribute)
-		if !ok {
-			continue
-		}
-		selector := listenerAttr.ListenerAttribute.Selector
-		if labels.SelectorFromSet(selector).Matches(listenerLabels) {
-			listenerAttributes = append(listenerAttributes, listenerAttr.ListenerAttribute)
-		}
-	}
-	return listenerAttributes
 }
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve

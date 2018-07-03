@@ -7,16 +7,17 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
 	"github.com/solo-io/gloo/pkg/control-plane/reporter"
 	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/matcher"
 	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
 	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
@@ -109,6 +110,8 @@ func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycac
 
 func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listener, inputs *snapshot.Cache, cfgErrs configErrors) *listenerResources {
 	rdsName := routeConfigName(listener)
+
+	addListenerAttributes(listener, inputs.Cfg.Attributes)
 	inputs = trimSnapshot(role, listener, inputs, cfgErrs)
 
 	cfgErrs.initializeKeys(inputs.Cfg)
@@ -125,6 +128,49 @@ func (t *Translator) computeListenerResources(role *v1.Role, listener *v1.Listen
 		routeConfig:  routeConfig,
 		configErrors: cfgErrs,
 	}
+}
+
+func addListenerAttributes(listener *v1.Listener, attributes []*v1.Attribute) {
+	listenerAttributes := attributesForListener(listener, attributes)
+	for _, attr := range listenerAttributes {
+		// only overwrite listener virtual services if they aren't set
+		if len(attr.VirtualServices) > 0 && len(listener.VirtualServices) == 0 {
+			listener.VirtualServices = attr.VirtualServices
+		}
+		// merge the two configs together with the listener config taking precedence
+		if attr.Config != nil {
+			switch {
+			case listener.Config == nil:
+				listener.Config = attr.Config
+			default:
+				for key, val := range attr.Config.Fields {
+					if _, exists := listener.Config.Fields[key]; exists {
+						continue
+					}
+					listener.Config.Fields[key] = val
+				}
+			}
+		}
+	}
+}
+
+func attributesForListener(listener *v1.Listener, attributes []*v1.Attribute) []*v1.ListenerAttribute {
+	listenerLabels := labels.Set(listener.Labels)
+	if len(listenerLabels) == 0 {
+		return nil
+	}
+	var listenerAttributes []*v1.ListenerAttribute
+	for _, attr := range attributes {
+		listenerAttr, ok := attr.AttributeType.(*v1.Attribute_ListenerAttribute)
+		if !ok {
+			continue
+		}
+		selector := listenerAttr.ListenerAttribute.Selector
+		if labels.SelectorFromSet(selector).Matches(listenerLabels) {
+			listenerAttributes = append(listenerAttributes, listenerAttr.ListenerAttribute)
+		}
+	}
+	return listenerAttributes
 }
 
 func generateXDSSnapshot(clusters []*envoyapi.Cluster,
