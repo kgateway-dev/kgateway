@@ -11,21 +11,21 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/control-plane/configwatcher"
-	"github.com/solo-io/gloo/pkg/control-plane/endpointswatcher"
-	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
-	. "github.com/solo-io/gloo/pkg/control-plane/snapshot"
-	kubeupstreamdiscovery "github.com/solo-io/gloo/pkg/upstream-discovery/kube"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
+	"github.com/solo-io/gloo/pkg/control-plane/configwatcher"
+	"github.com/solo-io/gloo/pkg/control-plane/endpointswatcher"
+	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
+	. "github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/pkg/storage"
+	kubeupstreamdiscovery "github.com/solo-io/gloo/pkg/upstream-discovery/kube"
 	"github.com/solo-io/gloo/test/helpers"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,6 +81,25 @@ var _ = Describe("Emitter", func() {
 
 				store.V1().VirtualServices().Create(&v1.VirtualService{
 					Name: "foo",
+					SslConfig: &v1.SSLConfig{
+						SslSecrets: &v1.SSLConfig_SecretRef{
+							SecretRef: "vservice-secret",
+						},
+					},
+				})
+
+				store.V1().Roles().Create(&v1.Role{
+					Name: "foo",
+					Listeners: []*v1.Listener{
+						{
+							Name: "foo",
+							SslConfig: &v1.SSLConfig{
+								SslSecrets: &v1.SSLConfig_SecretRef{
+									SecretRef: "listener-secret",
+								},
+							},
+						},
+					},
 				})
 
 				discovery, err := kubeupstreamdiscovery.NewUpstreamController(cfg, store, time.Minute)
@@ -157,9 +176,26 @@ var _ = Describe("Emitter", func() {
 					"secret-name": {
 						Ref: "secret-name",
 						Data: map[string]string{
-							"username": "me@example.com",
 							"password": "foobar",
+							"username": "me@example.com",
 						},
+						ResourceVersion: "",
+					},
+					"vservice-secret": {
+						Ref: "vservice-secret",
+						Data: map[string]string{
+							"password": "foobar",
+							"username": "me@example.com",
+						},
+						ResourceVersion: "",
+					},
+					"listener-secret": {
+						Ref: "listener-secret",
+						Data: map[string]string{
+							"password": "foobar",
+							"username": "me@example.com",
+						},
+						ResourceVersion: "",
 					},
 				}))
 				endpoints := snap.Endpoints
@@ -348,6 +384,11 @@ var _ = Describe("Emitter", func() {
 				Expect(cfg.VirtualServices).To(ContainElement(
 					&v1.VirtualService{
 						Name: "foo",
+						SslConfig: &v1.SSLConfig{
+							SslSecrets: &v1.SSLConfig_SecretRef{
+								SecretRef: "vservice-secret",
+							},
+						},
 						Metadata: &v1.Metadata{
 							Namespace: namespace,
 						},
@@ -479,6 +520,28 @@ func createKubeResources() {
 	}
 
 	_, err := kubeClient.CoreV1().Secrets(namespace).Create(secret)
+	Expect(err).NotTo(HaveOccurred())
+
+	secret = &kubev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "vservice-secret",
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{"username": []byte("me@example.com"), "password": []byte("foobar")},
+	}
+
+	_, err = kubeClient.CoreV1().Secrets(namespace).Create(secret)
+	Expect(err).NotTo(HaveOccurred())
+
+	secret = &kubev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "listener-secret",
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{"username": []byte("me@example.com"), "password": []byte("foobar")},
+	}
+
+	_, err = kubeClient.CoreV1().Secrets(namespace).Create(secret)
 	Expect(err).NotTo(HaveOccurred())
 
 	file := &kubev1.ConfigMap{
