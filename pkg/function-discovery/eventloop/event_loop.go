@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/gloo/pkg/function-discovery/detector"
@@ -27,6 +26,7 @@ import (
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
+	"github.com/solo-io/gloo/pkg/storage/crd"
 )
 
 const (
@@ -183,7 +183,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 
 func createResolver(opts bootstrap.Options) resolver.Resolver {
 	kube, err := func() (kubernetes.Interface, error) {
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := crd.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return nil, err
 		}

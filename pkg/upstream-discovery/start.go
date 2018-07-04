@@ -12,12 +12,12 @@ import (
 	"github.com/solo-io/gloo/pkg/upstream-discovery/kube"
 	"github.com/solo-io/gloo/pkg/plugins/cloudfoundry"
 	"github.com/solo-io/gloo/pkg/storage"
-	"k8s.io/client-go/tools/clientcmd"
+	"github.com/solo-io/gloo/pkg/storage/crd"
 )
 
 func Start(opts bootstrap.Options, store storage.Interface, stop <-chan struct{}) error {
 	if opts.UpstreamDiscoveryOptions.EnableDiscoveryForKubernetes {
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := crd.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to create kube restclient config")
 		}
