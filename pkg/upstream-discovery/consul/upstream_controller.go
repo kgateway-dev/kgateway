@@ -95,6 +95,7 @@ func (c *UpstreamController) watchConsulServices(ctx context.Context, discovered
 				// get each unique set of tags
 				// we will use this to generate an upstream for each unique set
 				serviceTagSets := make(map[string][][]string)
+
 				for svcName := range services {
 					instances, _, err := c.consul.Catalog().Service(svcName, "", &api.QueryOptions{RequireConsistent: true})
 					if err != nil {
@@ -104,6 +105,9 @@ func (c *UpstreamController) watchConsulServices(ctx context.Context, discovered
 					for _, inst := range instances {
 						allTagSets = append(allTagSets, inst.ServiceTags)
 					}
+					// add a service with no tags, so the service can be accessed regardless of tags.
+					allTagSets = append(allTagSets, []string{})
+
 					serviceTagSets[svcName] = uniqueTagSets(allTagSets)
 				}
 				discoveredServices <- serviceTagSets
