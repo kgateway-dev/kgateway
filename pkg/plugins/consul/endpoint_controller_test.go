@@ -19,7 +19,7 @@ var _ = Describe("EndpointController", func() {
 	Describe("controller", func() {
 		It("watches consul services and returns endpoints", func() {
 			cfg := api.DefaultConfig()
-			eds, err := newEndpointController(cfg)
+			eds, err := NewEndpointController(cfg, false)
 			Expect(err).NotTo(HaveOccurred())
 
 			ch := make(chan struct{})
