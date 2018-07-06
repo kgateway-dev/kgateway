@@ -18,6 +18,9 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/pkg/protoutil"
 
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
@@ -42,6 +45,15 @@ type Plugin struct {
 	// these clusters are the destination clusters for the tcp proxy on the inbound listener
 	// they're just localhost:port; only the local envoy needs to know them
 	clustersToGenerate []*envoyapi.Cluster
+}
+
+func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
+	cfg := opts.ConsulOptions.ToConsulConfig()
+	disc, err := consul.NewEndpointController(cfg, true)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start consul endpoint discovery")
+	}
+	return disc, err
 }
 
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {

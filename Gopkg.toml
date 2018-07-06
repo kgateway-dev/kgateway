@@ -84,7 +84,7 @@ ignored = ["github.com/envoyproxy/data-plane-api*"]
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
-  version = "1.0.6"
+  version = "1.2.0"
 
 [[constraint]]
   branch = "master"
