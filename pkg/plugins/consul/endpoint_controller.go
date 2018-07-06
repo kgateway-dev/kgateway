@@ -195,11 +195,15 @@ func (c *endpointController) getNextUpdateForUpstream(ctx context.Context, spec 
 		if !hasRequiredTags(inst.ServiceTags, spec.ServiceTags) {
 			continue
 		}
-		if inst.ServiceAddress == "" || inst.ServicePort == 0 {
+		addr := inst.ServiceAddress
+		if addr == "" {
+			addr = inst.Address
+		}
+		if addr == "" || inst.ServicePort == 0 {
 			continue
 		}
 		ep := endpointdiscovery.Endpoint{
-			Address: inst.ServiceAddress,
+			Address: addr,
 			Port:    int32(inst.ServicePort),
 		}
 		eps = append(eps, ep)
