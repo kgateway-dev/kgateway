@@ -165,28 +165,34 @@ func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginPar
 	if err := validateListener(listener, cfg.DestinationConsulService, params.Config.VirtualServices); err != nil {
 		return nil, err
 	}
-	destinationUpstream, err := FindUpstreamForService(params.Config.Upstreams, cfg.DestinationConsulService)
-	if err != nil {
-		return nil, err
+	if len(listener.VirtualServices) == 0 {
+		destinationUpstream, err := FindUpstreamForService(params.Config.Upstreams, cfg.DestinationConsulService)
+		if err != nil {
+			return nil, err
+		}
+
+		tcpProxyFilterConfig := &envoytcpproxy.TcpProxy{
+			StatPrefix: "outbound-tcp-proxy-" + destinationUpstream.Name,
+			Cluster:    params.EnvoyNameForUpstream(destinationUpstream.Name),
+		}
+		tcpProxyFilterConfigStruct, err := protoutil.MarshalStruct(tcpProxyFilterConfig)
+		if err != nil {
+			panic("unexpected error marsahlling filter config: " + err.Error())
+		}
+		tcpProxyFilter := envoylistener.Filter{
+			Name:   util.TCPProxy,
+			Config: tcpProxyFilterConfigStruct,
+		}
+		return []plugins.StagedListenerFilter{
+			{
+				ListenerFilter: tcpProxyFilter,
+				// TODO(yuval-k): is this correct stage?
+				Stage: plugins.PostInAuth,
+			},
+		}, nil
 	}
-	tcpProxyFilterConfig := &envoytcpproxy.TcpProxy{
-		StatPrefix: "outbound-tcp-proxy-" + destinationUpstream.Name,
-		Cluster:    params.EnvoyNameForUpstream(destinationUpstream.Name),
-	}
-	tcpProxyFilterConfigStruct, err := protoutil.MarshalStruct(tcpProxyFilterConfig)
-	if err != nil {
-		panic("unexpected error marsahlling filter config: " + err.Error())
-	}
-	tcpProxyFilter := envoylistener.Filter{
-		Name:   util.TCPProxy,
-		Config: tcpProxyFilterConfigStruct,
-	}
-	return []plugins.StagedListenerFilter{
-		{
-			ListenerFilter: tcpProxyFilter,
-			Stage:          plugins.PostInAuth,
-		},
-	}, nil
+
+	return nil, nil
 }
 
 // TODO (ilackarms): support tags, structured queries, etc.
