@@ -41,7 +41,15 @@ const (
 	UpstreamTypeConsul = "consul"
 )
 
+// TODO(yuval-k): refactor this to be shared with gloo-connect code
+const CertitificateSecretName = "certificates"
+
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
+	if p.connect {
+		deps := new(plugins.Dependencies)
+		deps.SecretRefs = append(deps.SecretRefs, CertitificateSecretName)
+		return deps
+	}
 	return nil
 }
 
@@ -64,8 +72,6 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 		},
 	}
 	if p.connect {
-		// TODO(yuval-k): refactor this to be shared with gloo-connect code
-		const CertitificateSecretName = "certificates"
 
 		_, ok := params.Secrets[CertitificateSecretName]
 		if ok {
