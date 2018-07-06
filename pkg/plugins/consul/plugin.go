@@ -17,7 +17,7 @@ func init() {
 
 func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
 	cfg := opts.ConsulOptions.ToConsulConfig()
-	disc, err := NewEndpointController(cfg, false)
+	disc, err := NewEndpointController(cfg, opts.ConsulOptions.Connect)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start consul endpoint discovery")
 	}
