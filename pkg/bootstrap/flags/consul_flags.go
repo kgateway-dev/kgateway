@@ -13,5 +13,4 @@ func AddConsulFlags(cmd *cobra.Command, opts *bootstrap.Options) {
 	cmd.PersistentFlags().StringVar(&opts.ConsulOptions.Token, "consul.token", "", "token is used to provide a per-request ACL token to override the default")
 	cmd.PersistentFlags().StringVar(&opts.ConsulOptions.Username, "consul.username", "", "username for authenticating to the consul server, if using basic auth")
 	cmd.PersistentFlags().StringVar(&opts.ConsulOptions.Password, "consul.password", "", "password for authenticating to the consul server, if using basic auth")
-	cmd.PersistentFlags().BoolVar(&opts.ConsulOptions.Connect, "consul.connect", false, "should we do connect endpoint discovery?")
 }
