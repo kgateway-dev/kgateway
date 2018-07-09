@@ -20,7 +20,7 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 
 	listenerFilters := t.computeListenerFilters(role, listener, inputs, cfgErrs)
 
-	filterChains := createListenerFilterChains(inputs, listener, listenerFilters, cfgErrs)
+	filterChains := createListenerFilterChains(inputs, listener, listenerFilters)
 
 	return &envoyapi.Listener{
 		Name: listener.Name,
@@ -42,7 +42,7 @@ func (t *Translator) computeListener(role *v1.Role, listener *v1.Listener, input
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // plus one if there's an insecure one
-func createListenerFilterChains(inputs *snapshot.Cache, listener *v1.Listener, listenerFilters []envoylistener.Filter, cfgErrs configErrors) []envoylistener.FilterChain {
+func createListenerFilterChains(inputs *snapshot.Cache, listener *v1.Listener, listenerFilters []envoylistener.Filter) []envoylistener.FilterChain {
 	// no filters = no filter chains
 	// TODO(ilackarms): find another way to prevent the xds server from serving listeners with 0 filters
 	// currently the translator does not add listeners with 0 filters to the xds snapshot
