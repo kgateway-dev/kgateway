@@ -207,6 +207,12 @@ func FindUpstreamForService(upstreams []*v1.Upstream, serviceName string) (*v1.U
 			log.Warnf("failed to decode consul upstream %s's spec: %v", us.Name, err)
 			continue
 		}
+
+		// Only support connect enabled upstreams
+		if spec.Connect == nil {
+			continue
+		}
+
 		if serviceName == spec.ServiceName {
 			return us, nil
 		}
