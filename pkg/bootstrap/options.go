@@ -79,9 +79,6 @@ type ConsulOptions struct {
 	// in consul by gloo
 	RootPath string
 
-	// Should we use connect enabled endpoint discovery?
-	Connect bool
-
 	// TODO: TLS Configuration for Consul
 }
 type CoPilotOptions struct {

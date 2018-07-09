@@ -73,49 +73,51 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 			},
 		},
 	}
-	if p.connect {
+	if spec.Connect == nil || spec.Connect.TlsSecretRef == "" {
+		return nil
+	}
+	secretRef := spec.Connect.TlsSecretRef
+	_, ok := params.Secrets[secretRef]
+	if !ok {
+		return errors.Errorf("missing secret %v", secretRef)
+	}
+	certChain, privateKey, rootCa, err := getSslSecrets(secretRef, params.Secrets)
+	if err != nil {
+		return err
+	}
+	certChainData := &envoycore.DataSource{
+		Specifier: &envoycore.DataSource_InlineString{
+			InlineString: certChain,
+		},
+	}
+	privateKeyData := &envoycore.DataSource{
+		Specifier: &envoycore.DataSource_InlineString{
+			InlineString: privateKey,
+		},
+	}
+	rootCaData := &envoycore.DataSource{
+		Specifier: &envoycore.DataSource_InlineString{
+			InlineString: rootCa,
+		},
+	}
 
-		_, ok := params.Secrets[CertitificateSecretName]
-		if ok {
-			certChain, privateKey, rootCa, err := getSslSecrets(CertitificateSecretName, params.Secrets)
-			if err != nil {
-				return err
-			}
-			certChainData := &envoycore.DataSource{
-				Specifier: &envoycore.DataSource_InlineString{
-					InlineString: certChain,
-				},
-			}
-			privateKeyData := &envoycore.DataSource{
-				Specifier: &envoycore.DataSource_InlineString{
-					InlineString: privateKey,
-				},
-			}
-			rootCaData := &envoycore.DataSource{
-				Specifier: &envoycore.DataSource_InlineString{
-					InlineString: rootCa,
-				},
-			}
-
-			var validationContext *envoyauth.CertificateValidationContext
-			if rootCa != "" {
-				validationContext = &envoyauth.CertificateValidationContext{
-					TrustedCa: rootCaData,
-				}
-			}
-			out.TlsContext = &envoyauth.UpstreamTlsContext{
-				CommonTlsContext: &envoyauth.CommonTlsContext{
-					TlsParams: &envoyauth.TlsParameters{},
-					TlsCertificates: []*envoyauth.TlsCertificate{
-						{
-							CertificateChain: certChainData,
-							PrivateKey:       privateKeyData,
-						},
-					},
-					ValidationContext: validationContext,
-				},
-			}
+	var validationContext *envoyauth.CertificateValidationContext
+	if rootCa != "" {
+		validationContext = &envoyauth.CertificateValidationContext{
+			TrustedCa: rootCaData,
 		}
+	}
+	out.TlsContext = &envoyauth.UpstreamTlsContext{
+		CommonTlsContext: &envoyauth.CommonTlsContext{
+			TlsParams: &envoyauth.TlsParameters{},
+			TlsCertificates: []*envoyauth.TlsCertificate{
+				{
+					CertificateChain: certChainData,
+					PrivateKey:       privateKeyData,
+				},
+			},
+			ValidationContext: validationContext,
+		},
 	}
 	return nil
 }

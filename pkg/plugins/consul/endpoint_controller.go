@@ -28,11 +28,9 @@ type endpointController struct {
 
 	lastSeen         uint64
 	upstreamsToTrack chan []*v1.Upstream
-
-	connect bool
 }
 
-func NewEndpointController(cfg *api.Config, connect bool) (*endpointController, error) {
+func NewEndpointController(cfg *api.Config) (*endpointController, error) {
 	client, err := api.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create consul client: %v", err)
@@ -43,7 +41,6 @@ func NewEndpointController(cfg *api.Config, connect bool) (*endpointController, 
 		upstreamsToTrack:    make(chan []*v1.Upstream, 1),
 		upstreamCancelFuncs: make(map[string]context.CancelFunc),
 		consul:              client,
-		connect:             connect,
 	}
 
 	return c, nil
@@ -173,8 +170,8 @@ func (c *endpointController) beginTrackingUpstream(ctx context.Context, us *v1.U
 	}
 }
 
-func (c *endpointController) getEndpoints(service string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
-	if c.connect {
+func (c *endpointController) getEndpoints(service string, useConnectApi bool, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
+	if useConnectApi {
 		return c.consul.Catalog().Connect(service, "", q)
 	}
 	return c.consul.Catalog().Service(service, "", q)
@@ -183,7 +180,8 @@ func (c *endpointController) getEndpoints(service string, q *api.QueryOptions) (
 func (c *endpointController) getNextUpdateForUpstream(ctx context.Context, spec *UpstreamSpec, lastIndex uint64) ([]endpointdiscovery.Endpoint, uint64, error) {
 	opts := &api.QueryOptions{RequireConsistent: true, WaitIndex: lastIndex}
 	opts = opts.WithContext(ctx)
-	instances, meta, err := c.getEndpoints(spec.ServiceName, opts)
+	isConnectUpstream := spec.Connect != nil && spec.Connect.TlsSecretRef != ""
+	instances, meta, err := c.getEndpoints(spec.ServiceName, isConnectUpstream, opts)
 	if err != nil {
 		return nil, lastIndex, errors.Wrapf(err, "failed to find %v in service catalog", spec.ServiceName)
 	}
