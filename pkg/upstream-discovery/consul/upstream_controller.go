@@ -1,14 +1,11 @@
 package consul
 
 import (
+	"context"
 	"fmt"
 	"log"
-
-	"context"
-
-	"strings"
-
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/pkg/errors"
@@ -59,7 +56,7 @@ func (c *UpstreamController) Run(stop <-chan struct{}) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.ctx = ctx
-	discoveredServices := make(chan map[string][][]string)
+	discoveredServices := make(chan []consulService)
 	go c.watchConsulServices(ctx, discoveredServices)
 	for {
 		select {
@@ -76,7 +73,13 @@ func (c *UpstreamController) Error() <-chan error {
 	return c.errors
 }
 
-func (c *UpstreamController) watchConsulServices(ctx context.Context, discoveredServices chan map[string][][]string) {
+type consulService struct {
+	name    string
+	tagSets [][]string
+	connect bool
+}
+
+func (c *UpstreamController) watchConsulServices(ctx context.Context, discoveredServices chan []consulService) {
 	var lastIndex uint64
 	for {
 		select {
@@ -94,23 +97,38 @@ func (c *UpstreamController) watchConsulServices(ctx context.Context, discovered
 				}
 				// get each unique set of tags
 				// we will use this to generate an upstream for each unique set
-				serviceTagSets := make(map[string][][]string)
+				var consulServices []consulService
 
 				for svcName := range services {
-					instances, _, err := c.consul.Catalog().Service(svcName, "", &api.QueryOptions{RequireConsistent: true})
+					serviceInstances, _, err := c.consul.Catalog().Service(svcName, "", &api.QueryOptions{RequireConsistent: true})
 					if err != nil {
 						return errors.Wrapf(err, "failed to get instances of service %s", svcName)
 					}
 					var allTagSets [][]string
-					for _, inst := range instances {
+					for _, inst := range serviceInstances {
 						allTagSets = append(allTagSets, inst.ServiceTags)
 					}
 					// add a service with no tags, so the service can be accessed regardless of tags.
 					allTagSets = append(allTagSets, []string{})
 
-					serviceTagSets[svcName] = uniqueTagSets(allTagSets)
+					consulServices = append(consulServices, consulService{
+						name:    svcName,
+						tagSets: uniqueTagSets(allTagSets),
+						connect: false,
+					})
+
+					proxyInstances, _, _ := c.consul.Catalog().Connect(svcName, "", &api.QueryOptions{RequireConsistent: true})
+
+					if len(proxyInstances) > 0 {
+						consulServices = append(consulServices, consulService{
+							name:    svcName,
+							tagSets: uniqueTagSets(allTagSets),
+							connect: true,
+						})
+					}
 				}
-				discoveredServices <- serviceTagSets
+
+				discoveredServices <- consulServices
 				return nil
 			}, ctx)
 		}
@@ -179,23 +197,37 @@ func (c *UpstreamController) getNextUpdate(ctx context.Context, lastIndex uint64
 	return services, meta.LastIndex, nil
 }
 
-func (c *UpstreamController) syncGlooUpstreamsWithConsulServices(serviceList map[string][][]string) {
-	c.syncer.DesiredUpstreams = convertServicesFunc(serviceList)
+func (c *UpstreamController) syncGlooUpstreamsWithConsulServices(serviceList []consulService) {
+	c.syncer.DesiredUpstreams = c.convertServicesFunc(serviceList)
 	if err := c.syncer.SyncDesiredState(); err != nil {
 		c.errors <- err
 	}
 }
 
-func convertServicesFunc(serviceList map[string][][]string) func() ([]*v1.Upstream, error) {
+func (c *UpstreamController) convertServicesFunc(serviceList []consulService) func() ([]*v1.Upstream, error) {
 	return func() ([]*v1.Upstream, error) {
 		var upstreams []*v1.Upstream
-		for svcName, tagSets := range serviceList {
-			for _, tags := range tagSets {
+		for _, svc := range serviceList {
+			if svc.connect {
 				us := &v1.Upstream{
-					Name: upstreamName(svcName, tags),
+					Name: consul.UpstreamNameForConnectService(svc.name),
 					Type: consul.UpstreamTypeConsul,
 					Spec: consul.EncodeUpstreamSpec(consul.UpstreamSpec{
-						ServiceName: svcName,
+						ServiceName: svc.name,
+						Connect: &consul.Connect{
+							TlsSecretRef: consul.LeafCertificateSecret,
+						},
+					}),
+				}
+				upstreams = append(upstreams, us)
+				continue
+			}
+			for _, tags := range svc.tagSets {
+				us := &v1.Upstream{
+					Name: upstreamName(svc.name, tags),
+					Type: consul.UpstreamTypeConsul,
+					Spec: consul.EncodeUpstreamSpec(consul.UpstreamSpec{
+						ServiceName: svc.name,
 						ServiceTags: tags,
 					}),
 				}

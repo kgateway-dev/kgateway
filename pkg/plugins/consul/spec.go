@@ -44,3 +44,8 @@ func (s *UpstreamSpec) validateUpstream() error {
 	}
 	return nil
 }
+
+// TODO(ilackarms + yuval-k): assess where this function should ive
+func UpstreamNameForConnectService(serviceName string) string {
+	return serviceName+"-proxy"
+}

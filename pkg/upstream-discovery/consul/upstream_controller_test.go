@@ -2,10 +2,8 @@ package consul
 
 import (
 	"os"
-
-	"time"
-
 	"sort"
+	"time"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/hashicorp/consul/api"
@@ -153,6 +151,7 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								},
 							},
 						},
+						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -179,6 +178,7 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								},
 							},
 						},
+						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -205,6 +205,7 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								},
 							},
 						},
+						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -237,6 +238,7 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								},
 							},
 						},
+						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -274,6 +276,7 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								},
 							},
 						},
+						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
