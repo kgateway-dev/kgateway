@@ -162,7 +162,7 @@ func (p *Plugin) outboundListenerFilters(params *plugins.ListenerFilterPluginPar
 	if cfg.DestinationConsulService == "" {
 		return nil, errors.Errorf("destination service cannot be empty")
 	}
-	if err := validateListener(listener, cfg.DestinationConsulService, params.Config.VirtualServices); err != nil {
+	if err := validateListener(listener, consul.UpstreamNameForConnectService(cfg.DestinationConsulService), params.Config.VirtualServices); err != nil {
 		return nil, err
 	}
 	if len(listener.VirtualServices) == 0 {
