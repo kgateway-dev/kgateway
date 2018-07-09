@@ -22,35 +22,36 @@ func init() {
 
 func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
 	cfg := opts.ConsulOptions.ToConsulConfig()
-	// TODO(yuval-k): This is a big ugly it should happend durint init
-	// refactor this - perhaps register a plugin factory?
-	p.connect = opts.ConsulOptions.Connect
-	disc, err := NewEndpointController(cfg, opts.ConsulOptions.Connect)
+	disc, err := NewEndpointController(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start consul endpoint discovery")
 	}
 	return disc, err
 }
 
-type Plugin struct {
-	connect bool
-}
+type Plugin struct{}
 
 const (
 	// define Upstream type name
 	UpstreamTypeConsul = "consul"
 )
 
-// TODO(yuval-k): refactor this to be shared with gloo-connect code
-const CertitificateSecretName = "certificates"
-
-func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
-	if p.connect {
-		deps := new(plugins.Dependencies)
-		deps.SecretRefs = append(deps.SecretRefs, CertitificateSecretName)
-		return deps
+func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
+	deps := new(plugins.Dependencies)
+	for _, us := range cfg.Upstreams {
+		if us.Type != UpstreamTypeConsul {
+			continue
+		}
+		spec, err := DecodeUpstreamSpec(us.Spec)
+		if err != nil {
+			continue
+		}
+		if spec.Connect == nil || spec.Connect.TlsSecretRef == "" {
+			continue
+		}
+		deps.SecretRefs = append(deps.SecretRefs, spec.Connect.TlsSecretRef)
 	}
-	return nil
+	return deps
 }
 
 func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Upstream, out *envoyapi.Cluster) error {
@@ -58,7 +59,8 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 		return nil
 	}
 	// decode does validation for us
-	if _, err := DecodeUpstreamSpec(in.Spec); err != nil {
+	spec, err := DecodeUpstreamSpec(in.Spec)
+	if err != nil {
 		return errors.Wrap(err, "invalid consul upstream spec")
 	}
 
