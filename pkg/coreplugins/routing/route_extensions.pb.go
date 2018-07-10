@@ -34,8 +34,8 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// Common config that can be applied to any route in a Virtual Serivce
-// RouteExtensions should be placed
+// RouteExtensions should be placed in the route.extensions field
+// RouteExtensions extend the behavior of a regular route in gloo (within a virtual service)
 type RouteExtensions struct {
 	// These headers will be added to the request before it is sent to the upstream
 	AddRequestHeaders []*HeaderValue `protobuf:"bytes,1,rep,name=add_request_headers,json=addRequestHeaders" json:"add_request_headers,omitempty"`
