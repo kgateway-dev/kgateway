@@ -121,7 +121,7 @@ func ValidConfig() *v1.Config {
 						},
 					},
 					PrefixRewrite: "/bar",
-					Extensions: routing.EncodeRouteExtensionSpec(routing.RouteExtensions{
+					Extensions: routing.EncodeRouteExtensionSpec(&routing.RouteExtensions{
 						MaxRetries: 2,
 						Timeout:    &timeout,
 						AddRequestHeaders: []*routing.HeaderValue{
@@ -161,7 +161,7 @@ func ValidConfig() *v1.Config {
 						},
 					},
 					PrefixRewrite: "/bar",
-					Extensions: routing.EncodeRouteExtensionSpec(routing.RouteExtensions{
+					Extensions: routing.EncodeRouteExtensionSpec(&routing.RouteExtensions{
 						MaxRetries: 2,
 						Timeout:    &timeout,
 						AddRequestHeaders: []*routing.HeaderValue{
