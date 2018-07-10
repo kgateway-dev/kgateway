@@ -24,7 +24,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/storage/crd"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -59,7 +59,7 @@ func GetKubernetesClient() (*rest.Config, *kubernetes.Clientset, *apiextensionsc
 	// in-cluster service account
 	kubeConfig := os.Getenv("KUBECONFIG")
 	if len(kubeConfig) != 0 {
-		config, err = crd.GetConfig("", kubeConfig)
+		config, err = kubeutils.GetConfig("", kubeConfig)
 		if err != nil {
 			return nil, nil, nil, err
 		}

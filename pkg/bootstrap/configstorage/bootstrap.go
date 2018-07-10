@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/consul"
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/solo-io/gloo/pkg/storage/file"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 func Bootstrap(opts bootstrap.Options) (storage.Interface, error) {
@@ -22,7 +23,7 @@ func Bootstrap(opts bootstrap.Options) (storage.Interface, error) {
 		}
 		return client, nil
 	case bootstrap.WatcherTypeKube:
-		cfg, err := crd.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := kubeutils.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return nil, errors.Wrap(err, "building kube restclient")
 		}

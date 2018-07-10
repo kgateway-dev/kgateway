@@ -7,6 +7,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/hashicorp/consul/api"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
+	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/function-discovery/detector"
 	"github.com/solo-io/gloo/pkg/function-discovery/fission"
 	"github.com/solo-io/gloo/pkg/function-discovery/grpc"
@@ -18,15 +24,9 @@ import (
 	"github.com/solo-io/gloo/pkg/function-discovery/swagger"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater"
 	"github.com/solo-io/gloo/pkg/function-discovery/upstreamwatcher"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
-	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
-	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
-	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
-	"github.com/solo-io/gloo/pkg/storage/crd"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 const (
@@ -183,7 +183,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 
 func createResolver(opts bootstrap.Options) resolver.Resolver {
 	kube, err := func() (kubernetes.Interface, error) {
-		cfg, err := crd.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := kubeutils.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return nil, err
 		}

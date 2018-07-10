@@ -6,18 +6,18 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/plugins/cloudfoundry"
+	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap"
 	"github.com/solo-io/gloo/pkg/upstream-discovery/consul"
 	"github.com/solo-io/gloo/pkg/upstream-discovery/copilot"
 	"github.com/solo-io/gloo/pkg/upstream-discovery/kube"
-	"github.com/solo-io/gloo/pkg/plugins/cloudfoundry"
-	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/storage/crd"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 func Start(opts bootstrap.Options, store storage.Interface, stop <-chan struct{}) error {
 	if opts.UpstreamDiscoveryOptions.EnableDiscoveryForKubernetes {
-		cfg, err := crd.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := kubeutils.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to create kube restclient config")
 		}

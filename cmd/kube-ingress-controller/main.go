@@ -8,14 +8,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"
 
-	"github.com/solo-io/gloo/pkg/kube-ingress-controller/ingress"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
+	"github.com/solo-io/gloo/pkg/kube-ingress-controller/ingress"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/signals"
 	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/storage/crd"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 func main() {
@@ -38,7 +38,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return errors.Wrap(err, "failed to create config store client")
 		}
-		cfg, err := crd.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := kubeutils.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to create kube restclient config")
 		}

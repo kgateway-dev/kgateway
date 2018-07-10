@@ -8,11 +8,11 @@ import (
 	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/storage/crd"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/file"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/kube"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/vault"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 func Bootstrap(opts bootstrap.Options) (dependencies.SecretStorage, error) {
@@ -24,7 +24,7 @@ func Bootstrap(opts bootstrap.Options) (dependencies.SecretStorage, error) {
 		}
 		return file.NewSecretStorage(opts.FileOptions.SecretDir, opts.SecretStorageOptions.SyncFrequency)
 	case bootstrap.WatcherTypeKube:
-		cfg, err := crd.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := kubeutils.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return nil, errors.Wrap(err, "building kube restclient")
 		}

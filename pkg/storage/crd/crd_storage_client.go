@@ -2,7 +2,6 @@ package crd
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -12,8 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
@@ -24,34 +21,6 @@ import (
 //go:generate go run ${GOPATH}/src/github.com/solo-io/gloo/pkg/storage/generate/generate_clients.go -f ${GOPATH}/src/github.com/solo-io/gloo/pkg/storage/crd/client_template.go.tmpl -o ${GOPATH}/src/github.com/solo-io/gloo/pkg/storage/crd/
 type Client struct {
 	v1 *v1client
-}
-
-// GetConfig gets the kubernetes client config
-func GetConfig(masterURL, kubeconfigPath string) (*rest.Config, error) {
-
-	envVarName := clientcmd.RecommendedConfigPathEnvVar
-	if kubeconfigPath == "" && masterURL == "" && os.Getenv(envVarName) == "" {
-		// Neither kubeconfig nor master URL nor envVarName(KUBECONFIG) was specified. Using the inClusterConfig.
-		kubeconfig, err := rest.InClusterConfig()
-		if err == nil {
-			return kubeconfig, nil
-		}
-		// error creating inClusterConfig, falling back to default config
-	}
-
-	if kubeconfigPath != "" {
-		if _, err := os.Stat(kubeconfigPath); os.IsNotExist(err) {
-			// the specified kubeconfig does not exist so fallback to default
-			kubeconfigPath = ""
-		}
-	}
-
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.ExplicitPath = kubeconfigPath
-	configOverrides := &clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterURL}}
-
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides).ClientConfig()
-
 }
 
 func NewStorage(cfg *rest.Config, namespace string, syncFrequency time.Duration) (storage.Interface, error) {
