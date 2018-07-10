@@ -1,11 +1,11 @@
-package extensions_test
+package routing_test
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
+	. "github.com/solo-io/gloo/pkg/coreplugins/routing"
 	. "github.com/solo-io/gloo/test/helpers"
 )
 

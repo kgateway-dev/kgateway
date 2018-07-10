@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	v12 "github.com/solo-io/gloo/pkg/api/defaults/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
+	"github.com/solo-io/gloo/pkg/coreplugins/routing"
 	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
@@ -98,6 +98,7 @@ func ValidConfig() *v1.Config {
 			}),
 		},
 	}
+	timeout := time.Minute
 	virtualServices := []*v1.VirtualService{
 		{
 			Name: "valid-vservice-1",
@@ -120,13 +121,13 @@ func ValidConfig() *v1.Config {
 						},
 					},
 					PrefixRewrite: "/bar",
-					Extensions: extensions.EncodeRouteExtensionSpec(extensions.RouteExtensionSpec{
+					Extensions: routing.EncodeRouteExtensionSpec(routing.RouteExtensions{
 						MaxRetries: 2,
-						Timeout:    time.Minute,
-						AddRequestHeaders: []extensions.HeaderValue{
+						Timeout:    &timeout,
+						AddRequestHeaders: []*routing.HeaderValue{
 							{Key: "x-foo", Value: "bar"},
 						},
-						AddResponseHeaders: []extensions.HeaderValue{
+						AddResponseHeaders: []*routing.HeaderValue{
 							{Key: "x-foo", Value: "bar"},
 						},
 						RemoveResponseHeaders: []string{
@@ -160,13 +161,13 @@ func ValidConfig() *v1.Config {
 						},
 					},
 					PrefixRewrite: "/bar",
-					Extensions: extensions.EncodeRouteExtensionSpec(extensions.RouteExtensionSpec{
+					Extensions: routing.EncodeRouteExtensionSpec(routing.RouteExtensions{
 						MaxRetries: 2,
-						Timeout:    time.Minute,
-						AddRequestHeaders: []extensions.HeaderValue{
+						Timeout:    &timeout,
+						AddRequestHeaders: []*routing.HeaderValue{
 							{Key: "x-foo", Value: "bar"},
 						},
-						AddResponseHeaders: []extensions.HeaderValue{
+						AddResponseHeaders: []*routing.HeaderValue{
 							{Key: "x-foo", Value: "bar"},
 						},
 						RemoveResponseHeaders: []string{

@@ -1,4 +1,4 @@
-package extensions
+package routing_test
 
 import (
 	"testing"

@@ -1,0 +1,68 @@
+syntax = "proto3";
+package gloo.api.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/coreplugins/routing";
+
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Plugin Name = "routing.gloo.solo.io"
+
+// Common config that can be applied to any route in a Virtual Serivce
+// RouteExtensions should be placed
+message RouteExtensions {
+    // These headers will be added to the request before it is sent to the upstream
+    repeated HeaderValue add_request_headers = 1;
+    // These headers will be added to the response before it is returned to the downstream
+    repeated HeaderValue add_response_headers = 2;
+    // These headers will be removed from the request before it is sent to the upstream
+    repeated string remove_response_headers = 3;
+    // The maximum number of retries to attempt for requests that get a 5xx response
+    uint32 max_retries = 4;
+    // If set, time out requests on this route. If not set, this will default to the connection timeout on the upstream
+    google.protobuf.Duration timeout = 5 [(gogoproto.stdduration) = true];
+    // Rewrite the host header of the request to this value, if set
+    string host_rewrite = 6;
+    // Configure Cross-Origin Resource Sharing requests
+    CorsPolicy cors = 7;
+
+}
+
+// Header name/value pair
+message HeaderValue {
+    // Header name
+    string key = 1;
+    // Header value
+    string value = 2;
+    // Should this value be appended?
+    bool append  = 3;
+}
+
+// Configuration for Cross-Origin Resource Sharing requests
+message CorsPolicy {
+    // Specifies the origins that will be allowed to do CORS requests.
+    //
+    // An origin is allowed if either allow_origin or allow_origin_regex match.
+    repeated string allow_origin = 1;
+
+    // Specifies regex patterns that match allowed origins.
+    //
+    // An origin is allowed if either allow_origin or allow_origin_regex match.
+    repeated string allow_origin_regex = 8;
+
+    // Specifies the content for the *access-control-allow-methods* header.
+    string allow_methods = 2;
+
+    // Specifies the content for the *access-control-allow-headers* header.
+    string allow_headers = 3;
+
+    // Specifies the content for the *access-control-expose-headers* header.
+    string expose_headers = 4;
+
+    // Specifies the content for the *access-control-max-age* header.
+    google.protobuf.Duration max_age = 5[(gogoproto.stdduration) = true];
+
+    // Specifies whether the resource allows credentials.
+    bool allow_credentials = 6;
+}

@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/pkg/control-plane/reporter"
 	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/coreplugins/matcher"
-	"github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
+	"github.com/solo-io/gloo/pkg/coreplugins/routing"
 	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
@@ -32,7 +32,7 @@ type Translator struct {
 // all built-in plugins should go here
 var corePlugins = []plugins.TranslatorPlugin{
 	&matcher.Plugin{},
-	&extensions.Plugin{},
+	&routing.Plugin{},
 	static.NewPlugin(),
 }
 

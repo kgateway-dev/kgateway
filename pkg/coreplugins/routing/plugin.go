@@ -1,4 +1,4 @@
-package extensions
+package routing
 
 import (
 	"fmt"
@@ -11,6 +11,8 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins"
 )
+
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:${GOPATH}/src route_extensions.proto
 
 const (
 	// TODO: add more retry policies
@@ -66,8 +68,8 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 	}
 	routeAction.Route.ResponseHeadersToRemove = append(routeAction.Route.ResponseHeadersToRemove, spec.RemoveResponseHeaders...)
 
-	if spec.Timeout > 0 {
-		routeAction.Route.Timeout = &spec.Timeout
+	if spec.Timeout != nil {
+		routeAction.Route.Timeout = spec.Timeout
 	}
 	if spec.HostRewrite != "" {
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{
@@ -89,7 +91,7 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 			ExposeHeaders:    spec.Cors.ExposeHeaders,
 			AllowCredentials: &types.BoolValue{Value: spec.Cors.AllowCredentials},
 		}
-		if spec.Cors.MaxAge != 0 {
+		if spec.Cors.MaxAge != nil {
 			maxAge := fmt.Sprintf("%.0f", spec.Cors.MaxAge.Seconds())
 			routeAction.Route.Cors.MaxAge = maxAge
 		}

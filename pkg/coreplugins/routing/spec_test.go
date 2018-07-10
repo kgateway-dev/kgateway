@@ -1,4 +1,4 @@
-package extensions_test
+package routing_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,17 +9,18 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/types"
-	. "github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
+	. "github.com/solo-io/gloo/pkg/coreplugins/routing"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
 var _ = Describe("Spec", func() {
 	It("decodes and uncodes from yaml", func() {
-		spec := RouteExtensionSpec{
+		timeout := time.Minute
+		spec := &RouteExtensions{
 			MaxRetries: 1,
-			Timeout:    time.Minute,
-			AddRequestHeaders: []HeaderValue{
+			Timeout:    &timeout,
+			AddRequestHeaders: []*HeaderValue{
 				{
 					Key:   "FOO",
 					Value: "BAR",
