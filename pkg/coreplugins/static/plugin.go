@@ -14,6 +14,8 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src upstream_spec.proto
+
 type Plugin struct {
 	hostRewriteUpstreams map[string]bool
 }
@@ -74,12 +76,12 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 			},
 		})
 		// fix issue where ipv6 addr cannot bind
-		if !spec.EnableIPv6 {
+		if !spec.EnableIpv6 {
 			out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 		}
 		// if host port is 443 && spec.TLS == nil we will use TLS
 		// or if the user wants it
-		if (spec.TLS != nil && *spec.TLS) || (spec.TLS == nil && foundSslPort) {
+		if (spec.Tls != nil && spec.Tls.Value) || (spec.Tls == nil && foundSslPort) {
 			// tell envoy to use TLS to connect to this upstream
 			// TODO: support client certificates
 			out.TlsContext = &envoyauth.UpstreamTlsContext{

@@ -1,32 +1,21 @@
 package static
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
-type UpstreamSpec struct {
-	Hosts      []Host `json:"hosts"`
-	EnableIPv6 bool   `json:"enable_ipv6"`
-	TLS        *bool   `json:"tls"`
-}
-
-type Host struct {
-	Addr string `json:"addr"`
-	Port uint32 `json:"port"`
-}
-
-func DecodeUpstreamSpec(generic v1.UpstreamSpec) (UpstreamSpec, error) {
+func DecodeUpstreamSpec(generic v1.UpstreamSpec) (*UpstreamSpec, error) {
 	var s UpstreamSpec
-	if err := protoutil.UnmarshalStruct(generic, &s); err != nil {
-		return s, err
+	if err := util.StructToMessage(generic, &s); err != nil {
+		return &s, err
 	}
-	return s, s.validateUpstream()
+	return &s, s.validateUpstream()
 }
 
-func EncodeUpstreamSpec(spec UpstreamSpec) v1.UpstreamSpec {
-	v1Spec, err := protoutil.MarshalStruct(spec)
+func EncodeUpstreamSpec(spec *UpstreamSpec) v1.UpstreamSpec {
+	v1Spec, err := util.MessageToStruct(spec)
 	if err != nil {
 		panic(err)
 	}

@@ -1,0 +1,28 @@
+syntax = "proto3";
+package gloo.api.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/coreplugins/static";
+
+import "google/protobuf/wrappers.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Configuration for Static Upstreams
+message UpstreamSpec {
+    // A list of addresses and ports
+    // at least one must be specified
+    repeated Host hosts = 1;
+    // Enable ipv6 addresses to be used for routing
+    bool enable_ipv6 = 2;
+    // Attempt to use outbound TLS
+    google.protobuf.BoolValue tls = 3;
+
+}
+
+// Represents a single instance of an upstream
+message Host {
+    // Address (hostname or IP)
+    string addr = 1;
+    // Port the instance is listening on
+    uint32 port = 2;
+}
