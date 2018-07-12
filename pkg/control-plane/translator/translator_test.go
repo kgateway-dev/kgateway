@@ -88,8 +88,8 @@ func ValidConfig() *v1.Config {
 		{
 			Name: "valid-service",
 			Type: static.UpstreamTypeService,
-			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-				Hosts: []static.Host{
+			Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
+				Hosts: []*static.Host{
 					{
 						Addr: "localhost",
 						Port: 1234,
