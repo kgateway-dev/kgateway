@@ -39,12 +39,8 @@ var _ = Describe("Spec", func() {
 add_request_headers:
 - key: FOO
   value: BAR
-- key: BOO
-  value: BAR
-  append: true
 max_retries: 1
-prefix_rewrite: /foo
-timeout: 60000000000
+timeout: 60.000s
 something_invalid: another_spec_maybe?
 cors:
   allow_origin: 
