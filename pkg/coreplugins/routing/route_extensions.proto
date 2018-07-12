@@ -24,7 +24,6 @@ message RouteExtensions {
     string host_rewrite = 6;
     // Configure Cross-Origin Resource Sharing requests
     CorsPolicy cors = 7;
-
 }
 
 // Header name/value pair

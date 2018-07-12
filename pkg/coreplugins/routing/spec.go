@@ -3,12 +3,11 @@ package routing
 import (
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
 func DecodeRouteExtensions(generic *types.Struct) (*RouteExtensions, error) {
 	cfg := new(RouteExtensions)
-	if err := protoutil.UnmarshalStruct(generic, cfg); err != nil {
+	if err := util.StructToMessage(generic, cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
