@@ -48,6 +48,8 @@ const (
 	functionQualifierKey = "qualifier"
 )
 
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src upstream_spec.proto
+
 func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 	deps := new(plugins.Dependencies)
 	for _, upstream := range cfg.Upstreams {

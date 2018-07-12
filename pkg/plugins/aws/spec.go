@@ -30,11 +30,6 @@ var (
 	}
 )
 
-type UpstreamSpec struct {
-	Region    string `json:"region"`
-	SecretRef string `json:"secret_ref"`
-}
-
 func EncodeUpstreamSpec(spec UpstreamSpec) *types.Struct {
 	v1Spec, err := protoutil.MarshalStruct(spec)
 	if err != nil {

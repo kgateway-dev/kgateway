@@ -1,0 +1,22 @@
+syntax = "proto3";
+package gloo.api.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/aws";
+
+import "google/protobuf/wrappers.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Upstream Spec for AWS Lambda Upstreams
+message UpstreamSpec {
+    // The AWS Region in which to run Lambda Functions
+    string region = 1;
+    // A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret
+    // AWS Secrets can be created with `glooctl secret create aws ...`
+    // If the secret is created manually, it must conform to the following structure:
+    //  ```
+    //  access_key: <aws access key>
+    //  secret_key: <aws secret key>
+    //  ```
+    string secret_ref = 2;
+}

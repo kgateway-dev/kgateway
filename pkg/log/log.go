@@ -35,7 +35,7 @@ func Printf(format string, a ...interface{}) {
 }
 
 func Warnf(format string, a ...interface{}) {
-	fmt.Fprintln(DefaultOut, Sprintf("WARNING: %v\t"+format+"\n", a...))
+	fmt.Fprintln(DefaultOut, Sprintf("WARNING:\n"+format+"\n", a...))
 }
 
 func Debugf(format string, a ...interface{}) {
