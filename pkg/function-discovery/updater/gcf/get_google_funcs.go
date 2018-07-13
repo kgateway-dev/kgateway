@@ -105,7 +105,7 @@ func convertGfuncsToFunctionSpec(results []*cloudfunctions.CloudFunction) []*v1.
 		fn := &v1.Function{
 			Name: gFunc.Name,
 			Spec: googleplugin.EncodeFunctionSpec(googleplugin.FunctionSpec{
-				URL: gFunc.HttpsTrigger.Url,
+				Url: gFunc.HttpsTrigger.Url,
 			}),
 		}
 		funcs = append(funcs, fn)

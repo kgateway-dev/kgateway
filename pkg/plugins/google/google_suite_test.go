@@ -1,4 +1,4 @@
-package gfunc
+package google
 
 import (
 	"testing"

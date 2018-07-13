@@ -1,4 +1,4 @@
-package gfunc
+package google
 
 import (
 	"errors"
@@ -30,11 +30,6 @@ var (
 	}
 )
 
-type UpstreamSpec struct {
-	Region    string `json:"region"`
-	ProjectId string `json:"project_id"`
-}
-
 func DecodeUpstreamSpec(generic v1.UpstreamSpec) (*UpstreamSpec, error) {
 	s := new(UpstreamSpec)
 	if err := protoutil.UnmarshalStruct(generic, s); err != nil {
@@ -60,13 +55,6 @@ func (s *UpstreamSpec) GetGFuncHostname() string {
 	return fmt.Sprintf("%s-%s.cloudfunctions.net", s.Region, s.ProjectId)
 }
 
-type FunctionSpec struct {
-	URL string `json:"URL"`
-
-	path string // used by envoy filter
-	host string // used by envoy filter
-}
-
 func DecodeFunctionSpec(generic v1.FunctionSpec) (*FunctionSpec, error) {
 	s := new(FunctionSpec)
 	if err := protoutil.UnmarshalStruct(generic, s); err != nil {
@@ -75,7 +63,7 @@ func DecodeFunctionSpec(generic v1.FunctionSpec) (*FunctionSpec, error) {
 	if err := s.ValidateGFunc(); err != nil {
 		return s, err
 	}
-	parsedURL, _ := url.Parse(s.URL)
+	parsedURL, _ := url.Parse(s.Url)
 	s.path = parsedURL.Path
 	s.host = parsedURL.Host
 	return s, nil
@@ -92,27 +80,27 @@ func EncodeFunctionSpec(spec FunctionSpec) *types.Struct {
 // TODO(ashish) - is this being called from outside this package?
 // can this be merged into DecodeFuncionSpec
 func (s *FunctionSpec) ValidateGFunc() error {
-	if s.URL == "" {
-		return errors.New("invalid function URL")
+	if s.Url == "" {
+		return errors.New("invalid function Url")
 	}
-	parsedURL, err := url.Parse(s.URL)
+	parsedURL, err := url.Parse(s.Url)
 	if err != nil {
 		return err
 	}
 
 	if parsedURL.Path == "" {
-		return errors.New("invalid function URL; missing path")
+		return errors.New("invalid function Url; missing path")
 	}
 
 	if parsedURL.Host == "" {
-		return errors.New("invalid function URL; missing host")
+		return errors.New("invalid function Url; missing host")
 	}
 	return nil
 }
 
 func NewFuncFromUrl(funcurl string) (*FunctionSpec, error) {
 	s := new(FunctionSpec)
-	s.URL = funcurl
+	s.Url = funcurl
 	parsedUrl, err := url.Parse(funcurl)
 	if err != nil {
 		return s, err

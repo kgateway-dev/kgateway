@@ -1,0 +1,25 @@
+syntax = "proto3";
+package gloo.api.google.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/google";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Upstream Spec for Google Functions Upstreams
+// AWS Upstreams represent a collection of Google Functions for a particular Google Cloud Platform Account
+// in a particular region, for a particlar project
+message UpstreamSpec {
+    // The Google Cloud Region in which to run Google Functions
+    string region = 1;
+
+    // The Google Cloud Platform project id where the functions are contained
+    string project_id = 2;
+}
+
+// Function Spec for Functions on Google Functions Upstreams
+// The Function Spec contains data necessary for Gloo to invoke Google Cloud Platform Functions
+message FunctionSpec {
+    // URL is the HTTP Trigger URL assigned to the function in the Google Cloud Functions UI
+    string url  = 1;
+}

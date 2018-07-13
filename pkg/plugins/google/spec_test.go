@@ -1,4 +1,4 @@
-package gfunc
+package google
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -83,7 +83,7 @@ var _ = Describe("Spec", func() {
 func funcSpec(u string) v1.FunctionSpec {
 	return &types.Struct{
 		Fields: map[string]*types.Value{
-			"URL": &types.Value{
+			"Url": &types.Value{
 				Kind: &types.Value_StringValue{StringValue: u},
 			},
 		},

@@ -30,7 +30,7 @@ func GetFunctionType(us *v1.Upstream) FunctionType {
 	switch {
 	case us.Type == aws.UpstreamTypeAws:
 		return FunctionTypeLambda
-	case us.Type == gfunc.UpstreamTypeGoogle:
+	case us.Type == google.UpstreamTypeGoogle:
 		return FunctionTypeGfuncs
 	case us.Type == azure.UpstreamTypeAzure:
 		return FunctionTypeAzure

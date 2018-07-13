@@ -38,7 +38,7 @@ func NewGoogleUpstream() *v1.Upstream {
 		Skip("no google uppercase function, test cannot continue" + skipMsg)
 	}
 
-	serviceSpec := gfunc.UpstreamSpec{
+	serviceSpec := google.UpstreamSpec{
 		Region:    googleRegion,
 		ProjectId: googleProject,
 	}
@@ -47,7 +47,7 @@ func NewGoogleUpstream() *v1.Upstream {
 		panic(err)
 	}
 
-	funcSpec, err := gfunc.NewFuncFromUrl(fmt.Sprintf("https://%s-%s.cloudfunctions.net/%s", googleProject, googleProject, googleFunction))
+	funcSpec, err := google.NewFuncFromUrl(fmt.Sprintf("https://%s-%s.cloudfunctions.net/%s", googleProject, googleProject, googleFunction))
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +65,7 @@ func NewGoogleUpstream() *v1.Upstream {
 	annotations["gloo.solo.io/google_secret_ref"] = GoogleSecretRef
 	u := &v1.Upstream{
 		Name:      "local", // TODO: randomize
-		Type:      gfunc.UpstreamTypeGoogle,
+		Type:      google.UpstreamTypeGoogle,
 		Spec:      v1Spec,
 		Functions: []*v1.Function{f},
 		Metadata: &v1.Metadata{

@@ -1,4 +1,4 @@
-package gfunc
+package google
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -18,6 +18,8 @@ import (
 func init() {
 	plugins.Register(&Plugin{})
 }
+
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src spec.proto
 
 type Plugin struct {
 	isNeeded bool
