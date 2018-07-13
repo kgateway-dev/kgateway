@@ -21,8 +21,8 @@ var _ = Describe("Marker", func() {
 				&mockDetector{id: "succeeding", triesBeforeSucceding: 3},
 			}, resolve)
 			us := helpers.NewTestUpstream2()
-			us.Spec = static.EncodeUpstreamSpec(static.UpstreamSpec{
-				Hosts: []static.Host{
+			us.Spec = static.EncodeUpstreamSpec(&static.UpstreamSpec{
+				Hosts: []*static.Host{
 					{Addr: "localhost", Port: 8000},
 				},
 			})
