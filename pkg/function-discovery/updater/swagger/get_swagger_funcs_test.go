@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("GetSwaggerFuncs", func() {
-
 	// create a test swagger server
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, swaggerDoc)
@@ -39,8 +38,8 @@ var _ = Describe("GetSwaggerFuncs", func() {
 			Metadata: &v1.Metadata{Annotations: map[string]string{
 				AnnotationKeySwaggerURL: srv.URL + "/anything",
 			}},
-			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-				Hosts: []static.Host{
+			Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
+				Hosts: []*static.Host{
 					{
 						Addr: addr,
 						Port: uint32(port),
