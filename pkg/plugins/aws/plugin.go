@@ -48,7 +48,7 @@ const (
 	functionQualifierKey = "qualifier"
 )
 
-//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src upstream_spec.proto
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src upstream_spec.proto function_spec.proto
 
 func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 	deps := new(plugins.Dependencies)
@@ -68,7 +68,6 @@ func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 }
 
 func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
-
 	defer func() { p.isNeeded = false }()
 
 	if p.isNeeded {

@@ -63,11 +63,6 @@ func (s *UpstreamSpec) GetLambdaHostname() string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", s.Region)
 }
 
-type FunctionSpec struct {
-	FunctionName string `json:"function_name"`
-	Qualifier    string `json:"qualifier"`
-}
-
 func DecodeFunctionSpec(generic v1.FunctionSpec) (*FunctionSpec, error) {
 	s := new(FunctionSpec)
 	if err := protoutil.UnmarshalStruct(generic, s); err != nil {

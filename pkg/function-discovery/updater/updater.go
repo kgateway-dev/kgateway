@@ -149,7 +149,7 @@ func updateAzureUpstream(gloo storage.Interface, secretStore dependencies.Secret
 		if _, err := secretStore.Create(azureSecret); err != nil {
 			return errors.Wrap(err, "writing azure secret to storage")
 		}
-	} else if reflect.DeepEqual(existingSecret.Data, azureSecret.Ref) {
+	} else if reflect.DeepEqual(existingSecret.Data, azureSecret.Data) {
 		// seret exists but has changed
 		if _, err := secretStore.Update(azureSecret); err != nil {
 			return errors.Wrap(err, "writing azure secret to storage")

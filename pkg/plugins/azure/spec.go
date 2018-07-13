@@ -12,11 +12,6 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 )
 
-type UpstreamSpec struct {
-	FunctionAppName string `json:"function_app_name"`
-	SecretRef       string `json:"secret_ref"`
-}
-
 func EncodeUpstreamSpec(spec UpstreamSpec) *types.Struct {
 	v1Spec, err := protoutil.MarshalStruct(spec)
 	if err != nil {
@@ -43,11 +38,6 @@ func (s *UpstreamSpec) Validate() error {
 
 func (s *UpstreamSpec) GetHostname() string {
 	return fmt.Sprintf("%s.azurewebsites.net", s.FunctionAppName)
-}
-
-type FunctionSpec struct {
-	FunctionName string `json:"function_name"`
-	AuthLevel    string `json:"auth_level"`
 }
 
 func EncodeFunctionSpec(spec FunctionSpec) *types.Struct {

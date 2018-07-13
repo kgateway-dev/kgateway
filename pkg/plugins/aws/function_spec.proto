@@ -1,0 +1,16 @@
+syntax = "proto3";
+package gloo.api.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/aws";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Function Spec for Functions on AWS Lambda Upstreams
+message FunctionSpec {
+    // The Name of the Lambda Function as it appears in the AWS Lambda Portal
+    string function_name  = 1;
+    // The Qualifier for the Lambda Function. Qualifiers act as a kind of version
+    // for Lambda Functions. See https://docs.aws.amazon.com/lambda/latest/dg/API_Invoke.html for more info.
+    string qualifier = 2;
+}

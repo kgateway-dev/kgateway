@@ -1,0 +1,16 @@
+syntax = "proto3";
+package gloo.api.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/azure";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Function Spec for Functions on Azure Functions Upstreams
+message FunctionSpec {
+    // The Name of the Azure Function as it appears in the Azure Functions Portal
+    string function_name  = 1;
+    // Auth Level can bve either "anonymous" "function" or "admin"
+    // See https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details
+    string auth_level = 2;
+}

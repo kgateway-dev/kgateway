@@ -138,8 +138,8 @@ func NewTestConfig() v1.Config {
 		{
 			Name: upstreamName,
 			Type: static.UpstreamTypeService,
-			Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-				Hosts: []static.Host{
+			Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
+				Hosts: []*static.Host{
 					{Addr: upstreamHost, Port: upstreamPort},
 				},
 			}),

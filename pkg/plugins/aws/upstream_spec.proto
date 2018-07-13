@@ -3,7 +3,6 @@ package gloo.api.v1;
 
 option go_package = "github.com/solo-io/gloo/pkg/plugins/aws";
 
-import "google/protobuf/wrappers.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
