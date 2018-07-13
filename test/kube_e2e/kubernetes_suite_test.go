@@ -1,14 +1,13 @@
 package kube_e2e
 
 import (
+	"os"
 	"strings"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/helpers"
-
-	"os"
-	"testing"
 )
 
 const maxLogLines = 250

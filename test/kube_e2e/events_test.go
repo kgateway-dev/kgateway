@@ -23,8 +23,8 @@ var _ = Describe("Event matcher route type", func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: upstreamForEvents,
 				Type: static.UpstreamTypeService,
-				Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-					Hosts: []static.Host{
+				Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
+					Hosts: []*static.Host{
 						{
 							Addr: upstreamForEvents,
 							Port: servicePort,

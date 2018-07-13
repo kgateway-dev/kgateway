@@ -21,8 +21,8 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
 				Type: static.UpstreamTypeService,
-				Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-					Hosts: []static.Host{
+				Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
+					Hosts: []*static.Host{
 						{
 							Addr: helloService,
 							Port: servicePort,
@@ -34,8 +34,8 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 			_, err = gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService2,
 				Type: static.UpstreamTypeService,
-				Spec: static.EncodeUpstreamSpec(static.UpstreamSpec{
-					Hosts: []static.Host{
+				Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
+					Hosts: []*static.Host{
 						{
 							Addr: helloService2,
 							Port: servicePort,
