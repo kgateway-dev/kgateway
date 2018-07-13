@@ -2,11 +2,12 @@ package routing
 
 import (
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
 func DecodeRouteExtensions(generic *types.Struct) (*RouteExtensions, error) {
 	cfg := new(RouteExtensions)
-	if err := util.StructToMessage(generic, cfg); err != nil {
+	if err := protoutil.UnmarshalStruct(generic, cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
