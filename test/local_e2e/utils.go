@@ -114,8 +114,8 @@ func NewTestGRPCUpstream(addr string, glooFilesDir string) *TestUpstream {
 }
 
 func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest) *TestUpstream {
-	serviceSpec := static.UpstreamSpec{
-		Hosts: []static.Host{{
+	serviceSpec := &static.UpstreamSpec{
+		Hosts: []*static.Host{{
 			Addr: addr,
 			Port: port,
 		}},
