@@ -1,0 +1,29 @@
+syntax = "proto3";
+package gloo.api.aws.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/consul";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Upstream Spec for Consul Upstreams
+// Consul Upstreams represent a set of one or more instances of a Service that has been registered with Consul
+// Consul Upstreams map to multiple service instances by the name and tags found on each instance
+// Consul Upstreams are typically generated automatically by Gloo from the Consul Service Catalog
+message UpstreamSpec {
+    // The name of the Service as it is registered in Consul
+    string service_name = 1;
+    // The list of service tags Gloo should search for on a service instance before deciding whether or not to
+    // include the instance as part of this upstream
+    repeated string service_tags = 2;
+    // Connect specifies configuration for consul services that are "Connect-enabled". See
+    // for more information about Consul Connect
+    Connect connect = 3;
+}
+
+// Connect contains the information necessary to connect to proxies that are running as sidecars for
+// Consul Connect (in-mesh) services
+message Connect {
+    // A reference to a Gloo secret containing the client TLS parameters for connecting to this service
+    string tls_secret_ref = 1;
+}
