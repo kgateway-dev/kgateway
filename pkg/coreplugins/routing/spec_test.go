@@ -40,7 +40,7 @@ add_request_headers:
 - key: FOO
   value: BAR
 max_retries: 1
-timeout: 60.000s
+timeout: 60000
 something_invalid: another_spec_maybe?
 cors:
   allow_origin: 
@@ -52,12 +52,14 @@ cors:
 		jsn, err := yaml.YAMLToJSON([]byte(yam))
 		Expect(err).NotTo(HaveOccurred())
 		var struc types.Struct
+		log.Printf(string(jsn))
 		err = protoutil.Unmarshal(jsn, &struc)
 		Expect(err).NotTo(HaveOccurred())
 		specc, err := DecodeRouteExtensions(&struc)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(specc.Cors).NotTo(BeNil())
-		Expect(specc.Cors.MaxAge).To(Equal(time.Duration(24 * time.Hour)))
+		t := time.Duration(24 * time.Hour)
+		Expect(specc.Cors.MaxAge).To(Equal(&t))
 		log.Printf("%v", specc)
 	})
 })

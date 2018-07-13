@@ -1,21 +1,21 @@
 package static
 
 import (
-	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
 func DecodeUpstreamSpec(generic v1.UpstreamSpec) (*UpstreamSpec, error) {
 	var s UpstreamSpec
-	if err := util.StructToMessage(generic, &s); err != nil {
+	if err := protoutil.UnmarshalStruct(generic, &s); err != nil {
 		return &s, err
 	}
 	return &s, s.validateUpstream()
 }
 
 func EncodeUpstreamSpec(spec *UpstreamSpec) v1.UpstreamSpec {
-	v1Spec, err := util.MessageToStruct(spec)
+	v1Spec, err := protoutil.MarshalStruct(spec)
 	if err != nil {
 		panic(err)
 	}
