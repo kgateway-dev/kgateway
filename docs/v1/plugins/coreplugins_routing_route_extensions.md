@@ -1,9 +1,9 @@
 <a name="top"></a>
 
 ## Contents
-  - [RouteExtensions](#gloo.api.v1.RouteExtensions)
-  - [HeaderValue](#gloo.api.v1.HeaderValue)
-  - [CorsPolicy](#gloo.api.v1.CorsPolicy)
+  - [RouteExtensions](#gloo.api.core.v1.RouteExtensions)
+  - [HeaderValue](#gloo.api.core.v1.HeaderValue)
+  - [CorsPolicy](#gloo.api.core.v1.CorsPolicy)
 
 
 
@@ -13,7 +13,7 @@
 
 
 
-<a name="gloo.api.v1.RouteExtensions"></a>
+<a name="gloo.api.core.v1.RouteExtensions"></a>
 
 ### RouteExtensions
 RouteExtensions should be placed in the route.extensions field
@@ -32,20 +32,20 @@ cors: {CorsPolicy}
 ```
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| add_request_headers | [HeaderValue](github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.md#gloo.api.v1.HeaderValue) | repeated | These headers will be added to the request before it is sent to the upstream |
-| add_response_headers | [HeaderValue](github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.md#gloo.api.v1.HeaderValue) | repeated | These headers will be added to the response before it is returned to the downstream |
+| add_request_headers | [HeaderValue](github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.md#gloo.api.core.v1.HeaderValue) | repeated | These headers will be added to the request before it is sent to the upstream |
+| add_response_headers | [HeaderValue](github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.md#gloo.api.core.v1.HeaderValue) | repeated | These headers will be added to the response before it is returned to the downstream |
 | remove_response_headers | string | repeated | These headers will be removed from the request before it is sent to the upstream |
 | max_retries | uint32 |  | The maximum number of retries to attempt for requests that get a 5xx response |
 | timeout | [google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  | If set, time out requests on this route. If not set, this will default to the connection timeout on the upstream |
 | host_rewrite | string |  | Rewrite the host header of the request to this value, if set |
-| cors | [CorsPolicy](github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.md#gloo.api.v1.CorsPolicy) |  | Configure Cross-Origin Resource Sharing requests |
+| cors | [CorsPolicy](github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.md#gloo.api.core.v1.CorsPolicy) |  | Configure Cross-Origin Resource Sharing requests |
 
 
 
 
 
 
-<a name="gloo.api.v1.HeaderValue"></a>
+<a name="gloo.api.core.v1.HeaderValue"></a>
 
 ### HeaderValue
 Header name/value pair
@@ -68,7 +68,7 @@ append: bool
 
 
 
-<a name="gloo.api.v1.CorsPolicy"></a>
+<a name="gloo.api.core.v1.CorsPolicy"></a>
 
 ### CorsPolicy
 Configuration for Cross-Origin Resource Sharing requests

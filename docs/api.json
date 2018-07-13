@@ -3,7 +3,7 @@
     {
       "name": "github.com/solo-io/gloo/pkg/coreplugins/static/upstream_spec.proto",
       "description": "",
-      "package": "gloo.api.v1",
+      "package": "gloo.api.core.v1",
       "hasEnums": false,
       "hasExtensions": false,
       "hasMessages": true,
@@ -14,7 +14,7 @@
         {
           "name": "UpstreamSpec",
           "longName": "UpstreamSpec",
-          "fullName": "gloo.api.v1.UpstreamSpec",
+          "fullName": "gloo.api.core.v1.UpstreamSpec",
           "description": "Configuration for Static Upstreams",
           "hasExtensions": false,
           "hasFields": true,
@@ -26,7 +26,7 @@
               "label": "repeated",
               "type": "Host",
               "longType": "Host",
-              "fullType": "gloo.api.v1.Host",
+              "fullType": "gloo.api.core.v1.Host",
               "defaultValue": ""
             },
             {
@@ -52,7 +52,7 @@
         {
           "name": "Host",
           "longName": "Host",
-          "fullName": "gloo.api.v1.Host",
+          "fullName": "gloo.api.core.v1.Host",
           "description": "Represents a single instance of an upstream",
           "hasExtensions": false,
           "hasFields": true,
@@ -84,7 +84,7 @@
     {
       "name": "github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.proto",
       "description": "",
-      "package": "gloo.api.v1",
+      "package": "gloo.api.core.v1",
       "hasEnums": false,
       "hasExtensions": false,
       "hasMessages": true,
@@ -95,7 +95,7 @@
         {
           "name": "RouteExtensions",
           "longName": "RouteExtensions",
-          "fullName": "gloo.api.v1.RouteExtensions",
+          "fullName": "gloo.api.core.v1.RouteExtensions",
           "description": "RouteExtensions should be placed in the route.extensions field\nRouteExtensions extend the behavior of a regular route in gloo (within a virtual service)",
           "hasExtensions": false,
           "hasFields": true,
@@ -107,7 +107,7 @@
               "label": "repeated",
               "type": "HeaderValue",
               "longType": "HeaderValue",
-              "fullType": "gloo.api.v1.HeaderValue",
+              "fullType": "gloo.api.core.v1.HeaderValue",
               "defaultValue": ""
             },
             {
@@ -116,7 +116,7 @@
               "label": "repeated",
               "type": "HeaderValue",
               "longType": "HeaderValue",
-              "fullType": "gloo.api.v1.HeaderValue",
+              "fullType": "gloo.api.core.v1.HeaderValue",
               "defaultValue": ""
             },
             {
@@ -161,7 +161,7 @@
               "label": "",
               "type": "CorsPolicy",
               "longType": "CorsPolicy",
-              "fullType": "gloo.api.v1.CorsPolicy",
+              "fullType": "gloo.api.core.v1.CorsPolicy",
               "defaultValue": ""
             }
           ]
@@ -169,7 +169,7 @@
         {
           "name": "HeaderValue",
           "longName": "HeaderValue",
-          "fullName": "gloo.api.v1.HeaderValue",
+          "fullName": "gloo.api.core.v1.HeaderValue",
           "description": "Header name/value pair",
           "hasExtensions": false,
           "hasFields": true,
@@ -207,7 +207,7 @@
         {
           "name": "CorsPolicy",
           "longName": "CorsPolicy",
-          "fullName": "gloo.api.v1.CorsPolicy",
+          "fullName": "gloo.api.core.v1.CorsPolicy",
           "description": "Configuration for Cross-Origin Resource Sharing requests",
           "hasExtensions": false,
           "hasFields": true,
@@ -275,7 +275,7 @@
     {
       "name": "github.com/solo-io/gloo/pkg/plugins/connect/listener_config.proto",
       "description": "",
-      "package": "gloo.api.v1",
+      "package": "gloo.api.connect.v1",
       "hasEnums": false,
       "hasExtensions": false,
       "hasMessages": true,
@@ -286,7 +286,7 @@
         {
           "name": "ListenerConfig",
           "longName": "ListenerConfig",
-          "fullName": "gloo.api.v1.ListenerConfig",
+          "fullName": "gloo.api.connect.v1.ListenerConfig",
           "description": "the listenerConfig must be either an InboundListener or an OutboundListener",
           "hasExtensions": false,
           "hasFields": true,
@@ -298,7 +298,7 @@
               "label": "",
               "type": "InboundListenerConfig",
               "longType": "InboundListenerConfig",
-              "fullType": "gloo.api.v1.InboundListenerConfig",
+              "fullType": "gloo.api.connect.v1.InboundListenerConfig",
               "defaultValue": ""
             },
             {
@@ -307,7 +307,7 @@
               "label": "",
               "type": "OutboundListenerConfig",
               "longType": "OutboundListenerConfig",
-              "fullType": "gloo.api.v1.OutboundListenerConfig",
+              "fullType": "gloo.api.connect.v1.OutboundListenerConfig",
               "defaultValue": ""
             }
           ]
@@ -315,7 +315,7 @@
         {
           "name": "InboundListenerConfig",
           "longName": "InboundListenerConfig",
-          "fullName": "gloo.api.v1.InboundListenerConfig",
+          "fullName": "gloo.api.connect.v1.InboundListenerConfig",
           "description": "configuration for the inbound listener\nthis listener does authentication and connects\nclients to the local service",
           "hasExtensions": false,
           "hasFields": true,
@@ -327,7 +327,7 @@
               "label": "",
               "type": "AuthConfig",
               "longType": "AuthConfig",
-              "fullType": "gloo.api.v1.AuthConfig",
+              "fullType": "gloo.api.connect.v1.AuthConfig",
               "defaultValue": ""
             },
             {
@@ -353,7 +353,7 @@
         {
           "name": "AuthConfig",
           "longName": "AuthConfig",
-          "fullName": "gloo.api.v1.AuthConfig",
+          "fullName": "gloo.api.connect.v1.AuthConfig",
           "description": "AuthConfig contains information necessary to\ncommunicate with the Authentication Server (Consul Agent)",
           "hasExtensions": false,
           "hasFields": true,
@@ -409,7 +409,7 @@
         {
           "name": "OutboundListenerConfig",
           "longName": "OutboundListenerConfig",
-          "fullName": "gloo.api.v1.OutboundListenerConfig",
+          "fullName": "gloo.api.connect.v1.OutboundListenerConfig",
           "description": "The configuration for the outbound listeners which serve as \"tcp routes\"",
           "hasExtensions": false,
           "hasFields": true,
@@ -427,6 +427,178 @@
             {
               "name": "destination_consul_type",
               "description": "TODO (ilackarms): support destination type in Consul Connect API",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/azure/function_spec.proto",
+      "description": "",
+      "package": "gloo.api.azure.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "FunctionSpec",
+          "longName": "FunctionSpec",
+          "fullName": "gloo.api.azure.v1.FunctionSpec",
+          "description": "Function Spec for Functions on Azure Functions Upstreams",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "function_name",
+              "description": "The Name of the Azure Function as it appears in the Azure Functions Portal",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "auth_level",
+              "description": "Auth Level can bve either \"anonymous\" \"function\" or \"admin\"\nSee https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/azure/upstream_spec.proto",
+      "description": "",
+      "package": "gloo.api.azure.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.azure.v1.UpstreamSpec",
+          "description": "Upstream Spec for Azure Functions Upstreams",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "function_app_name",
+              "description": "The Name of the Azure Function App where the functions are grouped",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "secret_ref",
+              "description": "A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).\n{{ hide_not_implemented \"Azure Secrets can be created with `glooctl secret create azure ...`\" }}\nNote that this secret is not required unless Function Discovery is enabled",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/aws/function_spec.proto",
+      "description": "",
+      "package": "gloo.api.aws.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "FunctionSpec",
+          "longName": "FunctionSpec",
+          "fullName": "gloo.api.aws.v1.FunctionSpec",
+          "description": "Function Spec for Functions on AWS Lambda Upstreams",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "function_name",
+              "description": "The Name of the Lambda Function as it appears in the AWS Lambda Portal",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "qualifier",
+              "description": "The Qualifier for the Lambda Function. Qualifiers act as a kind of version\nfor Lambda Functions. See https://docs.aws.amazon.com/lambda/latest/dg/API_Invoke.html for more info.",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/aws/upstream_spec.proto",
+      "description": "",
+      "package": "gloo.api.aws.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.aws.v1.UpstreamSpec",
+          "description": "Upstream Spec for AWS Lambda Upstreams",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "region",
+              "description": "The AWS Region in which to run Lambda Functions",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "secret_ref",
+              "description": "A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret\nAWS Secrets can be created with `glooctl secret create aws ...`\nIf the secret is created manually, it must conform to the following structure:\n ```\n access_key: \u003caws access key\u003e\n secret_key: \u003caws secret key\u003e\n ```",
               "label": "",
               "type": "string",
               "longType": "string",

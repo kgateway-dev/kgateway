@@ -1,8 +1,8 @@
 <a name="top"></a>
 
 ## Contents
-  - [UpstreamSpec](#gloo.api.v1.UpstreamSpec)
-  - [Host](#gloo.api.v1.Host)
+  - [UpstreamSpec](#gloo.api.core.v1.UpstreamSpec)
+  - [Host](#gloo.api.core.v1.Host)
 
 
 
@@ -12,7 +12,7 @@
 
 
 
-<a name="gloo.api.v1.UpstreamSpec"></a>
+<a name="gloo.api.core.v1.UpstreamSpec"></a>
 
 ### UpstreamSpec
 Configuration for Static Upstreams
@@ -26,7 +26,7 @@ tls: {google.protobuf.BoolValue}
 ```
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| hosts | [Host](github.com/solo-io/gloo/pkg/coreplugins/static/upstream_spec.md#gloo.api.v1.Host) | repeated | A list of addresses and ports at least one must be specified |
+| hosts | [Host](github.com/solo-io/gloo/pkg/coreplugins/static/upstream_spec.md#gloo.api.core.v1.Host) | repeated | A list of addresses and ports at least one must be specified |
 | enable_ipv6 | bool |  | Enable ipv6 addresses to be used for routing |
 | tls | [google.protobuf.BoolValue](github.com/solo-io/gloo/pkg/coreplugins/static/upstream_spec.md#google.protobuf.BoolValue) |  | Attempt to use outbound TLS |
 
@@ -35,7 +35,7 @@ tls: {google.protobuf.BoolValue}
 
 
 
-<a name="gloo.api.v1.Host"></a>
+<a name="gloo.api.core.v1.Host"></a>
 
 ### Host
 Represents a single instance of an upstream

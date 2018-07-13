@@ -1,10 +1,10 @@
 <a name="top"></a>
 
 ## Contents
-  - [ListenerConfig](#gloo.api.v1.ListenerConfig)
-  - [InboundListenerConfig](#gloo.api.v1.InboundListenerConfig)
-  - [AuthConfig](#gloo.api.v1.AuthConfig)
-  - [OutboundListenerConfig](#gloo.api.v1.OutboundListenerConfig)
+  - [ListenerConfig](#gloo.api.connect.v1.ListenerConfig)
+  - [InboundListenerConfig](#gloo.api.connect.v1.InboundListenerConfig)
+  - [AuthConfig](#gloo.api.connect.v1.AuthConfig)
+  - [OutboundListenerConfig](#gloo.api.connect.v1.OutboundListenerConfig)
 
 
 
@@ -14,7 +14,7 @@
 
 
 
-<a name="gloo.api.v1.ListenerConfig"></a>
+<a name="gloo.api.connect.v1.ListenerConfig"></a>
 
 ### ListenerConfig
 the listenerConfig must be either an InboundListener or an OutboundListener
@@ -27,15 +27,15 @@ outbound: {OutboundListenerConfig}
 ```
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| inbound | [InboundListenerConfig](github.com/solo-io/gloo/pkg/plugins/connect/listener_config.md#gloo.api.v1.InboundListenerConfig) |  |  |
-| outbound | [OutboundListenerConfig](github.com/solo-io/gloo/pkg/plugins/connect/listener_config.md#gloo.api.v1.OutboundListenerConfig) |  |  |
+| inbound | [InboundListenerConfig](github.com/solo-io/gloo/pkg/plugins/connect/listener_config.md#gloo.api.connect.v1.InboundListenerConfig) |  |  |
+| outbound | [OutboundListenerConfig](github.com/solo-io/gloo/pkg/plugins/connect/listener_config.md#gloo.api.connect.v1.OutboundListenerConfig) |  |  |
 
 
 
 
 
 
-<a name="gloo.api.v1.InboundListenerConfig"></a>
+<a name="gloo.api.connect.v1.InboundListenerConfig"></a>
 
 ### InboundListenerConfig
 configuration for the inbound listener
@@ -51,7 +51,7 @@ local_service_name: string
 ```
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| auth_config | [AuthConfig](github.com/solo-io/gloo/pkg/plugins/connect/listener_config.md#gloo.api.v1.AuthConfig) |  | configuration for tls-based auth filter |
+| auth_config | [AuthConfig](github.com/solo-io/gloo/pkg/plugins/connect/listener_config.md#gloo.api.connect.v1.AuthConfig) |  | configuration for tls-based auth filter |
 | local_service_address | string |  | the address of the local upstream being proxied the service being proxied must be reachable by Envoy |
 | local_service_name | string |  | the name of the local consul service being proxied |
 
@@ -60,7 +60,7 @@ local_service_name: string
 
 
 
-<a name="gloo.api.v1.AuthConfig"></a>
+<a name="gloo.api.connect.v1.AuthConfig"></a>
 
 ### AuthConfig
 AuthConfig contains information necessary to
@@ -88,7 +88,7 @@ request_timeout: {google.protobuf.Duration}
 
 
 
-<a name="gloo.api.v1.OutboundListenerConfig"></a>
+<a name="gloo.api.connect.v1.OutboundListenerConfig"></a>
 
 ### OutboundListenerConfig
 The configuration for the outbound listeners which serve as &#34;tcp routes&#34;

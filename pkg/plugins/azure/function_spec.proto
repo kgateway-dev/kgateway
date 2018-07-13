@@ -1,5 +1,5 @@
 syntax = "proto3";
-package gloo.api.v1;
+package gloo.api.azure.v1;
 
 option go_package = "github.com/solo-io/gloo/pkg/plugins/azure";
 
