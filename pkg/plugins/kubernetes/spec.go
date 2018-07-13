@@ -7,13 +7,6 @@ import (
 	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
-type UpstreamSpec struct {
-	ServiceName      string            `json:"service_name"`
-	ServiceNamespace string            `json:"service_namespace"`
-	ServicePort      int32             `json:"service_port,omitempty"`
-	Labels           map[string]string `json:"labels,omitempty"`
-}
-
 func DecodeUpstreamSpec(generic v1.UpstreamSpec) (*UpstreamSpec, error) {
 	s := new(UpstreamSpec)
 	if err := protoutil.UnmarshalStruct(generic, s); err != nil {

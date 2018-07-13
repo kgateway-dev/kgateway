@@ -15,6 +15,8 @@ func init() {
 	plugins.Register(&Plugin{})
 }
 
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src spec.proto
+
 func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
 	kubeConfig := opts.KubeOptions.KubeConfig
 	masterUrl := opts.KubeOptions.MasterURL
