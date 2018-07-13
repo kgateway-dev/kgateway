@@ -63,9 +63,10 @@ func DecodeFunctionSpec(generic v1.FunctionSpec) (*FunctionSpec, error) {
 	if err := s.ValidateGFunc(); err != nil {
 		return s, err
 	}
-	parsedURL, _ := url.Parse(s.Url)
-	s.path = parsedURL.Path
-	s.host = parsedURL.Host
+	_, err := url.Parse(s.Url)
+	if err != nil {
+		return s, err
+	}
 	return s, nil
 }
 
@@ -101,12 +102,9 @@ func (s *FunctionSpec) ValidateGFunc() error {
 func NewFuncFromUrl(funcurl string) (*FunctionSpec, error) {
 	s := new(FunctionSpec)
 	s.Url = funcurl
-	parsedUrl, err := url.Parse(funcurl)
+	_, err := url.Parse(funcurl)
 	if err != nil {
 		return s, err
 	}
-
-	s.path = parsedUrl.Path
-	s.host = parsedUrl.Host
 	return s, nil
 }

@@ -25,17 +25,6 @@ var _ = Describe("Spec", func() {
 			Entry("valid url with no path", funcSpec("http://apple.com")),
 			Entry("url with port but no path", funcSpec("http://solo.io:8433")),
 			Entry("invalid url", funcSpec("nowhere]:/apple")))
-
-		DescribeTable("with valid spec",
-			func(url, host, path string) {
-				f, err := DecodeFunctionSpec(funcSpec(url))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(f.host).To(Equal(host))
-				Expect(f.path).To(Equal(path))
-			},
-
-			Entry("url with path", "http://test.com/apple", "test.com", "/apple"),
-			Entry("/ path", "http://solo.io/", "solo.io", "/"))
 	})
 
 	Describe("Decode upstream", func() {

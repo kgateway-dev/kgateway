@@ -1,6 +1,8 @@
 package google
 
 import (
+	"net/url"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -102,10 +104,14 @@ func (p *Plugin) ParseFunctionSpec(params *plugins.FunctionPluginParams, in v1.F
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid google function spec")
 	}
+	u, err := url.Parse(functionSpec.Url)
+	if err != nil {
+		return nil, err
+	}
 	return &types.Struct{
 		Fields: map[string]*types.Value{
-			functionHost: {Kind: &types.Value_StringValue{StringValue: functionSpec.host}},
-			functionPath: {Kind: &types.Value_StringValue{StringValue: functionSpec.path}},
+			functionHost: {Kind: &types.Value_StringValue{StringValue: u.Host}},
+			functionPath: {Kind: &types.Value_StringValue{StringValue: u.Path}},
 		},
 	}, nil
 }
