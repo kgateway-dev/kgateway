@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-openapi/runtime"
 
-	"github.com/solo-io/gloo/pkg/function-discovery/resolver"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/function-discovery/resolver"
 	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 

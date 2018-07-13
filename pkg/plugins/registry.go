@@ -18,5 +18,5 @@ func RegisteredPlugins() []TranslatorPlugin {
 }
 
 type registry struct {
-	plugins             []TranslatorPlugin
+	plugins []TranslatorPlugin
 }

@@ -16,8 +16,8 @@ type Upstream struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Status *v1.Status `json:"status"`
-	Spec   *Spec      `json:"spec"`
+	Status            *v1.Status `json:"status"`
+	Spec              *Spec      `json:"spec"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -26,8 +26,8 @@ type Upstream struct {
 type UpstreamList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta  `json:"metadata"`
-	Items []Upstream `json:"items"`
+	metav1.ListMeta `json:"metadata"`
+	Items           []Upstream `json:"items"`
 }
 
 // +genclient
@@ -39,8 +39,8 @@ type VirtualService struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Status *v1.Status `json:"status"`
-	Spec   *Spec      `json:"spec"`
+	Status            *v1.Status `json:"status"`
+	Spec              *Spec      `json:"spec"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -49,9 +49,9 @@ type VirtualService struct {
 type VirtualServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta        `json:"metadata"`
-	metav1.Status          `json:"status,omitempty"`
-	Items []VirtualService `json:"items"`
+	metav1.ListMeta `json:"metadata"`
+	metav1.Status   `json:"status,omitempty"`
+	Items           []VirtualService `json:"items"`
 }
 
 // +genclient
@@ -63,8 +63,8 @@ type Role struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Status *v1.Status `json:"status"`
-	Spec   *Spec      `json:"spec"`
+	Status            *v1.Status `json:"status"`
+	Spec              *Spec      `json:"spec"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -75,7 +75,7 @@ type RoleList struct {
 	// +optional
 	metav1.ListMeta `json:"metadata"`
 	metav1.Status   `json:"status,omitempty"`
-	Items []Role    `json:"items"`
+	Items           []Role `json:"items"`
 }
 
 // +genclient
@@ -87,8 +87,8 @@ type Attribute struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Status *v1.Status `json:"status"`
-	Spec   *Spec      `json:"spec"`
+	Status            *v1.Status `json:"status"`
+	Spec              *Spec      `json:"spec"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -97,9 +97,9 @@ type Attribute struct {
 type AttributeList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta   `json:"metadata"`
-	metav1.Status     `json:"status,omitempty"`
-	Items []Attribute `json:"items"`
+	metav1.ListMeta `json:"metadata"`
+	metav1.Status   `json:"status,omitempty"`
+	Items           []Attribute `json:"items"`
 }
 
 // spec implements deepcopy

@@ -3,8 +3,8 @@ package translator
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/hashicorp/go-multierror"
-	"github.com/solo-io/gloo/pkg/control-plane/reporter"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/control-plane/reporter"
 )
 
 // aggregate user config errors inside this map

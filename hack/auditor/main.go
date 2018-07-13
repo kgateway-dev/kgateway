@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"github.com/solo-io/gloo/hack/auditor/audit"
 	"github.com/solo-io/gloo/pkg/log"
+	"net/http"
 )
 
 func main() {

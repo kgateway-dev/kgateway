@@ -49,8 +49,8 @@ func (c *Client) V1() storage.V1 {
 type v1client struct {
 	upstreams       *upstreamsClient
 	virtualServices *virtualServicesClient
-	roles *rolesClient
-	attributes *attributesClient
+	roles           *rolesClient
+	attributes      *attributesClient
 }
 
 func (c *v1client) Register() error {
@@ -68,7 +68,6 @@ func (c *v1client) VirtualServices() storage.VirtualServices {
 func (c *v1client) Roles() storage.Roles {
 	return c.roles
 }
-
 
 func (c *v1client) Attributes() storage.Attributes {
 	return c.attributes

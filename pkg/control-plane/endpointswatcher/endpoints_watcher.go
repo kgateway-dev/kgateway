@@ -1,24 +1,24 @@
 package endpointswatcher
 
 import (
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
-	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/pkg/log"
-	"sync"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins"
+	"sync"
 )
 
 // watches all the endpoint discoveries registered by various plugins and aggregates them into a single stream
 type endpointsAggregator struct {
-	endpointDiscoveries []endpointdiscovery.Interface
+	endpointDiscoveries  []endpointdiscovery.Interface
 	endpointsByDiscovery chan endpointTuple
-	aggregatedEndpoints chan endpointdiscovery.EndpointGroups
-	errors chan error
+	aggregatedEndpoints  chan endpointdiscovery.EndpointGroups
+	errors               chan error
 }
 
-func NewEndpointsWatcher(opts bootstrap.Options, endpointDiscoveryPlugins ... plugins.EndpointDiscoveryPlugin) endpointdiscovery.Interface {
+func NewEndpointsWatcher(opts bootstrap.Options, endpointDiscoveryPlugins ...plugins.EndpointDiscoveryPlugin) endpointdiscovery.Interface {
 	var endpointDiscoveries []endpointdiscovery.Interface
 	for _, edPlugin := range endpointDiscoveryPlugins {
 		discovery, err := edPlugin.SetupEndpointDiscovery(opts)
@@ -30,10 +30,10 @@ func NewEndpointsWatcher(opts bootstrap.Options, endpointDiscoveryPlugins ... pl
 		endpointDiscoveries = append(endpointDiscoveries, discovery)
 	}
 	return &endpointsAggregator{
-		endpointDiscoveries: endpointDiscoveries,
+		endpointDiscoveries:  endpointDiscoveries,
 		endpointsByDiscovery: make(chan endpointTuple),
-		aggregatedEndpoints: make(chan endpointdiscovery.EndpointGroups),
-		errors: make(chan error),
+		aggregatedEndpoints:  make(chan endpointdiscovery.EndpointGroups),
+		errors:               make(chan error),
 	}
 }
 
@@ -86,7 +86,7 @@ func (e *endpointsAggregator) aggregateReceivedEndpoints(wg *sync.WaitGroup, sto
 			case <-stop:
 				log.Printf("stopping endpoints watcher")
 				return
-			case tuple := <- e.endpointsByDiscovery:
+			case tuple := <-e.endpointsByDiscovery:
 				// overwrite the last endpoints we got from this discovery
 				endpointsByDiscovery[tuple.discoveredBy] = tuple.endpoints
 

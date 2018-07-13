@@ -2,15 +2,15 @@ package localgloo
 
 import (
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	controlplanebootstrap "github.com/solo-io/gloo/pkg/control-plane/bootstrap"
 	"github.com/solo-io/gloo/pkg/control-plane/eventloop"
 	functiondiscovery "github.com/solo-io/gloo/pkg/function-discovery/eventloop"
 	functiondiscoveryopts "github.com/solo-io/gloo/pkg/function-discovery/options"
+	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/upstream-discovery"
 	upstreamdiscbootstrap "github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap"
-	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
-	"github.com/solo-io/gloo/pkg/log"
 	//register plugins
 	_ "github.com/solo-io/gloo/pkg/control-plane/install"
 )

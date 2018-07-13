@@ -135,8 +135,8 @@ func (c *ConsulStorageClient) Watch(handlers ...StorableItemEventHandler) (*stor
 			return nil
 		}
 		var (
-			roles   []*v1.Role
-			attributes   []*v1.Attribute
+			roles           []*v1.Role
+			attributes      []*v1.Attribute
 			virtualServices []*v1.VirtualService
 			upstreams       []*v1.Upstream
 			files           []*dependencies.File

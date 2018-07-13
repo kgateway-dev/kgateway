@@ -7,8 +7,8 @@ import (
 
 	"github.com/onsi/ginkgo"
 
-	"github.com/solo-io/gloo/pkg/log"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 // builds binaries

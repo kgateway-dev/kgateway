@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 	defaultv1 "github.com/solo-io/gloo/pkg/api/defaults/v1"
 
-	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/control-plane/snapshot"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
@@ -201,7 +201,7 @@ const (
 func getSslSecrets(ref string, secrets secretwatcher.SecretMap) (string, string, string, error) {
 	sslSecrets, ok := secrets[ref]
 	if !ok {
-		return "", "","", errors.Errorf("ssl secret not found for ref %v", ref)
+		return "", "", "", errors.Errorf("ssl secret not found for ref %v", ref)
 	}
 	certChain, ok := sslSecrets.Data[defaultv1.SslCertificateChainKey]
 	if !ok {

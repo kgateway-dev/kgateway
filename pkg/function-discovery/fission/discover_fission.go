@@ -3,8 +3,8 @@ package fission
 import (
 	"errors"
 
-	"github.com/solo-io/gloo/pkg/function-discovery/detector"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/function-discovery/detector"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 
 	"github.com/solo-io/gloo/pkg/function-discovery"

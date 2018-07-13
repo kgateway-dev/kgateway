@@ -1,12 +1,12 @@
 package snapshot
 
 import (
-	"github.com/solo-io/gloo/pkg/secretwatcher"
-	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/gogo/protobuf/proto"
 	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/gogo/protobuf/proto"
+	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/solo-io/gloo/pkg/secretwatcher"
 )
 
 // Cache contains the latest Gloo snapshot

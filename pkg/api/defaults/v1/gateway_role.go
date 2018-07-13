@@ -62,4 +62,3 @@ func AssignGatewayVirtualServices(insecureListener, secureListener *v1.Listener,
 	insecureListener.VirtualServices = insecureVirtualServices
 	secureListener.VirtualServices = secureVirtualServices
 }
-

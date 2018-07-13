@@ -3,9 +3,9 @@ package projectfn
 import (
 	"errors"
 
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/function-discovery"
 	"github.com/solo-io/gloo/pkg/function-discovery/detector"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 
 	updatefn "github.com/solo-io/gloo/pkg/function-discovery/updater/projectfn"

@@ -7,13 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/solo-io/gloo/pkg/upstream-discovery"
-	"github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap"
-	internalflags "github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/signals"
+	"github.com/solo-io/gloo/pkg/upstream-discovery"
+	"github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap"
+	internalflags "github.com/solo-io/gloo/pkg/upstream-discovery/bootstrap/flags"
 )
 
 func main() {

@@ -42,7 +42,6 @@ type Roles interface {
 	Watch(...RoleEventHandler) (*Watcher, error)
 }
 
-
 type Attributes interface {
 	Create(*v1.Attribute) (*v1.Attribute, error)
 	Update(*v1.Attribute) (*v1.Attribute, error)

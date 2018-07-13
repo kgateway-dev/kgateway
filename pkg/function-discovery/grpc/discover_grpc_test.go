@@ -11,8 +11,8 @@ import (
 
 	"time"
 
-	. "github.com/solo-io/gloo/pkg/function-discovery/grpc"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	. "github.com/solo-io/gloo/pkg/function-discovery/grpc"
 	"github.com/solo-io/gloo/pkg/plugins/grpc"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/file"
 )

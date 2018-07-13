@@ -143,11 +143,11 @@ func (c *attributesClient) pathsToAttributes() (map[string]*v1.Attribute, error)
 		}
 
 		attribute, err := pathToAttribute(path)
-        if err != nil {
-            return nil, errors.Wrap(err, "unable to parse .yml file as attribute")
-        }
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to parse .yml file as attribute")
+		}
 
-        attributes[path] = attribute
+		attributes[path] = attribute
 	}
 	return attributes, nil
 }

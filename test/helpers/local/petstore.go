@@ -1,11 +1,11 @@
 package localhelpers
 
 import (
-	"net/http"
-	"io"
-	"path/filepath"
-	"os"
 	"github.com/pkg/errors"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 )
 
 func downloadPetstore(destDir string) (string, error) {

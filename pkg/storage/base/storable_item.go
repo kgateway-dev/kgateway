@@ -11,7 +11,7 @@ type StorableItem struct {
 	Upstream       *v1.Upstream
 	VirtualService *v1.VirtualService
 	Role           *v1.Role
-	Attribute           *v1.Attribute
+	Attribute      *v1.Attribute
 	File           *dependencies.File
 }
 
@@ -127,7 +127,7 @@ func (item *StorableItem) GetTypeFlag() StorableItemType {
 type StorableItemType uint64
 
 const (
-	StorableItemTypeUpstream       StorableItemType = iota
+	StorableItemTypeUpstream StorableItemType = iota
 	StorableItemTypeVirtualService
 	StorableItemTypeRole
 	StorableItemTypeAttribute

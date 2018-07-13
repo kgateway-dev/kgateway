@@ -1,22 +1,22 @@
 package endpointswatcher_test
 
 import (
+	"github.com/gogo/protobuf/types"
+	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/gogo/protobuf/types"
-	"k8s.io/apimachinery/pkg/labels"
-	"time"
+	. "github.com/solo-io/gloo/pkg/control-plane/endpointswatcher"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/plugins/consul"
+	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/test/helpers"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/solo-io/gloo/pkg/plugins/consul"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
-	"github.com/hashicorp/consul/api"
-	"github.com/solo-io/gloo/test/helpers"
+	"k8s.io/apimachinery/pkg/labels"
 	"strings"
-	"github.com/solo-io/gloo/pkg/log"
-	. "github.com/solo-io/gloo/pkg/control-plane/endpointswatcher"
+	"time"
 )
 
 var upstreams []*v1.Upstream
@@ -49,19 +49,19 @@ var _ = Describe("EndpointsWatcher", func() {
 					{Address: "6.7.8.9", Port: 3456},
 				},
 				"upstream-for-svc1": []endpointdiscovery.Endpoint{
-				{Address: "1.2.3.4", Port: 1234},
-				{Address: "2.3.4.5", Port: 2345},
-			},
+					{Address: "1.2.3.4", Port: 1234},
+					{Address: "2.3.4.5", Port: 2345},
+				},
 				"upstream-for-svc2": []endpointdiscovery.Endpoint{
-			{Address: "3.4.5.6", Port: 3456},
-			},
-				"upstream-for-svc3-a-b":[]endpointdiscovery.Endpoint{
-			{Address: "6.7.8.9", Port: 3456},
-			},
+					{Address: "3.4.5.6", Port: 3456},
+				},
+				"upstream-for-svc3-a-b": []endpointdiscovery.Endpoint{
+					{Address: "6.7.8.9", Port: 3456},
+				},
 				"upstream-for-svc3": []endpointdiscovery.Endpoint{
-			{Address: "4.5.6.7", Port: 3456},
-			{Address: "5.6.7.8", Port: 3456},
-			{Address: "6.7.8.9", Port: 3456},
+					{Address: "4.5.6.7", Port: 3456},
+					{Address: "5.6.7.8", Port: 3456},
+					{Address: "6.7.8.9", Port: 3456},
 				},
 			}))
 		})

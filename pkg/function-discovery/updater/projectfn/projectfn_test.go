@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/runtime"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/projectfn/imported/client/apps"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/projectfn/imported/client/routes"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/projectfn/imported/models"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/test/helpers"

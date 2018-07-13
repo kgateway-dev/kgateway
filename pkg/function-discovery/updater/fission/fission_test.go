@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	. "github.com/solo-io/gloo/pkg/function-discovery/updater/fission"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/fission/imported"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/test/helpers"

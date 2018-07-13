@@ -8,10 +8,10 @@ import (
 	"github.com/d4l3k/messagediff"
 	"github.com/pkg/errors"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/gogo/protobuf/proto"
 )
 
 type configWatcher struct {
@@ -50,8 +50,8 @@ func NewConfigWatcher(storageClient storage.Interface) (*configWatcher, error) {
 	cache := &v1.Config{
 		Upstreams:       initialUpstreams,
 		VirtualServices: initialVirtualServices,
-		Roles: initialRoles,
-		Attributes: initialAttributes,
+		Roles:           initialRoles,
+		Attributes:      initialAttributes,
 	}
 	// throw it down the channel to get things going
 	go func() {

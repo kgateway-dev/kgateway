@@ -128,7 +128,6 @@ func (r RoleEventHandlerFuncs) OnDelete(updatedList []*v1.Role, obj *v1.Role) {
 	}
 }
 
-
 // AttributeEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
 // AttributeEventHandler.

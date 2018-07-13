@@ -1,12 +1,12 @@
 package functiontypes
 
 import (
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/fission"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/grpc"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/openfaas"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/projectfn"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/swagger"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/azure"
 	"github.com/solo-io/gloo/pkg/plugins/google"
@@ -23,7 +23,7 @@ const (
 	FunctionTypeFission   FunctionType = "functionTypeFission"
 	FunctionTypeProjectFn FunctionType = "functionTypeProjectFn"
 	NonFunctional         FunctionType = "nonFunctional"
-	FunctionTypeGRPC     FunctionType = "functionTypeGRPC"
+	FunctionTypeGRPC      FunctionType = "functionTypeGRPC"
 )
 
 func GetFunctionType(us *v1.Upstream) FunctionType {

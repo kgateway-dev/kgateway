@@ -15,5 +15,5 @@ func virtualHostName(virtualServiceName string) string {
 }
 
 func routeConfigName(listener *v1.Listener) string {
-	return listener.Name+"-routes"
+	return listener.Name + "-routes"
 }

@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/function-discovery"
 	. "github.com/solo-io/gloo/pkg/function-discovery/nats-streaming"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 )
 

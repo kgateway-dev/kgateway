@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/solo-io/gloo/pkg/function-discovery/updater/swagger"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/static"
+	. "github.com/solo-io/gloo/pkg/function-discovery/updater/swagger"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 )
 

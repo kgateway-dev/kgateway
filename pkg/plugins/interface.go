@@ -7,9 +7,9 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/types"
 
-	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/control-plane/filewatcher"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
 )
@@ -17,7 +17,7 @@ import (
 type Stage int
 
 const (
-	PreInAuth  Stage = iota
+	PreInAuth Stage = iota
 	InAuth
 	PostInAuth
 	PreOutAuth
@@ -114,4 +114,4 @@ type ClusterGeneratorPlugin interface {
 }
 
 // Params for GeneratedClusters()
-type ClusterGeneratorPluginParams struct {}
+type ClusterGeneratorPluginParams struct{}

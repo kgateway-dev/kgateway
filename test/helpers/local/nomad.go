@@ -194,8 +194,8 @@ func (i *NomadInstance) SetupNomadForE2eTest(envoyPath, outputDirectory string, 
 	nomadResourcesDir := filepath.Join(helpers.NomadE2eDirectory(), "nomad_resources")
 
 	data := &struct {
-		OutputDirectory   string
-		EnvoyPath         string
+		OutputDirectory string
+		EnvoyPath       string
 	}{OutputDirectory: outputDirectory, EnvoyPath: envoyPath}
 
 	tmpl, err := template.New("Test_Resources").ParseFiles(filepath.Join(nomadResourcesDir, "install.nomad.tmpl"))

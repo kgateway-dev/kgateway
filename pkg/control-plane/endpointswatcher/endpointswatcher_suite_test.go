@@ -5,13 +5,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/helpers/local"
-	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/log"
-	"os"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/helpers/local"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"github.com/solo-io/gloo/pkg/bootstrap"
+	"os"
 	"path/filepath"
 )
 

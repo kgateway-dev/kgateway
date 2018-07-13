@@ -176,7 +176,7 @@ func NewTestRouteWithCORS() *v1.Route {
 	}
 }
 
-func NewTestRole(name string, vServices ... string) *v1.Role {
+func NewTestRole(name string, vServices ...string) *v1.Role {
 	return &v1.Role{
 		Name: name,
 		Metadata: &v1.Metadata{
@@ -189,9 +189,7 @@ func NewTestAttribute(name string) *v1.Attribute {
 	return &v1.Attribute{
 		Name: name,
 		AttributeType: &v1.Attribute_ListenerAttribute{
-			ListenerAttribute: &v1.ListenerAttribute{
-
-			},
+			ListenerAttribute: &v1.ListenerAttribute{},
 		},
 		Metadata: &v1.Metadata{
 			Annotations: map[string]string{"my_annotation": "value"},

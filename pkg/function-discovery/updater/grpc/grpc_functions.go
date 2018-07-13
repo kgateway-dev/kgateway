@@ -30,7 +30,7 @@ func GetFuncs(files dependencies.FileStorage, us *v1.Upstream) ([]*v1.Function, 
 		for _, s := range file.Service {
 			for _, m := range s.Method {
 				funcs = append(funcs, &v1.Function{
-					Name: *s.Name +"."+*m.Name,
+					Name: *s.Name + "." + *m.Name,
 				})
 			}
 		}

@@ -3,9 +3,9 @@ package nats
 import (
 	"github.com/nats-io/go-nats-streaming"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/function-discovery"
 	"github.com/solo-io/gloo/pkg/function-discovery/detector"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 )

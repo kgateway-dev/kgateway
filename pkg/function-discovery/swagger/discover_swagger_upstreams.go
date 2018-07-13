@@ -6,10 +6,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/function-discovery"
 	"github.com/solo-io/gloo/pkg/function-discovery/detector"
 	"github.com/solo-io/gloo/pkg/function-discovery/updater/swagger"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 )

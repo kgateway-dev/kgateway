@@ -178,7 +178,7 @@ func (p *Plugin) templateForFunction(dest *v1.Destination_Function) (*transforma
 	// get the package_name.service_name to generate the path that envoy wants
 	var (
 		fullServiceName string
-		methodName string
+		methodName      string
 	)
 
 	// for multi-service upstreams: format should be ServiceName.MethodName

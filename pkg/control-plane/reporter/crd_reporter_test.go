@@ -12,8 +12,8 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/crd"
 	"k8s.io/client-go/tools/clientcmd"
 
-	. "github.com/solo-io/gloo/pkg/control-plane/reporter"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	. "github.com/solo-io/gloo/pkg/control-plane/reporter"
 	"github.com/solo-io/gloo/pkg/log"
 	. "github.com/solo-io/gloo/test/helpers"
 )
@@ -45,7 +45,7 @@ var _ = Describe("CrdReporter", func() {
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
 			roles           []*v1.Role
-			attributes           []*v1.Attribute
+			attributes      []*v1.Attribute
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
