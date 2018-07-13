@@ -8,10 +8,10 @@ import (
 
 type UpstreamSpec = static.UpstreamSpec
 
-func DecodeUpstreamSpec(generic v1.UpstreamSpec) (UpstreamSpec, error) {
+func DecodeUpstreamSpec(generic v1.UpstreamSpec) (*UpstreamSpec, error) {
 	return static.DecodeUpstreamSpec(generic)
 }
 
 func EncodeUpstreamSpec(spec UpstreamSpec) *types.Struct {
-	return static.EncodeUpstreamSpec(spec)
+	return static.EncodeUpstreamSpec(&spec)
 }
