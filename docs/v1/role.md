@@ -56,6 +56,7 @@ bind_address: string
 bind_port: uint32
 virtual_services: [string]
 config: {google.protobuf.Struct}
+labels: map<string,string>
 ssl_config: {SSLConfig}
 
 ```
@@ -66,6 +67,7 @@ ssl_config: {SSLConfig}
 | bind_port | uint32 |  | the port to bind on ports numbers must be unique for listeners within a role |
 | virtual_services | string | repeated | defines the set of virtual services that will be accessible by clients connecting to this listener. at least one virtual service must be specifiedfor HTTP-level features to be applied at the listener level |
 | config | [google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  | Config contains top-level config to be applied to a listener Listener config is applied to all TCP/HTTP traffic that initiates via this listener. Configuration such as gzip compression and TLS authentication is specified here |
+| labels | map&lt;string,string&gt; |  | Apply Listener Attributes to listeners with selectors matching these label keys and values If empty or not present, the Listener will inherit no configuration from Attributes. |
 | ssl_config | [SSLConfig](virtualservice.md#gloo.api.v1.SSLConfig) |  | SSL Config is optional for the role. If provided, the listener will serve TLS for connections on this port this is useful when there are no virtual services assigned to this listener, e.g. for the purpose of securing a Listener functioning as a TCP Proxy if no virtual services are defined and ssl_config is nil, the proxy will serve tcp connections insecurely on this port |
 
 

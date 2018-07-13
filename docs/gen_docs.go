@@ -7,12 +7,14 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 
 	"os"
 
 	"strings"
 
 	"github.com/ilackarms/protoc-gen-doc"
+	"github.com/pkg/errors"
 )
 
 func main() {
@@ -28,17 +30,17 @@ func main() {
 func run(file, tmplFile, outDir string) error {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "reading input file")
 	}
 	var protoDescriptor gendoc.Template
 	err = json.Unmarshal(data, &protoDescriptor)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "unmarshalling proto descriptor")
 	}
 
 	inputTemplate, err := ioutil.ReadFile(tmplFile)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "reading tmpl file")
 	}
 
 	fixMapEntryKludge(&protoDescriptor)
@@ -46,7 +48,7 @@ func run(file, tmplFile, outDir string) error {
 
 	for _, protoFile := range protoDescriptor.Files {
 		protoFile.Name = strings.TrimSuffix(protoFile.Name, ".proto")
-		log.Printf(protoFile.Name)
+		log.Printf("%s", protoFile.Name)
 		tmpl, err := template.New("Proto Doc Template").Funcs(map[string]interface{}{
 			"p":           gendoc.PFilter,
 			"para":        gendoc.ParaFilter,
@@ -56,16 +58,23 @@ func run(file, tmplFile, outDir string) error {
 			"linkForType": linkForType,
 		}).Parse(string(inputTemplate))
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "parsing template")
 		}
 		var buf bytes.Buffer
 		err = tmpl.Execute(&buf, protoFile)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "executing template")
 		}
-		err = ioutil.WriteFile(outDir+"/"+protoFile.Name+".md", buf.Bytes(), 0644)
+		name := protoFile.Name
+		// plugins go in a special subdir
+		if strings.Contains(name, "plugins/") {
+			name = filepath.Join("plugins", strings.TrimPrefix(strings.Replace(protoFile.Name, "/", "_", -1), "github.com_solo-io_gloo_pkg_"))
+			os.MkdirAll(outDir+"/plugins", 0755)
+
+		}
+		err = ioutil.WriteFile(outDir+"/"+name+".md", buf.Bytes(), 0644)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "writing output md")
 		}
 	}
 	return nil

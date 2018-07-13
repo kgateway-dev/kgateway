@@ -43,6 +43,11 @@ pages:
       - Virtual Services: v1/virtualservice.md
       - Metadata: v1/metadata.md
       - Status: v1/status.md
+      - Plugins:
+        - Routing Plugins:
+          - Basic: v1/plugins/coreplugins_routing_route_extensions.md
+        - Upstream Plugins:
+          - Static: v1/plugins/coreplugins_static_upstream_spec.md
 repo_url: https://github.com/solo-io/gloo/
 site_author: gloo Project Authors
 copyright: © Copyright 2018, solo.io Inc.

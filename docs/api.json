@@ -1,6 +1,624 @@
 {
   "files": [
     {
+      "name": "github.com/solo-io/gloo/pkg/coreplugins/static/upstream_spec.proto",
+      "description": "",
+      "package": "gloo.api.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.v1.UpstreamSpec",
+          "description": "Configuration for Static Upstreams",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "hosts",
+              "description": "A list of addresses and ports\nat least one must be specified",
+              "label": "repeated",
+              "type": "Host",
+              "longType": "Host",
+              "fullType": "gloo.api.v1.Host",
+              "defaultValue": ""
+            },
+            {
+              "name": "enable_ipv6",
+              "description": "Enable ipv6 addresses to be used for routing",
+              "label": "",
+              "type": "bool",
+              "longType": "bool",
+              "fullType": "bool",
+              "defaultValue": ""
+            },
+            {
+              "name": "tls",
+              "description": "Attempt to use outbound TLS",
+              "label": "",
+              "type": "BoolValue",
+              "longType": "google.protobuf.BoolValue",
+              "fullType": "google.protobuf.BoolValue",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "Host",
+          "longName": "Host",
+          "fullName": "gloo.api.v1.Host",
+          "description": "Represents a single instance of an upstream",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "addr",
+              "description": "Address (hostname or IP)",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "port",
+              "description": "Port the instance is listening on",
+              "label": "",
+              "type": "uint32",
+              "longType": "uint32",
+              "fullType": "uint32",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/coreplugins/routing/route_extensions.proto",
+      "description": "",
+      "package": "gloo.api.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "RouteExtensions",
+          "longName": "RouteExtensions",
+          "fullName": "gloo.api.v1.RouteExtensions",
+          "description": "RouteExtensions should be placed in the route.extensions field\nRouteExtensions extend the behavior of a regular route in gloo (within a virtual service)",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "add_request_headers",
+              "description": "These headers will be added to the request before it is sent to the upstream",
+              "label": "repeated",
+              "type": "HeaderValue",
+              "longType": "HeaderValue",
+              "fullType": "gloo.api.v1.HeaderValue",
+              "defaultValue": ""
+            },
+            {
+              "name": "add_response_headers",
+              "description": "These headers will be added to the response before it is returned to the downstream",
+              "label": "repeated",
+              "type": "HeaderValue",
+              "longType": "HeaderValue",
+              "fullType": "gloo.api.v1.HeaderValue",
+              "defaultValue": ""
+            },
+            {
+              "name": "remove_response_headers",
+              "description": "These headers will be removed from the request before it is sent to the upstream",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "max_retries",
+              "description": "The maximum number of retries to attempt for requests that get a 5xx response",
+              "label": "",
+              "type": "uint32",
+              "longType": "uint32",
+              "fullType": "uint32",
+              "defaultValue": ""
+            },
+            {
+              "name": "timeout",
+              "description": "If set, time out requests on this route. If not set, this will default to the connection timeout on the upstream",
+              "label": "",
+              "type": "Duration",
+              "longType": "google.protobuf.Duration",
+              "fullType": "google.protobuf.Duration",
+              "defaultValue": ""
+            },
+            {
+              "name": "host_rewrite",
+              "description": "Rewrite the host header of the request to this value, if set",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "cors",
+              "description": "Configure Cross-Origin Resource Sharing requests",
+              "label": "",
+              "type": "CorsPolicy",
+              "longType": "CorsPolicy",
+              "fullType": "gloo.api.v1.CorsPolicy",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "HeaderValue",
+          "longName": "HeaderValue",
+          "fullName": "gloo.api.v1.HeaderValue",
+          "description": "Header name/value pair",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "key",
+              "description": "Header name",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "value",
+              "description": "Header value",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "append",
+              "description": "Should this value be appended?",
+              "label": "",
+              "type": "bool",
+              "longType": "bool",
+              "fullType": "bool",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "CorsPolicy",
+          "longName": "CorsPolicy",
+          "fullName": "gloo.api.v1.CorsPolicy",
+          "description": "Configuration for Cross-Origin Resource Sharing requests",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "allow_origin",
+              "description": "Specifies the origins that will be allowed to do CORS requests.\n\nAn origin is allowed if either allow_origin matches.",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "allow_methods",
+              "description": "Specifies the content for the *access-control-allow-methods* header.",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "allow_headers",
+              "description": "Specifies the content for the *access-control-allow-headers* header.",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "expose_headers",
+              "description": "Specifies the content for the *access-control-expose-headers* header.",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "max_age",
+              "description": "Specifies the content for the *access-control-max-age* header.",
+              "label": "",
+              "type": "Duration",
+              "longType": "google.protobuf.Duration",
+              "fullType": "google.protobuf.Duration",
+              "defaultValue": ""
+            },
+            {
+              "name": "allow_credentials",
+              "description": "Specifies whether the resource allows credentials.",
+              "label": "",
+              "type": "bool",
+              "longType": "bool",
+              "fullType": "bool",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/connect/listener_config.proto",
+      "description": "",
+      "package": "gloo.api.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "ListenerConfig",
+          "longName": "ListenerConfig",
+          "fullName": "gloo.api.v1.ListenerConfig",
+          "description": "the listenerConfig must be either an InboundListener or an OutboundListener",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "inbound",
+              "description": "",
+              "label": "",
+              "type": "InboundListenerConfig",
+              "longType": "InboundListenerConfig",
+              "fullType": "gloo.api.v1.InboundListenerConfig",
+              "defaultValue": ""
+            },
+            {
+              "name": "outbound",
+              "description": "",
+              "label": "",
+              "type": "OutboundListenerConfig",
+              "longType": "OutboundListenerConfig",
+              "fullType": "gloo.api.v1.OutboundListenerConfig",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "InboundListenerConfig",
+          "longName": "InboundListenerConfig",
+          "fullName": "gloo.api.v1.InboundListenerConfig",
+          "description": "configuration for the inbound listener\nthis listener does authentication and connects\nclients to the local service",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "auth_config",
+              "description": "configuration for tls-based auth filter",
+              "label": "",
+              "type": "AuthConfig",
+              "longType": "AuthConfig",
+              "fullType": "gloo.api.v1.AuthConfig",
+              "defaultValue": ""
+            },
+            {
+              "name": "local_service_address",
+              "description": "the address of the local upstream being proxied\nthe service being proxied must be reachable by Envoy",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "local_service_name",
+              "description": "the name of the local consul service being proxied",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "AuthConfig",
+          "longName": "AuthConfig",
+          "fullName": "gloo.api.v1.AuthConfig",
+          "description": "AuthConfig contains information necessary to\ncommunicate with the Authentication Server (Consul Agent)",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "target",
+              "description": "The name of the service who owns this proxy\nTarget must be delivered by the filter as part of the authorize request payload",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "authorize_hostname",
+              "description": "the hostname of the authorization REST service",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "authorize_port",
+              "description": "the port of the authorization REST service",
+              "label": "",
+              "type": "uint32",
+              "longType": "uint32",
+              "fullType": "uint32",
+              "defaultValue": ""
+            },
+            {
+              "name": "authorize_path",
+              "description": "the request path for the authorization REST service\nNOTE: currently ignored by the plugin and filter",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "request_timeout",
+              "description": "Connection Timeout tells the filter to set a timeout for unresponsive connections created to this upstream.\nIf not provided by the user, it will set to a default value",
+              "label": "",
+              "type": "Duration",
+              "longType": "google.protobuf.Duration",
+              "fullType": "google.protobuf.Duration",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "OutboundListenerConfig",
+          "longName": "OutboundListenerConfig",
+          "fullName": "gloo.api.v1.OutboundListenerConfig",
+          "description": "The configuration for the outbound listeners which serve as \"tcp routes\"",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "destination_consul_service",
+              "description": "The name of the consul service which is the destination for the listener",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "destination_consul_type",
+              "description": "TODO (ilackarms): support destination type in Consul Connect API",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/nats-streaming/nats_streaming_filter.proto",
+      "description": "",
+      "package": "natsstreaming",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "NatsStreaming",
+          "longName": "NatsStreaming",
+          "fullName": "natsstreaming.NatsStreaming",
+          "description": "[#proto-status: experimental]",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "cluster",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "max_connections",
+              "description": "",
+              "label": "",
+              "type": "uint32",
+              "longType": "uint32",
+              "fullType": "uint32",
+              "defaultValue": ""
+            },
+            {
+              "name": "op_timeout",
+              "description": "",
+              "label": "",
+              "type": "Duration",
+              "longType": "google.protobuf.Duration",
+              "fullType": "google.protobuf.Duration",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "attribute.proto",
+      "description": "",
+      "package": "gloo.api.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "Attribute",
+          "longName": "Attribute",
+          "fullName": "gloo.api.v1.Attribute",
+          "description": "An attribute is a container for configuration that is intended to be applied across a set of labeled resources inside of Gloo.\nAttributes specify a set of selectors which are compared with labels by Gloo at runtime\nIn the current implementation, only Listeners have be selected, and therefore configured by Attributes.\nLabels and Selectors follow the same logical patterns implemented by Kubernetes.\nRead about the Kubernetes concepts here: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/\nAttributes are useful when applying shared configuration to a large number of objects, such as the sharing of route\nconfiguration between roles.",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "name",
+              "description": "Name of the attribute.\n\nAttribute Names must be unique and follow the following syntax rules:\nOne or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "listener_attribute",
+              "description": "",
+              "label": "",
+              "type": "ListenerAttribute",
+              "longType": "ListenerAttribute",
+              "fullType": "gloo.api.v1.ListenerAttribute",
+              "defaultValue": ""
+            },
+            {
+              "name": "status",
+              "description": "Status indicates the validation status of the attribute resource.\nStatus is read-only by clients, and set by gloo during validation",
+              "label": "",
+              "type": "Status",
+              "longType": "Status",
+              "fullType": "gloo.api.v1.Status",
+              "defaultValue": ""
+            },
+            {
+              "name": "metadata",
+              "description": "Metadata contains the resource metadata for the attribute",
+              "label": "",
+              "type": "Metadata",
+              "longType": "Metadata",
+              "fullType": "gloo.api.v1.Metadata",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "ListenerAttribute",
+          "longName": "ListenerAttribute",
+          "fullName": "gloo.api.v1.ListenerAttribute",
+          "description": "Listeners define the address:port where the proxy will listen for incoming connections\nEach listener defines a unique set of TCP and HTTP behaviors",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "selector",
+              "description": "Apply this attribute to listeners with label keys and values matching this\nselector. If empty or not present, the attribute will not be applied to any listeners.",
+              "label": "repeated",
+              "type": "SelectorEntry",
+              "longType": "ListenerAttribute.SelectorEntry",
+              "fullType": "gloo.api.v1.ListenerAttribute.SelectorEntry",
+              "defaultValue": ""
+            },
+            {
+              "name": "virtual_services",
+              "description": "Listeners can serve HTTP or raw TCP, but not both. If at least one Virtual Service is specified here,\nthe listener will become an HTTP listener serving routes defined in these virtual services.\nSome Listener plugins may impose restrictions on the Virtual Services that can be applied to a listener.\nFor example, some plugins may require all applied virtual services only route to a specific upstream,\na common requirement for Service Meshes",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "config",
+              "description": "Config contains top-level config to be applied to a listener\nListener config is applied to all TCP/HTTP traffic that\ninitiates via this listener.\nConfiguration such as gzip compression and TLS authentication is specified here\nThis config struct will be merged with Role-specific Listener Conig. If two fields overlap between the\nListener config on the role and the config on the attribute, the config on the Role will supersede this one",
+              "label": "",
+              "type": "Struct",
+              "longType": "google.protobuf.Struct",
+              "fullType": "google.protobuf.Struct",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "SelectorEntry",
+          "longName": "ListenerAttribute.SelectorEntry",
+          "fullName": "gloo.api.v1.ListenerAttribute.SelectorEntry",
+          "description": "",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "key",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "value",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
       "name": "config.proto",
       "description": "",
       "package": "gloo.api.v1",
@@ -45,6 +663,15 @@
               "type": "Role",
               "longType": "Role",
               "fullType": "gloo.api.v1.Role",
+              "defaultValue": ""
+            },
+            {
+              "name": "attributes",
+              "description": "the list attributes defined by the user",
+              "label": "repeated",
+              "type": "Attribute",
+              "longType": "Attribute",
+              "fullType": "gloo.api.v1.Attribute",
               "defaultValue": ""
             }
           ]
@@ -246,12 +873,50 @@
               "defaultValue": ""
             },
             {
+              "name": "labels",
+              "description": "Apply Listener Attributes to listeners with selectors matching these label keys and values\nIf empty or not present, the Listener will inherit no configuration from Attributes.",
+              "label": "repeated",
+              "type": "LabelsEntry",
+              "longType": "Listener.LabelsEntry",
+              "fullType": "gloo.api.v1.Listener.LabelsEntry",
+              "defaultValue": ""
+            },
+            {
               "name": "ssl_config",
               "description": "SSL Config is optional for the role. If provided, the listener will serve TLS for connections on this port\nthis is useful when there are no virtual services assigned to this listener, e.g. for the purpose of\nsecuring a Listener functioning as a TCP Proxy\nif no virtual services are defined and ssl_config is nil, the proxy will serve tcp connections insecurely on this port",
               "label": "",
               "type": "SSLConfig",
               "longType": "SSLConfig",
               "fullType": "gloo.api.v1.SSLConfig",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "LabelsEntry",
+          "longName": "Listener.LabelsEntry",
+          "fullName": "gloo.api.v1.Listener.LabelsEntry",
+          "description": "",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "key",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "value",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
               "defaultValue": ""
             }
           ]

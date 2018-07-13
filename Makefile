@@ -148,6 +148,9 @@ install/openshift/install.yaml: install/kube/install.yaml
 # Docs
 #----------------------------------------------------------------------------------
 
+PLUGIN_PROTOS=$(shell find pkg/coreplugins/ -maxdepth 2 -name *.proto && find pkg/plugins/ -maxdepth 2 -name *.proto)
+PROTO_FILES=$(foreach PROTO,$(PLUGIN_PROTOS),$(ROOTDIR)/$(PROTO)) ./*.proto
+
 docs/api.json: $(PROTOS)
 	export DISABLE_SORT=1 && \
 	cd api/v1/ && \
@@ -156,11 +159,13 @@ docs/api.json: $(PROTOS)
 	-I=. \
 	-I=$(GOPATH)/src \
 	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
+	-I=${GOPATH}/src/github.com/lyft/protoc-gen-validate/ \
 	--plugin=protoc-gen-doc=$(GOPATH)/bin/protoc-gen-doc \
-    --doc_out=$(ROOTDIR)/docs/ \
-    --doc_opt=json,api.json \
-	./*.proto
+	--doc_out=$(ROOTDIR)/docs/ \
+	--doc_opt=json,api.json \
+	$(PROTO_FILES)
 
+.PHONY: docs
 doc: docs/api.json
 	go run docs/gen_docs.go
 
