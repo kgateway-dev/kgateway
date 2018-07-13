@@ -30,6 +30,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Upstream Spec for AWS Lambda Upstreams
+// AWS Upstreams represent a collection of Lambda Functions for a particular AWS Account (IAM Role or User account)
+// in a particular region
 type UpstreamSpec struct {
 	// The AWS Region in which to run Lambda Functions
 	Region string `protobuf:"bytes,1,opt,name=region,proto3" json:"region,omitempty"`
@@ -63,6 +65,7 @@ func (m *UpstreamSpec) GetSecretRef() string {
 }
 
 // Function Spec for Functions on AWS Lambda Upstreams
+// The Function Spec contains data necessary for Gloo to invoke Lambda functions
 type FunctionSpec struct {
 	// The Name of the Lambda Function as it appears in the AWS Lambda Portal
 	FunctionName string `protobuf:"bytes,1,opt,name=function_name,json=functionName,proto3" json:"function_name,omitempty"`

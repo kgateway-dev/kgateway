@@ -7,6 +7,8 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 // Upstream Spec for AWS Lambda Upstreams
+// AWS Upstreams represent a collection of Lambda Functions for a particular AWS Account (IAM Role or User account)
+// in a particular region
 message UpstreamSpec {
     // The AWS Region in which to run Lambda Functions
     string region = 1;
@@ -21,6 +23,7 @@ message UpstreamSpec {
 }
 
 // Function Spec for Functions on AWS Lambda Upstreams
+// The Function Spec contains data necessary for Gloo to invoke Lambda functions
 message FunctionSpec {
     // The Name of the Lambda Function as it appears in the AWS Lambda Portal
     string function_name  = 1;

@@ -30,6 +30,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Upstream Spec for Azure Functions Upstreams
+// AWS Upstreams represent a collection of Azure Functions for a particular Azure Account (IAM Role or User account)
+// within a particular Function App
 type UpstreamSpec struct {
 	// The Name of the Azure Function App where the functions are grouped
 	FunctionAppName string `protobuf:"bytes,1,opt,name=function_app_name,json=functionAppName,proto3" json:"function_app_name,omitempty"`
@@ -59,6 +61,7 @@ func (m *UpstreamSpec) GetSecretRef() string {
 }
 
 // Function Spec for Functions on Azure Functions Upstreams
+// The Function Spec contains data necessary for Gloo to invoke Azure functions
 type FunctionSpec struct {
 	// The Name of the Azure Function as it appears in the Azure Functions Portal
 	FunctionName string `protobuf:"bytes,1,opt,name=function_name,json=functionName,proto3" json:"function_name,omitempty"`

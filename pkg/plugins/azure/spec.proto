@@ -7,6 +7,8 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 // Upstream Spec for Azure Functions Upstreams
+// AWS Upstreams represent a collection of Azure Functions for a particular Azure Account (IAM Role or User account)
+// within a particular Function App
 message UpstreamSpec {
     // The Name of the Azure Function App where the functions are grouped
     string function_app_name  = 1;
@@ -17,6 +19,7 @@ message UpstreamSpec {
 }
 
 // Function Spec for Functions on Azure Functions Upstreams
+// The Function Spec contains data necessary for Gloo to invoke Azure functions
 message FunctionSpec {
     // The Name of the Azure Function as it appears in the Azure Functions Portal
     string function_name  = 1;
