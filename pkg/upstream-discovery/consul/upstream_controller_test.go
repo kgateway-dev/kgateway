@@ -144,14 +144,6 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								StringValue: "svc2",
 							},
 						},
-						"service_tags": {
-							Kind: &types.Value_ListValue{
-								ListValue: &types.ListValue{
-									Values: nil,
-								},
-							},
-						},
-						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -171,14 +163,6 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								StringValue: "svc2",
 							},
 						},
-						"service_tags": {
-							Kind: &types.Value_ListValue{
-								ListValue: &types.ListValue{
-									Values: nil,
-								},
-							},
-						},
-						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -198,14 +182,6 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								StringValue: "svc3",
 							},
 						},
-						"service_tags": {
-							Kind: &types.Value_ListValue{
-								ListValue: &types.ListValue{
-									Values: nil,
-								},
-							},
-						},
-						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -238,7 +214,6 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								},
 							},
 						},
-						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
@@ -276,7 +251,6 @@ var _ = Describe("Consul UpstreamController Integration", func() {
 								},
 							},
 						},
-						"connect": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 				Metadata: &v1.Metadata{
