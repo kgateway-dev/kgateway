@@ -1,0 +1,21 @@
+syntax = "proto3";
+package gloo.api.grpc.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/grpc";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Service Properties for gRPC Services
+// Service Properties must be set to enable JSON-to-gRPC Transcoding for gRPC Services
+// via Gloo.
+message ServiceProperties {
+    // the names of the gRPC services defined in the descriptors. The methods on
+    // services specified here can be called using JSON/REST via Gloo's function-level routing
+    repeated string grpc_service_names = 1;
+    // The [Gloo File Ref](https://gloo.solo.io/introduction/concepts/#Files) to a File
+    // containing the proto descriptors generated for the gRPC service
+    // This file will be generated automatically by Gloo Function Discovery if it is enabled
+    // and the gRPC service supports Reflection
+    string descriptors_file_ref = 2;
+}

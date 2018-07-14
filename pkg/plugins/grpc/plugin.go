@@ -27,6 +27,8 @@ func init() {
 	plugins.Register(NewPlugin())
 }
 
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src service_properties.proto
+
 type ServicesAndDescriptor struct {
 	ServiceNames []string
 	PackageNames []string
@@ -84,7 +86,7 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 		return errors.Wrap(err, "parsing service properties")
 	}
 	fileRef := serviceProperties.DescriptorsFileRef
-	serviceNames := serviceProperties.GRPCServiceNames
+	serviceNames := serviceProperties.GrpcServiceNames
 
 	if fileRef == "" {
 		return errors.New("service_info.properties.descriptors_file_ref cannot be empty")

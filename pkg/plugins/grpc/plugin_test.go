@@ -37,7 +37,7 @@ var _ = Describe("Plugin", func() {
 					Type: ServiceTypeGRPC,
 					Properties: EncodeServiceProperties(ServiceProperties{
 						DescriptorsFileRef: "file_1",
-						GRPCServiceNames:   []string{"Bookstore"},
+						GrpcServiceNames:   []string{"Bookstore"},
 					}),
 				},
 			}
@@ -62,7 +62,7 @@ var _ = Describe("Plugin", func() {
 					Type: ServiceTypeGRPC,
 					Properties: EncodeServiceProperties(ServiceProperties{
 						DescriptorsFileRef: "file_1",
-						GRPCServiceNames:   []string{"Bookstore"},
+						GrpcServiceNames:   []string{"Bookstore"},
 					}),
 				},
 			}
@@ -72,7 +72,7 @@ var _ = Describe("Plugin", func() {
 					Type: ServiceTypeGRPC,
 					Properties: EncodeServiceProperties(ServiceProperties{
 						DescriptorsFileRef: "file_1",
-						GRPCServiceNames:   []string{"Bookstore"},
+						GrpcServiceNames:   []string{"Bookstore"},
 					}),
 				},
 			}
@@ -99,7 +99,7 @@ var _ = Describe("Plugin", func() {
 					Type: ServiceTypeGRPC,
 					Properties: EncodeServiceProperties(ServiceProperties{
 						DescriptorsFileRef: "file_1",
-						GRPCServiceNames:   []string{"Bookstore"},
+						GrpcServiceNames:   []string{"Bookstore"},
 					}),
 				},
 			}

@@ -106,7 +106,7 @@ func NewTestGRPCUpstream(addr string, glooFilesDir string) *TestUpstream {
 	us.Upstream.ServiceInfo = &v1.ServiceInfo{
 		Type: grpc.ServiceTypeGRPC,
 		Properties: grpc.EncodeServiceProperties(grpc.ServiceProperties{
-			GRPCServiceNames:   []string{"TestService"},
+			GrpcServiceNames:   []string{"TestService"},
 			DescriptorsFileRef: "proto.pb",
 		}),
 	}

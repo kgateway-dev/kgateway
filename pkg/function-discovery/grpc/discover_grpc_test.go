@@ -34,7 +34,7 @@ var _ = Describe("Discovergrpc", func() {
 				Expect(svcInfo).To(Equal(&v1.ServiceInfo{
 					Type: grpc.ServiceTypeGRPC,
 					Properties: grpc.EncodeServiceProperties(grpc.ServiceProperties{
-						GRPCServiceNames:   []string{"Bookstore"},
+						GrpcServiceNames:   []string{"Bookstore"},
 						DescriptorsFileRef: fileRef,
 					}),
 				}))

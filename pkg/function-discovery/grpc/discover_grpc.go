@@ -98,7 +98,7 @@ func (d *grpcDetector) DetectFunctionalService(us *v1.Upstream, addr string) (*v
 	svcInfo := &v1.ServiceInfo{
 		Type: grpcplugin.ServiceTypeGRPC,
 		Properties: grpcplugin.EncodeServiceProperties(grpcplugin.ServiceProperties{
-			GRPCServiceNames:   serviceNames,
+			GrpcServiceNames:   serviceNames,
 			DescriptorsFileRef: fileRef,
 		}),
 	}

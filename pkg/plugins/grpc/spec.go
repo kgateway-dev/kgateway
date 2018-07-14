@@ -5,13 +5,6 @@ import (
 	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
-type ServiceProperties struct {
-	// the name of the gRPC services defined in the descriptors (to route to)
-	GRPCServiceNames []string `json:"service_names"`
-	// file ref for the proto descriptors generated for is gRPC service
-	DescriptorsFileRef string `json:"descriptors_file_ref"`
-}
-
 func DecodeServiceProperties(generic *types.Struct) (ServiceProperties, error) {
 	var p ServiceProperties
 	err := protoutil.UnmarshalStruct(generic, &p)
