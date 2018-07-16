@@ -1,7 +1,7 @@
 <a name="top"></a>
 
 ## Contents
-  - [NatsStreaming](#natsstreaming.NatsStreaming)
+  - [NatsStreaming](#nats.NatsStreaming)
 
 
 
@@ -11,7 +11,7 @@
 
 
 
-<a name="natsstreaming.NatsStreaming"></a>
+<a name="nats.NatsStreaming"></a>
 
 ### NatsStreaming
 [#proto-status: experimental]

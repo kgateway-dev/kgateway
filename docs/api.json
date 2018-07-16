@@ -613,7 +613,7 @@
     {
       "name": "github.com/solo-io/gloo/pkg/plugins/nats-streaming/nats_streaming_filter.proto",
       "description": "",
-      "package": "natsstreaming",
+      "package": "nats",
       "hasEnums": false,
       "hasExtensions": false,
       "hasMessages": true,
@@ -624,7 +624,7 @@
         {
           "name": "NatsStreaming",
           "longName": "NatsStreaming",
-          "fullName": "natsstreaming.NatsStreaming",
+          "fullName": "nats.NatsStreaming",
           "description": "[#proto-status: experimental]",
           "hasExtensions": false,
           "hasFields": true,
