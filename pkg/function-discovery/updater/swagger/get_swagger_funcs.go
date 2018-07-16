@@ -8,6 +8,7 @@ import (
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/swag"
+	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -113,9 +114,9 @@ func createFunctionForOpertaion(method string, basePath, functionPath string, op
 	return &v1.Function{
 		Name: fnName,
 		Spec: rest.EncodeFunctionSpec(rest.TransformationSpec{
-			Path:   path,
-			Header: headersTemplate,
-			Body:   &body,
+			Path:    path,
+			Headers: headersTemplate,
+			Body:    &types.StringValue{Value: body},
 		}),
 	}
 }

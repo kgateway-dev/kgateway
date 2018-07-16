@@ -103,9 +103,8 @@ func createFunction(fn function) *v1.Function {
 	return &v1.Function{
 		Name: fn.Name,
 		Spec: rest.EncodeFunctionSpec(rest.TransformationSpec{
-			Path:            path.Join("/function", fn.Name),
-			Header:          headersTemplate,
-			PassthroughBody: true,
+			Path:    path.Join("/function", fn.Name),
+			Headers: headersTemplate,
 		}),
 	}
 }
