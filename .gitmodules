@@ -1,9 +1,6 @@
 [submodule "pkg/plugins/google/envoy"]
 	path = pkg/plugins/google/envoy
 	url = https://github.com/solo-io/envoy-google-function
-[submodule "pkg/plugins/nats-streaming/envoy"]
-	path = pkg/plugins/nats-streaming/envoy
-	url = https://github.com/solo-io/envoy-nats-streaming
 [submodule "pkg/plugins/common/transformation/envoy"]
 	path = pkg/plugins/common/transformation/envoy
 	url = https://github.com/solo-io/envoy-transformation
