@@ -53,7 +53,7 @@ var _ = Describe("GetSwaggerFuncs", func() {
 		str := ""
 		expectedFn := &v1.Function{
 			Name: "get.pets",
-			Spec: rest.EncodeFunctionSpec(rest.Template{
+			Spec: rest.EncodeFunctionSpec(rest.TransformationSpec{
 				Path:   "/api/pets",
 				Header: map[string]string{":method": "GET"},
 				Body:   &str,

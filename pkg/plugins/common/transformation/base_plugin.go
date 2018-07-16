@@ -132,7 +132,7 @@ func (p *transformationPlugin) AddResponseTransformationsToRoute(in *v1.Route, o
 		return err
 	}
 
-	if extension.ResponseTemplate == nil {
+	if extension.ResponseTransformation == nil {
 		return nil
 	}
 
@@ -145,7 +145,7 @@ func (p *transformationPlugin) AddResponseTransformationsToRoute(in *v1.Route, o
 	}
 
 	// calculate the templates for all these transformations
-	if err := p.setResponseTransformationForRoute(*extension.ResponseTemplate, extractors, out); err != nil {
+	if err := p.setResponseTransformationForRoute(*extension.ResponseTransformation, extractors, out); err != nil {
 		return errors.Wrap(err, "resolving request transformations for route")
 	}
 
@@ -319,11 +319,11 @@ func (p *transformationPlugin) setTransformationForRoute(getTemplateForDestinati
 	return nil
 }
 
-func (p *transformationPlugin) setResponseTransformationForRoute(template Template, extractors map[string]*Extraction, out *envoyroute.Route) error {
+func (p *transformationPlugin) setResponseTransformationForRoute(template TransformationSpec, extractors map[string]*Extraction, out *envoyroute.Route) error {
 	// create templates
 	// right now it's just a no-op, user writes inja directly
 	headerTemplates := make(map[string]*InjaTemplate)
-	for k, v := range template.Header {
+	for k, v := range template.Headers {
 		headerTemplates[k] = &InjaTemplate{Text: v}
 	}
 
@@ -337,7 +337,7 @@ func (p *transformationPlugin) setResponseTransformationForRoute(template Templa
 	if template.Body != nil {
 		tt.TransformationTemplate.BodyTransformation = &TransformationTemplate_Body{
 			Body: &InjaTemplate{
-				Text: *template.Body,
+				Text: template.Body.Value,
 			},
 		}
 	} else {

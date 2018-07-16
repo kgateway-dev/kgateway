@@ -21,7 +21,7 @@ var _ = Describe("Transformation", func() {
 
 		in := NewNonFunctionSingleDestRoute(upstreamName)
 		in.Extensions = EncodeRouteExtension(RouteExtension{
-			ResponseTemplate: &Template{
+			ResponseTemplate: &TransformationSpec{
 				Body: strPtr("{{body}}"),
 			},
 		})
@@ -509,7 +509,7 @@ func NewFunctionalUpstream(name, funcName string) *v1.Upstream {
 	us.Functions = []*v1.Function{
 		{
 			Name: funcName,
-			Spec: EncodeFunctionSpec(Template{
+			Spec: EncodeFunctionSpec(TransformationSpec{
 				Path: "/{{id}}/why/{{id}}",
 				Header: map[string]string{
 					"x-user-id":      "{{id}}",

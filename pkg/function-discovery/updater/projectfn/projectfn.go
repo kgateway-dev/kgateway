@@ -93,7 +93,7 @@ func createFunction(funk Function) *v1.Function {
 
 	return &v1.Function{
 		Name: funk.Appname + ":" + funk.Funcname,
-		Spec: rest.EncodeFunctionSpec(rest.Template{
+		Spec: rest.EncodeFunctionSpec(rest.TransformationSpec{
 			Path:            funk.Route,
 			Header:          headersTemplate,
 			PassthroughBody: true,

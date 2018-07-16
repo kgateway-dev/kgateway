@@ -1,4 +1,4 @@
-response_template:
+response_transformation:
   body: '{{body}}'
   headers:
     content-type: text/html

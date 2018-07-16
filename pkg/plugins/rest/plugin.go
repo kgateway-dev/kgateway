@@ -77,7 +77,7 @@ func createTransformationForRestFunction(upstreams []*v1.Upstream) transformatio
 		// create templates
 		// right now it's just a no-op, user writes inja directly
 		headerTemplates := make(map[string]*transformation.InjaTemplate)
-		for k, v := range outputTemplates.Header {
+		for k, v := range outputTemplates.Headers {
 			needsTransformation = true
 			headerTemplates[k] = &transformation.InjaTemplate{Text: v}
 		}

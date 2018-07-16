@@ -94,7 +94,7 @@ func createFunction(fn fission_imported.Function) *v1.Function {
 
 	return &v1.Function{
 		Name: fn.Metadata.Name,
-		Spec: rest.EncodeFunctionSpec(rest.Template{
+		Spec: rest.EncodeFunctionSpec(rest.TransformationSpec{
 			Path:            UrlForFunction(fn.Metadata.Name),
 			Header:          headersTemplate,
 			PassthroughBody: true,

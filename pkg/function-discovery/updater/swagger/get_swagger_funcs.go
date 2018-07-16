@@ -112,7 +112,7 @@ func createFunctionForOpertaion(method string, basePath, functionPath string, op
 
 	return &v1.Function{
 		Name: fnName,
-		Spec: rest.EncodeFunctionSpec(rest.Template{
+		Spec: rest.EncodeFunctionSpec(rest.TransformationSpec{
 			Path:   path,
 			Header: headersTemplate,
 			Body:   &body,

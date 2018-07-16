@@ -66,13 +66,13 @@ func EncodeRouteExtension(spec RouteExtension) *types.Struct {
 	return v1Spec
 }
 
-func DecodeFunctionSpec(generic *types.Struct) (Template, error) {
-	var s Template
+func DecodeFunctionSpec(generic *types.Struct) (TransformationSpec, error) {
+	var s TransformationSpec
 	err := protoutil.UnmarshalStruct(generic, &s)
 	return s, err
 }
 
-func EncodeFunctionSpec(spec Template) *types.Struct {
+func EncodeFunctionSpec(spec TransformationSpec) *types.Struct {
 	v1Spec, err := protoutil.MarshalStruct(spec)
 	if err != nil {
 		panic(err)

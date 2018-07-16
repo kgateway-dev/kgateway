@@ -1,0 +1,49 @@
+syntax = "proto3";
+package gloo.api.grpc.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/grpc";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// The REST Route Extension contains two components:
+// * parameters for calling REST functions
+// * Response Transformation
+message RouteExtension {
+    // If specified, these parameters will be used as inputs for REST templates for
+    // the destination function for the route
+    // (if the route destination is a functional destination that has a REST transformation)
+    Parameters parameters = 1;
+    //
+    TransformationSpec response_trasnformation = 2;
+}
+
+
+// Parameters define a set of parameters for REST Transformations
+// Parameters can be extracted from HTTP Headers and Request Path
+// Parameters can also be extracted from the HTTP Body, provided that it is
+// valid JSON-encoded
+// Gloo will search for parameters by their name in strings, enclosed in single
+// curly braces, and attempt to match them to the variables in REST Function Templates
+// for example:
+//   # route
+//   match: {...}
+//   destination: {...}
+//   extensions:
+//     parameters:
+//         headers:
+//           x-user-id: { userId }
+//   ---
+//   # function
+//   name: myfunc
+//   spec:
+//     body: |
+//     {
+//       "id": {{ userId }}
+//     }
+message Parameters {
+    // headers that will be used to extract data for processing output templates
+    // Gloo will search for parameters by their name in header value strings, enclosed in single
+    // curly braces
+    map<string, string> headers = 1;
+}
