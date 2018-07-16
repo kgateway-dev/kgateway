@@ -37,7 +37,6 @@ functions:
     body: null
     headers:
       :method: POST
-    passthrough_body: true
     path: /function/url-ping
 metadata:
   annotations:
