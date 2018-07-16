@@ -16,3 +16,8 @@ cmd/control-plane/control-plane
 cmd/function-discovery/gloo-function-discovery
 test/nomad_e2e/nomad_resources/install.nomad
 test/nomad_e2e/nomad_resources/testing-resources.nomad
+build-envoy/bazel-bin
+build-envoy/bazel-build-envoy
+build-envoy/bazel-genfiles
+build-envoy/bazel-out
+build-envoy/bazel-testlogs
