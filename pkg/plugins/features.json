@@ -16,8 +16,8 @@
     },
     {
         "name": "nats_streaming",
-        "gloo": "pkg/plugins/nats-streaming",
-        "envoy": "pkg/plugins/nats-streaming/envoy"
+        "gloo": "pkg/plugins/nats",
+        "envoy": "pkg/plugins/nats/envoy"
     },
     {
         "name": "kubernetes",
