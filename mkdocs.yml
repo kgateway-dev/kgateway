@@ -44,10 +44,22 @@ pages:
       - Metadata: v1/metadata.md
       - Status: v1/status.md
       - Plugins:
-        - Routing Plugins:
-          - Basic: v1/plugins/coreplugins_routing_route_extensions.md
-        - Upstream Plugins:
-          - Static: v1/plugins/coreplugins_static_upstream_spec.md
+        - Serverless:
+          - AWS Lambda: v1/plugins/aws_spec.md
+          - Azure Functions: v1/plugins/azure_spec.md
+          - Google Cloud Functions: v1/plugins/google_spec.md
+        - Microservices:
+          - Consul Service Discovery: v1/plugins/consul_spec.md
+          - Kubernetes Service Discovery: v1/plugins/kubernetes_spec.md
+        - Transformation:
+          - NATS Request Transformation: v1/plugins/nats_service_properties.md
+          - gRPC Request Transformation: v1/plugins/grpc_service_properties.md
+          - REST Request Transformation: v1/plugins/rest_spec.md
+        - Mesh:
+          - Consul Connect: v1/plugins/connect_listener_config.md
+        - Basic:
+          - Route Extensions: v1/plugins/basic_routing_route_extensions.md
+          - Static Upstreams: v1/plugins/basic_static_upstream_spec.md
 repo_url: https://github.com/solo-io/gloo/
 site_author: gloo Project Authors
 copyright: © Copyright 2018, solo.io Inc.

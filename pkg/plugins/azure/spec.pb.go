@@ -30,7 +30,7 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Upstream Spec for Azure Functions Upstreams
-// AWS Upstreams represent a collection of Azure Functions for a particular Azure Account (IAM Role or User account)
+// Azure Upstreams represent a collection of Azure Functions for a particular Azure Account (IAM Role or User account)
 // within a particular Function App
 type UpstreamSpec struct {
 	// The Name of the Azure Function App where the functions are grouped

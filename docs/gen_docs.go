@@ -69,6 +69,8 @@ func run(file, tmplFile, outDir string) error {
 		// plugins go in a special subdir
 		if strings.Contains(name, "plugins/") {
 			name = filepath.Join("plugins", strings.TrimPrefix(strings.Replace(protoFile.Name, "/", "_", -1), "github.com_solo-io_gloo_pkg_"))
+			name = strings.Replace(name, "coreplugins_", "basic_", -1)
+			name = strings.Replace(name, "plugins_", "", -1)
 			os.MkdirAll(outDir+"/plugins", 0755)
 
 		}

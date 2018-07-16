@@ -439,7 +439,70 @@
       "services": []
     },
     {
-      "name": "github.com/solo-io/gloo/pkg/plugins/azure/function_spec.proto",
+      "name": "github.com/solo-io/gloo/pkg/plugins/google/spec.proto",
+      "description": "",
+      "package": "gloo.api.google.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.google.v1.UpstreamSpec",
+          "description": "Upstream Spec for Google Functions Upstreams\nAWS Upstreams represent a collection of Google Functions for a particular Google Cloud Platform Account\nin a particular region, for a particlar project",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "region",
+              "description": "The Google Cloud Region in which to run Google Functions",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "project_id",
+              "description": "The Google Cloud Platform project id where the functions are contained",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "FunctionSpec",
+          "longName": "FunctionSpec",
+          "fullName": "gloo.api.google.v1.FunctionSpec",
+          "description": "Function Spec for Functions on Google Functions Upstreams\nThe Function Spec contains data necessary for Gloo to invoke Google Cloud Platform Functions",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "url",
+              "description": "URL is the HTTP Trigger URL assigned to the function in the Google Cloud Functions UI",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/azure/spec.proto",
       "description": "",
       "package": "gloo.api.azure.v1",
       "hasEnums": false,
@@ -450,10 +513,39 @@
       "extensions": [],
       "messages": [
         {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.azure.v1.UpstreamSpec",
+          "description": "Upstream Spec for Azure Functions Upstreams\nAzure Upstreams represent a collection of Azure Functions for a particular Azure Account (IAM Role or User account)\nwithin a particular Function App",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "function_app_name",
+              "description": "The Name of the Azure Function App where the functions are grouped",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "secret_ref",
+              "description": "A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).\n{{ hide_not_implemented \"Azure Secrets can be created with `glooctl secret create azure ...`\" }}\nNote that this secret is not required unless Function Discovery is enabled",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
           "name": "FunctionSpec",
           "longName": "FunctionSpec",
           "fullName": "gloo.api.azure.v1.FunctionSpec",
-          "description": "Function Spec for Functions on Azure Functions Upstreams",
+          "description": "Function Spec for Functions on Azure Functions Upstreams\nThe Function Spec contains data necessary for Gloo to invoke Azure functions",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
@@ -482,9 +574,9 @@
       "services": []
     },
     {
-      "name": "github.com/solo-io/gloo/pkg/plugins/azure/upstream_spec.proto",
+      "name": "github.com/solo-io/gloo/pkg/plugins/rest/spec.proto",
       "description": "",
-      "package": "gloo.api.azure.v1",
+      "package": "gloo.api.rest.v1",
       "hasEnums": false,
       "hasExtensions": false,
       "hasMessages": true,
@@ -493,17 +585,84 @@
       "extensions": [],
       "messages": [
         {
-          "name": "UpstreamSpec",
-          "longName": "UpstreamSpec",
-          "fullName": "gloo.api.azure.v1.UpstreamSpec",
-          "description": "Upstream Spec for Azure Functions Upstreams",
+          "name": "RouteExtension",
+          "longName": "RouteExtension",
+          "fullName": "gloo.api.rest.v1.RouteExtension",
+          "description": "The REST Route Extension contains two components:\n* parameters for calling REST functions\n* Response Transformation",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
           "fields": [
             {
-              "name": "function_app_name",
-              "description": "The Name of the Azure Function App where the functions are grouped",
+              "name": "parameters",
+              "description": "If specified, these parameters will be used as inputs for REST templates for\nthe destination function for the route\n(if the route destination is a functional destination that has a REST transformation)",
+              "label": "",
+              "type": "Parameters",
+              "longType": "Parameters",
+              "fullType": "gloo.api.rest.v1.Parameters",
+              "defaultValue": ""
+            },
+            {
+              "name": "response_transformation",
+              "description": "If specified, responses on this route will be transformed according to the template(s) provided\nin the transformation spec here",
+              "label": "",
+              "type": "TransformationSpec",
+              "longType": "TransformationSpec",
+              "fullType": "gloo.api.rest.v1.TransformationSpec",
+              "defaultValue": ""
+            },
+            {
+              "name": "response_params",
+              "description": "If specified, paremeters for the response transformation will be extracted from these sources",
+              "label": "",
+              "type": "Parameters",
+              "longType": "Parameters",
+              "fullType": "gloo.api.rest.v1.Parameters",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "Parameters",
+          "longName": "Parameters",
+          "fullName": "gloo.api.rest.v1.Parameters",
+          "description": "Parameters define a set of parameters for REST Transformations\nParameters can be extracted from HTTP Headers and Request Path\nParameters can also be extracted from the HTTP Body, provided that it is\nvalid JSON-encoded\nGloo will search for parameters by their name in strings, enclosed in single\ncurly braces, and attempt to match them to the variables in REST Function Templates\nfor example:\n  # route\n  match: {...}\n  destination: {...}\n  extensions:\n    parameters:\n        headers:\n          x-user-id: { userId }\n  ---\n  # function\n  name: myfunc\n  spec:\n    body: |\n    {\n      \"id\": {{ userId }}\n    }",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "headers",
+              "description": "headers that will be used to extract data for processing output templates\nGloo will search for parameters by their name in header value strings, enclosed in single\ncurly braces\nExample:\n  extensions:\n    parameters:\n        headers:\n          x-user-id: { userId }",
+              "label": "repeated",
+              "type": "HeadersEntry",
+              "longType": "Parameters.HeadersEntry",
+              "fullType": "gloo.api.rest.v1.Parameters.HeadersEntry",
+              "defaultValue": ""
+            },
+            {
+              "name": "path",
+              "description": "part of the (or the entire) path that will be used extract data for processing output templates\nGloo will search for parameters by their name in header value strings, enclosed in single\ncurly braces\nExample:\n  extensions:\n    parameters:\n        path: /users/{ userId }\n\nTODO: support query params\nTODO: support form params",
+              "label": "",
+              "type": "StringValue",
+              "longType": "google.protobuf.StringValue",
+              "fullType": "google.protobuf.StringValue",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "HeadersEntry",
+          "longName": "Parameters.HeadersEntry",
+          "fullName": "gloo.api.rest.v1.Parameters.HeadersEntry",
+          "description": "",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "key",
+              "description": "",
               "label": "",
               "type": "string",
               "longType": "string",
@@ -511,8 +670,75 @@
               "defaultValue": ""
             },
             {
-              "name": "secret_ref",
-              "description": "A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).\n{{ hide_not_implemented \"Azure Secrets can be created with `glooctl secret create azure ...`\" }}\nNote that this secret is not required unless Function Discovery is enabled",
+              "name": "value",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "TransformationSpec",
+          "longName": "TransformationSpec",
+          "fullName": "gloo.api.rest.v1.TransformationSpec",
+          "description": "TransformationSpec can act as part of a Route Extension (as a Response Transformation), or as\na FunctionSpec (as a Request Transformation).\nUse TransformationSpec as the Function Spec for REST Services (where `Upstream.ServiceInfo.Type == \"REST\"`)\nTransformationSpec contains a set of templates that will be used to modify the Path, Headers, and Body\nParameters for the tempalte come from the following sources:\npath: HTTP Request path (if present)\nmethod: HTTP Request method (if present)\nparameters specified in the RouteExtension.Parameters (or, in the case of ResponseTransformation, RouteExtension.ResponseParams)\nParameters can also be extracted from the Request / Response Body provided that they are JSON\nTo do so, specify the field using JSONPath syntax\nany field from the request body, assuming it's json (http://goessner.net/articles/JsonPath/index.html#e2)\nNote: REST Service detection and configuration can be performed automatically by Gloo for services that\nimplement Swagger and serve their `swagger.json` file on a common endpoint (e.g. /v1/swagger.json).\nCustom endpoints for swagger.json can be added via the Function Discovery configuration. Requires Function Discovery to be enabled.",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "path",
+              "description": "a Jinja-style Template string for the outbound request path. Only useful for request transformation",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "headers",
+              "description": "a map of keys to Jinja-style Template strings HTTP Headers. Useful for request and response transformations",
+              "label": "repeated",
+              "type": "HeadersEntry",
+              "longType": "TransformationSpec.HeadersEntry",
+              "fullType": "gloo.api.rest.v1.TransformationSpec.HeadersEntry",
+              "defaultValue": ""
+            },
+            {
+              "name": "body",
+              "description": "a Jinja-style Template string for the outbound HTTP Body. Useful for request and response transformations\nIf this is nil, the body will be passed through unmodified. If set to an empty string, the body will be removed\nfrom the HTTP message.\n\nTODO: support query template\nTODO: support form template",
+              "label": "",
+              "type": "StringValue",
+              "longType": "google.protobuf.StringValue",
+              "fullType": "google.protobuf.StringValue",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "HeadersEntry",
+          "longName": "TransformationSpec.HeadersEntry",
+          "fullName": "gloo.api.rest.v1.TransformationSpec.HeadersEntry",
+          "description": "",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "key",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "value",
+              "description": "",
               "label": "",
               "type": "string",
               "longType": "string",
@@ -525,7 +751,7 @@
       "services": []
     },
     {
-      "name": "github.com/solo-io/gloo/pkg/plugins/aws/function_spec.proto",
+      "name": "github.com/solo-io/gloo/pkg/plugins/aws/spec.proto",
       "description": "",
       "package": "gloo.api.aws.v1",
       "hasEnums": false,
@@ -536,10 +762,39 @@
       "extensions": [],
       "messages": [
         {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.aws.v1.UpstreamSpec",
+          "description": "Upstream Spec for AWS Lambda Upstreams\nAWS Upstreams represent a collection of Lambda Functions for a particular AWS Account (IAM Role or User account)\nin a particular region",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "region",
+              "description": "The AWS Region in which to run Lambda Functions",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "secret_ref",
+              "description": "A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret\nAWS Secrets can be created with `glooctl secret create aws ...`\nIf the secret is created manually, it must conform to the following structure:\n ```\n access_key: \u003caws access key\u003e\n secret_key: \u003caws secret key\u003e\n ```",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
           "name": "FunctionSpec",
           "longName": "FunctionSpec",
           "fullName": "gloo.api.aws.v1.FunctionSpec",
-          "description": "Function Spec for Functions on AWS Lambda Upstreams",
+          "description": "Function Spec for Functions on AWS Lambda Upstreams\nThe Function Spec contains data necessary for Gloo to invoke Lambda functions",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
@@ -568,9 +823,9 @@
       "services": []
     },
     {
-      "name": "github.com/solo-io/gloo/pkg/plugins/aws/upstream_spec.proto",
+      "name": "github.com/solo-io/gloo/pkg/plugins/grpc/service_properties.proto",
       "description": "",
-      "package": "gloo.api.aws.v1",
+      "package": "gloo.api.grpc.v1",
       "hasEnums": false,
       "hasExtensions": false,
       "hasMessages": true,
@@ -579,26 +834,26 @@
       "extensions": [],
       "messages": [
         {
-          "name": "UpstreamSpec",
-          "longName": "UpstreamSpec",
-          "fullName": "gloo.api.aws.v1.UpstreamSpec",
-          "description": "Upstream Spec for AWS Lambda Upstreams",
+          "name": "ServiceProperties",
+          "longName": "ServiceProperties",
+          "fullName": "gloo.api.grpc.v1.ServiceProperties",
+          "description": "Service Properties for gRPC Services\nService Properties must be set to enable JSON-to-gRPC Transcoding for gRPC Services\nvia Gloo.\nNote: gRPC detection and configuration can be performed automatically by Gloo for services that\nsupport gRPC Reflection. Function Discovery must be enabled.",
           "hasExtensions": false,
           "hasFields": true,
           "extensions": [],
           "fields": [
             {
-              "name": "region",
-              "description": "The AWS Region in which to run Lambda Functions",
-              "label": "",
+              "name": "grpc_service_names",
+              "description": "the names of the gRPC services defined in the descriptors. The methods on\nservices specified here can be called using JSON/REST via Gloo's function-level routing",
+              "label": "repeated",
               "type": "string",
               "longType": "string",
               "fullType": "string",
               "defaultValue": ""
             },
             {
-              "name": "secret_ref",
-              "description": "A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret\nAWS Secrets can be created with `glooctl secret create aws ...`\nIf the secret is created manually, it must conform to the following structure:\n ```\n access_key: \u003caws access key\u003e\n secret_key: \u003caws secret key\u003e\n ```",
+              "name": "descriptors_file_ref",
+              "description": "The [Gloo File Ref](https://gloo.solo.io/introduction/concepts/#Files) to a File\ncontaining the proto descriptors generated for the gRPC service\nThis file will be generated automatically by Gloo Function Discovery if it is enabled\nand the gRPC service supports Reflection",
               "label": "",
               "type": "string",
               "longType": "string",
@@ -611,7 +866,79 @@
       "services": []
     },
     {
-      "name": "github.com/solo-io/gloo/pkg/plugins/nats-streaming/nats_streaming_filter.proto",
+      "name": "github.com/solo-io/gloo/pkg/plugins/consul/spec.proto",
+      "description": "",
+      "package": "gloo.api.consul.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.consul.v1.UpstreamSpec",
+          "description": "Upstream Spec for Consul Upstreams\nConsul Upstreams represent a set of one or more instances of a Service that has been registered with Consul\nConsul Upstreams map to multiple service instances by the name and tags found on each instance\nConsul Upstreams are typically generated automatically by Gloo from the Consul Service Catalog",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "service_name",
+              "description": "The name of the Service as it is registered in Consul",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "service_tags",
+              "description": "The list of service tags Gloo should search for on a service instance before deciding whether or not to\ninclude the instance as part of this upstream",
+              "label": "repeated",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "connect",
+              "description": "Connect specifies configuration for consul services that are \"Connect-enabled\". See\nfor more information about Consul Connect",
+              "label": "",
+              "type": "Connect",
+              "longType": "Connect",
+              "fullType": "gloo.api.consul.v1.Connect",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "Connect",
+          "longName": "Connect",
+          "fullName": "gloo.api.consul.v1.Connect",
+          "description": "Connect contains the information necessary to connect to proxies that are running as sidecars for\nConsul Connect (in-mesh) services",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "tls_secret_ref",
+              "description": "A reference to a Gloo secret containing the client TLS parameters for connecting to this service",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/nats/nats_streaming_filter.proto",
       "description": "",
       "package": "nats",
       "hasEnums": false,
@@ -655,6 +982,139 @@
               "type": "Duration",
               "longType": "google.protobuf.Duration",
               "fullType": "google.protobuf.Duration",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/nats/service_properties.proto",
+      "description": "",
+      "package": "gloo.api.nats.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "ServiceProperties",
+          "longName": "ServiceProperties",
+          "fullName": "gloo.api.nats.v1.ServiceProperties",
+          "description": "Service Properties for NATS-Streaming clusters\nService Properties must be set to enable HTTP-to-NATS\nMessage transformation via Gloo.",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "cluster_id",
+              "description": "the cluster ID of the NATS-streaming service\ndefaults to `test-cluster`",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "discover_prefix",
+              "description": "the NATS-streaming discover prefix\ndefaults to `_STAN.discover`",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            }
+          ]
+        }
+      ],
+      "services": []
+    },
+    {
+      "name": "github.com/solo-io/gloo/pkg/plugins/kubernetes/spec.proto",
+      "description": "",
+      "package": "gloo.api.kubernetes.v1",
+      "hasEnums": false,
+      "hasExtensions": false,
+      "hasMessages": true,
+      "hasServices": false,
+      "enums": [],
+      "extensions": [],
+      "messages": [
+        {
+          "name": "UpstreamSpec",
+          "longName": "UpstreamSpec",
+          "fullName": "gloo.api.kubernetes.v1.UpstreamSpec",
+          "description": "Upstream Spec for Kubernetes Upstreams\nKubernetes Upstreams represent a set of one or more addressable pods for a Kubernetes Service\nthe Gloo Kubernetes Upstream maps to a single service port. Because Kubernetes Services support mulitple ports,\nGloo requires that a different upstream be created for each port\nKubernetes Upstreams are typically generated automatically by Gloo from the Kubernetes API",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "service_name",
+              "description": "The name of the Kubernetes Service",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "service_namespace",
+              "description": "The namespace where the Service lives",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "service_port",
+              "description": "The port where the Service is listening. If the service only has one port, this can be left empty",
+              "label": "",
+              "type": "int32",
+              "longType": "int32",
+              "fullType": "int32",
+              "defaultValue": ""
+            },
+            {
+              "name": "labels",
+              "description": "Labels allow finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if\nany are provided here.\n(see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)",
+              "label": "repeated",
+              "type": "LabelsEntry",
+              "longType": "UpstreamSpec.LabelsEntry",
+              "fullType": "gloo.api.kubernetes.v1.UpstreamSpec.LabelsEntry",
+              "defaultValue": ""
+            }
+          ]
+        },
+        {
+          "name": "LabelsEntry",
+          "longName": "UpstreamSpec.LabelsEntry",
+          "fullName": "gloo.api.kubernetes.v1.UpstreamSpec.LabelsEntry",
+          "description": "",
+          "hasExtensions": false,
+          "hasFields": true,
+          "extensions": [],
+          "fields": [
+            {
+              "name": "key",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
+              "defaultValue": ""
+            },
+            {
+              "name": "value",
+              "description": "",
+              "label": "",
+              "type": "string",
+              "longType": "string",
+              "fullType": "string",
               "defaultValue": ""
             }
           ]

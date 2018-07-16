@@ -165,7 +165,7 @@ docs/api.json: $(PROTOS)
 	--doc_opt=json,api.json \
 	$(PROTO_FILES)
 
-.PHONY: docs
+.PHONY: doc
 doc: docs/api.json
 	go run docs/gen_docs.go
 

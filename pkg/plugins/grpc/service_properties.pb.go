@@ -31,6 +31,8 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 // Service Properties for gRPC Services
 // Service Properties must be set to enable JSON-to-gRPC Transcoding for gRPC Services
 // via Gloo.
+// Note: gRPC detection and configuration can be performed automatically by Gloo for services that
+// support gRPC Reflection. Function Discovery must be enabled.
 type ServiceProperties struct {
 	// the names of the gRPC services defined in the descriptors. The methods on
 	// services specified here can be called using JSON/REST via Gloo's function-level routing

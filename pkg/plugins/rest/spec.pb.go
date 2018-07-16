@@ -144,6 +144,9 @@ func (m *Parameters) GetPath() *google_protobuf1.StringValue {
 // Parameters can also be extracted from the Request / Response Body provided that they are JSON
 // To do so, specify the field using JSONPath syntax
 // any field from the request body, assuming it's json (http://goessner.net/articles/JsonPath/index.html#e2)
+// Note: REST Service detection and configuration can be performed automatically by Gloo for services that
+// implement Swagger and serve their `swagger.json` file on a common endpoint (e.g. /v1/swagger.json).
+// Custom endpoints for swagger.json can be added via the Function Discovery configuration. Requires Function Discovery to be enabled.
 type TransformationSpec struct {
 	// a Jinja-style Template string for the outbound request path. Only useful for request transformation
 	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
