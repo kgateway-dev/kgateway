@@ -16,6 +16,8 @@ const (
 	ServiceTypeREST = "REST"
 )
 
+//go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src spec.proto
+
 func init() {
 	plugins.Register(NewPlugin())
 }
@@ -100,7 +102,7 @@ func createTransformationForRestFunction(upstreams []*v1.Upstream) transformatio
 		if outputTemplates.Body != nil {
 			template.BodyTransformation = &transformation.TransformationTemplate_Body{
 				Body: &transformation.InjaTemplate{
-					Text: *outputTemplates.Body,
+					Text: outputTemplates.Body.Value,
 				},
 			}
 		} else {

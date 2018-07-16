@@ -1,11 +1,15 @@
 syntax = "proto3";
-package gloo.api.rest.v1;
+package gloo.api.common.v1;
 
-option go_package = "github.com/solo-io/gloo/pkg/plugins/rest";
+option go_package = "github.com/solo-io/gloo/pkg/plugins/common/transformation";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 import "google/protobuf/wrappers.proto";
+
+/*
+    This file is copied from plugins/rest/spec.proto, with the package and go_package changed
+*/
 
 // The REST Route Extension contains two components:
 // * parameters for calling REST functions
