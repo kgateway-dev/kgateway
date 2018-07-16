@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/function-discovery"
 	"github.com/solo-io/gloo/pkg/function-discovery/detector"
 	"github.com/solo-io/gloo/pkg/log"
-	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
+	"github.com/solo-io/gloo/pkg/plugins/nats"
 )
 
 const (
@@ -41,9 +41,9 @@ func (d *natsDetector) DetectFunctionalService(us *v1.Upstream, addr string) (*v
 
 	log.Printf("nats upstream detected: %v", addr)
 	svcInfo := &v1.ServiceInfo{
-		Type: natsstreaming.ServiceTypeNatsStreaming,
-		Properties: natsstreaming.EncodeServiceProperties(natsstreaming.ServiceProperties{
-			ClusterID: d.clusterID,
+		Type: nats.ServiceTypeNatsStreaming,
+		Properties: nats.EncodeServiceProperties(nats.ServiceProperties{
+			ClusterId: d.clusterID,
 		}),
 	}
 

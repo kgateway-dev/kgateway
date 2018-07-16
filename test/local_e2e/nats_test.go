@@ -9,7 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/static"
-	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
+	"github.com/solo-io/gloo/pkg/plugins/nats"
 
 	"github.com/nats-io/go-nats-streaming"
 	. "github.com/onsi/ginkgo"
@@ -41,7 +41,7 @@ var _ = Describe("Nats streaming test", func() {
 			Type: "service",
 			Spec: static.EncodeUpstreamSpec(serviceSpec),
 			ServiceInfo: &v1.ServiceInfo{
-				Type: natsstreaming.ServiceTypeNatsStreaming,
+				Type: nats.ServiceTypeNatsStreaming,
 			},
 		}
 		err = glooInstance.AddUpstream(u)

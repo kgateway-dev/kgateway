@@ -1,0 +1,19 @@
+syntax = "proto3";
+package gloo.api.nats.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/nats";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Service Properties for NATS-Streaming clusters
+// Service Properties must be set to enable HTTP-to-NATS
+// Message transformation via Gloo.
+message ServiceProperties {
+    // the cluster ID of the NATS-streaming service
+    // defaults to `test-cluster`
+    string cluster_id = 1;
+    // the NATS-streaming discover prefix
+    // defaults to `_STAN.discover`
+    string discover_prefix = 2;
+}

@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/function-discovery"
 	. "github.com/solo-io/gloo/pkg/function-discovery/nats-streaming"
-	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
+	"github.com/solo-io/gloo/pkg/plugins/nats"
 )
 
 var _ = Describe("DiscoverNats", func() {
@@ -25,9 +25,9 @@ var _ = Describe("DiscoverNats", func() {
 				Expect(err).To(BeNil())
 				Expect(annotations).To(HaveKey(functiondiscovery.DiscoveryTypeAnnotationKey))
 				Expect(svcInfo).To(Equal(&v1.ServiceInfo{
-					Type: natsstreaming.ServiceTypeNatsStreaming,
-					Properties: natsstreaming.EncodeServiceProperties(natsstreaming.ServiceProperties{
-						ClusterID: natsStreamingInstance.ClusterId(),
+					Type: nats.ServiceTypeNatsStreaming,
+					Properties: nats.EncodeServiceProperties(nats.ServiceProperties{
+						ClusterId: natsStreamingInstance.ClusterId(),
 					}),
 				}))
 			})

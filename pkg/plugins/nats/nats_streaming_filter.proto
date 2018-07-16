@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package nats;
+
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+
+// [#protodoc-title: NatsStreaming]
+// NATS Streaming :ref:`configuration overview <config_http_filters_nats_streaming>`.
+
+// [#proto-status: experimental]
+message NatsStreaming {
+    string cluster = 1;
+    uint32 max_connections = 2;
+    google.protobuf.Duration op_timeout = 3 [(gogoproto.stdduration) = true];
+ }

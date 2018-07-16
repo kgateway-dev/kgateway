@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/grpc"
-	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
+	"github.com/solo-io/gloo/pkg/plugins/nats"
 	"github.com/solo-io/gloo/pkg/plugins/rest"
 )
 
@@ -24,7 +24,7 @@ var _ = Describe("Function Discovery Service Detection", func() {
 		{
 			description:         "nats",
 			upstreamName:        namespace + "-nats-streaming-4222",
-			expectedServiceInfo: &v1.ServiceInfo{Type: natsstreaming.ServiceTypeNatsStreaming},
+			expectedServiceInfo: &v1.ServiceInfo{Type: nats.ServiceTypeNatsStreaming},
 		},
 		{
 			description:         "swagger",
