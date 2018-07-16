@@ -2,7 +2,7 @@ version: '3'
 services:
 
   control-plane:
-    image: "soloio/control-plane:0.3.1"
+    image: "soloio/control-plane:0.4.0"
     working_dir: /config/
     command:
     - "--storage.type=file"
@@ -18,7 +18,7 @@ services:
     - "8081:8081"
 
   ingress:
-    image: soloio/envoy:0.3.1
+    image: soloio/envoy:0.4.0
     entrypoint: ["envoy"]
     command: ["-c", "/config/envoy.yaml", "--v2-config-only"]
     volumes:
@@ -29,7 +29,7 @@ services:
     - "19000:19000"
 
   function-discovery:
-    image: "soloio/function-discovery:0.3.1"
+    image: "soloio/function-discovery:0.4.0"
     working_dir: /config/
     command:
     - "--storage.type=file"

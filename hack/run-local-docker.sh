@@ -86,7 +86,7 @@ docker run --rm  -i \
     -v ${CONFIG_DIR}:/config \
     --net=host \
     --name envoy \
-    soloio/envoy:0.3.1 \
+    soloio/envoy:0.4.0 \
     envoy \
     -c /config/envoy.yaml \
     --v2-config-only &
