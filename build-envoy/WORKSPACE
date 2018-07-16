@@ -27,7 +27,7 @@ local_repository(
 
 local_repository(
     name = "nats_streaming_filter",
-    path = "../pkg/plugins/nats-streaming/envoy",
+    path = "../pkg/plugins/nats/envoy",
 )
 
 local_repository(

@@ -191,6 +191,23 @@ e2e:
 test: unit e2e
 
 
+#----------------------------------------------------------------------------------
+# Envoy
+#----------------------------------------------------------------------------------
+
+envoy:
+	cd build-envoy && bazel build -c dbg //:envoy
+
+envoy-in-docker:
+	docker run -v $(shell pwd):$(shell pwd) -w $(shell pwd)/build-envoy envoyproxy/envoy-build bash -c "bazel build -c dbg //:envoy && cd .. && cp -f build-envoy/bazel-bin/envoy $(OUTPUT_DIR)"
+
+envoy-docker: envoy
+	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
+	docker build -t soloio/envoy:$(IMAGE_TAG) $(OUTPUT_DIR)
+
+envoy-dev-docker: envoy
+	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
+	docker build -t soloio/envoy-dev:$(IMAGE_TAG) $(OUTPUT_DIR)
 
 
 # TODO: dependnencies
@@ -207,17 +224,3 @@ test: unit e2e
 
 # go packages#
 #  github.com/gogo/protobuf
-
-envoy:
-	cd build-envoy && bazel build -c dbg //:envoy
-
-envoy-in-docker:
-	docker run -v $(shell pwd):$(shell pwd) -w $(shell pwd)/build-envoy envoyproxy/envoy-build bash -c "bazel build -c dbg //:envoy && cd .. && cp -f build-envoy/bazel-bin/envoy $(OUTPUT_DIR)"
-
-envoy-docker: envoy
-	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
-	docker build -t soloio/envoy:$(IMAGE_TAG) $(OUTPUT_DIR)
-
-envoy-dev-docker: envoy
-	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
-	docker build -t soloio/envoy-dev:$(IMAGE_TAG) $(OUTPUT_DIR)

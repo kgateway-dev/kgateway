@@ -22,3 +22,6 @@
 [submodule "build-envoy/envoy"]
 	path = build-envoy/envoy
 	url = https://github.com/envoyproxy/envoy
+[submodule "pkg/plugins/nats/envoy"]
+	path = pkg/plugins/nats/envoy
+	url = https://github.com/solo-io/envoy-nats-streaming
