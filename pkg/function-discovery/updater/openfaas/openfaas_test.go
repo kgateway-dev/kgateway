@@ -88,8 +88,7 @@ var _ = Describe("FaaS", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(outspec.Path).To(Equal("/function/test"))
-		Expect(outspec.Header[":method"]).To(Equal("POST"))
-		Expect(outspec.PassthroughBody).To(Equal(true))
+		Expect(outspec.Headers[":method"]).To(Equal("POST"))
 	})
 
 	It("should ignore non gateway faas upstreams", func() {
@@ -130,9 +129,6 @@ var _ = Describe("FaaS", func() {
 				Name: "qrcode-go",
 				Spec: &types.Struct{
 					Fields: map[string]*types.Value{
-						"passthrough_body": {
-							Kind: &types.Value_BoolValue{BoolValue: true},
-						},
 						"path": {
 							Kind: &types.Value_StringValue{
 								StringValue: "/function/qrcode-go",
@@ -149,7 +145,6 @@ var _ = Describe("FaaS", func() {
 								},
 							},
 						},
-						"body": {Kind: &types.Value_NullValue{NullValue: 0}},
 					},
 				},
 			},

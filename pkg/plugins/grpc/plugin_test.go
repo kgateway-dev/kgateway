@@ -222,52 +222,6 @@ var _ = Describe("Plugin", func() {
 																		},
 																	},
 																},
-																"scheme": {
-																	Kind: &types.Value_StructValue{
-																		StructValue: &types.Struct{
-																			Fields: map[string]*types.Value{
-																				"header": {
-																					Kind: &types.Value_StringValue{
-																						StringValue: ":scheme",
-																					},
-																				},
-																				"regex": {
-																					Kind: &types.Value_StringValue{
-																						StringValue: `([\-._[:alnum:]]+)`,
-																					},
-																				},
-																				"subgroup": {
-																					Kind: &types.Value_NumberValue{
-																						NumberValue: 1.000000,
-																					},
-																				},
-																			},
-																		},
-																	},
-																},
-																"authority": {
-																	Kind: &types.Value_StructValue{
-																		StructValue: &types.Struct{
-																			Fields: map[string]*types.Value{
-																				"header": {
-																					Kind: &types.Value_StringValue{
-																						StringValue: ":authority",
-																					},
-																				},
-																				"regex": {
-																					Kind: &types.Value_StringValue{
-																						StringValue: `([\-._[:alnum:]]+)`,
-																					},
-																				},
-																				"subgroup": {
-																					Kind: &types.Value_NumberValue{
-																						NumberValue: 1.000000,
-																					},
-																				},
-																			},
-																		},
-																	},
-																},
 															},
 														},
 													},

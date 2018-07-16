@@ -1,6 +1,7 @@
 package swagger_test
 
 import (
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -54,9 +55,9 @@ var _ = Describe("GetSwaggerFuncs", func() {
 		expectedFn := &v1.Function{
 			Name: "get.pets",
 			Spec: rest.EncodeFunctionSpec(rest.TransformationSpec{
-				Path:   "/api/pets",
-				Header: map[string]string{":method": "GET"},
-				Body:   &str,
+				Path:    "/api/pets",
+				Headers: map[string]string{":method": "GET"},
+				Body:    &types.StringValue{Value: str},
 			}),
 		}
 		Expect(funcs[0]).To(Equal(expectedFn))

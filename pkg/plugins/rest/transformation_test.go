@@ -21,7 +21,7 @@ var _ = Describe("Transformation", func() {
 
 		in := NewNonFunctionSingleDestRoute(upstreamName)
 		in.Extensions = EncodeRouteExtension(RouteExtension{
-			ResponseTemplate: &TransformationSpec{
+			ResponseTransformation: &TransformationSpec{
 				Body: strPtr("{{body}}"),
 			},
 		})
@@ -137,29 +137,6 @@ var _ = Describe("Transformation", func() {
 																	},
 																},
 															},
-															"scheme": {
-																Kind: &types.Value_StructValue{
-																	StructValue: &types.Struct{
-																		Fields: map[string]*types.Value{
-																			"header": {
-																				Kind: &types.Value_StringValue{
-																					StringValue: ":scheme",
-																				},
-																			},
-																			"regex": {
-																				Kind: &types.Value_StringValue{
-																					StringValue: `([\-._[:alnum:]]+)`,
-																				},
-																			},
-																			"subgroup": {
-																				Kind: &types.Value_NumberValue{
-																					NumberValue: 1.000000,
-																				},
-																			},
-																		},
-																	},
-																},
-															},
 															"type": {
 																Kind: &types.Value_StructValue{
 																	StructValue: &types.Struct{
@@ -200,29 +177,6 @@ var _ = Describe("Transformation", func() {
 																			"regex": {
 																				Kind: &types.Value_StringValue{
 																					StringValue: `/u\(se\)rs/([\-._[:alnum:]]+)/accounts/([\-._[:alnum:]]+)`,
-																				},
-																			},
-																		},
-																	},
-																},
-															},
-															"authority": {
-																Kind: &types.Value_StructValue{
-																	StructValue: &types.Struct{
-																		Fields: map[string]*types.Value{
-																			"header": {
-																				Kind: &types.Value_StringValue{
-																					StringValue: ":authority",
-																				},
-																			},
-																			"regex": {
-																				Kind: &types.Value_StringValue{
-																					StringValue: `([\-._[:alnum:]]+)`,
-																				},
-																			},
-																			"subgroup": {
-																				Kind: &types.Value_NumberValue{
-																					NumberValue: 1.000000,
 																				},
 																			},
 																		},
@@ -439,7 +393,7 @@ func NewSingleDestRoute(upstreamName, functionName string) *v1.Route {
 		},
 		Extensions: EncodeRouteExtension(RouteExtension{
 			Parameters: &Parameters{
-				Path: "/u(se)rs/{id}/accounts/{account}",
+				Path: strPtr("/u(se)rs/{id}/accounts/{account}"),
 				Headers: map[string]string{
 					"content-type": "application/{type}",
 					"x-foo-bar":    "{foo.bar}",
@@ -469,7 +423,7 @@ func NewBadExtractorsRoute(upstreamName, functionName string) *v1.Route {
 		},
 		Extensions: EncodeRouteExtension(RouteExtension{
 			Parameters: &Parameters{
-				Path: "/u(se)rs/{id}/accounts/{account}",
+				Path: strPtr("/u(se)rs/{id}/accounts/{account}"),
 				Headers: map[string]string{
 					"bad-extractor": "f{foo/bar}",
 				},
@@ -497,7 +451,7 @@ func NewNonFunctionSingleDestRoute(upstreamName string) *v1.Route {
 		},
 		Extensions: EncodeRouteExtension(RouteExtension{
 			Parameters: &Parameters{
-				Path:    "/u(se)rs/{id}/accounts/{account}",
+				Path:    strPtr("/u(se)rs/{id}/accounts/{account}"),
 				Headers: map[string]string{"content-type": "application/{type}"},
 			},
 		}),
@@ -511,7 +465,7 @@ func NewFunctionalUpstream(name, funcName string) *v1.Upstream {
 			Name: funcName,
 			Spec: EncodeFunctionSpec(TransformationSpec{
 				Path: "/{{id}}/why/{{id}}",
-				Header: map[string]string{
+				Headers: map[string]string{
 					"x-user-id":      "{{id}}",
 					"x-content-type": "{{type}}",
 				},
@@ -522,6 +476,6 @@ func NewFunctionalUpstream(name, funcName string) *v1.Upstream {
 	return us
 }
 
-func strPtr(s string) *string {
-	return &s
+func strPtr(s string) *types.StringValue {
+	return &types.StringValue{Value:s}
 }

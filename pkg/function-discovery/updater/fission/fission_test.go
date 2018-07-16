@@ -77,9 +77,7 @@ var _ = Describe("Fission", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(outspec.Path).To(Equal("/fission-function/func1"))
-		Expect(outspec.Header[":method"]).To(Equal("POST"))
-		Expect(outspec.PassthroughBody).To(Equal(true))
-
+		Expect(outspec.Headers[":method"]).To(Equal("POST"))
 	})
 
 })
