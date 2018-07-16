@@ -7,7 +7,7 @@ ROOTDIR := $(shell pwd)
 PROTOS := $(shell find api/v1 -name "*.proto")
 SOURCES := $(shell find . -name "*.go" | grep -v test)
 GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go")
-OUTPUT_DIR ?= _output
+OUTPUT_DIR ?= $(ROOTDIR)/_output
 
 PACKAGE_PATH:=github.com/solo-io/gloo
 
@@ -195,7 +195,10 @@ test: unit e2e
 # Envoy
 #----------------------------------------------------------------------------------
 
-envoy:
+.PHONY: envoy
+envoy: $(OUTPUT_DIR)/envoy
+
+$(OUTPUT_DIR)/envoy:
 	cd build-envoy && bazel build -c dbg //:envoy
 
 envoy-in-docker:
@@ -209,6 +212,40 @@ envoy-dev-docker: envoy
 	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
 	docker build -t soloio/envoy-dev:$(IMAGE_TAG) $(OUTPUT_DIR)
 
+
+#----------------------------------------------------------------------------------
+# glooctl
+#----------------------------------------------------------------------------------
+
+# glooctl target
+# relies on glooctl sources being located in ../glooctl
+$(OUTPUT_DIR)/glooctl-linux-amd64: $(OUTPUT_DIR) $(shell find ../glooctl/ -name *.go)
+	cd ../glooctl/ && GOOS=linux go build -o $@ main.go
+
+$(OUTPUT_DIR)/glooctl-darwin-amd64: $(OUTPUT_DIR) $(shell find ../glooctl/ -name *.go)
+	cd ../glooctl/ && GOOS=darwin go build -o $@ main.go
+
+
+#----------------------------------------------------------------------------------
+# Release
+#----------------------------------------------------------------------------------
+
+RELEASE_BINARIES := \
+	$(OUTPUT_DIR)/glooctl-linux-amd64 \
+	$(OUTPUT_DIR)/glooctl-darwin-amd64 \
+	$(OUTPUT_DIR)/control-plane \
+	$(OUTPUT_DIR)/function-discovery \
+	$(OUTPUT_DIR)/upstream-discovery \
+	$(OUTPUT_DIR)/localgloo \
+	$(OUTPUT_DIR)/envoy
+
+.PHONY: release-binaries
+release-binaries: $(RELEASE_BINARIES)
+
+.PHONY: release
+release: release-binaries
+	hack/create-release.sh github_api_token=$(GITHUB_TOKEN) owner=solo-io repo=gloo tag=v$(VERSION)
+	@$(foreach BINARY,$(RELEASE_BINARIES),hack/upload-github-release-asset.sh github_api_token=$(GITHUB_TOKEN) owner=solo-io repo=gloo tag=v$(VERSION) filename=$(BINARY);)
 
 # TODO: dependnencies
 # binaries:
