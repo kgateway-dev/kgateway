@@ -160,12 +160,6 @@
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
 
 [[projects]]
-  name = "github.com/envoyproxy/envoy"
-  packages = ["examples/grpc-bridge/service/gen"]
-  revision = "3f59fb5c0f6554f8b3f2e73ab4c1437a63d42668"
-  version = "v1.7.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
@@ -1294,6 +1288,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "67fa99f474a8bc7f23bd075a5a5e19106b65149d2577e9f380c0cd26de42f79d"
+  inputs-digest = "651b5ec48e3ef999a843f8db473581c3e4588c2c9d640d58de4bb1f135a0782f"
   solver-name = "gps-cdcl"
   solver-version = 1
