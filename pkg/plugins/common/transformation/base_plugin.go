@@ -95,20 +95,13 @@ func createRequestExtractors(params *Parameters) (map[string]*Extraction, error)
 	for _, header := range []string{
 		"path",
 		"method",
-		"scheme",
-		"authority",
 	} {
 		addHeaderExtractorFromParam(":"+header, "{"+header+"}", extractors)
 	}
 	// headers we support submatching on
 	// custom as well as the path and authority/host header
 	if params.Path != nil {
-		if err := addHeaderExtractorFromParam(":path", *params.Path, extractors); err != nil {
-			return nil, errors.Wrap(err, "error processing parameter")
-		}
-	}
-	if params.Authority != nil {
-		if err := addHeaderExtractorFromParam(":authority", *params.Authority, extractors); err != nil {
+		if err := addHeaderExtractorFromParam(":path", params.Path.Value, extractors); err != nil {
 			return nil, errors.Wrap(err, "error processing parameter")
 		}
 	}
