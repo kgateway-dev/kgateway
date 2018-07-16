@@ -5,7 +5,7 @@
 
 
 
-<a name="github.com/solo-io/gloo/pkg/plugins/nats-streaming/nats_streaming_filter"></a>
+<a name="github.com/solo-io/gloo/pkg/plugins/nats"></a>
 <p align="right"><a href="#top">Top</a></p>
 
 
