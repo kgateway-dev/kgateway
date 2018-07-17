@@ -20,7 +20,7 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
-				Type: static.UpstreamTypeService,
+				Type: static.UpstreamTypeStatic,
 				Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
 					Hosts: []*static.Host{
 						{
@@ -33,7 +33,7 @@ var _ = Describe("Multiple Upstream Destinations", func() {
 			Must(err)
 			_, err = gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService2,
-				Type: static.UpstreamTypeService,
+				Type: static.UpstreamTypeStatic,
 				Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
 					Hosts: []*static.Host{
 						{

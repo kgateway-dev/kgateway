@@ -19,7 +19,7 @@ var _ = Describe("Core Service Plugin", func() {
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
-				Type: static.UpstreamTypeService,
+				Type: static.UpstreamTypeStatic,
 				Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
 					Hosts: []*static.Host{
 						{

@@ -123,7 +123,7 @@ func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest
 	id += 1
 	u := &v1.Upstream{
 		Name: fmt.Sprintf("local-%d", id),
-		Type: "service",
+		Type: "static",
 		Spec: static.EncodeUpstreamSpec(serviceSpec),
 	}
 

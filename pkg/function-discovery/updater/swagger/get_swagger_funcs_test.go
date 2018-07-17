@@ -35,7 +35,7 @@ var _ = Describe("GetSwaggerFuncs", func() {
 
 		us := &v1.Upstream{
 			Name: "something",
-			Type: static.UpstreamTypeService,
+			Type: static.UpstreamTypeStatic,
 			Metadata: &v1.Metadata{Annotations: map[string]string{
 				AnnotationKeySwaggerURL: srv.URL + "/anything",
 			}},

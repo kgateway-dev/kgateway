@@ -87,7 +87,7 @@ func ValidConfig() *v1.Config {
 	upstreams := []*v1.Upstream{
 		{
 			Name: "valid-service",
-			Type: static.UpstreamTypeService,
+			Type: static.UpstreamTypeStatic,
 			Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
 				Hosts: []*static.Host{
 					{

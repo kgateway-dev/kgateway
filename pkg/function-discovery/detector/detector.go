@@ -46,7 +46,7 @@ func NewMarker(detectors []Interface, resolver resolver.Resolver) *Marker {
 // should only be called for k8s, consul, and static type upstreams
 func (m *Marker) DetectFunctionalServiceType(us *v1.Upstream) (*v1.ServiceInfo, map[string]string, error) {
 	if us.Type != kubernetes.UpstreamTypeKube &&
-		us.Type != static.UpstreamTypeService &&
+		us.Type != static.UpstreamTypeStatic &&
 		us.Type != consul.UpstreamTypeConsul {
 		// don't run detection for these types of upstreams
 		return nil, nil, nil

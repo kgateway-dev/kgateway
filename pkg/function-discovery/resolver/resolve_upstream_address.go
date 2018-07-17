@@ -31,7 +31,7 @@ func (r *resolver) Resolve(us *v1.Upstream) (string, error) {
 	switch us.Type {
 	case kubeplugin.UpstreamTypeKube:
 		return resolveKubeUpstream(r.Kube, us)
-	case staticplugin.UpstreamTypeService:
+	case staticplugin.UpstreamTypeStatic:
 		return resolveServiceUpstream(us)
 	case consul.UpstreamTypeConsul:
 		return resolveConsulUpstream(r.Consul, us)

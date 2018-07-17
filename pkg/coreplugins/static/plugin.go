@@ -28,7 +28,7 @@ func NewPlugin() *Plugin {
 
 const (
 	// define Upstream type name
-	UpstreamTypeService = "service"
+	UpstreamTypeStatic = "static"
 )
 
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
@@ -36,7 +36,7 @@ func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
 }
 
 func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstream, out *envoyapi.Cluster) error {
-	if in.Type != UpstreamTypeService {
+	if in.Type != UpstreamTypeStatic {
 		return nil
 	}
 	// decode does validation for us

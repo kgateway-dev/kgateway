@@ -38,7 +38,7 @@ var _ = Describe("Nats streaming test", func() {
 
 		u := &v1.Upstream{
 			Name: "local", // TODO: randomize
-			Type: "service",
+			Type: "static",
 			Spec: static.EncodeUpstreamSpec(serviceSpec),
 			ServiceInfo: &v1.ServiceInfo{
 				Type: nats.ServiceTypeNatsStreaming,

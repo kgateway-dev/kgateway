@@ -22,7 +22,7 @@ var _ = Describe("Event matcher route type", func() {
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: upstreamForEvents,
-				Type: static.UpstreamTypeService,
+				Type: static.UpstreamTypeStatic,
 				Spec: static.EncodeUpstreamSpec(&static.UpstreamSpec{
 					Hosts: []*static.Host{
 						{
