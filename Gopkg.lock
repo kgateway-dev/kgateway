@@ -139,7 +139,7 @@
   name = "github.com/dghubble/oauth1"
   packages = ["."]
   revision = "70562a5920ad9b6ff03ef697c0f90ae569abbd2b"
-  version = "v0.4.0"
+  version = "v0.4.1"
 
 [[projects]]
   name = "github.com/dghubble/sling"
