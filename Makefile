@@ -202,7 +202,10 @@ $(OUTPUT_DIR)/envoy:
 	cd build-envoy && bazel build -c dbg //:envoy
 
 envoy-in-docker:
-	docker run -v $(shell pwd):$(shell pwd) -w $(shell pwd)/build-envoy envoyproxy/envoy-build bash -c "bazel build -c dbg //:envoy && cd .. && cp -f build-envoy/bazel-bin/envoy $(OUTPUT_DIR)"
+	docker run -v $(shell pwd):$(shell pwd) -v $(shell pwd)/build-envoy/bazel-docker-cache:/root/.cache/ -w $(shell pwd)/build-envoy envoyproxy/envoy-build bash -c "bazel build -c dbg //:envoy && cd .. && cp -f build-envoy/bazel-bin/envoy $(OUTPUT_DIR)"
+
+envoy-release:
+	./build-envoy/ci/run_envoy_docker.sh "./build-envoy/ci/build.sh"
 
 envoy-docker: envoy
 	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)

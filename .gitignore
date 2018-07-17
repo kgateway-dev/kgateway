@@ -21,3 +21,5 @@ build-envoy/bazel-build-envoy
 build-envoy/bazel-genfiles
 build-envoy/bazel-out
 build-envoy/bazel-testlogs
+build-envoy/ci/WORKSPACE
+build-envoy/ci/BUILD
