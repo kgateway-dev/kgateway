@@ -1,11 +1,11 @@
 
 <h1 align="center">
-    <img src="Gloo-01.png" alt="Gloo" width="200" height="242">
+    <img src="/docs/Gloo-01.png" alt="Gloo" width="200" height="242">
   <br>
 </h1>
 
 
-<h3 align="center">  API Definitions for Gloo</h3>
+<h3 align="center">API Definitions for Gloo</h3>
 <BR>
 
 Gloo is a function gateway built on top of the [Envoy Proxy](https://www.Envoyproxy.io). Gloo provides a unified entry point
@@ -16,7 +16,7 @@ out of cluster, across clusters, along with any provider of serverless functions
 This Repo 
 ----
 Here you will find the `.proto` files that define the base for Gloo's configuration language. Extensions to the language
-are defined in Gloo's extensive plugin ecosystem. See [https://www.github.com/solo-io/gloo-plugins](https://www.github.com/solo-io/gloo-plugins)
+are defined in Gloo's extensive plugin ecosystem. See the [plugins](/pkg/plugins)
 and our [documentation](https://gloo.solo.io) for more information about plugin-specific API, as well as extending the
 Gloo language.
 
