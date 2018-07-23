@@ -45,7 +45,7 @@ func (*logger) Errorf(format string, args ...interface{}) {
 	log.Warnf(format, args...)
 }
 
-func RunXDS(addr net.Addr, badNodeSnapshot envoycache.Snapshot) (envoycache.SnapshotCache, *grpc.Server, error) {
+func RunXDS(addr net.Addr, badNodeSnapshot envoycache.Snapshot, callbacks xds.Callbacks) (envoycache.SnapshotCache, *grpc.Server, error) {
 	lis, err := net.Listen(addr.Network(), addr.String())
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to listen: %v", err)
@@ -61,7 +61,7 @@ func RunXDS(addr net.Addr, badNodeSnapshot envoycache.Snapshot) (envoycache.Snap
 			},
 		)),
 	)
-	xdsServer := xds.NewServer(envoyCache, nil)
+	xdsServer := xds.NewServer(envoyCache, callbacks)
 	envoyv2.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
 	v2.RegisterEndpointDiscoveryServiceServer(grpcServer, xdsServer)
 	v2.RegisterClusterDiscoveryServiceServer(grpcServer, xdsServer)

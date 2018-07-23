@@ -117,21 +117,39 @@ type ClusterGeneratorPlugin interface {
 // Params for GeneratedClusters()
 type ClusterGeneratorPluginParams struct{}
 
-
 type XdsPlugin interface {
 	Callbacks() server.Callbacks
 }
 
-type XdsPlugins []XdsPlugin
+type XdsCallbacks []server.Callbacks
 
-func (ps XdsPlugins) OnStreamOpen(a int64, b string) {
-	for _, p := range ps {
-
+func (ps XdsCallbacks) OnStreamOpen(a int64, b string) {
+	for _, cb := range ps {
+		cb.OnStreamOpen(a, b)
 	}
 }
-
-func (ps XdsPlugins) OnStreamClosed(int64) {}
-func (ps XdsPlugins) OnStreamRequest(int64, *envoyapi.DiscoveryRequest) {}
-func (ps XdsPlugins) OnStreamResponse(int64, *envoyapi.DiscoveryRequest, *envoyapi.DiscoveryResponse) {}
-func (ps XdsPlugins) OnFetchRequest(*envoyapi.DiscoveryRequest) {}
-func (ps XdsPlugins) OnFetchResponse(*envoyapi.DiscoveryRequest, *envoyapi.DiscoveryResponse) {}
+func (ps XdsCallbacks) OnStreamClosed(a int64) {
+	for _, cb := range ps {
+		cb.OnStreamClosed(a)
+	}
+}
+func (ps XdsCallbacks) OnStreamRequest(a int64, b *envoyapi.DiscoveryRequest) {
+	for _, cb := range ps {
+		cb.OnStreamRequest(a, b)
+	}
+}
+func (ps XdsCallbacks) OnStreamResponse(a int64, b *envoyapi.DiscoveryRequest, c *envoyapi.DiscoveryResponse) {
+	for _, cb := range ps {
+		cb.OnStreamResponse(a, b, c)
+	}
+}
+func (ps XdsCallbacks) OnFetchRequest(a *envoyapi.DiscoveryRequest) {
+	for _, cb := range ps {
+		cb.OnFetchRequest(a)
+	}
+}
+func (ps XdsCallbacks) OnFetchResponse(a *envoyapi.DiscoveryRequest, b *envoyapi.DiscoveryResponse) {
+	for _, cb := range ps {
+		cb.OnFetchResponse(a, b)
+	}
+}
