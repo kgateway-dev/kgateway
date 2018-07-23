@@ -118,6 +118,13 @@ func SetupWithConfig(cfg Config) (EventLoop, error) {
 	// create a snapshot to give to misconfigured envoy instances
 	badNodeSnapshot := xds.BadNodeSnapshot(cfg.Options.IngressOptions.BindAddress, cfg.Options.IngressOptions.Port)
 
+	var xdsPlugins []plugins.XdsPlugin
+	for _, plug := range plugs {
+		if xdsPlug, ok := plug.(plugins.XdsPlugin); ok {
+			xdsPlug
+		}
+	}
+
 	xdsConfig, _, err := xds.RunXDS(cfg.XdsBindAddress, badNodeSnapshot)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start xds server")
