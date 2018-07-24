@@ -215,6 +215,13 @@ func (ei *EnvoyInstance) DebugMode() error {
 	return err
 }
 
+func (ei *EnvoyInstance) Quit() error {
+
+	_, err := http.Post("http://localhost:19000/quitquitquit", "application/text", nil)
+
+	return err
+}
+
 func (ei *EnvoyInstance) runWithPort(id string, port uint32) error {
 	if id == "" {
 		id = "ingress~for-testing"

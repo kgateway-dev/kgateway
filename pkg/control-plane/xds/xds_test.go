@@ -47,7 +47,7 @@ var _ = Describe("Xds", func() {
 			BeforeEach(func() {
 				err := envoyInstance.RunWithId("badid")
 				Expect(err).NotTo(HaveOccurred())
-				_, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot)
+				_, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot, nil)
 				Expect(err).NotTo(HaveOccurred())
 				srv = grpcSrv
 			})
@@ -75,7 +75,7 @@ var _ = Describe("Xds", func() {
 			BeforeEach(func() {
 				err := envoyInstance.RunWithId(nodeGroup + "~12345")
 				Expect(err).NotTo(HaveOccurred())
-				cache, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot)
+				cache, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot, nil)
 				Expect(err).NotTo(HaveOccurred())
 				srv = grpcSrv
 				snapshot, err := createSnapshot(routeConfigName, listenerName)
@@ -102,8 +102,61 @@ var _ = Describe("Xds", func() {
 				Expect(string(b)).To(Equal("the route worked. yay."))
 			})
 		})
+
+		Context("callbacks", func() {
+
+			It("invokes callbacks", func() {
+				err := envoyInstance.RunWithId(nodeGroup + "~12345")
+				Expect(err).NotTo(HaveOccurred())
+				var cb testCallbacks
+				cache, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot, &cb)
+				Expect(err).NotTo(HaveOccurred())
+				srv = grpcSrv
+				snapshot, err := createSnapshot(routeConfigName, listenerName)
+				Expect(err).NotTo(HaveOccurred())
+				cache.SetSnapshot(nodeGroup, snapshot)
+
+				Eventually(func() bool { return cb.onStreamOpenCalled }, time.Second*10).Should(BeTrue())
+				envoyInstance.Quit()
+				Eventually(func() bool { return cb.onStreamClosedCalled }, time.Second*10).Should(BeTrue())
+
+				// Envoy will only do stream requests:
+				Expect(cb.onStreamRequestCalled).To(BeTrue())
+				Expect(cb.onStreamResponseCalled).To(BeTrue())
+				Expect(cb.onFetchRequestCalled).To(BeFalse())
+				Expect(cb.onFetchResponseCalled).To(BeFalse())
+			})
+		})
 	})
 })
+
+type testCallbacks struct {
+	onStreamOpenCalled     bool
+	onStreamClosedCalled   bool
+	onStreamRequestCalled  bool
+	onStreamResponseCalled bool
+	onFetchRequestCalled   bool
+	onFetchResponseCalled  bool
+}
+
+func (t *testCallbacks) OnStreamOpen(a int64, b string) {
+	t.onStreamOpenCalled = true
+}
+func (t *testCallbacks) OnStreamClosed(a int64) {
+	t.onStreamClosedCalled = true
+}
+func (t *testCallbacks) OnStreamRequest(a int64, b *envoyapi.DiscoveryRequest) {
+	t.onStreamRequestCalled = true
+}
+func (t *testCallbacks) OnStreamResponse(a int64, b *envoyapi.DiscoveryRequest, c *envoyapi.DiscoveryResponse) {
+	t.onStreamResponseCalled = true
+}
+func (t *testCallbacks) OnFetchRequest(a *envoyapi.DiscoveryRequest) {
+	t.onFetchRequestCalled = true
+}
+func (t *testCallbacks) OnFetchResponse(a *envoyapi.DiscoveryRequest, b *envoyapi.DiscoveryResponse) {
+	t.onFetchResponseCalled = true
+}
 
 func createSnapshot(routeConfigName, listenerName string) (cache.Snapshot, error) {
 	var (
