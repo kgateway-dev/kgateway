@@ -40,6 +40,10 @@ var _ = Describe("Xds", func() {
 		if envoyInstance != nil {
 			envoyInstance.Clean()
 		}
+		if srv != nil {
+			srv.Stop()
+			srv = nil
+		}
 	})
 
 	Describe("RunXDS Server", func() {
@@ -50,9 +54,6 @@ var _ = Describe("Xds", func() {
 				_, grpcSrv, err := RunXDS(&net.TCPAddr{Port: 8081}, badNodeSnapshot, nil)
 				Expect(err).NotTo(HaveOccurred())
 				srv = grpcSrv
-			})
-			AfterEach(func() {
-				srv.Stop()
 			})
 			It("successfully bootstraps the envoy proxy", func() {
 				Eventually(envoyInstance.Logs, time.Second*10).Should(ContainSubstring("lds: add/update listener 'listener-for-invalid-envoy'"))
@@ -82,9 +83,7 @@ var _ = Describe("Xds", func() {
 				Expect(err).NotTo(HaveOccurred())
 				cache.SetSnapshot(nodeGroup, snapshot)
 			})
-			AfterEach(func() {
-				srv.Stop()
-			})
+
 			It("successfully bootstraps the envoy proxy", func() {
 				Eventually(envoyInstance.Logs, time.Second*30).Should(ContainSubstring("lds: add/update listener '" + listenerName))
 			})
