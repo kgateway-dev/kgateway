@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega/gexec"
 
 	"github.com/ghodss/yaml"
 )
@@ -42,8 +43,6 @@ func NewGlooFactory() (*GlooFactory, error) {
 	if err != nil {
 		return nil, err
 	}
-	gloopath = filepath.Join(srcpath, "control-plane")
-	gf.gloopath = gloopath
 	return gf, nil
 }
 
@@ -55,13 +54,10 @@ func (gf *GlooFactory) build() error {
 		return nil
 	}
 	gf.wasbuilt = true
+	var err error
+	gf.gloopath, err = gexec.Build("github.com/solo-io/gloo/cmd/control-plane")
 
-	cmd := exec.Command("go", "build", "-v", "-i", "-gcflags", "-N -l", "-o", "control-plane", "main.go")
-
-	cmd.Dir = gf.srcpath
-	cmd.Stdout = ginkgo.GinkgoWriter
-	cmd.Stderr = ginkgo.GinkgoWriter
-	if err := cmd.Run(); err != nil {
+	if err != nil {
 		return err
 	}
 	return nil
