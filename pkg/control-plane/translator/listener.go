@@ -187,7 +187,9 @@ func newSslFilterChain(certChain, privateKey, rootCa string, inline bool, sniDom
 						PrivateKey:       privateKeyData,
 					},
 				},
-				ValidationContext: validationContext,
+				ValidationContextType: &envoyauth.CommonTlsContext_ValidationContext{
+					ValidationContext: validationContext,
+				},
 			},
 		},
 	}

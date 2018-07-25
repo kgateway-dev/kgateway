@@ -42,8 +42,10 @@ func createEventMatcher(eventMatcher *v1.EventMatcher, out *envoyroute.Route) er
 		Path: eventPath,
 	}
 	out.Match.Headers = append(out.Match.Headers, &envoyroute.HeaderMatcher{
-		Name:  headerXEventType,
-		Value: eventType,
+		Name: headerXEventType,
+		HeaderMatchSpecifier: &envoyroute.HeaderMatcher_ExactMatch{
+			ExactMatch: eventType,
+		},
 	})
 	return nil
 }
@@ -64,18 +66,23 @@ func createRequestMatcher(requestMatcher *v1.RequestMatcher, out *envoyroute.Rou
 		}
 	}
 	for headerName, headerValue := range requestMatcher.Headers {
-		var regex bool
+		m := &envoyroute.HeaderMatcher{
+			Name: headerName,
+		}
 		if headerValue == "" {
-			headerValue = ".*"
+			m.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_PresentMatch{
+				PresentMatch: true,
+			}
+		} else if strings.Contains(headerValue, ".*") {
+			m.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
+				RegexMatch: headerValue,
+			}
+		} else {
+			m.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
+				ExactMatch: headerValue,
+			}
 		}
-		if strings.Contains(headerValue, ".*") {
-			regex = true
-		}
-		out.Match.Headers = append(out.Match.Headers, &envoyroute.HeaderMatcher{
-			Name:  headerName,
-			Value: headerValue,
-			Regex: &types.BoolValue{Value: regex},
-		})
+		out.Match.Headers = append(out.Match.Headers, m)
 	}
 	for paramName, paramValue := range requestMatcher.QueryParams {
 		var regex bool
@@ -91,9 +98,10 @@ func createRequestMatcher(requestMatcher *v1.RequestMatcher, out *envoyroute.Rou
 	}
 	if len(requestMatcher.Verbs) > 0 {
 		out.Match.Headers = append(out.Match.Headers, &envoyroute.HeaderMatcher{
-			Name:  ":method",
-			Value: strings.Join(requestMatcher.Verbs, "|"),
-			Regex: &types.BoolValue{Value: true},
+			Name: ":method",
+			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_RegexMatch{
+				RegexMatch: strings.Join(requestMatcher.Verbs, "|"),
+			},
 		})
 	}
 	return nil

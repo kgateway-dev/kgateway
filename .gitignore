@@ -23,3 +23,4 @@ build-envoy/bazel-out
 build-envoy/bazel-testlogs
 build-envoy/ci/WORKSPACE
 build-envoy/ci/BUILD
+build-envoy/bazel-docker-cache

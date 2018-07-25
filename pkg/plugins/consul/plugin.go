@@ -118,7 +118,9 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 					PrivateKey:       privateKeyData,
 				},
 			},
-			ValidationContext: validationContext,
+			ValidationContextType: &envoyauth.CommonTlsContext_ValidationContext{
+				ValidationContext: validationContext,
+			},
 		},
 	}
 	return nil

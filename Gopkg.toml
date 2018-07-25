@@ -52,7 +52,7 @@ ignored = ["github.com/envoyproxy/data-plane-api*"]
 
 [[constraint]]
   name = "github.com/envoyproxy/go-control-plane"
-  branch = "master"
+  revision = "0264921c77953fd8b514336bd92ddaaad86c7b69"
 
 [[constraint]]
   name = "github.com/ghodss/yaml"

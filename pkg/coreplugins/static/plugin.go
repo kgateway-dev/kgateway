@@ -6,7 +6,9 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 
@@ -64,17 +66,30 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 			// for sni
 			hostname = host.Addr
 		}
-		out.Hosts = append(out.Hosts, &envoycore.Address{
-			Address: &envoycore.Address_SocketAddress{
-				SocketAddress: &envoycore.SocketAddress{
-					Protocol: envoycore.TCP,
-					Address:  host.Addr,
-					PortSpecifier: &envoycore.SocketAddress_PortValue{
-						PortValue: host.Port,
+
+		if out.LoadAssignment == nil {
+			out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
+				ClusterName: out.Name,
+				Endpoints:   []envoyendpoint.LocalityLbEndpoints{{}},
+			}
+		}
+
+		out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
+			envoyendpoint.LbEndpoint{
+				Endpoint: &envoyendpoint.Endpoint{
+					Address: &envoycore.Address{
+						Address: &envoycore.Address_SocketAddress{
+							SocketAddress: &envoycore.SocketAddress{
+								Protocol: envoycore.TCP,
+								Address:  host.Addr,
+								PortSpecifier: &envoycore.SocketAddress_PortValue{
+									PortValue: host.Port,
+								},
+							},
+						},
 					},
 				},
-			},
-		})
+			})
 		// fix issue where ipv6 addr cannot bind
 		if !spec.EnableIpv6 {
 			out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY

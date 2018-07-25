@@ -166,7 +166,6 @@
   version = "v1.7.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -187,7 +186,7 @@
     "pkg/server",
     "pkg/util"
   ]
-  revision = "9daae37c4f163381177a2156a718f00b1770f35d"
+  revision = "0264921c77953fd8b514336bd92ddaaad86c7b69"
 
 [[projects]]
   name = "github.com/fatih/structs"
@@ -1294,6 +1293,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "feeb72e6fcc6463bccad8185ec870f7826b15d8c57e4ab8e213d6641f7334133"
+  inputs-digest = "d360ab06857478a79c96561096d1e888a2a8635bb93840455e3d222db64b562d"
   solver-name = "gps-cdcl"
   solver-version = 1
