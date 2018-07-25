@@ -69,7 +69,7 @@ func initializeCluster(upstream *v1.Upstream, endpoints endpointdiscovery.Endpoi
 // TODO: add more validation here
 func validateCluster(c *envoyapi.Cluster) error {
 	if c.Type == envoyapi.Cluster_STATIC || c.Type == envoyapi.Cluster_STRICT_DNS || c.Type == envoyapi.Cluster_LOGICAL_DNS {
-		if len(c.Hosts) < 1 {
+		if (len(c.Hosts) == 0) && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
 			return errors.Errorf("cluster type %v specified but hosts were empty", c.Type.String())
 		}
 	}
