@@ -15,7 +15,7 @@ const (
 	filterName = "io.solo.function_router"
 )
 
-//go:generate protoc -I=../../../build-envoy/envoy-common/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=. functional_base.proto
+//go:generate protoc -I=${GOPATH}/src/github.com/solo-io/gloo/build-envoy/envoy-common/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=. ${GOPATH}/src/github.com/solo-io/gloo/build-envoy/envoy-common/functional_base.proto
 
 type routeInitializerPlugin struct{}
 
