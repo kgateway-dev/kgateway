@@ -1,0 +1,24 @@
+syntax = "proto3";
+package gloo.api.kubernetes.v1;
+
+option go_package = "github.com/solo-io/gloo/pkg/plugins/knative";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Upstream Spec for Kubernetes Upstreams
+// Kubernetes Upstreams represent a set of one or more addressable pods for a Kubernetes Service
+// the Gloo Kubernetes Upstream maps to a single service port. Because Kubernetes Services support mulitple ports,
+// Gloo requires that a different upstream be created for each port
+// Kubernetes Upstreams are typically generated automatically by Gloo from the Kubernetes API
+message UpstreamSpec {
+    // The name of the Kubernetes Service
+    string service_name = 1;
+    // The namespace where the Service lives
+    string service_namespace = 2;
+    // The port where the Service is listening. If the service only has one port, this can be left empty
+    int32 service_port = 3;
+
+    string hostname = 4;
+    
+}
