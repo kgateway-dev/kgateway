@@ -74,6 +74,7 @@ type FunctionPlugin interface {
 
 // Params for ProcessRoute()
 type RoutePluginParams struct {
+	EnvoyNameForUpstream EnvoyNameForUpstream
 	// some route plugins need to know about the upstream(s) they route to
 	Upstreams []*v1.Upstream
 }

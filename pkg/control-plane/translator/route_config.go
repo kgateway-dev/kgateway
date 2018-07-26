@@ -47,7 +47,8 @@ func (t *Translator) computeVirtualHost(virtualService *v1.VirtualService, input
 				continue
 			}
 			params := &plugins.RoutePluginParams{
-				Upstreams: inputs.Cfg.Upstreams,
+				EnvoyNameForUpstream: clusterName,
+				Upstreams:            inputs.Cfg.Upstreams,
 			}
 			if err := routePlugin.ProcessRoute(params, route, &out); err != nil {
 				configErrs.addError(virtualService, err)
