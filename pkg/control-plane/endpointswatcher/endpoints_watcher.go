@@ -1,13 +1,14 @@
 package endpointswatcher
 
 import (
+	"sync"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
-	"sync"
 )
 
 // watches all the endpoint discoveries registered by various plugins and aggregates them into a single stream
@@ -27,7 +28,9 @@ func NewEndpointsWatcher(opts bootstrap.Options, endpointDiscoveryPlugins ...plu
 				"upstream type", err)
 			continue
 		}
-		endpointDiscoveries = append(endpointDiscoveries, discovery)
+		if discovery != nil {
+			endpointDiscoveries = append(endpointDiscoveries, discovery)
+		}
 	}
 	return &endpointsAggregator{
 		endpointDiscoveries:  endpointDiscoveries,
