@@ -128,7 +128,7 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 	}
 
 	// decode does validation for us
-	spec, err := DecodeUpstreamSpec(in.Spec)
+	_, err := DecodeUpstreamSpec(in.Spec)
 	if err != nil {
 		return errors.Wrap(err, "invalid knative upstream spec")
 	}
@@ -138,25 +138,11 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 	}
 
 	out.Type = envoyapi.Cluster_STATIC
-
 	out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
 		ClusterName: out.Name,
 		Endpoints: []envoyendpoint.LocalityLbEndpoints{{
 			LbEndpoints: []envoyendpoint.LbEndpoint{{
 				HealthStatus: envoycore.HealthStatus_HEALTHY,
-				Metadata: &envoycore.Metadata{
-					FilterMetadata: map[string]*types.Struct{
-						MetadataNamespace: &types.Struct{
-							Fields: map[string]*types.Value{
-								HostnameKNative: &types.Value{
-									Kind: &types.Value_StringValue{
-										StringValue: spec.Hostname,
-									},
-								},
-							},
-						},
-					},
-				},
 				Endpoint: &envoyendpoint.Endpoint{
 					Address: &envoycore.Address{
 						Address: &envoycore.Address_SocketAddress{
@@ -185,24 +171,53 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 	return nil
 }
 
+func findUpstream(ClusterName plugins.EnvoyNameForUpstream, clustername string, upstreams []*v1.Upstream) *v1.Upstream {
+	for _, us := range upstreams {
+		if ClusterName(us.Name) == clustername {
+			return us
+		}
+	}
+	return nil
+}
+
 func (p *Plugin) ProcessRoute(pluginParams *plugins.RoutePluginParams, in *v1.Route, out *envoyroute.Route) error {
 
 	// if we have one knative upstream, the
 	if route, ok := out.Action.(*envoyroute.Route_Route); ok {
-		headervalue := "%UPSTREAM_METADATA([\"" + MetadataNamespace + "\", \"" + HostnameKNative + "\"])%"
-		route.Route.RequestHeadersToAdd = append(route.Route.RequestHeadersToAdd, &envoycore.HeaderValueOption{
-			Header: &envoycore.HeaderValue{
-				Key:   ":authority",
-				Value: headervalue,
-			},
-			Append: &types.BoolValue{Value: false},
-		})
-		route.Route.RequestHeadersToAdd = append(route.Route.RequestHeadersToAdd, &envoycore.HeaderValueOption{
-			Header: &envoycore.HeaderValue{
-				Key:   "x-yuval",
-				Value: "yuval-" + headervalue,
-			},
-		})
+		route := route.Route
+		switch clusters := route.ClusterSpecifier.(type) {
+		case *envoyroute.RouteAction_Cluster:
+			if us := findUpstream(pluginParams.EnvoyNameForUpstream, clusters.Cluster, pluginParams.Upstreams); us != nil {
+				if us.Type == UpstreamTypeKnative {
+					if spec, err := DecodeUpstreamSpec(us.Spec); err == nil {
+						route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoycore.HeaderValueOption{
+							Header: &envoycore.HeaderValue{
+								Key:   ":authority",
+								Value: spec.Hostname,
+							},
+							Append: &types.BoolValue{Value: false},
+						})
+					}
+				}
+			}
+		case *envoyroute.RouteAction_WeightedClusters:
+			for _, cluster := range clusters.WeightedClusters.Clusters {
+				if us := findUpstream(pluginParams.EnvoyNameForUpstream, cluster.Name, pluginParams.Upstreams); us != nil {
+					if us.Type == UpstreamTypeKnative {
+						if spec, err := DecodeUpstreamSpec(us.Spec); err == nil {
+							cluster.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoycore.HeaderValueOption{
+								Header: &envoycore.HeaderValue{
+									Key:   ":authority",
+									Value: spec.Hostname,
+								},
+								Append: &types.BoolValue{Value: false},
+							})
+						}
+					}
+				}
+			}
+
+		}
 	}
 
 	return nil
