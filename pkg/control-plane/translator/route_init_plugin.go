@@ -121,7 +121,8 @@ func setTotalWeight(totalWeight uint32, out *envoyroute.Route) {
 	weightedClusters.WeightedClusters.TotalWeight = &types.UInt32Value{Value: totalWeight}
 }
 
-func addWeightedCluster(clusterName, funcname string, weight uint32, out *envoyroute.Route) {
+func addWeightedCluster(upstreamName, funcname string, weight uint32, out *envoyroute.Route) {
+	clusterName := clusterName(upstreamName)
 	weights := getWeightedClusters(out)
 	clusterWeight := &envoyroute.WeightedCluster_ClusterWeight{
 		Name:   clusterName,
