@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 )
 
 var _ = Describe("HappyPath", func() {
@@ -71,11 +72,10 @@ var _ = Describe("HappyPath", func() {
 			return err
 		}, 90, 1).Should(BeNil())
 
-		expectedResponse := &ReceivedRequest{
-			Method: "POST",
-			Body:   body,
-		}
-		Eventually(tu.C).Should(Receive(Equal(expectedResponse)))
+		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			"Method": Equal("POST"),
+			"Body":   Equal(body),
+		}))))
 
 	})
 

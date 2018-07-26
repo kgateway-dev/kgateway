@@ -15,6 +15,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+
 	"github.com/pkg/errors"
 	. "github.com/solo-io/gloo/test/helpers"
 )
@@ -137,10 +139,9 @@ var _ = Describe("SSL Route", func() {
 			return nil
 		}, 30, 1).Should(BeNil())
 
-		expectedResponse := &ReceivedRequest{
-			Method: "GET",
-		}
-		Eventually(tu.C).Should(Receive(Equal(expectedResponse)))
+		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			"Method": Equal("GET"),
+		}))))
 
 		// now make sure that a request without a client cert fails
 
@@ -190,11 +191,10 @@ var _ = Describe("SSL Route", func() {
 			return nil
 		}, 90, 1).Should(BeNil())
 
-		expectedResponse := &ReceivedRequest{
-			Method: "POST",
-			Body:   body,
-		}
-		Eventually(tu.C).Should(Receive(Equal(expectedResponse)))
+		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			"Method": Equal("POST"),
+			"Body":   Equal(body),
+		}))))
 
 	})
 

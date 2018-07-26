@@ -26,6 +26,7 @@ import (
 	bbsmodels "code.cloudfoundry.org/bbs/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -252,11 +253,10 @@ var _ = Describe("Copilot", func() {
 			return err
 		}, 90, 1).Should(BeNil())
 
-		expectedResponse := &ReceivedRequest{
-			Method: "POST",
-			Body:   body,
-		}
-		Eventually(responses).Should(Receive(Equal(expectedResponse)))
+		Eventually(responses).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			"Method": Equal("POST"),
+			"Body":   Equal(body),
+		}))))
 	})
 
 })

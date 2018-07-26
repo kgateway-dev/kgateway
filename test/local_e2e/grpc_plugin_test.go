@@ -13,6 +13,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/local_e2e/test_grpc_service/glootest/protos"
@@ -90,10 +92,9 @@ var _ = Describe("GRPC Plugin", func() {
 			}
 		}()
 
-		expectedResponse := &ReceivedRequest{
-			GRPCRequest: &glootest.TestRequest{Str: "foo"},
-		}
-		Eventually(tu.C, time.Second*15).Should(Receive(Equal(expectedResponse)))
+		Eventually(tu.C, time.Second*15).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+		}))))
 		close(ch)
 	})
 

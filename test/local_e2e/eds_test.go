@@ -15,6 +15,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 )
 
 var _ = Describe("HappyPath EDS", func() {
@@ -80,11 +81,10 @@ var _ = Describe("HappyPath EDS", func() {
 			return err
 		}, 90, 1).Should(BeNil())
 
-		expectedResponse := &ReceivedRequest{
-			Method: "POST",
-			Body:   body,
-		}
-		Eventually(tu.C, "2s").Should(Receive(Equal(expectedResponse)))
+		Eventually(tu.C, "2s").Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			"Method": Equal("POST"),
+			"Body":   Equal(body),
+		}))))
 
 	})
 
@@ -296,11 +296,10 @@ func dozbam() {
 		return nil
 	}, "90000s", 1).Should(BeNil())
 
-	expectedResponse := &ReceivedRequest{
-		Method: "POST",
-		Body:   body,
-	}
-	Eventually(tutmp.C, "5s", time.Second/2).Should(Receive(Equal(expectedResponse)))
+	Eventually(tutmp.C, "5s", time.Second/2).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+		"Method": Equal("POST"),
+		"Body":   Equal(body),
+	}))))
 
 }
 
@@ -367,11 +366,10 @@ func doEDS(howmany int) {
 		return nil
 	}, 90, 1).Should(BeNil())
 
-	expectedResponse := &ReceivedRequest{
-		Method: "POST",
-		Body:   body,
-	}
-	Eventually(tu.C, "5s", time.Second/2).Should(Receive(Equal(expectedResponse)))
+	Eventually(tu.C, "5s", time.Second/2).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+		"Method": Equal("POST"),
+		"Body":   Equal(body),
+	}))))
 }
 
 // reset; DEBUG=1 ENVOY_IMAGE_TAG="0.4.1" ginkgo  -v
