@@ -69,7 +69,8 @@ var _ = Describe("Translator", func() {
 
 		Expect(snap.Clusters.Items).To(HaveKey("valid-service"))
 		Expect(snap.Clusters.Items["valid-service"]).NotTo(BeNil())
-		Expect(snap.Clusters.Items["valid-service"].String()).To(ContainSubstring(`name:"valid-service" type:STRICT_DNS connect_timeout:<seconds:5 > hosts:<socket_address:<address:"localhost" port_value:1234 > > dns_lookup_family:V4_ONLY metadata:<> `))
+
+		Expect(snap.Clusters.Items["valid-service"].String()).To(ContainSubstring(`name:"valid-service" type:STRICT_DNS connect_timeout:<seconds:5 > load_assignment:<cluster_name:"valid-service" endpoints:<lb_endpoints:<endpoint:<address:<socket_address:<address:"localhost" port_value:1234 > > > > > > dns_lookup_family:V4_ONLY metadata:<>`))
 
 		Expect(snap.Listeners.Items).To(HaveKey("insecure-gateway-listener"))
 		Expect(snap.Listeners.Items["insecure-gateway-listener"]).NotTo(BeNil())
@@ -77,7 +78,8 @@ var _ = Describe("Translator", func() {
 
 		Expect(snap.Routes.Items).To(HaveKey("insecure-gateway-listener-routes"))
 		Expect(snap.Routes.Items["insecure-gateway-listener-routes"]).NotTo(BeNil())
-		Expect(snap.Routes.Items["insecure-gateway-listener-routes"].String()).To(ContainSubstring(`name:"insecure-gateway-listener-routes" virtual_hosts:<name:"valid-vservice-2" domains:"*" routes:<match:<prefix:"/foo" headers:<name:"x-foo-bar" value:".*" regex:<value:true > > headers:<name:":method" value:"GET|POST" regex:<value:true > > > route:<cluster:"valid-service" prefix_rewrite:"/bar" auto_host_rewrite:<value:true > timeout:<seconds:60 > retry_policy:<retry_on:"5xx" num_retries:<value:2 > > request_headers_to_add:<header:<key:"x-foo" value:"bar" > append:<> > response_headers_to_add:<header:<key:"x-foo" value:"bar" > append:<> > response_headers_to_remove:"x-bar" > > >`))
+
+		Expect(snap.Routes.Items["insecure-gateway-listener-routes"].String()).To(ContainSubstring(`name:"insecure-gateway-listener-routes" virtual_hosts:<name:"valid-vservice-2" domains:"*" routes:<match:<prefix:"/foo" headers:<name:"x-foo-bar" present_match:true > headers:<name:":method" regex_match:"GET|POST" > > route:<cluster:"valid-service" prefix_rewrite:"/bar" auto_host_rewrite:<value:true > timeout:<seconds:60 > retry_policy:<retry_on:"5xx" num_retries:<value:2 > > request_headers_to_add:<header:<key:"x-foo" value:"bar" > append:<> > response_headers_to_add:<header:<key:"x-foo" value:"bar" > append:<> > response_headers_to_remove:"x-bar" > > >`))
 
 		Expect(snap.Endpoints.Items).To(HaveLen(0))
 	})
