@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/gogo/protobuf/proto"
+	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/plugins/grpc"
@@ -23,11 +24,13 @@ import (
 type ReceivedRequest struct {
 	Method      string
 	Body        []byte
+	Host        string
 	GRPCRequest proto.Message
 }
 type TestUpstream struct {
 	Upstream *v1.Upstream
 	C        <-chan *ReceivedRequest
+	Address  string
 }
 
 func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
@@ -42,6 +45,9 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 				rr.Body = body
 			}
 		}
+
+		rr.Host = r.Host
+
 		bodychan <- &rr
 	}
 
@@ -63,8 +69,10 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 
 	handler := http.HandlerFunc(handlerfunc)
 	go func() {
+		defer GinkgoRecover()
 		h := &http.Server{Handler: handler}
 		go func() {
+			defer GinkgoRecover()
 			if err := h.Serve(listener); err != nil {
 				if err != http.ErrServerClosed {
 					panic(err)
@@ -91,6 +99,7 @@ func NewTestGRPCUpstream(addr string, glooFilesDir string) *TestUpstream {
 	srv := testgrpcservice.RunServer()
 	received := make(chan *ReceivedRequest)
 	go func() {
+		defer GinkgoRecover()
 		for r := range srv.C {
 			received <- &ReceivedRequest{GRPCRequest: r}
 		}
@@ -130,5 +139,6 @@ func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest
 	return &TestUpstream{
 		Upstream: u,
 		C:        responses,
+		Address:  fmt.Sprintf("%s:%d", addr, port),
 	}
 }
