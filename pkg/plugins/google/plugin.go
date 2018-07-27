@@ -8,6 +8,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
@@ -42,8 +43,7 @@ const (
 	functionPath = "path"
 )
 
-func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
-
+func (p *Plugin) Init(options bootstrap.Options) error{
 	return nil
 }
 

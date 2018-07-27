@@ -3,6 +3,7 @@ package rest
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/pkg/errors"
 
@@ -30,7 +31,7 @@ type Plugin struct {
 	transformation transformation.Plugin
 }
 
-func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
+func (p *Plugin) Init(options bootstrap.Options) error{
 	return nil
 }
 

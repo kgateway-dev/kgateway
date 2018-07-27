@@ -7,6 +7,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins"
@@ -24,7 +25,7 @@ func newFunctionalPluginProcessor(functionPlugins []plugins.FunctionPlugin) *fun
 	return &functionalPluginProcessor{functionPlugins: functionPlugins}
 }
 
-func (p *functionalPluginProcessor) GetDependencies(_ *v1.Config) *plugins.Dependencies {
+func (p *functionalPluginProcessor) Init(options bootstrap.Options) error{
 	return nil
 }
 

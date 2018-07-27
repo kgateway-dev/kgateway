@@ -216,7 +216,11 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 // utility functions
 
 func dependenciesForPlugin(inputs *snapshot.Cache, plug plugins.TranslatorPlugin) (secretwatcher.SecretMap, filewatcher.Files) {
-	dependencyRefs := plug.GetDependencies(inputs.Cfg)
+	dependentPlugin, ok := plug.(plugins.PluginWithDependencies)
+	if !ok {
+		return nil, nil
+	}
+	dependencyRefs := dependentPlugin.GetDependencies(inputs.Cfg)
 	if dependencyRefs == nil {
 		return nil, nil
 	}

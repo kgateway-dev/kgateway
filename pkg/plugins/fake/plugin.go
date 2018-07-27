@@ -25,6 +25,10 @@ const (
 	UpstreamTypeFake = "fake"
 )
 
+func (p *Plugin) Init(options bootstrap.Options) error{
+	return nil
+}
+
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
 	return nil
 }

@@ -33,6 +33,11 @@ type Dependencies struct {
 }
 
 type TranslatorPlugin interface {
+	Init(options bootstrap.Options) error
+}
+
+type PluginWithDependencies interface {
+	TranslatorPlugin
 	GetDependencies(cfg *v1.Config) *Dependencies
 }
 
@@ -50,7 +55,7 @@ type UpstreamPlugin interface {
 
 type EndpointDiscoveryPlugin interface {
 	UpstreamPlugin
-	SetupEndpointDiscovery(options bootstrap.Options) (endpointdiscovery.Interface, error)
+	SetupEndpointDiscovery() (endpointdiscovery.Interface, error)
 }
 
 // Params for ParseFunctionSpec()

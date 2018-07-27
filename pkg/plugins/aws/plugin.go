@@ -8,6 +8,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/hashicorp/go-multierror"
@@ -49,6 +50,10 @@ const (
 )
 
 //go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src spec.proto
+
+func (p *Plugin) Init(options bootstrap.Options) error{
+	return nil
+}
 
 func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 	deps := new(plugins.Dependencies)

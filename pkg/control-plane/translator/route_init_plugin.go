@@ -4,6 +4,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins"
@@ -23,7 +24,7 @@ func newRouteInitializerPlugin() *routeInitializerPlugin {
 	return &routeInitializerPlugin{}
 }
 
-func (p *routeInitializerPlugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
+func (p *routeInitializerPlugin) Init(options bootstrap.Options) error{
 	return nil
 }
 

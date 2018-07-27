@@ -13,6 +13,7 @@ import (
 	"github.com/gogo/googleapis/google/api"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
@@ -54,6 +55,10 @@ const (
 
 	ServiceTypeGRPC = "gRPC"
 )
+
+func (p *Plugin) Init(options bootstrap.Options) error{
+	return nil
+}
 
 func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 	deps := &plugins.Dependencies{}

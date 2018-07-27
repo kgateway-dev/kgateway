@@ -38,6 +38,10 @@ const (
 	UpstreamTypeConsul = "consul"
 )
 
+func (p *Plugin) Init(options bootstrap.Options) error{
+	return nil
+}
+
 func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
 	deps := new(plugins.Dependencies)
 	for _, us := range cfg.Upstreams {

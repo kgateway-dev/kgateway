@@ -146,9 +146,11 @@ func getDependenciesFor(translatorPlugins []plugins.TranslatorPlugin) func(cfg *
 		var dependencies []*plugins.Dependencies
 		// secrets plugins need
 		for _, plug := range translatorPlugins {
-			dep := plug.GetDependencies(cfg)
-			if dep != nil {
-				dependencies = append(dependencies, dep)
+			if dependentPlugin, ok := plug.(plugins.PluginWithDependencies); ok {
+				dep := dependentPlugin.GetDependencies(cfg)
+				if dep != nil {
+					dependencies = append(dependencies, dep)
+				}
 			}
 		}
 		return dependencies

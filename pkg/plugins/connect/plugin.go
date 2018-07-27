@@ -13,6 +13,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/plugins/consul"
@@ -44,7 +45,7 @@ type Plugin struct {
 	clustersToGenerate []*envoyapi.Cluster
 }
 
-func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
+func (p *Plugin) Init(options bootstrap.Options) error{
 	return nil
 }
 

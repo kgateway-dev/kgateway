@@ -28,14 +28,17 @@ func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscove
 	return disc, err
 }
 
-type Plugin struct{}
+type Plugin struct{
+	opts bootstrap.Options
+}
 
 const (
 	// define Upstream type name
 	UpstreamTypeKube = "kubernetes"
 )
 
-func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
+func (p *Plugin) Init(options bootstrap.Options) error{
+	p.opts = options
 	return nil
 }
 

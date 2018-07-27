@@ -21,14 +21,16 @@ func init() {
 
 var _ plugins.UpstreamPlugin = &Plugin{}
 
-type Plugin struct{}
+type Plugin struct{
+	opts bootstrap.Options
+}
 
-func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
-	istioclient, err := GetClientFromOptions(opts.CoPilotOptions)
+func (p *Plugin) SetupEndpointDiscovery() (endpointdiscovery.Interface, error) {
+	istioclient, err := GetClientFromOptions(p.opts.CoPilotOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create copilot client")
 	}
-	resyncDuration := opts.ConfigStorageOptions.SyncFrequency
+	resyncDuration := p.opts.ConfigStorageOptions.SyncFrequency
 	disc := NewEndpointDiscovery(context.Background(), istioclient, resyncDuration)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start copilot endpoint discovery")
@@ -36,7 +38,8 @@ func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscove
 	return disc, nil
 }
 
-func (p *Plugin) GetDependencies(cfg *v1.Config) *plugins.Dependencies {
+func (p *Plugin) Init(options bootstrap.Options) error{
+	p.opts = options
 	return nil
 }
 
