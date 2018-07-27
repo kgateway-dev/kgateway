@@ -19,7 +19,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/plugins"
 	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
@@ -47,21 +46,15 @@ const (
 	HostnameKNative     = "hostname"
 )
 
-// TODO: we are taking advantage of the fact that this function is called first and use it like a contructor.
-// should refactor to a real init function
-func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
+func (p *Plugin) Init(opts bootstrap.Options) error {
 	masterUrl := opts.KubeOptions.MasterURL
 	kubeconfigPath := opts.KubeOptions.KubeConfig
 
 	cfg, err := kubeutils.GetConfig(masterUrl, kubeconfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build rest config: %v", err)
+		return fmt.Errorf("failed to build rest config: %v", err)
 	}
 	p.kubeConfig = cfg
-	return nil, nil
-}
-
-func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
 	return nil
 }
 
@@ -106,7 +99,7 @@ func (p *Plugin) verifytKNative() error {
 		return fmt.Errorf("no knative ingress found: %v", err)
 	}
 
-	// There should be only one, so grap the first one with a cluster IP
+	// There should be only one, so grab the first one with a cluster IP
 	for _, service := range services {
 		if service.Spec.ClusterIP != "" {
 			for _, port := range service.Spec.Ports {
