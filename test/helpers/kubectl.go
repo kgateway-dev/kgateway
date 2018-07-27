@@ -17,6 +17,11 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/log"
+	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage/crd"
+	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -34,6 +39,33 @@ const (
 	eventEmitter          = "event-emitter"
 )
 
+type Clients struct {
+	Kube           kubernetes.Interface
+	Gloo           storage.Interface
+	RestConfig     *restclient.Config
+	KubeconfigPath string
+	MasterUrl      string
+}
+
+func GetClients(namespace string) Clients {
+	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	masterUrl := ""
+	cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+	Must(err)
+	gloo, err := crd.NewStorage(cfg, namespace, time.Minute)
+	Must(err)
+
+	kube, err := kubernetes.NewForConfig(cfg)
+	Must(err)
+	return Clients{
+		Kube:           kube,
+		Gloo:           gloo,
+		MasterUrl:      masterUrl,
+		KubeconfigPath: kubeconfigPath,
+		RestConfig:     cfg,
+	}
+}
+
 func SetupKubeForTest(namespace string) error {
 	context := os.Getenv("KUBECTL_CONTEXT")
 	if context == "" {
@@ -48,7 +80,10 @@ func SetupKubeForTest(namespace string) error {
 	if err := Kubectl("config", "set-context", context, "--namespace="+namespace); err != nil {
 		return errors.Wrap(err, "setting context")
 	}
-	return Kubectl("create", "namespace", namespace)
+	if err := Kubectl("create", "namespace", namespace); err != nil {
+		return errors.Wrap(err, "creating namespace")
+	}
+	return Kubectl("label", "namespace", namespace, "istio-injection=disabled")
 }
 
 func TeardownKube(namespace string) error {

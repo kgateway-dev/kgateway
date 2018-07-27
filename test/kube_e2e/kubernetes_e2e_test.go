@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"os"
-	"path/filepath"
 
 	"strings"
 
@@ -17,10 +16,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/storage/crd"
 	. "github.com/solo-io/gloo/test/helpers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -53,15 +50,9 @@ var _ = BeforeSuite(func() {
 
 	err := SetupKubeForE2eTest(namespace, true, push, debug)
 	Must(err)
-	kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	masterUrl := ""
-	Must(err)
-	cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
-	Must(err)
-	gloo, err = crd.NewStorage(cfg, namespace, time.Minute)
-	Must(err)
-	kube, err = kubernetes.NewForConfig(cfg)
-	Must(err)
+	clients := GetClients(namespace)
+	gloo = clients.Gloo
+	kube = clients.Kube
 })
 
 var _ = AfterSuite(func() {

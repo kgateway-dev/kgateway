@@ -88,6 +88,8 @@ func (c *UpstreamController) startControllers(cfg *rest.Config) error {
 
 	serviceInformer := servingInformerFactory.Serving().V1alpha1().Services()
 	c.serviceInformer = serviceInformer
+	// call informer method just because
+	serviceInformer.Informer()
 
 	// copied from here:
 	// github.com/knative/serving/cmd/controller/main.go
@@ -98,14 +100,12 @@ func (c *UpstreamController) startControllers(cfg *rest.Config) error {
 
 		// Wait for the caches to be synced before starting controllers.
 		log.Printf("Waiting for informer caches to sync")
-		for i, synced := range []cache.InformerSynced{
-			serviceInformer.Informer().HasSynced,
-		} {
-			if ok := cache.WaitForCacheSync(stopCh, synced); !ok {
-				c.errors <- fmt.Errorf("failed to wait for cache at index %v to sync", i)
-				return
-			}
+
+		if ok := cache.WaitForCacheSync(stopCh, serviceInformer.Informer().HasSynced); !ok {
+			c.errors <- fmt.Errorf("failed to wait for cache to sync")
+			return
 		}
+
 		ctrlr := NewController(
 			opt,
 			notifications,
