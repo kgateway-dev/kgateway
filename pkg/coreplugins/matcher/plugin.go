@@ -69,15 +69,16 @@ func createRequestMatcher(requestMatcher *v1.RequestMatcher, out *envoyroute.Rou
 		m := &envoyroute.HeaderMatcher{
 			Name: headerName,
 		}
-		if headerValue == "" {
+		switch {
+		case headerValue == "":
 			m.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_PresentMatch{
 				PresentMatch: true,
 			}
-		} else if strings.Contains(headerValue, ".*") {
+		case strings.Contains(headerValue, ".*"):
 			m.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
 				RegexMatch: headerValue,
 			}
-		} else {
+		default:
 			m.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
 				ExactMatch: headerValue,
 			}
