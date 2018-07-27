@@ -50,8 +50,8 @@ It is entirely possible to run Gloo as a traditional API gateway, without levera
 can be configured as a fully-featured<!--(TODO)--> API gateway, simply by using upstreams that don't support functions.
 
 
-However, we at [solo.io](solo.io) believe that function level routing will open the door to many new use cases and improve
-existing ones. <!--(TODO)-->
+However, we at [solo.io](https://solo.io) believe that function-level routing will open the door to
+many new use cases and improve existing ones. <!--(TODO)-->
 
 
 
