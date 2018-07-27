@@ -24,8 +24,11 @@ import (
 )
 
 const (
-	MetadataNamespace   = "io.solo.knative"
+	MetadataNamespace = "io.solo.knative"
+	// define Upstream type name
+
 	UpstreamTypeKnative = "knative"
+	HostnameKNative     = "hostname"
 )
 
 func init() {
@@ -39,12 +42,6 @@ type Plugin struct {
 	knativeIngress     string
 	knativeIngressPort int32
 }
-
-const (
-	// define Upstream type name
-	UpstreamTypeKNative = "knative"
-	HostnameKNative     = "hostname"
-)
 
 func (p *Plugin) Init(opts bootstrap.Options) error {
 	masterUrl := opts.KubeOptions.MasterURL
@@ -116,7 +113,7 @@ func (p *Plugin) verifytKNative() error {
 }
 
 func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstream, out *envoyapi.Cluster) error {
-	if in.Type != UpstreamTypeKNative {
+	if in.Type != UpstreamTypeKnative {
 		return nil
 	}
 
