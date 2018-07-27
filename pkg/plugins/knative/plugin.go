@@ -152,15 +152,7 @@ func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstrea
 			}},
 		}},
 	}
-
 	out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints)
-	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
-		EdsConfig: &envoycore.ConfigSource{
-			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
-				Ads: &envoycore.AggregatedConfigSource{},
-			},
-		},
-	}
 	return nil
 }
 
@@ -173,6 +165,23 @@ func findUpstream(ClusterName plugins.EnvoyNameForUpstream, clustername string, 
 	return nil
 }
 
+func maybeAppendHeader(pluginParams *plugins.RoutePluginParams, clustername string, headers []*envoycore.HeaderValueOption) []*envoycore.HeaderValueOption {
+	if us := findUpstream(pluginParams.EnvoyNameForUpstream, clustername, pluginParams.Upstreams); us != nil {
+		if us.Type == UpstreamTypeKnative {
+			if spec, err := DecodeUpstreamSpec(us.Spec); err == nil {
+				headers = append(headers, &envoycore.HeaderValueOption{
+					Header: &envoycore.HeaderValue{
+						Key:   ":authority",
+						Value: spec.Hostname,
+					},
+					Append: &types.BoolValue{Value: false},
+				})
+			}
+		}
+	}
+	return headers
+}
+
 func (p *Plugin) ProcessRoute(pluginParams *plugins.RoutePluginParams, in *v1.Route, out *envoyroute.Route) error {
 
 	// if we have one knative upstream, the
@@ -180,36 +189,13 @@ func (p *Plugin) ProcessRoute(pluginParams *plugins.RoutePluginParams, in *v1.Ro
 		route := route.Route
 		switch clusters := route.ClusterSpecifier.(type) {
 		case *envoyroute.RouteAction_Cluster:
-			if us := findUpstream(pluginParams.EnvoyNameForUpstream, clusters.Cluster, pluginParams.Upstreams); us != nil {
-				if us.Type == UpstreamTypeKnative {
-					if spec, err := DecodeUpstreamSpec(us.Spec); err == nil {
-						route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoycore.HeaderValueOption{
-							Header: &envoycore.HeaderValue{
-								Key:   ":authority",
-								Value: spec.Hostname,
-							},
-							Append: &types.BoolValue{Value: false},
-						})
-					}
-				}
-			}
+			// clusters is actually one cluster
+			cluster := clusters
+			route.RequestHeadersToAdd = maybeAppendHeader(pluginParams, cluster.Cluster, route.RequestHeadersToAdd)
 		case *envoyroute.RouteAction_WeightedClusters:
 			for _, cluster := range clusters.WeightedClusters.Clusters {
-				if us := findUpstream(pluginParams.EnvoyNameForUpstream, cluster.Name, pluginParams.Upstreams); us != nil {
-					if us.Type == UpstreamTypeKnative {
-						if spec, err := DecodeUpstreamSpec(us.Spec); err == nil {
-							cluster.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoycore.HeaderValueOption{
-								Header: &envoycore.HeaderValue{
-									Key:   ":authority",
-									Value: spec.Hostname,
-								},
-								Append: &types.BoolValue{Value: false},
-							})
-						}
-					}
-				}
+				cluster.RequestHeadersToAdd = maybeAppendHeader(pluginParams, cluster.Name, cluster.RequestHeadersToAdd)
 			}
-
 		}
 	}
 
