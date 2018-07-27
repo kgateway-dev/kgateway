@@ -1,7 +1,6 @@
 package snapshot_test
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"time"
