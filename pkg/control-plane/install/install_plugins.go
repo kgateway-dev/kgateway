@@ -9,7 +9,6 @@ import (
 	_ "github.com/solo-io/gloo/pkg/plugins/fake"
 	_ "github.com/solo-io/gloo/pkg/plugins/google"
 	_ "github.com/solo-io/gloo/pkg/plugins/grpc"
-	_ "github.com/solo-io/gloo/pkg/plugins/knative"
 	_ "github.com/solo-io/gloo/pkg/plugins/kubernetes"
 	_ "github.com/solo-io/gloo/pkg/plugins/nats"
 	_ "github.com/solo-io/gloo/pkg/plugins/rest"
