@@ -198,9 +198,17 @@ ignored = ["github.com/envoyproxy/data-plane-api*"]
   name = "k8s.io/client-go"
   version = "7.0.0"
 
+[[override]]
+  name = "k8s.io/kubernetes"
+  revision = "81753b10df112992bf51bbc2c2f85208aad78335"
+
 [[constraint]]
-  branch = "master"
   name = "github.com/knative/serving"
+  revision = "9958b753e8f3f8899434b8860872819e4223aa46"
+
+[[override]]
+  name = "k8s.io/autoscaler"
+  branch = "vpa-release-0.1"
 
 [prune]
   go-tests = true
