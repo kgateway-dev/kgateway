@@ -117,7 +117,7 @@ var _ = Describe("Emitter", func() {
 				Expect(err).NotTo(HaveOccurred())
 				fileWatcher, err := filewatcher.NewFileWatcher(filestore)
 				Expect(err).NotTo(HaveOccurred())
-				endpointsWatcher := endpointswatcher.NewEndpointsWatcher(opts, &kubernetes.Plugin{})
+				endpointsWatcher := endpointswatcher.NewEndpointsWatcher(&kubernetes.Plugin{})
 				getDependencies := func(cfg *v1.Config) []*plugins.Dependencies {
 					return []*plugins.Dependencies{
 						{

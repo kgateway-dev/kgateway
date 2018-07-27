@@ -14,7 +14,7 @@ func init() {
 	plugins.Register(&Plugin{})
 }
 
-func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
+func (p *Plugin) SetupEndpointDiscovery() (endpointdiscovery.Interface, error) {
 	return &FakeEndpointDiscovery, nil
 }
 

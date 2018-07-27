@@ -103,7 +103,7 @@ func SetupWithConfig(cfg Config) (EventLoop, error) {
 		}
 	}
 
-	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(cfg.Options.Options, edPlugins...)
+	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(edPlugins...)
 
 	snapshotEmitter := snapshot.NewEmitter(
 		cfgWatcher,

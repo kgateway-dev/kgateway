@@ -22,8 +22,8 @@ func init() {
 
 //go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src spec.proto
 
-func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
-	cfg := opts.ConsulOptions.ToConsulConfig()
+func (p *Plugin) SetupEndpointDiscovery() (endpointdiscovery.Interface, error) {
+	cfg := p.opts.ConsulOptions.ToConsulConfig()
 	disc, err := NewEndpointController(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start consul endpoint discovery")
@@ -31,7 +31,9 @@ func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscove
 	return disc, err
 }
 
-type Plugin struct{}
+type Plugin struct{
+	opts bootstrap.Options
+}
 
 const (
 	// define Upstream type name
@@ -39,6 +41,7 @@ const (
 )
 
 func (p *Plugin) Init(options bootstrap.Options) error{
+	p.opts = options
 	return nil
 }
 

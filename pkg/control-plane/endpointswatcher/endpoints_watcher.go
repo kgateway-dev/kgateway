@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
@@ -19,10 +18,10 @@ type endpointsAggregator struct {
 	errors               chan error
 }
 
-func NewEndpointsWatcher(opts bootstrap.Options, endpointDiscoveryPlugins ...plugins.EndpointDiscoveryPlugin) endpointdiscovery.Interface {
+func NewEndpointsWatcher(endpointDiscoveryPlugins ...plugins.EndpointDiscoveryPlugin) endpointdiscovery.Interface {
 	var endpointDiscoveries []endpointdiscovery.Interface
 	for _, edPlugin := range endpointDiscoveryPlugins {
-		discovery, err := edPlugin.SetupEndpointDiscovery(opts)
+		discovery, err := edPlugin.SetupEndpointDiscovery()
 		if err != nil {
 			log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
 				"upstream type", err)

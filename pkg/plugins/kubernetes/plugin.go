@@ -17,10 +17,10 @@ func init() {
 
 //go:generate protoc -I=./ -I=${GOPATH}/src/github.com/gogo/protobuf/ -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ --gogo_out=Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types:${GOPATH}/src spec.proto
 
-func (p *Plugin) SetupEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
-	kubeConfig := opts.KubeOptions.KubeConfig
-	masterUrl := opts.KubeOptions.MasterURL
-	resyncDuration := opts.ConfigStorageOptions.SyncFrequency
+func (p *Plugin) SetupEndpointDiscovery() (endpointdiscovery.Interface, error) {
+	kubeConfig := p.opts.KubeOptions.KubeConfig
+	masterUrl := p.opts.KubeOptions.MasterURL
+	resyncDuration := p.opts.ConfigStorageOptions.SyncFrequency
 	disc, err := NewEndpointDiscovery(masterUrl, kubeConfig, resyncDuration)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start Kubernetes endpoint discovery")

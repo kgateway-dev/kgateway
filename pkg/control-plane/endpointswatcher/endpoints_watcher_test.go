@@ -22,7 +22,7 @@ import (
 var upstreams []*v1.Upstream
 
 var _ = Describe("EndpointsWatcher", func() {
-	eds := NewEndpointsWatcher(opts, &kubernetes.Plugin{}, &consul.Plugin{})
+	eds := NewEndpointsWatcher(&kubernetes.Plugin{}, &consul.Plugin{})
 	Context("running both consul eds and kubernetes eds", func() {
 		BeforeEach(func() {
 			createKubeResources()
