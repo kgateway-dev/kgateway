@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/knative/serving/pkg/controller"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/pkg/log"
 	knativeplugin "github.com/solo-io/gloo/pkg/plugins/knative"
 	"github.com/solo-io/gloo/pkg/storage"
+
 )
 
 const (
@@ -75,11 +77,15 @@ func (c *UpstreamController) startControllers(cfg *rest.Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to create serving clientset: %v", err)
 	}
+	kubeClient, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create kube clientset: %v", err)
+	}
 
 	servingInformerFactory := knativeinformers.NewSharedInformerFactory(servingClient, time.Second*30)
 
 	opt := controller.Options{
-		KubeClientSet:    nil,
+		KubeClientSet:    kubeClient,
 		ServingClientSet: servingClient,
 		BuildClientSet:   nil,
 		ConfigMapWatcher: nil,
