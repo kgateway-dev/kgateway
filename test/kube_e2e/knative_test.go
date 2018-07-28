@@ -50,7 +50,7 @@ var _ = Describe("Knative", func() {
 		}
 	})
 
-	FIt("should detect the upstream service info", func() {
+	It("should detect the upstream service info", func() {
 		var upstreamToTest *v1.Upstream
 
 		Eventually(func() *v1.Upstream {
@@ -72,7 +72,7 @@ var _ = Describe("Knative", func() {
 		spec, err := knative.DecodeUpstreamSpec(upstreamToTest.Spec)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(spec.Hostname).To(Equal("helloworld-go.default.example.com"))
+		Expect(spec.Hostname).To(Equal("helloworld-go." + ns.Name + ".example.com"))
 
 		_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
 			Name: "knative-service",
