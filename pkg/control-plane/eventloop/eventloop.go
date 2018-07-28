@@ -98,8 +98,14 @@ func SetupWithConfig(cfg Config) (EventLoop, error) {
 
 	var edPlugins []plugins.EndpointDiscoveryPlugin
 	for _, plug := range plugs {
-		if edp, ok := plug.(plugins.EndpointDiscoveryPlugin); ok {
-			edPlugins = append(edPlugins, edp)
+
+		// initialize the plugin
+		if err := plug.Init(cfg.Options.Options); err == nil {
+			if edp, ok := plug.(plugins.EndpointDiscoveryPlugin); ok {
+				edPlugins = append(edPlugins, edp)
+			}
+		} else {
+			log.Warnf("Error initializing plugin: %v", err)
 		}
 	}
 
