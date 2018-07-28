@@ -50,7 +50,7 @@ var _ = Describe("Knative", func() {
 		}
 	})
 
-	It("should detect the upstream service info", func() {
+	FIt("should detect the upstream service info", func() {
 		var upstreamToTest *v1.Upstream
 
 		Eventually(func() *v1.Upstream {
@@ -67,7 +67,37 @@ var _ = Describe("Knative", func() {
 				break
 			}
 			return upstreamToTest
-		}, "2m", "5s").ShouldNot(BeNil())
+		}, "5m", "5s").ShouldNot(BeNil())
+
+		spec, err := knative.DecodeUpstreamSpec(upstreamToTest.Spec)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(spec.Hostname).To(Equal("helloworld-go.default.example.com"))
+
+		_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
+			Name: "knative-service",
+			Routes: []*v1.Route{{
+				Matcher: &v1.Route_RequestMatcher{
+					RequestMatcher: &v1.RequestMatcher{
+						Path: &v1.RequestMatcher_PathPrefix{
+							PathPrefix: "/",
+						},
+					},
+				},
+				SingleDestination: &v1.Destination{
+					DestinationType: &v1.Destination_Upstream{
+						Upstream: &v1.UpstreamDestination{
+							Name: upstreamToTest.Name,
+						},
+					},
+				},
+			}},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		// make sure that curl returns something we expect
+		curlEventuallyShouldRespond(curlOpts{
+			path: "/",
+		}, "Hello", time.Minute)
 	})
 
 })

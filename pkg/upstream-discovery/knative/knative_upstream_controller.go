@@ -127,7 +127,6 @@ func (c *UpstreamController) startControllers(cfg *rest.Config) error {
 			}
 		}(ctrlr)
 
-		//		go kubeController.Run(2, stop)
 		// refresh every minute
 		tick := time.Tick(time.Minute)
 		go func() {
@@ -142,7 +141,7 @@ func (c *UpstreamController) startControllers(cfg *rest.Config) error {
 			}
 		}()
 		<-stopCh
-		log.Printf("kube upstream discovery stopped")
+		log.Printf("knative upstream discovery stopped")
 	}
 
 	return nil
@@ -172,8 +171,11 @@ func (c *UpstreamController) generateDesiredUpstreams() ([]*v1.Upstream, error) 
 		domain := svc.Status.Domain
 		upstream := &v1.Upstream{
 			Name: upstreamName(domain),
+
 			Type: knativeplugin.UpstreamTypeKnative,
 			Spec: knativeplugin.EncodeUpstreamSpec(knativeplugin.UpstreamSpec{
+				ServiceName: svc.Name,
+				ServiceNamespace: svc.Namespace,
 				Hostname: domain,
 			}),
 		}

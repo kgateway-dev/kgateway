@@ -64,3 +64,28 @@ roleRef:
   kind: ClusterRole
   name: gloo-discovery-role
   apiGroup: rbac.authorization.k8s.io
+
+---
+#rbac for knative and upstream-discovery
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-knative-upstream-discovery-role
+rules:
+- apiGroups: ["serving.knative.dev"]
+  resources: ["services"]
+  verbs: ["get", "watch", "list"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-knative-upstream-discovery-binding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: gloo-knative-upstream-discovery-role
+  apiGroup: rbac.authorization.k8s.io
