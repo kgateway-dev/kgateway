@@ -50,7 +50,7 @@ var _ = Describe("Knative", func() {
 		}
 	})
 
-	It("should detect the upstream service info", func() {
+	FIt("should detect the upstream service info", func() {
 		var upstreamToTest *v1.Upstream
 
 		Eventually(func() *v1.Upstream {
