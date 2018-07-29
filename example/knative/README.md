@@ -1,3 +1,5 @@
+In this document we will demo gloo together with knative. gloo version of 0.4.2 or latest is requried. This documented was test with knative serving v0.1.0.
+
 # Install everything!
 
 ## Start Minikube
@@ -7,7 +9,7 @@ minikube start --memory=8192 --cpus=4   --kubernetes-version=v1.10.5   --vm-driv
 
 ## Install Gloo, Istio, Knative.
 
-As Istio and Knative are fast moving project, we have vendored in the version of knative we tested against in this directory. to install, please run:
+To install istio and knative, please run:
 
 ```
 glooctl install
@@ -43,12 +45,12 @@ EOF
 ```
 
 # Configure gloo
-see that gloo detected the new upstream:
+Verify and see that gloo detected the new upstream (may take a bit of time to show up untill all the pods start up):
 ```
 glooctl upstream get
 ```
 
-route to it!
+Add route to it!
 ```
 glooctl route create --sort --path-prefix / --upstream helloworld-go.default.example.com
 ```
