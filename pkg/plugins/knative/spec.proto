@@ -16,7 +16,7 @@ message UpstreamSpec {
     string service_name = 1;
     // The namespace where the Service lives
     string service_namespace = 2;
-
+    // The domain name for the knative service.
     string hostname = 3;
     
 }

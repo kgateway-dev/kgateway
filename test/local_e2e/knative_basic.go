@@ -45,7 +45,6 @@ var _ = Describe("Knative routing works", func() {
 		serviceSpec := knative.UpstreamSpec{
 			ServiceName : "doesnt matter" ,
 			ServiceNamespace : "doesnt matter" ,
-			ServicePort :5,
 			Hostname:    hostname,
 			}
 
@@ -96,7 +95,7 @@ var _ = Describe("Knative routing works", func() {
 		}, 30, 1).Should(BeNil())
 
 		Eventually(fakeIngress.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"Host": Equal("hostname"),
+			"Host": Equal(hostname),
 		}))))
 	})
 
