@@ -204,17 +204,16 @@ $(OUTPUT_DIR)/envoy:
 envoy-in-docker:
 	docker run -v $(ROOTDIR):$(ROOTDIR) -v $(ROOTDIR)/build-envoy/bazel-docker-cache:/root/.cache/ -w $(ROOTDIR)/build-envoy envoyproxy/envoy-build bash -c "bazel build -c dbg //:envoy && cd .. && cp -f build-envoy/bazel-bin/envoy $(OUTPUT_DIR)"
 
-envoy-release:
-	./build-envoy/ci/run_envoy_docker.sh "./build-envoy/ci/build.sh"
-
-envoy-docker: envoy
-	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
-	docker build -t soloio/envoy:$(IMAGE_TAG) $(OUTPUT_DIR)
-
 envoy-dev-docker: envoy
 	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
 	docker build -t soloio/envoy-dev:$(IMAGE_TAG) $(OUTPUT_DIR)
 
+envoy-release:
+	./build-envoy/ci/run_envoy_docker.sh "./build-envoy/ci/build.sh"
+
+envoy-docker: envoy-release
+	cp -f build-envoy/Dockerfile $(OUTPUT_DIR)
+	docker build -t soloio/envoy:$(IMAGE_TAG) $(OUTPUT_DIR)
 
 #----------------------------------------------------------------------------------
 # glooctl
