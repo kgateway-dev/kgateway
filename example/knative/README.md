@@ -12,11 +12,14 @@ minikube start --memory=8192 --cpus=4   --kubernetes-version=v1.10.5   --vm-driv
 To install istio and knative, please run:
 
 ```
-glooctl install
+glooctl install kube
+
 curl -L https://raw.githubusercontent.com/knative/serving/v0.1.0/third_party/istio-0.8.0/istio.yaml \
   | sed 's/LoadBalancer/NodePort/' \
   | kubectl apply -f -
-  
+
+kubectl label namespace default istio-injection=enabled
+
 curl -L https://github.com/knative/serving/releases/download/v0.1.0/release-lite.yaml \
   | sed 's/LoadBalancer/NodePort/' \
   | kubectl apply -f -

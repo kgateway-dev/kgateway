@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -162,10 +163,12 @@ func findUpstream(ClusterName plugins.EnvoyNameForUpstream, clustername string, 
 	return nil
 }
 
-func maybeAppendHeader(pluginParams *plugins.RoutePluginParams, clustername string, headers []*envoycore.HeaderValueOption) []*envoycore.HeaderValueOption {
+func maybeAppendHeader(pluginParams *plugins.RoutePluginParams, clustername string, headers []*envoycore.HeaderValueOption) ([]*envoycore.HeaderValueOption, bool) {
+	var knativeroute bool
 	if us := findUpstream(pluginParams.EnvoyNameForUpstream, clustername, pluginParams.Upstreams); us != nil {
 		if us.Type == UpstreamTypeKnative {
 			if spec, err := DecodeUpstreamSpec(us.Spec); err == nil {
+				knativeroute = true
 				headers = append(headers, &envoycore.HeaderValueOption{
 					Header: &envoycore.HeaderValue{
 						Key:   ":authority",
@@ -176,7 +179,7 @@ func maybeAppendHeader(pluginParams *plugins.RoutePluginParams, clustername stri
 			}
 		}
 	}
-	return headers
+	return headers, knativeroute
 }
 
 func (p *Plugin) ProcessRoute(pluginParams *plugins.RoutePluginParams, in *v1.Route, out *envoyroute.Route) error {
@@ -184,15 +187,23 @@ func (p *Plugin) ProcessRoute(pluginParams *plugins.RoutePluginParams, in *v1.Ro
 	// if we have one knative upstream, the
 	if route, ok := out.Action.(*envoyroute.Route_Route); ok {
 		route := route.Route
+		var knativeroute bool
 		switch clusters := route.ClusterSpecifier.(type) {
 		case *envoyroute.RouteAction_Cluster:
 			// clusters is actually one cluster
 			cluster := clusters
-			route.RequestHeadersToAdd = maybeAppendHeader(pluginParams, cluster.Cluster, route.RequestHeadersToAdd)
+			route.RequestHeadersToAdd, knativeroute = maybeAppendHeader(pluginParams, cluster.Cluster, route.RequestHeadersToAdd)
 		case *envoyroute.RouteAction_WeightedClusters:
 			for _, cluster := range clusters.WeightedClusters.Clusters {
-				cluster.RequestHeadersToAdd = maybeAppendHeader(pluginParams, cluster.Name, cluster.RequestHeadersToAdd)
+				cluster.RequestHeadersToAdd, knativeroute = maybeAppendHeader(pluginParams, cluster.Name, cluster.RequestHeadersToAdd)
 			}
+		}
+
+		// knative needs longer timeouts
+		// see here: https://github.com/knative/serving/blob/90ead22dd4842524bcb992588f19511d79a44543/pkg/controller/route/resources/virtual_service.go#L51
+		if knativeroute {
+			d := 60 * time.Second
+			route.Timeout = &d
 		}
 	}
 
