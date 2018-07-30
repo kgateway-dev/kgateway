@@ -18,7 +18,7 @@ import (
 type Stage int
 
 const (
-	PreInAuth Stage = iota
+	PreInAuth  Stage = iota
 	InAuth
 	PostInAuth
 	PreOutAuth
@@ -85,7 +85,9 @@ type RoutePlugin interface {
 }
 
 // Params for HttpFilters()
-type HttpFilterPluginParams struct{}
+type HttpFilterPluginParams struct {
+	Listener *v1.Listener
+}
 
 type StagedHttpFilter struct {
 	HttpFilter *envoyhttp.HttpFilter

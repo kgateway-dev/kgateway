@@ -8,12 +8,13 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
-func (t *Translator) computeHttpConnectionManager(rdsName string) envoylistener.Filter {
+func (t *Translator) computeHttpConnectionManager(listener *v1.Listener, rdsName string) envoylistener.Filter {
 	httpConnMgr := &envoyhttp.HttpConnectionManager{
 		CodecType:  envoyhttp.AUTO,
 		StatPrefix: "http",
@@ -27,7 +28,7 @@ func (t *Translator) computeHttpConnectionManager(rdsName string) envoylistener.
 				RouteConfigName: rdsName,
 			},
 		},
-		HttpFilters: t.computeHttpFilters(),
+		HttpFilters: t.computeHttpFilters(listener),
 	}
 
 	httpConnMgrCfg, err := envoyutil.MessageToStruct(httpConnMgr)
@@ -40,14 +41,16 @@ func (t *Translator) computeHttpConnectionManager(rdsName string) envoylistener.
 	}
 }
 
-func (t *Translator) computeHttpFilters() []*envoyhttp.HttpFilter {
+func (t *Translator) computeHttpFilters(listener *v1.Listener) []*envoyhttp.HttpFilter {
 	var httpFilters []plugins.StagedHttpFilter
 	for _, plug := range t.plugins {
 		filterPlugin, ok := plug.(plugins.HttpFilterPlugin)
 		if !ok {
 			continue
 		}
-		params := &plugins.HttpFilterPluginParams{}
+		params := &plugins.HttpFilterPluginParams{
+			Listener: listener,
+		}
 		stagedFilters := filterPlugin.HttpFilters(params)
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.HttpFilter == nil {

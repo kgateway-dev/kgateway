@@ -219,7 +219,7 @@ func (t *Translator) computeListenerFilters(role *v1.Role, listener *v1.Listener
 	if len(listener.VirtualServices) > 0 {
 		// add the http connection manager filter after all the InAuth Listener Filters
 		rdsName := routeConfigName(listener)
-		httpConnMgr := t.computeHttpConnectionManager(rdsName)
+		httpConnMgr := t.computeHttpConnectionManager(listener, rdsName)
 		listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
 			ListenerFilter: httpConnMgr,
 			Stage:          plugins.PostInAuth,
