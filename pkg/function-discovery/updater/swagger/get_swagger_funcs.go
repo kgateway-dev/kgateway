@@ -37,8 +37,10 @@ func GetFuncs(us *v1.Upstream) ([]*v1.Function, error) {
 	}
 	// TODO: when response transformation is done, look at produces as well
 	var funcs []*v1.Function
-	for functionPath, pathItem := range swaggerSpec.Paths.Paths {
-		funcs = append(funcs, createFunctionsForPath(swaggerSpec.BasePath, functionPath, pathItem.PathItemProps, swaggerSpec.Definitions)...)
+	if swaggerSpec.Paths != nil {
+		for functionPath, pathItem := range swaggerSpec.Paths.Paths {
+			funcs = append(funcs, createFunctionsForPath(swaggerSpec.BasePath, functionPath, pathItem.PathItemProps, swaggerSpec.Definitions)...)
+		}
 	}
 	return funcs, nil
 }
