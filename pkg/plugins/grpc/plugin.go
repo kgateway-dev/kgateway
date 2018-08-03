@@ -312,21 +312,19 @@ func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) ([]plugins.Stage
 	}()
 
 	if len(p.upstreamServices) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	transformationFilter := p.transformation.GetTransformationFilter()
 	if transformationFilter == nil {
-		log.Warnf("ERROR: nil transformation filter returned from transformation plugin")
-		return nil
+		return nil, errors.Errorf("nil transformation filter returned from transformation plugin")
 	}
 
 	var filters []plugins.StagedHttpFilter
 	for _, serviceAndDescriptor := range p.upstreamServices {
 		descriptorBytes, err := proto.Marshal(serviceAndDescriptor.Descriptors)
 		if err != nil {
-			log.Warnf("ERROR: marshaling proto descriptor: %v", err)
-			continue
+			return nil, errors.Wrapf(err, "marshaling proto descriptor")
 		}
 		var fullServiceNames []string
 		for i := range serviceAndDescriptor.ServiceNames {
