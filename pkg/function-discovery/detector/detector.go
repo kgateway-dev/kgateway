@@ -23,6 +23,10 @@ type Interface interface {
 	// if it detects the upstream is a known functional type, give us the
 	// service info and annotations to mark it with
 	DetectFunctionalService(us *v1.Upstream, addr string) (*v1.ServiceInfo, map[string]string, error)
+	// the caller should invoke this function before detection, after a new set of upstreams has been read in
+	// this way we can clear the cache out
+	// TODO(ilackarms): this is a bit of a combina to solve https://github.com/solo-io/gloo/issues/160#
+	UnmarkUpstream(usName string)
 }
 
 // marker marks the upstream as functional. this modifies the upstream it was received,
@@ -41,6 +45,13 @@ func NewMarker(detectors []Interface, resolver resolver.Resolver) *Marker {
 		resolver:         resolver,
 		finishedOrFailed: make(map[string]int),
 	}
+}
+
+// remove any "finished" upstreams that were deleted
+func (m *Marker) UnmarkUpstream(usName string) {
+	m.m.Lock()
+	delete(m.finishedOrFailed, usName)
+	m.m.Unlock()
 }
 
 // should only be called for k8s, consul, and static type upstreams

@@ -133,6 +133,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 			if !upstreamFound {
 				close(workQueues[usName])
 				delete(workQueues, usName)
+				marker.UnmarkUpstream(usName)
 			}
 		}
 
