@@ -1,4 +1,4 @@
-In this document we will demo gloo together with knative. gloo version of 0.4.3 or latest is requried. This documented was test with knative serving v0.1.0.
+In this document we will demo gloo together with knative. gloo version of 0.4.2 or latest is required. This documented was test with knative serving v0.1.0.
 
 # Install everything!
 
@@ -48,7 +48,7 @@ EOF
 ```
 
 # Configure gloo
-Verify and see that gloo detected the new upstream (may take a bit of time to show up untill all the pods start up):
+Verify and see that gloo detected the new upstream (may take a bit of time to show up until all the pods start up):
 ```
 glooctl upstream get
 ```
