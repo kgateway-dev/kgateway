@@ -1,6 +1,7 @@
 package eventloop
 
 import (
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,13 @@ import (
 
 const (
 	maxThreadsPerUpstream = 25
+)
+
+var (
+	excludedUpstreams = []string{
+		"gloo-system-ingress",
+		"gloo-system-control-plane-8081",
+	}
 )
 
 type workItem struct {
@@ -127,10 +135,13 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 			for _, us := range cache.upstreams {
 				if usName == us.Name {
 					upstreamFound = true
+					log.Printf("upstream %v found on update", usName)
 					break
 				}
 			}
 			if !upstreamFound {
+				log.Printf("upstream %v was deleted", usName)
+				log.Printf("closing work queue for upstream %v", usName)
 				close(workQueues[usName])
 				delete(workQueues, usName)
 				marker.UnmarkUpstream(usName)
@@ -170,7 +181,21 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		select {
 		case cache.secrets = <-secretWatcher.Secrets():
 			update()
-		case cache.upstreams = <-upstreams:
+		case upstreamList := <-upstreams:
+			var discoveryTargets []*v1.Upstream
+			for _, us := range upstreamList {
+				var exclude bool
+				for _, prefix := range excludedUpstreams {
+					if strings.HasPrefix(us.Name, prefix) {
+						exclude = true
+						break
+					}
+				}
+				if !exclude {
+					discoveryTargets = append(discoveryTargets, us)
+				}
+			}
+			cache.upstreams = discoveryTargets
 			update()
 		case <-ticker.C:
 			update()

@@ -49,6 +49,7 @@ func NewMarker(detectors []Interface, resolver resolver.Resolver) *Marker {
 // TODO(ilackarms): this is a bit of a combina to solve https://github.com/solo-io/gloo/issues/160#
 func (m *Marker) UnmarkUpstream(usName string) {
 	m.m.Lock()
+	log.Printf("unmarking upstream %v", usName)
 	delete(m.finishedOrFailed, usName)
 	m.m.Unlock()
 }

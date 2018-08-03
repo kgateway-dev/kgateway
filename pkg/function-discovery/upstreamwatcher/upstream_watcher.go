@@ -21,6 +21,7 @@ func WatchUpstreams(gloo storage.Interface,
 	w, err := gloo.V1().Upstreams().Watch(storage.UpstreamEventHandlerFuncs{
 		AddFunc:    syncFunc,
 		UpdateFunc: syncFunc,
+		DeleteFunc: syncFunc,
 	})
 	if err != nil {
 		return nil, err
