@@ -1,4 +1,4 @@
-In this document we will demo gloo together with knative. gloo version of 0.4.2 or latest is requried. This documented was test with knative serving v0.1.0.
+In this document we will demo gloo together with knative. gloo version of 0.4.3 or latest is requried. This documented was test with knative serving v0.1.0.
 
 # Install everything!
 
