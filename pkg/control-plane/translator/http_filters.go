@@ -7,6 +7,7 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 
@@ -14,7 +15,8 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins"
 )
 
-func (t *Translator) computeHttpConnectionManager(listener *v1.Listener, rdsName string) envoylistener.Filter {
+func (t *Translator) computeHttpConnectionManager(listener *v1.Listener, rdsName string) (envoylistener.Filter, error) {
+	httpFilters, err := t.computeHttpFilters(listener)
 	httpConnMgr := &envoyhttp.HttpConnectionManager{
 		CodecType:  envoyhttp.AUTO,
 		StatPrefix: "http",
@@ -28,7 +30,7 @@ func (t *Translator) computeHttpConnectionManager(listener *v1.Listener, rdsName
 				RouteConfigName: rdsName,
 			},
 		},
-		HttpFilters: t.computeHttpFilters(listener),
+		HttpFilters: httpFilters,
 	}
 
 	httpConnMgrCfg, err := envoyutil.MessageToStruct(httpConnMgr)
@@ -38,20 +40,24 @@ func (t *Translator) computeHttpConnectionManager(listener *v1.Listener, rdsName
 	return envoylistener.Filter{
 		Name:   connMgrFilter,
 		Config: httpConnMgrCfg,
-	}
+	}, err
 }
 
-func (t *Translator) computeHttpFilters(listener *v1.Listener) []*envoyhttp.HttpFilter {
+func (t *Translator) computeHttpFilters(listener *v1.Listener) ([]*envoyhttp.HttpFilter, error) {
 	var httpFilters []plugins.StagedHttpFilter
+	var pluginErrs error
 	for _, plug := range t.plugins {
 		filterPlugin, ok := plug.(plugins.HttpFilterPlugin)
 		if !ok {
 			continue
 		}
 		params := &plugins.HttpFilterPluginParams{
-			Listener: listener,
+			CommonParams: plugins.CommonParams{Listener: listener},
 		}
-		stagedFilters := filterPlugin.HttpFilters(params)
+		stagedFilters, err := filterPlugin.HttpFilters(params)
+		if err != nil {
+			pluginErrs = multierror.Append(pluginErrs, err)
+		}
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.HttpFilter == nil {
 				log.Warnf("plugin implements HttpFilters() but returned nil")
@@ -64,7 +70,7 @@ func (t *Translator) computeHttpFilters(listener *v1.Listener) []*envoyhttp.Http
 	// sort filters by stage
 	envoyHttpFilters := sortFilters(httpFilters)
 	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{Name: routerFilter})
-	return envoyHttpFilters
+	return envoyHttpFilters, pluginErrs
 }
 
 func sortFilters(filters []plugins.StagedHttpFilter) []*envoyhttp.HttpFilter {

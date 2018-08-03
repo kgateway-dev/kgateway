@@ -305,7 +305,7 @@ func httpPath(upstreamName, serviceName, methodName string) string {
 	return "/" + fmt.Sprintf("%x", h.Sum(nil))[:8] + "/" + upstreamName + "/" + serviceName + "/" + methodName
 }
 
-func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
+func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) ([]plugins.StagedHttpFilter, error) {
 	defer func() {
 		// clear cache
 		p.upstreamServices = make(map[string]ServicesAndDescriptor)
@@ -341,8 +341,7 @@ func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) []plugins.Staged
 			MatchIncomingRequestRoute: true,
 		})
 		if err != nil {
-			log.Warnf("ERROR: marshaling GrpcJsonTranscoder config: %v", err)
-			return nil
+			return nil, errors.Wrapf(err, "ERROR: marshaling GrpcJsonTranscoder config")
 		}
 		filters = append(filters, plugins.StagedHttpFilter{
 			HttpFilter: &envoyhttp.HttpFilter{
@@ -354,12 +353,11 @@ func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) []plugins.Staged
 	}
 
 	if len(filters) == 0 {
-		log.Warnf("ERROR: no valid GrpcJsonTranscoder available")
-		return nil
+		return nil, errors.Errorf("ERROR: no valid GrpcJsonTranscoder available")
 	}
 	filters = append([]plugins.StagedHttpFilter{*transformationFilter}, filters...)
 
-	return filters
+	return filters, nil
 }
 
 // just so the init plugin knows we're functional

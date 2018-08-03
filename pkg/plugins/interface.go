@@ -27,6 +27,10 @@ const (
 
 type EnvoyNameForUpstream func(upstreamName string) string
 
+type CommonParams struct {
+	Listener *v1.Listener
+}
+
 type Dependencies struct {
 	SecretRefs []string
 	FileRefs   []string
@@ -43,6 +47,7 @@ type PluginWithDependencies interface {
 
 // Parameters for ProcessUpstream()
 type UpstreamPluginParams struct {
+	CommonParams
 	EnvoyNameForUpstream EnvoyNameForUpstream
 	Secrets              secretwatcher.SecretMap
 	Files                filewatcher.Files
@@ -60,6 +65,7 @@ type EndpointDiscoveryPlugin interface {
 
 // Params for ParseFunctionSpec()
 type FunctionPluginParams struct {
+	CommonParams
 	UpstreamType string
 	ServiceType  string
 }
@@ -74,6 +80,7 @@ type FunctionPlugin interface {
 
 // Params for ProcessRoute()
 type RoutePluginParams struct {
+	CommonParams
 	EnvoyNameForUpstream EnvoyNameForUpstream
 	// some route plugins need to know about the upstream(s) they route to
 	Upstreams []*v1.Upstream
@@ -86,7 +93,7 @@ type RoutePlugin interface {
 
 // Params for HttpFilters()
 type HttpFilterPluginParams struct {
-	Listener *v1.Listener
+	CommonParams
 }
 
 type StagedHttpFilter struct {
@@ -96,11 +103,12 @@ type StagedHttpFilter struct {
 
 type HttpFilterPlugin interface {
 	TranslatorPlugin
-	HttpFilters(params *HttpFilterPluginParams) []StagedHttpFilter
+	HttpFilters(params *HttpFilterPluginParams) ([]StagedHttpFilter, error)
 }
 
 // Params for ListenerFilters()
 type ListenerFilterPluginParams struct {
+	CommonParams
 	EnvoyNameForUpstream EnvoyNameForUpstream
 	Config               *v1.Config
 }

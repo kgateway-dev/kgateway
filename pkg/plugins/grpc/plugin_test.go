@@ -135,7 +135,7 @@ var _ = Describe("Plugin", func() {
 			outRoute := &envoyroute.Route{}
 			err = p.ProcessRoute(nil, route, outRoute)
 			Expect(err).To(BeNil())
-			filters := p.HttpFilters(nil)
+			filters, _ := p.HttpFilters(nil)
 			Expect(filters).To(HaveLen(2))
 			Expect(filters[0].HttpFilter.Name).To(Equal("io.solo.transformation"))
 			Expect(filters[0].HttpFilter.Config.Fields["transformations"].Kind.(*types.Value_StructValue).StructValue.Fields).

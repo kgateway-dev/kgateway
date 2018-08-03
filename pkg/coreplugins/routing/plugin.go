@@ -100,13 +100,13 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
+func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) ([]plugins.StagedHttpFilter, error) {
 	defer func() { p.corsFilterNeeded = false }()
 
 	if p.corsFilterNeeded {
 		return []plugins.StagedHttpFilter{{
 			HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage,
-		}}
+		}}, nil
 	}
-	return nil
+	return nil, nil
 }

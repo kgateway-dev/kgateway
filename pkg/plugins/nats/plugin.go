@@ -60,10 +60,10 @@ func (p *Plugin) Init(options bootstrap.Options) error{
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
+func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) ([]plugins.StagedHttpFilter, error) {
 	filters := p.filters
 	p.filters = nil
-	return filters
+	return filters, nil
 }
 
 func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Upstream, out *envoyapi.Cluster) error {

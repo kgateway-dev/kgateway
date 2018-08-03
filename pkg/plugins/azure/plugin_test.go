@@ -41,7 +41,7 @@ var _ = Describe("Plugin HTTP filters", func() {
 				isNeeded: true,
 				apiKeys:  map[string]string{"a": "b"},
 			}
-			filters := p.HttpFilters(nil)
+			filters, _ := p.HttpFilters(nil)
 			Expect(filters).To(HaveLen(1))
 			Expect(filters[0].HttpFilter.Name).To(Equal("io.solo.azure_functions"))
 			Expect(filters[0].Stage).To(Equal(plugins.OutAuth))
@@ -55,7 +55,7 @@ var _ = Describe("Plugin HTTP filters", func() {
 				isNeeded: false,
 				apiKeys:  map[string]string{"a": "b"},
 			}
-			filters := p.HttpFilters(nil)
+			filters, _ := p.HttpFilters(nil)
 			Expect(filters).To(HaveLen(0))
 			Expect(p.isNeeded).To(Equal(false))
 			Expect(p.apiKeys).To(HaveLen(0))

@@ -132,11 +132,11 @@ func findFunction(upstreams []*v1.Upstream, upstreamName, functionName string) (
 	return nil, errors.Errorf("function %v/%v not found", upstreamName, functionName)
 }
 
-func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
+func (p *Plugin) HttpFilters(_ *plugins.HttpFilterPluginParams) ([]plugins.StagedHttpFilter, error) {
 	filter := p.transformation.GetTransformationFilter()
 	if filter == nil {
-		return nil
+		return nil, nil
 	}
 
-	return []plugins.StagedHttpFilter{*filter}
+	return []plugins.StagedHttpFilter{*filter}, nil
 }

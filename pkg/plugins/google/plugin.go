@@ -47,13 +47,13 @@ func (p *Plugin) Init(options bootstrap.Options) error{
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) []plugins.StagedHttpFilter {
+func (p *Plugin) HttpFilters(params *plugins.HttpFilterPluginParams) ([]plugins.StagedHttpFilter, error) {
 	defer func() { p.isNeeded = false }()
 
 	if p.isNeeded {
-		return []plugins.StagedHttpFilter{{HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage}}
+		return []plugins.StagedHttpFilter{{HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage}}, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *envoyroute.Route) error {
