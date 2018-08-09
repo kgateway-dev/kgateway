@@ -143,11 +143,11 @@ func (c *rolesClient) pathsToRoles() (map[string]*v1.Role, error) {
 		}
 
 		role, err := pathToRole(path)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as role")
-		}
+        if err != nil {
+            return nil, errors.Wrap(err, "unable to parse .yml file as role")
+        }
 
-		roles[path] = role
+        roles[path] = role
 	}
 	return roles, nil
 }

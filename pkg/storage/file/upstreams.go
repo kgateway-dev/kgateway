@@ -143,11 +143,11 @@ func (c *upstreamsClient) pathsToUpstreams() (map[string]*v1.Upstream, error) {
 		}
 
 		upstream, err := pathToUpstream(path)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as upstream")
-		}
+        if err != nil {
+            return nil, errors.Wrap(err, "unable to parse .yml file as upstream")
+        }
 
-		upstreams[path] = upstream
+        upstreams[path] = upstream
 	}
 	return upstreams, nil
 }

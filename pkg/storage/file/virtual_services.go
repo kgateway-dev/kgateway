@@ -143,11 +143,11 @@ func (c *virtualServicesClient) pathsToVirtualServices() (map[string]*v1.Virtual
 		}
 
 		virtualService, err := pathToVirtualService(path)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as virtualService")
-		}
+        if err != nil {
+            return nil, errors.Wrap(err, "unable to parse .yml file as virtualService")
+        }
 
-		virtualServices[path] = virtualService
+        virtualServices[path] = virtualService
 	}
 	return virtualServices, nil
 }

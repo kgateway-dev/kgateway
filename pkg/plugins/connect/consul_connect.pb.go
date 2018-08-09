@@ -33,18 +33,21 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// ConsulConnect contains the configuration necessary to perform client certificate-based
-// authorization using a REST call to the Authorize endpoint of Consul Connect.
+// ConsulConnect contains the configuration necessary to perform client
+// certificate-based authorization using a REST call to the Authorize endpoint
+// of Consul Connect.
 type ConsulConnect struct {
 	// The name of the service who owns this proxy
-	// Target must be delivered by the filter as part of the authorize request payload
+	// Target must be delivered by the filter as part of the authorize request
+	// payload
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// the hostname of the authorization REST service
 	AuthorizeHostname string `protobuf:"bytes,2,opt,name=authorize_hostname,json=authorizeHostname,proto3" json:"authorize_hostname,omitempty"`
 	// the name of the Envoy Cluster representing the authorization REST service
 	AuthorizeClusterName string `protobuf:"bytes,3,opt,name=authorize_cluster_name,json=authorizeClusterName,proto3" json:"authorize_cluster_name,omitempty"`
-	// Connection Timeout tells the filter to set a timeout for unresponsive connections created to this upstream.
-	// If not provided by the user, it will set to a default value
+	// Connection Timeout tells the filter to set a timeout for unresponsive
+	// connections created to this upstream. If not provided by the user, it will
+	// set to a default value
 	RequestTimeout *time.Duration `protobuf:"bytes,4,opt,name=request_timeout,json=requestTimeout,stdduration" json:"request_timeout,omitempty"`
 }
 
