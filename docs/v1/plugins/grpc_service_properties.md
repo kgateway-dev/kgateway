@@ -18,7 +18,8 @@ Service Properties for gRPC Services
 Service Properties must be set to enable JSON-to-gRPC Transcoding for gRPC Services
 via Gloo.
 Note: gRPC detection and configuration can be performed automatically by Gloo for services that
-support gRPC Reflection. Function Discovery must be enabled.
+support gRPC Reflection. Function Discovery must be enabled. Without function discovery, protobuf descriptor files
+generated for the target service must be uploaded by `glooctl`.
 
 
 ```yaml

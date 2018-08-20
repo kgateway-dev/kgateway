@@ -389,8 +389,8 @@ func (c *IngressController) addRoutesAndUpstreams(namespace string, rule v1beta1
 		routes[host] = append(routes[host], &v1.Route{
 			Matcher: &v1.Route_RequestMatcher{
 				RequestMatcher: &v1.RequestMatcher{
-					Path: &v1.RequestMatcher_PathRegex{
-						PathRegex: path.Path,
+					Path: &v1.RequestMatcher_PathPrefix{
+						PathPrefix: path.Path,
 					},
 				},
 			},
