@@ -118,8 +118,8 @@ type Route struct {
 	SingleDestination *Destination `protobuf:"bytes,4,opt,name=single_destination,json=singleDestination" json:"single_destination,omitempty"`
 	// PrefixRewrite can be specified to rewrite the matched path of the request path to a new prefix
 	PrefixRewrite string `protobuf:"bytes,5,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
-	// Extensions provides a way to extend the behavior of a route. In addition to the core route extensions<!--(TODO)-->,
-	// gloo provides the means for route plugins<!--(TODO)--> to be added to gloo which add new types of route extensions.
+	// Extensions provides a way to extend the behavior of a route. In addition to the core route extensions
+	// gloo provides the means for route plugins to be added to gloo which add new types of route extensions.
 	// <!--See the route extensions section for a more detailed explanation-->
 	Extensions *google_protobuf.Struct `protobuf:"bytes,6,opt,name=extensions" json:"extensions,omitempty"`
 }

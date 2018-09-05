@@ -21,8 +21,8 @@ var _ = time.Kitchen
 // *
 // Upstream represents a destination for routing. Upstreams can be compared to
 // [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster) in Envoy terminology.
-// Upstreams can take a variety of types<!--(TODO)--> in gloo. Language extensions known as plugins<!--(TODO)--> allow the addition of new
-// types of upstreams. <!--See [upstream types](TODO) for a detailed description of available upstream types.-->
+// Upstreams can take a variety of types in gloo. Language extensions known as plugins allow the addition of new
+// types of upstreams. <!--See `upstream types for a detailed description of available upstream types.-->
 type Upstream struct {
 	// Name of the upstream. Names must be unique and follow the following syntax rules:
 	// One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters.
