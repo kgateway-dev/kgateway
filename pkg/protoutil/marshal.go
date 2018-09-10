@@ -24,6 +24,27 @@ func MarshalStruct(m interface{}) (*types.Struct, error) {
 	return &pb, err
 }
 
+func UnmarshalStructToProto(structuredData *types.Struct, into proto.Message) error {
+	if structuredData == nil {
+		return errors.New("cannot unmarshal nil proto struct")
+	}
+	strData, err := jsonpbMarshaler.MarshalToString(structuredData)
+	if err != nil {
+		return err
+	}
+	data := []byte(strData)
+	return Unmarshal(data, into)
+}
+func UnmarshalProtoToStruct(m proto.Message) (*types.Struct, error) {
+	strData, err := jsonpbMarshaler.MarshalToString(m)
+	if err != nil {
+		return nil, err
+	}
+	var pb types.Struct
+	err = jsonpb.UnmarshalString(strData, &pb)
+	return &pb, err
+}
+
 func UnmarshalStruct(structuredData *types.Struct, into interface{}) error {
 	if structuredData == nil {
 		return errors.New("cannot unmarshal nil proto struct")

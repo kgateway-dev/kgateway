@@ -7,12 +7,12 @@ import (
 
 func DecodeRouteExtension(generic *types.Struct) (RouteExtension, error) {
 	var s RouteExtension
-	err := protoutil.UnmarshalStruct(generic, &s)
+	err := protoutil.UnmarshalStructToProto(generic, &s)
 	return s, err
 }
 
 func EncodeRouteExtension(spec RouteExtension) *types.Struct {
-	v1Spec, err := protoutil.MarshalStruct(spec)
+	v1Spec, err := protoutil.UnmarshalProtoToStruct(&spec)
 	if err != nil {
 		panic(err)
 	}
@@ -21,12 +21,12 @@ func EncodeRouteExtension(spec RouteExtension) *types.Struct {
 
 func DecodeFunctionSpec(generic *types.Struct) (TransformationSpec, error) {
 	var s TransformationSpec
-	err := protoutil.UnmarshalStruct(generic, &s)
+	err := protoutil.UnmarshalStructToProto(generic, &s)
 	return s, err
 }
 
 func EncodeFunctionSpec(spec TransformationSpec) *types.Struct {
-	v1Spec, err := protoutil.MarshalStruct(spec)
+	v1Spec, err := protoutil.UnmarshalProtoToStruct(&spec)
 	if err != nil {
 		panic(err)
 	}
