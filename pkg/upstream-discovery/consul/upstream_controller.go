@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -239,8 +240,23 @@ func (c *UpstreamController) convertServicesFunc(serviceList []consulService) fu
 }
 
 func upstreamName(serviceName string, tags []string) string {
-	if len(tags) < 1 {
-		return serviceName
+	usName := serviceName
+	if len(tags) > 0 {
+		usName = fmt.Sprintf("%s-%s", serviceName, strings.Join(tags, "-"))
 	}
-	return fmt.Sprintf("%s-%s", serviceName, strings.Join(tags, "-"))
+	return dNS1035Labelify(usName)
 }
+
+// upstream names must be compatible with kubernetes storage
+const dns1035LabelFmt = "[a-z]([-a-z0-9]*[a-z0-9])?"
+const dNS1035LabelMaxLength = 63
+var dns1035LabelRegexp = regexp.MustCompile(dns1035LabelFmt)
+func dNS1035Labelify(value string) string {
+	parts :=  dns1035LabelRegexp.FindAllString(value, -1)
+	str := strings.Join(parts, "")
+	if len(str) > dNS1035LabelMaxLength {
+		str = str[:dNS1035LabelMaxLength+1]
+	}
+	return str
+}
+
