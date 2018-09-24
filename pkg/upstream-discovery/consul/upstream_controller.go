@@ -254,6 +254,8 @@ var dns1035LabelRegexp = regexp.MustCompile(dns1035LabelFmt)
 func dNS1035Labelify(value string) string {
 	parts :=  dns1035LabelRegexp.FindAllString(value, -1)
 	str := strings.Join(parts, "")
+	str = strings.Replace(str, "--", "-", -1)
+	str = strings.TrimSuffix(str, "-")
 	if len(str) > dNS1035LabelMaxLength {
 		str = str[:dNS1035LabelMaxLength+1]
 	}
