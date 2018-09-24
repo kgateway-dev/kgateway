@@ -95,7 +95,7 @@ func resolveConsulUpstream(client *api.Client, us *v1.Upstream) (string, error) 
 		}
 	}
 
-	return "", errors.Errorf("service with name %s and tags %v not found", spec.ServiceTags, spec.ServiceTags)
+	return "", errors.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
 }
 
 func matchTags(t1, t2 []string) bool {
