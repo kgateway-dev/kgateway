@@ -23,7 +23,7 @@ this readme (usually this is `cd $GOPATH/src/github.com/solo-io/gloo/example/dem
 ## Install Kubernetes
 
 ```shell
-minikube start --extra-config=apiserver.Authorization.Mode=RBAC --cpus 4 --memory 4096
+minikube start --extra-config=apiserver.authorization-mode=RBAC --cpus 4 --memory 4096
 kubectl create clusterrolebinding permissive-binding \
          --clusterrole=cluster-admin \
          --user=admin \
