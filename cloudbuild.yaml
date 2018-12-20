@@ -1,37 +1,7 @@
 steps:
-- name: gcr.io/cloud-builders/gcloud
-  args:
-  - kms
-  - decrypt
-  - --ciphertext-file=ci/id_rsa.enc
-  - --plaintext-file=/root/.ssh/id_rsa
-  - --location=global
-  - --keyring=build
-  - --key=build-key
-  volumes:
-  - name: 'ssh'
-    path: /root/.ssh
-- name: 'gcr.io/cloud-builders/git'
-  entrypoint: 'bash'
-  args:
-  - '-c'
-  - |
-    chmod 600 /root/.ssh/id_rsa
-    cat <<EOF >/root/.ssh/config
-    Hostname github.com
-    IdentityFile /root/.ssh/id_rsa
-    EOF
-    mv ./ci/github_known_hosts /root/.ssh/known_hosts
-    git config --global url."ssh://git@github.com/solo-io".insteadOf https://github.com/solo-io
-  volumes:
-  - name: 'ssh'
-    path: /root/.ssh
 - name: 'soloio/dep'
   args: ['ensure']
   env: ['PROJECT_ROOT=github.com/solo-io/gloo']
-  volumes:
-  - name: 'ssh'
-    path: /root/.ssh
   id: 'dep'
 
 - name: gcr.io/cloud-builders/gsutil
