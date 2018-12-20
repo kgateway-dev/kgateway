@@ -9,7 +9,7 @@ steps:
   args:
   - '-c'
   - |
-    gsutil cp gs://artifacts.solo.io/envoy/265f5f50b0b17b42442bcc8d7f7572a9b47a073a/envoy.stripped /workspace/envoy
+    gsutil cp gs://solo-public-artifacts.solo.io/envoy/547421c3922fbfab04ac90a732396c4b9878a052/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
   waitFor: ['-']
   id: 'get-envoy'
