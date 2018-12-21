@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "public": "site",
+    "target": "gloo-docs",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
