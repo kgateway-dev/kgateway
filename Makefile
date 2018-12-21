@@ -31,11 +31,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: generated-docs-and-code
-
-generated-docs-and-code: docs-and-code/v1
-
-docs-and-code/v1:
+generated-code:
 	go run $(GOPATH)/src/github.com/solo-io/gloo/cmd/solo-kit-gen/main.go -r projects/gateway -i projects/gloo/api
 	go run $(GOPATH)/src/github.com/solo-io/gloo/cmd/solo-kit-gen/main.go -r projects/gloo
 	rm -rf docs/v1/github.com/
@@ -44,16 +40,13 @@ docs-and-code/v1:
 docs/index.md: SITE.md
 	cat SITE.md | sed 's@doc/docs/@@' > $@
 
-site: docs/index.md generated-docs-and-code
+site: docs/index.md generated-code
 	mkdocs build
 
-.PHONY: docker-site
-docker-site: site
-	docker build -t soloio/gloo-docs:$(VERSION) .
-
-.PHONY: docker-site-push
-docker-site-push: docker-site
-	docker push soloio/gloo-docs:$(VERSION)
+# To run this, install firebase CLI and first run firebase login (requires solo account)
+.PHONY: deploy-site
+deploy-site: site
+	firebase deploy --only hosting:gloo-docs
 
 #################
 #################
