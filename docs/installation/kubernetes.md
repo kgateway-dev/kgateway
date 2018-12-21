@@ -9,7 +9,7 @@
 
 #### 1. Install Glooctl
 
-`curl -sL https://run.solo.io/glooctl/install | sh`
+`curl -sL https://run.solo.io/gloo/install | sh`
 
 This will download the latest released `glooctl` into `~/.gloo/bin`. Make sure to add `~/.gloo/bin` to your `PATH` if it isn't already. 
 
