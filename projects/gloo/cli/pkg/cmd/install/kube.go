@@ -24,7 +24,6 @@ const (
 	imagePullSecretName = "solo-io-docker-secret"
 )
 
-// TODO(ilackarms): change this line when extracting gloo to external repo
 //go:generate sh -c "2gobytes -p install -a kubeManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/kube.yaml | sed 's@// date.*@@g' > kube.yaml.go"
 
 func kubeCmd(opts *options.Options) *cobra.Command {

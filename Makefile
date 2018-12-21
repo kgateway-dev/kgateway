@@ -38,7 +38,8 @@ generated-docs-and-code: docs-and-code/v1
 docs-and-code/v1:
 	go run $(GOPATH)/src/github.com/solo-io/gloo/cmd/solo-kit-gen/main.go -r projects/gateway -i projects/gloo/api
 	go run $(GOPATH)/src/github.com/solo-io/gloo/cmd/solo-kit-gen/main.go -r projects/gloo
-	rm -rf docs/v1/github.com/       
+	rm -rf docs/v1/github.com/
+	go generate github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install
 
 docs/index.md: SITE.md
 	cat SITE.md | sed 's@doc/docs/@@' > $@
