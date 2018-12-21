@@ -2,3 +2,4 @@ vendor
 _output
 .idea
 site
+.firebase

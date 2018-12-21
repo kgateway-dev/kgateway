@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "gloo-docs"
+  },
+  "targets": {
+    "solo-corp": {
+      "hosting": {
+        "gloo-docs": [
+          "gloo-docs"
+        ]
+      }
+    }
+  }
+}
