@@ -13,7 +13,7 @@ fi
 
 tmp=$(mktemp -d /tmp/gloo.XXXXXX)
 filename="glooctl-${OS}-amd64"
-url="https://github.com/solo-io/supergloo/releases/download/${GLOO_VERSION}/${filename}"
+url="https://github.com/solo-io/gloo/releases/download/${GLOO_VERSION}/${filename}"
 (
   cd "$tmp"
 
@@ -35,8 +35,8 @@ url="https://github.com/solo-io/supergloo/releases/download/${GLOO_VERSION}/${fi
 (
   cd "$HOME"
   mkdir -p ".gloo/bin"
-  mv "${tmp}/${filename}" ".gloo/bin/gloo"
-  chmod +x ".gloo/bin/gloo"
+  mv "${tmp}/${filename}" ".gloo/bin/glooctl"
+  chmod +x ".gloo/bin/glooctl"
 )
 
 rm -r "$tmp"
