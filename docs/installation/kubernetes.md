@@ -9,11 +9,22 @@
 
 #### 1. Install Glooctl
 
+If this is your first time running Gloo, you’ll need to download the command-line interface (CLI) onto your local machine. 
+You’ll use this CLI to interact with Gloo, including installing it onto your Kubernetes cluster.
+
+To install the CLI, run:
+
 `curl -sL https://run.solo.io/gloo/install | sh`
 
-This will download the latest released `glooctl` into `~/.gloo/bin`. Make sure to add `~/.gloo/bin` to your `PATH` if it isn't already. 
+Alternatively, you can download the CLI directly via the github releases page. 
 
-If you'd like to download glooctl manually, you can download it from the releases page and place it on your `PATH`. 
+Next, add Gloo to your path with:
+
+`export PATH=$HOME/.gloo/bin:$PATH`
+
+Verify the CLI is installed and running correctly with:
+
+`glooctl --version`
 
 #### 2. Install Gloo to your Kubernetes Cluster using Glooctl
 
