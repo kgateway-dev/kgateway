@@ -37,7 +37,7 @@ steps:
   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
   - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
   - 'RUN_KUBE_TESTS=1'
-  dir: 'github.com/solo-io/gloo'
+  dir: './gopath/src/github.com/solo-io/gloo'
   args: ['test', '-v', './...']
   waitFor: ['dep', 'get-envoy', 'setup-aws-creds']
 
