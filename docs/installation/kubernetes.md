@@ -9,8 +9,11 @@
 
 #### 1. Install Glooctl
 
-Download the latest `glooctl` from the releases page and place it on your `PATH`. 
+`curl -sL https://run.solo.io/glooctl/install | sh`
 
+This will download the latest released `glooctl` into `~/.gloo/bin`. Make sure to add `~/.gloo/bin` to your `PATH` if it isn't already. 
+
+If you'd like to download glooctl manually, you can download it from the releases page and place it on your `PATH`. 
 
 #### 2. Install Gloo to your Kubernetes Cluster using Glooctl
 
