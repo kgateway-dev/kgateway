@@ -11,7 +11,7 @@
 
 Gloo aggregates back end services and provides function-to-function translation for clients, allowing decoupling from back end APIs
 
-![Overview](high_level_architecture.png "High Level Architecture")
+![Overview](gloo_diagram.png "High Level Architecture")
 
 Clients issue requests or [emit events](https://github.com/solo-io/gloo-sdk-go) to routes defined on Gloo. These routes are mapped
 to functions on upstream services by Gloo's configuration (provided by clients of Gloo's API). 
