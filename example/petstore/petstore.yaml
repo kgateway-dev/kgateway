@@ -37,7 +37,7 @@ metadata:
   name: petstore
   namespace: default
   labels:
-    sevice: petstore
+    service: petstore
 spec:
   ports:
   - port: 8080
