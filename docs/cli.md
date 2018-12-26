@@ -296,7 +296,7 @@ glooctl create upstream kube
 Use `glooctl create upstream kube -i` for interactive mode.
 
 
-Kubernetes Upstreams represent a collection of endpoints for Services registered with Kubernetes. Typically, Gloo will automatically discover these upstreams, meaning you don't have to create them. However, if upstream discovery in Gloo is disabled, or RBAC pe0rmissions have not been granted to Gloo to read from the registry, Kubernetes services can be added to Gloo manually via the CLI.
+Kubernetes Upstreams represent a collection of endpoints for Services registered with Kubernetes. Typically, Gloo will automatically discover these upstreams, meaning you don't have to create them. However, if upstream discovery in Gloo is disabled, or RBAC permissions have not been granted to Gloo to read from the registry, Kubernetes services can be added to Gloo manually via the CLI.
 
 Usage:
 ```bash
