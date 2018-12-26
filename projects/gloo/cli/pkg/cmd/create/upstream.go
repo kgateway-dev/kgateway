@@ -109,7 +109,7 @@ func createUpstreamSubcommand(opts *options.Options, upstreamType, short, long s
 			return createUpstream(opts)
 		},
 	}
-	flagutils.AddUpstreamFlags(cmd.LocalFlags(), upstreamType, &opts.Create.InputUpstream)
+	flagutils.AddUpstreamFlags(cmd.PersistentFlags(), upstreamType, &opts.Create.InputUpstream)
 
 	return cmd
 }
