@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "gloo-docs"
+    "default": "solo-corp"
   },
   "targets": {
     "solo-corp": {
