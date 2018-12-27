@@ -9,7 +9,7 @@ import (
 
 func main() {
 	log.Printf("starting generate")
-	if err := cmd.Run(".", true, true, nil, nil); err != nil {
+	if err := cmd.Run("projects", true, true, nil, nil); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
 }

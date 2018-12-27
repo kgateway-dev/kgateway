@@ -31,16 +31,19 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code:
-	go run $(GOPATH)/src/github.com/solo-io/gloo/cmd/solo-kit-gen/main.go -r projects/gateway -i projects/gloo/api
-	go run $(GOPATH)/src/github.com/solo-io/gloo/cmd/solo-kit-gen/main.go -r projects/gloo
-	rm -rf docs/v1/github.com/
-	go generate github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install
+generated-code: $(OUTPUT_DIR)/.generated-code
+
+SUBDIRS:=projects
+$(OUTPUT_DIR)/.generated-code:
+	go generate ./...
+	gofmt -w $(SUBDIRS)
+	goimports -w $(SUBDIRS)
+	touch $@
 
 docs/index.md: SITE.md
 	cat SITE.md | sed 's@doc/docs/@@' > $@
 
-site: docs/index.md generated-code
+site: docs/index.md
 	mkdocs build
 
 # To run this, install firebase CLI and first run firebase login (requires solo account)
