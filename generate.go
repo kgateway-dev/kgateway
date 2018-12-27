@@ -5,8 +5,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
+//go:generate go run generate.go
+
 func main() {
+	log.Printf("starting generate")
 	if err := cmd.Run(".", true, true, nil, nil); err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("generate failed!: %v", err)
 	}
 }
