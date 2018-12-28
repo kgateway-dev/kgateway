@@ -246,7 +246,7 @@ func RunGloo(opts bootstrap.Opts) error {
 		return err
 	}
 
-	cache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, secretClient, upstreamClient)
+	cache := v1.NewApiEmitter(proxyClient, artifactClient, endpointClient, secretClient, upstreamClient)
 
 	// Register grpc endpoints to the grpc server
 	xdsHasher := xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
