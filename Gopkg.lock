@@ -1117,7 +1117,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:e9f703117365afe9a41898c887114e80626ea55f9a27e41a8a43e5bf71cdb899"
+  digest = "1:55f54fc509d1884ed9d7dca8b8e2e05225f68e09ed5f9bd6fd5e56848e44314d"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1126,6 +1126,7 @@
     "pkg/api/v1/clients/factory",
     "pkg/api/v1/clients/file",
     "pkg/api/v1/clients/kube",
+    "pkg/api/v1/clients/kube/controller",
     "pkg/api/v1/clients/kube/crd",
     "pkg/api/v1/clients/kube/crd/client/clientset/versioned",
     "pkg/api/v1/clients/kube/crd/client/clientset/versioned/scheme",
@@ -1168,7 +1169,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "7f1c6045f74a59050ddf2df394901ead1dc2fd33"
+  revision = "d7c20bcc954c1e2ff983f59e5219483a1b09ce69"
+  version = "v0.2.7"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
