@@ -130,7 +130,7 @@ var _ = Describe("Kubernetes", func() {
 			case <-time.After(time.Second * 2):
 				Fail("no upstreams detected after 2s")
 			case upstreamList := <-upstreams:
-				Expect(upstreamList).To(HaveLen(2))
+				Expect(upstreamList).To(HaveLen(4)) // two pods, two ports per pod
 			case err, ok := <-errs:
 				if !ok {
 					return
