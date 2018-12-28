@@ -68,7 +68,7 @@ func GatherResources(namespaces []string) (NsResourceMap, error) {
 func getKubernetesConfig() (*rest.Config, error) {
 	config, err := kubeutils.GetConfig("", "")
 	if err != nil {
-		return nil, fmt.Errorf("Error with Kubernetese configuration", err)
+		return nil, fmt.Errorf("Error with Kubernetese configuration: %v", err)
 	}
 	return config, nil
 }

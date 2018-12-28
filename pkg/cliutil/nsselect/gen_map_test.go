@@ -9,24 +9,12 @@ import (
 var _ = Describe("Generate Options", func() {
 	nsrMap := make(NsResourceMap)
 	nsrMap["ns1"] = &NsResource{
-		Meshes:  []string{"m1", "m2"},
+		Upstreams:  []string{"u1", "u2"},
 		Secrets: []string{"s1", "s2"},
-		MeshesByInstallNs: []core.ResourceRef{
-			core.ResourceRef{
-				Name:      "m1",
-				Namespace: "ns1",
-			},
-		},
 	}
 	nsrMap["ns2"] = &NsResource{
-		Meshes:  []string{},
+		Upstreams:  []string{},
 		Secrets: []string{"s3"},
-		MeshesByInstallNs: []ResourceRef{
-			ResourceRef{
-				Name:      "m2",
-				Namespace: "ns1",
-			},
-		},
 	}
 
 	It("should create the correct Secret options and map", func() {
