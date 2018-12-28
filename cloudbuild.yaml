@@ -34,7 +34,7 @@ steps:
 # need to use the provided entrypoint
 
 # Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
-- name: 'gcr.io/$PROJECT_ID/e2e-go'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
@@ -44,7 +44,7 @@ steps:
   - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
   - 'RUN_KUBE_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['test', '-v', 'github.com/solo-io/gloo/test/e2e']
+  args: ['-r']
   waitFor: ['get-envoy', 'setup-aws-creds']
 
 # Not producing artifacts yet. Artifacts need to be produced with the makefile because of
