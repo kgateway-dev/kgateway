@@ -1,4 +1,12 @@
 steps:
+
+# Dep modifies workspace so that the code is moved into the PROJECT_ROOT
+- name: 'gcr.io/$PROJECT_ID/dep'
+  args: ['ensure']
+  env:
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  id: 'dep'
+
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args:
@@ -6,7 +14,7 @@ steps:
   - |
     gsutil cp gs://solo-public-artifacts.solo.io/envoy/547421c3922fbfab04ac90a732396c4b9878a052/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
-  waitFor: ['-']
+  waitFor: ['dep']
   id: 'get-envoy'
 
 - name: gcr.io/cloud-builders/gcloud
@@ -18,16 +26,8 @@ steps:
   - --location=global
   - --keyring=build
   - --key=build-key
-  waitFor: ['-']
+  waitFor: ['dep']
   id: 'setup-aws-creds'
-
-# Dep modifies workspace so that the code is moved into the PROJECT_ROOT
-- name: 'gcr.io/$PROJECT_ID/dep'
-  args: ['ensure']
-  env:
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  id: 'dep'
-  waitFor: ['get-envoy', 'setup-aws-creds']
 
 # e2e-go is produced from https://github.com/solo-io/cloud-builders/e2e-go
 # sets up redis, consul, kubectl, go with required environment variables
@@ -45,7 +45,7 @@ steps:
   - 'RUN_KUBE_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['test', '-v', 'github.com/solo-io/gloo/test/e2e']
-  waitFor: ['dep']
+  waitFor: ['get-envoy', 'setup-aws-creds']
 
 # Not producing artifacts yet. Artifacts need to be produced with the makefile because of
 # setting the version at compile time with a linker flag. Release binaries/images were
