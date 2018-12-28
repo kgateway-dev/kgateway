@@ -44,7 +44,7 @@ steps:
   - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
   - 'RUN_KUBE_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['test', '-v', 'test/e2e']
+  args: ['test', '-v', 'github.com/solo-io/gloo/test/e2e']
   waitFor: ['dep']
 
 # Not producing artifacts yet. Artifacts need to be produced with the makefile because of
