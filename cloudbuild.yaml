@@ -29,7 +29,7 @@ steps:
   waitFor: ['dep']
   id: 'setup-aws-creds'
 
-# e2e-go is produced from https://github.com/solo-io/cloud-builders/e2e-go
+# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
 
