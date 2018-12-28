@@ -117,7 +117,7 @@ var _ = Describe("Kubernetes", func() {
 		setup.TeardownKube(namespace)
 	})
 
-	It("uses json keys when serializing", func() {
+	PIt("uses json keys when serializing", func() {
 		plug := kubeplugin.NewPlugin(kubeClient).(discovery.DiscoveryPlugin)
 		upstreams, errs, err := plug.DiscoverUpstreams([]string{namespace}, namespace, clients.WatchOpts{
 			Ctx:         context.TODO(),
