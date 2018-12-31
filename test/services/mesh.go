@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/exec"
 
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

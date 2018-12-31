@@ -139,9 +139,9 @@ var _ = Describe("Fault Injection", func() {
 				// This test regularly flakes, and the error is usually of the form:
 				// "Elapsed time 2.998280684s not longer than delay 3s"
 				// There's a small precision issue when communicating with Envoy, so including a small
-				// margin of error to eliminate the test flake. 
+				// margin of error to eliminate the test flake.
 				marginOfError := 100 * time.Millisecond
-				if elapsed + marginOfError < (3 * time.Second) {
+				if elapsed+marginOfError < (3 * time.Second) {
 					return errors.New(fmt.Sprintf("Elapsed time %s not longer than delay %s", elapsed.String(), fixedDelay.String()))
 				}
 				return nil

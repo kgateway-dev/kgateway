@@ -9,12 +9,12 @@ import (
 var _ = Describe("Generate Options", func() {
 	nsrMap := make(NsResourceMap)
 	nsrMap["ns1"] = &NsResource{
-		Upstreams:  []string{"u1", "u2"},
-		Secrets: []string{"s1", "s2"},
+		Upstreams: []string{"u1", "u2"},
+		Secrets:   []string{"s1", "s2"},
 	}
 	nsrMap["ns2"] = &NsResource{
-		Upstreams:  []string{},
-		Secrets: []string{"s3"},
+		Upstreams: []string{},
+		Secrets:   []string{"s3"},
 	}
 
 	It("should create the correct Secret options and map", func() {
