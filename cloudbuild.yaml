@@ -38,6 +38,15 @@ steps:
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  entrypoint: make
+  args: ['check-format']
+  waitFor: ['dep']
+
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
