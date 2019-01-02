@@ -18,7 +18,7 @@ func GetYesInput(msg string) (bool, error) {
 	); err != nil {
 		return false, err
 	}
-	return strings.ToLower(yesAnswer) != "y", nil
+	return strings.ToLower(yesAnswer) == "y", nil
 }
 
 func GetStringInput(msg string, value *string) error {
