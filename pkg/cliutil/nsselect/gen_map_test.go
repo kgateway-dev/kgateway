@@ -17,7 +17,8 @@ var _ = Describe("Generate Options", func() {
 		Secrets:   []string{"s3"},
 	}
 
-	It("should create the correct Secret options and map", func() {
+	// https://github.com/solo-io/gloo/issues/210
+	PIt("should create the correct Secret options and map", func() {
 		genOpts, resMap := generateCommonResourceSelectOptions("secret", nsrMap)
 		Expect(genOpts).To(Equal([]string{
 			"ns1, s1",
