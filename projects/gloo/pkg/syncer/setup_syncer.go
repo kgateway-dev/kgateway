@@ -45,6 +45,7 @@ func NewSetupFunc() setuputils.SetupFunc {
 	return NewSetupFuncWithRun(RunGloo)
 }
 
+// used outside of this repo
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunGlooWithExtensions(opts, extensions)
@@ -215,8 +216,8 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache *kube.KubeCache, memC
 }
 
 type Extensions struct {
-	additionalPlugins []plugins.Plugin
-	syncerExtensions  []TranslatorSyncerExtension
+	AdditionalPlugins []plugins.Plugin
+	SyncerExtensions  []TranslatorSyncerExtension
 }
 
 func RunGloo(opts bootstrap.Opts) error {
