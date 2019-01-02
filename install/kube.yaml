@@ -1,4 +1,12 @@
 ---
+# Source: gloo/templates/0-namespace.yaml
+
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gloo-system
+---
 # Source: gloo/templates/9-gateway-proxy-configmap.yaml
 # configmap
 apiVersion: v1
@@ -45,6 +53,7 @@ metadata:
   labels:
     app: gloo
   name: gateway-envoy-config
+  namespace: gloo-system
 
 ---
 # Source: gloo/templates/2-namespace-clusterrolebinding.yaml
@@ -98,6 +107,7 @@ metadata:
     app: gloo
     gloo: gloo
   name: gloo
+  namespace: gloo-system
 spec:
   ports:
   - name: grpc
@@ -115,6 +125,7 @@ metadata:
     app: gloo
     gloo: gateway-proxy
   name: gateway-proxy
+  namespace: gloo-system
 spec:
   ports:
   - port: 8080
@@ -133,6 +144,7 @@ metadata:
     app: gloo
     gloo: gloo
   name: gloo
+  namespace: gloo-system
 spec:
   replicas: 1
   selector:
@@ -163,6 +175,7 @@ metadata:
     app: gloo
     gloo: discovery
   name: discovery
+  namespace: gloo-system
 spec:
   replicas: 1
   selector:
@@ -189,6 +202,7 @@ metadata:
     app: gloo
     gloo: gateway
   name: gateway
+  namespace: gloo-system
 spec:
   replicas: 1
   selector:
@@ -214,6 +228,7 @@ metadata:
     app: gloo
     gloo: gateway-proxy
   name: gateway-proxy
+  namespace: gloo-system
 spec:
   replicas: 1
   selector:

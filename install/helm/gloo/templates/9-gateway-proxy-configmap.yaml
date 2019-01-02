@@ -43,3 +43,4 @@ metadata:
   labels:
     app: gloo
   name: gateway-envoy-config
+  namespace: {{ .Release.Namespace }}

@@ -5,6 +5,7 @@ metadata:
     app: gloo
     gloo: gloo
   name: gloo
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.deployment.gloo.replicas }}
   selector:

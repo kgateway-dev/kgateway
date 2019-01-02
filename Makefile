@@ -172,8 +172,12 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 # Deployment Manifests / Helm
 #----------------------------------------------------------------------------------
 
-.PHONY: manifest
-manifest: install/kube.yaml
+.PHONY: manifest bump-helm-version
+manifest: install/kube.yaml bump-helm-version
+
+bump-helm-version:
+	sed -i 's/version: .*/version: $(VERSION)/g' install/helm/gloo/Chart.yaml
+	sed -i 's@image: soloio/\(.*\):.*@image: soloio/\1:$(VERSION)@g' install/helm/gloo/values.yaml
 
 install/kube.yaml: $(shell find install/helm/gloo)
 	helm template install/helm/gloo --namespace gloo-system > $@
