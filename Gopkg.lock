@@ -289,13 +289,14 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:35621fe20f140f05a0c4ef662c26c0ab4ee50bca78aa30fe87d33120bd28165e"
+  digest = "1:60731c5aecf6061614be06333160462b47be4f7cd2369845e50d5da38bfd6a54"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
     "jsonpb",
     "proto",
     "protoc-gen-gogo/descriptor",
+    "protoc-gen-gogo/plugin",
     "sortkeys",
     "types",
   ]
@@ -692,6 +693,13 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:99bafffd60368afd17d11302671600e044137f5c6ba9babb950a47c84ed5a71d"
+  name = "github.com/ilackarms/protokit"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ee2393f3bbf04700fc5d611077496c47ec1937ed"
+
+[[projects]]
   digest = "1:3e260afa138eab6492b531a3b3d10ab4cb70512d423faa78b8949dec76e66a21"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -1062,14 +1070,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:37fe5a9adb37233d7f2d764dcdef5e2537d0d927bf57a6095f178817c8c616e5"
-  name = "github.com/pseudomuto/protokit"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "7037620bf27b13fcdc10b1b17ddef82540db670b"
-  version = "v0.1.0"
-
-[[projects]]
   digest = "1:0665976cc6d8c2e60dafca32820b6b7eca70f37ded0bcccc103388e1c0d05c53"
   name = "github.com/radovskyb/watcher"
   packages = ["."]
@@ -1117,7 +1117,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:e21a2d11c9b3ad1d3e0d842e19a82d6f5a9d186383cfb825bed90c1f5872a3c2"
+  digest = "1:57ab171593ee59ebe7eb8ac1de1e279fe43f49be5347ec96e6495be4849f99a1"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1169,8 +1169,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "80516cbaebd91573f174bfcbaf7d34de5b2a958a"
-  version = "v0.2.9"
+  revision = "2ecdeed08aa89ea8d8c6cdc4f222c07f187b8cea"
+  version = "v0.2.10"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
