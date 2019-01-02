@@ -2,6 +2,8 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
+import "google/protobuf/any.proto";
+
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
@@ -28,6 +30,7 @@ message ListenerPlugins {}
 // Note to developers: new Virtual Host Plugins must be added to this struct
 // to be usable by Gloo.
 message VirtualHostPlugins {
+    map<string, google.protobuf.Any> plugins = 1;
 }
 
 // Plugin-specific configuration that lives on routes
