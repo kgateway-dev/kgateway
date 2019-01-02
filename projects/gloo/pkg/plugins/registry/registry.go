@@ -37,13 +37,19 @@ var globalRegistry = func(opts bootstrap.Opts, additionalPlugins []plugins.Plugi
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient))
 	}
-	for _, additionalPlugin := range additionalPlugins {
-		reg.plugins = append(reg.plugins, additionalPlugin)
+	if additionalPlugins != nil {
+		for _, additionalPlugin := range additionalPlugins {
+			reg.plugins = append(reg.plugins, additionalPlugin)
+		}
 	}
 
 	return reg
 }
 
-func Plugins(opts bootstrap.Opts, additionalPlugins []plugins.Plugin) []plugins.Plugin {
+func Plugins(opts bootstrap.Opts) []plugins.Plugin {
+	return globalRegistry(opts, nil).plugins
+}
+
+func PluginsWithExtensions(opts bootstrap.Opts, additionalPlugins []plugins.Plugin) []plugins.Plugin {
 	return globalRegistry(opts, additionalPlugins).plugins
 }

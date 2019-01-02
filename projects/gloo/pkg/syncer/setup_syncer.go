@@ -270,7 +270,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	rpt := reporter.NewReporter("gloo", upstreamClient.BaseClient(), proxyClient.BaseClient())
 
-	plugins := registry.Plugins(opts, extensions.additionalPlugins)
+	plugins := registry.PluginsWithExtensions(opts, extensions.additionalPlugins)
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range plugins {
