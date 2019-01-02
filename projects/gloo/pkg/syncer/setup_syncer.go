@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"net"
 	"strconv"
 	"strings"
@@ -206,7 +207,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache *kube.KubeCache, memC
 	return s.runFunc(opts)
 }
 
-func RunGloo(opts bootstrap.Opts) error {
+func RunGloo(opts bootstrap.Opts, additionalPlugins ...*plugins.Plugin) error {
 	watchOpts := opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
@@ -253,7 +254,7 @@ func RunGloo(opts bootstrap.Opts) error {
 
 	rpt := reporter.NewReporter("gloo", upstreamClient.BaseClient(), proxyClient.BaseClient())
 
-	plugins := registry.Plugins(opts)
+	plugins := registry.Plugins(opts, additionalPlugins...)
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range plugins {
