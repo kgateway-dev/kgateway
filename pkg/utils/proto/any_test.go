@@ -31,11 +31,25 @@ var _ = Describe("Any", func() {
 		Expect(*m.(*types.Duration)).To(Equal(duration))
 	})
 
-	It("should error if no name found", func() {
+	It("should error if no name found with expected error", func() {
 
 		protos := map[string]*types.Any{}
 		_, err := GetMessage(protos, "duration")
 		Expect(err).To(HaveOccurred())
-
+		Expect(err).To(Equal(NotFoundError))
 	})
+
+	It("should error if proto is bad with other error", func() {
+
+		anyduration, err := types.MarshalAny(&types.Duration{})
+		Expect(err).NotTo(HaveOccurred())
+		anyduration.Value = []byte("bad proto")
+		protos := map[string]*types.Any{
+			"duration": anyduration,
+		}
+		_, err = GetMessage(protos, "duration")
+		Expect(err).To(HaveOccurred())
+		Expect(err).NotTo(Equal(NotFoundError))
+	})
+
 })

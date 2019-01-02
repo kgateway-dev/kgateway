@@ -7,12 +7,14 @@ import (
 	"github.com/gogo/protobuf/types"
 )
 
+var NotFoundError = fmt.Errorf("message not found")
+
 func GetMessage(protos map[string]*types.Any, name string) (proto.Message, error) {
 	if any, ok := protos[name]; ok {
 		return getProto(any)
 	}
 
-	return nil, fmt.Errorf("message not found")
+	return nil, NotFoundError
 }
 
 func getProto(p *types.Any) (proto.Message, error) {
