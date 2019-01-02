@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+
 	"go.opencensus.io/tag"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

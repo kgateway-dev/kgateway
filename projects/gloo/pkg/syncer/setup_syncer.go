@@ -2,10 +2,11 @@ package syncer
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
