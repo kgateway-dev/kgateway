@@ -169,6 +169,16 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 
 
 #----------------------------------------------------------------------------------
+# Deployment Manifests / Helm
+#----------------------------------------------------------------------------------
+
+.PHONY: manifest
+manifest: install/kube.yaml
+
+install/kube.yaml: $(shell find install/helm/gloo)
+	helm template install/helm/gloo --namespace gloo-system > $@
+
+#----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
 GH_ORG:=solo-io
