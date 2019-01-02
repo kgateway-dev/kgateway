@@ -19,6 +19,9 @@ func main() {
 	}
 	env := os.Environ()
 	args := []string{envoy(), "-c", outfile, "--v2-config-only"}
+	if len(os.Args) > 1 {
+		args = append(args, os.Args[1:]...)
+	}
 	if err := syscall.Exec(args[0], args, env); err != nil {
 		panic(err)
 	}

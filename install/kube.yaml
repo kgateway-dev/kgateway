@@ -198,7 +198,8 @@ spec:
         gloo: gateway-proxy
     spec:
       containers:
-      - env:
+      - args: ["--disable-hot-restart"]
+        env:
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
