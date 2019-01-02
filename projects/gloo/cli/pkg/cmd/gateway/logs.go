@@ -93,7 +93,7 @@ func getEnvoyLogs(opts *options.Options) error {
 	}
 
 	logsCmd := exec.Command("kubectl", "logs", "-n", opts.Metadata.Namespace,
-		"deployment/gateway-proxy")
+		"deployment/gateway-proxy", "-c", "gateway-proxy")
 	if opts.Gateway.FollowLogs {
 		logsCmd.Args = append(logsCmd.Args, "-f")
 	}
