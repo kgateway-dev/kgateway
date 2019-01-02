@@ -216,8 +216,8 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache *kube.KubeCache, memC
 }
 
 type Extensions struct {
-	AdditionalPlugins []plugins.Plugin
-	SyncerExtensions  []TranslatorSyncerExtension
+	PluginExtensions []plugins.Plugin
+	SyncerExtensions []TranslatorSyncerExtension
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -271,7 +271,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	rpt := reporter.NewReporter("gloo", upstreamClient.BaseClient(), proxyClient.BaseClient())
 
-	plugins := registry.PluginsWithExtensions(opts, extensions.additionalPlugins)
+	plugins := registry.PluginsWithExtensions(opts, extensions.PluginExtensions)
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range plugins {
@@ -281,7 +281,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}
 
-	sync := NewTranslatorSyncer(translator.NewTranslator(plugins), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.syncerExtensions)
+	sync := NewTranslatorSyncer(translator.NewTranslator(plugins), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.SyncerExtensions)
 	eventLoop := v1.NewApiEventLoop(cache, sync)
 
 	errs := make(chan error)
