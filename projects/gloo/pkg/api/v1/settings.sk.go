@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -30,6 +31,22 @@ func (r *Settings) SetStatus(status core.Status) {
 
 func (r *Settings) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Settings) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.DiscoveryNamespace,
+		r.WatchNamespaces,
+		r.BindAddr,
+		r.RefreshRate,
+		r.DevMode,
+		r.ConfigSource,
+		r.SecretSource,
+		r.ArtifactSource,
+	)
 }
 
 type SettingsList []*Settings
@@ -92,6 +109,20 @@ func (list SettingsList) Clone() SettingsList {
 		settingsList = append(settingsList, proto.Clone(settings).(*Settings))
 	}
 	return settingsList
+}
+
+func (list SettingsList) Each(f func(element *Settings)) {
+	for _, settings := range list {
+		f(settings)
+	}
+}
+
+func (list SettingsList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *Settings) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list SettingsList) ByNamespace() SettingsByNamespace {

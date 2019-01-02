@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -26,6 +27,15 @@ func NewSecret(namespace, name string) *Secret {
 
 func (r *Secret) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Secret) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.Kind,
+	)
 }
 
 type SecretList []*Secret
@@ -80,6 +90,20 @@ func (list SecretList) Clone() SecretList {
 		secretList = append(secretList, proto.Clone(secret).(*Secret))
 	}
 	return secretList
+}
+
+func (list SecretList) Each(f func(element *Secret)) {
+	for _, secret := range list {
+		f(secret)
+	}
+}
+
+func (list SecretList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *Secret) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list SecretList) ByNamespace() SecretsByNamespace {

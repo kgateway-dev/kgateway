@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -26,6 +27,15 @@ func NewArtifact(namespace, name string) *Artifact {
 
 func (r *Artifact) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Artifact) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.Data,
+	)
 }
 
 type ArtifactList []*Artifact
@@ -80,6 +90,20 @@ func (list ArtifactList) Clone() ArtifactList {
 		artifactList = append(artifactList, proto.Clone(artifact).(*Artifact))
 	}
 	return artifactList
+}
+
+func (list ArtifactList) Each(f func(element *Artifact)) {
+	for _, artifact := range list {
+		f(artifact)
+	}
+}
+
+func (list ArtifactList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *Artifact) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list ArtifactList) ByNamespace() ArtifactsByNamespace {

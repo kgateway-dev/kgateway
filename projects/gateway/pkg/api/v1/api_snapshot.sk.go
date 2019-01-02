@@ -3,9 +3,7 @@
 package v1
 
 import (
-	"github.com/mitchellh/hashstructure"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
 
@@ -21,43 +19,25 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 	}
 }
 
-func (s ApiSnapshot) snapshotToHash() ApiSnapshot {
-	snapshotForHashing := s.Clone()
-	for _, gateway := range snapshotForHashing.Gateways.List() {
-		resources.UpdateMetadata(gateway, func(meta *core.Metadata) {
-			meta.ResourceVersion = ""
-		})
-		gateway.SetStatus(core.Status{})
-	}
-	for _, virtualService := range snapshotForHashing.VirtualServices.List() {
-		resources.UpdateMetadata(virtualService, func(meta *core.Metadata) {
-			meta.ResourceVersion = ""
-		})
-		virtualService.SetStatus(core.Status{})
-	}
-
-	return snapshotForHashing
+func (s ApiSnapshot) Hash() uint64 {
+	return hashutils.HashAll(
+		s.hashGateways(),
+		s.hashVirtualServices(),
+	)
 }
 
-func (s ApiSnapshot) Hash() uint64 {
-	return s.hashStruct(s.snapshotToHash())
+func (s ApiSnapshot) hashGateways() uint64 {
+	return hashutils.HashAll(s.Gateways.List().AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashVirtualServices() uint64 {
+	return hashutils.HashAll(s.VirtualServices.List().AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
-	snapshotForHashing := s.snapshotToHash()
 	var fields []zap.Field
-	gateways := s.hashStruct(snapshotForHashing.Gateways.List())
-	fields = append(fields, zap.Uint64("gateways", gateways))
-	virtualServices := s.hashStruct(snapshotForHashing.VirtualServices.List())
-	fields = append(fields, zap.Uint64("virtualServices", virtualServices))
+	fields = append(fields, zap.Uint64("gateways", s.hashGateways()))
+	fields = append(fields, zap.Uint64("virtualServices", s.hashVirtualServices()))
 
-	return append(fields, zap.Uint64("snapshotHash", s.hashStruct(snapshotForHashing)))
-}
-
-func (s ApiSnapshot) hashStruct(v interface{}) uint64 {
-	h, err := hashstructure.Hash(v, nil)
-	if err != nil {
-		panic(err)
-	}
-	return h
+	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
 }

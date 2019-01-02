@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -30,6 +31,18 @@ func (r *Gateway) SetStatus(status core.Status) {
 
 func (r *Gateway) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Gateway) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.VirtualServices,
+		r.BindAddress,
+		r.BindPort,
+		r.Plugins,
+	)
 }
 
 type GatewayList []*Gateway
@@ -92,6 +105,20 @@ func (list GatewayList) Clone() GatewayList {
 		gatewayList = append(gatewayList, proto.Clone(gateway).(*Gateway))
 	}
 	return gatewayList
+}
+
+func (list GatewayList) Each(f func(element *Gateway)) {
+	for _, gateway := range list {
+		f(gateway)
+	}
+}
+
+func (list GatewayList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *Gateway) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list GatewayList) ByNamespace() GatewaysByNamespace {

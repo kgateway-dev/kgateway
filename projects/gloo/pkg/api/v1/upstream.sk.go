@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -30,6 +31,16 @@ func (r *Upstream) SetStatus(status core.Status) {
 
 func (r *Upstream) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Upstream) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.UpstreamSpec,
+		r.DiscoveryMetadata,
+	)
 }
 
 type UpstreamList []*Upstream
@@ -92,6 +103,20 @@ func (list UpstreamList) Clone() UpstreamList {
 		upstreamList = append(upstreamList, proto.Clone(upstream).(*Upstream))
 	}
 	return upstreamList
+}
+
+func (list UpstreamList) Each(f func(element *Upstream)) {
+	for _, upstream := range list {
+		f(upstream)
+	}
+}
+
+func (list UpstreamList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *Upstream) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list UpstreamList) ByNamespace() UpstreamsByNamespace {

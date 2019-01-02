@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -30,6 +31,16 @@ func (r *VirtualService) SetStatus(status core.Status) {
 
 func (r *VirtualService) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *VirtualService) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.VirtualHost,
+		r.SslConfig,
+	)
 }
 
 type VirtualServiceList []*VirtualService
@@ -92,6 +103,20 @@ func (list VirtualServiceList) Clone() VirtualServiceList {
 		virtualServiceList = append(virtualServiceList, proto.Clone(virtualService).(*VirtualService))
 	}
 	return virtualServiceList
+}
+
+func (list VirtualServiceList) Each(f func(element *VirtualService)) {
+	for _, virtualService := range list {
+		f(virtualService)
+	}
+}
+
+func (list VirtualServiceList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *VirtualService) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list VirtualServiceList) ByNamespace() VirtualServicesByNamespace {

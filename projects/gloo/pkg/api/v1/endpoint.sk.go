@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -26,6 +27,17 @@ func NewEndpoint(namespace, name string) *Endpoint {
 
 func (r *Endpoint) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Endpoint) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.Upstreams,
+		r.Address,
+		r.Port,
+	)
 }
 
 type EndpointList []*Endpoint
@@ -80,6 +92,20 @@ func (list EndpointList) Clone() EndpointList {
 		endpointList = append(endpointList, proto.Clone(endpoint).(*Endpoint))
 	}
 	return endpointList
+}
+
+func (list EndpointList) Each(f func(element *Endpoint)) {
+	for _, endpoint := range list {
+		f(endpoint)
+	}
+}
+
+func (list EndpointList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *Endpoint) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list EndpointList) ByNamespace() EndpointsByNamespace {

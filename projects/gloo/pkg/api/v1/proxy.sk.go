@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -30,6 +31,15 @@ func (r *Proxy) SetStatus(status core.Status) {
 
 func (r *Proxy) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Proxy) Hash() uint64 {
+	metaCopy := r.GetMetadata()
+	metaCopy.ResourceVersion = ""
+	return hashutils.HashAll(
+		metaCopy,
+		r.Listeners,
+	)
 }
 
 type ProxyList []*Proxy
@@ -92,6 +102,20 @@ func (list ProxyList) Clone() ProxyList {
 		proxyList = append(proxyList, proto.Clone(proxy).(*Proxy))
 	}
 	return proxyList
+}
+
+func (list ProxyList) Each(f func(element *Proxy)) {
+	for _, proxy := range list {
+		f(proxy)
+	}
+}
+
+func (list ProxyList) AsInterfaces() []interface{} {
+	var asInterfaces []interface{}
+	list.Each(func(element *Proxy) {
+		asInterfaces = append(asInterfaces, element)
+	})
+	return asInterfaces
 }
 
 func (list ProxyList) ByNamespace() ProxiesByNamespace {

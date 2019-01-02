@@ -3,9 +3,7 @@
 package v1
 
 import (
-	"github.com/mitchellh/hashstructure"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
 
@@ -21,42 +19,25 @@ func (s DiscoverySnapshot) Clone() DiscoverySnapshot {
 	}
 }
 
-func (s DiscoverySnapshot) snapshotToHash() DiscoverySnapshot {
-	snapshotForHashing := s.Clone()
-	for _, secret := range snapshotForHashing.Secrets.List() {
-		resources.UpdateMetadata(secret, func(meta *core.Metadata) {
-			meta.ResourceVersion = ""
-		})
-	}
-	for _, upstream := range snapshotForHashing.Upstreams.List() {
-		resources.UpdateMetadata(upstream, func(meta *core.Metadata) {
-			meta.ResourceVersion = ""
-		})
-		upstream.SetStatus(core.Status{})
-	}
-
-	return snapshotForHashing
+func (s DiscoverySnapshot) Hash() uint64 {
+	return hashutils.HashAll(
+		s.hashSecrets(),
+		s.hashUpstreams(),
+	)
 }
 
-func (s DiscoverySnapshot) Hash() uint64 {
-	return s.hashStruct(s.snapshotToHash())
+func (s DiscoverySnapshot) hashSecrets() uint64 {
+	return hashutils.HashAll(s.Secrets.List().AsInterfaces()...)
+}
+
+func (s DiscoverySnapshot) hashUpstreams() uint64 {
+	return hashutils.HashAll(s.Upstreams.List().AsInterfaces()...)
 }
 
 func (s DiscoverySnapshot) HashFields() []zap.Field {
-	snapshotForHashing := s.snapshotToHash()
 	var fields []zap.Field
-	secrets := s.hashStruct(snapshotForHashing.Secrets.List())
-	fields = append(fields, zap.Uint64("secrets", secrets))
-	upstreams := s.hashStruct(snapshotForHashing.Upstreams.List())
-	fields = append(fields, zap.Uint64("upstreams", upstreams))
+	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
+	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
 
-	return append(fields, zap.Uint64("snapshotHash", s.hashStruct(snapshotForHashing)))
-}
-
-func (s DiscoverySnapshot) hashStruct(v interface{}) uint64 {
-	h, err := hashstructure.Hash(v, nil)
-	if err != nil {
-		panic(err)
-	}
-	return h
+	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
 }
