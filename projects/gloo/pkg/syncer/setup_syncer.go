@@ -207,7 +207,16 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache *kube.KubeCache, memC
 	return s.runFunc(opts)
 }
 
-func RunGloo(opts bootstrap.Opts, additionalPlugins ...*plugins.Plugin) error {
+type Extensions struct {
+	additionalPlugins []plugins.Plugin
+	syncerExtensions  []TranslatorSyncerExtension
+}
+
+func RunGloo(opts bootstrap.Opts) error {
+	return RunGlooWithExtensions(opts, Extensions{})
+}
+
+func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	watchOpts := opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
@@ -254,7 +263,7 @@ func RunGloo(opts bootstrap.Opts, additionalPlugins ...*plugins.Plugin) error {
 
 	rpt := reporter.NewReporter("gloo", upstreamClient.BaseClient(), proxyClient.BaseClient())
 
-	plugins := registry.Plugins(opts, additionalPlugins...)
+	plugins := registry.Plugins(opts, extensions.additionalPlugins)
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range plugins {
@@ -264,7 +273,7 @@ func RunGloo(opts bootstrap.Opts, additionalPlugins ...*plugins.Plugin) error {
 		}
 	}
 
-	sync := NewTranslatorSyncer(translator.NewTranslator(plugins), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode)
+	sync := NewTranslatorSyncer(translator.NewTranslator(plugins), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.syncerExtensions)
 	eventLoop := v1.NewApiEventLoop(cache, sync)
 
 	errs := make(chan error)

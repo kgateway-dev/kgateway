@@ -41,7 +41,7 @@ var _ = Describe("GraphQLSyncer", func() {
 		rep := reporter.NewReporter(ref, proxyClient, upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-		s := NewTranslatorSyncer(&mockTranslator{true}, c, xdsHasher, rep, false)
+		s := NewTranslatorSyncer(&mockTranslator{true}, c, xdsHasher, rep, false, nil)
 		snap := &v1.ApiSnapshot{
 			Proxies: map[string]v1.ProxyList{
 				"": []*v1.Proxy{
@@ -68,7 +68,7 @@ var _ = Describe("GraphQLSyncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[""][0] = p1.(*v1.Proxy)
 
-		s = NewTranslatorSyncer(&mockTranslator{false}, c, xdsHasher, rep, false)
+		s = NewTranslatorSyncer(&mockTranslator{false}, c, xdsHasher, rep, false, nil)
 		err = s.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 

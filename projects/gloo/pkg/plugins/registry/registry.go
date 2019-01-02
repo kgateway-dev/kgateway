@@ -19,7 +19,7 @@ type registry struct {
 	plugins []plugins.Plugin
 }
 
-var globalRegistry = func(opts bootstrap.Opts, additionalPlugins... *plugins.Plugin) *registry {
+var globalRegistry = func(opts bootstrap.Opts, additionalPlugins []plugins.Plugin) *registry {
 	transformationPlugin := transformation.NewPlugin()
 	reg := &registry{}
 	// plugins should be added here
@@ -38,12 +38,12 @@ var globalRegistry = func(opts bootstrap.Opts, additionalPlugins... *plugins.Plu
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient))
 	}
 	for _, additionalPlugin := range additionalPlugins {
-		reg.plugins = append(reg.plugins, *additionalPlugin)
+		reg.plugins = append(reg.plugins, additionalPlugin)
 	}
 
 	return reg
 }
 
-func Plugins(opts bootstrap.Opts, additionalPlugins... *plugins.Plugin) []plugins.Plugin {
-	return globalRegistry(opts, additionalPlugins...).plugins
+func Plugins(opts bootstrap.Opts, additionalPlugins []plugins.Plugin) []plugins.Plugin {
+	return globalRegistry(opts, additionalPlugins).plugins
 }
