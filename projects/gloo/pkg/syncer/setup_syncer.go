@@ -45,6 +45,13 @@ func NewSetupFunc() setuputils.SetupFunc {
 	return NewSetupFuncWithRun(RunGloo)
 }
 
+func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
+	runWithExtensions := func(opts bootstrap.Opts) error {
+		return RunGlooWithExtensions(opts, extensions)
+	}
+	return NewSetupFuncWithRun(runWithExtensions)
+}
+
 // for use by UDS, FDS, other v1.SetupSyncers
 func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
 	s := &setupSyncer{
