@@ -24,8 +24,18 @@ var _ = Describe("Any", func() {
 			"duration": anyduration,
 		}
 
-		m := GetMessage(protos, "duration")
+		m, err := GetMessage(protos, "duration")
+		Expect(err).NotTo(HaveOccurred())
+
 		Expect(m).NotTo(BeNil())
 		Expect(*m.(*types.Duration)).To(Equal(duration))
+	})
+
+	It("should error if no name found", func() {
+
+		protos := map[string]*types.Any{}
+		_, err := GetMessage(protos, "duration")
+		Expect(err).To(HaveOccurred())
+
 	})
 })
