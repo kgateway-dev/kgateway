@@ -50,9 +50,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	if err != nil {
 		return err
 	}
-	if s.extensions == nil {
-		return nil
-	}
 	for _, extension := range s.extensions {
 		err := extension.Sync(ctx, snap, s.xdsCache)
 		if err != nil {
