@@ -24,17 +24,18 @@ var _ = Describe("Any", func() {
 			"duration": anyduration,
 		}
 
-		m, err := GetMessage(protos, "duration")
+		var outm types.Duration
+		err = UnmarshalAnyFromMap(protos, "duration", &outm)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(m).NotTo(BeNil())
-		Expect(*m.(*types.Duration)).To(Equal(duration))
+		Expect(outm).To(Equal(duration))
 	})
 
 	It("should error if no name found with expected error", func() {
 
 		protos := map[string]*types.Any{}
-		_, err := GetMessage(protos, "duration")
+		var outm types.Duration
+		err := UnmarshalAnyFromMap(protos, "duration", &outm)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(Equal(NotFoundError))
 	})
@@ -47,7 +48,8 @@ var _ = Describe("Any", func() {
 		protos := map[string]*types.Any{
 			"duration": anyduration,
 		}
-		_, err = GetMessage(protos, "duration")
+		var outm types.Duration
+		err = UnmarshalAnyFromMap(protos, "duration", &outm)
 		Expect(err).To(HaveOccurred())
 		Expect(err).NotTo(Equal(NotFoundError))
 	})

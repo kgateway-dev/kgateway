@@ -9,19 +9,17 @@ import (
 
 var NotFoundError = fmt.Errorf("message not found")
 
-func GetMessage(protos map[string]*types.Any, name string) (proto.Message, error) {
+func UnmarshalAnyFromMap(protos map[string]*types.Any, name string, outproto proto.Message) error {
 	if any, ok := protos[name]; ok {
-		return getProto(any)
+		return getProto(any, outproto)
 	}
-
-	return nil, NotFoundError
+	return NotFoundError
 }
 
-func getProto(p *types.Any) (proto.Message, error) {
-	var x types.DynamicAny
-	err := types.UnmarshalAny(p, &x)
+func getProto(p *types.Any, outproto proto.Message) error {
+	err := types.UnmarshalAny(p, outproto)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return x.Message, nil
+	return nil
 }
