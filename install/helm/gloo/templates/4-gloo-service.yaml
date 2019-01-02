@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo
+  name: gloo
+spec:
+  ports:
+  - name: grpc
+    port: {{ .Values.deployment.gloo.xdsPort }}
+    protocol: TCP
+  selector:
+    gloo: gloo
