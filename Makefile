@@ -199,9 +199,17 @@ RELEASE_BINARIES := \
 .PHONY: release-binaries
 release-binaries: $(RELEASE_BINARIES)
 
+# Release process:
+# make manifest VERSION=X.Y.Z OR update kube.yaml manually if on mac
+# make generated-code VERSION=X.Y.Z
+# merge into master
+# make release VERSION=vX.Y.Z GITHUB_TOKEN=...
+# make docker VERSION=X.Y.Z
+# make docker-push VERSION=X.Y.Z
+
 .PHONY: release
 release: release-binaries
-	hack/create-release.sh github_api_token=$(GITHUB_TOKEN) owner=$(GH_ORG) repo=$(GH_REPO) tag=v$(VERSION)
+	hack/create-release.sh github_api_token=$(GITHUB_TOKEN) owner=$(GH_ORG) repo=$(GH_REPO) tag=$(VERSION)
 	@$(foreach BINARY,$(RELEASE_BINARIES),hack/upload-github-release-asset.sh github_api_token=$(GITHUB_TOKEN) owner=solo-io repo=gloo tag=$(VERSION) filename=$(BINARY);)
 
 #----------------------------------------------------------------------------------
@@ -211,9 +219,10 @@ release: release-binaries
 #---------
 #--------- Push
 #---------
+#
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gloo-docker
+docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker
 docker-push:
 	docker push soloio/gateway:$(VERSION) && \
 	docker push soloio/discovery:$(VERSION) && \

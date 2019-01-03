@@ -156,7 +156,7 @@ spec:
         gloo: gloo
     spec:
       containers:
-      - image: soloio/gloo:0.5.0
+      - image: soloio/gloo:0.5.2
         imagePullPolicy: Always
         name: gloo
         ports:
@@ -187,7 +187,7 @@ spec:
         gloo: discovery
     spec:
       containers:
-      - image: soloio/discovery:0.5.0
+      - image: soloio/discovery:0.5.2
         imagePullPolicy: Always
         name: discovery
         args: ["--namespace", "gloo-system" ]
@@ -214,7 +214,7 @@ spec:
         gloo: gateway
     spec:
       containers:
-      - image: soloio/gateway:0.5.0
+      - image: soloio/gateway:0.5.2
         imagePullPolicy: Always
         name: gateway
         args: ["--namespace", "gloo-system" ]
@@ -250,7 +250,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: soloio/gloo-envoy-wrapper:0.5.0
+        image: soloio/gloo-envoy-wrapper:0.5.2
         imagePullPolicy: Always
         name: gateway-proxy
         ports:
