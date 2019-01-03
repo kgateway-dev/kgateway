@@ -5,7 +5,8 @@
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
-VERSION ?= $(shell git describe --tags)
+# This doesn't work as we'd want with v tags
+# VERSION ?= $(shell git describe --tags)
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 
 #----------------------------------------------------------------------------------
