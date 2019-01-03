@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -42,6 +44,14 @@ type RunFunc func(opts bootstrap.Opts) error
 
 func NewSetupFunc() setuputils.SetupFunc {
 	return NewSetupFuncWithRun(RunGloo)
+}
+
+// used outside of this repo
+func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
+	runWithExtensions := func(opts bootstrap.Opts) error {
+		return RunGlooWithExtensions(opts, extensions)
+	}
+	return NewSetupFuncWithRun(runWithExtensions)
 }
 
 // for use by UDS, FDS, other v1.SetupSyncers
@@ -206,7 +216,16 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache *kube.KubeCache, memC
 	return s.runFunc(opts)
 }
 
+type Extensions struct {
+	PluginExtensions []plugins.Plugin
+	SyncerExtensions []TranslatorSyncerExtension
+}
+
 func RunGloo(opts bootstrap.Opts) error {
+	return RunGlooWithExtensions(opts, Extensions{})
+}
+
+func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	watchOpts := opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
@@ -253,7 +272,7 @@ func RunGloo(opts bootstrap.Opts) error {
 
 	rpt := reporter.NewReporter("gloo", upstreamClient.BaseClient(), proxyClient.BaseClient())
 
-	plugins := registry.Plugins(opts)
+	plugins := registry.Plugins(opts, extensions.PluginExtensions...)
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range plugins {
@@ -263,7 +282,7 @@ func RunGloo(opts bootstrap.Opts) error {
 		}
 	}
 
-	sync := NewTranslatorSyncer(translator.NewTranslator(plugins), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode)
+	sync := NewTranslatorSyncer(translator.NewTranslator(plugins), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.SyncerExtensions)
 	eventLoop := v1.NewApiEventLoop(cache, sync)
 
 	errs := make(chan error)

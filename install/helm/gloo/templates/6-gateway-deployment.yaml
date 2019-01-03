@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway
+  name: gateway
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.deployment.gateway.replicas }}
+  selector:
+    matchLabels:
+      gloo: gateway
+  template:
+    metadata:
+      labels:
+        gloo: gateway
+    spec:
+      containers:
+      - image: {{ .Values.deployment.gateway.image }}
+        imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
+        name: gateway
+        args: ["--namespace", "{{.Release.Namespace}}" ]

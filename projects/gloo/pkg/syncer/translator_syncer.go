@@ -23,14 +23,20 @@ type translatorSyncer struct {
 	reporter   reporter.Reporter
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
+	extensions []TranslatorSyncerExtension
 }
 
-func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, reporter reporter.Reporter, devMode bool) v1.ApiSyncer {
+type TranslatorSyncerExtension interface {
+	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) error
+}
+
+func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension) v1.ApiSyncer {
 	s := &translatorSyncer{
 		translator: translator,
 		xdsCache:   xdsCache,
 		xdsHasher:  xdsHasher,
 		reporter:   reporter,
+		extensions: extensions,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -43,6 +49,12 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	err := s.syncEnvoy(ctx, snap)
 	if err != nil {
 		return err
+	}
+	for _, extension := range s.extensions {
+		err := extension.Sync(ctx, snap, s.xdsCache)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

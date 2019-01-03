@@ -1,0 +1,24 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: discovery
+  name: discovery
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.deployment.discovery.replicas }}
+  selector:
+    matchLabels:
+      gloo: discovery
+  template:
+    metadata:
+      labels:
+        gloo: discovery
+    spec:
+      containers:
+      - image: {{ .Values.deployment.discovery.image }}
+        imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
+        name: discovery
+        args: ["--namespace", "{{.Release.Namespace}}" ]
+

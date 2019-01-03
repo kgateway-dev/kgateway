@@ -1,250 +1,13 @@
-########################################################################
-###                                                                  ###
-###            Installation Manifest for Kubernetes                  ###
-###                                                                  ###
-########################################################################
+---
+# Source: gloo/templates/0-namespace.yaml
 
-########################################################################
-###                                                                  ###
-###                            PreReqs                               ###
-###                                                                  ###
-########################################################################
 
 apiVersion: v1
 kind: Namespace
 metadata:
   name: gloo-system
-
 ---
-#rbac
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: gloo-role
-rules:
-- apiGroups: [""]
-  resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
-  verbs: ["*"]
-- apiGroups: [""]
-  resources: ["namespaces"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: ["apiextensions.k8s.io"]
-  resources: ["customresourcedefinitions"]
-  verbs: ["get", "create"]
-- apiGroups: ["gloo.solo.io"]
-  resources: ["settings", "upstreams", "proxies","virtualservices"]
-  verbs: ["*"]
-- apiGroups: ["sqoop.solo.io"]
-  resources: ["schemas"]
-  verbs: ["*"]
-- apiGroups: ["gateway.solo.io"]
-  resources: ["virtualservices", "gateways"]
-  verbs: ["*"]
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: gloo-role-binding
-subjects:
-- kind: ServiceAccount
-  name: default
-  namespace: gloo-system
-roleRef:
-  kind: ClusterRole
-  name: gloo-role
-  apiGroup: rbac.authorization.k8s.io
-
----
-########################################################################
-###                                                                  ###
-###                            Gloo                                  ###
-###                                                                  ###
-########################################################################
-
-# pod
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  labels:
-    app: gloo
-    gloo: gloo
-  name: gloo
-  namespace: gloo-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      gloo: gloo
-  template:
-    metadata:
-      labels:
-        gloo: gloo
-    spec:
-      containers:
-      - image: soloio/gloo:0.5.0
-        imagePullPolicy: Always
-        name: gloo
-        ports:
-        - containerPort: 9977
-          name: xds
-          protocol: TCP
----
-# service
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: gloo
-    gloo: gloo
-  name: gloo
-  namespace: gloo-system
-spec:
-  ports:
-  - name: xds
-    port: 9977
-    protocol: TCP
-  selector:
-    gloo: gloo
-
----
-
-########################################################################
-###                                                                  ###
-###                        Discovery                                 ###
-###                                                                  ###
-########################################################################
-
-# pod
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  labels:
-    app: gloo
-    gloo: discovery
-  name: discovery
-  namespace: gloo-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      gloo: discovery
-  template:
-    metadata:
-      labels:
-        gloo: discovery
-    spec:
-      containers:
-      - image: soloio/discovery:0.5.0
-        imagePullPolicy: Always
-        name: discovery
-
----
-
-########################################################################
-###                                                                  ###
-###                        Gateway                                   ###
-###                                                                  ###
-########################################################################
-
-# pod
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  labels:
-    app: gloo
-    gloo: gateway
-  name: gateway
-  namespace: gloo-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      gloo: gateway
-  template:
-    metadata:
-      labels:
-        gloo: gateway
-    spec:
-      containers:
-      - image: soloio/gateway:0.5.0
-        imagePullPolicy: Always
-        name: gateway
-
----
-
-########################################################################
-###                                                                  ###
-###                     Gateway-Proxy                                ###
-###                                                                  ###
-########################################################################
-
-# pod
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  labels:
-    app: gloo
-    gloo: gateway-proxy
-  name: gateway-proxy
-  namespace: gloo-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      gloo: gateway-proxy
-  template:
-    metadata:
-      labels:
-        gloo: gateway-proxy
-    spec:
-      containers:
-      - args: ["--disable-hot-restart"]
-        env:
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        image: soloio/gloo-envoy-wrapper:0.5.0
-        imagePullPolicy: Always
-        name: gateway-proxy
-        ports:
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-        volumeMounts:
-        - mountPath: /etc/envoy
-          name: envoy-config
-      volumes:
-      - configMap:
-          name: gateway-envoy-config
-        name: envoy-config
-
----
-
-# service
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: gloo
-    gloo: gateway-proxy
-  name: gateway-proxy
-  namespace: gloo-system
-spec:
-  ports:
-  - port: 8080
-    protocol: TCP
-    name: http
-  selector:
-    gloo: gateway-proxy
-  type: LoadBalancer
-
----
-
+# Source: gloo/templates/9-gateway-proxy-configmap.yaml
 # configmap
 apiVersion: v1
 data:
@@ -292,4 +55,212 @@ metadata:
   name: gateway-envoy-config
   namespace: gloo-system
 
+---
+# Source: gloo/templates/2-namespace-clusterrolebinding.yaml
 
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: gloo-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
+  verbs: ["*"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "create"]
+- apiGroups: ["gloo.solo.io"]
+  resources: ["settings", "upstreams", "proxies","virtualservices"]
+  verbs: ["*"]
+- apiGroups: ["sqoop.solo.io"]
+  resources: ["schemas"]
+  verbs: ["*"]
+- apiGroups: ["gateway.solo.io"]
+  resources: ["virtualservices", "gateways"]
+  verbs: ["*"]
+---
+# Source: gloo/templates/1-namespace-clusterrole.yaml
+
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-role-binding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: gloo-system
+roleRef:
+  kind: ClusterRole
+  name: gloo-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: gloo/templates/4-gloo-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo
+  name: gloo
+  namespace: gloo-system
+spec:
+  ports:
+  - name: grpc
+    port: 9977
+    protocol: TCP
+  selector:
+    gloo: gloo
+
+---
+# Source: gloo/templates/8-gateway-proxy-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-proxy
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    name: http
+  selector:
+    gloo: gateway-proxy
+  type: LoadBalancer
+
+---
+# Source: gloo/templates/3-gloo-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo
+  name: gloo
+  namespace: gloo-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gloo: gloo
+  template:
+    metadata:
+      labels:
+        gloo: gloo
+    spec:
+      containers:
+      - image: soloio/gloo:0.5.0
+        imagePullPolicy: Always
+        name: gloo
+        ports:
+        - containerPort: 9977
+          name: grpc
+          protocol: TCP
+        args: ["--namespace", "gloo-system" ]
+
+
+---
+# Source: gloo/templates/5-discovery-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: discovery
+  name: discovery
+  namespace: gloo-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gloo: discovery
+  template:
+    metadata:
+      labels:
+        gloo: discovery
+    spec:
+      containers:
+      - image: soloio/discovery:0.5.0
+        imagePullPolicy: Always
+        name: discovery
+        args: ["--namespace", "gloo-system" ]
+
+
+---
+# Source: gloo/templates/6-gateway-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway
+  name: gateway
+  namespace: gloo-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gloo: gateway
+  template:
+    metadata:
+      labels:
+        gloo: gateway
+    spec:
+      containers:
+      - image: soloio/gateway:0.5.0
+        imagePullPolicy: Always
+        name: gateway
+        args: ["--namespace", "gloo-system" ]
+
+---
+# Source: gloo/templates/7-gateway-proxy-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-proxy
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gloo: gateway-proxy
+  template:
+    metadata:
+      labels:
+        gloo: gateway-proxy
+    spec:
+      containers:
+      - args: ["--disable-hot-restart"]
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: soloio/gloo-envoy-wrapper:0.5.0
+        imagePullPolicy: Always
+        name: gateway-proxy
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-config
+      volumes:
+      - configMap:
+          name: gateway-envoy-config
+        name: envoy-config

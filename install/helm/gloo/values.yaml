@@ -1,0 +1,21 @@
+namespace:
+  create: true
+rbac:
+  create: true
+
+deployment:
+  imagePullPolicy: Always
+  gloo:
+    xdsPort: 9977
+    image: soloio/gloo:0.5.0
+    replicas: 1
+  discovery:
+    image: soloio/discovery:0.5.0
+    replicas: 1
+  gateway:
+    image: soloio/gateway:0.5.0
+    replicas: 1
+  gatewayProxy:
+    image: soloio/gloo-envoy-wrapper:0.5.0
+    httpPort: 8080
+    replicas: 1

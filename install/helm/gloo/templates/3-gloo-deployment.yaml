@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo
+  name: gloo
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.deployment.gloo.replicas }}
+  selector:
+    matchLabels:
+      gloo: gloo
+  template:
+    metadata:
+      labels:
+        gloo: gloo
+    spec:
+      containers:
+      - image: {{ .Values.deployment.gloo.image }}
+        imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
+        name: gloo
+        ports:
+        - containerPort: {{ .Values.deployment.gloo.xdsPort }}
+          name: grpc
+          protocol: TCP
+        args: ["--namespace", "{{.Release.Namespace}}" ]
+
