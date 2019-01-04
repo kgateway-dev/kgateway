@@ -7,3 +7,12 @@ img {
     border: 0px;
     background:rgba(0,0,0,0);
 }
+
+p {
+    font-size: 20px;
+    line-height: 1.6;
+}
+ul li {
+    font-size: 20px;
+    line-height: 1.6;
+}
