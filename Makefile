@@ -40,8 +40,9 @@ $(OUTPUT_DIR)/.generated-code:
 	goimports -w $(SUBDIRS)
 	touch $@
 
-docs/index.md: SITE.md
-	cat SITE.md | sed 's@doc/docs/@@' > $@
+.PHONY: docs/index.md
+docs/index.md: 
+	cat README.md | sed 's@docs/@@g' > $@
 
 site: docs/index.md
 	mkdocs build
