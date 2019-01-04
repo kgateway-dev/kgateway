@@ -54,4 +54,37 @@ var _ = Describe("Any", func() {
 		Expect(err).NotTo(Equal(NotFoundError))
 	})
 
+	Describe("Any from plugins", func() {
+
+		It("should return not found for nil plugins", func() {
+			var outm types.Duration
+			err := UnmarshalAnyPlugins(nil, "duration", &outm)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(NotFoundError))
+		})
+
+		It("should return not found for typed nil plugins", func() {
+			var p *plugins
+			var outm types.Duration
+			err := UnmarshalAnyPlugins(p, "duration", &outm)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(NotFoundError))
+		})
+
+		It("should return not found for nil plugin map", func() {
+			var p plugins
+			var outm types.Duration
+			err := UnmarshalAnyPlugins(&p, "duration", &outm)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(NotFoundError))
+		})
+
+	})
+
 })
+
+type plugins struct {
+	plugins map[string]*types.Any
+}
+
+func (p *plugins) GetPlugins() map[string]*types.Any { return p.plugins }
