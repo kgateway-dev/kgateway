@@ -1110,6 +1110,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:c08e59153cb7590afc7453ffc5f1bce9b3913b71a4b29cc3aeeadec8aaf4f67a"
+  name = "github.com/solo-io/go-utils"
+  packages = ["kubeutils"]
+  pruneopts = "UT"
+  revision = "20850e4923eaa754a69ec42eba7a1c5ed095e1e6"
+
+[[projects]]
+  branch = "master"
   digest = "1:898faa8b0ea3e2a812fb293db0d9d3359c15669559f7128f15d11e597012fdee"
   name = "github.com/solo-io/kubecontroller"
   packages = ["."]
@@ -1805,6 +1813,7 @@
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-checkpoint",
+    "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
