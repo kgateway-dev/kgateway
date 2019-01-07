@@ -1,9 +1,10 @@
 package create
 
 import (
-	"github.com/solo-io/go-utils/cliutils"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -24,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Upstream(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "upstream",
 		Aliases: []string{"us", "upstream", "upstreams"},
@@ -262,4 +263,3 @@ func serviceSpecFromOpts(input options.InputServiceSpec) (*plugins.ServiceSpec, 
 	}
 	return spec, nil
 }
-

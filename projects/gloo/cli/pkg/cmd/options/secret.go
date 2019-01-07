@@ -1,6 +1,5 @@
 package options
 
-
 type Secret struct {
 	TlsSecret TlsSecret
 	AwsSecret AwsSecret

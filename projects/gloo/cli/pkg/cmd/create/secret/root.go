@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CreateCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func CreateCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "secret",
 		Aliases: []string{"s", "secret"},

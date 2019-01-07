@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RootCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "gateway",
 		Aliases: []string{"gw"},

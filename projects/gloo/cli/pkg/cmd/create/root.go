@@ -1,6 +1,10 @@
 package create
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
@@ -8,9 +12,6 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
-	"io"
-	"io/ioutil"
-	"os"
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/del"
@@ -15,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func App(version string, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func App(version string, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 
 	app := &cobra.Command{
 		Use:   "glooctl",

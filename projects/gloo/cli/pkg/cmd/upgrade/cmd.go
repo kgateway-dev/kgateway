@@ -3,10 +3,11 @@ package upgrade
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/cliutils"
 	"net/http"
 	"os"
 	"runtime"
+
+	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/inconshreveable/go-update"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RootCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "upgrade",
 		Aliases: []string{"ug"},

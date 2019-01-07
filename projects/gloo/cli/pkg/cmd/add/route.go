@@ -2,8 +2,9 @@ package add
 
 import (
 	"fmt"
-	"github.com/solo-io/go-utils/cliutils"
 	"sort"
+
+	"github.com/solo-io/go-utils/cliutils"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -20,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Route(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "route",
 		Aliases: []string{"r", "routes"},
@@ -236,4 +237,3 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 	}
 	return nil, nil // errors.Errorf("unimplemented destination type: %v", input.DestinationType)
 }
-

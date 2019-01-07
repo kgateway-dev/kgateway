@@ -1,6 +1,5 @@
 package create
 
-
 import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -16,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func VirtualService(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "virtualservice",
 		Aliases: []string{"vs", "virtualservice", "virtualservices"},

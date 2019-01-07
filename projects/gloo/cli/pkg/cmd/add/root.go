@@ -19,4 +19,3 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
-

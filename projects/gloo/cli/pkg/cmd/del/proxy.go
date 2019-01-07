@@ -2,6 +2,7 @@ package del
 
 import (
 	"fmt"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Proxy(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func Proxy(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "proxy",
 		Aliases: []string{"p", "px", "proxies"},

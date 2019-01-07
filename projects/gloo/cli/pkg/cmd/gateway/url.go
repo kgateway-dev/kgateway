@@ -3,10 +3,11 @@ package gateway
 import (
 	"bytes"
 	"fmt"
-	"github.com/solo-io/go-utils/cliutils"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -17,7 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func urlCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
+func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "url",
 		Short: "print the http endpoint for the gateway ingress",
