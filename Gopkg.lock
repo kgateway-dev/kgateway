@@ -1110,11 +1110,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c08e59153cb7590afc7453ffc5f1bce9b3913b71a4b29cc3aeeadec8aaf4f67a"
+  digest = "1:c4f5e25cc8582ee64fc188ee0b0b2151743c406d23f835d4e3322065207c2f69"
   name = "github.com/solo-io/go-utils"
   packages = ["kubeutils"]
   pruneopts = "UT"
-  revision = "20850e4923eaa754a69ec42eba7a1c5ed095e1e6"
+  revision = "aed107e26498b88eb641f3e9a794dd1ddeda6a10"
 
 [[projects]]
   branch = "master"
