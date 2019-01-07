@@ -1,6 +1,9 @@
 package grpc
 
 import (
+	"log"
+	"os/exec"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 )
@@ -12,6 +15,11 @@ import (
 var annotationsDescriptor, httpDescriptor, descriptorsDescriptor descriptor.FileDescriptorProto
 
 func init() {
+	// Check to make sure 2gobytes is available
+	// go generate will fail silently without
+	if _, err := exec.LookPath("2gobytes"); err != nil {
+		log.Fatalf("2gobytes not available in path: %s", err)
+	}
 	err := proto.Unmarshal(annotationsDescriptorBytes, &annotationsDescriptor)
 	if err != nil {
 		panic(err)
