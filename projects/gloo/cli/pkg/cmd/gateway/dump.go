@@ -37,7 +37,7 @@ func dumpCmd(opts *options.Options) *cobra.Command {
 func getEnvoyCfgDump(opts *options.Options) (string, error) {
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
-		"deployment/gateway-proxy", adminPort)
+		"deployment/"+opts.Gateway.Proxy, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	if err := portFwd.Start(); err != nil {
@@ -115,7 +115,7 @@ func statsCmd(opts *options.Options) *cobra.Command {
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
-		"deployment/gateway-proxy", adminPort)
+		"deployment/"+opts.Gateway.Proxy, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	if err := portFwd.Start(); err != nil {

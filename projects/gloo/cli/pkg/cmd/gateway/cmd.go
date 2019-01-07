@@ -11,6 +11,8 @@ func Cmd(opts *options.Options) *cobra.Command {
 		Aliases: []string{"gw"},
 		Short:   "interact with the Gloo Gateway/Ingress",
 	}
+	cmd.PersistentFlags().StringVarP(&opts.Gateway.Proxy, "proxy", "p", "gateway-proxy", "the proxy to target with this command")
+
 	cmd.AddCommand(urlCmd(opts))
 	cmd.AddCommand(dumpCmd(opts))
 	cmd.AddCommand(logsCmd(opts))

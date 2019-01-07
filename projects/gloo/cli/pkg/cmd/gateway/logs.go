@@ -42,7 +42,7 @@ func getEnvoyLogs(opts *options.Options) error {
 
 		adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 		portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
-			"deployment/gateway-proxy", adminPort)
+			"deployment/"+opts.Gateway.Proxy, adminPort)
 		portFwd.Stdout = os.Stderr
 		portFwd.Stderr = os.Stderr
 		if err := portFwd.Start(); err != nil {
@@ -93,7 +93,7 @@ func getEnvoyLogs(opts *options.Options) error {
 	}
 
 	logsCmd := exec.Command("kubectl", "logs", "-n", opts.Metadata.Namespace,
-		"deployment/gateway-proxy", "-c", "gateway-proxy")
+		"deployment/"+opts.Gateway.Proxy, "-c", opts.Gateway.Proxy)
 	if opts.Gateway.FollowLogs {
 		logsCmd.Args = append(logsCmd.Args, "-f")
 	}

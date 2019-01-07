@@ -46,13 +46,13 @@ func getIngressHost(opts *options.Options) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "starting kube client")
 	}
-	svc, err := kube.CoreV1().Services(opts.Metadata.Namespace).Get("gateway-proxy", metav1.GetOptions{})
+	svc, err := kube.CoreV1().Services(opts.Metadata.Namespace).Get(opts.Gateway.Proxy, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "could not detect 'gateway-proxy' service in %v namespace. "+
-			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'")
+		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
+			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'", opts.Gateway.Proxy)
 	}
 	if len(svc.Spec.Ports) != 1 {
-		return "", errors.Errorf("service gateway-proxy is missing expected number of ports (1)")
+		return "", errors.Errorf("service %v is missing expected number of ports (1)", opts.Gateway.Proxy)
 	}
 	svcPort := svc.Spec.Ports[0]
 
