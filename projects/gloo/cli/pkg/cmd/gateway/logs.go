@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"github.com/solo-io/go-utils/cliutils"
 	"log"
 	"net/http"
 	"os"
@@ -8,14 +9,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/spf13/cobra"
 )
 
-func logsCmd(opts *options.Options) *cobra.Command {
+func logsCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "logs",
 		Short: "dump Envoy logs from one of the gateway proxy instances" +
@@ -33,7 +34,7 @@ func logsCmd(opts *options.Options) *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	pflags.BoolVarP(&opts.Gateway.DebugLogs, "debug", "d", true, "enable debug logging on the gateway proxy as part of this command")
 	pflags.BoolVarP(&opts.Gateway.FollowLogs, "follow", "f", false, "enable debug logging on the gateway proxy as part of this command")
-
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
@@ -93,7 +94,7 @@ func getEnvoyLogs(opts *options.Options) error {
 	}
 
 	logsCmd := exec.Command("kubectl", "logs", "-n", opts.Metadata.Namespace,
-		"deployment/gateway-proxy", "-c", "gateway-proxy")
+		"deployment/gateway-proxy")
 	if opts.Gateway.FollowLogs {
 		logsCmd.Args = append(logsCmd.Args, "-f")
 	}

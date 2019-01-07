@@ -3,7 +3,6 @@ package options
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/secret/inputsecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -64,7 +63,7 @@ type Delete struct {
 type Create struct {
 	VirtualService InputVirtualService
 	InputUpstream  InputUpstream
-	InputSecret    inputsecret.Secret
+	InputSecret    Secret
 }
 
 type RouteMatchers struct {

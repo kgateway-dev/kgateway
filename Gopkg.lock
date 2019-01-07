@@ -159,7 +159,7 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:99a541d432754c36cb44332017a1f330f9db7d54b1d521c229ab7e6ee0d620cc"
+  digest = "1:437b07cf4e8c04c4d20cf781f26f9268c557bec0113233c81fd7fa9008df6b60"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -173,7 +173,6 @@
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/fault/v2",
     "envoy/config/filter/http/fault/v2",
-    "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
@@ -289,7 +288,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:60731c5aecf6061614be06333160462b47be4f7cd2369845e50d5da38bfd6a54"
+  digest = "1:dc9cbd16a546ee8d4a9f4823c9c91f0825e294fc085493a5a3937183d5f17b84"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
@@ -301,8 +300,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
-  version = "v1.1.1"
+  revision = "4cbf7e384e768b4e01799441fdf2a706a5635ae7"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -991,12 +990,12 @@
   version = "v2.0.1"
 
 [[projects]]
-  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -1107,6 +1106,17 @@
   pruneopts = "UT"
   revision = "b798a7563f831f081f2a73ca889888f1ceec06b3"
   version = "0.0.4"
+
+[[projects]]
+  digest = "1:312ae26174128ef39d4563460c95d6e1f08e119c594e8f8a207c8864eb4a1d2c"
+  name = "github.com/solo-io/go-utils"
+  packages = [
+    "cliutils",
+    "errors",
+    "protoutils",
+  ]
+  pruneopts = "UT"
+  revision = "20850e4923eaa754a69ec42eba7a1c5ed095e1e6"
 
 [[projects]]
   branch = "master"
@@ -1764,7 +1774,6 @@
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/route",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
-    "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
@@ -1773,10 +1782,8 @@
     "github.com/go-openapi/loads",
     "github.com/go-openapi/spec",
     "github.com/go-openapi/swag",
-    "github.com/gogo/googleapis/google/api",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/proto",
-    "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/google/go-github/github",
@@ -1805,6 +1812,8 @@
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-checkpoint",
+    "github.com/solo-io/go-utils/cliutils",
+    "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",

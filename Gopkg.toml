@@ -44,22 +44,6 @@
   version = "1.2.0"
   name = "github.com/golang/protobuf"
 
-#[[constraint]]
-#  revision = "e9c5d9645c437ab1b204cff969a2c0fb16cd4276"
-#  name = "github.com/grpc-ecosystem/go-grpc-middleware"
-#
-#[[constraint]]
-#  branch = "master"
-#  name = "k8s.io/apiextensions-apiserver"
-#
-#[[constraint]]
-#  branch = "master"
-#  name = "k8s.io/apimachinery"
-#
-#[[constraint]]
-#  name = "k8s.io/client-go"
-#  branch = "master"
-
 [[constraint]]
   name = "github.com/solo-io/envoy-operator"
   revision = "c71f318a203bca8433268be67336086379a2bf9f"
@@ -69,7 +53,6 @@
   version = ">=0.2.11"
 
 [[constraint]]
-
   name = "github.com/hashicorp/consul"
   revision = "eba25a143821cec25bdb48fe64dd7b7a6152d01d"
 
@@ -81,3 +64,8 @@
 [[constraint]]
   name = "github.com/solo-io/go-checkpoint"
   version = "0.0.4"
+
+[[constraint]]
+  name = "github.com/solo-io/go-utils"
+  revision = "20850e4923eaa754a69ec42eba7a1c5ed095e1e6"
+

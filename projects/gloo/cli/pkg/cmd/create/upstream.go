@@ -1,6 +1,7 @@
 package create
 
 import (
+	"github.com/solo-io/go-utils/cliutils"
 	"strconv"
 	"strings"
 
@@ -23,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func upstreamCreate(opts *options.Options) *cobra.Command {
+func Upstream(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "upstream",
 		Aliases: []string{"us", "upstream", "upstreams"},
@@ -84,7 +85,7 @@ func upstreamCreate(opts *options.Options) *cobra.Command {
 				"with a static upstream. Requests routed to a static upstream will be round-robin load balanced across each host.",
 		),
 	)
-
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
@@ -261,3 +262,4 @@ func serviceSpecFromOpts(input options.InputServiceSpec) (*plugins.ServiceSpec, 
 	}
 	return spec, nil
 }
+

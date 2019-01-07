@@ -34,14 +34,14 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type Upstream struct {
 	// Type-specific configuration. Examples include static, kubernetes, and aws.
 	// The type-specific config for the upstream is called a spec.
-	UpstreamSpec *UpstreamSpec `protobuf:"bytes,2,opt,name=upstream_spec,json=upstreamSpec" json:"upstream_spec,omitempty"`
+	UpstreamSpec *UpstreamSpec `protobuf:"bytes,2,opt,name=upstream_spec,json=upstreamSpec,proto3" json:"upstream_spec,omitempty"`
 	// Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation
-	Status core.Status `protobuf:"bytes,6,opt,name=status" json:"status" testdiff:"ignore"`
+	Status core.Status `protobuf:"bytes,6,opt,name=status,proto3" json:"status" testdiff:"ignore"`
 	// Metadata contains the object metadata for this resource
-	Metadata core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
+	Metadata core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
 	// Upstreams and their configuration can be automatically by Gloo Discovery
 	// if this upstream is created or modified by Discovery, metadata about the operation will be placed here.
-	DiscoveryMetadata    *DiscoveryMetadata `protobuf:"bytes,8,opt,name=discovery_metadata,json=discoveryMetadata" json:"discovery_metadata,omitempty"`
+	DiscoveryMetadata    *DiscoveryMetadata `protobuf:"bytes,8,opt,name=discovery_metadata,json=discoveryMetadata,proto3" json:"discovery_metadata,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`

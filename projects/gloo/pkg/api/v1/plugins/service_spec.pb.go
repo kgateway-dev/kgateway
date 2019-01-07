@@ -72,13 +72,13 @@ type isServiceSpec_PluginType interface {
 }
 
 type ServiceSpec_Rest struct {
-	Rest *rest.ServiceSpec `protobuf:"bytes,1,opt,name=rest,oneof"`
+	Rest *rest.ServiceSpec `protobuf:"bytes,1,opt,name=rest,proto3,oneof"`
 }
 type ServiceSpec_Grpc struct {
-	Grpc *grpc1.ServiceSpec `protobuf:"bytes,2,opt,name=grpc,oneof"`
+	Grpc *grpc1.ServiceSpec `protobuf:"bytes,2,opt,name=grpc,proto3,oneof"`
 }
 type ServiceSpec_Sqoop struct {
-	Sqoop *sqoop.ServiceSpec `protobuf:"bytes,3,opt,name=sqoop,oneof"`
+	Sqoop *sqoop.ServiceSpec `protobuf:"bytes,3,opt,name=sqoop,proto3,oneof"`
 }
 
 func (*ServiceSpec_Rest) isServiceSpec_PluginType()  {}

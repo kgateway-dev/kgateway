@@ -25,7 +25,7 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 // What schemas this Sqoop serves
 type ServiceSpec struct {
 	// reference to each schema in the service spec
-	Schemas              []core.ResourceRef `protobuf:"bytes,2,rep,name=schemas" json:"schemas"`
+	Schemas              []core.ResourceRef `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -64,7 +64,7 @@ func (m *ServiceSpec) GetSchemas() []core.ResourceRef {
 
 // Which schema should the route point to?
 type DestinationSpec struct {
-	Schema core.ResourceRef `protobuf:"bytes,1,opt,name=schema" json:"schema"`
+	Schema core.ResourceRef `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema"`
 	// if set to true, this route will point to the schema playground page
 	Playground           bool     `protobuf:"varint,2,opt,name=playground,proto3" json:"playground,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

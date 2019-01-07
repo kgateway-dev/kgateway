@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/cliutils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,14 +11,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/spf13/cobra"
 )
 
-func dumpCmd(opts *options.Options) *cobra.Command {
+func dumpCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dump",
 		Short: "dump Envoy config from one of the gateway proxy instances",
@@ -31,6 +32,7 @@ func dumpCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
@@ -95,7 +97,7 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 
 }
 
-func statsCmd(opts *options.Options) *cobra.Command {
+func statsCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stats",
 		Short: "stats for one of the gateway proxy instances",
@@ -109,6 +111,7 @@ func statsCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 

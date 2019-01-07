@@ -58,10 +58,10 @@ type UpstreamSpec struct {
 	//  access_key: <aws access key>
 	//  secret_key: <aws secret key>
 	//  ```
-	SecretRef core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef" json:"secret_ref"`
+	SecretRef core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref"`
 	// The list of Lambda Functions contained within this region.
 	// This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions
-	LambdaFunctions      []*LambdaFunctionSpec `protobuf:"bytes,3,rep,name=lambda_functions,json=lambdaFunctions" json:"lambda_functions,omitempty"`
+	LambdaFunctions      []*LambdaFunctionSpec `protobuf:"bytes,3,rep,name=lambda_functions,json=lambdaFunctions,proto3" json:"lambda_functions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`

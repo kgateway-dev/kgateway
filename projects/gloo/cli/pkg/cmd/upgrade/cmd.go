@@ -3,6 +3,7 @@ package upgrade
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/cliutils"
 	"net/http"
 	"os"
 	"runtime"
@@ -15,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Cmd(opts *options.Options) *cobra.Command {
+func RootCmd(opts *options.Options, optionsFunc... cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "upgrade",
 		Aliases: []string{"ug"},
@@ -29,6 +30,7 @@ func Cmd(opts *options.Options) *cobra.Command {
 		"to download. Specify a git tag corresponding to the desired version of glooctl.")
 	cmd.PersistentFlags().StringVar(&opts.Upgrade.DownloadPath, "path", "", "Desired path for your "+
 		"upgraded glooctl binary. Defaults to the location of your currently executing binary.")
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 

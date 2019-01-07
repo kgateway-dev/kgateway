@@ -1,4 +1,5 @@
-package inputsecret
+package options
+
 
 type Secret struct {
 	TlsSecret TlsSecret
