@@ -159,7 +159,7 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:437b07cf4e8c04c4d20cf781f26f9268c557bec0113233c81fd7fa9008df6b60"
+  digest = "1:99a541d432754c36cb44332017a1f330f9db7d54b1d521c229ab7e6ee0d620cc"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -173,6 +173,7 @@
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/fault/v2",
     "envoy/config/filter/http/fault/v2",
+    "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
@@ -1108,11 +1109,12 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:312ae26174128ef39d4563460c95d6e1f08e119c594e8f8a207c8864eb4a1d2c"
+  digest = "1:579f466261f0d5e01d2d53b862abec57b7ec6f3e322c3f7a86cb982521263588"
   name = "github.com/solo-io/go-utils"
   packages = [
     "cliutils",
     "errors",
+    "kubeutils",
     "protoutils",
   ]
   pruneopts = "UT"
@@ -1774,6 +1776,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/route",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
@@ -1782,8 +1785,10 @@
     "github.com/go-openapi/loads",
     "github.com/go-openapi/spec",
     "github.com/go-openapi/swag",
+    "github.com/gogo/googleapis/google/api",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/proto",
+    "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/google/go-github/github",
@@ -1814,6 +1819,7 @@
     "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/errors",
+    "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
