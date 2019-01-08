@@ -29,6 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	kubecore "k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
 var _ = Describe("Happypath", func() {
@@ -280,6 +282,30 @@ func getIpThatsNotLocalhost() string {
 			default:
 				continue
 			}
+
+			// make sure that kubernetes like this endpoint:
+			endpoints := &kubecore.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "validate",
+					Name:      "validate",
+				},
+				Subsets: []kubecore.EndpointSubset{{
+					Addresses: []kubecore.EndpointAddress{{
+						IP:       ip.String(),
+						Hostname: "localhost",
+					}},
+					Ports: []kubecore.EndpointPort{{
+						Port:     int32(5555),
+						Protocol: kubecore.ProtocolTCP,
+					}},
+				}},
+			}
+
+			errs := validation.ValidateEndpoints(endpoints)
+			if len(errs) != 0 {
+				continue
+			}
+
 			return ip.String()
 		}
 	}
