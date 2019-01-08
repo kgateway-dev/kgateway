@@ -3,6 +3,7 @@ package test_test
 import (
 	"bytes"
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
@@ -44,7 +45,7 @@ var _ = Describe("Regression", func() {
 	})
 
 	Context("All unique subcommands are callable", func() {
-		for _,v := range uniqueCommands {
+		for _, v := range uniqueCommands {
 			It(fmt.Sprintf("can call %s subcommand", v), func() {
 				app.SetArgs([]string{v, "help"})
 				err := app.Execute()
@@ -54,7 +55,7 @@ var _ = Describe("Regression", func() {
 	})
 
 	Context("All generic subcommands are callable", func() {
-		for _,v := range commands {
+		for _, v := range commands {
 			It(fmt.Sprintf("can call %s subcommand", v), func() {
 				app.SetArgs([]string{v, "help"})
 				err := app.Execute()

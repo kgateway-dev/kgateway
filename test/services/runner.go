@@ -6,8 +6,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/keybase/go-ps"
 )
 
 type Runner struct {
