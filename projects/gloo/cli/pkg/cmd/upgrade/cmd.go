@@ -11,8 +11,6 @@ import (
 
 	"github.com/solo-io/go-utils/cliutils"
 
-	"github.com/inconshreveable/go-update"
-
 	"github.com/google/go-github/github"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/solo-kit/pkg/errors"
