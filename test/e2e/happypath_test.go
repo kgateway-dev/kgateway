@@ -295,7 +295,8 @@ func getIpThatsNotLocalhost() string {
 						Hostname: "localhost",
 					}},
 					Ports: []kubecore.EndpointPort{{
-						Port: int32(5555),
+						Port:     int32(5555),
+						Protocol: kubecore.ProtocolTCP,
 					}},
 				}},
 			}
