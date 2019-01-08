@@ -29,12 +29,12 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type UpstreamSpec struct {
 	// A list of addresses and ports
 	// at least one must be specified
-	Hosts []*Host `protobuf:"bytes,1,rep,name=hosts" json:"hosts,omitempty"`
+	Hosts []*Host `protobuf:"bytes,1,rep,name=hosts,proto3" json:"hosts,omitempty"`
 	// Attempt to use outbound TLS
 	// Gloo will automatically set this to true for port 443
 	UseTls bool `protobuf:"varint,3,opt,name=use_tls,json=useTls,proto3" json:"use_tls,omitempty"`
 	// An optional Service Spec describing the service listening at this address
-	ServiceSpec          *plugins.ServiceSpec `protobuf:"bytes,5,opt,name=service_spec,json=serviceSpec" json:"service_spec,omitempty"`
+	ServiceSpec          *plugins.ServiceSpec `protobuf:"bytes,5,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`

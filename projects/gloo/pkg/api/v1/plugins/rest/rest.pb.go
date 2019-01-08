@@ -23,8 +23,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type ServiceSpec struct {
-	Transformations      map[string]*transformation.TransformationTemplate `protobuf:"bytes,1,rep,name=transformations" json:"transformations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
-	SwaggerInfo          *ServiceSpec_SwaggerInfo                          `protobuf:"bytes,2,opt,name=swagger_info,json=swaggerInfo" json:"swagger_info,omitempty"`
+	Transformations      map[string]*transformation.TransformationTemplate `protobuf:"bytes,1,rep,name=transformations,proto3" json:"transformations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	SwaggerInfo          *ServiceSpec_SwaggerInfo                          `protobuf:"bytes,2,opt,name=swagger_info,json=swaggerInfo,proto3" json:"swagger_info,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                          `json:"-"`
 	XXX_unrecognized     []byte                                            `json:"-"`
 	XXX_sizecache        int32                                             `json:"-"`
@@ -207,8 +207,8 @@ func _ServiceSpec_SwaggerInfo_OneofSizer(msg proto.Message) (n int) {
 // This is only for upstream with REST service spec
 type DestinationSpec struct {
 	FunctionName           string                                 `protobuf:"bytes,1,opt,name=function_name,json=functionName,proto3" json:"function_name,omitempty"`
-	Parameters             *transformation.Parameters             `protobuf:"bytes,2,opt,name=parameters" json:"parameters,omitempty"`
-	ResponseTransformation *transformation.TransformationTemplate `protobuf:"bytes,3,opt,name=response_transformation,json=responseTransformation" json:"response_transformation,omitempty"`
+	Parameters             *transformation.Parameters             `protobuf:"bytes,2,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	ResponseTransformation *transformation.TransformationTemplate `protobuf:"bytes,3,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{}                               `json:"-"`
 	XXX_unrecognized       []byte                                 `json:"-"`
 	XXX_sizecache          int32                                  `json:"-"`

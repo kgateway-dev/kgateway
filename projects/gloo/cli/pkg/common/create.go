@@ -1,62 +1,17 @@
-package create
+package common
 
 import (
-	"io"
-	"io/ioutil"
-	"os"
-
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/secret"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
-func Cmd(opts *options.Options) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "create",
-		Aliases: []string{"c"},
-		Short:   "Create a Gloo resource",
-		Long:    "Gloo resources be created from files (including stdin)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var reader io.ReadCloser
-			if opts.Top.File == "" {
-				return errors.Errorf("create only takes a file")
-			}
-			if opts.Top.File == "-" {
-				reader = os.Stdin
-			} else {
-				r, err := os.Open(opts.Top.File)
-				if err != nil {
-					return err
-				}
-				reader = r
-			}
-			yml, err := ioutil.ReadAll(reader)
-			if err != nil {
-				return err
-			}
-			return createAndPrintObject(yml, opts.Top.Output)
-		},
-	}
-	flagutils.AddFileFlag(cmd.LocalFlags(), &opts.Top.File)
-	flagutils.AddOutputFlag(cmd.PersistentFlags(), &opts.Top.Output)
-
-	cmd.AddCommand(virtualServiceCreate(opts))
-	cmd.AddCommand(upstreamCreate(opts))
-	cmd.AddCommand(secret.CreateCmd(opts))
-	return cmd
-}
-
-func createAndPrintObject(yml []byte, outputType string) error {
+func CreateAndPrintObject(yml []byte, outputType string) error {
 	resource, err := resourceFromYaml(yml)
 	if err != nil {
 		return errors.Wrapf(err, "parsing resource from yaml")

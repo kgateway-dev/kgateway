@@ -8,7 +8,6 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/secret/inputsecret"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -52,7 +51,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-func tlsSecretArgsInteractive(meta *core.Metadata, input *inputsecret.TlsSecret) error {
+func tlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) error {
 	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
 		return err
 	}
@@ -73,7 +72,7 @@ func tlsSecretArgsInteractive(meta *core.Metadata, input *inputsecret.TlsSecret)
 	return nil
 }
 
-func createTlsSecret(ctx context.Context, meta core.Metadata, input inputsecret.TlsSecret) error {
+func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret) error {
 	if meta.Name == "" {
 		return errors.Errorf("must provide name")
 	}

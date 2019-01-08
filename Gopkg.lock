@@ -289,7 +289,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:60731c5aecf6061614be06333160462b47be4f7cd2369845e50d5da38bfd6a54"
+  digest = "1:dc9cbd16a546ee8d4a9f4823c9c91f0825e294fc085493a5a3937183d5f17b84"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
@@ -301,8 +301,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
-  version = "v1.1.1"
+  revision = "4cbf7e384e768b4e01799441fdf2a706a5635ae7"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -991,12 +991,12 @@
   version = "v2.0.1"
 
 [[projects]]
-  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -1109,6 +1109,18 @@
   version = "0.0.4"
 
 [[projects]]
+  digest = "1:5689ccff238a7dcdaec7c5ed18632b1f58345320895b1d28d1c555b1f53dbe7b"
+  name = "github.com/solo-io/go-utils"
+  packages = [
+    "cliutils",
+    "errors",
+    "kubeutils",
+    "protoutils",
+  ]
+  pruneopts = "UT"
+  revision = "aed107e26498b88eb641f3e9a794dd1ddeda6a10"
+
+[[projects]]
   branch = "master"
   digest = "1:898faa8b0ea3e2a812fb293db0d9d3359c15669559f7128f15d11e597012fdee"
   name = "github.com/solo-io/kubecontroller"
@@ -1117,7 +1129,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:b5dd3704debad220fee641cce0dd2f7dad09b801b7e5ca75e1b05bfb786676e2"
+  digest = "1:d1d58c46a9e300ea33377bb419f7b67d23a636f0623c6c19b2554bd88e8178b4"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1170,8 +1182,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "7874fbfaf3cc61865a14442a5ba0f77f665b3ab7"
-  version = "v0.2.11"
+  revision = "f2b636e31041dfcad17ed8deb4f52c19d19840de"
+  version = "v0.2.12"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -1323,6 +1335,14 @@
   ]
   pruneopts = "UT"
   revision = "8f65e3013ebad444f13bc19536f7865efc793816"
+
+[[projects]]
+  branch = "master"
+  digest = "1:b521f10a2d8fa85c04a8ef4e62f2d1e14d303599a55d64dabf9f5a02f84d35eb"
+  name = "golang.org/x/sync"
+  packages = ["errgroup"]
+  pruneopts = "UT"
+  revision = "37e7f081c4d4c64e13b10787722085407fe5d15f"
 
 [[projects]]
   branch = "master"
@@ -1805,6 +1825,9 @@
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-checkpoint",
+    "github.com/solo-io/go-utils/cliutils",
+    "github.com/solo-io/go-utils/errors",
+    "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",

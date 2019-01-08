@@ -26,7 +26,7 @@ type ServiceSpec struct {
 	// TODO(yuval-k): ideally this should be google.protobuf.FileDescriptorSet
 	// but that doesn't work with gogoproto.equal_all.
 	Descriptors          []byte                     `protobuf:"bytes,1,opt,name=descriptors,proto3" json:"descriptors,omitempty"`
-	GrpcServices         []*ServiceSpec_GrpcService `protobuf:"bytes,2,rep,name=grpc_services,json=grpcServices" json:"grpc_services,omitempty"`
+	GrpcServices         []*ServiceSpec_GrpcService `protobuf:"bytes,2,rep,name=grpc_services,json=grpcServices,proto3" json:"grpc_services,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -73,7 +73,7 @@ func (m *ServiceSpec) GetGrpcServices() []*ServiceSpec_GrpcService {
 type ServiceSpec_GrpcService struct {
 	PackageName          string   `protobuf:"bytes,1,opt,name=package_name,json=packageName,proto3" json:"package_name,omitempty"`
 	ServiceName          string   `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
-	FunctionNames        []string `protobuf:"bytes,3,rep,name=function_names,json=functionNames" json:"function_names,omitempty"`
+	FunctionNames        []string `protobuf:"bytes,3,rep,name=function_names,json=functionNames,proto3" json:"function_names,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -129,7 +129,7 @@ type DestinationSpec struct {
 	Package              string                     `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
 	Service              string                     `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
 	Function             string                     `protobuf:"bytes,3,opt,name=function,proto3" json:"function,omitempty"`
-	Parameters           *transformation.Parameters `protobuf:"bytes,4,opt,name=parameters" json:"parameters,omitempty"`
+	Parameters           *transformation.Parameters `protobuf:"bytes,4,opt,name=parameters,proto3" json:"parameters,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`

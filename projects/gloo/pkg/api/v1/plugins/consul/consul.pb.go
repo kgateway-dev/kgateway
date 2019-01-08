@@ -33,9 +33,9 @@ type UpstreamSpec struct {
 	// The list of service tags Gloo should search for on a service instance
 	// before deciding whether or not to include the instance as part of this
 	// upstream
-	ServiceTags []string `protobuf:"bytes,2,rep,name=service_tags,json=serviceTags" json:"service_tags,omitempty"`
+	ServiceTags []string `protobuf:"bytes,2,rep,name=service_tags,json=serviceTags,proto3" json:"service_tags,omitempty"`
 	//     An optional Service Spec describing the service listening at this address
-	ServiceSpec *plugins.ServiceSpec `protobuf:"bytes,3,opt,name=service_spec,json=serviceSpec" json:"service_spec,omitempty"`
+	ServiceSpec *plugins.ServiceSpec `protobuf:"bytes,3,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
 	// is this consul service connect enabled.
 	ConnectEnabled       bool     `protobuf:"varint,4,opt,name=connect_enabled,json=connectEnabled,proto3" json:"connect_enabled,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

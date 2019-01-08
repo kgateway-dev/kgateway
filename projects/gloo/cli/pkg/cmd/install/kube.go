@@ -26,14 +26,14 @@ const (
 
 //go:generate sh -c "2gobytes -p install -a kubeManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/kube.yaml | sed 's@// date.*@@g' > kube.yaml.go"
 
-func kubeCmd(opts *options.Options) *cobra.Command {
+func KubeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kube",
 		Short: "install Gloo on kubernetes",
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
-				return errors.Wrapf(err, "creating image pull seret")
+				return errors.Wrapf(err, "creating image pull secret")
 			}
 
 			kubectl := exec.Command("kubectl", "apply", "-f", "-")

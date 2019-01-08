@@ -17,8 +17,6 @@ import (
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/spf13/cobra"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/secret/inputsecret"
 )
 
 func awsCmd(opts *options.Options) *cobra.Command {
@@ -55,7 +53,7 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-func awsSecretArgsInteractive(meta *core.Metadata, input *inputsecret.AwsSecret) error {
+func awsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) error {
 	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
 		return err
 	}
@@ -76,7 +74,7 @@ func awsSecretArgsInteractive(meta *core.Metadata, input *inputsecret.AwsSecret)
 	return nil
 }
 
-func createAwsSecret(ctx context.Context, meta core.Metadata, input inputsecret.AwsSecret) error {
+func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret) error {
 	if input.AccessKey == "" || input.SecretKey == "" {
 		fmt.Printf("access key or secret key not provided, reading credentials from ~/.aws/credentials")
 		creds := credentials.NewSharedCredentials("", "")

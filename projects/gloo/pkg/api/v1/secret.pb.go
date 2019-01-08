@@ -44,7 +44,7 @@ type Secret struct {
 	//	*Secret_Tls
 	Kind isSecret_Kind `protobuf_oneof:"kind"`
 	// Metadata contains the object metadata for this resource
-	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
+	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -80,13 +80,13 @@ type isSecret_Kind interface {
 }
 
 type Secret_Aws struct {
-	Aws *AwsSecret `protobuf:"bytes,1,opt,name=aws,oneof"`
+	Aws *AwsSecret `protobuf:"bytes,1,opt,name=aws,proto3,oneof"`
 }
 type Secret_Azure struct {
-	Azure *AzureSecret `protobuf:"bytes,2,opt,name=azure,oneof"`
+	Azure *AzureSecret `protobuf:"bytes,2,opt,name=azure,proto3,oneof"`
 }
 type Secret_Tls struct {
-	Tls *TlsSecret `protobuf:"bytes,3,opt,name=tls,oneof"`
+	Tls *TlsSecret `protobuf:"bytes,3,opt,name=tls,proto3,oneof"`
 }
 
 func (*Secret_Aws) isSecret_Kind()   {}
@@ -268,7 +268,7 @@ func (m *AwsSecret) GetSecretKey() string {
 }
 
 type AzureSecret struct {
-	ApiKeys              map[string]string `protobuf:"bytes,1,rep,name=api_keys,json=apiKeys" json:"api_keys,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	ApiKeys              map[string]string `protobuf:"bytes,1,rep,name=api_keys,json=apiKeys,proto3" json:"api_keys,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`

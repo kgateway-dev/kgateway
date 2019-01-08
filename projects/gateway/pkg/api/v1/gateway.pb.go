@@ -32,18 +32,18 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type Gateway struct {
 	// names of the the virtual services, which contain the actual routes for the gateway
 	// if the list is empty, the gateway will apply all virtual services to this gateway
-	VirtualServices []core.ResourceRef `protobuf:"bytes,2,rep,name=virtual_services,json=virtualServices" json:"virtual_services"`
+	VirtualServices []core.ResourceRef `protobuf:"bytes,2,rep,name=virtual_services,json=virtualServices,proto3" json:"virtual_services"`
 	// the bind address the gateway should serve traffic on
 	BindAddress string `protobuf:"bytes,3,opt,name=bind_address,json=bindAddress,proto3" json:"bind_address,omitempty"`
 	// bind ports must not conflict across gateways in a namespace
 	BindPort uint32 `protobuf:"varint,4,opt,name=bind_port,json=bindPort,proto3" json:"bind_port,omitempty"`
 	// top level plugin configuration for all routes on the gateway
-	Plugins *v1.ListenerPlugins `protobuf:"bytes,5,opt,name=plugins" json:"plugins,omitempty"`
+	Plugins *v1.ListenerPlugins `protobuf:"bytes,5,opt,name=plugins,proto3" json:"plugins,omitempty"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation
-	Status core.Status `protobuf:"bytes,6,opt,name=status" json:"status" testdiff:"ignore"`
+	Status core.Status `protobuf:"bytes,6,opt,name=status,proto3" json:"status" testdiff:"ignore"`
 	// Metadata contains the object metadata for this resource
-	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
+	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
