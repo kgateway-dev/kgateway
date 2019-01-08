@@ -2,10 +2,11 @@ package secret
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )
 
-func CreateCmd(opts *options.Options) *cobra.Command {
+func CreateCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "secret",
 		Aliases: []string{"s", "secret"},
@@ -18,6 +19,6 @@ func CreateCmd(opts *options.Options) *cobra.Command {
 	}
 	cmd.AddCommand(awsCmd(opts))
 	cmd.AddCommand(tlsCmd(opts))
-
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

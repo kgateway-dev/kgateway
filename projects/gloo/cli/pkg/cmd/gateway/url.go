@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/solo-io/go-utils/cliutils"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -16,7 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func urlCmd(opts *options.Options) *cobra.Command {
+func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "url",
 		Short: "print the http endpoint for the gateway ingress",
@@ -34,6 +36,7 @@ func urlCmd(opts *options.Options) *cobra.Command {
 		"If Kubernetes is running locally with minikube, specify 'Minikube' or leave empty. Note, this is not required if yoru "+
 		"kubernetes service is connected to an external load balancer, such as AWS ELB")
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
@@ -46,13 +49,13 @@ func getIngressHost(opts *options.Options) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "starting kube client")
 	}
-	svc, err := kube.CoreV1().Services(opts.Metadata.Namespace).Get("gateway-proxy", metav1.GetOptions{})
+	svc, err := kube.CoreV1().Services(opts.Metadata.Namespace).Get(opts.Gateway.Proxy, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "could not detect 'gateway-proxy' service in %v namespace. "+
-			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'")
+		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
+			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'", opts.Gateway.Proxy)
 	}
 	if len(svc.Spec.Ports) != 1 {
-		return "", errors.Errorf("service gateway-proxy is missing expected number of ports (1)")
+		return "", errors.Errorf("service %v is missing expected number of ports (1)", opts.Gateway.Proxy)
 	}
 	svcPort := svc.Spec.Ports[0]
 

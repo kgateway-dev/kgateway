@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/solo-io/go-utils/cliutils"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
@@ -19,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addRouteCmd(opts *options.Options) *cobra.Command {
+func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "route",
 		Aliases: []string{"r", "routes"},
@@ -49,6 +51,7 @@ func addRouteCmd(opts *options.Options) *cobra.Command {
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddRouteFlags(pflags, &opts.Add.Route)
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 

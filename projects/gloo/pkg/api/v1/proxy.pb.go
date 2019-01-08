@@ -79,12 +79,12 @@ type Proxy struct {
 	// Define here each listener the proxy should create.
 	// Listeners define the a set of behaviors for a single bind address/port where the proxy will listen
 	// If no listeners are specified, the instances configured with the proxy resource will not accept connections.
-	Listeners []*Listener `protobuf:"bytes,2,rep,name=listeners" json:"listeners,omitempty"`
+	Listeners []*Listener `protobuf:"bytes,2,rep,name=listeners,proto3" json:"listeners,omitempty"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation
-	Status core.Status `protobuf:"bytes,6,opt,name=status" json:"status" testdiff:"ignore"`
+	Status core.Status `protobuf:"bytes,6,opt,name=status,proto3" json:"status" testdiff:"ignore"`
 	// Metadata contains the object metadata for this resource
-	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
+	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -156,7 +156,7 @@ type Listener struct {
 	// Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config
 	// must match a domain in virtual host
 	// TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored
-	SslConfiguations     []*SslConfig `protobuf:"bytes,5,rep,name=ssl_configuations,json=sslConfiguations" json:"ssl_configuations,omitempty"`
+	SslConfiguations     []*SslConfig `protobuf:"bytes,5,rep,name=ssl_configuations,json=sslConfiguations,proto3" json:"ssl_configuations,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -192,7 +192,7 @@ type isListener_ListenerType interface {
 }
 
 type Listener_HttpListener struct {
-	HttpListener *HttpListener `protobuf:"bytes,4,opt,name=http_listener,json=httpListener,oneof"`
+	HttpListener *HttpListener `protobuf:"bytes,4,opt,name=http_listener,json=httpListener,proto3,oneof"`
 }
 
 func (*Listener_HttpListener) isListener_ListenerType() {}
@@ -301,7 +301,7 @@ type HttpListener struct {
 	// the set of virtual hosts that will be accessible by clients connecting to this listener.
 	// at least one virtual host must be specified for this listener to be active (else connections will be refused)
 	// the set of domains for each virtual host must be unique, or the config will be considered invalid
-	VirtualHosts []*VirtualHost `protobuf:"bytes,1,rep,name=virtual_hosts,json=virtualHosts" json:"virtual_hosts,omitempty"`
+	VirtualHosts []*VirtualHost `protobuf:"bytes,1,rep,name=virtual_hosts,json=virtualHosts,proto3" json:"virtual_hosts,omitempty"`
 	// Plugins contains top-level plugin configuration to be applied to a listener
 	// Listener config is applied to all HTTP traffic that
 	// connects to this listener. Some configuration here can be overridden in
@@ -310,7 +310,7 @@ type HttpListener struct {
 	// Plugins should be specified here in the form of
 	//   `"plugin_name": {..//plugin_config...}`
 	// to allow specifying multiple plugins.
-	ListenerPlugins      *ListenerPlugins `protobuf:"bytes,2,opt,name=listener_plugins,json=listenerPlugins" json:"listener_plugins,omitempty"`
+	ListenerPlugins      *ListenerPlugins `protobuf:"bytes,2,opt,name=listener_plugins,json=listenerPlugins,proto3" json:"listener_plugins,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -368,11 +368,11 @@ type VirtualHost struct {
 	// Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all
 	// virtual hosts or the config will be invalidated by Gloo
 	// Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto)
-	Domains []string `protobuf:"bytes,2,rep,name=domains" json:"domains,omitempty"`
+	Domains []string `protobuf:"bytes,2,rep,name=domains,proto3" json:"domains,omitempty"`
 	// The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches
 	// this virtual host. If the request matches more than one route in the list, the first route matched will be selected.
 	// If the list of routes is empty, the virtual host will be ignored by Gloo.
-	Routes []*Route `protobuf:"bytes,3,rep,name=routes" json:"routes,omitempty"`
+	Routes []*Route `protobuf:"bytes,3,rep,name=routes,proto3" json:"routes,omitempty"`
 	// Plugins contains top-level plugin configuration to be applied to a listener
 	// Listener config is applied to all HTTP traffic that
 	// connects to this listener. Some configuration here can be overridden in
@@ -381,7 +381,7 @@ type VirtualHost struct {
 	// Plugins should be specified here in the form of
 	//   `"plugin_name": {..//plugin_config...}`
 	// to allow specifying multiple plugins.
-	VirtualHostPlugins   *VirtualHostPlugins `protobuf:"bytes,4,opt,name=virtual_host_plugins,json=virtualHostPlugins" json:"virtual_host_plugins,omitempty"`
+	VirtualHostPlugins   *VirtualHostPlugins `protobuf:"bytes,4,opt,name=virtual_host_plugins,json=virtualHostPlugins,proto3" json:"virtual_host_plugins,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -443,7 +443,7 @@ func (m *VirtualHost) GetVirtualHostPlugins() *VirtualHostPlugins {
 // Routes declare the entrypoints on virtual hosts and the action to take for matched requests.
 type Route struct {
 	// The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.)
-	Matcher *Matcher `protobuf:"bytes,1,opt,name=matcher" json:"matcher,omitempty"`
+	Matcher *Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
 	// The Route Action Defines what action the proxy should take when a request matches the route.
 	//
 	// Types that are valid to be assigned to Action:
@@ -458,7 +458,7 @@ type Route struct {
 	// Plugins should be specified here in the form of
 	//   `"plugin_name": {..//plugin_config...}`
 	// to allow specifying multiple plugins.
-	RoutePlugins         *RoutePlugins `protobuf:"bytes,5,opt,name=route_plugins,json=routePlugins" json:"route_plugins,omitempty"`
+	RoutePlugins         *RoutePlugins `protobuf:"bytes,5,opt,name=route_plugins,json=routePlugins,proto3" json:"route_plugins,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -494,13 +494,13 @@ type isRoute_Action interface {
 }
 
 type Route_RouteAction struct {
-	RouteAction *RouteAction `protobuf:"bytes,2,opt,name=route_action,json=routeAction,oneof"`
+	RouteAction *RouteAction `protobuf:"bytes,2,opt,name=route_action,json=routeAction,proto3,oneof"`
 }
 type Route_RedirectAction struct {
-	RedirectAction *RedirectAction `protobuf:"bytes,3,opt,name=redirect_action,json=redirectAction,oneof"`
+	RedirectAction *RedirectAction `protobuf:"bytes,3,opt,name=redirect_action,json=redirectAction,proto3,oneof"`
 }
 type Route_DirectResponseAction struct {
-	DirectResponseAction *DirectResponseAction `protobuf:"bytes,4,opt,name=direct_response_action,json=directResponseAction,oneof"`
+	DirectResponseAction *DirectResponseAction `protobuf:"bytes,4,opt,name=direct_response_action,json=directResponseAction,proto3,oneof"`
 }
 
 func (*Route_RouteAction) isRoute_Action()          {}
@@ -654,15 +654,15 @@ type Matcher struct {
 	// config. A match will happen if all the headers in the route are present in
 	// the request with the same values (or based on presence if the value field
 	// is not in the config).
-	Headers []*HeaderMatcher `protobuf:"bytes,6,rep,name=headers" json:"headers,omitempty"`
+	Headers []*HeaderMatcher `protobuf:"bytes,6,rep,name=headers,proto3" json:"headers,omitempty"`
 	// Specifies a set of URL query parameters on which the route should
 	// match. The router will check the query string from the *path* header
 	// against all the specified query parameters. If the number of specified
 	// query parameters is nonzero, they all must match the *path* header's
 	// query string for a match to occur.
-	QueryParameters []*QueryParameterMatcher `protobuf:"bytes,7,rep,name=query_parameters,json=queryParameters" json:"query_parameters,omitempty"`
+	QueryParameters []*QueryParameterMatcher `protobuf:"bytes,7,rep,name=query_parameters,json=queryParameters,proto3" json:"query_parameters,omitempty"`
 	// HTTP Method/Verb(s) to match on. If none specified, the matcher will ignore the HTTP Method
-	Methods              []string `protobuf:"bytes,8,rep,name=methods" json:"methods,omitempty"`
+	Methods              []string `protobuf:"bytes,8,rep,name=methods,proto3" json:"methods,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1015,10 +1015,10 @@ type isRouteAction_Destination interface {
 }
 
 type RouteAction_Single struct {
-	Single *Destination `protobuf:"bytes,1,opt,name=single,oneof"`
+	Single *Destination `protobuf:"bytes,1,opt,name=single,proto3,oneof"`
 }
 type RouteAction_Multi struct {
-	Multi *MultiDestination `protobuf:"bytes,2,opt,name=multi,oneof"`
+	Multi *MultiDestination `protobuf:"bytes,2,opt,name=multi,proto3,oneof"`
 }
 
 func (*RouteAction_Single) isRouteAction_Destination() {}
@@ -1122,12 +1122,12 @@ func _RouteAction_OneofSizer(msg proto.Message) (n int) {
 // Destinations define routable destinations for proxied requests
 type Destination struct {
 	// The upstream to route requests to
-	Upstream core.ResourceRef `protobuf:"bytes,1,opt,name=upstream" json:"upstream"`
+	Upstream core.ResourceRef `protobuf:"bytes,1,opt,name=upstream,proto3" json:"upstream"`
 	// Some upstreams utilize plugins which require or permit additional configuration on routes targeting them.
 	// gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the
 	// destination config. If the destination config is required for the upstream and not provided by the user,
 	// Gloo will invalidate the destination and its parent resources.
-	DestinationSpec      *DestinationSpec `protobuf:"bytes,2,opt,name=destination_spec,json=destinationSpec" json:"destination_spec,omitempty"`
+	DestinationSpec      *DestinationSpec `protobuf:"bytes,2,opt,name=destination_spec,json=destinationSpec,proto3" json:"destination_spec,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -1176,7 +1176,7 @@ func (m *Destination) GetDestinationSpec() *DestinationSpec {
 type MultiDestination struct {
 	// This list must contain at least one destination or the listener housing this route will be invalid,
 	// causing Gloo to error the parent proxy resource.
-	Destinations         []*WeightedDestination `protobuf:"bytes,1,rep,name=destinations" json:"destinations,omitempty"`
+	Destinations         []*WeightedDestination `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -1215,7 +1215,7 @@ func (m *MultiDestination) GetDestinations() []*WeightedDestination {
 
 // WeightedDestination attaches a weight to a single destination.
 type WeightedDestination struct {
-	Destination *Destination `protobuf:"bytes,1,opt,name=destination" json:"destination,omitempty"`
+	Destination *Destination `protobuf:"bytes,1,opt,name=destination,proto3" json:"destination,omitempty"`
 	// Weight must be greater than zero
 	// Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route
 	Weight               uint32   `protobuf:"varint,2,opt,name=weight,proto3" json:"weight,omitempty"`
@@ -1499,7 +1499,7 @@ type SslConfig struct {
 	//	*SslConfig_SslFiles
 	SslSecrets isSslConfig_SslSecrets `protobuf_oneof:"ssl_secrets"`
 	// optional. the SNI domains that should be considered for TLS connections
-	SniDomains           []string `protobuf:"bytes,3,rep,name=sni_domains,json=sniDomains" json:"sni_domains,omitempty"`
+	SniDomains           []string `protobuf:"bytes,3,rep,name=sni_domains,json=sniDomains,proto3" json:"sni_domains,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1535,10 +1535,10 @@ type isSslConfig_SslSecrets interface {
 }
 
 type SslConfig_SecretRef struct {
-	SecretRef *core.ResourceRef `protobuf:"bytes,1,opt,name=secret_ref,json=secretRef,oneof"`
+	SecretRef *core.ResourceRef `protobuf:"bytes,1,opt,name=secret_ref,json=secretRef,proto3,oneof"`
 }
 type SslConfig_SslFiles struct {
-	SslFiles *SSLFiles `protobuf:"bytes,2,opt,name=ssl_files,json=sslFiles,oneof"`
+	SslFiles *SSLFiles `protobuf:"bytes,2,opt,name=ssl_files,json=sslFiles,proto3,oneof"`
 }
 
 func (*SslConfig_SecretRef) isSslConfig_SslSecrets() {}

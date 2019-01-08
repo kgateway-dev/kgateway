@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/go-utils/cliutils"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -17,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func dumpCmd(opts *options.Options) *cobra.Command {
+func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dump",
 		Short: "dump Envoy config from one of the gateway proxy instances",
@@ -31,13 +33,14 @@ func dumpCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
 func getEnvoyCfgDump(opts *options.Options) (string, error) {
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
-		"deployment/gateway-proxy", adminPort)
+		"deployment/"+opts.Gateway.Proxy, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	if err := portFwd.Start(); err != nil {
@@ -95,7 +98,7 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 
 }
 
-func statsCmd(opts *options.Options) *cobra.Command {
+func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stats",
 		Short: "stats for one of the gateway proxy instances",
@@ -109,13 +112,14 @@ func statsCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
-		"deployment/gateway-proxy", adminPort)
+		"deployment/"+opts.Gateway.Proxy, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
 	if err := portFwd.Start(); err != nil {

@@ -71,7 +71,7 @@ var xxx_messageInfo_ListenerPlugins proto.InternalMessageInfo
 // Note to developers: new Virtual Host Plugins must be added to this struct
 // to be usable by Gloo.
 type VirtualHostPlugins struct {
-	Plugins              map[string]*types.Any `protobuf:"bytes,1,rep,name=plugins" json:"plugins,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	Plugins              map[string]*types.Any `protobuf:"bytes,1,rep,name=plugins,proto3" json:"plugins,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -113,9 +113,9 @@ func (m *VirtualHostPlugins) GetPlugins() map[string]*types.Any {
 // Note to developers: new Route Plugins must be added to this struct
 // to be usable by Gloo.
 type RoutePlugins struct {
-	Transformations      *transformation.RouteTransformations `protobuf:"bytes,1,opt,name=transformations" json:"transformations,omitempty"`
-	Faults               *faultinjection.RouteFaults          `protobuf:"bytes,2,opt,name=faults" json:"faults,omitempty"`
-	PrefixRewrite        *transformation.PrefixRewrite        `protobuf:"bytes,3,opt,name=prefix_rewrite,json=prefixRewrite" json:"prefix_rewrite,omitempty"`
+	Transformations      *transformation.RouteTransformations `protobuf:"bytes,1,opt,name=transformations,proto3" json:"transformations,omitempty"`
+	Faults               *faultinjection.RouteFaults          `protobuf:"bytes,2,opt,name=faults,proto3" json:"faults,omitempty"`
+	PrefixRewrite        *transformation.PrefixRewrite        `protobuf:"bytes,3,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
 	XXX_unrecognized     []byte                               `json:"-"`
 	XXX_sizecache        int32                                `json:"-"`
@@ -213,19 +213,19 @@ type isDestinationSpec_DestinationType interface {
 }
 
 type DestinationSpec_Aws struct {
-	Aws *aws.DestinationSpec `protobuf:"bytes,1,opt,name=aws,oneof"`
+	Aws *aws.DestinationSpec `protobuf:"bytes,1,opt,name=aws,proto3,oneof"`
 }
 type DestinationSpec_Azure struct {
-	Azure *azure.DestinationSpec `protobuf:"bytes,2,opt,name=azure,oneof"`
+	Azure *azure.DestinationSpec `protobuf:"bytes,2,opt,name=azure,proto3,oneof"`
 }
 type DestinationSpec_Rest struct {
-	Rest *rest.DestinationSpec `protobuf:"bytes,3,opt,name=rest,oneof"`
+	Rest *rest.DestinationSpec `protobuf:"bytes,3,opt,name=rest,proto3,oneof"`
 }
 type DestinationSpec_Grpc struct {
-	Grpc *grpc1.DestinationSpec `protobuf:"bytes,4,opt,name=grpc,oneof"`
+	Grpc *grpc1.DestinationSpec `protobuf:"bytes,4,opt,name=grpc,proto3,oneof"`
 }
 type DestinationSpec_Sqoop struct {
-	Sqoop *sqoop.DestinationSpec `protobuf:"bytes,5,opt,name=sqoop,oneof"`
+	Sqoop *sqoop.DestinationSpec `protobuf:"bytes,5,opt,name=sqoop,proto3,oneof"`
 }
 
 func (*DestinationSpec_Aws) isDestinationSpec_DestinationType()   {}
@@ -455,19 +455,19 @@ type isUpstreamSpec_UpstreamType interface {
 }
 
 type UpstreamSpec_Kube struct {
-	Kube *kubernetes.UpstreamSpec `protobuf:"bytes,1,opt,name=kube,oneof"`
+	Kube *kubernetes.UpstreamSpec `protobuf:"bytes,1,opt,name=kube,proto3,oneof"`
 }
 type UpstreamSpec_Static struct {
-	Static *static.UpstreamSpec `protobuf:"bytes,4,opt,name=static,oneof"`
+	Static *static.UpstreamSpec `protobuf:"bytes,4,opt,name=static,proto3,oneof"`
 }
 type UpstreamSpec_Aws struct {
-	Aws *aws.UpstreamSpec `protobuf:"bytes,2,opt,name=aws,oneof"`
+	Aws *aws.UpstreamSpec `protobuf:"bytes,2,opt,name=aws,proto3,oneof"`
 }
 type UpstreamSpec_Azure struct {
-	Azure *azure.UpstreamSpec `protobuf:"bytes,3,opt,name=azure,oneof"`
+	Azure *azure.UpstreamSpec `protobuf:"bytes,3,opt,name=azure,proto3,oneof"`
 }
 type UpstreamSpec_Consul struct {
-	Consul *consul.UpstreamSpec `protobuf:"bytes,5,opt,name=consul,oneof"`
+	Consul *consul.UpstreamSpec `protobuf:"bytes,5,opt,name=consul,proto3,oneof"`
 }
 
 func (*UpstreamSpec_Kube) isUpstreamSpec_UpstreamType()   {}

@@ -9,12 +9,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
 )
 
-func virtualServiceCreate(opts *options.Options) *cobra.Command {
+func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "virtualservice",
 		Aliases: []string{"vs", "virtualservice", "virtualservices"},
@@ -44,6 +45,7 @@ func virtualServiceCreate(opts *options.Options) *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddVirtualServiceFlags(pflags, &opts.Create.VirtualService)
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 

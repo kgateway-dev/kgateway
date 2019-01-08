@@ -22,8 +22,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type RouteTransformations struct {
-	RequestTransformation  *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation" json:"request_transformation,omitempty"`
-	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation" json:"response_transformation,omitempty"`
+	RequestTransformation  *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
+	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
 	XXX_unrecognized       []byte          `json:"-"`
 	XXX_sizecache          int32           `json:"-"`
@@ -111,10 +111,10 @@ type isTransformation_TransformationType interface {
 }
 
 type Transformation_TransformationTemplate struct {
-	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,oneof"`
+	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,proto3,oneof"`
 }
 type Transformation_HeaderBodyTransform struct {
-	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,oneof"`
+	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,proto3,oneof"`
 }
 
 func (*Transformation_TransformationTemplate) isTransformation_TransformationType() {}
@@ -274,8 +274,8 @@ func (m *Extraction) GetSubgroup() uint32 {
 type TransformationTemplate struct {
 	AdvancedTemplates bool `protobuf:"varint,1,opt,name=advanced_templates,json=advancedTemplates,proto3" json:"advanced_templates,omitempty"`
 	// Extractors are in the origin request language domain
-	Extractors map[string]*Extraction   `protobuf:"bytes,2,rep,name=extractors" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
-	Headers    map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	Extractors map[string]*Extraction   `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Headers    map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Types that are valid to be assigned to BodyTransformation:
 	//	*TransformationTemplate_Body
 	//	*TransformationTemplate_Passthrough
@@ -316,13 +316,13 @@ type isTransformationTemplate_BodyTransformation interface {
 }
 
 type TransformationTemplate_Body struct {
-	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,oneof"`
+	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
 }
 type TransformationTemplate_Passthrough struct {
-	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,oneof"`
+	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,proto3,oneof"`
 }
 type TransformationTemplate_MergeExtractorsToBody struct {
-	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,oneof"`
+	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,proto3,oneof"`
 }
 
 func (*TransformationTemplate_Body) isTransformationTemplate_BodyTransformation()                  {}

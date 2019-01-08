@@ -32,7 +32,7 @@ type Settings struct {
 	DiscoveryNamespace string `protobuf:"bytes,1,opt,name=discovery_namespace,json=discoveryNamespace,proto3" json:"discovery_namespace,omitempty"`
 	// namespaces to watch for user config as well as services
 	// TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces...
-	WatchNamespaces []string `protobuf:"bytes,2,rep,name=watch_namespaces,json=watchNamespaces" json:"watch_namespaces,omitempty"`
+	WatchNamespaces []string `protobuf:"bytes,2,rep,name=watch_namespaces,json=watchNamespaces,proto3" json:"watch_namespaces,omitempty"`
 	// where to read user config (upstream, proxy) from
 	// if nil, use only in memory config
 	//
@@ -56,14 +56,14 @@ type Settings struct {
 	// where the gloo xds server should bind (should not need configuration by user)
 	BindAddr string `protobuf:"bytes,11,opt,name=bind_addr,json=bindAddr,proto3" json:"bind_addr,omitempty"`
 	// how frequently to resync watches, etc
-	RefreshRate *types.Duration `protobuf:"bytes,12,opt,name=refresh_rate,json=refreshRate" json:"refresh_rate,omitempty"`
+	RefreshRate *types.Duration `protobuf:"bytes,12,opt,name=refresh_rate,json=refreshRate,proto3" json:"refresh_rate,omitempty"`
 	// enable serving debug data on port 9090
 	DevMode bool `protobuf:"varint,13,opt,name=DevMode,proto3" json:"DevMode,omitempty"`
 	// Metadata contains the object metadata for this resource
-	Metadata core.Metadata `protobuf:"bytes,14,opt,name=metadata" json:"metadata"`
+	Metadata core.Metadata `protobuf:"bytes,14,opt,name=metadata,proto3" json:"metadata"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation
-	Status               core.Status `protobuf:"bytes,15,opt,name=status" json:"status" testdiff:"ignore"`
+	Status               core.Status `protobuf:"bytes,15,opt,name=status,proto3" json:"status" testdiff:"ignore"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -107,25 +107,25 @@ type isSettings_ArtifactSource interface {
 }
 
 type Settings_KubernetesConfigSource struct {
-	KubernetesConfigSource *Settings_KubernetesCrds `protobuf:"bytes,4,opt,name=kubernetes_config_source,json=kubernetesConfigSource,oneof"`
+	KubernetesConfigSource *Settings_KubernetesCrds `protobuf:"bytes,4,opt,name=kubernetes_config_source,json=kubernetesConfigSource,proto3,oneof"`
 }
 type Settings_DirectoryConfigSource struct {
-	DirectoryConfigSource *Settings_Directory `protobuf:"bytes,5,opt,name=directory_config_source,json=directoryConfigSource,oneof"`
+	DirectoryConfigSource *Settings_Directory `protobuf:"bytes,5,opt,name=directory_config_source,json=directoryConfigSource,proto3,oneof"`
 }
 type Settings_KubernetesSecretSource struct {
-	KubernetesSecretSource *Settings_KubernetesSecrets `protobuf:"bytes,6,opt,name=kubernetes_secret_source,json=kubernetesSecretSource,oneof"`
+	KubernetesSecretSource *Settings_KubernetesSecrets `protobuf:"bytes,6,opt,name=kubernetes_secret_source,json=kubernetesSecretSource,proto3,oneof"`
 }
 type Settings_VaultSecretSource struct {
-	VaultSecretSource *Settings_VaultSecrets `protobuf:"bytes,7,opt,name=vault_secret_source,json=vaultSecretSource,oneof"`
+	VaultSecretSource *Settings_VaultSecrets `protobuf:"bytes,7,opt,name=vault_secret_source,json=vaultSecretSource,proto3,oneof"`
 }
 type Settings_DirectorySecretSource struct {
-	DirectorySecretSource *Settings_Directory `protobuf:"bytes,8,opt,name=directory_secret_source,json=directorySecretSource,oneof"`
+	DirectorySecretSource *Settings_Directory `protobuf:"bytes,8,opt,name=directory_secret_source,json=directorySecretSource,proto3,oneof"`
 }
 type Settings_KubernetesArtifactSource struct {
-	KubernetesArtifactSource *Settings_KubernetesConfigmaps `protobuf:"bytes,9,opt,name=kubernetes_artifact_source,json=kubernetesArtifactSource,oneof"`
+	KubernetesArtifactSource *Settings_KubernetesConfigmaps `protobuf:"bytes,9,opt,name=kubernetes_artifact_source,json=kubernetesArtifactSource,proto3,oneof"`
 }
 type Settings_DirectoryArtifactSource struct {
-	DirectoryArtifactSource *Settings_Directory `protobuf:"bytes,10,opt,name=directory_artifact_source,json=directoryArtifactSource,oneof"`
+	DirectoryArtifactSource *Settings_Directory `protobuf:"bytes,10,opt,name=directory_artifact_source,json=directoryArtifactSource,proto3,oneof"`
 }
 
 func (*Settings_KubernetesConfigSource) isSettings_ConfigSource()     {}

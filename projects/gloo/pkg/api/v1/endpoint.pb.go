@@ -30,13 +30,13 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 // Endpoints represent dynamically discovered address/ports where an upstream service is listening
 type Endpoint struct {
 	// List of the upstreams the endpoint belongs to
-	Upstreams []*core.ResourceRef `protobuf:"bytes,1,rep,name=upstreams" json:"upstreams,omitempty"`
+	Upstreams []*core.ResourceRef `protobuf:"bytes,1,rep,name=upstreams,proto3" json:"upstreams,omitempty"`
 	// Address of the endpoint (ip or hostname)
 	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	// listening port for the endpoint
 	Port uint32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	// Metadata contains the object metadata for this resource
-	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
+	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`

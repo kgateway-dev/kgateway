@@ -80,7 +80,7 @@ type RouteDelay struct {
 	// This should be a value between 0.0 and 100.0, with up to 6 significant digits.
 	Percentage float32 `protobuf:"fixed32,1,opt,name=percentage,proto3" json:"percentage,omitempty"`
 	// Fixed delay, defaulting to 0.
-	FixedDelay           *time.Duration `protobuf:"bytes,2,opt,name=fixed_delay,json=fixedDelay,stdduration" json:"fixed_delay,omitempty"`
+	FixedDelay           *time.Duration `protobuf:"bytes,2,opt,name=fixed_delay,json=fixedDelay,proto3,stdduration" json:"fixed_delay,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -125,8 +125,8 @@ func (m *RouteDelay) GetFixedDelay() *time.Duration {
 }
 
 type RouteFaults struct {
-	Abort                *RouteAbort `protobuf:"bytes,1,opt,name=abort" json:"abort,omitempty"`
-	Delay                *RouteDelay `protobuf:"bytes,2,opt,name=delay" json:"delay,omitempty"`
+	Abort                *RouteAbort `protobuf:"bytes,1,opt,name=abort,proto3" json:"abort,omitempty"`
+	Delay                *RouteDelay `protobuf:"bytes,2,opt,name=delay,proto3" json:"delay,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`

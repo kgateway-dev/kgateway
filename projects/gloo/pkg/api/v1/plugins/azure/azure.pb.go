@@ -57,8 +57,8 @@ type UpstreamSpec struct {
 	// A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).
 	// {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }}
 	// Note that this secret is not required unless Function Discovery is enabled
-	SecretRef            core.ResourceRef             `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef" json:"secret_ref"`
-	Functions            []*UpstreamSpec_FunctionSpec `protobuf:"bytes,3,rep,name=functions" json:"functions,omitempty"`
+	SecretRef            core.ResourceRef             `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref"`
+	Functions            []*UpstreamSpec_FunctionSpec `protobuf:"bytes,3,rep,name=functions,proto3" json:"functions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
 	XXX_unrecognized     []byte                       `json:"-"`
 	XXX_sizecache        int32                        `json:"-"`

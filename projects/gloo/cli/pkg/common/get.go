@@ -76,3 +76,10 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 
 	return list, nil
 }
+
+func GetName(args []string, opts *options.Options) string {
+	if len(args) > 0 {
+		return args[0]
+	}
+	return opts.Metadata.Name
+}
