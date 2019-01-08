@@ -1,10 +1,11 @@
 package create
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"

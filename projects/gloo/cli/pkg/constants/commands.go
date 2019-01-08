@@ -65,6 +65,4 @@ var (
 		Aliases: []string{"ug"},
 		Short:   "upgrade glooctl binary",
 	}
-
-
 )

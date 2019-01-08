@@ -3,10 +3,11 @@ package upgrade
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"net/http"
 	"os"
 	"runtime"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/go-utils/cliutils"
 
