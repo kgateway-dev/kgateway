@@ -17,8 +17,8 @@ import (
 
 func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "virtualservice",
-		Aliases: []string{"vs", "virtualservice", "virtualservices"},
+		Use:     constants.VIRTUAL_SERVICE_COMMAND.Use,
+		Aliases: constants.VIRTUAL_SERVICE_COMMAND.Aliases,
 		Short:   "Create a Virtual Service",
 		Long: "A virtual service describes the set of routes to match for a set of domains. \n" +
 			"Virtual services are containers for routes assigned to a domain or set of domains. \n" +

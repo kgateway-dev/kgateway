@@ -1,6 +1,7 @@
 package create
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"strconv"
 	"strings"
 
@@ -27,8 +28,8 @@ import (
 
 func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "upstream",
-		Aliases: []string{"us", "upstream", "upstreams"},
+		Use:     constants.UPSTREAM_COMMAND.Use,
+		Aliases: constants.UPSTREAM_COMMAND.Aliases,
 		Short:   "Create an Upstream Interactively",
 		Long: "Upstreams represent destination for routing HTTP requests. Upstreams can be compared to \n" +
 			"[clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster) in Envoy terminology. \n" +

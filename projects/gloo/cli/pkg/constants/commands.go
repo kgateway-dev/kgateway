@@ -29,6 +29,11 @@ var (
 		Short:   "interact with the Gloo Gateway/Ingress",
 	}
 
+	SECRET_COMMAND = cobra.Command{
+		Use:     "secret",
+		Aliases: []string{"s", "secret"},
+	}
+
 	ADD_COMMAND = cobra.Command{
 		Use:     "add",
 		Aliases: []string{"a"},
