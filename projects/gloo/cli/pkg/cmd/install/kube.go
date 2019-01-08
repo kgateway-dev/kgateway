@@ -33,7 +33,7 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
-				return errors.Wrapf(err, "creating image pull seret")
+				return errors.Wrapf(err, "creating image pull secret")
 			}
 
 			kubectl := exec.Command("kubectl", "apply", "-f", "-")
