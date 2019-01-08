@@ -1109,7 +1109,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:579f466261f0d5e01d2d53b862abec57b7ec6f3e322c3f7a86cb982521263588"
+  digest = "1:5689ccff238a7dcdaec7c5ed18632b1f58345320895b1d28d1c555b1f53dbe7b"
   name = "github.com/solo-io/go-utils"
   packages = [
     "cliutils",
@@ -1118,7 +1118,7 @@
     "protoutils",
   ]
   pruneopts = "UT"
-  revision = "20850e4923eaa754a69ec42eba7a1c5ed095e1e6"
+  revision = "aed107e26498b88eb641f3e9a794dd1ddeda6a10"
 
 [[projects]]
   branch = "master"
@@ -1129,7 +1129,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:b5dd3704debad220fee641cce0dd2f7dad09b801b7e5ca75e1b05bfb786676e2"
+  digest = "1:d1d58c46a9e300ea33377bb419f7b67d23a636f0623c6c19b2554bd88e8178b4"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1182,8 +1182,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "7874fbfaf3cc61865a14442a5ba0f77f665b3ab7"
-  version = "v0.2.11"
+  revision = "f2b636e31041dfcad17ed8deb4f52c19d19840de"
+  version = "v0.2.12"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -1335,6 +1335,14 @@
   ]
   pruneopts = "UT"
   revision = "8f65e3013ebad444f13bc19536f7865efc793816"
+
+[[projects]]
+  branch = "master"
+  digest = "1:b521f10a2d8fa85c04a8ef4e62f2d1e14d303599a55d64dabf9f5a02f84d35eb"
+  name = "golang.org/x/sync"
+  packages = ["errgroup"]
+  pruneopts = "UT"
+  revision = "37e7f081c4d4c64e13b10787722085407fe5d15f"
 
 [[projects]]
   branch = "master"
