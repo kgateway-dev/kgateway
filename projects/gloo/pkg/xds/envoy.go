@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

@@ -708,18 +708,6 @@
   version = "v0.3.5"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f3b0cfd42716269884bf06df5d5be9e54161d5af0a2f0ccca08717928dd45fc5"
-  name = "github.com/inconshreveable/go-update"
-  packages = [
-    ".",
-    "internal/binarydist",
-    "internal/osext",
-  ]
-  pruneopts = "UT"
-  revision = "8152e7eb6ccf8679a64582a66b78519688d156ad"
-
-[[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
@@ -770,17 +758,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "95032a82bc518f77982ea72343cc1ade730072f0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:6bc9f1251db7b9e95316813d9564d158a886b796f5073e767151b2c1178c7109"
-  name = "github.com/keybase/go-ps"
-  packages = [
-    ".",
-    "darwincgo",
-  ]
-  pruneopts = "UT"
-  revision = "668c8856d9992f97248b3177d45743d2cc1068db"
 
 [[projects]]
   digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
@@ -1807,10 +1784,8 @@
     "github.com/hashicorp/consul/agent/config",
     "github.com/hashicorp/consul/api",
     "github.com/hashicorp/go-multierror",
-    "github.com/inconshreveable/go-update",
     "github.com/jhump/protoreflect/desc",
     "github.com/jhump/protoreflect/grpcreflect",
-    "github.com/keybase/go-ps",
     "github.com/lyft/protoc-gen-validate/validate",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",

@@ -10,6 +10,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	multierror "github.com/hashicorp/go-multierror"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 
 	"github.com/envoyproxy/go-control-plane/pkg/util"

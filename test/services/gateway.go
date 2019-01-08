@@ -22,6 +22,9 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
+
 	. "github.com/onsi/gomega"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
