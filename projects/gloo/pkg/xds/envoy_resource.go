@@ -15,6 +15,7 @@
 package xds
 
 import (
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"

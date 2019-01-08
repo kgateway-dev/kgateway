@@ -7,6 +7,8 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/inconshreveable/go-update"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/go-utils/cliutils"

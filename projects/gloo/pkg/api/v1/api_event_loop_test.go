@@ -23,12 +23,6 @@ var _ = Describe("ApiEventLoop", func() {
 
 	BeforeEach(func() {
 
-		proxyClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-		proxyClient, err := NewProxyClient(proxyClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-
 		artifactClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
@@ -39,6 +33,12 @@ var _ = Describe("ApiEventLoop", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		endpointClient, err := NewEndpointClient(endpointClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		proxyClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		proxyClient, err := NewProxyClient(proxyClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		secretClientFactory := &factory.MemoryResourceClientFactory{
@@ -53,14 +53,14 @@ var _ = Describe("ApiEventLoop", func() {
 		upstreamClient, err := NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewApiEmitter(proxyClient, artifactClient, endpointClient, secretClient, upstreamClient)
+		emitter = NewApiEmitter(artifactClient, endpointClient, proxyClient, secretClient, upstreamClient)
 	})
 	It("runs sync function on a new snapshot", func() {
-		_, err = emitter.Proxy().Write(NewProxy(namespace, "jerry"), clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Artifact().Write(NewArtifact(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Endpoint().Write(NewEndpoint(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.Proxy().Write(NewProxy(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Secret().Write(NewSecret(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())

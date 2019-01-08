@@ -1,4 +1,4 @@
-package test_test
+package cli_unit_test
 
 import (
 	"bytes"
@@ -40,6 +40,8 @@ var _ = Describe("Regression", func() {
 	})
 
 	It("can run properly without crashing", func() {
+		// Otherwise uses args from ginkgo which crashes the test
+		app.SetArgs([]string{})
 		err := app.Execute()
 		Expect(err).NotTo(HaveOccurred())
 	})

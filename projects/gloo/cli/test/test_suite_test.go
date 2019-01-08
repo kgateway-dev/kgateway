@@ -1,4 +1,4 @@
-package test_test
+package cli_unit_test
 
 import (
 	"testing"
