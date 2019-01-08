@@ -12,8 +12,8 @@ import (
 
 func VirtualService(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     constants.UPSTREAM_COMMAND.Use,
-		Aliases: constants.UPSTREAM_COMMAND.Aliases,
+		Use:     constants.VIRTUAL_SERVICE_COMMAND.Use,
+		Aliases: constants.VIRTUAL_SERVICE_COMMAND.Aliases,
 		Short:   "read a virtualservice or list virtualservices in a namespace",
 		Long:    "usage: glooctl get virtualservice [NAME] [--namespace=namespace] [-o FORMAT]",
 		RunE: func(cmd *cobra.Command, args []string) error {
