@@ -2,6 +2,7 @@ package del
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/go-utils/cliutils"
@@ -14,8 +15,8 @@ import (
 
 func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "virtualservice",
-		Aliases: []string{"v", "vs", "virtualservices"},
+		Use:     constants.VIRTUAL_SERVICE_COMMAND.Use,
+		Aliases: constants.VIRTUAL_SERVICE_COMMAND.Aliases,
 		Short:   "delete a virtualservice",
 		Long:    "usage: glooctl delete virtualservice [NAME] [--namespace=namespace]",
 		RunE: func(cmd *cobra.Command, args []string) error {

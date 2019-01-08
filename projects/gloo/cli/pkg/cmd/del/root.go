@@ -2,6 +2,7 @@ package del
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
@@ -9,9 +10,9 @@ import (
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "delete",
-		Aliases: []string{"d"},
-		Short:   "Delete a Gloo resource",
+		Use:     constants.DELETE_COMMAND.Use,
+		Aliases: constants.DELETE_COMMAND.Aliases,
+		Short:   constants.DELETE_COMMAND.Short,
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)

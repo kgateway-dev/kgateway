@@ -67,5 +67,5 @@
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  revision = "aed107e26498b88eb641f3e9a794dd1ddeda6a10"
+  revision = "67428b92743fd710ab708665d5fff86e06ff1612"
 

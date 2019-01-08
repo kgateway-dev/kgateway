@@ -2,6 +2,7 @@ package del
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/go-utils/cliutils"
@@ -14,8 +15,8 @@ import (
 
 func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "upstream",
-		Aliases: []string{"u", "us", "upstreams"},
+		Use:     constants.UPSTREAM_COMMAND.Use,
+		Aliases: constants.UPSTREAM_COMMAND.Aliases,
 		Short:   "delete an upstream",
 		Long:    "usage: glooctl get upstream [NAME] [--namespace=namespace]",
 		RunE: func(cmd *cobra.Command, args []string) error {

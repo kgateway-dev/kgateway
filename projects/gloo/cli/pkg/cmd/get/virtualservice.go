@@ -3,6 +3,7 @@ package get
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/errors"
 
@@ -11,8 +12,8 @@ import (
 
 func VirtualService(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "virtualservice",
-		Aliases: []string{"vs", "virtualservices"},
+		Use:     constants.UPSTREAM_COMMAND.Use,
+		Aliases: constants.UPSTREAM_COMMAND.Aliases,
 		Short:   "read a virtualservice or list virtualservices in a namespace",
 		Long:    "usage: glooctl get virtualservice [NAME] [--namespace=namespace] [-o FORMAT]",
 		RunE: func(cmd *cobra.Command, args []string) error {

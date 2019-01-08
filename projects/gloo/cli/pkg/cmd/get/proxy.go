@@ -3,14 +3,15 @@ package get
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/spf13/cobra"
 )
 
 func Proxy(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "proxy",
-		Aliases: []string{"p", "proxies"},
+		Use:     constants.PROXY_COMMAND.Use,
+		Aliases: constants.PROXY_COMMAND.Aliases,
 		Short:   "read a proxy or list proxies in a namespace",
 		Long:    "usage: glooctl get proxy",
 		RunE: func(cmd *cobra.Command, args []string) error {

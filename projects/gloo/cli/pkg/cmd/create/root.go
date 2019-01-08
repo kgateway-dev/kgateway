@@ -1,6 +1,7 @@
 package create
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"io"
 	"io/ioutil"
 	"os"
@@ -16,10 +17,10 @@ import (
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "create",
-		Aliases: []string{"c"},
-		Short:   "Create a Gloo resource",
-		Long:    "Gloo resources be created from files (including stdin)",
+		Use:     constants.CREATE_COMMAND.Use,
+		Aliases: constants.CREATE_COMMAND.Aliases,
+		Short:   constants.CREATE_COMMAND.Short,
+		Long:    constants.CREATE_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var reader io.ReadCloser
 			if opts.Top.File == "" {

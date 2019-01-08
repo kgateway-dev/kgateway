@@ -2,6 +2,7 @@ package del
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/go-utils/cliutils"
@@ -14,8 +15,8 @@ import (
 
 func Proxy(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "proxy",
-		Aliases: []string{"p", "px", "proxies"},
+		Use:     constants.PROXY_COMMAND.Use,
+		Aliases: constants.PROXY_COMMAND.Aliases,
 		Short:   "delete a proxy",
 		Long:    "usage: glooctl delete proxy [NAME] [--namespace=namespace]",
 		RunE: func(cmd *cobra.Command, args []string) error {

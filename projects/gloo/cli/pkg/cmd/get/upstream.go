@@ -2,6 +2,7 @@ package get
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -10,8 +11,8 @@ import (
 
 func Upstream(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "upstream",
-		Aliases: []string{"u", "us", "upstreams"},
+		Use:     constants.UPSTREAM_COMMAND.Use,
+		Aliases: constants.UPSTREAM_COMMAND.Aliases,
 		Short:   "read an upstream or list upstreams in a namespace",
 		Long:    "usage: glooctl get upstream [NAME] [--namespace=namespace] [-o FORMAT] [-o FORMAT]",
 		RunE: func(cmd *cobra.Command, args []string) error {
