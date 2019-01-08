@@ -63,6 +63,7 @@ func (el *apiEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan
 	go func() {
 		// create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
+		// use closure to allow cancel function to be updated as context changes
 		defer func() { cancel() }()
 		for {
 			select {
