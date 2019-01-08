@@ -12,6 +12,7 @@ import (
 	kubeerrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
-				return errors.Wrapf(err, "creating image pull seret")
+				return errors.Wrapf(err, "creating image pull secret")
 			}
 
 			kubectl := exec.Command("kubectl", "apply", "-f", "-")
