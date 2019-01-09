@@ -12,14 +12,14 @@ import (
 
 // tell us how to setup
 type SetupFunc func(ctx context.Context,
-	kubeCache *kube.KubeCache,
+	kubeCache kube.SharedCache,
 	inMemoryCache memory.InMemoryResourceCache,
 	settings *v1.Settings) error
 
 type SetupSyncer struct {
 	settingsRef   core.ResourceRef
 	setupFunc     SetupFunc
-	kubeCache     *kube.KubeCache
+	kubeCache     kube.SharedCache
 	inMemoryCache memory.InMemoryResourceCache
 }
 

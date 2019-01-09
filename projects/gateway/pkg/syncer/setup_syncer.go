@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func Setup(ctx context.Context, kubeCache *kube.KubeCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
+func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
 		cfg *rest.Config
 	)

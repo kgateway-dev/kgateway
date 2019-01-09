@@ -95,7 +95,7 @@ func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, start bool) b
 	return c
 }
 
-func (s *setupSyncer) Setup(ctx context.Context, kubeCache *kube.KubeCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
+func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
 	var (
 		cfg       *rest.Config
 		clientset kubernetes.Interface

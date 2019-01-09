@@ -17,7 +17,7 @@ import (
 // sharedCache OR resourceCrd+cfg must be non-nil
 func ConfigFactoryForSettings(settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
-	cache *kube.KubeCache,
+	cache kube.SharedCache,
 	resourceCrd crd.Crd,
 	cfg **rest.Config) (factory.ResourceClientFactory, error) {
 	if settings.ConfigSource == nil {
