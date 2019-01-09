@@ -37,7 +37,7 @@ done
 GH_API="https://api.github.com"
 GH_REPO="$GH_API/repos/$owner/$repo"
 GH_TAGS="$GH_REPO/releases/tags/$tag"
-AUTH="Authorization: token $github_api_token"
+AUTH="Authorization: token $GITHUB_TOKEN"
 WGET_ARGS="--content-disposition --auth-no-challenge --no-cookie"
 CURL_ARGS="-LJO#"
 
@@ -62,5 +62,5 @@ echo "Uploading asset... "
 # Construct url
 GH_ASSET="https://uploads.github.com/repos/$owner/$repo/releases/$id/assets?name=$(basename $filename)"
 
-curl --data-binary @"$filename" -H "Authorization: token $github_api_token" -H "Content-Type: application/octet-stream" $GH_ASSET
-curl -d $(shasum -a 256 ${filename}) -H "Authorization: token $github_api_token" -H "Content-Type: application/octet-stream" $GH_ASSET.sha256
+curl --data-binary @"$filename" -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" $GH_ASSET
+curl -d $(shasum -a 256 ${filename}) -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" $GH_ASSET.sha256

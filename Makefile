@@ -5,7 +5,13 @@
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
-VERSION ?= $(shell git describe --tags)
+RELEASE := "true"
+ifeq ($(TAGGED_VERSION),)
+	TAGGED_VERSION := $(shell git describe --tags)
+	RELEASE := "false"
+endif
+VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 
 #----------------------------------------------------------------------------------
@@ -206,10 +212,15 @@ RELEASE_BINARIES := \
 .PHONY: release-binaries
 release-binaries: $(RELEASE_BINARIES)
 
+# This is invoked by cloudbuild. When the bot gets a release notification, it kicks of a build with and provides a tag
+# variable that gets passed through to here as $TAGGED_VERSION. If no tag is provided, this is a no-op. If a tagged
+# version is provided, all the release binaries are uploaded to github.
+# Create new releases by clicking "Draft a new release" from https://github.com/solo-io/gloo/releases
 .PHONY: release
 release: release-binaries
-	hack/create-release.sh github_api_token=$(GITHUB_TOKEN) owner=$(GH_ORG) repo=$(GH_REPO) tag=v$(VERSION)
-	@$(foreach BINARY,$(RELEASE_BINARIES),hack/upload-github-release-asset.sh github_api_token=$(GITHUB_TOKEN) owner=solo-io repo=gloo tag=v$(VERSION) filename=$(BINARY);)
+ifeq ($(RELEASE),"true")
+	@$(foreach BINARY,$(RELEASE_BINARIES),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(BINARY);)
+endif
 
 #----------------------------------------------------------------------------------
 # Docker
