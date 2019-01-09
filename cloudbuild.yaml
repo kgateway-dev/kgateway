@@ -68,3 +68,5 @@ secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
   secretEnv:
     GITHUB_TOKEN: CiQABlzmSRpjt9c2jcCGU2lIk68qAkHIzIHUeYS+artlcens/7oSUQCCPGSG407g5usGvAhM+oL98Xir0fHWUiNe3827h9zdhmkCbrZpNqfVFkMhAxQ/ZlhC31+KwzWoHnDSb3RN7CoKj+gves6q7MMf7wNxSmC46A==
+
+timeout: 1800s
