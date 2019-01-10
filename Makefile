@@ -232,8 +232,8 @@ endif
 
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker
-docker-push
-ifeq($(RELEASE),"true")
+docker-push: docker
+ifeq ($(RELEASE),"true")
 	docker push soloio/gateway:$(VERSION) && \
 	docker push soloio/discovery:$(VERSION) && \
 	docker push soloio/gloo:$(VERSION) && \
