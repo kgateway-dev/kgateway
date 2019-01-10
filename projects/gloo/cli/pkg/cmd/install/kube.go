@@ -2,8 +2,11 @@ package install
 
 import (
 	"bytes"
+	"github.com/solo-io/gloo/pkg/version"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -38,7 +41,8 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 			}
 
 			kubectl := exec.Command("kubectl", "apply", "-f", "-")
-			kubectl.Stdin = bytes.NewBuffer(kubeManifestBytes)
+			updatedManifest := UpdateBytesWithVersion(kubeManifestBytes, version.Version)
+			kubectl.Stdin = bytes.NewBuffer(updatedManifest)
 			kubectl.Stdout = os.Stdout
 			kubectl.Stderr = os.Stderr
 			return kubectl.Run()
@@ -47,6 +51,22 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	flagutils.AddDockerSecretFlags(pflags, &opts.Install)
 	return cmd
+}
+
+func UpdateBytesWithVersion(kubeManifestBytes []byte, version string) []byte {
+	if version == "undefined" {
+		return kubeManifestBytes
+	}
+	manifest := string(kubeManifestBytes)
+	regexString := `image: soloio/\S+:(.+)`
+	regex := regexp.MustCompile(regexString)
+	matches := regex.FindStringSubmatch(manifest)
+	if len(matches) < 2 {
+		return kubeManifestBytes
+	}
+	oldVersion := matches[1]
+	updatedManifest := strings.Replace(manifest, oldVersion, version, -1)
+	return []byte(updatedManifest)
 }
 
 func createImagePullSecretIfNeeded(install options.Install) error {
