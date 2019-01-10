@@ -24,7 +24,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  branch = "master"
+  revision = "d6e3c25a4768bd9c496c8173cd83ce75b3c9cc82"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"

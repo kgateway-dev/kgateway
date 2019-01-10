@@ -1,5 +1,5 @@
 {
-  "name": "clusteringress.solo.io",
+  "name": "clusteringress.gloo.solo.io",
   "version": "v1",
   "resource_groups": {
     "translator.clusteringress.solo.io": [
@@ -13,7 +13,7 @@
       },
       {
         "name": "ClusterIngress",
-        "package": "clusteringress.solo.io"
+        "package": "networking.internal.knative.dev"
       }
     ]
   }

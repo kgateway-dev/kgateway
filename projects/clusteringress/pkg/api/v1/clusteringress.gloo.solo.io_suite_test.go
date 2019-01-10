@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestClusteringresssoloio(t *testing.T) {
+func TestClusteringressgloosoloio(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Clusteringresssoloio Suite")
+	RunSpecs(t, "Clusteringressgloosoloio Suite")
 }
