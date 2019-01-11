@@ -2,7 +2,7 @@
   "name": "clusteringress.gloo.solo.io",
   "version": "v1",
   "resource_groups": {
-    "translator.clusteringress.solo.io": [
+    "translator.clusteringress.gloo.solo.io": [
       {
         "name": "Secret",
         "package": "gloo.solo.io"
@@ -13,7 +13,7 @@
       },
       {
         "name": "ClusterIngress",
-        "package": "networking.internal.knative.dev"
+        "package": "clusteringress.gloo.solo.io"
       }
     ]
   }

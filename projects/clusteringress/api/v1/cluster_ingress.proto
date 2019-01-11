@@ -1,5 +1,5 @@
 syntax = "proto3";
-package networking.internal.knative.dev;
+package clusteringress.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
@@ -11,7 +11,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 /*
 A simple wrapper for a kNative ClusterIngress Object.
 */
-message ClusterIngress{
+message ClusterIngress {
     option (core.solo.io.resource).short_name = "cig";
     option (core.solo.io.resource).plural_name = "clusteringresses";
 
@@ -22,5 +22,4 @@ message ClusterIngress{
 
     // a raw byte representation of the ingress status of the cluster ingress object
     google.protobuf.Any cluster_ingress_status = 3 [(core.solo.io.skip_hashing) = true];
-
 }
