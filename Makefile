@@ -172,6 +172,7 @@ $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile
 
 .PHONY: gloo-envoy-wrapper-docker
 gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
+	docker login
 	docker build -t soloio/gloo-envoy-wrapper:$(VERSION) $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit
 
 
@@ -234,7 +235,6 @@ endif
 docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker
 docker-push: docker
 ifeq ($(RELEASE),"true")
-	docker login
 	docker push soloio/gateway:$(VERSION) && \
 	docker push soloio/discovery:$(VERSION) && \
 	docker push soloio/gloo:$(VERSION) && \
