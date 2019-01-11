@@ -32,29 +32,28 @@ steps:
 # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
 # sets up redis, consul, kubectl, go with required environment variables
 # need to use the provided entrypoint
-
 # Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
-#- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
-#  env:
-#  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-#  - 'GOPATH=/workspace/gopath'
-#  dir: './gopath/src/github.com/solo-io/gloo'
-#  entrypoint: make
-#  args: ['check-format']
-#  waitFor: ['dep']
-#
-#- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
-#  env:
-#  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-#  - 'GOPATH=/workspace/gopath'
-#  - 'ENVOY_BINARY=/workspace/envoy'
-#  - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
-#  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-#  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
-#  - 'RUN_KUBE_TESTS=1'
-#  dir: './gopath/src/github.com/solo-io/gloo'
-#  args: ['-r', '-failFast']
-#  waitFor: ['get-envoy', 'setup-aws-creds']
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  entrypoint: make
+  args: ['check-format']
+  waitFor: ['dep']
+
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  - 'ENVOY_BINARY=/workspace/envoy'
+  - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
+  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
+  - 'RUN_KUBE_TESTS=1'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  args: ['-r', '-failFast']
+  waitFor: ['get-envoy', 'setup-aws-creds']
 
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
@@ -62,9 +61,9 @@ steps:
   secretEnv: ['DOCKER_HUB_PASSWORD']
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['docker-push'] #Add release first
+  args: ['release', 'docker-push']
   env:
-  - 'TAGGED_VERSION=v0.5.7' #Remove me
+  - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
   dir: './gopath/src/github.com/solo-io/gloo'
