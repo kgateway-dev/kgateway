@@ -19,6 +19,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	// Needed to run tests in GKE
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -47,8 +50,6 @@ var _ = Describe("V1Emitter", func() {
 		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		Expect(err).NotTo(HaveOccurred())
-
-		cache := kuberc.NewKubeCache()
 		var kube kubernetes.Interface
 		// Secret Constructor
 		kube, err = kubernetes.NewForConfig(cfg)
@@ -63,7 +64,7 @@ var _ = Describe("V1Emitter", func() {
 		upstreamClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         UpstreamCrd,
 			Cfg:         cfg,
-			SharedCache: cache,
+			SharedCache: kuberc.NewKubeCache(),
 		}
 		upstreamClient, err = NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())

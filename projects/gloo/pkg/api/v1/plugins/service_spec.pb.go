@@ -46,7 +46,7 @@ func (m *ServiceSpec) Reset()         { *m = ServiceSpec{} }
 func (m *ServiceSpec) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec) ProtoMessage()    {}
 func (*ServiceSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_spec_dff47922dd799de4, []int{0}
+	return fileDescriptor_service_spec_43d129964200eece, []int{0}
 }
 func (m *ServiceSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec.Unmarshal(m, b)
@@ -72,13 +72,13 @@ type isServiceSpec_PluginType interface {
 }
 
 type ServiceSpec_Rest struct {
-	Rest *rest.ServiceSpec `protobuf:"bytes,1,opt,name=rest,proto3,oneof"`
+	Rest *rest.ServiceSpec `protobuf:"bytes,1,opt,name=rest,oneof"`
 }
 type ServiceSpec_Grpc struct {
-	Grpc *grpc1.ServiceSpec `protobuf:"bytes,2,opt,name=grpc,proto3,oneof"`
+	Grpc *grpc1.ServiceSpec `protobuf:"bytes,2,opt,name=grpc,oneof"`
 }
 type ServiceSpec_Sqoop struct {
-	Sqoop *sqoop.ServiceSpec `protobuf:"bytes,3,opt,name=sqoop,proto3,oneof"`
+	Sqoop *sqoop.ServiceSpec `protobuf:"bytes,3,opt,name=sqoop,oneof"`
 }
 
 func (*ServiceSpec_Rest) isServiceSpec_PluginType()  {}
@@ -316,10 +316,10 @@ func (this *ServiceSpec_Sqoop) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto", fileDescriptor_service_spec_dff47922dd799de4)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto", fileDescriptor_service_spec_43d129964200eece)
 }
 
-var fileDescriptor_service_spec_dff47922dd799de4 = []byte{
+var fileDescriptor_service_spec_43d129964200eece = []byte{
 	// 257 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x90, 0x3f, 0x4b, 0x04, 0x31,
 	0x14, 0xc4, 0x8d, 0xff, 0x8a, 0x2c, 0x36, 0xcb, 0x15, 0xcb, 0x15, 0x22, 0x16, 0x6a, 0xe3, 0x0b,

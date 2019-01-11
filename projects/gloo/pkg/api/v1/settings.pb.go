@@ -32,7 +32,7 @@ type Settings struct {
 	DiscoveryNamespace string `protobuf:"bytes,1,opt,name=discovery_namespace,json=discoveryNamespace,proto3" json:"discovery_namespace,omitempty"`
 	// namespaces to watch for user config as well as services
 	// TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces...
-	WatchNamespaces []string `protobuf:"bytes,2,rep,name=watch_namespaces,json=watchNamespaces,proto3" json:"watch_namespaces,omitempty"`
+	WatchNamespaces []string `protobuf:"bytes,2,rep,name=watch_namespaces,json=watchNamespaces" json:"watch_namespaces,omitempty"`
 	// where to read user config (upstream, proxy) from
 	// if nil, use only in memory config
 	//
@@ -56,14 +56,14 @@ type Settings struct {
 	// where the gloo xds server should bind (should not need configuration by user)
 	BindAddr string `protobuf:"bytes,11,opt,name=bind_addr,json=bindAddr,proto3" json:"bind_addr,omitempty"`
 	// how frequently to resync watches, etc
-	RefreshRate *types.Duration `protobuf:"bytes,12,opt,name=refresh_rate,json=refreshRate,proto3" json:"refresh_rate,omitempty"`
+	RefreshRate *types.Duration `protobuf:"bytes,12,opt,name=refresh_rate,json=refreshRate" json:"refresh_rate,omitempty"`
 	// enable serving debug data on port 9090
 	DevMode bool `protobuf:"varint,13,opt,name=DevMode,proto3" json:"DevMode,omitempty"`
 	// Metadata contains the object metadata for this resource
-	Metadata core.Metadata `protobuf:"bytes,14,opt,name=metadata,proto3" json:"metadata"`
+	Metadata core.Metadata `protobuf:"bytes,14,opt,name=metadata" json:"metadata"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation
-	Status               core.Status `protobuf:"bytes,15,opt,name=status,proto3" json:"status" testdiff:"ignore"`
+	Status               core.Status `protobuf:"bytes,15,opt,name=status" json:"status" testdiff:"ignore"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -73,7 +73,7 @@ func (m *Settings) Reset()         { *m = Settings{} }
 func (m *Settings) String() string { return proto.CompactTextString(m) }
 func (*Settings) ProtoMessage()    {}
 func (*Settings) Descriptor() ([]byte, []int) {
-	return fileDescriptor_settings_0f009bd9b9171cf0, []int{0}
+	return fileDescriptor_settings_eb1a11db94547259, []int{0}
 }
 func (m *Settings) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Settings.Unmarshal(m, b)
@@ -107,25 +107,25 @@ type isSettings_ArtifactSource interface {
 }
 
 type Settings_KubernetesConfigSource struct {
-	KubernetesConfigSource *Settings_KubernetesCrds `protobuf:"bytes,4,opt,name=kubernetes_config_source,json=kubernetesConfigSource,proto3,oneof"`
+	KubernetesConfigSource *Settings_KubernetesCrds `protobuf:"bytes,4,opt,name=kubernetes_config_source,json=kubernetesConfigSource,oneof"`
 }
 type Settings_DirectoryConfigSource struct {
-	DirectoryConfigSource *Settings_Directory `protobuf:"bytes,5,opt,name=directory_config_source,json=directoryConfigSource,proto3,oneof"`
+	DirectoryConfigSource *Settings_Directory `protobuf:"bytes,5,opt,name=directory_config_source,json=directoryConfigSource,oneof"`
 }
 type Settings_KubernetesSecretSource struct {
-	KubernetesSecretSource *Settings_KubernetesSecrets `protobuf:"bytes,6,opt,name=kubernetes_secret_source,json=kubernetesSecretSource,proto3,oneof"`
+	KubernetesSecretSource *Settings_KubernetesSecrets `protobuf:"bytes,6,opt,name=kubernetes_secret_source,json=kubernetesSecretSource,oneof"`
 }
 type Settings_VaultSecretSource struct {
-	VaultSecretSource *Settings_VaultSecrets `protobuf:"bytes,7,opt,name=vault_secret_source,json=vaultSecretSource,proto3,oneof"`
+	VaultSecretSource *Settings_VaultSecrets `protobuf:"bytes,7,opt,name=vault_secret_source,json=vaultSecretSource,oneof"`
 }
 type Settings_DirectorySecretSource struct {
-	DirectorySecretSource *Settings_Directory `protobuf:"bytes,8,opt,name=directory_secret_source,json=directorySecretSource,proto3,oneof"`
+	DirectorySecretSource *Settings_Directory `protobuf:"bytes,8,opt,name=directory_secret_source,json=directorySecretSource,oneof"`
 }
 type Settings_KubernetesArtifactSource struct {
-	KubernetesArtifactSource *Settings_KubernetesConfigmaps `protobuf:"bytes,9,opt,name=kubernetes_artifact_source,json=kubernetesArtifactSource,proto3,oneof"`
+	KubernetesArtifactSource *Settings_KubernetesConfigmaps `protobuf:"bytes,9,opt,name=kubernetes_artifact_source,json=kubernetesArtifactSource,oneof"`
 }
 type Settings_DirectoryArtifactSource struct {
-	DirectoryArtifactSource *Settings_Directory `protobuf:"bytes,10,opt,name=directory_artifact_source,json=directoryArtifactSource,proto3,oneof"`
+	DirectoryArtifactSource *Settings_Directory `protobuf:"bytes,10,opt,name=directory_artifact_source,json=directoryArtifactSource,oneof"`
 }
 
 func (*Settings_KubernetesConfigSource) isSettings_ConfigSource()     {}
@@ -457,7 +457,7 @@ func (m *Settings_KubernetesCrds) Reset()         { *m = Settings_KubernetesCrds
 func (m *Settings_KubernetesCrds) String() string { return proto.CompactTextString(m) }
 func (*Settings_KubernetesCrds) ProtoMessage()    {}
 func (*Settings_KubernetesCrds) Descriptor() ([]byte, []int) {
-	return fileDescriptor_settings_0f009bd9b9171cf0, []int{0, 0}
+	return fileDescriptor_settings_eb1a11db94547259, []int{0, 0}
 }
 func (m *Settings_KubernetesCrds) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Settings_KubernetesCrds.Unmarshal(m, b)
@@ -487,7 +487,7 @@ func (m *Settings_KubernetesSecrets) Reset()         { *m = Settings_KubernetesS
 func (m *Settings_KubernetesSecrets) String() string { return proto.CompactTextString(m) }
 func (*Settings_KubernetesSecrets) ProtoMessage()    {}
 func (*Settings_KubernetesSecrets) Descriptor() ([]byte, []int) {
-	return fileDescriptor_settings_0f009bd9b9171cf0, []int{0, 1}
+	return fileDescriptor_settings_eb1a11db94547259, []int{0, 1}
 }
 func (m *Settings_KubernetesSecrets) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Settings_KubernetesSecrets.Unmarshal(m, b)
@@ -517,7 +517,7 @@ func (m *Settings_VaultSecrets) Reset()         { *m = Settings_VaultSecrets{} }
 func (m *Settings_VaultSecrets) String() string { return proto.CompactTextString(m) }
 func (*Settings_VaultSecrets) ProtoMessage()    {}
 func (*Settings_VaultSecrets) Descriptor() ([]byte, []int) {
-	return fileDescriptor_settings_0f009bd9b9171cf0, []int{0, 2}
+	return fileDescriptor_settings_eb1a11db94547259, []int{0, 2}
 }
 func (m *Settings_VaultSecrets) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Settings_VaultSecrets.Unmarshal(m, b)
@@ -547,7 +547,7 @@ func (m *Settings_KubernetesConfigmaps) Reset()         { *m = Settings_Kubernet
 func (m *Settings_KubernetesConfigmaps) String() string { return proto.CompactTextString(m) }
 func (*Settings_KubernetesConfigmaps) ProtoMessage()    {}
 func (*Settings_KubernetesConfigmaps) Descriptor() ([]byte, []int) {
-	return fileDescriptor_settings_0f009bd9b9171cf0, []int{0, 3}
+	return fileDescriptor_settings_eb1a11db94547259, []int{0, 3}
 }
 func (m *Settings_KubernetesConfigmaps) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Settings_KubernetesConfigmaps.Unmarshal(m, b)
@@ -578,7 +578,7 @@ func (m *Settings_Directory) Reset()         { *m = Settings_Directory{} }
 func (m *Settings_Directory) String() string { return proto.CompactTextString(m) }
 func (*Settings_Directory) ProtoMessage()    {}
 func (*Settings_Directory) Descriptor() ([]byte, []int) {
-	return fileDescriptor_settings_0f009bd9b9171cf0, []int{0, 4}
+	return fileDescriptor_settings_eb1a11db94547259, []int{0, 4}
 }
 func (m *Settings_Directory) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Settings_Directory.Unmarshal(m, b)
@@ -983,10 +983,10 @@ func (this *Settings_Directory) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto", fileDescriptor_settings_0f009bd9b9171cf0)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto", fileDescriptor_settings_eb1a11db94547259)
 }
 
-var fileDescriptor_settings_0f009bd9b9171cf0 = []byte{
+var fileDescriptor_settings_eb1a11db94547259 = []byte{
 	// 643 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xdf, 0x6e, 0xd3, 0x3e,
 	0x14, 0x5e, 0xf6, 0xdb, 0x6f, 0x6b, 0xbc, 0x6e, 0x5d, 0xb3, 0x31, 0xd2, 0x80, 0xb6, 0xaa, 0x08,

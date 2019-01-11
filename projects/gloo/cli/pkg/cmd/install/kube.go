@@ -2,11 +2,12 @@ package install
 
 import (
 	"bytes"
-	"github.com/solo-io/gloo/pkg/version"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/version"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"

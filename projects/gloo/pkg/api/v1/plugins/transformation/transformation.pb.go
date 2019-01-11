@@ -22,8 +22,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type RouteTransformations struct {
-	RequestTransformation  *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
-	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
+	RequestTransformation  *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation" json:"request_transformation,omitempty"`
+	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation" json:"response_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
 	XXX_unrecognized       []byte          `json:"-"`
 	XXX_sizecache          int32           `json:"-"`
@@ -33,7 +33,7 @@ func (m *RouteTransformations) Reset()         { *m = RouteTransformations{} }
 func (m *RouteTransformations) String() string { return proto.CompactTextString(m) }
 func (*RouteTransformations) ProtoMessage()    {}
 func (*RouteTransformations) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{0}
+	return fileDescriptor_transformation_82712f0712268527, []int{0}
 }
 func (m *RouteTransformations) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RouteTransformations.Unmarshal(m, b)
@@ -85,7 +85,7 @@ func (m *Transformation) Reset()         { *m = Transformation{} }
 func (m *Transformation) String() string { return proto.CompactTextString(m) }
 func (*Transformation) ProtoMessage()    {}
 func (*Transformation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{1}
+	return fileDescriptor_transformation_82712f0712268527, []int{1}
 }
 func (m *Transformation) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Transformation.Unmarshal(m, b)
@@ -111,10 +111,10 @@ type isTransformation_TransformationType interface {
 }
 
 type Transformation_TransformationTemplate struct {
-	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,proto3,oneof"`
+	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,oneof"`
 }
 type Transformation_HeaderBodyTransform struct {
-	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,proto3,oneof"`
+	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,oneof"`
 }
 
 func (*Transformation_TransformationTemplate) isTransformation_TransformationType() {}
@@ -230,7 +230,7 @@ func (m *Extraction) Reset()         { *m = Extraction{} }
 func (m *Extraction) String() string { return proto.CompactTextString(m) }
 func (*Extraction) ProtoMessage()    {}
 func (*Extraction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{2}
+	return fileDescriptor_transformation_82712f0712268527, []int{2}
 }
 func (m *Extraction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Extraction.Unmarshal(m, b)
@@ -274,8 +274,8 @@ func (m *Extraction) GetSubgroup() uint32 {
 type TransformationTemplate struct {
 	AdvancedTemplates bool `protobuf:"varint,1,opt,name=advanced_templates,json=advancedTemplates,proto3" json:"advanced_templates,omitempty"`
 	// Extractors are in the origin request language domain
-	Extractors map[string]*Extraction   `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Headers    map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Extractors map[string]*Extraction   `protobuf:"bytes,2,rep,name=extractors" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	Headers    map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 	// Types that are valid to be assigned to BodyTransformation:
 	//	*TransformationTemplate_Body
 	//	*TransformationTemplate_Passthrough
@@ -290,7 +290,7 @@ func (m *TransformationTemplate) Reset()         { *m = TransformationTemplate{}
 func (m *TransformationTemplate) String() string { return proto.CompactTextString(m) }
 func (*TransformationTemplate) ProtoMessage()    {}
 func (*TransformationTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{3}
+	return fileDescriptor_transformation_82712f0712268527, []int{3}
 }
 func (m *TransformationTemplate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TransformationTemplate.Unmarshal(m, b)
@@ -316,13 +316,13 @@ type isTransformationTemplate_BodyTransformation interface {
 }
 
 type TransformationTemplate_Body struct {
-	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
+	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,oneof"`
 }
 type TransformationTemplate_Passthrough struct {
-	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,proto3,oneof"`
+	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,oneof"`
 }
 type TransformationTemplate_MergeExtractorsToBody struct {
-	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,proto3,oneof"`
+	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,oneof"`
 }
 
 func (*TransformationTemplate_Body) isTransformationTemplate_BodyTransformation()                  {}
@@ -486,7 +486,7 @@ func (m *InjaTemplate) Reset()         { *m = InjaTemplate{} }
 func (m *InjaTemplate) String() string { return proto.CompactTextString(m) }
 func (*InjaTemplate) ProtoMessage()    {}
 func (*InjaTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{4}
+	return fileDescriptor_transformation_82712f0712268527, []int{4}
 }
 func (m *InjaTemplate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InjaTemplate.Unmarshal(m, b)
@@ -523,7 +523,7 @@ func (m *Passthrough) Reset()         { *m = Passthrough{} }
 func (m *Passthrough) String() string { return proto.CompactTextString(m) }
 func (*Passthrough) ProtoMessage()    {}
 func (*Passthrough) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{5}
+	return fileDescriptor_transformation_82712f0712268527, []int{5}
 }
 func (m *Passthrough) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Passthrough.Unmarshal(m, b)
@@ -553,7 +553,7 @@ func (m *MergeExtractorsToBody) Reset()         { *m = MergeExtractorsToBody{} }
 func (m *MergeExtractorsToBody) String() string { return proto.CompactTextString(m) }
 func (*MergeExtractorsToBody) ProtoMessage()    {}
 func (*MergeExtractorsToBody) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{6}
+	return fileDescriptor_transformation_82712f0712268527, []int{6}
 }
 func (m *MergeExtractorsToBody) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MergeExtractorsToBody.Unmarshal(m, b)
@@ -583,7 +583,7 @@ func (m *HeaderBodyTransform) Reset()         { *m = HeaderBodyTransform{} }
 func (m *HeaderBodyTransform) String() string { return proto.CompactTextString(m) }
 func (*HeaderBodyTransform) ProtoMessage()    {}
 func (*HeaderBodyTransform) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transformation_03ec73f432e255b0, []int{7}
+	return fileDescriptor_transformation_82712f0712268527, []int{7}
 }
 func (m *HeaderBodyTransform) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HeaderBodyTransform.Unmarshal(m, b)
@@ -984,10 +984,10 @@ func (this *HeaderBodyTransform) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto", fileDescriptor_transformation_03ec73f432e255b0)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto", fileDescriptor_transformation_82712f0712268527)
 }
 
-var fileDescriptor_transformation_03ec73f432e255b0 = []byte{
+var fileDescriptor_transformation_82712f0712268527 = []byte{
 	// 605 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x95, 0xdd, 0x6e, 0xda, 0x30,
 	0x14, 0xc7, 0x09, 0xb4, 0xac, 0x3d, 0xb4, 0xfb, 0x70, 0x1b, 0x88, 0xb8, 0x98, 0x50, 0x76, 0xc3,

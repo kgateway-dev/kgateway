@@ -30,14 +30,14 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 // A virtual service describes the set of routes to match for a set of domains.
 // Domains must be unique across all virtual services within a gateway (i.e. no overlap between sets).
 type VirtualService struct {
-	VirtualHost *v1.VirtualHost `protobuf:"bytes,1,opt,name=virtual_host,json=virtualHost,proto3" json:"virtual_host,omitempty"`
+	VirtualHost *v1.VirtualHost `protobuf:"bytes,1,opt,name=virtual_host,json=virtualHost" json:"virtual_host,omitempty"`
 	// If provided, the Gateway will serve TLS/SSL traffic for this set of routes
-	SslConfig *v1.SslConfig `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
+	SslConfig *v1.SslConfig `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig" json:"ssl_config,omitempty"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation
-	Status core.Status `protobuf:"bytes,6,opt,name=status,proto3" json:"status" testdiff:"ignore"`
+	Status core.Status `protobuf:"bytes,6,opt,name=status" json:"status" testdiff:"ignore"`
 	// Metadata contains the object metadata for this resource
-	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
+	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -47,7 +47,7 @@ func (m *VirtualService) Reset()         { *m = VirtualService{} }
 func (m *VirtualService) String() string { return proto.CompactTextString(m) }
 func (*VirtualService) ProtoMessage()    {}
 func (*VirtualService) Descriptor() ([]byte, []int) {
-	return fileDescriptor_virtual_service_355af80ff7ff7047, []int{0}
+	return fileDescriptor_virtual_service_f38fc53548247af6, []int{0}
 }
 func (m *VirtualService) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VirtualService.Unmarshal(m, b)
@@ -136,10 +136,10 @@ func (this *VirtualService) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto", fileDescriptor_virtual_service_355af80ff7ff7047)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto", fileDescriptor_virtual_service_f38fc53548247af6)
 }
 
-var fileDescriptor_virtual_service_355af80ff7ff7047 = []byte{
+var fileDescriptor_virtual_service_f38fc53548247af6 = []byte{
 	// 335 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xc1, 0x4e, 0x3a, 0x31,
 	0x10, 0xc6, 0xff, 0x90, 0x7f, 0x50, 0x8b, 0xd1, 0xb8, 0x21, 0xba, 0x70, 0x10, 0xc3, 0xc9, 0x8b,

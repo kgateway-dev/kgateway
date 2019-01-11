@@ -42,7 +42,7 @@ func (x DestinationSpec_InvocationStyle) String() string {
 	return proto.EnumName(DestinationSpec_InvocationStyle_name, int32(x))
 }
 func (DestinationSpec_InvocationStyle) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_aws_45ea1c95c2b8e10a, []int{2, 0}
+	return fileDescriptor_aws_18e32ef2807acd5b, []int{2, 0}
 }
 
 // Upstream Spec for AWS Lambda Upstreams
@@ -58,10 +58,10 @@ type UpstreamSpec struct {
 	//  access_key: <aws access key>
 	//  secret_key: <aws secret key>
 	//  ```
-	SecretRef core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref"`
+	SecretRef core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef" json:"secret_ref"`
 	// The list of Lambda Functions contained within this region.
 	// This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions
-	LambdaFunctions      []*LambdaFunctionSpec `protobuf:"bytes,3,rep,name=lambda_functions,json=lambdaFunctions,proto3" json:"lambda_functions,omitempty"`
+	LambdaFunctions      []*LambdaFunctionSpec `protobuf:"bytes,3,rep,name=lambda_functions,json=lambdaFunctions" json:"lambda_functions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -71,7 +71,7 @@ func (m *UpstreamSpec) Reset()         { *m = UpstreamSpec{} }
 func (m *UpstreamSpec) String() string { return proto.CompactTextString(m) }
 func (*UpstreamSpec) ProtoMessage()    {}
 func (*UpstreamSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aws_45ea1c95c2b8e10a, []int{0}
+	return fileDescriptor_aws_18e32ef2807acd5b, []int{0}
 }
 func (m *UpstreamSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamSpec.Unmarshal(m, b)
@@ -133,7 +133,7 @@ func (m *LambdaFunctionSpec) Reset()         { *m = LambdaFunctionSpec{} }
 func (m *LambdaFunctionSpec) String() string { return proto.CompactTextString(m) }
 func (*LambdaFunctionSpec) ProtoMessage()    {}
 func (*LambdaFunctionSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aws_45ea1c95c2b8e10a, []int{1}
+	return fileDescriptor_aws_18e32ef2807acd5b, []int{1}
 }
 func (m *LambdaFunctionSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LambdaFunctionSpec.Unmarshal(m, b)
@@ -191,7 +191,7 @@ func (m *DestinationSpec) Reset()         { *m = DestinationSpec{} }
 func (m *DestinationSpec) String() string { return proto.CompactTextString(m) }
 func (*DestinationSpec) ProtoMessage()    {}
 func (*DestinationSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aws_45ea1c95c2b8e10a, []int{2}
+	return fileDescriptor_aws_18e32ef2807acd5b, []int{2}
 }
 func (m *DestinationSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationSpec.Unmarshal(m, b)
@@ -344,10 +344,10 @@ func (this *DestinationSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto", fileDescriptor_aws_45ea1c95c2b8e10a)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto", fileDescriptor_aws_18e32ef2807acd5b)
 }
 
-var fileDescriptor_aws_45ea1c95c2b8e10a = []byte{
+var fileDescriptor_aws_18e32ef2807acd5b = []byte{
 	// 446 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xc1, 0x6e, 0x13, 0x31,
 	0x10, 0x86, 0xeb, 0xa6, 0xad, 0x1a, 0xa7, 0x22, 0x91, 0x55, 0x95, 0xa5, 0x42, 0x10, 0x72, 0x40,

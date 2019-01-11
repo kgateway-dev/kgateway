@@ -23,8 +23,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type ServiceSpec struct {
-	Transformations      map[string]*transformation.TransformationTemplate `protobuf:"bytes,1,rep,name=transformations,proto3" json:"transformations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	SwaggerInfo          *ServiceSpec_SwaggerInfo                          `protobuf:"bytes,2,opt,name=swagger_info,json=swaggerInfo,proto3" json:"swagger_info,omitempty"`
+	Transformations      map[string]*transformation.TransformationTemplate `protobuf:"bytes,1,rep,name=transformations" json:"transformations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	SwaggerInfo          *ServiceSpec_SwaggerInfo                          `protobuf:"bytes,2,opt,name=swagger_info,json=swaggerInfo" json:"swagger_info,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                          `json:"-"`
 	XXX_unrecognized     []byte                                            `json:"-"`
 	XXX_sizecache        int32                                             `json:"-"`
@@ -34,7 +34,7 @@ func (m *ServiceSpec) Reset()         { *m = ServiceSpec{} }
 func (m *ServiceSpec) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec) ProtoMessage()    {}
 func (*ServiceSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rest_36ddb4411c65025c, []int{0}
+	return fileDescriptor_rest_0f2db338e2ad2c97, []int{0}
 }
 func (m *ServiceSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec.Unmarshal(m, b)
@@ -82,7 +82,7 @@ func (m *ServiceSpec_SwaggerInfo) Reset()         { *m = ServiceSpec_SwaggerInfo
 func (m *ServiceSpec_SwaggerInfo) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec_SwaggerInfo) ProtoMessage()    {}
 func (*ServiceSpec_SwaggerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rest_36ddb4411c65025c, []int{0, 1}
+	return fileDescriptor_rest_0f2db338e2ad2c97, []int{0, 1}
 }
 func (m *ServiceSpec_SwaggerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec_SwaggerInfo.Unmarshal(m, b)
@@ -207,8 +207,8 @@ func _ServiceSpec_SwaggerInfo_OneofSizer(msg proto.Message) (n int) {
 // This is only for upstream with REST service spec
 type DestinationSpec struct {
 	FunctionName           string                                 `protobuf:"bytes,1,opt,name=function_name,json=functionName,proto3" json:"function_name,omitempty"`
-	Parameters             *transformation.Parameters             `protobuf:"bytes,2,opt,name=parameters,proto3" json:"parameters,omitempty"`
-	ResponseTransformation *transformation.TransformationTemplate `protobuf:"bytes,3,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
+	Parameters             *transformation.Parameters             `protobuf:"bytes,2,opt,name=parameters" json:"parameters,omitempty"`
+	ResponseTransformation *transformation.TransformationTemplate `protobuf:"bytes,3,opt,name=response_transformation,json=responseTransformation" json:"response_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{}                               `json:"-"`
 	XXX_unrecognized       []byte                                 `json:"-"`
 	XXX_sizecache          int32                                  `json:"-"`
@@ -218,7 +218,7 @@ func (m *DestinationSpec) Reset()         { *m = DestinationSpec{} }
 func (m *DestinationSpec) String() string { return proto.CompactTextString(m) }
 func (*DestinationSpec) ProtoMessage()    {}
 func (*DestinationSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rest_36ddb4411c65025c, []int{1}
+	return fileDescriptor_rest_0f2db338e2ad2c97, []int{1}
 }
 func (m *DestinationSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationSpec.Unmarshal(m, b)
@@ -416,10 +416,10 @@ func (this *DestinationSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto", fileDescriptor_rest_36ddb4411c65025c)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto", fileDescriptor_rest_0f2db338e2ad2c97)
 }
 
-var fileDescriptor_rest_36ddb4411c65025c = []byte{
+var fileDescriptor_rest_0f2db338e2ad2c97 = []byte{
 	// 427 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x93, 0xdf, 0x8a, 0xd4, 0x30,
 	0x14, 0xc6, 0xed, 0x16, 0x17, 0x4c, 0x57, 0x57, 0xc2, 0xa2, 0xb5, 0x17, 0x32, 0xac, 0x37, 0x73,

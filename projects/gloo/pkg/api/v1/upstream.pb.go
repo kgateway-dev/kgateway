@@ -34,14 +34,14 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type Upstream struct {
 	// Type-specific configuration. Examples include static, kubernetes, and aws.
 	// The type-specific config for the upstream is called a spec.
-	UpstreamSpec *UpstreamSpec `protobuf:"bytes,2,opt,name=upstream_spec,json=upstreamSpec,proto3" json:"upstream_spec,omitempty"`
+	UpstreamSpec *UpstreamSpec `protobuf:"bytes,2,opt,name=upstream_spec,json=upstreamSpec" json:"upstream_spec,omitempty"`
 	// Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation
-	Status core.Status `protobuf:"bytes,6,opt,name=status,proto3" json:"status" testdiff:"ignore"`
+	Status core.Status `protobuf:"bytes,6,opt,name=status" json:"status" testdiff:"ignore"`
 	// Metadata contains the object metadata for this resource
-	Metadata core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
+	Metadata core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
 	// Upstreams and their configuration can be automatically by Gloo Discovery
 	// if this upstream is created or modified by Discovery, metadata about the operation will be placed here.
-	DiscoveryMetadata    *DiscoveryMetadata `protobuf:"bytes,8,opt,name=discovery_metadata,json=discoveryMetadata,proto3" json:"discovery_metadata,omitempty"`
+	DiscoveryMetadata    *DiscoveryMetadata `protobuf:"bytes,8,opt,name=discovery_metadata,json=discoveryMetadata" json:"discovery_metadata,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -51,7 +51,7 @@ func (m *Upstream) Reset()         { *m = Upstream{} }
 func (m *Upstream) String() string { return proto.CompactTextString(m) }
 func (*Upstream) ProtoMessage()    {}
 func (*Upstream) Descriptor() ([]byte, []int) {
-	return fileDescriptor_upstream_29947727819065fe, []int{0}
+	return fileDescriptor_upstream_745706e49a8c38ac, []int{0}
 }
 func (m *Upstream) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Upstream.Unmarshal(m, b)
@@ -110,7 +110,7 @@ func (m *DiscoveryMetadata) Reset()         { *m = DiscoveryMetadata{} }
 func (m *DiscoveryMetadata) String() string { return proto.CompactTextString(m) }
 func (*DiscoveryMetadata) ProtoMessage()    {}
 func (*DiscoveryMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_upstream_29947727819065fe, []int{1}
+	return fileDescriptor_upstream_745706e49a8c38ac, []int{1}
 }
 func (m *DiscoveryMetadata) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DiscoveryMetadata.Unmarshal(m, b)
@@ -196,10 +196,10 @@ func (this *DiscoveryMetadata) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto", fileDescriptor_upstream_29947727819065fe)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto", fileDescriptor_upstream_745706e49a8c38ac)
 }
 
-var fileDescriptor_upstream_29947727819065fe = []byte{
+var fileDescriptor_upstream_745706e49a8c38ac = []byte{
 	// 325 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x90, 0x4d, 0x4e, 0x02, 0x31,
 	0x1c, 0xc5, 0x85, 0x18, 0x24, 0x15, 0x17, 0x8c, 0xc4, 0x20, 0x0b, 0x31, 0xb3, 0x72, 0x63, 0x2b,

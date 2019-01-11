@@ -37,9 +37,9 @@ type UpstreamSpec struct {
 	// Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if
 	// any are provided here.
 	// (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-	Selector map[string]string `protobuf:"bytes,4,rep,name=selector,proto3" json:"selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Selector map[string]string `protobuf:"bytes,4,rep,name=selector" json:"selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	//     An optional Service Spec describing the service listening at this address
-	ServiceSpec          *plugins.ServiceSpec `protobuf:"bytes,5,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
+	ServiceSpec          *plugins.ServiceSpec `protobuf:"bytes,5,opt,name=service_spec,json=serviceSpec" json:"service_spec,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -49,7 +49,7 @@ func (m *UpstreamSpec) Reset()         { *m = UpstreamSpec{} }
 func (m *UpstreamSpec) String() string { return proto.CompactTextString(m) }
 func (*UpstreamSpec) ProtoMessage()    {}
 func (*UpstreamSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_kubernetes_fb46c8b64defbd2b, []int{0}
+	return fileDescriptor_kubernetes_b17793a03f99a3f6, []int{0}
 }
 func (m *UpstreamSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamSpec.Unmarshal(m, b)
@@ -154,10 +154,10 @@ func (this *UpstreamSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto", fileDescriptor_kubernetes_fb46c8b64defbd2b)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto", fileDescriptor_kubernetes_b17793a03f99a3f6)
 }
 
-var fileDescriptor_kubernetes_fb46c8b64defbd2b = []byte{
+var fileDescriptor_kubernetes_b17793a03f99a3f6 = []byte{
 	// 328 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xcd, 0x4a, 0xc3, 0x40,
 	0x10, 0x80, 0x49, 0x6b, 0x45, 0xb7, 0x2d, 0xd4, 0xa5, 0x87, 0xd0, 0x83, 0xa6, 0x9e, 0x02, 0xe2,

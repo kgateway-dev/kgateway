@@ -44,7 +44,7 @@ type Secret struct {
 	//	*Secret_Tls
 	Kind isSecret_Kind `protobuf_oneof:"kind"`
 	// Metadata contains the object metadata for this resource
-	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata"`
+	Metadata             core.Metadata `protobuf:"bytes,7,opt,name=metadata" json:"metadata"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -54,7 +54,7 @@ func (m *Secret) Reset()         { *m = Secret{} }
 func (m *Secret) String() string { return proto.CompactTextString(m) }
 func (*Secret) ProtoMessage()    {}
 func (*Secret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_87775a72bfd2ab43, []int{0}
+	return fileDescriptor_secret_ea566aee069ffa27, []int{0}
 }
 func (m *Secret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Secret.Unmarshal(m, b)
@@ -80,13 +80,13 @@ type isSecret_Kind interface {
 }
 
 type Secret_Aws struct {
-	Aws *AwsSecret `protobuf:"bytes,1,opt,name=aws,proto3,oneof"`
+	Aws *AwsSecret `protobuf:"bytes,1,opt,name=aws,oneof"`
 }
 type Secret_Azure struct {
-	Azure *AzureSecret `protobuf:"bytes,2,opt,name=azure,proto3,oneof"`
+	Azure *AzureSecret `protobuf:"bytes,2,opt,name=azure,oneof"`
 }
 type Secret_Tls struct {
-	Tls *TlsSecret `protobuf:"bytes,3,opt,name=tls,proto3,oneof"`
+	Tls *TlsSecret `protobuf:"bytes,3,opt,name=tls,oneof"`
 }
 
 func (*Secret_Aws) isSecret_Kind()   {}
@@ -233,7 +233,7 @@ func (m *AwsSecret) Reset()         { *m = AwsSecret{} }
 func (m *AwsSecret) String() string { return proto.CompactTextString(m) }
 func (*AwsSecret) ProtoMessage()    {}
 func (*AwsSecret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_87775a72bfd2ab43, []int{1}
+	return fileDescriptor_secret_ea566aee069ffa27, []int{1}
 }
 func (m *AwsSecret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AwsSecret.Unmarshal(m, b)
@@ -268,7 +268,7 @@ func (m *AwsSecret) GetSecretKey() string {
 }
 
 type AzureSecret struct {
-	ApiKeys              map[string]string `protobuf:"bytes,1,rep,name=api_keys,json=apiKeys,proto3" json:"api_keys,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	ApiKeys              map[string]string `protobuf:"bytes,1,rep,name=api_keys,json=apiKeys" json:"api_keys,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -278,7 +278,7 @@ func (m *AzureSecret) Reset()         { *m = AzureSecret{} }
 func (m *AzureSecret) String() string { return proto.CompactTextString(m) }
 func (*AzureSecret) ProtoMessage()    {}
 func (*AzureSecret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_87775a72bfd2ab43, []int{2}
+	return fileDescriptor_secret_ea566aee069ffa27, []int{2}
 }
 func (m *AzureSecret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AzureSecret.Unmarshal(m, b)
@@ -318,7 +318,7 @@ func (m *TlsSecret) Reset()         { *m = TlsSecret{} }
 func (m *TlsSecret) String() string { return proto.CompactTextString(m) }
 func (*TlsSecret) ProtoMessage()    {}
 func (*TlsSecret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_87775a72bfd2ab43, []int{3}
+	return fileDescriptor_secret_ea566aee069ffa27, []int{3}
 }
 func (m *TlsSecret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TlsSecret.Unmarshal(m, b)
@@ -571,10 +571,10 @@ func (this *TlsSecret) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto", fileDescriptor_secret_87775a72bfd2ab43)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto", fileDescriptor_secret_ea566aee069ffa27)
 }
 
-var fileDescriptor_secret_87775a72bfd2ab43 = []byte{
+var fileDescriptor_secret_ea566aee069ffa27 = []byte{
 	// 424 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0x41, 0x8e, 0xd3, 0x30,
 	0x14, 0x9d, 0x34, 0x33, 0xe9, 0xe4, 0x67, 0x16, 0xc8, 0x1a, 0x31, 0xa1, 0x12, 0x0c, 0xca, 0x02,

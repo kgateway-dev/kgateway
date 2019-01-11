@@ -34,7 +34,7 @@ func (m *PrefixRewrite) Reset()         { *m = PrefixRewrite{} }
 func (m *PrefixRewrite) String() string { return proto.CompactTextString(m) }
 func (*PrefixRewrite) ProtoMessage()    {}
 func (*PrefixRewrite) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prefix_rewrite_b9008ef6c255662e, []int{0}
+	return fileDescriptor_prefix_rewrite_2caab40b039098bf, []int{0}
 }
 func (m *PrefixRewrite) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrefixRewrite.Unmarshal(m, b)
@@ -93,10 +93,10 @@ func (this *PrefixRewrite) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto", fileDescriptor_prefix_rewrite_b9008ef6c255662e)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto", fileDescriptor_prefix_rewrite_2caab40b039098bf)
 }
 
-var fileDescriptor_prefix_rewrite_b9008ef6c255662e = []byte{
+var fileDescriptor_prefix_rewrite_2caab40b039098bf = []byte{
 	// 188 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x8a, 0x48, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x2f, 0xce, 0xcf, 0xc9, 0xd7, 0xcd, 0xcc, 0xd7, 0x4f,

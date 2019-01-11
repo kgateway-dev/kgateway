@@ -31,7 +31,7 @@ type Parameters struct {
 	//     parameters:
 	//         headers:
 	//           x-user-id: { userId }
-	Headers map[string]string `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Headers map[string]string `protobuf:"bytes,1,rep,name=headers" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// part of the (or the entire) path that will be used extract data for processing output templates
 	// Gloo will search for parameters by their name in header value strings, enclosed in single
 	// curly braces
@@ -39,7 +39,7 @@ type Parameters struct {
 	//   extensions:
 	//     parameters:
 	//         path: /users/{ userId }
-	Path                 *types.StringValue `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Path                 *types.StringValue `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -49,7 +49,7 @@ func (m *Parameters) Reset()         { *m = Parameters{} }
 func (m *Parameters) String() string { return proto.CompactTextString(m) }
 func (*Parameters) ProtoMessage()    {}
 func (*Parameters) Descriptor() ([]byte, []int) {
-	return fileDescriptor_parameters_4d25d86fcd684e8e, []int{0}
+	return fileDescriptor_parameters_abc642b45a582bbf, []int{0}
 }
 func (m *Parameters) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Parameters.Unmarshal(m, b)
@@ -124,10 +124,10 @@ func (this *Parameters) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/parameters.proto", fileDescriptor_parameters_4d25d86fcd684e8e)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/parameters.proto", fileDescriptor_parameters_abc642b45a582bbf)
 }
 
-var fileDescriptor_parameters_4d25d86fcd684e8e = []byte{
+var fileDescriptor_parameters_abc642b45a582bbf = []byte{
 	// 293 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0xcf, 0x4a, 0xc3, 0x40,
 	0x10, 0xc6, 0xd9, 0xd6, 0x3f, 0x74, 0xeb, 0x41, 0x42, 0x0f, 0x25, 0x48, 0x09, 0x7a, 0xc9, 0xc5,

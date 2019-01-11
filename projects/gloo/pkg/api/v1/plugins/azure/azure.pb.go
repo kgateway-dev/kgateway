@@ -45,7 +45,7 @@ func (x UpstreamSpec_FunctionSpec_AuthLevel) String() string {
 	return proto.EnumName(UpstreamSpec_FunctionSpec_AuthLevel_name, int32(x))
 }
 func (UpstreamSpec_FunctionSpec_AuthLevel) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_azure_924480be19b2b013, []int{0, 0, 0}
+	return fileDescriptor_azure_ce70a74e8750f051, []int{0, 0, 0}
 }
 
 // Upstream Spec for Azure Functions Upstreams
@@ -57,8 +57,8 @@ type UpstreamSpec struct {
 	// A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).
 	// {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }}
 	// Note that this secret is not required unless Function Discovery is enabled
-	SecretRef            core.ResourceRef             `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref"`
-	Functions            []*UpstreamSpec_FunctionSpec `protobuf:"bytes,3,rep,name=functions,proto3" json:"functions,omitempty"`
+	SecretRef            core.ResourceRef             `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef" json:"secret_ref"`
+	Functions            []*UpstreamSpec_FunctionSpec `protobuf:"bytes,3,rep,name=functions" json:"functions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
 	XXX_unrecognized     []byte                       `json:"-"`
 	XXX_sizecache        int32                        `json:"-"`
@@ -68,7 +68,7 @@ func (m *UpstreamSpec) Reset()         { *m = UpstreamSpec{} }
 func (m *UpstreamSpec) String() string { return proto.CompactTextString(m) }
 func (*UpstreamSpec) ProtoMessage()    {}
 func (*UpstreamSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_azure_924480be19b2b013, []int{0}
+	return fileDescriptor_azure_ce70a74e8750f051, []int{0}
 }
 func (m *UpstreamSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamSpec.Unmarshal(m, b)
@@ -126,7 +126,7 @@ func (m *UpstreamSpec_FunctionSpec) Reset()         { *m = UpstreamSpec_Function
 func (m *UpstreamSpec_FunctionSpec) String() string { return proto.CompactTextString(m) }
 func (*UpstreamSpec_FunctionSpec) ProtoMessage()    {}
 func (*UpstreamSpec_FunctionSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_azure_924480be19b2b013, []int{0, 0}
+	return fileDescriptor_azure_ce70a74e8750f051, []int{0, 0}
 }
 func (m *UpstreamSpec_FunctionSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamSpec_FunctionSpec.Unmarshal(m, b)
@@ -172,7 +172,7 @@ func (m *DestinationSpec) Reset()         { *m = DestinationSpec{} }
 func (m *DestinationSpec) String() string { return proto.CompactTextString(m) }
 func (*DestinationSpec) ProtoMessage()    {}
 func (*DestinationSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_azure_924480be19b2b013, []int{1}
+	return fileDescriptor_azure_ce70a74e8750f051, []int{1}
 }
 func (m *DestinationSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationSpec.Unmarshal(m, b)
@@ -302,10 +302,10 @@ func (this *DestinationSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto", fileDescriptor_azure_924480be19b2b013)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto", fileDescriptor_azure_ce70a74e8750f051)
 }
 
-var fileDescriptor_azure_924480be19b2b013 = []byte{
+var fileDescriptor_azure_ce70a74e8750f051 = []byte{
 	// 386 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x52, 0xbb, 0x8e, 0xd3, 0x40,
 	0x14, 0x5d, 0x6f, 0x00, 0xe1, 0x59, 0x2f, 0x1b, 0x46, 0x14, 0xc1, 0x05, 0x44, 0xa1, 0x89, 0x10,

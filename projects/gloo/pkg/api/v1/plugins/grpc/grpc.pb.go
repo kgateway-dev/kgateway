@@ -26,7 +26,7 @@ type ServiceSpec struct {
 	// TODO(yuval-k): ideally this should be google.protobuf.FileDescriptorSet
 	// but that doesn't work with gogoproto.equal_all.
 	Descriptors          []byte                     `protobuf:"bytes,1,opt,name=descriptors,proto3" json:"descriptors,omitempty"`
-	GrpcServices         []*ServiceSpec_GrpcService `protobuf:"bytes,2,rep,name=grpc_services,json=grpcServices,proto3" json:"grpc_services,omitempty"`
+	GrpcServices         []*ServiceSpec_GrpcService `protobuf:"bytes,2,rep,name=grpc_services,json=grpcServices" json:"grpc_services,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -36,7 +36,7 @@ func (m *ServiceSpec) Reset()         { *m = ServiceSpec{} }
 func (m *ServiceSpec) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec) ProtoMessage()    {}
 func (*ServiceSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_grpc_aec2869f168ac0ba, []int{0}
+	return fileDescriptor_grpc_6d4e9923bb380143, []int{0}
 }
 func (m *ServiceSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec.Unmarshal(m, b)
@@ -73,7 +73,7 @@ func (m *ServiceSpec) GetGrpcServices() []*ServiceSpec_GrpcService {
 type ServiceSpec_GrpcService struct {
 	PackageName          string   `protobuf:"bytes,1,opt,name=package_name,json=packageName,proto3" json:"package_name,omitempty"`
 	ServiceName          string   `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
-	FunctionNames        []string `protobuf:"bytes,3,rep,name=function_names,json=functionNames,proto3" json:"function_names,omitempty"`
+	FunctionNames        []string `protobuf:"bytes,3,rep,name=function_names,json=functionNames" json:"function_names,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -83,7 +83,7 @@ func (m *ServiceSpec_GrpcService) Reset()         { *m = ServiceSpec_GrpcService
 func (m *ServiceSpec_GrpcService) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec_GrpcService) ProtoMessage()    {}
 func (*ServiceSpec_GrpcService) Descriptor() ([]byte, []int) {
-	return fileDescriptor_grpc_aec2869f168ac0ba, []int{0, 0}
+	return fileDescriptor_grpc_6d4e9923bb380143, []int{0, 0}
 }
 func (m *ServiceSpec_GrpcService) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec_GrpcService.Unmarshal(m, b)
@@ -129,7 +129,7 @@ type DestinationSpec struct {
 	Package              string                     `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
 	Service              string                     `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
 	Function             string                     `protobuf:"bytes,3,opt,name=function,proto3" json:"function,omitempty"`
-	Parameters           *transformation.Parameters `protobuf:"bytes,4,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	Parameters           *transformation.Parameters `protobuf:"bytes,4,opt,name=parameters" json:"parameters,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -139,7 +139,7 @@ func (m *DestinationSpec) Reset()         { *m = DestinationSpec{} }
 func (m *DestinationSpec) String() string { return proto.CompactTextString(m) }
 func (*DestinationSpec) ProtoMessage()    {}
 func (*DestinationSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_grpc_aec2869f168ac0ba, []int{1}
+	return fileDescriptor_grpc_6d4e9923bb380143, []int{1}
 }
 func (m *DestinationSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationSpec.Unmarshal(m, b)
@@ -303,10 +303,10 @@ func (this *DestinationSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto", fileDescriptor_grpc_aec2869f168ac0ba)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto", fileDescriptor_grpc_6d4e9923bb380143)
 }
 
-var fileDescriptor_grpc_aec2869f168ac0ba = []byte{
+var fileDescriptor_grpc_6d4e9923bb380143 = []byte{
 	// 369 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x52, 0xc1, 0x4b, 0xfb, 0x30,
 	0x14, 0xa6, 0xeb, 0x8f, 0x9f, 0x2e, 0xdd, 0x14, 0x8a, 0x87, 0xda, 0x83, 0xd4, 0x81, 0xd0, 0x8b,
