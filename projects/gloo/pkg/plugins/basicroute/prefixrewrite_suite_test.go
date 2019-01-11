@@ -1,4 +1,4 @@
-package timeout_test
+package basicroute_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestTimeout(t *testing.T) {
+func TestPrefixrewrite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Timeout Suite")
+	RunSpecs(t, "Prefixrewrite Suite")
 }
