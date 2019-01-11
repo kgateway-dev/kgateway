@@ -1,0 +1,307 @@
+package translator
+
+import (
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"sort"
+	"time"
+
+	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
+	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/log"
+)
+
+func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
+	var ingresses []*v1alpha1.ClusterIngress
+	for _, ig := range snap.Clusteringresses.List() {
+		kubeIngress, err := clusteringress.ToKube(ig)
+		if err != nil {
+			return nil, err
+		}
+		ingresses = append(ingresses, kubeIngress)
+	}
+	upstreams := snap.Upstreams.List()
+	secrets := snap.Secrets.List()
+
+	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, secrets)
+	if err != nil {
+		return nil, errors.Wrapf(err, "computing virtual hosts")
+	}
+	var virtualHostsHttps []*gloov1.VirtualHost
+	var sslConfigs []*gloov1.SslConfig
+	for _, svh := range secureVirtualHosts {
+		virtualHostsHttps = append(virtualHostsHttps, svh.vh)
+		sslConfigs = append(sslConfigs, &gloov1.SslConfig{
+			SslSecrets: &gloov1.SslConfig_SecretRef{
+				SecretRef: &svh.secret,
+			},
+			SniDomains: svh.vh.Domains,
+		})
+	}
+	var listeners []*gloov1.Listener
+	if len(virtualHostsHttp) > 0 {
+		listeners = append(listeners, &gloov1.Listener{
+			Name:        "http",
+			BindAddress: "::",
+			BindPort:    80,
+			ListenerType: &gloov1.Listener_HttpListener{
+				HttpListener: &gloov1.HttpListener{
+					VirtualHosts: virtualHostsHttp,
+				},
+			},
+		})
+	}
+	if len(virtualHostsHttps) > 0 {
+		listeners = append(listeners, &gloov1.Listener{
+			Name:        "https",
+			BindAddress: "::",
+			BindPort:    443,
+			ListenerType: &gloov1.Listener_HttpListener{
+				HttpListener: &gloov1.HttpListener{
+					VirtualHosts: virtualHostsHttps,
+				},
+			},
+			SslConfiguations: sslConfigs,
+		})
+	}
+	return &gloov1.Proxy{
+		Metadata: core.Metadata{
+			Name:      "ingress-proxy", // must match envoy role
+			Namespace: namespace,
+		},
+		Listeners: listeners,
+	}, nil
+}
+
+type secureVirtualHost struct {
+	vh     *gloov1.VirtualHost
+	secret core.ResourceRef
+}
+
+func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.UpstreamList, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
+	routesByHostHttp := make(map[string][]*gloov1.Route)
+	routesByHostHttps := make(map[string][]*gloov1.Route)
+	secretsByHost := make(map[string]*core.ResourceRef)
+	for _, ing := range ingresses {
+		if !isOurIngress(ing) {
+			continue
+		}
+		spec := ing.Spec
+		var useTls bool
+		for _, tls := range spec.TLS {
+			useTls = true
+			secret, err := secrets.Find(ing.Namespace, tls.SecretName)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "invalid secret for ingress %v", ing.Name)
+			}
+
+			ref := secret.Metadata.Ref()
+			for _, host := range tls.Hosts {
+				if existing, alreadySet := secretsByHost[host]; alreadySet {
+					if existing.Name != ref.Name || existing.Namespace != ref.Namespace {
+						log.Warnf("a TLS secret for host %v was redefined in ingress %v, ignoring", ing.Name)
+						continue
+					}
+				}
+				secretsByHost[host] = &ref
+			}
+		}
+
+		for i, rule := range spec.Rules {
+			if rule.HTTP == nil {
+				log.Warnf("rule %v in ingress %v is missing HTTP field", i, ing.Name)
+				continue
+			}
+			for _, route := range rule.HTTP.Paths {
+				pathRegex := route.Path
+				if pathRegex == "" {
+					pathRegex = ".*"
+				}
+				appendHeaders := make(map[string]*transformation.InjaTemplate)
+				for name, value := range route.AppendHeaders {
+					appendHeaders[name] = &transformation.InjaTemplate{Text: value}
+				}
+				var timeout *time.Duration
+				if route.Timeout != nil {
+					timeout = &route.Timeout.Duration
+				}
+				var retryPolicy *retries.RetryPolicy
+				if route.Retries != nil {
+					var perTryTimeout *time.Duration
+					if route.Retries.PerTryTimeout != nil {
+						perTryTimeout = &route.Retries.PerTryTimeout.Duration
+					}
+					retryPolicy = &retries.RetryPolicy{
+						NumRetries:    uint32(route.Retries.Attempts),
+						PerTryTimeout: perTryTimeout,
+					}
+				}
+				appendHeadersTransformation := &transformation.RouteTransformations{
+					RequestTransformation: &transformation.Transformation{
+						TransformationType: &transformation.Transformation_TransformationTemplate{
+							TransformationTemplate: &transformation.TransformationTemplate{
+								Headers: appendHeaders,
+								BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+									Passthrough: &transformation.Passthrough{},
+								},
+							},
+						},
+					},
+				}
+
+				action, err := routeActionFromSplits(route.Splits, upstreams)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "")
+				}
+
+				route := &gloov1.Route{
+					Matcher: &gloov1.Matcher{
+						PathSpecifier: &gloov1.Matcher_Regex{
+							Regex: pathRegex,
+						},
+					},
+					Action: &gloov1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									Upstream: upstream.Metadata.Ref(),
+								},
+							},
+						},
+					},
+					RoutePlugins: &gloov1.RoutePlugins{
+						Transformations: appendHeadersTransformation,
+						Timeout:         timeout,
+						Retries:         retryPolicy,
+					},
+				}
+				for _, host := range rule.Hosts {
+					if useTls {
+						routesByHostHttps[host] = append(routesByHostHttps[host], route)
+					} else {
+						routesByHostHttp[host] = append(routesByHostHttp[host], route)
+					}
+				}
+			}
+		}
+	}
+
+	var virtualHostsHttp []*gloov1.VirtualHost
+	var virtualHostsHttps []secureVirtualHost
+
+	// TODO (ilackarms): support for VirtualHostPlugins on ingress?
+	for host, routes := range routesByHostHttp {
+		sortByLongestPathName(routes)
+		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
+			Name:    host + "-http",
+			Domains: []string{host},
+			Routes:  routes,
+		})
+	}
+
+	for host, routes := range routesByHostHttps {
+		sortByLongestPathName(routes)
+		secret, ok := secretsByHost[host]
+		if !ok {
+			return nil, nil, errors.Errorf("internal error: secret not found for host %v after processing ingresses", host)
+		}
+		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
+			vh: &gloov1.VirtualHost{
+				Name:    host + "-http",
+				Domains: []string{host},
+				Routes:  routes,
+			},
+			secret: *secret,
+		})
+	}
+
+	sort.SliceStable(virtualHostsHttp, func(i, j int) bool {
+		return virtualHostsHttp[i].Name < virtualHostsHttp[j].Name
+	})
+	sort.SliceStable(virtualHostsHttps, func(i, j int) bool {
+		return virtualHostsHttps[i].vh.Name < virtualHostsHttps[j].vh.Name
+	})
+	return virtualHostsHttp, virtualHostsHttps, nil
+}
+
+func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstreams gloov1.UpstreamList) (*gloov1.RouteAction, error) {
+	switch len(splits) {
+	case 0:
+		return nil, errors.Errorf("invalid cluster ingress: must provide at least 1 split")
+	case 1:
+		split := splits[0]
+		upstream, err := upstreamForSplit(upstreams, split)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting upstream for split %v", split)
+		}
+		return &gloov1.RouteAction{
+			Destination: &gloov1.RouteAction_Single{
+				Single: &gloov1.Destination{
+					Upstream: upstream.Metadata.Ref(),
+				},
+			},
+		}, nil
+	}
+
+	var destinations []*gloov1.WeightedDestination
+	for _, split := range splits {
+		upstream, err := upstreamForSplit(upstreams, split)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting upstream for split %v", split)
+		}
+		destinations = append(destinations, &gloov1.WeightedDestination{
+			Destination: &gloov1.Destination{
+				Upstream: upstream.Metadata.Ref(),
+			},
+			Weight: uint32(split.Percent),
+		})
+	}
+	return &gloov1.RouteAction{
+		Destination: &gloov1.RouteAction_Multi{
+			Multi: &gloov1.MultiDestination{
+				Destinations: destinations,
+			},
+		},
+	}, nil
+}
+
+func upstreamForSplit(upstreams gloov1.UpstreamList, backend v1alpha1.ClusterIngressBackendSplit) (*gloov1.Upstream, error) {
+	// find the upstream with the smallest matching selector
+	// longer selectors represent subsets of pods for a service
+	var matchingUpstream *gloov1.Upstream
+	for _, us := range upstreams {
+		switch spec := us.UpstreamSpec.UpstreamType.(type) {
+		case *gloov1.UpstreamSpec_Kube:
+			if spec.Kube.ServiceNamespace == backend.ServiceNamespace &&
+				spec.Kube.ServiceName == backend.ServiceName &&
+				spec.Kube.ServicePort == uint32(backend.ServicePort.IntVal) {
+				if matchingUpstream != nil {
+					originalSelectorLength := len(matchingUpstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.Selector)
+					newSelectorLength := len(spec.Kube.Selector)
+					if newSelectorLength > originalSelectorLength {
+						continue
+					}
+				}
+				matchingUpstream = us
+			}
+		}
+	}
+	if matchingUpstream == nil {
+		return nil, errors.Errorf("discovery failure: upstream not found for kube service %v with port %v", backend.ServiceName, backend.ServicePort)
+	}
+	return matchingUpstream, nil
+}
+
+func sortByLongestPathName(routes []*gloov1.Route) {
+	sort.SliceStable(routes, func(i, j int) bool {
+		return routes[i].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex > routes[j].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex
+	})
+}
+
+func isOurIngress(ingress *v1alpha1.ClusterIngress) bool {
+	return ingress.Annotations["kubernetes.io/ingress.class"] == "gloo"
+}
