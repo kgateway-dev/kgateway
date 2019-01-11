@@ -12,7 +12,8 @@ p {
     font-size: 20px;
     line-height: 1.6;
 }
-ul li {
+
+div[role=main] ul li {
     font-size: 20px;
     line-height: 1.6;
 }
