@@ -238,7 +238,7 @@ ifeq ($(RELEASE),"true")
 	docker push soloio/gateway:$(VERSION) && \
 	docker push soloio/discovery:$(VERSION) && \
 	docker push soloio/gloo:$(VERSION) && \
-        docker push soloio/gloo-envoy-wrapper:$(VERSION)
+	docker push soloio/gloo-envoy-wrapper:$(VERSION)
 endif
 
 .PHONY: check-format
