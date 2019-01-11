@@ -50,11 +50,6 @@ var _ = Describe("ResourceClient", func() {
 			Spec: v1beta1.CustomResourceDefinitionSpec{
 				Group:   "networking.internal.knative.dev",
 				Version: "v1alpha1",
-				Versions: []v1beta1.CustomResourceDefinitionVersion{
-					{
-						Name: "v1alpha1",
-					},
-				},
 				Names: v1beta1.CustomResourceDefinitionNames{
 					Kind:       "ClusterIngress",
 					Plural:     "clusteringresses",

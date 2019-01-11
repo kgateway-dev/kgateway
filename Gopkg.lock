@@ -402,6 +402,13 @@
   version = "v0.2.0"
 
 [[projects]]
+  digest = "1:5ae77b6deaf1be337861bb792537719511f7372cb3b05905b47a45730d85f122"
+  name = "github.com/google/go-containerregistry"
+  packages = ["pkg/name"]
+  pruneopts = "UT"
+  revision = "5f7b0e4895413d785ff15b84d218d73e8a47866a"
+
+[[projects]]
   digest = "1:34bd52916ea0a9e4d95d34dab5bc4f125a7ee7b1e11b1a531d2ea43f41b4f4e8"
   name = "github.com/google/go-github"
   packages = ["github"]
@@ -846,24 +853,45 @@
   revision = "668c8856d9992f97248b3177d45743d2cc1068db"
 
 [[projects]]
+  digest = "1:345bbba667abadd6263391c915251ede8d9fa6f6852839c60bb6738b6122b89c"
+  name = "github.com/knative/build"
+  packages = [
+    "pkg/apis/build",
+    "pkg/apis/build/v1alpha1",
+  ]
+  pruneopts = "UT"
+  revision = "94859753e2c6724df2be86f6a254f810895fa3eb"
+  version = "v0.2.0"
+
+[[projects]]
   branch = "master"
-  digest = "1:f28340a6168422549b7ed663fc538e258ae4163ce141edb9ac1b7aaed7eb1f7f"
+  digest = "1:541a01315a0c0df6d36f5e41d0de33f5f1f0c4d1f9121efc4be612386326f098"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1alpha1",
+    "kmeta",
     "kmp",
   ]
   pruneopts = "UT"
   revision = "d6a2e27f7b67a2dee038e15154ced311c4bbf58e"
 
 [[projects]]
-  digest = "1:533ec0e0d1ecc8142cec851cd4229a882f202d2abb6d0067c6e5d4e8abb019b0"
+  digest = "1:dc860ba5694192d09d61139be88186bc9aebde96bd991a1a6c481cb43153d231"
   name = "github.com/knative/serving"
   packages = [
+    "pkg/apis/autoscaling",
+    "pkg/apis/autoscaling/v1alpha1",
     "pkg/apis/networking",
     "pkg/apis/networking/v1alpha1",
+    "pkg/apis/serving",
+    "pkg/apis/serving/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1",
   ]
   pruneopts = "UT"
   revision = "4d198db8756db2f8a3c228302a97fb3a216a9475"
@@ -1996,6 +2024,8 @@
     "github.com/jhump/protoreflect/grpcreflect",
     "github.com/keybase/go-ps",
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
+    "github.com/knative/serving/pkg/client/clientset/versioned",
+    "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/lyft/protoc-gen-validate/validate",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
@@ -2054,12 +2084,15 @@
     "gopkg.in/AlecAivazis/survey.v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
+    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
+    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/util/intstr",
+    "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/informers",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/listers/core/v1",
