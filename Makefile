@@ -56,9 +56,12 @@ site: docs/index.md
 	mkdocs build
 
 # To run this, install firebase CLI and first run firebase login (requires solo account)
+# This is run by CI and is not intended to be run manually unless otherwise necessary
 .PHONY: deploy-site
 deploy-site: site
+ifeq ($(RELEASE),"true")
 	firebase deploy --only hosting:gloo-docs
+endif
 
 #################
 #################

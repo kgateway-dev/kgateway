@@ -61,17 +61,18 @@ steps:
   secretEnv: ['DOCKER_HUB_PASSWORD']
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['release', 'docker-push']
+  args: ['release', 'docker-push', 'deploy-site']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
   dir: './gopath/src/github.com/solo-io/gloo'
-  secretEnv: 'GITHUB_TOKEN'
+  secretEnv: ['GITHUB_TOKEN', 'FIREBASE_TOKEN']
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
   secretEnv:
     GITHUB_TOKEN: CiQABlzmSRpjt9c2jcCGU2lIk68qAkHIzIHUeYS+artlcens/7oSUQCCPGSG407g5usGvAhM+oL98Xir0fHWUiNe3827h9zdhmkCbrZpNqfVFkMhAxQ/ZlhC31+KwzWoHnDSb3RN7CoKj+gves6q7MMf7wNxSmC46A==
     DOCKER_HUB_PASSWORD: CiQABlzmSW0u+qhXDvTCxLnbi09Zm88eCU0wSdvFn1W+6WOpTgQSTgCCPGSGTAlMndrEkYOynPhDzTXrW1q1eAsQYjKOWOwZKodcQZ2WIzdvpOOjv+WrGTssWWg1uPFV4CnajT7DzeNAb7USkla1epatm6OnuQ==
+    FIREBASE_TOKEN: CiQABlzmSc0BWpPfrGRtDscrxOfp9ZBkZO9fkO79tjEmA14c8ZESVwCCPGSG8uZtLSmFucmEEJGJ0080ON7Zw5TjLe2YdwuxnSOA5YzZryVwLFAMzRmfb6OBxyThTZKvGZzgfXyv6CeLwYX0exk20u7k2bnrWbFHO0Aa4TiQqw==
 
 timeout: 1800s
