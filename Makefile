@@ -234,6 +234,7 @@ endif
 docker: discovery-docker gateway-docker gloo-docker
 docker-push: docker
 ifeq ($(RELEASE),"true")
+	docker login
 	docker push soloio/gateway:$(VERSION) && \
 	docker push soloio/discovery:$(VERSION) && \
 	docker push soloio/gloo:$(VERSION) 
