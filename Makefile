@@ -7,7 +7,9 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
 RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)
-	TAGGED_VERSION := $(shell git describe --tags)
+	# TAGGED_VERSION := $(shell git describe --tags)
+	# This doesn't work in CI, need to find another way...
+	TAGGED_VERSION := vdev	
 	RELEASE := "false"
 endif
 VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
