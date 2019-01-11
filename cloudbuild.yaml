@@ -64,6 +64,7 @@ steps:
   args: ['deploy-site'] # add back: 'release', 'docker-push'
   env:
   - 'TAGGED_VERSION=v0.5.7' # change back to $TAG_NAME after testing
+  - 'DUMMY_VAR=$TAG_NAME' # temporary so substitution doesn't complain
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
   dir: './gopath/src/github.com/solo-io/gloo'
