@@ -23,16 +23,6 @@ message RetryPolicy {
     // defaults to 1. These are the same conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on)
     uint32 num_retries = 2;
 
-    // Specifies a non-zero upstream timeout per retry attempt. This parameter is optional. The
-    // same conditions documented for
-    // :ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms` apply.
-    //
-    // .. note::
-    //
-    //   If left unspecified, Envoy will use the global
-    //   :ref:`route timeout <envoy_api_field_route.RouteAction.timeout>` for the request.
-    //   Consequently, when using a :ref:`5xx <config_http_filters_router_x-envoy-retry-on>` based
-    //   retry policy, a request that times out will not be retried as the total timeout budget
-    //   would have been exhausted.
+    // Specifies a non-zero upstream timeout per retry attempt. This parameter is optional.
     google.protobuf.Duration per_try_timeout = 3 [(gogoproto.stdduration) = true];
 }
