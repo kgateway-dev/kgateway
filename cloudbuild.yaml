@@ -73,7 +73,7 @@ steps:
   waitFor: ['dep', 'create-docker-creds-dir']
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['docker-push'] #Add release first 
+  args: ['docker-push'] #Add release first
   env:
   - 'TAGGED_VERSION=v0.5.7' #Remove me
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
