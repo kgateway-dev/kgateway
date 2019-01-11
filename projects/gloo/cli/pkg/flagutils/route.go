@@ -10,9 +10,9 @@ func AddRouteFlags(set *pflag.FlagSet, route *options.InputRoute) {
 	set.Uint32VarP(&route.InsertIndex, "index", "x", 0, "index in the virtual service "+
 		"route list where to insert this route. routes after it will be shifted back one")
 
-	set.StringVarP(&route.Matcher.PathExact, "path-exact", "e", "", "regex matcher for route. "+
+	set.StringVarP(&route.Matcher.PathExact, "path-exact", "e", "", "exact path to match route")
+	set.StringVarP(&route.Matcher.PathRegex, "path-regex", "r", "", "regex matcher for route. "+
 		"note: only one of path-exact, path-regex, or path-prefix should be set")
-	set.StringVarP(&route.Matcher.PathRegex, "path-regex", "r", "", "exact path to match route")
 	set.StringVarP(&route.Matcher.PathPrefix, "path-prefix", "p", "", "path prefix to match route")
 	set.StringSliceVarP(&route.Matcher.Methods, "method", "m", []string{},
 		"the HTTP methods (GET, POST, etc.) to match on the request. if empty, all methods will match ")

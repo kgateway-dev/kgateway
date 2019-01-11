@@ -19,7 +19,7 @@ A Proxy is a container for the entire set of configuration that will to be appli
 Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
 for connections. Each listener has its own set of configuration.
 
-If any of the subresources within a listener is declared invalid (e.g. due to invalid user configuration), the
+If any of the sub-resources within a listener is declared invalid (e.g. due to invalid user configuration), the
 proxy will be marked invalid by Gloo.
 
 Proxy instances that register with Gloo are assigned the proxy configuration corresponding with

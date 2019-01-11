@@ -26,7 +26,7 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 		Use:     "route",
 		Aliases: []string{"r", "routes"},
 		Short:   "Add a Route to a Virtual Service",
-		Long: "Routes match patterns on requests and indicate the type of action to take when a proxy recieves " +
+		Long: "Routes match patterns on requests and indicate the type of action to take when a proxy receives " +
 			"a matching request. Requests can be broken down into their Match and Action components. " +
 			"The order of routes within a Virtual Service matters. The first route in the virtual service " +
 			"that matches a given request will be selected for routing. \n\n" +
