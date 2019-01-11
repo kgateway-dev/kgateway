@@ -43,7 +43,7 @@ message RoutePlugins {
     transformation.plugins.gloo.solo.io.RouteTransformations transformations = 1;
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
     transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
-    google.protobuf.Duration timeout = 12;
+    google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
