@@ -61,10 +61,11 @@ func validateVirtualServices(virtualServices v1.VirtualServiceList, resourceErrs
 }
 
 func desiredListener(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) *gloov1.Listener {
+	virtualServicesForGateway := gateway.VirtualServices
 	// add all virtual services if empty
 	if len(gateway.VirtualServices) == 0 {
 		for _, virtualService := range virtualServices {
-			gateway.VirtualServices = append(gateway.VirtualServices, core.ResourceRef{
+			virtualServicesForGateway = append(virtualServicesForGateway, core.ResourceRef{
 				Name:      virtualService.GetMetadata().Name,
 				Namespace: virtualService.GetMetadata().Namespace,
 			})
@@ -76,7 +77,7 @@ func desiredListener(gateway *v1.Gateway, virtualServices v1.VirtualServiceList,
 		sslConfigs   []*gloov1.SslConfig
 	)
 
-	for _, ref := range gateway.VirtualServices {
+	for _, ref := range virtualServicesForGateway {
 		// virtual service must live in the same namespace as gateway
 		virtualService, err := virtualServices.Find(ref.Strings())
 		if err != nil {
