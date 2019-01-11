@@ -61,9 +61,9 @@ steps:
   secretEnv: ['DOCKER_HUB_PASSWORD']
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['release', 'docker-push', 'deploy-site']
+  args: ['deploy-site'] # add back: 'release', 'docker-push'
   env:
-  - 'TAGGED_VERSION=$TAG_NAME'
+  - 'TAGGED_VERSION=v0.5.7' # change back to $TAG_NAME after testing
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
   dir: './gopath/src/github.com/solo-io/gloo'
