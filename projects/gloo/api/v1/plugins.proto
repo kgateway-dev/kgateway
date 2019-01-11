@@ -13,6 +13,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/sqoop/sqoop.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
@@ -44,6 +45,7 @@ message RoutePlugins {
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
     transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
+    retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
