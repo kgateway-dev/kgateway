@@ -56,21 +56,10 @@ steps:
 #  args: ['-r', '-failFast']
 #  waitFor: ['get-envoy', 'setup-aws-creds']
 
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
-  entrypoint: mkdir
-  args: ['/workspace/.docker']
-  id: 'create-docker-creds-dir'
-
-- name: gcr.io/cloud-builders/gcloud
-  args:
-  - kms
-  - decrypt
-  - --ciphertext-file=./gopath/src/github.com/solo-io/gloo/ci/dockerhub_credentials.enc
-  - --plaintext-file=/workspace/.docker/config.json
-  - --location=global
-  - --keyring=build
-  - --key=build-key
-  waitFor: ['dep', 'create-docker-creds-dir']
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker login --username soloiobot --password $$DOCKER_HUB_PASSWORD']
+  secretEnv: ['DOCKER_HUB_PASSWORD']
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker-push'] #Add release first
@@ -78,12 +67,14 @@ steps:
   - 'TAGGED_VERSION=v0.5.7' #Remove me
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
-  - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: 'GITHUB_TOKEN'
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
   secretEnv:
     GITHUB_TOKEN: CiQABlzmSRpjt9c2jcCGU2lIk68qAkHIzIHUeYS+artlcens/7oSUQCCPGSG407g5usGvAhM+oL98Xir0fHWUiNe3827h9zdhmkCbrZpNqfVFkMhAxQ/ZlhC31+KwzWoHnDSb3RN7CoKj+gves6q7MMf7wNxSmC46A==
+- kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
+  secretEnv:
+    DOCKER_HUB_PASSWORD: CiQABlzmSW0u+qhXDvTCxLnbi09Zm88eCU0wSdvFn1W+6WOpTgQSTgCCPGSGTAlMndrEkYOynPhDzTXrW1q1eAsQYjKOWOwZKodcQZ2WIzdvpOOjv+WrGTssWWg1uPFV4CnajT7DzeNAb7USkla1epatm6OnuQ==
 
 timeout: 1800s
