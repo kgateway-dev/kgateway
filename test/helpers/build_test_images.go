@@ -47,12 +47,17 @@ func BuildPushContainers(version string, push, verbose bool) error {
 	os.Setenv("VERSION", version)
 
 	// make the gloo containers
-	if err := RunCommand(verbose, "make", "docker"); err != nil {
+	if err := RunCommand(verbose, "make", "docker", "VERSION="+version); err != nil {
 		return err
 	}
 
 	if push {
-		if err := RunCommand(verbose, "make", "docker-push"); err != nil {
+		makearg := "docker-push"
+		kindContainer := os.Getenv("KIND_CONTAINER_ID")
+		if kindContainer != "" {
+			makearg = "docker-kind"
+		}
+		if err := RunCommand(verbose, "make", makearg, "KIND_CONTAINER_ID="+kindContainer, "VERSION="+version); err != nil {
 			return err
 		}
 	}

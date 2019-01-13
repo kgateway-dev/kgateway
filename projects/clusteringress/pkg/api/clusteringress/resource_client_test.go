@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
-	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -69,6 +69,14 @@ var _ = Describe("ResourceClient", func() {
 		if err != nil && !errors.IsAlreadyExists(err) {
 			Expect(err).NotTo(HaveOccurred())
 		}
+		// wait for it to be accepted
+		Eventually(func() (string, error) {
+			crd, err := apiexts.ApiextensionsV1beta1().CustomResourceDefinitions().Get("clusteringresses.networking.internal.knative.dev", metav1.GetOptions{})
+			if err != nil {
+				return "", err
+			}
+			return crd.Status.AcceptedNames.Kind, nil
+		}, "1s", "0.1s").ShouldNot(BeEmpty())
 
 		knative, err = knativeclientset.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())

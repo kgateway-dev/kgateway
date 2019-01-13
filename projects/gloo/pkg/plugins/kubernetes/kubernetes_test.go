@@ -11,17 +11,16 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 
 	"os"
-	"path/filepath"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -52,8 +51,7 @@ var _ = Describe("Kubernetes", func() {
 		namespace = helpers.RandString(8)
 		err := setup.SetupKubeForTest(namespace)
 		Expect(err).NotTo(HaveOccurred())
-		kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		kubeClient, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())

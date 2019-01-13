@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -16,6 +15,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/solo-io/gloo/test/services"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -28,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	kubecore "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
@@ -128,8 +127,7 @@ var _ = Describe("Happypath", func() {
 			namespace = "gloo-e2e-" + helpers.RandString(8)
 			err := setup.SetupKubeForTest(namespace)
 			Expect(err).NotTo(HaveOccurred())
-			kubeconfigPath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-			cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+			cfg, err = kubeutils.GetConfig("", "")
 			Expect(err).NotTo(HaveOccurred())
 			kubeClient, err = kubernetes.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())

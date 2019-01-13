@@ -267,6 +267,13 @@ ifeq ($(RELEASE),"true")
 	docker push soloio/gloo-envoy-wrapper:$(VERSION)
 endif
 
+docker-kind: docker
+	docker save soloio/gateway:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
+	docker save soloio/ingress:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
+	docker save soloio/discovery:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
+	docker save soloio/gloo:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
+	docker save soloio/gloo-envoy-wrapper:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
+
 .PHONY: check-format
 check-format:
 	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
