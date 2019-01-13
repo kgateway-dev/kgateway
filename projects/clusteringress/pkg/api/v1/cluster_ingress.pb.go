@@ -40,7 +40,7 @@ func (m *ClusterIngress) Reset()         { *m = ClusterIngress{} }
 func (m *ClusterIngress) String() string { return proto.CompactTextString(m) }
 func (*ClusterIngress) ProtoMessage()    {}
 func (*ClusterIngress) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cluster_ingress_f001847f5884e124, []int{0}
+	return fileDescriptor_cluster_ingress_482e756d25ba9b56, []int{0}
 }
 func (m *ClusterIngress) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClusterIngress.Unmarshal(m, b)
@@ -119,10 +119,10 @@ func (this *ClusterIngress) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/clusteringress/api/v1/cluster_ingress.proto", fileDescriptor_cluster_ingress_f001847f5884e124)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/clusteringress/api/v1/cluster_ingress.proto", fileDescriptor_cluster_ingress_482e756d25ba9b56)
 }
 
-var fileDescriptor_cluster_ingress_f001847f5884e124 = []byte{
+var fileDescriptor_cluster_ingress_482e756d25ba9b56 = []byte{
 	// 315 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xf2, 0x49, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x2f, 0xce, 0xcf, 0xc9, 0xd7, 0xcd, 0xcc, 0xd7, 0x4f,

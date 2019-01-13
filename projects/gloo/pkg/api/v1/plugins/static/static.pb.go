@@ -44,7 +44,7 @@ func (m *UpstreamSpec) Reset()         { *m = UpstreamSpec{} }
 func (m *UpstreamSpec) String() string { return proto.CompactTextString(m) }
 func (*UpstreamSpec) ProtoMessage()    {}
 func (*UpstreamSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_static_104970622ce91ba8, []int{0}
+	return fileDescriptor_static_9c02b0558d3c8fb8, []int{0}
 }
 func (m *UpstreamSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamSpec.Unmarshal(m, b)
@@ -100,7 +100,7 @@ func (m *Host) Reset()         { *m = Host{} }
 func (m *Host) String() string { return proto.CompactTextString(m) }
 func (*Host) ProtoMessage()    {}
 func (*Host) Descriptor() ([]byte, []int) {
-	return fileDescriptor_static_104970622ce91ba8, []int{1}
+	return fileDescriptor_static_9c02b0558d3c8fb8, []int{1}
 }
 func (m *Host) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Host.Unmarshal(m, b)
@@ -208,10 +208,10 @@ func (this *Host) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto", fileDescriptor_static_104970622ce91ba8)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto", fileDescriptor_static_9c02b0558d3c8fb8)
 }
 
-var fileDescriptor_static_104970622ce91ba8 = []byte{
+var fileDescriptor_static_9c02b0558d3c8fb8 = []byte{
 	// 278 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x51, 0x4d, 0x4b, 0x03, 0x31,
 	0x10, 0x25, 0xf6, 0x43, 0x4d, 0xeb, 0x25, 0x08, 0x2e, 0x15, 0x64, 0xed, 0x69, 0x2f, 0x26, 0xa8,

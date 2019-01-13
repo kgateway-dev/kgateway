@@ -44,7 +44,7 @@ func (m *RetryPolicy) Reset()         { *m = RetryPolicy{} }
 func (m *RetryPolicy) String() string { return proto.CompactTextString(m) }
 func (*RetryPolicy) ProtoMessage()    {}
 func (*RetryPolicy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_retries_7206010145c5283a, []int{0}
+	return fileDescriptor_retries_203568ba9631523c, []int{0}
 }
 func (m *RetryPolicy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RetryPolicy.Unmarshal(m, b)
@@ -129,10 +129,10 @@ func (this *RetryPolicy) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto", fileDescriptor_retries_7206010145c5283a)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto", fileDescriptor_retries_203568ba9631523c)
 }
 
-var fileDescriptor_retries_7206010145c5283a = []byte{
+var fileDescriptor_retries_203568ba9631523c = []byte{
 	// 272 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x90, 0xcf, 0x4a, 0x03, 0x31,
 	0x10, 0x87, 0x89, 0x8a, 0x7f, 0x52, 0x8a, 0xb0, 0x78, 0xd8, 0x16, 0x69, 0x17, 0x4f, 0x7b, 0x31,

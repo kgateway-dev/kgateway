@@ -35,7 +35,7 @@ func (m *ServiceSpec) Reset()         { *m = ServiceSpec{} }
 func (m *ServiceSpec) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec) ProtoMessage()    {}
 func (*ServiceSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sqoop_9ffd5804cae55142, []int{0}
+	return fileDescriptor_sqoop_b39169acf20586fe, []int{0}
 }
 func (m *ServiceSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec.Unmarshal(m, b)
@@ -76,7 +76,7 @@ func (m *DestinationSpec) Reset()         { *m = DestinationSpec{} }
 func (m *DestinationSpec) String() string { return proto.CompactTextString(m) }
 func (*DestinationSpec) ProtoMessage()    {}
 func (*DestinationSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sqoop_9ffd5804cae55142, []int{1}
+	return fileDescriptor_sqoop_b39169acf20586fe, []int{1}
 }
 func (m *DestinationSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationSpec.Unmarshal(m, b)
@@ -178,10 +178,10 @@ func (this *DestinationSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/sqoop/sqoop.proto", fileDescriptor_sqoop_9ffd5804cae55142)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/sqoop/sqoop.proto", fileDescriptor_sqoop_b39169acf20586fe)
 }
 
-var fileDescriptor_sqoop_9ffd5804cae55142 = []byte{
+var fileDescriptor_sqoop_b39169acf20586fe = []byte{
 	// 266 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x90, 0xb1, 0x4e, 0xc3, 0x30,
 	0x18, 0x84, 0x49, 0x41, 0x05, 0xb9, 0x03, 0x52, 0xc4, 0x10, 0x32, 0x94, 0xa8, 0x53, 0x07, 0xb0,

@@ -54,7 +54,7 @@ func (m *Secret) Reset()         { *m = Secret{} }
 func (m *Secret) String() string { return proto.CompactTextString(m) }
 func (*Secret) ProtoMessage()    {}
 func (*Secret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_ea566aee069ffa27, []int{0}
+	return fileDescriptor_secret_87775a72bfd2ab43, []int{0}
 }
 func (m *Secret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Secret.Unmarshal(m, b)
@@ -233,7 +233,7 @@ func (m *AwsSecret) Reset()         { *m = AwsSecret{} }
 func (m *AwsSecret) String() string { return proto.CompactTextString(m) }
 func (*AwsSecret) ProtoMessage()    {}
 func (*AwsSecret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_ea566aee069ffa27, []int{1}
+	return fileDescriptor_secret_87775a72bfd2ab43, []int{1}
 }
 func (m *AwsSecret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AwsSecret.Unmarshal(m, b)
@@ -278,7 +278,7 @@ func (m *AzureSecret) Reset()         { *m = AzureSecret{} }
 func (m *AzureSecret) String() string { return proto.CompactTextString(m) }
 func (*AzureSecret) ProtoMessage()    {}
 func (*AzureSecret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_ea566aee069ffa27, []int{2}
+	return fileDescriptor_secret_87775a72bfd2ab43, []int{2}
 }
 func (m *AzureSecret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AzureSecret.Unmarshal(m, b)
@@ -318,7 +318,7 @@ func (m *TlsSecret) Reset()         { *m = TlsSecret{} }
 func (m *TlsSecret) String() string { return proto.CompactTextString(m) }
 func (*TlsSecret) ProtoMessage()    {}
 func (*TlsSecret) Descriptor() ([]byte, []int) {
-	return fileDescriptor_secret_ea566aee069ffa27, []int{3}
+	return fileDescriptor_secret_87775a72bfd2ab43, []int{3}
 }
 func (m *TlsSecret) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TlsSecret.Unmarshal(m, b)
@@ -571,10 +571,10 @@ func (this *TlsSecret) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto", fileDescriptor_secret_ea566aee069ffa27)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto", fileDescriptor_secret_87775a72bfd2ab43)
 }
 
-var fileDescriptor_secret_ea566aee069ffa27 = []byte{
+var fileDescriptor_secret_87775a72bfd2ab43 = []byte{
 	// 424 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0x41, 0x8e, 0xd3, 0x30,
 	0x14, 0x9d, 0x34, 0x33, 0xe9, 0xe4, 0x67, 0x16, 0xc8, 0x1a, 0x31, 0xa1, 0x12, 0x0c, 0xca, 0x02,

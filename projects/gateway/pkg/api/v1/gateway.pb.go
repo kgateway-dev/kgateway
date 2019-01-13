@@ -53,7 +53,7 @@ func (m *Gateway) Reset()         { *m = Gateway{} }
 func (m *Gateway) String() string { return proto.CompactTextString(m) }
 func (*Gateway) ProtoMessage()    {}
 func (*Gateway) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_e93aa079daa3eabf, []int{0}
+	return fileDescriptor_gateway_ac8f19f4bc5d6fc7, []int{0}
 }
 func (m *Gateway) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Gateway.Unmarshal(m, b)
@@ -167,10 +167,10 @@ func (this *Gateway) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto", fileDescriptor_gateway_e93aa079daa3eabf)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto", fileDescriptor_gateway_ac8f19f4bc5d6fc7)
 }
 
-var fileDescriptor_gateway_e93aa079daa3eabf = []byte{
+var fileDescriptor_gateway_ac8f19f4bc5d6fc7 = []byte{
 	// 400 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xcf, 0x6e, 0xda, 0x40,
 	0x10, 0xc6, 0x6b, 0xa0, 0xfc, 0x59, 0x5a, 0xd1, 0x5a, 0xa8, 0x32, 0x54, 0x2d, 0x2e, 0x27, 0x1f,

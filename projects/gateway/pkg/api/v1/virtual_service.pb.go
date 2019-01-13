@@ -47,7 +47,7 @@ func (m *VirtualService) Reset()         { *m = VirtualService{} }
 func (m *VirtualService) String() string { return proto.CompactTextString(m) }
 func (*VirtualService) ProtoMessage()    {}
 func (*VirtualService) Descriptor() ([]byte, []int) {
-	return fileDescriptor_virtual_service_f38fc53548247af6, []int{0}
+	return fileDescriptor_virtual_service_355af80ff7ff7047, []int{0}
 }
 func (m *VirtualService) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VirtualService.Unmarshal(m, b)
@@ -136,10 +136,10 @@ func (this *VirtualService) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto", fileDescriptor_virtual_service_f38fc53548247af6)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto", fileDescriptor_virtual_service_355af80ff7ff7047)
 }
 
-var fileDescriptor_virtual_service_f38fc53548247af6 = []byte{
+var fileDescriptor_virtual_service_355af80ff7ff7047 = []byte{
 	// 335 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xc1, 0x4e, 0x3a, 0x31,
 	0x10, 0xc6, 0xff, 0x90, 0x7f, 0x50, 0x8b, 0xd1, 0xb8, 0x21, 0xba, 0x70, 0x10, 0xc3, 0xc9, 0x8b,

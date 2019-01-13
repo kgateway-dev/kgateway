@@ -37,7 +37,7 @@ func (m *LambdaPerRoute) Reset()         { *m = LambdaPerRoute{} }
 func (m *LambdaPerRoute) String() string { return proto.CompactTextString(m) }
 func (*LambdaPerRoute) ProtoMessage()    {}
 func (*LambdaPerRoute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filter_3d010225fa27eb6d, []int{0}
+	return fileDescriptor_filter_b70d0076ba64fab8, []int{0}
 }
 func (m *LambdaPerRoute) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LambdaPerRoute.Unmarshal(m, b)
@@ -96,7 +96,7 @@ func (m *LambdaProtocolExtension) Reset()         { *m = LambdaProtocolExtension
 func (m *LambdaProtocolExtension) String() string { return proto.CompactTextString(m) }
 func (*LambdaProtocolExtension) ProtoMessage()    {}
 func (*LambdaProtocolExtension) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filter_3d010225fa27eb6d, []int{1}
+	return fileDescriptor_filter_b70d0076ba64fab8, []int{1}
 }
 func (m *LambdaProtocolExtension) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LambdaProtocolExtension.Unmarshal(m, b)
@@ -149,9 +149,9 @@ func init() {
 	proto.RegisterType((*LambdaProtocolExtension)(nil), "envoy.config.filter.http.aws.v2.LambdaProtocolExtension")
 }
 
-func init() { proto.RegisterFile("filter.proto", fileDescriptor_filter_3d010225fa27eb6d) }
+func init() { proto.RegisterFile("filter.proto", fileDescriptor_filter_b70d0076ba64fab8) }
 
-var fileDescriptor_filter_3d010225fa27eb6d = []byte{
+var fileDescriptor_filter_b70d0076ba64fab8 = []byte{
 	// 292 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x90, 0xcd, 0x4a, 0x03, 0x31,
 	0x14, 0x85, 0x99, 0xb6, 0x16, 0x27, 0x88, 0x8b, 0x20, 0xb4, 0x88, 0x62, 0xed, 0xaa, 0x1b, 0x13,

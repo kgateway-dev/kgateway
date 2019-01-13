@@ -46,7 +46,7 @@ func (m *Endpoint) Reset()         { *m = Endpoint{} }
 func (m *Endpoint) String() string { return proto.CompactTextString(m) }
 func (*Endpoint) ProtoMessage()    {}
 func (*Endpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_endpoint_20412e636e8130c4, []int{0}
+	return fileDescriptor_endpoint_65ecc527064c498b, []int{0}
 }
 func (m *Endpoint) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Endpoint.Unmarshal(m, b)
@@ -140,10 +140,10 @@ func (this *Endpoint) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto", fileDescriptor_endpoint_20412e636e8130c4)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto", fileDescriptor_endpoint_65ecc527064c498b)
 }
 
-var fileDescriptor_endpoint_20412e636e8130c4 = []byte{
+var fileDescriptor_endpoint_65ecc527064c498b = []byte{
 	// 269 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x90, 0x3d, 0x4e, 0x03, 0x31,
 	0x10, 0x85, 0x31, 0x89, 0x48, 0xe2, 0x40, 0x63, 0x21, 0x64, 0x52, 0xc0, 0x8a, 0x6a, 0x0b, 0xb0,

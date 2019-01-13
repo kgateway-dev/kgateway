@@ -44,7 +44,7 @@ func (m *KubeService) Reset()         { *m = KubeService{} }
 func (m *KubeService) String() string { return proto.CompactTextString(m) }
 func (*KubeService) ProtoMessage()    {}
 func (*KubeService) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_4c3ac28dba9bbc8b, []int{0}
+	return fileDescriptor_service_063c25cd3ad12f47, []int{0}
 }
 func (m *KubeService) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_KubeService.Unmarshal(m, b)
@@ -123,10 +123,10 @@ func (this *KubeService) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/ingress/api/v1/service.proto", fileDescriptor_service_4c3ac28dba9bbc8b)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/ingress/api/v1/service.proto", fileDescriptor_service_063c25cd3ad12f47)
 }
 
-var fileDescriptor_service_4c3ac28dba9bbc8b = []byte{
+var fileDescriptor_service_063c25cd3ad12f47 = []byte{
 	// 288 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x4d, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x2f, 0xce, 0xcf, 0xc9, 0xd7, 0xcd, 0xcc, 0xd7, 0x4f,

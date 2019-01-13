@@ -41,7 +41,7 @@ func (m *RouteAbort) Reset()         { *m = RouteAbort{} }
 func (m *RouteAbort) String() string { return proto.CompactTextString(m) }
 func (*RouteAbort) ProtoMessage()    {}
 func (*RouteAbort) Descriptor() ([]byte, []int) {
-	return fileDescriptor_fault_7c435b09593b6854, []int{0}
+	return fileDescriptor_fault_ee527d2d609a9497, []int{0}
 }
 func (m *RouteAbort) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RouteAbort.Unmarshal(m, b)
@@ -90,7 +90,7 @@ func (m *RouteDelay) Reset()         { *m = RouteDelay{} }
 func (m *RouteDelay) String() string { return proto.CompactTextString(m) }
 func (*RouteDelay) ProtoMessage()    {}
 func (*RouteDelay) Descriptor() ([]byte, []int) {
-	return fileDescriptor_fault_7c435b09593b6854, []int{1}
+	return fileDescriptor_fault_ee527d2d609a9497, []int{1}
 }
 func (m *RouteDelay) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RouteDelay.Unmarshal(m, b)
@@ -136,7 +136,7 @@ func (m *RouteFaults) Reset()         { *m = RouteFaults{} }
 func (m *RouteFaults) String() string { return proto.CompactTextString(m) }
 func (*RouteFaults) ProtoMessage()    {}
 func (*RouteFaults) Descriptor() ([]byte, []int) {
-	return fileDescriptor_fault_7c435b09593b6854, []int{2}
+	return fileDescriptor_fault_ee527d2d609a9497, []int{2}
 }
 func (m *RouteFaults) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RouteFaults.Unmarshal(m, b)
@@ -273,10 +273,10 @@ func (this *RouteFaults) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto", fileDescriptor_fault_7c435b09593b6854)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto", fileDescriptor_fault_ee527d2d609a9497)
 }
 
-var fileDescriptor_fault_7c435b09593b6854 = []byte{
+var fileDescriptor_fault_ee527d2d609a9497 = []byte{
 	// 344 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xc1, 0x4a, 0x2b, 0x31,
 	0x14, 0x7d, 0xe9, 0xa3, 0x2e, 0x32, 0xe8, 0x62, 0x10, 0xac, 0x5d, 0xb4, 0xa5, 0x0b, 0x29, 0x82,

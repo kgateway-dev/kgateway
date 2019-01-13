@@ -34,7 +34,7 @@ func (m *ServiceSpec) Reset()         { *m = ServiceSpec{} }
 func (m *ServiceSpec) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec) ProtoMessage()    {}
 func (*ServiceSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rest_0f2db338e2ad2c97, []int{0}
+	return fileDescriptor_rest_36ddb4411c65025c, []int{0}
 }
 func (m *ServiceSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec.Unmarshal(m, b)
@@ -82,7 +82,7 @@ func (m *ServiceSpec_SwaggerInfo) Reset()         { *m = ServiceSpec_SwaggerInfo
 func (m *ServiceSpec_SwaggerInfo) String() string { return proto.CompactTextString(m) }
 func (*ServiceSpec_SwaggerInfo) ProtoMessage()    {}
 func (*ServiceSpec_SwaggerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rest_0f2db338e2ad2c97, []int{0, 1}
+	return fileDescriptor_rest_36ddb4411c65025c, []int{0, 1}
 }
 func (m *ServiceSpec_SwaggerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceSpec_SwaggerInfo.Unmarshal(m, b)
@@ -218,7 +218,7 @@ func (m *DestinationSpec) Reset()         { *m = DestinationSpec{} }
 func (m *DestinationSpec) String() string { return proto.CompactTextString(m) }
 func (*DestinationSpec) ProtoMessage()    {}
 func (*DestinationSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rest_0f2db338e2ad2c97, []int{1}
+	return fileDescriptor_rest_36ddb4411c65025c, []int{1}
 }
 func (m *DestinationSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationSpec.Unmarshal(m, b)
@@ -416,10 +416,10 @@ func (this *DestinationSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto", fileDescriptor_rest_0f2db338e2ad2c97)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto", fileDescriptor_rest_36ddb4411c65025c)
 }
 
-var fileDescriptor_rest_0f2db338e2ad2c97 = []byte{
+var fileDescriptor_rest_36ddb4411c65025c = []byte{
 	// 427 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x93, 0xdf, 0x8a, 0xd4, 0x30,
 	0x14, 0xc6, 0xed, 0x16, 0x17, 0x4c, 0x57, 0x57, 0xc2, 0xa2, 0xb5, 0x17, 0x32, 0xac, 0x37, 0x73,

@@ -51,7 +51,7 @@ func (m *Upstream) Reset()         { *m = Upstream{} }
 func (m *Upstream) String() string { return proto.CompactTextString(m) }
 func (*Upstream) ProtoMessage()    {}
 func (*Upstream) Descriptor() ([]byte, []int) {
-	return fileDescriptor_upstream_745706e49a8c38ac, []int{0}
+	return fileDescriptor_upstream_29947727819065fe, []int{0}
 }
 func (m *Upstream) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Upstream.Unmarshal(m, b)
@@ -110,7 +110,7 @@ func (m *DiscoveryMetadata) Reset()         { *m = DiscoveryMetadata{} }
 func (m *DiscoveryMetadata) String() string { return proto.CompactTextString(m) }
 func (*DiscoveryMetadata) ProtoMessage()    {}
 func (*DiscoveryMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_upstream_745706e49a8c38ac, []int{1}
+	return fileDescriptor_upstream_29947727819065fe, []int{1}
 }
 func (m *DiscoveryMetadata) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DiscoveryMetadata.Unmarshal(m, b)
@@ -196,10 +196,10 @@ func (this *DiscoveryMetadata) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto", fileDescriptor_upstream_745706e49a8c38ac)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto", fileDescriptor_upstream_29947727819065fe)
 }
 
-var fileDescriptor_upstream_745706e49a8c38ac = []byte{
+var fileDescriptor_upstream_29947727819065fe = []byte{
 	// 325 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x90, 0x4d, 0x4e, 0x02, 0x31,
 	0x1c, 0xc5, 0x85, 0x18, 0x24, 0x15, 0x17, 0x8c, 0xc4, 0x20, 0x0b, 0x31, 0xb3, 0x72, 0x63, 0x2b,

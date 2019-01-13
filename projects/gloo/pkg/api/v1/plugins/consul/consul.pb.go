@@ -47,7 +47,7 @@ func (m *UpstreamSpec) Reset()         { *m = UpstreamSpec{} }
 func (m *UpstreamSpec) String() string { return proto.CompactTextString(m) }
 func (*UpstreamSpec) ProtoMessage()    {}
 func (*UpstreamSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_consul_539a871fe04ee199, []int{0}
+	return fileDescriptor_consul_779c08d39d1d437a, []int{0}
 }
 func (m *UpstreamSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamSpec.Unmarshal(m, b)
@@ -141,10 +141,10 @@ func (this *UpstreamSpec) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto", fileDescriptor_consul_539a871fe04ee199)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto", fileDescriptor_consul_779c08d39d1d437a)
 }
 
-var fileDescriptor_consul_539a871fe04ee199 = []byte{
+var fileDescriptor_consul_779c08d39d1d437a = []byte{
 	// 271 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0xc1, 0x4a, 0x03, 0x31,
 	0x10, 0x86, 0x89, 0x15, 0xd1, 0x6d, 0x51, 0x58, 0x3c, 0x2c, 0x15, 0x64, 0xeb, 0xc5, 0xbd, 0x98,

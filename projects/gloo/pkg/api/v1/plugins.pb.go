@@ -50,7 +50,7 @@ func (m *ListenerPlugins) Reset()         { *m = ListenerPlugins{} }
 func (m *ListenerPlugins) String() string { return proto.CompactTextString(m) }
 func (*ListenerPlugins) ProtoMessage()    {}
 func (*ListenerPlugins) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plugins_cf5e3dbed59c8119, []int{0}
+	return fileDescriptor_plugins_0bb98bc934637ef8, []int{0}
 }
 func (m *ListenerPlugins) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListenerPlugins.Unmarshal(m, b)
@@ -85,7 +85,7 @@ func (m *VirtualHostPlugins) Reset()         { *m = VirtualHostPlugins{} }
 func (m *VirtualHostPlugins) String() string { return proto.CompactTextString(m) }
 func (*VirtualHostPlugins) ProtoMessage()    {}
 func (*VirtualHostPlugins) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plugins_cf5e3dbed59c8119, []int{1}
+	return fileDescriptor_plugins_0bb98bc934637ef8, []int{1}
 }
 func (m *VirtualHostPlugins) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VirtualHostPlugins.Unmarshal(m, b)
@@ -131,7 +131,7 @@ func (m *RoutePlugins) Reset()         { *m = RoutePlugins{} }
 func (m *RoutePlugins) String() string { return proto.CompactTextString(m) }
 func (*RoutePlugins) ProtoMessage()    {}
 func (*RoutePlugins) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plugins_cf5e3dbed59c8119, []int{2}
+	return fileDescriptor_plugins_0bb98bc934637ef8, []int{2}
 }
 func (m *RoutePlugins) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RoutePlugins.Unmarshal(m, b)
@@ -207,7 +207,7 @@ func (m *DestinationSpec) Reset()         { *m = DestinationSpec{} }
 func (m *DestinationSpec) String() string { return proto.CompactTextString(m) }
 func (*DestinationSpec) ProtoMessage()    {}
 func (*DestinationSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plugins_cf5e3dbed59c8119, []int{3}
+	return fileDescriptor_plugins_0bb98bc934637ef8, []int{3}
 }
 func (m *DestinationSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationSpec.Unmarshal(m, b)
@@ -449,7 +449,7 @@ func (m *UpstreamSpec) Reset()         { *m = UpstreamSpec{} }
 func (m *UpstreamSpec) String() string { return proto.CompactTextString(m) }
 func (*UpstreamSpec) ProtoMessage()    {}
 func (*UpstreamSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plugins_cf5e3dbed59c8119, []int{4}
+	return fileDescriptor_plugins_0bb98bc934637ef8, []int{4}
 }
 func (m *UpstreamSpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamSpec.Unmarshal(m, b)
@@ -1086,10 +1086,10 @@ func (this *UpstreamSpec_Consul) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto", fileDescriptor_plugins_cf5e3dbed59c8119)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto", fileDescriptor_plugins_0bb98bc934637ef8)
 }
 
-var fileDescriptor_plugins_cf5e3dbed59c8119 = []byte{
+var fileDescriptor_plugins_0bb98bc934637ef8 = []byte{
 	// 749 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x95, 0xcd, 0x6e, 0x13, 0x31,
 	0x10, 0xc7, 0xd9, 0x24, 0x4d, 0x85, 0x9b, 0x92, 0x62, 0xf5, 0x90, 0xf6, 0x50, 0xaa, 0x1c, 0x20,

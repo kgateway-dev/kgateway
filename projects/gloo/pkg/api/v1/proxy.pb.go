@@ -56,7 +56,7 @@ func (x RedirectAction_RedirectResponseCode) String() string {
 	return proto.EnumName(RedirectAction_RedirectResponseCode_name, int32(x))
 }
 func (RedirectAction_RedirectResponseCode) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{12, 0}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{12, 0}
 }
 
 //
@@ -94,7 +94,7 @@ func (m *Proxy) Reset()         { *m = Proxy{} }
 func (m *Proxy) String() string { return proto.CompactTextString(m) }
 func (*Proxy) ProtoMessage()    {}
 func (*Proxy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{0}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{0}
 }
 func (m *Proxy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Proxy.Unmarshal(m, b)
@@ -166,7 +166,7 @@ func (m *Listener) Reset()         { *m = Listener{} }
 func (m *Listener) String() string { return proto.CompactTextString(m) }
 func (*Listener) ProtoMessage()    {}
 func (*Listener) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{1}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{1}
 }
 func (m *Listener) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Listener.Unmarshal(m, b)
@@ -320,7 +320,7 @@ func (m *HttpListener) Reset()         { *m = HttpListener{} }
 func (m *HttpListener) String() string { return proto.CompactTextString(m) }
 func (*HttpListener) ProtoMessage()    {}
 func (*HttpListener) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{2}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{2}
 }
 func (m *HttpListener) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HttpListener.Unmarshal(m, b)
@@ -391,7 +391,7 @@ func (m *VirtualHost) Reset()         { *m = VirtualHost{} }
 func (m *VirtualHost) String() string { return proto.CompactTextString(m) }
 func (*VirtualHost) ProtoMessage()    {}
 func (*VirtualHost) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{3}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{3}
 }
 func (m *VirtualHost) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VirtualHost.Unmarshal(m, b)
@@ -468,7 +468,7 @@ func (m *Route) Reset()         { *m = Route{} }
 func (m *Route) String() string { return proto.CompactTextString(m) }
 func (*Route) ProtoMessage()    {}
 func (*Route) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{4}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{4}
 }
 func (m *Route) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Route.Unmarshal(m, b)
@@ -672,7 +672,7 @@ func (m *Matcher) Reset()         { *m = Matcher{} }
 func (m *Matcher) String() string { return proto.CompactTextString(m) }
 func (*Matcher) ProtoMessage()    {}
 func (*Matcher) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{5}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{5}
 }
 func (m *Matcher) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Matcher.Unmarshal(m, b)
@@ -864,7 +864,7 @@ func (m *HeaderMatcher) Reset()         { *m = HeaderMatcher{} }
 func (m *HeaderMatcher) String() string { return proto.CompactTextString(m) }
 func (*HeaderMatcher) ProtoMessage()    {}
 func (*HeaderMatcher) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{6}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{6}
 }
 func (m *HeaderMatcher) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HeaderMatcher.Unmarshal(m, b)
@@ -929,7 +929,7 @@ func (m *QueryParameterMatcher) Reset()         { *m = QueryParameterMatcher{} }
 func (m *QueryParameterMatcher) String() string { return proto.CompactTextString(m) }
 func (*QueryParameterMatcher) ProtoMessage()    {}
 func (*QueryParameterMatcher) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{7}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{7}
 }
 func (m *QueryParameterMatcher) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueryParameterMatcher.Unmarshal(m, b)
@@ -989,7 +989,7 @@ func (m *RouteAction) Reset()         { *m = RouteAction{} }
 func (m *RouteAction) String() string { return proto.CompactTextString(m) }
 func (*RouteAction) ProtoMessage()    {}
 func (*RouteAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{8}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{8}
 }
 func (m *RouteAction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RouteAction.Unmarshal(m, b)
@@ -1137,7 +1137,7 @@ func (m *Destination) Reset()         { *m = Destination{} }
 func (m *Destination) String() string { return proto.CompactTextString(m) }
 func (*Destination) ProtoMessage()    {}
 func (*Destination) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{9}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{9}
 }
 func (m *Destination) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Destination.Unmarshal(m, b)
@@ -1186,7 +1186,7 @@ func (m *MultiDestination) Reset()         { *m = MultiDestination{} }
 func (m *MultiDestination) String() string { return proto.CompactTextString(m) }
 func (*MultiDestination) ProtoMessage()    {}
 func (*MultiDestination) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{10}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{10}
 }
 func (m *MultiDestination) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MultiDestination.Unmarshal(m, b)
@@ -1228,7 +1228,7 @@ func (m *WeightedDestination) Reset()         { *m = WeightedDestination{} }
 func (m *WeightedDestination) String() string { return proto.CompactTextString(m) }
 func (*WeightedDestination) ProtoMessage()    {}
 func (*WeightedDestination) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{11}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{11}
 }
 func (m *WeightedDestination) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WeightedDestination.Unmarshal(m, b)
@@ -1288,7 +1288,7 @@ func (m *RedirectAction) Reset()         { *m = RedirectAction{} }
 func (m *RedirectAction) String() string { return proto.CompactTextString(m) }
 func (*RedirectAction) ProtoMessage()    {}
 func (*RedirectAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{12}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{12}
 }
 func (m *RedirectAction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RedirectAction.Unmarshal(m, b)
@@ -1458,7 +1458,7 @@ func (m *DirectResponseAction) Reset()         { *m = DirectResponseAction{} }
 func (m *DirectResponseAction) String() string { return proto.CompactTextString(m) }
 func (*DirectResponseAction) ProtoMessage()    {}
 func (*DirectResponseAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{13}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{13}
 }
 func (m *DirectResponseAction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DirectResponseAction.Unmarshal(m, b)
@@ -1509,7 +1509,7 @@ func (m *SslConfig) Reset()         { *m = SslConfig{} }
 func (m *SslConfig) String() string { return proto.CompactTextString(m) }
 func (*SslConfig) ProtoMessage()    {}
 func (*SslConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{14}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{14}
 }
 func (m *SslConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SslConfig.Unmarshal(m, b)
@@ -1661,7 +1661,7 @@ func (m *SSLFiles) Reset()         { *m = SSLFiles{} }
 func (m *SSLFiles) String() string { return proto.CompactTextString(m) }
 func (*SSLFiles) ProtoMessage()    {}
 func (*SSLFiles) Descriptor() ([]byte, []int) {
-	return fileDescriptor_proxy_c2a37f20266ef362, []int{15}
+	return fileDescriptor_proxy_a3c5123289048b27, []int{15}
 }
 func (m *SSLFiles) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SSLFiles.Unmarshal(m, b)
@@ -2640,10 +2640,10 @@ func (this *SSLFiles) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto", fileDescriptor_proxy_c2a37f20266ef362)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto", fileDescriptor_proxy_a3c5123289048b27)
 }
 
-var fileDescriptor_proxy_c2a37f20266ef362 = []byte{
+var fileDescriptor_proxy_a3c5123289048b27 = []byte{
 	// 1357 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x4f, 0x73, 0x13, 0xc7,
 	0x12, 0xd7, 0x5a, 0x96, 0x2c, 0xb5, 0x24, 0x5b, 0x0c, 0x42, 0xc8, 0xf0, 0x1e, 0x98, 0xa5, 0xa8,

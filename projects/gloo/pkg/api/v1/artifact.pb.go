@@ -49,7 +49,7 @@ func (m *Artifact) Reset()         { *m = Artifact{} }
 func (m *Artifact) String() string { return proto.CompactTextString(m) }
 func (*Artifact) ProtoMessage()    {}
 func (*Artifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_artifact_b4145a599819f217, []int{0}
+	return fileDescriptor_artifact_4d49b488f1cb9eae, []int{0}
 }
 func (m *Artifact) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Artifact.Unmarshal(m, b)
@@ -118,10 +118,10 @@ func (this *Artifact) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto", fileDescriptor_artifact_b4145a599819f217)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto", fileDescriptor_artifact_4d49b488f1cb9eae)
 }
 
-var fileDescriptor_artifact_b4145a599819f217 = []byte{
+var fileDescriptor_artifact_4d49b488f1cb9eae = []byte{
 	// 202 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x4e, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x2f, 0xce, 0xcf, 0xc9, 0xd7, 0xcd, 0xcc, 0xd7, 0x4f,
