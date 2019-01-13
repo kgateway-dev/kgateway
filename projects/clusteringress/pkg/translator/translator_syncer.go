@@ -3,7 +3,6 @@ package translator
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/todo"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"

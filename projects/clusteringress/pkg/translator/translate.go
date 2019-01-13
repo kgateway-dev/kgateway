@@ -1,9 +1,10 @@
 package translator
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"sort"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/pkg/errors"
