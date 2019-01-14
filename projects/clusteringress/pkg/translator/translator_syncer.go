@@ -2,9 +2,9 @@ package translator
 
 import (
 	"context"
-
+	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
@@ -15,11 +15,11 @@ type translatorSyncer struct {
 	reporter        reporter.Reporter
 	writeErrs       chan error
 	proxyClient     gloov1.ProxyClient
-	ingressClient   v1.IngressClient
+	ingressClient   v1.ClusterIngressClient
 	proxyReconciler gloov1.ProxyReconciler
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, reporter reporter.Reporter, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.ClusterIngressClient, reporter reporter.Reporter, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
@@ -36,7 +36,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v ingresses)", snap.Hash(),
-		len(snap.Ingresses.List()))
+		len(snap.Clusteringresses.List()))
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 
@@ -58,7 +58,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, TODO.TransitionFunction, clients.ListOpts{
+	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, utils.TransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
 		Selector: labels,
 	}); err != nil {

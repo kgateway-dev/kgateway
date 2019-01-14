@@ -4,13 +4,15 @@ import (
 	"time"
 
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	ingresstype "github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
 	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -20,7 +22,7 @@ import (
 var _ = Describe("Translate", func() {
 	It("creates the appropriate proxy object for the provided ingress objects", func() {
 		namespace := "example"
-		serviceName := "wow-service"
+		serviceName := "peteszah-service"
 		servicePort := int32(80)
 		secretName := "areallygreatsecret"
 		ingress := &v1alpha1.ClusterIngress{
@@ -95,7 +97,7 @@ var _ = Describe("Translate", func() {
 			Spec: v1alpha1.IngressSpec{
 				TLS: []v1alpha1.ClusterIngressTLS{
 					{
-						Hosts:      []string{"wow.com"},
+						Hosts:      []string{"petes.com"},
 						SecretName: secretName,
 					},
 				},
@@ -187,209 +189,473 @@ var _ = Describe("Translate", func() {
 		}
 		proxy, errs := translateProxy(namespace, snap)
 		Expect(errs).NotTo(HaveOccurred())
-		//log.Printf("%v", proxy)
-		Expect(proxy.String()).To(Equal((&gloov1.Proxy{
+		Expect(proxy.Metadata.Name).To(Equal("clusteringress-proxy"))
+		Expect(proxy.Listeners).To(HaveLen(2))
+		Expect(proxy.Listeners[0].Name).To(Equal("http"))
+		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(80)))
+
+		//utter.Dump(proxy)
+		Expect(err).NotTo(HaveOccurred())
+		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
 				&gloov1.Listener{
-					Name:        "http",
-					BindAddress: "::",
-					BindPort:    0x00000050,
+					Name:        string("http"),
+					BindAddress: string("::"),
+					BindPort:    uint32(0x50),
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
 								&gloov1.VirtualHost{
-									Name: "wow.com-http",
+									Name: string("champ.net-http"),
 									Domains: []string{
-										"wow.com",
+										string("champ.net"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: "/",
+													Regex: string("/hay"),
 												},
-												Headers:              []*gloov1.HeaderMatcher{},
-												QueryParameters:      []*gloov1.QueryParameterMatcher{},
-												Methods:              []string{},
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_unrecognized:     []uint8{},
-												XXX_sizecache:        0,
+												Headers:         []*gloov1.HeaderMatcher(nil),
+												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
+												Methods:         []string(nil),
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
 															Upstream: core.ResourceRef{
-																Name:      "wow-upstream",
-																Namespace: "example",
+																Name:      string("wow-upstream-subset"),
+																Namespace: string("example"),
 															},
-															DestinationSpec:      (*gloov1.DestinationSpec)(nil),
-															XXX_NoUnkeyedLiteral: struct{}{},
-															XXX_unrecognized:     []uint8{},
-															XXX_sizecache:        0,
+															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_unrecognized:     []uint8{},
-													XXX_sizecache:        0,
 												},
 											},
-											RoutePlugins:         (*gloov1.RoutePlugins)(nil),
-											XXX_NoUnkeyedLiteral: struct{}{},
-											XXX_unrecognized:     []uint8{},
-											XXX_sizecache:        0,
+											RoutePlugins: &gloov1.RoutePlugins{
+												Transformations: &transformation.RouteTransformations{
+													RequestTransformation: &transformation.Transformation{
+														TransformationType: &transformation.Transformation_TransformationTemplate{
+															TransformationTemplate: &transformation.TransformationTemplate{
+																AdvancedTemplates: bool(false),
+																Extractors:        map[string]*transformation.Extraction(nil),
+																Headers: map[string]*transformation.InjaTemplate{
+																	string("add"): &transformation.InjaTemplate{
+																		Text: string("me"),
+																	},
+																},
+																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+																	Passthrough: &transformation.Passthrough{
+																	},
+																},
+															},
+														},
+													},
+													ResponseTransformation: (*transformation.Transformation)(nil),
+												},
+												Faults:        (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
+												Timeout:       durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:       string(""),
+													NumRetries:    uint32(0xe),
+													PerTryTimeout: durptr(1000),
+												},
+											},
 										},
 									},
-									VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
-									XXX_NoUnkeyedLiteral: struct{}{},
-									XXX_unrecognized:     []uint8{},
-									XXX_sizecache:        0,
+								},
+								&gloov1.VirtualHost{
+									Name: string("petes.com-http"),
+									Domains: []string{
+										string("petes.com"),
+									},
+									Routes: []*gloov1.Route{
+										&gloov1.Route{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
+													Regex: string("/"),
+												},
+												Headers:         []*gloov1.HeaderMatcher(nil),
+												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
+												Methods:         []string(nil),
+											},
+											Action: &gloov1.Route_RouteAction{
+												RouteAction: &gloov1.RouteAction{
+													Destination: &gloov1.RouteAction_Single{
+														Single: &gloov1.Destination{
+															Upstream: core.ResourceRef{
+																Name:      string("wow-upstream-subset"),
+																Namespace: string("example"),
+															},
+															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+														},
+													},
+												},
+											},
+											RoutePlugins: &gloov1.RoutePlugins{
+												Transformations: &transformation.RouteTransformations{
+													RequestTransformation: &transformation.Transformation{
+														TransformationType: &transformation.Transformation_TransformationTemplate{
+															TransformationTemplate: &transformation.TransformationTemplate{
+																AdvancedTemplates: bool(false),
+																Extractors:        map[string]*transformation.Extraction(nil),
+																Headers: map[string]*transformation.InjaTemplate{
+																	string("add"): &transformation.InjaTemplate{
+																		Text: string("me"),
+																	},
+																},
+																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+																	Passthrough: &transformation.Passthrough{
+																	},
+																},
+															},
+														},
+													},
+													ResponseTransformation: (*transformation.Transformation)(nil),
+												},
+												Faults:        (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
+												Timeout:       durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:       string(""),
+													NumRetries:    uint32(0xe),
+													PerTryTimeout: durptr(1000),
+												},
+											},
+										},
+									},
+								},
+								&gloov1.VirtualHost{
+									Name: string("pog.com-http"),
+									Domains: []string{
+										string("pog.com"),
+									},
+									Routes: []*gloov1.Route{
+										&gloov1.Route{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
+													Regex: string("/hay"),
+												},
+												Headers:         []*gloov1.HeaderMatcher(nil),
+												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
+												Methods:         []string(nil),
+											},
+											Action: &gloov1.Route_RouteAction{
+												RouteAction: &gloov1.RouteAction{
+													Destination: &gloov1.RouteAction_Single{
+														Single: &gloov1.Destination{
+															Upstream: core.ResourceRef{
+																Name:      string("wow-upstream-subset"),
+																Namespace: string("example"),
+															},
+															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+														},
+													},
+												},
+											},
+											RoutePlugins: &gloov1.RoutePlugins{
+												Transformations: &transformation.RouteTransformations{
+													RequestTransformation: &transformation.Transformation{
+														TransformationType: &transformation.Transformation_TransformationTemplate{
+															TransformationTemplate: &transformation.TransformationTemplate{
+																AdvancedTemplates: bool(false),
+																Extractors:        map[string]*transformation.Extraction(nil),
+																Headers: map[string]*transformation.InjaTemplate{
+																	string("add"): &transformation.InjaTemplate{
+																		Text: string("me"),
+																	},
+																},
+																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+																	Passthrough: &transformation.Passthrough{
+																	},
+																},
+															},
+														},
+													},
+													ResponseTransformation: (*transformation.Transformation)(nil),
+												},
+												Faults:        (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
+												Timeout:       durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:       string(""),
+													NumRetries:    uint32(0xe),
+													PerTryTimeout: durptr(1000),
+												},
+											},
+										},
+									},
+								},
+								&gloov1.VirtualHost{
+									Name: string("zah.net-http"),
+									Domains: []string{
+										string("zah.net"),
+									},
+									Routes: []*gloov1.Route{
+										&gloov1.Route{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
+													Regex: string("/hay"),
+												},
+												Headers:         []*gloov1.HeaderMatcher(nil),
+												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
+												Methods:         []string(nil),
+											},
+											Action: &gloov1.Route_RouteAction{
+												RouteAction: &gloov1.RouteAction{
+													Destination: &gloov1.RouteAction_Single{
+														Single: &gloov1.Destination{
+															Upstream: core.ResourceRef{
+																Name:      string("wow-upstream-subset"),
+																Namespace: string("example"),
+															},
+															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+														},
+													},
+												},
+											},
+											RoutePlugins: &gloov1.RoutePlugins{
+												Transformations: &transformation.RouteTransformations{
+													RequestTransformation: &transformation.Transformation{
+														TransformationType: &transformation.Transformation_TransformationTemplate{
+															TransformationTemplate: &transformation.TransformationTemplate{
+																AdvancedTemplates: bool(false),
+																Extractors:        map[string]*transformation.Extraction(nil),
+																Headers: map[string]*transformation.InjaTemplate{
+																	string("add"): &transformation.InjaTemplate{
+																		Text: string("me"),
+																	},
+																},
+																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+																	Passthrough: &transformation.Passthrough{
+																	},
+																},
+															},
+														},
+													},
+													ResponseTransformation: (*transformation.Transformation)(nil),
+												},
+												Faults:        (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
+												Timeout:       durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:       string(""),
+													NumRetries:    uint32(0xe),
+													PerTryTimeout: durptr(1000),
+												},
+											},
+										},
+										&gloov1.Route{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
+													Regex: string("/"),
+												},
+												Headers:         []*gloov1.HeaderMatcher(nil),
+												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
+												Methods:         []string(nil),
+											},
+											Action: &gloov1.Route_RouteAction{
+												RouteAction: &gloov1.RouteAction{
+													Destination: &gloov1.RouteAction_Single{
+														Single: &gloov1.Destination{
+															Upstream: core.ResourceRef{
+																Name:      string("wow-upstream-subset"),
+																Namespace: string("example"),
+															},
+															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+														},
+													},
+												},
+											},
+											RoutePlugins: &gloov1.RoutePlugins{
+												Transformations: &transformation.RouteTransformations{
+													RequestTransformation: &transformation.Transformation{
+														TransformationType: &transformation.Transformation_TransformationTemplate{
+															TransformationTemplate: &transformation.TransformationTemplate{
+																AdvancedTemplates: bool(false),
+																Extractors:        map[string]*transformation.Extraction(nil),
+																Headers: map[string]*transformation.InjaTemplate{
+																	string("add"): &transformation.InjaTemplate{
+																		Text: string("me"),
+																	},
+																},
+																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+																	Passthrough: &transformation.Passthrough{
+																	},
+																},
+															},
+														},
+													},
+													ResponseTransformation: (*transformation.Transformation)(nil),
+												},
+												Faults:        (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
+												Timeout:       durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:       string(""),
+													NumRetries:    uint32(0xe),
+													PerTryTimeout: durptr(1000),
+												},
+											},
+										},
+										&gloov1.Route{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
+													Regex: string("/"),
+												},
+												Headers:         []*gloov1.HeaderMatcher(nil),
+												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
+												Methods:         []string(nil),
+											},
+											Action: &gloov1.Route_RouteAction{
+												RouteAction: &gloov1.RouteAction{
+													Destination: &gloov1.RouteAction_Single{
+														Single: &gloov1.Destination{
+															Upstream: core.ResourceRef{
+																Name:      string("wow-upstream-subset"),
+																Namespace: string("example"),
+															},
+															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+														},
+													},
+												},
+											},
+											RoutePlugins: &gloov1.RoutePlugins{
+												Transformations: &transformation.RouteTransformations{
+													RequestTransformation: &transformation.Transformation{
+														TransformationType: &transformation.Transformation_TransformationTemplate{
+															TransformationTemplate: &transformation.TransformationTemplate{
+																AdvancedTemplates: bool(false),
+																Extractors:        map[string]*transformation.Extraction(nil),
+																Headers: map[string]*transformation.InjaTemplate{
+																	string("add"): &transformation.InjaTemplate{
+																		Text: string("me"),
+																	},
+																},
+																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+																	Passthrough: &transformation.Passthrough{
+																	},
+																},
+															},
+														},
+													},
+													ResponseTransformation: (*transformation.Transformation)(nil),
+												},
+												Faults:        (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
+												Timeout:       durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:       string(""),
+													NumRetries:    uint32(0xe),
+													PerTryTimeout: durptr(1000),
+												},
+											},
+										},
+									},
 								},
 							},
-							ListenerPlugins:      (*gloov1.ListenerPlugins)(nil),
-							XXX_NoUnkeyedLiteral: struct{}{},
-							XXX_unrecognized:     []uint8{},
-							XXX_sizecache:        0,
 						},
 					},
-					SslConfiguations:     []*gloov1.SslConfig{},
-					XXX_NoUnkeyedLiteral: struct{}{},
-					XXX_unrecognized:     []uint8{},
-					XXX_sizecache:        0,
+					SslConfiguations: []*gloov1.SslConfig(nil),
 				},
 				&gloov1.Listener{
-					Name:        "https",
-					BindAddress: "::",
-					BindPort:    0x000001bb,
+					Name:        string("https"),
+					BindAddress: string("::"),
+					BindPort:    uint32(0x1bb),
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
 								&gloov1.VirtualHost{
-									Name: "wow.com-http",
+									Name: string("petes.com-http"),
 									Domains: []string{
-										"wow.com",
+										string("petes.com"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: "/longestpathshouldcomesecond",
+													Regex: string("/"),
 												},
-												Headers:              []*gloov1.HeaderMatcher{},
-												QueryParameters:      []*gloov1.QueryParameterMatcher{},
-												Methods:              []string{},
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_unrecognized:     []uint8{},
-												XXX_sizecache:        0,
+												Headers:         []*gloov1.HeaderMatcher(nil),
+												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
+												Methods:         []string(nil),
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
 															Upstream: core.ResourceRef{
-																Name:      "wow-upstream",
-																Namespace: "example",
+																Name:      string("wow-upstream-subset"),
+																Namespace: string("example"),
 															},
-															DestinationSpec:      (*gloov1.DestinationSpec)(nil),
-															XXX_NoUnkeyedLiteral: struct{}{},
-															XXX_unrecognized:     []uint8{},
-															XXX_sizecache:        0,
+															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_unrecognized:     []uint8{},
-													XXX_sizecache:        0,
 												},
 											},
-											RoutePlugins:         (*gloov1.RoutePlugins)(nil),
-											XXX_NoUnkeyedLiteral: struct{}{},
-											XXX_unrecognized:     []uint8{},
-											XXX_sizecache:        0,
-										},
-										&gloov1.Route{
-											Matcher: &gloov1.Matcher{
-												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: "/basic",
-												},
-												Headers:              []*gloov1.HeaderMatcher{},
-												QueryParameters:      []*gloov1.QueryParameterMatcher{},
-												Methods:              []string{},
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_unrecognized:     []uint8{},
-												XXX_sizecache:        0,
-											},
-											Action: &gloov1.Route_RouteAction{
-												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      "wow-upstream",
-																Namespace: "example",
+											RoutePlugins: &gloov1.RoutePlugins{
+												Transformations: &transformation.RouteTransformations{
+													RequestTransformation: &transformation.Transformation{
+														TransformationType: &transformation.Transformation_TransformationTemplate{
+															TransformationTemplate: &transformation.TransformationTemplate{
+																AdvancedTemplates: bool(false),
+																Extractors:        map[string]*transformation.Extraction(nil),
+																Headers: map[string]*transformation.InjaTemplate{
+																	string("add"): &transformation.InjaTemplate{
+																		Text: string("me"),
+																	},
+																},
+																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
+																	Passthrough: &transformation.Passthrough{
+																	},
+																},
 															},
-															DestinationSpec:      (*gloov1.DestinationSpec)(nil),
-															XXX_NoUnkeyedLiteral: struct{}{},
-															XXX_unrecognized:     []uint8{},
-															XXX_sizecache:        0,
 														},
 													},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_unrecognized:     []uint8{},
-													XXX_sizecache:        0,
+													ResponseTransformation: (*transformation.Transformation)(nil),
+												},
+												Faults:        (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
+												Timeout:       durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:       string(""),
+													NumRetries:    uint32(0xe),
+													PerTryTimeout: durptr(1000),
 												},
 											},
-											RoutePlugins:         (*gloov1.RoutePlugins)(nil),
-											XXX_NoUnkeyedLiteral: struct{}{},
-											XXX_unrecognized:     []uint8{},
-											XXX_sizecache:        0,
 										},
 									},
-									VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
-									XXX_NoUnkeyedLiteral: struct{}{},
-									XXX_unrecognized:     []uint8{},
-									XXX_sizecache:        0,
 								},
 							},
-							ListenerPlugins:      (*gloov1.ListenerPlugins)(nil),
-							XXX_NoUnkeyedLiteral: struct{}{},
-							XXX_unrecognized:     []uint8{},
-							XXX_sizecache:        0,
 						},
 					},
 					SslConfiguations: []*gloov1.SslConfig{
 						&gloov1.SslConfig{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
-									Name:      "areallygreatsecret",
-									Namespace: "example",
+									Name:      string("areallygreatsecret"),
+									Namespace: string("example"),
 								},
 							},
-							SniDomains:           []string{"wow.com"},
-							XXX_NoUnkeyedLiteral: struct{}{},
-							XXX_unrecognized:     []uint8{},
-							XXX_sizecache:        0,
+							SniDomains: []string{
+								string("petes.com"),
+							},
 						},
 					},
-					XXX_NoUnkeyedLiteral: struct{}{},
-					XXX_unrecognized:     []uint8{},
-					XXX_sizecache:        0,
 				},
 			},
-			Status: core.Status{
-				State:               0,
-				Reason:              "",
-				ReportedBy:          "",
-				SubresourceStatuses: map[string]*core.Status{},
-			},
 			Metadata: core.Metadata{
-				Name:            "ingress-proxy",
-				Namespace:       "example",
-				ResourceVersion: "",
-				Labels:          map[string]string{},
-				Annotations:     map[string]string{},
+				Name:      string("clusteringress-proxy"),
+				Namespace: string("example"),
 			},
-			XXX_NoUnkeyedLiteral: struct{}{},
-			XXX_unrecognized:     []uint8{},
-			XXX_sizecache:        0,
-		}).String()))
+		}
+		Expect(proxy).To(Equal(expected))
 	})
 })
+
+func durptr(d int) *time.Duration {
+	dur := time.Duration(d)
+	return &dur
+}

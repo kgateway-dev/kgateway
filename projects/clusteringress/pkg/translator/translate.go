@@ -71,7 +71,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 	}
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "ingress-proxy", // must match envoy role
+			Name:      "clusteringress-proxy", // must match envoy role
 			Namespace: namespace,
 		},
 		Listeners: listeners,
@@ -88,13 +88,8 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)
 	for _, ing := range ingresses {
-		if !isOurIngress(ing) {
-			continue
-		}
 		spec := ing.Spec
-		var useTls bool
 		for _, tls := range spec.TLS {
-			useTls = true
 			secret, err := secrets.Find(ing.Namespace, tls.SecretName)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "invalid secret for ingress %v", ing.Name)
@@ -166,13 +161,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 						},
 					},
 					Action: &gloov1.Route_RouteAction{
-						RouteAction: &gloov1.RouteAction{
-							Destination: &gloov1.RouteAction_Single{
-								Single: &gloov1.Destination{
-									Upstream: upstream.Metadata.Ref(),
-								},
-							},
-						},
+						RouteAction: action,
 					},
 					RoutePlugins: &gloov1.RoutePlugins{
 						Transformations: appendHeadersTransformation,
@@ -181,7 +170,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 					},
 				}
 				for _, host := range rule.Hosts {
-					if useTls {
+					if _, useTls := secretsByHost[host]; useTls {
 						routesByHostHttps[host] = append(routesByHostHttps[host], route)
 					} else {
 						routesByHostHttp[host] = append(routesByHostHttp[host], route)
@@ -301,8 +290,4 @@ func sortByLongestPathName(routes []*gloov1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
 		return routes[i].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex > routes[j].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex
 	})
-}
-
-func isOurIngress(ingress *v1alpha1.ClusterIngress) bool {
-	return ingress.Annotations["kubernetes.io/ingress.class"] == "gloo"
 }

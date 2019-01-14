@@ -123,9 +123,7 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 			}
 			defaultBackend = spec.Backend
 		}
-		var useTls bool
 		for _, tls := range spec.TLS {
-			useTls = true
 			secret, err := secrets.Find(ing.Namespace, tls.SecretName)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "invalid secret for ingress %v", ing.Name)
@@ -179,7 +177,7 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 						},
 					},
 				}
-				if useTls {
+				if _, useTls := secretsByHost[host]; useTls {
 					routesByHostHttps[host] = append(routesByHostHttps[host], route)
 				} else {
 					routesByHostHttp[host] = append(routesByHostHttp[host], route)
