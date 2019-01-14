@@ -25,6 +25,10 @@ func DeployGlooWithHelm(namespace, imageVersion string, verbose bool) error {
 	if _, err := io.Copy(values, GlooHelmValues(imageVersion)); err != nil {
 		return err
 	}
+	err = values.Close()
+	if err != nil {
+		return err
+	}
 
 	// make the manifest
 	manifestContents, err := RunCommandOutput(verbose,
