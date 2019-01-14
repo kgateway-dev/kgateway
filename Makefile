@@ -226,14 +226,16 @@ install/kube.yaml: $(shell find install/helm/gloo)
 GH_ORG:=solo-io
 GH_REPO:=gloo
 
-RELEASE_BINARIES := \
-	$(OUTPUT_DIR)/gateway-linux-amd64 \
-	$(OUTPUT_DIR)/ingress-linux-amd64 \
-	$(OUTPUT_DIR)/gloo-linux-amd64 \
-	$(OUTPUT_DIR)/discovery-linux-amd64 \
-	$(OUTPUT_DIR)/envoyinit-linux-amd64 \
-	$(OUTPUT_DIR)/glooctl-linux-amd64 \
-	$(OUTPUT_DIR)/glooctl-darwin-amd64
+# For now, expecting people using the release to start from a glooctl CLI we provide, not
+# installing the binaries locally / directly. So only uploading the CLI binaries to Github.
+# The other binaries can be built manually and used, and docker images for everything will
+# be published on release.
+RELEASE_BINARIES := 
+ifeq ($(RELEASE),"true")
+	RELEASE_BINARIES := \
+		$(OUTPUT_DIR)/glooctl-linux-amd64 \
+		$(OUTPUT_DIR)/glooctl-darwin-amd64
+endif
 
 .PHONY: release-binaries
 release-binaries: $(RELEASE_BINARIES)
@@ -256,9 +258,19 @@ endif
 #--------- Push
 #---------
 
+DOCKER_IMAGES :=
+ifeq ($(RELEASE),"true")
+	DOCKER_IMAGES := docker
+endif
+
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker ingress-docker
-docker-push: docker
+
+# Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
+# This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
+# to be used for local testing.
+# docker-push is intended to be run by CI
+docker-push: $(DOCKER_IMAGES)
 ifeq ($(RELEASE),"true")
 	docker push soloio/gateway:$(VERSION) && \
 	docker push soloio/ingress:$(VERSION) && \
