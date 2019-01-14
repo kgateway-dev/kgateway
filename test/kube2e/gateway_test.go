@@ -2,6 +2,7 @@ package kube2e_test
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -72,7 +73,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		defaultGateway := defaults.DefaultGateway(namespace)
-
+		// wait for default gateway to be created
 		Eventually(func() (*v1.Gateway, error) {
 			return gatewayClient.Read(namespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 		}, "5s", "0.5s").Should(Not(BeNil()))
@@ -86,6 +87,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			Host:     gatewayProxy,
 			Service:  gatewayProxy,
 			Port:     gatewayPort,
-		}, helpers.SimpleHttpResponse)
+		}, helpers.SimpleHttpResponse, time.Minute)
 	})
 })
