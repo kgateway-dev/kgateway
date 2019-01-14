@@ -246,8 +246,7 @@ var _ = Describe("Translate", func() {
 																	},
 																},
 																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{
-																	},
+																	Passthrough: &transformation.Passthrough{},
 																},
 															},
 														},
@@ -307,8 +306,7 @@ var _ = Describe("Translate", func() {
 																	},
 																},
 																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{
-																	},
+																	Passthrough: &transformation.Passthrough{},
 																},
 															},
 														},
@@ -368,8 +366,7 @@ var _ = Describe("Translate", func() {
 																	},
 																},
 																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{
-																	},
+																	Passthrough: &transformation.Passthrough{},
 																},
 															},
 														},
@@ -429,8 +426,7 @@ var _ = Describe("Translate", func() {
 																	},
 																},
 																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{
-																	},
+																	Passthrough: &transformation.Passthrough{},
 																},
 															},
 														},
@@ -482,8 +478,7 @@ var _ = Describe("Translate", func() {
 																	},
 																},
 																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{
-																	},
+																	Passthrough: &transformation.Passthrough{},
 																},
 															},
 														},
@@ -535,8 +530,7 @@ var _ = Describe("Translate", func() {
 																	},
 																},
 																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{
-																	},
+																	Passthrough: &transformation.Passthrough{},
 																},
 															},
 														},
@@ -608,8 +602,7 @@ var _ = Describe("Translate", func() {
 																	},
 																},
 																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{
-																	},
+																	Passthrough: &transformation.Passthrough{},
 																},
 															},
 														},
