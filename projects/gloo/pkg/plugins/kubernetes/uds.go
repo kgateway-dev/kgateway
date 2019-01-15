@@ -145,7 +145,7 @@ func createUpstream(writeNamespace string, svc *kubev1.Service, port kubev1.Serv
 		}
 		extraLabels[k] = v
 	}
-	coremeta.Name = upstreamName(meta.Namespace, meta.Name, port.Port, extraLabels)
+	coremeta.Name = strings.ToLower(upstreamName(meta.Namespace, meta.Name, port.Port, extraLabels))
 	coremeta.Namespace = writeNamespace
 	targetPort := port.TargetPort.IntVal
 	if targetPort == 0 {
