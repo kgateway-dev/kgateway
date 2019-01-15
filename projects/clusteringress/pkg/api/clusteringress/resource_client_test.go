@@ -140,7 +140,7 @@ var _ = Describe("ResourceClient", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		ingressResource, err := ingressClient.Read("", kubeIng.Name, clients.ReadOpts{})
+		ingressResource, err := ingressClient.Read(kubeIng.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		convertedIng, err := ToKube(ingressResource)
 		Expect(err).NotTo(HaveOccurred())
