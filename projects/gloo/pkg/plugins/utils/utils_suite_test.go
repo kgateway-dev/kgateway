@@ -1,4 +1,4 @@
-package proto_test
+package utils_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestProto(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Proto Suite")
+	RunSpecs(t, "Utils Suite")
 }

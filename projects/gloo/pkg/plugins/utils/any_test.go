@@ -1,10 +1,10 @@
-package proto_test
+package utils_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/pkg/utils/proto"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 
 	"github.com/gogo/protobuf/types"
 )

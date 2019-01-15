@@ -1,4 +1,4 @@
-package proto
+package utils
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+
+	"github.com/envoyproxy/go-control-plane/pkg/util"
 )
 
 var NotFoundError = fmt.Errorf("message not found")
@@ -40,6 +42,17 @@ func UnmarshalAnyFromMap(protos map[string]*types.Any, name string, outproto pro
 }
 
 func getProto(p *types.Any, outproto proto.Message) error {
+
+	// special case - if we have a struct, use json pb for it.
+	if p.TypeUrl == "type.googleapis.com/google.protobuf.Struct" {
+		var msg types.Struct
+		err := types.UnmarshalAny(p, &msg)
+		if err != nil {
+			return err
+		}
+		return util.StructToMessage(&msg, outproto)
+	}
+
 	err := types.UnmarshalAny(p, outproto)
 	if err != nil {
 		return err
