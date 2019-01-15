@@ -4,31 +4,25 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/go-utils/kubeinstallutils"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/setup"
-	"github.com/solo-io/solo-kit/test/testutils"
 	"io/ioutil"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
 	"path/filepath"
 )
 
 var _ = FDescribe("Kube2e: Knative-Ingress", func() {
 	BeforeEach(func() {
-		deployKnative("a")
+		deployKnative()
 	})
 	AfterEach(func() {
-		deleteKnative("a")
+		deleteKnative()
 	})
 	It("works", func() {
-		return
-
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -87,50 +81,22 @@ var _ = FDescribe("Kube2e: Knative-Ingress", func() {
 	})
 })
 
-func deployKnative(namespace string) {
-	cfg, err := kubeutils.GetConfig("", "")
+func deployKnative() {
+	b, err := ioutil.ReadFile(KnativeManifest())
 	Expect(err).NotTo(HaveOccurred())
 
-	b, err := ioutil.ReadFile(filepath.Join(helpers.GlooTestArtifactsDir(), "knative-no-istio.yaml"))
-	Expect(err).NotTo(HaveOccurred())
-
-	err = testutils.DeployFromYaml(cfg, namespace, string(b))
+	err = helpers.RunCommandInput(string(b), true, "kubectl", "apply", "-f", "-")
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func deleteKnative(namespace string) {
-	cfg, err := kubeutils.GetConfig("", "")
+func deleteKnative() {
+	b, err := ioutil.ReadFile(KnativeManifest())
 	Expect(err).NotTo(HaveOccurred())
 
-	b, err := ioutil.ReadFile(filepath.Join(helpers.GlooTestArtifactsDir(), "knative-no-istio.yaml"))
-	Expect(err).NotTo(HaveOccurred())
-
-	err = DeleteFromYaml(cfg, namespace, string(b))
+	err = helpers.RunCommandInput(string(b), true, "kubectl", "apply", "-f", "-")
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func DeleteFromYaml(cfg *rest.Config, namespace, yamlManifest string) error {
-	kube, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-
-	apiext, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-
-	installer := kubeinstallutils.NewKubeInstaller(kube, apiext, namespace)
-
-	kubeObjs, err := kubeinstallutils.ParseKubeManifest(yamlManifest)
-	if err != nil {
-		return err
-	}
-
-	for _, kubeOjb := range kubeObjs {
-		if err := installer.Delete(kubeOjb); err != nil {
-			return err
-		}
-	}
-	return nil
+func KnativeManifest() string {
+	return filepath.Join(helpers.GlooDir(), "test", "kube2e", "artifacts", "knative-no-istio.yaml")
 }
