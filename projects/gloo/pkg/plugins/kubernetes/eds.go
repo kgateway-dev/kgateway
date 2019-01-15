@@ -124,13 +124,13 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 			for _, subset := range eps.Subsets {
 				var port uint32
 				for _, p := range subset.Ports {
-					if spec.ServicePort == uint32(p.Port) {
+					if spec.TargetPort == uint32(p.Port) {
 						port = uint32(p.Port)
 						break
 					}
 				}
 				if port == 0 {
-					logger.Warnf("upstream %v: port %v not found for service %v", usRef.Key(), spec.ServicePort, spec.ServiceName)
+					logger.Warnf("upstream %v: port %v not found for service %v", usRef.Key(), spec.TargetPort, spec.ServiceName)
 					continue
 				}
 				for _, addr := range subset.Addresses {
