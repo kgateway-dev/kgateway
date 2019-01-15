@@ -59,24 +59,24 @@ var _ = Describe("Plugins", func() {
 
 		It("should return not found for nil plugins", func() {
 			var outm types.Api
-			err := UnmarshalPlugin(nil, "test", &outm)
+			err := UnmarshalExtension(nil, "test", &outm)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NotFoundError))
 		})
 
 		It("should return not found for typed nil plugins", func() {
-			var p *plugins
+			var p *extensions
 			var outm types.Api
-			err := UnmarshalPlugin(p, "test", &outm)
+			err := UnmarshalExtension(p, "test", &outm)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NotFoundError))
 		})
 
 		It("should return not found for nil plugin map", func() {
-			var p plugins
-			p.plugins = &v1.ExtensionPlugins{}
+			var p extensions
+			p.extensions = &v1.Extensions{}
 			var outm types.Api
-			err := UnmarshalPlugin(&p, "test", &outm)
+			err := UnmarshalExtension(&p, "test", &outm)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NotFoundError))
 		})
@@ -94,8 +94,8 @@ var _ = Describe("Plugins", func() {
 				Name:    "test",
 				Domains: []string{"domain"},
 				VirtualHostPlugins: &v1.VirtualHostPlugins{
-					Plugins: &v1.ExtensionPlugins{
-						Plugins: map[string]*types.Struct{
+					Extensions: &v1.Extensions{
+						Configs: map[string]*types.Struct{
 							"test": pluginstruct,
 						},
 					},
@@ -103,15 +103,15 @@ var _ = Describe("Plugins", func() {
 			}
 			outm := new(types.Api)
 
-			err = UnmarshalPlugin(vhost.GetVirtualHostPlugins(), "test", outm)
+			err = UnmarshalExtension(vhost.GetVirtualHostPlugins(), "test", outm)
 			Expect(outm).To(Equal(orginalMessage))
 		})
 	})
 
 })
 
-type plugins struct {
-	plugins *v1.ExtensionPlugins
+type extensions struct {
+	extensions *v1.Extensions
 }
 
-func (p *plugins) GetPlugins() *v1.ExtensionPlugins { return p.plugins }
+func (e *extensions) GetExtensions() *v1.Extensions { return e.extensions }

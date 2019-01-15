@@ -14,26 +14,26 @@ import (
 
 var NotFoundError = fmt.Errorf("message not found")
 
-type PluginContainer interface {
-	GetPlugins() *v1.ExtensionPlugins
+type extensionPluginContainer interface {
+	GetExtensions() *v1.Extensions
 }
 
-func UnmarshalPlugin(plugins PluginContainer, name string, outproto proto.Message) error {
-	if plugins == nil {
+func UnmarshalExtension(extensions extensionPluginContainer, name string, outproto proto.Message) error {
+	if extensions == nil {
 		return NotFoundError
 	}
 
 	// value might still be a typed nil, so test for that too.
-	if reflect.ValueOf(plugins).IsNil() {
+	if reflect.ValueOf(extensions).IsNil() {
 		return NotFoundError
 	}
 
-	pluginmap := plugins.GetPlugins()
-	if pluginmap == nil {
+	extensionMap := extensions.GetExtensions()
+	if extensionMap == nil {
 		return NotFoundError
 	}
 
-	return UnmarshalStructFromMap(pluginmap.GetPlugins(), name, outproto)
+	return UnmarshalStructFromMap(extensionMap.GetConfigs(), name, outproto)
 }
 
 func UnmarshalStructFromMap(protos map[string]*types.Struct, name string, outproto proto.Message) error {
