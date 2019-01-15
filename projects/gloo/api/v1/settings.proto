@@ -46,8 +46,7 @@ message Settings {
     // how frequently to resync watches, etc
     google.protobuf.Duration refresh_rate = 12;
     // enable serving debug data on port 9090
-    bool DevMode = 13;
-
+    bool dev_mode = 13;
 
     // ilackarms(todo: make sure these are configurable)
     message KubernetesCrds{} // watch kubernetes Crds

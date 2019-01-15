@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	kubemeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -138,4 +139,20 @@ func ArtifactFactoryForSettings(settings *v1.Settings,
 		}, nil
 	}
 	return nil, errors.Errorf("invalid config source type")
+}
+
+func ListAllNamespaces(cfg *rest.Config) ([]string, error) {
+	kube, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating kube rest client")
+	}
+	kubeNamespaces, err := kube.CoreV1().Namespaces().List(kubemeta.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "listing kube namespaces")
+	}
+	var namespaces []string
+	for _, ns := range kubeNamespaces.Items {
+		namespaces = append(namespaces, ns.Name)
+	}
+	return namespaces, nil
 }

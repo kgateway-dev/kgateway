@@ -163,6 +163,12 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		writeNamespace = defaults.GlooSystem
 	}
 	watchNamespaces := settings.WatchNamespaces
+	if len(watchNamespaces) == 0 {
+		watchNamespaces, err = bootstrap.ListAllNamespaces(cfg)
+		if err != nil {
+			return err
+		}
+	}
 	var writeNamespaceProvided bool
 	for _, ns := range watchNamespaces {
 		if ns == writeNamespace {

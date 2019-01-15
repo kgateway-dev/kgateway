@@ -10,7 +10,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -23,21 +22,6 @@ import (
 func Main(loggingPrefix string, setupFunc SetupFunc) error {
 	flag.Parse()
 
-	if len(discoveryNamespaces) == 0 {
-		discoveryNamespaces = []string{"default", defaults.GlooSystem}
-	}
-
-	var containsSetupNs bool
-	for _, ns := range discoveryNamespaces {
-		if ns == setupNamespace {
-			containsSetupNs = true
-			break
-		}
-	}
-	if !containsSetupNs {
-		discoveryNamespaces = append(discoveryNamespaces, setupNamespace)
-	}
-
 	settingsClient, err := KubeOrFileSettingsClient(setupDir)
 	if err != nil {
 		return err
@@ -46,7 +30,7 @@ func Main(loggingPrefix string, setupFunc SetupFunc) error {
 		return err
 	}
 
-	if err := writeDefaultSettings(setupNamespace, setupName, discoveryNamespaces, settingsClient); err != nil {
+	if err := writeDefaultSettings(setupNamespace, setupName, settingsClient); err != nil {
 		return err
 	}
 
@@ -84,7 +68,7 @@ func KubeOrFileSettingsClient(settingsDir string) (v1.SettingsClient, error) {
 }
 
 // TODO(ilackarms): remove this or move it to a test package, only use settings watch for production gloo
-func writeDefaultSettings(settingsNamespace, name string, discoveryNamespaces []string, cli v1.SettingsClient) error {
+func writeDefaultSettings(settingsNamespace, name string, cli v1.SettingsClient) error {
 	settings := &v1.Settings{
 		ConfigSource: &v1.Settings_KubernetesConfigSource{
 			KubernetesConfigSource: &v1.Settings_KubernetesCrds{},
@@ -98,7 +82,6 @@ func writeDefaultSettings(settingsNamespace, name string, discoveryNamespaces []
 		BindAddr:           "0.0.0.0:9977",
 		RefreshRate:        types.DurationProto(time.Minute),
 		DevMode:            true,
-		WatchNamespaces:    discoveryNamespaces,
 		DiscoveryNamespace: settingsNamespace,
 		Metadata:           core.Metadata{Namespace: settingsNamespace, Name: name},
 	}
