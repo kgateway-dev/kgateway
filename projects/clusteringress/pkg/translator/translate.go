@@ -92,14 +92,14 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 		for _, tls := range spec.TLS {
 			secret, err := secrets.Find(ing.Namespace, tls.SecretName)
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "invalid secret for ingress %v", ing.Name)
+				return nil, nil, errors.Wrapf(err, "invalid secret for knative ingress %v", ing.Name)
 			}
 
 			ref := secret.Metadata.Ref()
 			for _, host := range tls.Hosts {
 				if existing, alreadySet := secretsByHost[host]; alreadySet {
 					if existing.Name != ref.Name || existing.Namespace != ref.Namespace {
-						log.Warnf("a TLS secret for host %v was redefined in ingress %v, ignoring", ing.Name)
+						log.Warnf("a TLS secret for host %v was redefined in knative ingress %v, ignoring", ing.Name)
 						continue
 					}
 				}
@@ -109,7 +109,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 
 		for i, rule := range spec.Rules {
 			if rule.HTTP == nil {
-				log.Warnf("rule %v in ingress %v is missing HTTP field", i, ing.Name)
+				log.Warnf("rule %v in knative ingress %v is missing HTTP field", i, ing.Name)
 				continue
 			}
 			for _, route := range rule.HTTP.Paths {
@@ -197,7 +197,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 		sortByLongestPathName(routes)
 		secret, ok := secretsByHost[host]
 		if !ok {
-			return nil, nil, errors.Errorf("internal error: secret not found for host %v after processing ingresses", host)
+			return nil, nil, errors.Errorf("internal error: secret not found for host %v after processing knative ingresses", host)
 		}
 		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
 			vh: &gloov1.VirtualHost{
