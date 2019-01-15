@@ -14,6 +14,7 @@ A simple wrapper for a kNative ClusterIngress Object.
 message ClusterIngress {
     option (core.solo.io.resource).short_name = "cig";
     option (core.solo.io.resource).plural_name = "clusteringresses";
+    option (core.solo.io.resource).cluster_scoped = true;
 
     core.solo.io.Metadata metadata = 1 [(gogoproto.nullable) = false];
 

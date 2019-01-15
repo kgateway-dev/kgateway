@@ -17,18 +17,18 @@ import (
 )
 
 func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
-	var ingresses []*v1alpha1.ClusterIngress
-	for _, ig := range snap.Clusteringresses.List() {
+	var clusterIngresses []*v1alpha1.ClusterIngress
+	for _, ig := range snap.Clusteringresses {
 		kubeIngress, err := clusteringress.ToKube(ig)
 		if err != nil {
 			return nil, err
 		}
-		ingresses = append(ingresses, kubeIngress)
+		clusterIngresses = append(clusterIngresses, kubeIngress)
 	}
 	upstreams := snap.Upstreams.List()
 	secrets := snap.Secrets.List()
 
-	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, secrets)
+	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(clusterIngresses, upstreams, secrets)
 	if err != nil {
 		return nil, errors.Wrapf(err, "computing virtual hosts")
 	}

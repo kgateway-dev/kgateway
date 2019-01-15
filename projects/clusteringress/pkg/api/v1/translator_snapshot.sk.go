@@ -12,7 +12,7 @@ import (
 type TranslatorSnapshot struct {
 	Secrets          gloo_solo_io.SecretsByNamespace
 	Upstreams        gloo_solo_io.UpstreamsByNamespace
-	Clusteringresses ClusteringressesByNamespace
+	Clusteringresses ClusterIngressList
 }
 
 func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
@@ -40,7 +40,7 @@ func (s TranslatorSnapshot) hashUpstreams() uint64 {
 }
 
 func (s TranslatorSnapshot) hashClusteringresses() uint64 {
-	return hashutils.HashAll(s.Clusteringresses.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Clusteringresses.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) HashFields() []zap.Field {
