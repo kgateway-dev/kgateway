@@ -8,6 +8,7 @@ import (
 	uds "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
 	gatewaysetup "github.com/solo-io/gloo/projects/gateway/pkg/setup"
 	gloosetup "github.com/solo-io/gloo/projects/gloo/pkg/setup"
+	ingresssetup "github.com/solo-io/gloo/projects/ingress/pkg/setup"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/pkg/utils/stats"
@@ -29,6 +30,9 @@ func run() error {
 	}()
 	go func() {
 		errs <- gatewaysetup.Main()
+	}()
+	go func() {
+		errs <- ingresssetup.Main()
 	}()
 	go func() {
 		errs <- uds.Main()
