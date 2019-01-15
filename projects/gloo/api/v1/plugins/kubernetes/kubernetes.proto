@@ -18,8 +18,12 @@ message UpstreamSpec {
     string service_name = 1;
     // The namespace where the Service lives
     string service_namespace = 2;
-    // The port where the Service is listening.
-    uint32 service_port = 3;
+    // The port where the application backing the kubernetes service is listening. This port, not service_port, is used
+    // for routing
+    uint32 target_port = 3;
+    // The access port port of the kubernetes service is listening. This port is populated by Gloo for read-only purposes
+    // and is not consumed by the system.
+    uint32 service_port = 6;
     // Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if
     // any are provided here.
     // (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)

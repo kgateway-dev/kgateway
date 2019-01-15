@@ -182,20 +182,20 @@ type InputAzureSpec struct {
 
 type InputConsulSpec struct {
 	// The name of the Consul Service
-	ServiceName string 
+	ServiceName string
 	// The list of service tags Gloo should search for on a service instance
 	// before deciding whether or not to include the instance as part of this
 	// upstream
-	ServiceTags []string 
+	ServiceTags []string
 }
 
 type InputKubeSpec struct {
 	// The name of the Kubernetes Service
-	ServiceName string 
+	ServiceName string
 	// The namespace where the Service lives
-	ServiceNamespace string 
+	ServiceNamespace string
 	// The port where the Service is listening.
-	TargetPort uint32 
+	TargetPort uint32
 	// Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if
 	// any are provided here.
 	// (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
@@ -206,7 +206,7 @@ type Selector struct {
 	// Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if
 	// any are provided here.
 	// (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-	SelectorKeyValuePairs []string 
+	SelectorKeyValuePairs []string
 }
 
 type InputStaticSpec struct {

@@ -147,9 +147,9 @@ func createUpstream(writeNamespace string, svc *kubev1.Service, port kubev1.Serv
 	}
 	coremeta.Name = upstreamName(meta.Namespace, meta.Name, port.Port, extraLabels)
 	coremeta.Namespace = writeNamespace
-	servicePort := port.TargetPort.IntVal
-	if servicePort == 0 {
-		servicePort = port.Port
+	targetPort := port.TargetPort.IntVal
+	if targetPort == 0 {
+		targetPort = port.Port
 	}
 	return &v1.Upstream{
 		Metadata: coremeta,
@@ -158,7 +158,8 @@ func createUpstream(writeNamespace string, svc *kubev1.Service, port kubev1.Serv
 				Kube: &kubeplugin.UpstreamSpec{
 					ServiceName:      meta.Name,
 					ServiceNamespace: meta.Namespace,
-					ServicePort:      uint32(servicePort),
+					TargetPort:       uint32(targetPort),
+					ServicePort:      uint32(port.Port),
 					Selector:         labels,
 				},
 			},
