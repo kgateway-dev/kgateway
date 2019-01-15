@@ -12,11 +12,11 @@ import (
 type ClusterIngressClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
-	Read(namespace, name string, opts clients.ReadOpts) (*ClusterIngress, error)
+	Read(name string, opts clients.ReadOpts) (*ClusterIngress, error)
 	Write(resource *ClusterIngress, opts clients.WriteOpts) (*ClusterIngress, error)
-	Delete(namespace, name string, opts clients.DeleteOpts) error
-	List(namespace string, opts clients.ListOpts) (ClusterIngressList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan ClusterIngressList, <-chan error, error)
+	Delete(name string, opts clients.DeleteOpts) error
+	List(opts clients.ListOpts) (ClusterIngressList, error)
+	Watch(opts clients.WatchOpts) (<-chan ClusterIngressList, <-chan error, error)
 }
 
 type clusterIngressClient struct {
@@ -52,10 +52,10 @@ func (client *clusterIngressClient) Register() error {
 	return client.rc.Register()
 }
 
-func (client *clusterIngressClient) Read(namespace, name string, opts clients.ReadOpts) (*ClusterIngress, error) {
+func (client *clusterIngressClient) Read(name string, opts clients.ReadOpts) (*ClusterIngress, error) {
 	opts = opts.WithDefaults()
 
-	resource, err := client.rc.Read(namespace, name, opts)
+	resource, err := client.rc.Read("", name, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -71,26 +71,26 @@ func (client *clusterIngressClient) Write(clusterIngress *ClusterIngress, opts c
 	return resource.(*ClusterIngress), nil
 }
 
-func (client *clusterIngressClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
+func (client *clusterIngressClient) Delete(name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
 
-	return client.rc.Delete(namespace, name, opts)
+	return client.rc.Delete("", name, opts)
 }
 
-func (client *clusterIngressClient) List(namespace string, opts clients.ListOpts) (ClusterIngressList, error) {
+func (client *clusterIngressClient) List(opts clients.ListOpts) (ClusterIngressList, error) {
 	opts = opts.WithDefaults()
 
-	resourceList, err := client.rc.List(namespace, opts)
+	resourceList, err := client.rc.List("", opts)
 	if err != nil {
 		return nil, err
 	}
 	return convertToClusterIngress(resourceList), nil
 }
 
-func (client *clusterIngressClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ClusterIngressList, <-chan error, error) {
+func (client *clusterIngressClient) Watch(opts clients.WatchOpts) (<-chan ClusterIngressList, <-chan error, error) {
 	opts = opts.WithDefaults()
 
-	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
+	resourcesChan, errs, initErr := client.rc.Watch("", opts)
 	if initErr != nil {
 		return nil, nil, initErr
 	}

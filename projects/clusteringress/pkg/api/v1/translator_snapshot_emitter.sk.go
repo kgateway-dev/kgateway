@@ -111,11 +111,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
 	/* Create channel for ClusterIngress */
-	type clusterIngressListWithNamespace struct {
-		list      ClusterIngressList
-		namespace string
-	}
-	clusterIngressChan := make(chan clusterIngressListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Secret */
@@ -140,17 +135,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
 		}(namespace)
-		/* Setup namespaced watch for ClusterIngress */
-		clusterIngressNamespacesChan, clusterIngressErrs, err := c.clusterIngress.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting ClusterIngress watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, clusterIngressErrs, namespace+"-clusteringresses")
-		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -170,16 +154,21 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 						return
 					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
 					}
-				case clusterIngressList := <-clusterIngressNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case clusterIngressChan <- clusterIngressListWithNamespace{list: clusterIngressList, namespace: namespace}:
-					}
 				}
 			}
 		}(namespace)
 	}
+	/* Setup cluster-wide watch for ClusterIngress */
+
+	clusterIngressChan, clusterIngressErrs, err := c.clusterIngress.Watch(opts)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "starting ClusterIngress watch")
+	}
+	done.Add(1)
+	go func() {
+		defer done.Done()
+		errutils.AggregateErrs(ctx, errs, clusterIngressErrs, "clusteringresses")
+	}()
 
 	snapshots := make(chan *TranslatorSnapshot)
 	go func() {
@@ -209,10 +198,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 		      currentSnapshot.Upstreams.Clear(upstreamNamespacedList.namespace)
 		      upstreamList := upstreamNamespacedList.list
 		   	currentSnapshot.Upstreams.Add(upstreamList...)
-		      clusterIngressNamespacedList := <- clusterIngressChan
-		      currentSnapshot.Clusteringresses.Clear(clusterIngressNamespacedList.namespace)
-		      clusterIngressList := clusterIngressNamespacedList.list
-		   	currentSnapshot.Clusteringresses.Add(clusterIngressList...)
 		   		}
 		*/
 
@@ -246,14 +231,9 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 
 				currentSnapshot.Upstreams.Clear(namespace)
 				currentSnapshot.Upstreams.Add(upstreamList...)
-			case clusterIngressNamespacedList := <-clusterIngressChan:
+			case clusterIngressList := <-clusterIngressChan:
 				record()
-
-				namespace := clusterIngressNamespacedList.namespace
-				clusterIngressList := clusterIngressNamespacedList.list
-
-				currentSnapshot.Clusteringresses.Clear(namespace)
-				currentSnapshot.Clusteringresses.Add(clusterIngressList...)
+				currentSnapshot.Clusteringresses = clusterIngressList
 			}
 		}
 	}()

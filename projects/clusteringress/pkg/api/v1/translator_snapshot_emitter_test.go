@@ -86,6 +86,8 @@ var _ = Describe("V1Emitter", func() {
 	AfterEach(func() {
 		setup.TeardownKube(namespace1)
 		setup.TeardownKube(namespace2)
+		clusterIngressClient.Delete(name1, clients.DeleteOpts{})
+		clusterIngressClient.Delete(name2, clients.DeleteOpts{})
 	})
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
@@ -226,12 +228,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectClusteringresses {
-						if _, err := snap.Clusteringresses.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Clusteringresses.Find(expected.Metadata.Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectClusteringresses {
-						if _, err := snap.Clusteringresses.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Clusteringresses.Find(unexpected.Metadata.Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -239,39 +241,29 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					nsList1, _ := clusterIngressClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := clusterIngressClient.List(namespace2, clients.ListOpts{})
-					combined := nsList1.ByNamespace()
-					combined.Add(nsList2...)
+					nsList, _ := clusterIngressClient.List(clients.ListOpts{})
+					combined := nsList.ByNamespace()
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
 		}
 		clusterIngress1a, err := clusterIngressClient.Write(NewClusterIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		clusterIngress1b, err := clusterIngressClient.Write(NewClusterIngress(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a, clusterIngress1b}, nil)
+		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a}, nil)
 		clusterIngress2a, err := clusterIngressClient.Write(NewClusterIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		clusterIngress2b, err := clusterIngressClient.Write(NewClusterIngress(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+
+		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a, clusterIngress2a}, nil)
+
+		err = clusterIngressClient.Delete(clusterIngress2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a, clusterIngress1b, clusterIngress2a, clusterIngress2b}, nil)
+		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a}, ClusterIngressList{clusterIngress2a})
 
-		err = clusterIngressClient.Delete(clusterIngress2a.Metadata.Namespace, clusterIngress2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = clusterIngressClient.Delete(clusterIngress2b.Metadata.Namespace, clusterIngress2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = clusterIngressClient.Delete(clusterIngress1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a, clusterIngress1b}, ClusterIngressList{clusterIngress2a, clusterIngress2b})
-
-		err = clusterIngressClient.Delete(clusterIngress1a.Metadata.Namespace, clusterIngress1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = clusterIngressClient.Delete(clusterIngress1b.Metadata.Namespace, clusterIngress1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotClusteringresses(nil, ClusterIngressList{clusterIngress1a, clusterIngress1b, clusterIngress2a, clusterIngress2b})
+		assertSnapshotClusteringresses(nil, ClusterIngressList{clusterIngress1a, clusterIngress2a})
 	})
 })
