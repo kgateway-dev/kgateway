@@ -54,6 +54,7 @@ func (client *kubeServiceClient) Register() error {
 
 func (client *kubeServiceClient) Read(namespace, name string, opts clients.ReadOpts) (*KubeService, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *kubeServiceClient) Write(kubeService *KubeService, opts clients.Wr
 
 func (client *kubeServiceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *kubeServiceClient) List(namespace string, opts clients.ListOpts) (KubeServiceList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *kubeServiceClient) List(namespace string, opts clients.ListOpts) (
 
 func (client *kubeServiceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan KubeServiceList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr

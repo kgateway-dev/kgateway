@@ -168,4 +168,5 @@ var VirtualServiceCrd = crd.NewCrd("gateway.solo.io",
 	"v1",
 	"VirtualService",
 	"vs",
+	false,
 	&VirtualService{})

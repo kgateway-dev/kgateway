@@ -84,7 +84,7 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 	settingsChan := make(chan settingsListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup watch for Settings */
+		/* Setup namespaced watch for Settings */
 		settingsNamespacesChan, settingsErrs, err := c.settings.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Settings watch")

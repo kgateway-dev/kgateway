@@ -167,4 +167,5 @@ var ProxyCrd = crd.NewCrd("gloo.solo.io",
 	"v1",
 	"Proxy",
 	"px",
+	false,
 	&Proxy{})

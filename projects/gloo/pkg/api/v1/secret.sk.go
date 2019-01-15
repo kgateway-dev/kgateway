@@ -155,4 +155,5 @@ var SecretCrd = crd.NewCrd("gloo.solo.io",
 	"v1",
 	"Secret",
 	"sec",
+	false,
 	&Secret{})

@@ -170,4 +170,5 @@ var GatewayCrd = crd.NewCrd("gateway.solo.io",
 	"v1",
 	"Gateway",
 	"gw",
+	false,
 	&Gateway{})

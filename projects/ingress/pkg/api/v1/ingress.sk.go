@@ -155,4 +155,5 @@ var IngressCrd = crd.NewCrd("ingress.solo.io",
 	"v1",
 	"Ingress",
 	"ig",
+	false,
 	&Ingress{})

@@ -54,6 +54,7 @@ func (client *virtualServiceClient) Register() error {
 
 func (client *virtualServiceClient) Read(namespace, name string, opts clients.ReadOpts) (*VirtualService, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *virtualServiceClient) Write(virtualService *VirtualService, opts c
 
 func (client *virtualServiceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *virtualServiceClient) List(namespace string, opts clients.ListOpts) (VirtualServiceList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *virtualServiceClient) List(namespace string, opts clients.ListOpts
 
 func (client *virtualServiceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan VirtualServiceList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr

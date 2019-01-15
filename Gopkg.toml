@@ -24,7 +24,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.2.15"
+  version = "0.2.17"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"

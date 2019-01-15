@@ -157,4 +157,5 @@ var EndpointCrd = crd.NewCrd("gloo.solo.io",
 	"v1",
 	"Endpoint",
 	"ep",
+	false,
 	&Endpoint{})

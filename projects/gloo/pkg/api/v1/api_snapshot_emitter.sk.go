@@ -148,7 +148,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	upstreamChan := make(chan upstreamListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup watch for Artifact */
+		/* Setup namespaced watch for Artifact */
 		artifactNamespacesChan, artifactErrs, err := c.artifact.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Artifact watch")
@@ -159,7 +159,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, artifactErrs, namespace+"-artifacts")
 		}(namespace)
-		/* Setup watch for Endpoint */
+		/* Setup namespaced watch for Endpoint */
 		endpointNamespacesChan, endpointErrs, err := c.endpoint.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Endpoint watch")
@@ -170,7 +170,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, endpointErrs, namespace+"-endpoints")
 		}(namespace)
-		/* Setup watch for Proxy */
+		/* Setup namespaced watch for Proxy */
 		proxyNamespacesChan, proxyErrs, err := c.proxy.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Proxy watch")
@@ -181,7 +181,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, proxyErrs, namespace+"-proxies")
 		}(namespace)
-		/* Setup watch for Secret */
+		/* Setup namespaced watch for Secret */
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Secret watch")
@@ -192,7 +192,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
 		}(namespace)
-		/* Setup watch for Upstream */
+		/* Setup namespaced watch for Upstream */
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Upstream watch")

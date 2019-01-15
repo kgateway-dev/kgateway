@@ -156,4 +156,5 @@ var KubeServiceCrd = crd.NewCrd("ingress.solo.io",
 	"v1",
 	"KubeService",
 	"sv",
+	false,
 	&KubeService{})

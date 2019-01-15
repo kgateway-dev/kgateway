@@ -54,6 +54,7 @@ func (client *gatewayClient) Register() error {
 
 func (client *gatewayClient) Read(namespace, name string, opts clients.ReadOpts) (*Gateway, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *gatewayClient) Write(gateway *Gateway, opts clients.WriteOpts) (*G
 
 func (client *gatewayClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *gatewayClient) List(namespace string, opts clients.ListOpts) (GatewayList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *gatewayClient) List(namespace string, opts clients.ListOpts) (Gate
 
 func (client *gatewayClient) Watch(namespace string, opts clients.WatchOpts) (<-chan GatewayList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr

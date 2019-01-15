@@ -33,6 +33,7 @@ var _ = Describe("V1Emitter", func() {
 	var (
 		namespace1        string
 		namespace2        string
+		name1, name2      = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg               *rest.Config
 		emitter           StatusEmitter
 		kubeServiceClient KubeServiceClient
@@ -118,17 +119,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		kubeService1a, err := kubeServiceClient.Write(NewKubeService(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		kubeService1a, err := kubeServiceClient.Write(NewKubeService(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		kubeService1b, err := kubeServiceClient.Write(NewKubeService(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		kubeService1b, err := kubeServiceClient.Write(NewKubeService(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotServices(KubeServiceList{kubeService1a, kubeService1b}, nil)
-
-		kubeService2a, err := kubeServiceClient.Write(NewKubeService(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		kubeService2a, err := kubeServiceClient.Write(NewKubeService(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		kubeService2b, err := kubeServiceClient.Write(NewKubeService(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		kubeService2b, err := kubeServiceClient.Write(NewKubeService(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotServices(KubeServiceList{kubeService1a, kubeService1b, kubeService2a, kubeService2b}, nil)
@@ -178,17 +177,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		ingress1a, err := ingressClient.Write(NewIngress(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		ingress1a, err := ingressClient.Write(NewIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		ingress1b, err := ingressClient.Write(NewIngress(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		ingress1b, err := ingressClient.Write(NewIngress(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b}, nil)
-
-		ingress2a, err := ingressClient.Write(NewIngress(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		ingress2a, err := ingressClient.Write(NewIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		ingress2b, err := ingressClient.Write(NewIngress(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		ingress2b, err := ingressClient.Write(NewIngress(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b, ingress2a, ingress2b}, nil)

@@ -33,6 +33,7 @@ var _ = Describe("V1Emitter", func() {
 	var (
 		namespace1     string
 		namespace2     string
+		name1, name2   = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg            *rest.Config
 		emitter        SetupEmitter
 		settingsClient SettingsClient
@@ -106,17 +107,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		settings1a, err := settingsClient.Write(NewSettings(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		settings1a, err := settingsClient.Write(NewSettings(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		settings1b, err := settingsClient.Write(NewSettings(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		settings1b, err := settingsClient.Write(NewSettings(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSettings(SettingsList{settings1a, settings1b}, nil)
-
-		settings2a, err := settingsClient.Write(NewSettings(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		settings2a, err := settingsClient.Write(NewSettings(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		settings2b, err := settingsClient.Write(NewSettings(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		settings2b, err := settingsClient.Write(NewSettings(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSettings(SettingsList{settings1a, settings1b, settings2a, settings2b}, nil)

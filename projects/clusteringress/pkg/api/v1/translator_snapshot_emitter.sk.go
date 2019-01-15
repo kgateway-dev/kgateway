@@ -118,7 +118,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	clusterIngressChan := make(chan clusterIngressListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup watch for Secret */
+		/* Setup namespaced watch for Secret */
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Secret watch")
@@ -129,7 +129,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
 		}(namespace)
-		/* Setup watch for Upstream */
+		/* Setup namespaced watch for Upstream */
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
@@ -140,7 +140,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
 		}(namespace)
-		/* Setup watch for ClusterIngress */
+		/* Setup namespaced watch for ClusterIngress */
 		clusterIngressNamespacesChan, clusterIngressErrs, err := c.clusterIngress.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting ClusterIngress watch")

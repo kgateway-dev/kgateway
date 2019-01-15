@@ -34,6 +34,7 @@ var _ = Describe("V1Emitter", func() {
 	var (
 		namespace1     string
 		namespace2     string
+		name1, name2   = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg            *rest.Config
 		emitter        ApiEmitter
 		artifactClient ArtifactClient
@@ -147,17 +148,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		artifact1a, err := artifactClient.Write(NewArtifact(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		artifact1a, err := artifactClient.Write(NewArtifact(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		artifact1b, err := artifactClient.Write(NewArtifact(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		artifact1b, err := artifactClient.Write(NewArtifact(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b}, nil)
-
-		artifact2a, err := artifactClient.Write(NewArtifact(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		artifact2a, err := artifactClient.Write(NewArtifact(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		artifact2b, err := artifactClient.Write(NewArtifact(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		artifact2b, err := artifactClient.Write(NewArtifact(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b, artifact2a, artifact2b}, nil)
@@ -207,17 +206,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		endpoint1a, err := endpointClient.Write(NewEndpoint(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		endpoint1a, err := endpointClient.Write(NewEndpoint(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		endpoint1b, err := endpointClient.Write(NewEndpoint(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		endpoint1b, err := endpointClient.Write(NewEndpoint(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b}, nil)
-
-		endpoint2a, err := endpointClient.Write(NewEndpoint(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		endpoint2a, err := endpointClient.Write(NewEndpoint(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		endpoint2b, err := endpointClient.Write(NewEndpoint(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		endpoint2b, err := endpointClient.Write(NewEndpoint(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b, endpoint2a, endpoint2b}, nil)
@@ -267,17 +264,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		proxy1a, err := proxyClient.Write(NewProxy(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		proxy1a, err := proxyClient.Write(NewProxy(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		proxy1b, err := proxyClient.Write(NewProxy(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		proxy1b, err := proxyClient.Write(NewProxy(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotProxies(ProxyList{proxy1a, proxy1b}, nil)
-
-		proxy2a, err := proxyClient.Write(NewProxy(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		proxy2a, err := proxyClient.Write(NewProxy(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		proxy2b, err := proxyClient.Write(NewProxy(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		proxy2b, err := proxyClient.Write(NewProxy(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotProxies(ProxyList{proxy1a, proxy1b, proxy2a, proxy2b}, nil)
@@ -327,17 +322,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		secret1a, err := secretClient.Write(NewSecret(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		secret1a, err := secretClient.Write(NewSecret(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		secret1b, err := secretClient.Write(NewSecret(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		secret1b, err := secretClient.Write(NewSecret(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(SecretList{secret1a, secret1b}, nil)
-
-		secret2a, err := secretClient.Write(NewSecret(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		secret2a, err := secretClient.Write(NewSecret(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		secret2b, err := secretClient.Write(NewSecret(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		secret2b, err := secretClient.Write(NewSecret(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(SecretList{secret1a, secret1b, secret2a, secret2b}, nil)
@@ -387,17 +380,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		upstream1a, err := upstreamClient.Write(NewUpstream(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		upstream1a, err := upstreamClient.Write(NewUpstream(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		upstream1b, err := upstreamClient.Write(NewUpstream(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		upstream1b, err := upstreamClient.Write(NewUpstream(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, nil)
-
-		upstream2a, err := upstreamClient.Write(NewUpstream(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		upstream2a, err := upstreamClient.Write(NewUpstream(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		upstream2b, err := upstreamClient.Write(NewUpstream(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		upstream2b, err := upstreamClient.Write(NewUpstream(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)

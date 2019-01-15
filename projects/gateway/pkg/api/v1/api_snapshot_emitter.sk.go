@@ -100,7 +100,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	virtualServiceChan := make(chan virtualServiceListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup watch for Gateway */
+		/* Setup namespaced watch for Gateway */
 		gatewayNamespacesChan, gatewayErrs, err := c.gateway.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Gateway watch")
@@ -111,7 +111,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, gatewayErrs, namespace+"-gateways")
 		}(namespace)
-		/* Setup watch for VirtualService */
+		/* Setup namespaced watch for VirtualService */
 		virtualServiceNamespacesChan, virtualServiceErrs, err := c.virtualService.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting VirtualService watch")

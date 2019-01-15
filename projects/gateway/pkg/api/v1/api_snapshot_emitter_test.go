@@ -33,6 +33,7 @@ var _ = Describe("V1Emitter", func() {
 	var (
 		namespace1           string
 		namespace2           string
+		name1, name2         = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg                  *rest.Config
 		emitter              ApiEmitter
 		gatewayClient        GatewayClient
@@ -115,17 +116,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, nil)
-
-		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
@@ -175,17 +174,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		virtualService1a, err := virtualServiceClient.Write(NewVirtualService(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		virtualService1a, err := virtualServiceClient.Write(NewVirtualService(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		virtualService1b, err := virtualServiceClient.Write(NewVirtualService(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		virtualService1b, err := virtualServiceClient.Write(NewVirtualService(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(VirtualServiceList{virtualService1a, virtualService1b}, nil)
-
-		virtualService2a, err := virtualServiceClient.Write(NewVirtualService(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		virtualService2a, err := virtualServiceClient.Write(NewVirtualService(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		virtualService2b, err := virtualServiceClient.Write(NewVirtualService(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		virtualService2b, err := virtualServiceClient.Write(NewVirtualService(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(VirtualServiceList{virtualService1a, virtualService1b, virtualService2a, virtualService2b}, nil)

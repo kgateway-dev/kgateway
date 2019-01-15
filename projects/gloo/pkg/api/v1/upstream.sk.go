@@ -168,4 +168,5 @@ var UpstreamCrd = crd.NewCrd("gloo.solo.io",
 	"v1",
 	"Upstream",
 	"us",
+	false,
 	&Upstream{})

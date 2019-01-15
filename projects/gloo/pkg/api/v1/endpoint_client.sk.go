@@ -54,6 +54,7 @@ func (client *endpointClient) Register() error {
 
 func (client *endpointClient) Read(namespace, name string, opts clients.ReadOpts) (*Endpoint, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *endpointClient) Write(endpoint *Endpoint, opts clients.WriteOpts) 
 
 func (client *endpointClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *endpointClient) List(namespace string, opts clients.ListOpts) (EndpointList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *endpointClient) List(namespace string, opts clients.ListOpts) (End
 
 func (client *endpointClient) Watch(namespace string, opts clients.WatchOpts) (<-chan EndpointList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr

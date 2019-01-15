@@ -54,6 +54,7 @@ func (client *clusterIngressClient) Register() error {
 
 func (client *clusterIngressClient) Read(namespace, name string, opts clients.ReadOpts) (*ClusterIngress, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *clusterIngressClient) Write(clusterIngress *ClusterIngress, opts c
 
 func (client *clusterIngressClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *clusterIngressClient) List(namespace string, opts clients.ListOpts) (ClusterIngressList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *clusterIngressClient) List(namespace string, opts clients.ListOpts
 
 func (client *clusterIngressClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ClusterIngressList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr

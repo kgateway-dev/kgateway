@@ -174,4 +174,5 @@ var SettingsCrd = crd.NewCrd("gloo.solo.io",
 	"v1",
 	"Settings",
 	"st",
+	false,
 	&Settings{})

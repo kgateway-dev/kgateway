@@ -100,7 +100,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 	ingressChan := make(chan ingressListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup watch for KubeService */
+		/* Setup namespaced watch for KubeService */
 		kubeServiceNamespacesChan, kubeServiceErrs, err := c.kubeService.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting KubeService watch")
@@ -111,7 +111,7 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, kubeServiceErrs, namespace+"-services")
 		}(namespace)
-		/* Setup watch for Ingress */
+		/* Setup namespaced watch for Ingress */
 		ingressNamespacesChan, ingressErrs, err := c.ingress.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Ingress watch")

@@ -155,4 +155,5 @@ var ClusterIngressCrd = crd.NewCrd("clusteringress.gloo.solo.io",
 	"v1",
 	"ClusterIngress",
 	"cig",
+	false,
 	&ClusterIngress{})

@@ -54,6 +54,7 @@ func (client *proxyClient) Register() error {
 
 func (client *proxyClient) Read(namespace, name string, opts clients.ReadOpts) (*Proxy, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *proxyClient) Write(proxy *Proxy, opts clients.WriteOpts) (*Proxy, 
 
 func (client *proxyClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *proxyClient) List(namespace string, opts clients.ListOpts) (ProxyList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *proxyClient) List(namespace string, opts clients.ListOpts) (ProxyL
 
 func (client *proxyClient) Watch(namespace string, opts clients.WatchOpts) (<-chan ProxyList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr

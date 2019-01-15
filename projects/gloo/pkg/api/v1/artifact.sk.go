@@ -155,4 +155,5 @@ var ArtifactCrd = crd.NewCrd("gloo.solo.io",
 	"v1",
 	"Artifact",
 	"art",
+	false,
 	&Artifact{})

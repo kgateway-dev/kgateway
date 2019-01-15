@@ -36,6 +36,7 @@ var _ = Describe("V1Emitter", func() {
 	var (
 		namespace1     string
 		namespace2     string
+		name1, name2   = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg            *rest.Config
 		emitter        TranslatorEmitter
 		secretClient   gloo_solo_io.SecretClient
@@ -130,17 +131,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		secret1a, err := secretClient.Write(gloo_solo_io.NewSecret(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		secret1a, err := secretClient.Write(gloo_solo_io.NewSecret(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		secret1b, err := secretClient.Write(gloo_solo_io.NewSecret(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		secret1b, err := secretClient.Write(gloo_solo_io.NewSecret(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(gloo_solo_io.SecretList{secret1a, secret1b}, nil)
-
-		secret2a, err := secretClient.Write(gloo_solo_io.NewSecret(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		secret2a, err := secretClient.Write(gloo_solo_io.NewSecret(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		secret2b, err := secretClient.Write(gloo_solo_io.NewSecret(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		secret2b, err := secretClient.Write(gloo_solo_io.NewSecret(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(gloo_solo_io.SecretList{secret1a, secret1b, secret2a, secret2b}, nil)
@@ -190,17 +189,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		upstream1a, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		upstream1a, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		upstream1b, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		upstream1b, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(gloo_solo_io.UpstreamList{upstream1a, upstream1b}, nil)
-
-		upstream2a, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		upstream2a, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		upstream2b, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		upstream2b, err := upstreamClient.Write(gloo_solo_io.NewUpstream(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(gloo_solo_io.UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)
@@ -250,17 +247,15 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-
-		ingress1a, err := ingressClient.Write(NewIngress(namespace1, "angela"), clients.WriteOpts{Ctx: ctx})
+		ingress1a, err := ingressClient.Write(NewIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		ingress1b, err := ingressClient.Write(NewIngress(namespace2, "angela"), clients.WriteOpts{Ctx: ctx})
+		ingress1b, err := ingressClient.Write(NewIngress(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b}, nil)
-
-		ingress2a, err := ingressClient.Write(NewIngress(namespace1, "bob"), clients.WriteOpts{Ctx: ctx})
+		ingress2a, err := ingressClient.Write(NewIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		ingress2b, err := ingressClient.Write(NewIngress(namespace2, "bob"), clients.WriteOpts{Ctx: ctx})
+		ingress2b, err := ingressClient.Write(NewIngress(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b, ingress2a, ingress2b}, nil)

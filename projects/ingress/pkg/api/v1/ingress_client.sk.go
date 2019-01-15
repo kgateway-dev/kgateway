@@ -54,6 +54,7 @@ func (client *ingressClient) Register() error {
 
 func (client *ingressClient) Read(namespace, name string, opts clients.ReadOpts) (*Ingress, error) {
 	opts = opts.WithDefaults()
+
 	resource, err := client.rc.Read(namespace, name, opts)
 	if err != nil {
 		return nil, err
@@ -72,11 +73,13 @@ func (client *ingressClient) Write(ingress *Ingress, opts clients.WriteOpts) (*I
 
 func (client *ingressClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
 	opts = opts.WithDefaults()
+
 	return client.rc.Delete(namespace, name, opts)
 }
 
 func (client *ingressClient) List(namespace string, opts clients.ListOpts) (IngressList, error) {
 	opts = opts.WithDefaults()
+
 	resourceList, err := client.rc.List(namespace, opts)
 	if err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (client *ingressClient) List(namespace string, opts clients.ListOpts) (Ingr
 
 func (client *ingressClient) Watch(namespace string, opts clients.WatchOpts) (<-chan IngressList, <-chan error, error) {
 	opts = opts.WithDefaults()
+
 	resourcesChan, errs, initErr := client.rc.Watch(namespace, opts)
 	if initErr != nil {
 		return nil, nil, initErr
