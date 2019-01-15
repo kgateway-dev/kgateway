@@ -182,20 +182,20 @@ type InputAzureSpec struct {
 
 type InputConsulSpec struct {
 	// The name of the Consul Service
-	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	ServiceName string 
 	// The list of service tags Gloo should search for on a service instance
 	// before deciding whether or not to include the instance as part of this
 	// upstream
-	ServiceTags []string `protobuf:"bytes,2,rep,name=service_tags,json=serviceTags" json:"service_tags,omitempty"`
+	ServiceTags []string 
 }
 
 type InputKubeSpec struct {
 	// The name of the Kubernetes Service
-	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	ServiceName string 
 	// The namespace where the Service lives
-	ServiceNamespace string `protobuf:"bytes,2,opt,name=service_namespace,json=serviceNamespace,proto3" json:"service_namespace,omitempty"`
+	ServiceNamespace string 
 	// The port where the Service is listening.
-	ServicePort uint32 `protobuf:"varint,3,opt,name=service_port,json=servicePort,proto3" json:"service_port,omitempty"`
+	TargetPort uint32 
 	// Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if
 	// any are provided here.
 	// (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
@@ -206,7 +206,7 @@ type Selector struct {
 	// Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if
 	// any are provided here.
 	// (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
-	SelectorKeyValuePairs []string `protobuf:"bytes,4,rep,name=selector" json:"selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	SelectorKeyValuePairs []string 
 }
 
 type InputStaticSpec struct {

@@ -183,7 +183,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			Kube: &kubernetes.UpstreamSpec{
 				ServiceName:      input.Kube.ServiceName,
 				ServiceNamespace: input.Kube.ServiceNamespace,
-				ServicePort:      input.Kube.ServicePort,
+				ServicePort:      input.Kube.TargetPort,
 				Selector:         input.Kube.Selector.MustMap(),
 				ServiceSpec:      svcSpec,
 			},
