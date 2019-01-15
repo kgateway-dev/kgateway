@@ -2,7 +2,7 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
-import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
@@ -22,6 +22,10 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/faul
 
 import "google/protobuf/duration.proto";
 
+message ExtensionPlugins {
+    map<string, google.protobuf.Struct> plugins = 1;
+}
+
 // Plugin-specific configuration that lives on listeners
 // Each ListenerPlugin object contains configuration for a specific plugin
 // Note to developers: new Listener Plugins must be added to this struct
@@ -33,7 +37,7 @@ message ListenerPlugins {}
 // Note to developers: new Virtual Host Plugins must be added to this struct
 // to be usable by Gloo.
 message VirtualHostPlugins {
-    map<string, google.protobuf.Any> plugins = 1;
+    ExtensionPlugins plugins = 1;
 }
 
 // Plugin-specific configuration that lives on routes
