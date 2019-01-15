@@ -2,6 +2,8 @@ package setup
 
 import (
 	"context"
+	"os"
+
 	"github.com/gogo/protobuf/types"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
@@ -24,7 +26,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
 )
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
