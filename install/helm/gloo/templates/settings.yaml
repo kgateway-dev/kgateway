@@ -1,0 +1,18 @@
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  bindAddr: 0.0.0.0:9977
+  discoveryNamespace: {{ .Values.settings.writeNamespace }}
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+{{- if gt (len .Values.settings.watchNamespaces) 0 }}
+  watchNamespaces:
+{{- range .Values.settings.watchNamespaces }}
+  - {{ . }}
+{{- end }}
+{{- end }}

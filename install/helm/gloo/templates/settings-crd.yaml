@@ -1,0 +1,16 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: settings.gloo.solo.io
+  annotations:
+    "helm.sh/hook": crd-install
+  labels:
+    gloo: settings
+spec:
+  group: gloo.solo.io
+  names:
+    kind: Settings
+    listKind: SettingsList
+    plural: settings
+  scope: Namespaced
+  version: v1
