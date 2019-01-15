@@ -7,23 +7,20 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 )
 
 type translatorSyncer struct {
 	writeNamespace  string
-	reporter        reporter.Reporter
 	writeErrs       chan error
 	proxyClient     gloov1.ProxyClient
 	ingressClient   v1.IngressClient
 	proxyReconciler gloov1.ProxyReconciler
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, reporter reporter.Reporter, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		writeNamespace:  writeNamespace,
-		reporter:        reporter,
 		writeErrs:       writeErrs,
 		proxyClient:     proxyClient,
 		ingressClient:   ingressClient,

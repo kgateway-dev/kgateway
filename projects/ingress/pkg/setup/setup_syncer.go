@@ -2,29 +2,29 @@ package setup
 
 import (
 	"context"
-
-	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
-	"github.com/solo-io/gloo/projects/ingress/pkg/status"
-
-	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
-
-	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/gogo/protobuf/types"
+	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
+	clusteringressv1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
+	clusteringresstranslator "github.com/solo-io/gloo/projects/clusteringress/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
+	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/ingress/pkg/status"
+	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/errutils"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
@@ -91,6 +91,8 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	if !writeNamespaceProvided {
 		watchNamespaces = append(watchNamespaces, writeNamespace)
 	}
+	enableKnative := os.Getenv("ENABLE_KNATIVE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
+
 	opts := Opts{
 		WriteNamespace:  writeNamespace,
 		WatchNamespaces: watchNamespaces,
@@ -101,6 +103,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
+		EnableKnative: enableKnative,
 	}
 
 	return RunIngress(opts)
@@ -143,17 +146,16 @@ func RunIngress(opts Opts) error {
 		return err
 	}
 
-	rpt := reporter.NewReporter("ingress", ingressClient.BaseClient())
 	writeErrs := make(chan error)
 
 	translatorEmitter := v1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
-	translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, rpt, writeErrs)
+	translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs)
 	translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 	translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 	if err != nil {
 		return err
 	}
-	go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, translatorEventLoopErrs, "translator_event_loop")
+	go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, translatorEventLoopErrs, "ingress_translator_event_loop")
 
 	baseKubeServiceClient := service.NewResourceClient(kube, &v1.KubeService{})
 	kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
@@ -170,9 +172,28 @@ func RunIngress(opts Opts) error {
 	if err != nil {
 		return err
 	}
-	go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, statusEventLoopErrs, "status_event_loop")
+	go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, statusEventLoopErrs, "ingress_status_event_loop")
 
 	logger := contextutils.LoggerFrom(opts.WatchOpts.Ctx)
+
+	if opts.EnableKnative {
+		logger.Infof("starting Ingress with KNative (ClusterIngress) support enabled")
+		knative, err := knativeclientset.NewForConfig(cfg)
+		if err != nil {
+			return errors.Wrapf(err, "creating knative clientset")
+		}
+
+		baseClient := clusteringress.NewResourceClient(knative, &clusteringressv1.ClusterIngress{})
+		ingressClient := clusteringressv1.NewClusterIngressClientWithBase(baseClient)
+		clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
+		clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs)
+		clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)
+		clusterIngTranslatorEventLoopErrs, err := clusterIngTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
+		if err != nil {
+			return err
+		}
+		go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, clusterIngTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
+	}
 
 	go func() {
 		for {

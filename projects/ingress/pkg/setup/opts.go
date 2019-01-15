@@ -12,4 +12,5 @@ type Opts struct {
 	Upstreams       factory.ResourceClientFactory
 	Secrets         factory.ResourceClientFactory
 	WatchOpts       clients.WatchOpts
+	EnableKnative   bool
 }
