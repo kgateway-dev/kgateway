@@ -183,7 +183,7 @@ var _ = Describe("Translate", func() {
 			},
 		}
 		snap := &v1.TranslatorSnapshot{
-			Clusteringresses: v1.ClusteringressesByNamespace{"hi": {ingressRes, ingressResTls}},
+			Clusteringresses: v1.ClusterIngressList{ingressRes, ingressResTls},
 			Secrets:          gloov1.SecretsByNamespace{"hi": {secret}},
 			Upstreams:        gloov1.UpstreamsByNamespace{"hi": {us, usSubset}},
 		}
