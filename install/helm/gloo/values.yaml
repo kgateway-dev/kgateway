@@ -7,7 +7,8 @@ settings:
   integrations:
     knative:
       enabled: false
-
+  # if this is set to false, default settings will be created by pods upon boot
+  create: false
   # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
   watchNamespaces: []
   # the namespace that Gloo should write discovery data (Upstreams)

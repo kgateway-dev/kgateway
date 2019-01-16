@@ -105,24 +105,6 @@ metadata:
   namespace: gloo-system
 
 ---
-# Source: gloo/templates/settings-crd.yaml
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  name: settings.gloo.solo.io
-  annotations:
-    "helm.sh/hook": crd-install
-  labels:
-    gloo: settings
-spec:
-  group: gloo.solo.io
-  names:
-    kind: Settings
-    listKind: SettingsList
-    plural: settings
-  scope: Namespaced
-  version: v1
----
 # Source: gloo/templates/1-namespace-clusterrole.yaml
 
 
@@ -431,21 +413,6 @@ spec:
           name: gateway-envoy-config
         name: envoy-config
 ---
-# Source: gloo/templates/settings.yaml
-apiVersion: gloo.solo.io/v1
-kind: Settings
-metadata:
-  name: default
-  namespace: gloo-system
-spec:
-  bindAddr: 0.0.0.0:9977
-  discoveryNamespace: gloo-system
-  kubernetesArtifactSource: {}
-  kubernetesConfigSource: {}
-  kubernetesSecretSource: {}
-  refreshRate: 60s
-
----
 # Source: gloo/templates/14-clusteringress-proxy-deployment.yaml
 
 ---
@@ -453,4 +420,11 @@ spec:
 
 ---
 # Source: gloo/templates/16-clusteringress-proxy-service.yaml
+
+---
+# Source: gloo/templates/settings-crd.yaml
+
+---
+# Source: gloo/templates/settings.yaml
+
 

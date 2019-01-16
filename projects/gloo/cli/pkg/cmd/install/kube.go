@@ -7,10 +7,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/solo-io/gloo/pkg/version"
-
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"k8s.io/api/core/v1"
 	kubeerrs "k8s.io/apimachinery/pkg/api/errors"
@@ -41,6 +43,9 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
 				return errors.Wrapf(err, "creating image pull secret")
 			}
+			if err := registerSettingsCrd(); err != nil {
+				return errors.Wrapf(err, "registering settings crd")
+			}
 
 			imageVersion := opts.Install.Version
 			if imageVersion == "" {
@@ -62,6 +67,21 @@ func applyManifest(manifest []byte, imageVersion string) error {
 	kubectl.Stdout = os.Stdout
 	kubectl.Stderr = os.Stderr
 	return kubectl.Run()
+}
+
+func registerSettingsCrd() error {
+	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		return err
+	}
+
+	settingsClient, err := gloov1.NewSettingsClient(&factory.KubeResourceClientFactory{
+		Crd:         gloov1.SettingsCrd,
+		Cfg:         cfg,
+		SharedCache: kube.NewKubeCache(),
+	})
+
+	return settingsClient.Register()
 }
 
 func UpdateBytesWithVersion(manifestBytes []byte, version string) []byte {
