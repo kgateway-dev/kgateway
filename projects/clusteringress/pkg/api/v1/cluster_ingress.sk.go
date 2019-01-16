@@ -25,6 +25,10 @@ func NewClusterIngress(namespace, name string) *ClusterIngress {
 	}
 }
 
+func (r *ClusterIngress) SetStatus(status core.Status) {
+	r.Status = status
+}
+
 func (r *ClusterIngress) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
 }
@@ -55,6 +59,14 @@ func (list ClusterIngressList) Find(namespace, name string) (*ClusterIngress, er
 
 func (list ClusterIngressList) AsResources() resources.ResourceList {
 	var ress resources.ResourceList
+	for _, clusterIngress := range list {
+		ress = append(ress, clusterIngress)
+	}
+	return ress
+}
+
+func (list ClusterIngressList) AsInputResources() resources.InputResourceList {
+	var ress resources.InputResourceList
 	for _, clusterIngress := range list {
 		ress = append(ress, clusterIngress)
 	}

@@ -7,6 +7,7 @@ option (gogoproto.equal_all) = true;
 import "google/protobuf/any.proto";
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 /*
 A simple wrapper for a kNative ClusterIngress Object.
@@ -17,6 +18,7 @@ message ClusterIngress {
     option (core.solo.io.resource).cluster_scoped = true;
 
     core.solo.io.Metadata metadata = 1 [(gogoproto.nullable) = false];
+    core.solo.io.Status status = 4 [(gogoproto.nullable) = false]; // status is ignored, used for generated tests
 
     // a raw byte representation of the cluster ingress this resource wraps
     google.protobuf.Any cluster_ingress_spec = 2;

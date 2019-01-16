@@ -62,6 +62,7 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 	Expect(r1.GetMetadata().Name).To(Equal(name))
 	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
 	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
+	Expect(r1.Status).To(Equal(input.Status))
 	Expect(r1.ClusterIngressSpec).To(Equal(input.ClusterIngressSpec))
 	Expect(r1.ClusterIngressStatus).To(Equal(input.ClusterIngressStatus))
 

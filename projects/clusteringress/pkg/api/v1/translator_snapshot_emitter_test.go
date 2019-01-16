@@ -73,11 +73,10 @@ var _ = Describe("V1Emitter", func() {
 		upstreamClient, err = gloo_solo_io.NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// ClusterIngress Constructor
-		kube, err = kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-
-		clusterIngressClientFactory := &factory.KubeConfigMapClientFactory{
-			Clientset: kube,
+		clusterIngressClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         ClusterIngressCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(),
 		}
 		clusterIngressClient, err = NewClusterIngressClient(clusterIngressClientFactory)
 		Expect(err).NotTo(HaveOccurred())
