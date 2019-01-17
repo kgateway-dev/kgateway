@@ -1,20 +1,22 @@
+{{- if .Values.settings.integrations.knative.enabled }}
+
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
     app: gloo
-    gloo: ingress-proxy
-  name: ingress-proxy
+    gloo: clusteringress-proxy
+  name: clusteringress-proxy
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.deployment.ingressProxy.replicas }}
+  replicas: {{ .Values.settings.integrations.knative.proxy.replicas }}
   selector:
     matchLabels:
-      gloo: ingress-proxy
+      gloo: clusteringress-proxy
   template:
     metadata:
       labels:
-        gloo: ingress-proxy
+        gloo: clusteringress-proxy
     spec:
       containers:
       - args: ["--disable-hot-restart"]
@@ -27,14 +29,14 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ .Values.deployment.ingressProxy.image }}
+        image: {{ .Values.settings.integrations.knative.proxy.image }}
         imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
-        name: ingress-proxy
+        name: clusteringress-proxy
         ports:
-        - containerPort: {{ .Values.deployment.ingressProxy.httpPort }}
+        - containerPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
           name: http
           protocol: TCP
-        - containerPort: {{ .Values.deployment.ingressProxy.httpsPort }}
+        - containerPort: {{ .Values.settings.integrations.knative.proxy.httpsPort }}
           name: https
           protocol: TCP
         volumeMounts:
@@ -42,5 +44,7 @@ spec:
           name: envoy-config
       volumes:
       - configMap:
-          name: ingress-envoy-config
+          name: clusteringress-envoy-config
         name: envoy-config
+
+{{- end }}

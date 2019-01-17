@@ -26,5 +26,10 @@ rules:
 - apiGroups: ["extensions", ""]
   resources: ["ingresses"]
   verbs: ["*"]
+{{- if .Values.settings.integrations.knative.enabled }}
+- apiGroups: ["networking.internal.knative.dev"]
+  resources: ["clusteringresses"]
+  verbs: ["get", "list", "watch"]
+{{- end -}}
 
 {{- end -}}

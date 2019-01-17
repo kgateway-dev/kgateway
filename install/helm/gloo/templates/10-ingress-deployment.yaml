@@ -21,3 +21,8 @@ spec:
         imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
         name: ingress
         args: ["--namespace", "{{.Release.Namespace}}" ]
+{{- if .Values.settings.integrations.knative.enabled }}
+        env:
+        - name: "ENABLE_KNATIVE_INGRESS"
+          value: "true"
+{{- end }}

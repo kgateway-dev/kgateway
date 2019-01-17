@@ -1,0 +1,21 @@
+{{- if .Values.settings.integrations.knative.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gloo
+    gloo: clusteringress-proxy
+  name: clusteringress-proxy
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - port: {{ .Values.settings.integrations.knative.proxy.httpPort }}
+    protocol: TCP
+    name: http
+  - port: {{ .Values.settings.integrations.knative.proxy.httpsPort }}
+    protocol: TCP
+    name: https
+  selector:
+    gloo: clusteringress-proxy
+  type: LoadBalancer
+{{- end }}

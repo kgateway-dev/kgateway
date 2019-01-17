@@ -11,6 +11,9 @@ spec:
   - port: {{ .Values.deployment.ingressProxy.httpPort }}
     protocol: TCP
     name: http
+  - port: {{ .Values.deployment.ingressProxy.httpsPort }}
+    protocol: TCP
+    name: https
   selector:
     gloo: ingress-proxy
   type: LoadBalancer

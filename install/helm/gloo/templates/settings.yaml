@@ -2,7 +2,7 @@ apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: {{ .Release.Namespace }}
 spec:
   bindAddr: 0.0.0.0:9977
   discoveryNamespace: {{ .Values.settings.writeNamespace }}

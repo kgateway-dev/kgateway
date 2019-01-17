@@ -20,5 +20,5 @@ spec:
       - image: {{ .Values.deployment.discovery.image }}
         imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
         name: discovery
-        args: ["--namespace", "{{.Release.Namespace}}" ]
+        args: ["--namespace={{.Release.Namespace}}" ]
 
