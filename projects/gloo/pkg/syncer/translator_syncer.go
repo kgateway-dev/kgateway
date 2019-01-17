@@ -5,7 +5,7 @@ import (
 
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"

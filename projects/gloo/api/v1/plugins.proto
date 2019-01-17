@@ -7,6 +7,8 @@ import "google/protobuf/struct.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
@@ -21,10 +23,6 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/tran
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
 
 import "google/protobuf/duration.proto";
-
-message Extensions {
-    map<string, google.protobuf.Struct> configs = 1;
-}
 
 // Plugin-specific configuration that lives on listeners
 // Each ListenerPlugin object contains configuration for a specific plugin

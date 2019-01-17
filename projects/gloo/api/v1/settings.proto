@@ -7,6 +7,9 @@ option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
+
+import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+
 import "google/protobuf/duration.proto";
 
 /*
@@ -56,6 +59,10 @@ message Settings {
     message Directory{
         string directory = 1;
     } // watch a directory
+
+
+    // Settings for extensions
+    Extensions extensions = 16;
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 14 [(gogoproto.nullable) = false];

@@ -6,7 +6,7 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -20,12 +20,14 @@ type Translator interface {
 }
 
 type translator struct {
-	plugins []plugins.Plugin
+	plugins            []plugins.Plugin
+	extensionsSettings *v1.Extensions
 }
 
-func NewTranslator(plugins []plugins.Plugin) Translator {
+func NewTranslator(plugins []plugins.Plugin, extensionsSettings *v1.Extensions) Translator {
 	return &translator{
-		plugins: plugins,
+		plugins:            plugins,
+		extensionsSettings: extensionsSettings,
 	}
 }
 
@@ -38,7 +40,8 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 	params.Ctx = contextutils.WithLogger(params.Ctx, "translator")
 	for _, p := range t.plugins {
 		if err := p.Init(plugins.InitParams{
-			Ctx: params.Ctx,
+			Ctx:                params.Ctx,
+			ExtensionsSettings: t.extensionsSettings,
 		}); err != nil {
 			return nil, nil, errors.Wrapf(err, "plugin init failed")
 		}

@@ -43,6 +43,7 @@ func (r *Settings) Hash() uint64 {
 		r.BindAddr,
 		r.RefreshRate,
 		r.DevMode,
+		r.Extensions,
 		r.ConfigSource,
 		r.SecretSource,
 		r.ArtifactSource,
