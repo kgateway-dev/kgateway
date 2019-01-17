@@ -123,12 +123,14 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 	// for each upstream
 	for usRef, spec := range upstreams {
 		var kubeServicePort *kubev1.ServicePort
+		var singlePortService bool
 	findServicePort:
 		for _, svc := range services {
 			if svc.Namespace != spec.ServiceNamespace || svc.Name != spec.ServiceName {
 				continue
 			}
 			if len(svc.Spec.Ports) == 1 {
+				singlePortService = true
 				kubeServicePort = &svc.Spec.Ports[0]
 			}
 			for _, port := range svc.Spec.Ports {
@@ -152,10 +154,10 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 				for _, p := range subset.Ports {
 					// if the edpoint port is not named, it implies that
 					// the kube service only has a single unnamed port as well.
-					//
-					// port names come from service names, which must be non-empty
-					// strings if there are >1 ports exposed on the service.
-					if p.Name == kubeServicePort.Name {
+					switch {
+					case singlePortService:
+						port = uint32(p.Port)
+					case p.Name == kubeServicePort.Name:
 						port = uint32(p.Port)
 						break
 					}
