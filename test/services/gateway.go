@@ -19,11 +19,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
 	. "github.com/onsi/gomega"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
@@ -62,7 +62,7 @@ func RunGatewayWithNamespaceAndKubeClient(ctx context.Context, justgloo bool, ns
 		go gatewaysyncer.RunGateway(opts)
 	}
 	glooopts.ControlPlane.StartGrpcServer = true
-	go syncer.RunGloo(glooopts)
+	go syncer.RunGloo(glooopts, nil)
 	go fds_syncer.RunFDS(glooopts)
 	go uds_syncer.RunUDS(glooopts)
 
