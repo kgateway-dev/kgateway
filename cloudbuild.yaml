@@ -32,14 +32,16 @@ steps:
 # Helm related setup
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: mkdir
-  args: ['/workspace/helm']
+  args: ['-p', './_output/helm']
+  dir: './gopath/src/github.com/solo-io/gloo'
 # sync helm repo data from google cloud bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
     - rsync
     - -r
     - gs://solo-public-helm/
-    - /workspace/helm
+    - './_output/helm'
+  dir: './gopath/src/github.com/solo-io/gloo'
 
 
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
@@ -94,12 +96,12 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['release', 'docker-push', 'deploy-site', 'manifest']
   env:
-  - 'TAGGED_VERSION=$TAG_NAME' 
+  - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
   - 'HELM_HOME=/root/.helm' # tell helm where to find data
   dir: './gopath/src/github.com/solo-io/gloo'
-  secretEnv: ['GITHUB_TOKEN'v 'FIREBASE_TOKEN']
+  secretEnv: ['GITHUB_TOKEN', 'FIREBASE_TOKEN']
   id: 'release'
 
 # Sync helm chart data back to google storage bucket
@@ -107,8 +109,9 @@ steps:
   args:
     - rsync
     - -r
-    - /workspace/helm
+    - './_output/helm'
     - gs://solo-public-helm/
+  dir: './gopath/src/github.com/solo-io/gloo'
   id: 'set-helm-chart'
 
 
