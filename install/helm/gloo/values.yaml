@@ -30,7 +30,21 @@ deployment:
   ingress:
     image: soloio/ingress:0.5.0
     replicas: 1
+
   ingressProxy:
     image: soloio/gloo-envoy-wrapper:0.5.0
     httpPort: 80
     replicas: 1
+
+configmap:
+  gatewayproxy:
+    envoy:
+      static:
+        listeners:
+        clusters:
+  ingressproxy:
+    envoy:
+      static:
+        listeners:
+        clusters:
+
