@@ -60,7 +60,7 @@ func DeployTestRunner(namespace, image string, port int32) error {
 	}); err != nil {
 		return err
 	}
-	if err := WaitPodsRunning(time.Minute, time.Second, "testrunner"); err != nil {
+	if err := WaitPodsRunning(time.Minute, time.Second, "gloo=testrunner"); err != nil {
 		return err
 	}
 	go func() {

@@ -4,16 +4,11 @@ import (
 	"fmt"
 	"hash/crc32"
 	"os"
+	"strings"
 
 	"github.com/solo-io/solo-kit/test/helpers"
 )
 
-var glooComponents = []string{
-	"gloo",
-	"discovery",
-	"gateway",
-	"ingress",
-}
 var versionTag = ""
 
 func TestVersion() string {
@@ -45,22 +40,34 @@ func BuildPushContainers(version string, push, verbose bool) error {
 		return nil
 	}
 	os.Setenv("VERSION", version)
+	if err := RunCommand(verbose, "make", "clean"); err != nil {
+		return err
+	}
+
+	if push {
+		kindContainer := os.Getenv("KIND_CONTAINER_ID")
+		if kindContainer == "" {
+			containerId, err := getKindContainer(verbose)
+			if err != nil {
+				return err
+			}
+			kindContainer = containerId
+		}
+		return RunCommand(verbose, "make", "docker-kind", "KIND_CONTAINER_ID="+kindContainer, "VERSION="+version)
+	}
 
 	// make the gloo containers
 	if err := RunCommand(verbose, "make", "docker", "VERSION="+version); err != nil {
 		return err
 	}
 
-	if push {
-		makearg := "docker-push"
-		kindContainer := os.Getenv("KIND_CONTAINER_ID")
-		if kindContainer != "" {
-			makearg = "docker-kind"
-		}
-		if err := RunCommand(verbose, "make", makearg, "KIND_CONTAINER_ID="+kindContainer, "VERSION="+version); err != nil {
-			return err
-		}
-	}
-
 	return nil
+}
+
+func getKindContainer(verbose bool) (string, error) {
+	out, err := RunCommandOutput(verbose, "/bin/sh", "-c", "docker ps |grep kindest/node |grep test | cut -f1 -d' '")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(out, "\n"), nil
 }
