@@ -43,9 +43,9 @@ func AddUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options
 			"name of the kubernetes service")
 		set.StringVar(&upstream.Kube.ServiceNamespace, "kube-service-namespace", "defaukt",
 			"namespace where the kubernetes service lives")
-		set.Uint32Var(&upstream.Kube.TargetPort, "kube-target-port", 80,
-			"the port were the service instances are listening. for instances listening on multiple ports, "+
-				"create an upstream for each port. NOTE: this should match the target port of the service")
+		set.Uint32Var(&upstream.Kube.ServicePort, "kube-service-port", 80,
+			"the port exposed by the kubernetes service. for services with multiple ports, "+
+				"create an upstream for each port.")
 		set.StringSliceVar(&upstream.Kube.Selector.Entries, "kube-service-labels", []string{},
 			"labels to use for customized selection of pods for this upstream. can be used to select subsets of "+
 				"pods for a service e.g. for blue-green deployment")

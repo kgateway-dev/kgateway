@@ -1,11 +1,14 @@
 package kubernetes
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
@@ -33,6 +36,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	if p.kubeShareFactory == nil {
 		p.kubeShareFactory = getInformerFactory(p.kube)
 	}
+	opts.Ctx = contextutils.WithLogger(opts.Ctx, "kube-uds")
 
 	watch := p.kubeShareFactory.Subscribe()
 
@@ -51,7 +55,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 			return
 		}
 
-		upstreamsChan <- convertServices(watchNamespaces, services, pods, discOpts, writeNamespace)
+		upstreamsChan <- convertServices(opts.Ctx, watchNamespaces, services, pods, discOpts, writeNamespace)
 	}
 
 	go func() {
@@ -75,7 +79,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	return upstreamsChan, errs, nil
 }
 
-func convertServices(watchNamespaces []string, services []*kubev1.Service, pods []*kubev1.Pod, opts discovery.Opts, writeNamespace string) v1.UpstreamList {
+func convertServices(ctx context.Context, watchNamespaces []string, services []*kubev1.Service, pods []*kubev1.Pod, opts discovery.Opts, writeNamespace string) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
 		if skip(svc, opts) {
@@ -86,12 +90,12 @@ func convertServices(watchNamespaces []string, services []*kubev1.Service, pods 
 			continue
 		}
 
-		upstreams = append(upstreams, upstreamsForService(svc, pods, writeNamespace)...)
+		upstreams = append(upstreams, upstreamsForService(ctx, svc, pods, writeNamespace)...)
 	}
 	return upstreams
 }
 
-func upstreamsForService(svc *kubev1.Service, pods []*kubev1.Pod, writeNamespace string) v1.UpstreamList {
+func upstreamsForService(ctx context.Context, svc *kubev1.Service, pods []*kubev1.Pod, writeNamespace string) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 
 	uniqueLabelSets := []map[string]string{
@@ -127,13 +131,13 @@ func upstreamsForService(svc *kubev1.Service, pods []*kubev1.Pod, writeNamespace
 
 	for _, extendedLabels := range uniqueLabelSets {
 		for _, port := range svc.Spec.Ports {
-			upstreams = append(upstreams, createUpstream(writeNamespace, svc, port, extendedLabels))
+			upstreams = append(upstreams, createUpstream(ctx, writeNamespace, svc, port, extendedLabels))
 		}
 	}
 	return upstreams
 }
 
-func createUpstream(writeNamespace string, svc *kubev1.Service, port kubev1.ServicePort, labels map[string]string) *v1.Upstream {
+func createUpstream(ctx context.Context, writeNamespace string, svc *kubev1.Service, port kubev1.ServicePort, labels map[string]string) *v1.Upstream {
 	meta := svc.ObjectMeta
 	coremeta := kubeutils.FromKubeMeta(meta)
 	coremeta.ResourceVersion = ""
@@ -147,10 +151,6 @@ func createUpstream(writeNamespace string, svc *kubev1.Service, port kubev1.Serv
 	}
 	coremeta.Name = strings.ToLower(upstreamName(meta.Namespace, meta.Name, port.Port, extraLabels))
 	coremeta.Namespace = writeNamespace
-	targetPort := port.TargetPort.IntVal
-	if targetPort == 0 {
-		targetPort = port.Port
-	}
 	return &v1.Upstream{
 		Metadata: coremeta,
 		UpstreamSpec: &v1.UpstreamSpec{
@@ -158,7 +158,6 @@ func createUpstream(writeNamespace string, svc *kubev1.Service, port kubev1.Serv
 				Kube: &kubeplugin.UpstreamSpec{
 					ServiceName:      meta.Name,
 					ServiceNamespace: meta.Namespace,
-					TargetPort:       uint32(targetPort),
 					ServicePort:      uint32(port.Port),
 					Selector:         labels,
 				},

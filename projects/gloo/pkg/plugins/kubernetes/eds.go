@@ -61,7 +61,12 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 		return nil, err
 	}
 
-	return filterEndpoints(opts.Ctx, writeNamespace, endpoints, pods, c.upstreams), nil
+	services, err := c.kubeShareFactory.ServicesLister().List(labels.SelectorFromSet(opts.Selector))
+	if err != nil {
+		return nil, err
+	}
+
+	return filterEndpoints(opts.Ctx, writeNamespace, endpoints, services, pods, c.upstreams), nil
 }
 
 func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -103,7 +108,8 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 	return endpointsChan, errs, nil
 }
 
-func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints []*kubev1.Endpoints, pods []*kubev1.Pod, upstreams map[core.ResourceRef]*kubeplugin.UpstreamSpec) v1.EndpointList {
+func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints []*kubev1.Endpoints,
+	services []*kubev1.Service, pods []*kubev1.Pod, upstreams map[core.ResourceRef]*kubeplugin.UpstreamSpec) v1.EndpointList {
 	var endpoints v1.EndpointList
 
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "kubernetes_eds"))
@@ -116,6 +122,25 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 
 	// for each upstream
 	for usRef, spec := range upstreams {
+		var kubeServicePort *kubev1.ServicePort
+	findServicePort:
+		for _, svc := range services {
+			if svc.Namespace != spec.ServiceNamespace || svc.Name != spec.ServiceName {
+				continue
+			}
+			if len(svc.Spec.Ports) == 1 {
+				kubeServicePort = &svc.Spec.Ports[0]
+			}
+			for _, port := range svc.Spec.Ports {
+				if spec.ServicePort == uint32(port.Port) {
+					kubeServicePort = &port
+					break findServicePort
+				}
+			}
+		}
+		if kubeServicePort == nil {
+			logger.Warnf("upstream %v: port %v not found for service %v", usRef.Key(), spec.ServicePort, spec.ServiceName)
+		}
 		// find each matching endpoint
 		for _, eps := range kubeEndpoints {
 			if eps.Namespace != spec.ServiceNamespace || eps.Name != spec.ServiceName {
@@ -124,13 +149,14 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 			for _, subset := range eps.Subsets {
 				var port uint32
 				for _, p := range subset.Ports {
-					if spec.TargetPort == uint32(p.Port) {
+					switch {
+					case p.Name == kubeServicePort.Name:
 						port = uint32(p.Port)
 						break
 					}
 				}
 				if port == 0 {
-					logger.Warnf("upstream %v: port %v not found for service %v", usRef.Key(), spec.TargetPort, spec.ServiceName)
+					logger.Warnf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset)
 					continue
 				}
 				for _, addr := range subset.Addresses {

@@ -194,8 +194,8 @@ type InputKubeSpec struct {
 	ServiceName string
 	// The namespace where the Service lives
 	ServiceNamespace string
-	// The port where the Service is listening.
-	TargetPort uint32
+	// The port exposed by the Kubernetes Service
+	ServicePort uint32
 	// Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if
 	// any are provided here.
 	// (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)

@@ -105,7 +105,7 @@ func upstreamDetails(up *v1.Upstream) []string {
 		add(
 			fmt.Sprintf("svc name:      %v", usType.Kube.ServiceName),
 			fmt.Sprintf("svc namespace: %v", usType.Kube.ServiceNamespace),
-			fmt.Sprintf("port:          %v", usType.Kube.TargetPort),
+			fmt.Sprintf("port:          %v", usType.Kube.ServicePort),
 		)
 		if usType.Kube.ServiceSpec != nil {
 			add(linesForServiceSpec(usType.Kube.ServiceSpec)...)
