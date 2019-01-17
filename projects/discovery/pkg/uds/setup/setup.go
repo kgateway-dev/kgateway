@@ -7,5 +7,9 @@ import (
 )
 
 func Main() error {
-	return setuputils.Main("uds", gloosyncer.NewSetupFuncWithRun(syncer.RunUDS))
+	return setuputils.Main(setuputils.SetupOpts{
+		LoggingPrefix: "uds",
+		SetupFunc:     gloosyncer.NewSetupFuncWithRun(syncer.RunUDS),
+		ExitOnError:   true,
+	})
 }

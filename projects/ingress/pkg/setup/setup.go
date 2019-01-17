@@ -5,5 +5,9 @@ import (
 )
 
 func Main() error {
-	return setuputils.Main("ingress", Setup)
+	return setuputils.Main(setuputils.SetupOpts{
+		LoggingPrefix: "ingress",
+		SetupFunc:     Setup,
+		ExitOnError:   true,
+	})
 }

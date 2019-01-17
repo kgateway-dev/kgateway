@@ -6,5 +6,9 @@ import (
 )
 
 func Main() error {
-	return setuputils.Main("gateway", syncer.Setup)
+	return setuputils.Main(setuputils.SetupOpts{
+		LoggingPrefix: "gateway",
+		SetupFunc:     syncer.Setup,
+		ExitOnError:   true,
+	})
 }

@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	check "github.com/solo-io/go-checkpoint"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -17,9 +16,19 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-func Main(loggingPrefix string, setupFunc SetupFunc) error {
+type SetupOpts struct {
+	LoggingPrefix string
+	SetupFunc     SetupFunc
+	ExitOnError   bool
+}
+
+func Main(opts SetupOpts) error {
+	start := time.Now()
+	loggingPrefix := opts.LoggingPrefix
+	check.CallCheck(loggingPrefix, version.Version, start)
 	flag.Parse()
 
 	settingsClient, err := KubeOrFileSettingsClient(setupDir)
@@ -37,7 +46,7 @@ func Main(loggingPrefix string, setupFunc SetupFunc) error {
 	emitter := v1.NewSetupEmitter(settingsClient)
 	ctx := contextutils.WithLogger(context.Background(), loggingPrefix)
 	settingsRef := core.ResourceRef{Namespace: setupNamespace, Name: setupName}
-	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, setupFunc))
+	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc))
 	errs, err := eventLoop.Run([]string{setupNamespace}, clients.WatchOpts{
 		Ctx:         ctx,
 		RefreshRate: time.Second,
@@ -46,6 +55,9 @@ func Main(loggingPrefix string, setupFunc SetupFunc) error {
 		return err
 	}
 	for err := range errs {
+		if opts.ExitOnError {
+			contextutils.LoggerFrom(ctx).Fatalf("error in setup: %v", err)
+		}
 		contextutils.LoggerFrom(ctx).Errorf("error in setup: %v", err)
 	}
 	return nil
