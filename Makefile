@@ -103,6 +103,9 @@ generate-client-mocks:
 #################
 #################
 
+# This macro takes a relative path as its only argument and returns all the files
+# in the tree rooted at that directory that match the given criteria.
+get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
 
 #----------------------------------------------------------------------------------
 # glooctl
@@ -133,7 +136,7 @@ glooctl-darwin-amd64: $(OUTPUT_DIR)/glooctl-darwin-amd64
 #----------------------------------------------------------------------------------
 
 GATEWAY_DIR=projects/gateway
-GATEWAY_SOURCES=$(shell find $(GATEWAY_DIR) -name "*.go" | grep -v test | grep -v generated.go)
+GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
 
 $(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
@@ -153,7 +156,7 @@ gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gatew
 #----------------------------------------------------------------------------------
 
 INGRESS_DIR=projects/ingress
-INGRESS_SOURCES=$(shell find $(INGRESS_DIR) -name "*.go" | grep -v test | grep -v generated.go)
+INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
@@ -173,7 +176,7 @@ ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingre
 #----------------------------------------------------------------------------------
 
 DISCOVERY_DIR=projects/discovery
-DISCOVERY_SOURCES=$(shell find $(DISCOVERY_DIR) -name "*.go" | grep -v test | grep -v generated.go)
+DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 
 $(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
@@ -193,7 +196,7 @@ discovery-docker: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.d
 #----------------------------------------------------------------------------------
 
 GLOO_DIR=projects/gloo
-GLOO_SOURCES=$(shell find $(GLOO_DIR) -name "*.go" | grep -v test | grep -v generated.go)
+GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 
 $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
@@ -213,7 +216,7 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=projects/envoyinit/cmd
-ENVOYINIT_SOURCES=$(shell find $(ENVOYINIT_DIR) -name "*.go" | grep -v test | grep -v generated.go)
+ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 
 $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
