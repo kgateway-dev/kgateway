@@ -151,6 +151,11 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 				var port uint32
 				for _, p := range subset.Ports {
 					switch {
+					// if the edpoint port is not named, it implies that
+					// the kube service only has a single unnamed port as well.
+					//
+					// port names come from service names, which must be non-empty
+					// strings if there are >1 ports exposed on the service.
 					case p.Name == kubeServicePort.Name:
 						port = uint32(p.Port)
 						break
