@@ -63,6 +63,36 @@ ifeq ($(RELEASE),"true")
 	firebase deploy --only hosting:gloo-docs
 endif
 
+#----------------------------------------------------------------------------------
+# Generate mocks
+#----------------------------------------------------------------------------------
+
+# The values in this array are used in a foreach loop to dynamically generate the
+# commands in the generate-client-mocks target.
+# For each value, the ":" character will be replaced with " " using the subst function,
+# thus turning the string into a 3-element array. The n-th element of the array will
+# then be selected via the word function
+MOCK_RESOURCE_INFO := \
+	gloo:artifact:ArtifactClient \
+	gloo:endpoint:EndpointClient \
+	gloo:proxy:ProxyClient \
+	gloo:secret:SecretClient \
+	gloo:settings:SettingsClient \
+	gloo:upstream:UpstreamClient \
+	gateway:gateway:GatewayClient \
+	gateway:virtual_service:VirtualServiceClient\
+
+# Use gomock (https://github.com/golang/mock) to generate mocks for our resource clients.
+.PHONY: generate-client-mocks
+generate-client-mocks:
+	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
+		echo Generating mock for $(word 3,$(subst :, , $(INFO)))...; \
+		mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
+     		-package=mocks \
+     		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
+     		$(word 3,$(subst :, , $(INFO))) \
+     	;)
+
 #################
 #################
 #               #
