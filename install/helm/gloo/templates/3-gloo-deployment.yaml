@@ -25,4 +25,8 @@ spec:
           name: grpc
           protocol: TCP
         args: ["--namespace", "{{.Release.Namespace}}" ]
+      {{- with .Values.deployment.gloo.imagePullSecrets }}
+      imagePullSecrets:
+{{toYaml . | indent 6}}
+{{end}}
 

@@ -22,7 +22,8 @@ data:
                     address: gloo
                     port_value: {{ .Values.deployment.gloo.xdsPort }}
         http2_protocol_options: {}
-        type: STRICT_DNS{{- with .Values.configmap.gatewayproxy.envoy.static.clusters }}
+        type: STRICT_DNS
+{{- with .Values.configmap.gatewayproxy.envoy.static.clusters }}
 {{ toYaml . | indent 6}}{{ end }}
 {{- with .Values.configmap.gatewayproxy.envoy.static.listeners }}
       listeners:

@@ -37,6 +37,10 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- with .Values.deployment.gloo.imagePullSecrets }}
+      imagePullSecrets:
+{{toYaml . | indent 6}}
+{{end}}
       volumes:
       - configMap:
           name: gateway-envoy-config
