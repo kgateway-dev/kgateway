@@ -29,6 +29,19 @@ steps:
   waitFor: ['dep']
   id: 'setup-aws-creds'
 
+# Helm related setup
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: mkdir
+  args: ['/workspace/helm']
+# sync helm repo data from google cloud bucket
+- name: gcr.io/cloud-builders/gsutil
+  args:
+    - rsync
+    - -r
+    - gs://solo-public-helm/
+    - /workspace/helm
+
+
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: mkdir
   args: ['/workspace/.docker']
@@ -79,13 +92,26 @@ steps:
   secretEnv: ['DOCKER_HUB_PASSWORD']
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['release', 'docker-push', 'deploy-site']
+  args: ['release', 'docker-push', 'deploy-site', 'manifest']
   env:
   - 'TAGGED_VERSION=$TAG_NAME' 
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
+  - 'HELM_HOME=/root/.helm' # tell helm where to find data
   dir: './gopath/src/github.com/solo-io/gloo'
-  secretEnv: ['GITHUB_TOKEN', 'FIREBASE_TOKEN']
+  secretEnv: ['GITHUB_TOKEN'v 'FIREBASE_TOKEN']
+  id: 'release'
+
+# Sync helm chart data back to google storage bucket
+- name: gcr.io/cloud-builders/gsutil
+  args:
+    - rsync
+    - -r
+    - /workspace/helm
+    - gs://solo-public-helm/
+  id: 'set-helm-chart'
+
+
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
   secretEnv:

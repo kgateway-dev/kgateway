@@ -210,12 +210,21 @@ build: gloo glooctl gateway discovery envoyinit
 # Deployment Manifests / Helm
 #----------------------------------------------------------------------------------
 
+HELM_SYNC_DIR?=/workspace/helm
+HELM_DIR?= $(ROOTDIR)/install/helm
+
 .PHONY: manifest
-manifest: install/kube.yaml bump-helm-version
+manifest: install/kube.yaml bump-helm-version update-helm-chart
 
 bump-helm-version:
 	sed -i 's/version: .*/version: $(VERSION)/g' install/helm/gloo/Chart.yaml
 	sed -i 's@image: soloio/\(.*\):.*@image: soloio/\1:$(VERSION)@g' install/helm/gloo/values.yaml
+
+update-helm-chart:
+ifeq ($(RELEASE),"true")
+	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
+	helm repo index $(HELM_SYNC_DIR)
+endif
 
 install/kube.yaml: $(shell find install/helm/gloo)
 	helm template install/helm/gloo --namespace gloo-system > $@
