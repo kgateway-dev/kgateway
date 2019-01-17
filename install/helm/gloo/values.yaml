@@ -6,12 +6,7 @@ rbac:
 settings:
   integrations:
     knative:
-      enabled: true
-    proxy:
-      image: soloio/gloo-envoy-wrapper:0.5.0
-      httpPort: 80
-      httpsPort: 443
-      replicas: 1
+      enabled: false
 
   # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
   watchNamespaces: []
