@@ -39,11 +39,6 @@
   name = "github.com/solo-io/go-checkpoint"
   version = "0.0.4"
 
-# TODO: avoid using revision here and use >= semver when go-utils has a release.
-[[constraint]]
-  name = "github.com/solo-io/go-utils"
-  revision = "0a2351c6daabdf85e7f72e2254d5f782b1747fe7"
-
 # make sure all kubernetes code is the same version.
 # when updating, update all in the same time.
 
