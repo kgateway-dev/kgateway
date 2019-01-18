@@ -10,3 +10,7 @@ option (gogoproto.equal_all) = true;
 message Extensions {
     map<string, google.protobuf.Struct> configs = 1;
 }
+
+message Extension {
+    google.protobuf.Struct config = 1;
+}
