@@ -2,10 +2,11 @@ package install
 
 import (
 	"bytes"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"os"
 	"os/exec"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"

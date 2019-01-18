@@ -3,10 +3,11 @@ package gateway
 import (
 	"bytes"
 	"fmt"
-	"k8s.io/api/core/v1"
 	"os"
 	"os/exec"
 	"strings"
+
+	"k8s.io/api/core/v1"
 
 	"github.com/solo-io/go-utils/cliutils"
 

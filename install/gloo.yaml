@@ -183,6 +183,9 @@ spec:
   - port: 80
     protocol: TCP
     name: http
+  - port: 443
+    protocol: TCP
+    name: https
   selector:
     gloo: ingress-proxy
   type: LoadBalancer
@@ -245,7 +248,7 @@ spec:
         gloo: ingress
     spec:
       containers:
-      - image: soloio/ingress:0.6.0
+      - image: soloio/ingress:0.6.5
         imagePullPolicy: Always
         name: ingress
         args: ["--namespace", "gloo-system" ]
@@ -281,12 +284,15 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: soloio/gloo-envoy-wrapper:0.6.0
+        image: soloio/gloo-envoy-wrapper:0.6.5
         imagePullPolicy: Always
         name: ingress-proxy
         ports:
         - containerPort: 80
           name: http
+          protocol: TCP
+        - containerPort: 443
+          name: https
           protocol: TCP
         volumeMounts:
         - mountPath: /etc/envoy
@@ -316,7 +322,7 @@ spec:
         gloo: gloo
     spec:
       containers:
-      - image: soloio/gloo:0.6.0
+      - image: soloio/gloo:0.6.5
         imagePullPolicy: Always
         name: gloo
         ports:
@@ -347,10 +353,10 @@ spec:
         gloo: discovery
     spec:
       containers:
-      - image: soloio/discovery:0.6.0
+      - image: soloio/discovery:0.6.5
         imagePullPolicy: Always
         name: discovery
-        args: ["--namespace", "gloo-system" ]
+        args: ["--namespace=gloo-system" ]
 
 
 ---
@@ -374,7 +380,7 @@ spec:
         gloo: gateway
     spec:
       containers:
-      - image: soloio/gateway:0.6.0
+      - image: soloio/gateway:0.6.5
         imagePullPolicy: Always
         name: gateway
         args: ["--namespace", "gloo-system" ]
@@ -410,7 +416,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: soloio/gloo-envoy-wrapper:0.6.0
+        image: soloio/gloo-envoy-wrapper:0.6.5
         imagePullPolicy: Always
         name: gateway-proxy
         ports:
@@ -438,7 +444,13 @@ spec:
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
-  watchNamespaces:
-  - gloo-system
-  - default
+
+---
+# Source: gloo/templates/14-clusteringress-proxy-deployment.yaml
+
+---
+# Source: gloo/templates/15-clusteringress-proxy-configmap.yaml
+
+---
+# Source: gloo/templates/16-clusteringress-proxy-service.yaml
 
