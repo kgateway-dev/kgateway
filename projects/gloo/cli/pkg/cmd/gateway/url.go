@@ -3,6 +3,7 @@ package gateway
 import (
 	"bytes"
 	"fmt"
+	"k8s.io/api/core/v1"
 	"os"
 	"os/exec"
 	"strings"
@@ -21,7 +22,7 @@ import (
 func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "url",
-		Short: "print the http endpoint for the gateway ingress",
+		Short: "print the http endpoint for a proxy",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ingressHost, err := getIngressHost(opts)
 			if err != nil {
@@ -54,10 +55,22 @@ func getIngressHost(opts *options.Options) (string, error) {
 		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
 			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'", opts.Gateway.Proxy)
 	}
-	if len(svc.Spec.Ports) != 1 {
-		return "", errors.Errorf("service %v is missing expected number of ports (1)", opts.Gateway.Proxy)
+	var svcPort *v1.ServicePort
+	switch len(svc.Spec.Ports) {
+	case 0:
+		return "", errors.Errorf("service %v is missing ports", opts.Gateway.Proxy)
+	case 1:
+		svcPort = &svc.Spec.Ports[0]
+	default:
+		for _, p := range svc.Spec.Ports {
+			if p.Name == opts.Gateway.Port {
+				svcPort = &p
+			}
+		}
+		if svcPort == nil {
+			return "", errors.Errorf("named port %v not found on service %v", opts.Gateway.Port, opts.Gateway.Proxy)
+		}
 	}
-	svcPort := svc.Spec.Ports[0]
 
 	var host, port string
 	// gateway-proxy is an externally load-balanced service

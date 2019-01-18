@@ -45,6 +45,7 @@ const (
 type Gateway struct {
 	ClusterProvider string
 	Proxy           string
+	Port            string
 	FollowLogs      bool
 	DebugLogs       bool
 }

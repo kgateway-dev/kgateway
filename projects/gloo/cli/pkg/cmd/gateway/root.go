@@ -13,7 +13,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Aliases: constants.GATEWAY_COMMAND.Aliases,
 		Short:   constants.GATEWAY_COMMAND.Short,
 	}
-	cmd.PersistentFlags().StringVarP(&opts.Gateway.Proxy, "proxy", "p", "gateway-proxy", "the proxy to target with this command")
+	cmd.PersistentFlags().StringVarP(&opts.Gateway.Proxy, "proxy", "p", "gateway-proxy", "the name of the proxy service to target with this command")
+	cmd.PersistentFlags().StringVar(&opts.Gateway.Port, "port", "http", "the name of the service port to connect to")
 
 	cmd.AddCommand(urlCmd(opts))
 	cmd.AddCommand(dumpCmd(opts))
