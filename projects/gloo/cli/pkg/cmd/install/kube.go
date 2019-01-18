@@ -41,27 +41,27 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
 				return errors.Wrapf(err, "creating image pull secret")
 			}
-			manifest := glooManifestBytes
-			if opts.Install.EnableKnative {
-				manifest = glooKnativeManifestBytes
-			}
 
 			imageVersion := opts.Install.Version
 			if imageVersion == "" {
 				imageVersion = version.Version
 			}
 
-			kubectl := exec.Command("kubectl", "apply", "-f", "-")
-			updatedManifest := UpdateBytesWithVersion(manifest, imageVersion)
-			kubectl.Stdin = bytes.NewBuffer(updatedManifest)
-			kubectl.Stdout = os.Stdout
-			kubectl.Stderr = os.Stderr
-			return kubectl.Run()
+			return applyManifest(glooManifestBytes, imageVersion)
 		},
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
 	return cmd
+}
+
+func applyManifest(manifest []byte, imageVersion string) error {
+	kubectl := exec.Command("kubectl", "apply", "-f", "-")
+	updatedManifest := UpdateBytesWithVersion(manifest, imageVersion)
+	kubectl.Stdin = bytes.NewBuffer(updatedManifest)
+	kubectl.Stdout = os.Stdout
+	kubectl.Stderr = os.Stderr
+	return kubectl.Run()
 }
 
 func UpdateBytesWithVersion(manifestBytes []byte, version string) []byte {

@@ -7,7 +7,6 @@ import (
 
 func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	addSecretFlags(set, install)
-	set.BoolVar(&install.EnableKnative, "knative", false, "Enable Knative Ingress support in Gloo")
 	set.StringVar(&install.Version, "version", "", "Override the image versions used for deployment")
 }
 

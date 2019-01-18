@@ -31,23 +31,12 @@ Verify the CLI is installed and running correctly with:
 
 `glooctl --version`
 
-#### 2. Install Knative to your Kubernetes Cluster using Glooctl
+#### 2. Install Knative and Gloo to your Kubernetes Cluster using Glooctl
 
-Once your Kubernetes cluster is up and running, run the following command to deploy Knative-Serving components to the `knative-serving` namespace:
+Once your Kubernetes cluster is up and running, run the following command to deploy Knative-Serving components to the `knative-serving` namespace and Gloo to the `gloo-system` namespace:
 
 `glooctl install knative`
 
-This will install [a modified version](https://github.com/solo-io/gloo/blob/master/install/integrations/knative-no-istio-0.3.0.yaml) 
-of [the original kubernetes manifest for Knative-Serving 0.3.0](https://github.com/knative/serving/releases/tag/v0.3.0) which has had 
-its dependency on Istio removed. 
-
-#### 3. Install Gloo to your Kubernetes Cluster using Glooctl with Knative support enabled
-
-Next, run the following command to deploy Gloo to the `gloo-system` namespace, with knative-ingress enabled:
-
-```bash
-glooctl install kube --knative
-```
 
 Check that the Gloo and Knative pods and services have been created:
 
@@ -113,7 +102,7 @@ image.caching.internal.knative.dev/fluentd-sidecar   15m
 image.caching.internal.knative.dev/queue-proxy       15m
 ```
 
-#### 4. Send Requests to a Knative App  
+#### 3. Send Requests to a Knative App  
 
 Create a Knative App: 
 

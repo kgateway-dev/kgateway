@@ -5,6 +5,9 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/go-utils/errors"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -17,14 +20,27 @@ import (
 func KnativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "knative",
-		Short: "install Knative on kubernetes",
+		Short: "install Knative with Gloo on kubernetes",
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			kubectl := exec.Command("kubectl", "apply", "-f", "-")
 			kubectl.Stdin = bytes.NewBuffer(knativeManifestBytes)
 			kubectl.Stdout = os.Stdout
 			kubectl.Stderr = os.Stderr
-			return kubectl.Run()
+			if err := kubectl.Run(); err != nil {
+				return err
+			}
+
+			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
+				return errors.Wrapf(err, "creating image pull secret")
+			}
+
+			imageVersion := opts.Install.Version
+			if imageVersion == "" {
+				imageVersion = version.Version
+			}
+
+			return applyManifest(glooManifestBytes, imageVersion)
 		},
 	}
 	pflags := cmd.PersistentFlags()
