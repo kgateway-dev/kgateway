@@ -62,7 +62,7 @@ func RunGatewayWithNamespaceAndKubeClient(ctx context.Context, justgloo bool, ns
 		go gatewaysyncer.RunGateway(opts)
 	}
 	glooopts.ControlPlane.StartGrpcServer = true
-	go syncer.RunGloo(glooopts, nil)
+	go syncer.RunGloo(glooopts)
 	go fds_syncer.RunFDS(glooopts)
 	go uds_syncer.RunUDS(glooopts)
 
