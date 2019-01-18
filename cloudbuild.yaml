@@ -95,6 +95,9 @@ steps:
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker']
+  env:
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GOPATH=/workspace/gopath'
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'compile'
 
