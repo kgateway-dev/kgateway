@@ -243,8 +243,8 @@ build: gloo glooctl gateway discovery envoyinit
 # Deployment Manifests / Helm
 #----------------------------------------------------------------------------------
 
-HELM_SYNC_DIR?=$(ROOTDIR)/_output/helm
-HELM_DIR?= $(OUTPUT_DIR)/helm
+HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
+HELM_DIR := install/helm
 
 .PHONY: manifest
 manifest: install/kube.yaml bump-helm-version update-helm-chart
