@@ -65,7 +65,7 @@ replicaset.apps/gloo-868c6644c9            1         1         1       30s
 Everything should be up and running. If this process does not work, please [open an issue](https://github.com/solo-io/gloo/issues/new). We are happy to answer
 questions on our [diligently staffed Slack channel](https://slack.solo.io/).
 
-See [Getting Started on Kubernetes](../getting_started/kubernetes/1.md) to get started creating routes with Gloo.
+See [Getting Started on Kubernetes](../getting_started/kubernetes/basic_routing.md) to get started creating routes with Gloo.
 
 
 ### Uninstall 

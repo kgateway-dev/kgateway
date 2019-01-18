@@ -9,8 +9,9 @@ pages:
   - Installing on Kubernetes: installation/kubernetes.md
 - Getting Started:
   - Kubernetes:
-    - Basic Routing: getting_started/kubernetes/1.md
-    - Function Routing: getting_started/kubernetes/2.md
+    - Basic Routing: getting_started/kubernetes/basic_routing.md
+    - Routing to external APIs: getting_started/kubernetes/external_api_routing.md
+    - Function Routing: getting_started/kubernetes/function_routing.md
 - CLI reference: cli.md
 - v1 API reference:
   - Overview: v1/gloo-gateway.md

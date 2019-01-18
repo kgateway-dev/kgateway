@@ -33,6 +33,7 @@ init:
 .PHONY: clean
 clean:
 	rm -rf _output
+	rm -fr site
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs

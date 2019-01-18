@@ -1,10 +1,15 @@
+## Function Routing
+
+Gloo builds on top of [Envoy proxy](https://www.envoyproxy.io) by giving it the ability to understand functions belonging to upstream clusters. Envoy (and most other gateways) are great at routing to backend clusters/services, but they don't know what functions (REST, gRPC, SOAP, etc) are exposed at each of those clusters/services. Gloo can dynamically discover and understand the details of a [Swagger](https://github.com/OAI/OpenAPI-Specification) or [gRPC reflection](https://github.com/grpc/grpc-go/blob/master/Documentation/server-reflection-tutorial.md), which can help make routing easier. In this tutorial, we'll take a look at Gloo's function routing and transformation capabilities. 
+
 ### What you'll need
 
-If you haven't already deployed Gloo and the example swagger service on kubernetes, [go back to the first tutorial](1.md)
+If you haven't already deployed Gloo and the example swagger service on kubernetes, [go back to the first tutorial](basic_routing.md)
 
 Now that we've seen the traditional routing functionality of Gloo (i.e. API-to-service), let's try doing some function routing.
 
 Let's take a look at the upstream that was created for our petstore service:
+        
 
          glooctl get upstream default-petstore-8080 -o yaml
 
