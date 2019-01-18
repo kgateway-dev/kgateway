@@ -46,8 +46,13 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 				manifest = glooKnativeManifestBytes
 			}
 
+			imageVersion := opts.Install.Version
+			if imageVersion == "" {
+				imageVersion = version.Version
+			}
+
 			kubectl := exec.Command("kubectl", "apply", "-f", "-")
-			updatedManifest := UpdateBytesWithVersion(manifest, version.Version)
+			updatedManifest := UpdateBytesWithVersion(manifest, imageVersion)
 			kubectl.Stdin = bytes.NewBuffer(updatedManifest)
 			kubectl.Stdout = os.Stdout
 			kubectl.Stderr = os.Stderr
