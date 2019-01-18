@@ -14,6 +14,73 @@ settings:
   # the namespace that Gloo should write discovery data (Upstreams)
   writeNamespace: "gloo-system"
 
+
+# NEW
+
+
+
+gloo:
+  deployment:
+    image:
+      tag: 0.6.0
+      repository: soloio/gloo
+      pullpolicy: always
+    xds_port: 9977
+
+discovery:
+  deployment:
+    image:
+      tag: 0.6.0
+      repository: soloio/discovery
+      pullpolicy: always
+
+gateway:
+  deployment:
+    image:
+      tag: 0.6.0
+      repository: soloio/gateway
+      pullpolicy: always
+
+gateway_proxy:
+  deployment:
+    image:
+      tag: 0.6.0
+      repository: soloio/gloo-envoy-wrapper
+      pullpolicy: always
+    http_port: 8080
+  configmap:
+    envoy:
+      static:
+        listeners:
+        clusters:
+
+ingress:
+  deployment:
+    image:
+      tag: 0.6.0
+      repository: soloio/ingress
+      pullpolicy: always
+
+
+ingress_proxy:
+  deployment:
+    image:
+      tag: 0.6.0
+      repository: soloio/gloo-envoy-wrapper
+      pullpolicy: always
+    http_port: 80
+    https_port: 443
+  configmap:
+    envoy:
+      static:
+        listeners:
+        clusters:
+
+
+
+
+# OLD
+
 deployment:
   imagePullPolicy: Always
   gloo:
