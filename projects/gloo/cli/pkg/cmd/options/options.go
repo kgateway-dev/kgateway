@@ -27,7 +27,8 @@ type Top struct {
 }
 
 type Install struct {
-	DockerAuth struct {
+	EnableKnative bool
+	DockerAuth    struct {
 		Email    string
 		Username string
 		Password string

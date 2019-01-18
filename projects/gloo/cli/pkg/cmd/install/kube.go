@@ -29,7 +29,8 @@ const (
 	imagePullSecretName = "solo-io-docker-secret"
 )
 
-//go:generate sh -c "2gobytes -p install -a kubeManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/kube.yaml | sed 's@// date.*@@g' > kube.yaml.go"
+//go:generate sh -c "2gobytes -p install -a glooManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/gloo.yaml | sed 's@// date.*@@g' > gloo.yaml.go"
+//go:generate sh -c "2gobytes -p install -a glooKnativeManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/gloo-knative.yaml | sed 's@// date.*@@g' > gloo-knative.yaml.go"
 
 func KubeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
@@ -40,9 +41,13 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
 				return errors.Wrapf(err, "creating image pull secret")
 			}
+			manifest := glooManifestBytes
+			if opts.Install.EnableKnative {
+				manifest = glooKnativeManifestBytes
+			}
 
 			kubectl := exec.Command("kubectl", "apply", "-f", "-")
-			updatedManifest := UpdateBytesWithVersion(kubeManifestBytes, version.Version)
+			updatedManifest := UpdateBytesWithVersion(manifest, version.Version)
 			kubectl.Stdin = bytes.NewBuffer(updatedManifest)
 			kubectl.Stdout = os.Stdout
 			kubectl.Stderr = os.Stderr
@@ -50,20 +55,20 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddDockerSecretFlags(pflags, &opts.Install)
+	flagutils.AddInstallFlags(pflags, &opts.Install)
 	return cmd
 }
 
-func UpdateBytesWithVersion(kubeManifestBytes []byte, version string) []byte {
+func UpdateBytesWithVersion(manifestBytes []byte, version string) []byte {
 	if version == "undefined" {
-		return kubeManifestBytes
+		return manifestBytes
 	}
-	manifest := string(kubeManifestBytes)
+	manifest := string(manifestBytes)
 	regexString := `image: soloio/\S+:(.+)`
 	regex := regexp.MustCompile(regexString)
 	matches := regex.FindStringSubmatch(manifest)
 	if len(matches) < 2 {
-		return kubeManifestBytes
+		return manifestBytes
 	}
 	oldVersion := matches[1]
 	updatedManifest := strings.Replace(manifest, oldVersion, version, -1)
