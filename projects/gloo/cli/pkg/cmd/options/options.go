@@ -38,8 +38,8 @@ type Install struct {
 }
 
 const (
-	ClusterProvider_GKE      = "GKE"
-	ClusterProvider_Minikube = "Minikube"
+	ClusterProvider_GKE       = "GKE"
+	ClusterProvider_BareMetal = "BareMetal"
 )
 
 type Gateway struct {

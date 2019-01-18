@@ -34,7 +34,7 @@ func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&opts.Gateway.ClusterProvider, "cluster-provider", options.ClusterProvider_Minikube, "Indicate which provider is hosting your kubernetes control plane. "+
+	cmd.PersistentFlags().StringVar(&opts.Gateway.ClusterProvider, "cluster-provider", options.ClusterProvider_BareMetal, "Indicate which provider is hosting your kubernetes control plane. "+
 		"If Kubernetes is running locally with minikube, specify 'Minikube' or leave empty. Note, this is not required if yoru "+
 		"kubernetes service is connected to an external load balancer, such as AWS ELB")
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
@@ -66,6 +66,7 @@ func getIngressHost(opts *options.Options) (string, error) {
 		for _, p := range svc.Spec.Ports {
 			if p.Name == opts.Gateway.Port {
 				svcPort = &p
+				break
 			}
 		}
 		if svcPort == nil {
@@ -83,10 +84,10 @@ func getIngressHost(opts *options.Options) (string, error) {
 		port = fmt.Sprintf("%v", svcPort.Port)
 	} else {
 		switch opts.Gateway.ClusterProvider {
-		case options.ClusterProvider_Minikube:
+		case options.ClusterProvider_BareMetal:
 			// assume nodeport on kubernetes
 			// TODO: support more types of NodePort services
-			host, err = minikubeIp()
+			host, err = getNodeIp()
 			if err != nil {
 				return "", errors.Wrapf(err, "")
 			}
@@ -99,8 +100,8 @@ func getIngressHost(opts *options.Options) (string, error) {
 
 }
 
-func minikubeIp() (string, error) {
-	kubectl := exec.Command("minikube", "ip")
+func getNodeIp() (string, error) {
+	kubectl := exec.Command("kubectl", "get", "node", "--output", "jsonpath={.items[0].status.addresses[0].address}")
 
 	hostname := &bytes.Buffer{}
 
