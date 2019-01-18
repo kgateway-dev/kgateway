@@ -24,7 +24,6 @@ spec:
 
 # custom added by ilackarms ^^^
 
-
 ---
 apiVersion: v1
 kind: Namespace

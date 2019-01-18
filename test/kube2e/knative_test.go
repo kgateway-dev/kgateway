@@ -86,7 +86,7 @@ func deleteKnative() error {
 }
 
 func KnativeManifest() string {
-	return filepath.Join(helpers.GlooDir(), "test", "kube2e", "artifacts", "knative-no-istio.yaml")
+	return filepath.Join(helpers.GlooDir(), "test", "kube2e", "artifacts", "knative-no-istio-0.3.0.yaml")
 }
 
 func KnativeTestService() string {
