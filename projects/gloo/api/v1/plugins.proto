@@ -48,6 +48,7 @@ message RoutePlugins {
     transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
+    Extensions extensions = 6;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
