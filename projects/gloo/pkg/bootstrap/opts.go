@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"net"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -23,6 +25,7 @@ type Opts struct {
 	WatchOpts       clients.WatchOpts
 	DevMode         bool
 	ControlPlane    ControlPlane
+	Extensions      *v1.Extensions
 }
 
 type ControlPlane struct {

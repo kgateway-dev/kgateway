@@ -94,6 +94,11 @@ steps:
   secretEnv: ['DOCKER_HUB_PASSWORD']
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
+  args: ['docker']
+  dir: './gopath/src/github.com/solo-io/gloo'
+  id: 'compile'
+
+- name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['release', 'docker-push', 'deploy-site', 'manifest']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'

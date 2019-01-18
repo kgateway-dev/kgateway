@@ -9,9 +9,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	"github.com/gogo/protobuf/types"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -27,8 +27,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/errutils"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"go.uber.org/zap"
@@ -39,7 +39,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type RunFunc func(opts bootstrap.Opts, extensionsSettings *v1.Extensions) error
+type RunFunc func(opts bootstrap.Opts) error
 
 func NewSetupFunc() setuputils.SetupFunc {
 	return NewSetupFuncWithRun(RunGloo)
@@ -47,8 +47,8 @@ func NewSetupFunc() setuputils.SetupFunc {
 
 // used outside of this repo
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
-	runWithExtensions := func(opts bootstrap.Opts, extensionsSettings *v1.Extensions) error {
-		return RunGlooWithExtensions(opts, extensions, extensionsSettings)
+	runWithExtensions := func(opts bootstrap.Opts) error {
+		return RunGlooWithExtensions(opts, extensions)
 	}
 	return NewSetupFuncWithRun(runWithExtensions)
 }
@@ -216,9 +216,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		// if nil, kube plugin disabled
 		KubeClient: clientset,
 		DevMode:    true,
+		Extensions: settings.Extensions,
 	}
 
-	return s.runFunc(opts, settings.Extensions)
+	return s.runFunc(opts)
 }
 
 type Extensions struct {
@@ -226,11 +227,11 @@ type Extensions struct {
 	SyncerExtensions []TranslatorSyncerExtension
 }
 
-func RunGloo(opts bootstrap.Opts, extensionsSettings *v1.Extensions) error {
-	return RunGlooWithExtensions(opts, Extensions{}, extensionsSettings)
+func RunGloo(opts bootstrap.Opts) error {
+	return RunGlooWithExtensions(opts, Extensions{})
 }
 
-func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, extensionsSettings *v1.Extensions) error {
+func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	watchOpts := opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
@@ -287,7 +288,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, extension
 		}
 	}
 
-	sync := NewTranslatorSyncer(translator.NewTranslator(plugins, extensionsSettings), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.SyncerExtensions)
+	sync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Extensions), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.SyncerExtensions)
 	eventLoop := v1.NewApiEventLoop(cache, sync)
 
 	errs := make(chan error)
