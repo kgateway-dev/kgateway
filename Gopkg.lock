@@ -1268,7 +1268,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:70484857b2a4135518adc6c3aa407ee3f83be664efd146a9b5e6949ac9187291"
+  digest = "1:de84f859aa3ec1714c0c35d6b643a85ffb0e0aec4095c93d4835d2c32dd68556"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1288,7 +1288,6 @@
     "pkg/api/v1/clients/memory",
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/control-plane/cache",
-    "pkg/api/v1/control-plane/client",
     "pkg/api/v1/control-plane/log",
     "pkg/api/v1/control-plane/server",
     "pkg/api/v1/control-plane/util",
@@ -1324,14 +1323,6 @@
   pruneopts = "UT"
   revision = "d46d5027113b8ee70fd1d23f866c8facbfbaf87a"
   version = "v0.2.17"
-
-[[projects]]
-  digest = "1:2c39ccb8524641d38cc102e48f9707068aed088ac6a872f1380c6143664c5304"
-  name = "github.com/solo-io/solo-projects"
-  packages = ["projects/gloo/pkg/api/v1/plugins/ratelimit"]
-  pruneopts = "UT"
-  revision = "af3d63fd52996aa761f426776705e2a659004fb5"
-  version = "v0.0.6"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -1569,12 +1560,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:eff11a4ed88d9d3e28dd697961c550af1c4d0d3dccdc6252715b9a65a1d541bb"
+  digest = "1:601e63e7d4577f907118bec825902505291918859d223bce015539e79f1160e3"
   name = "google.golang.org/genproto"
-  packages = [
-    "googleapis/api/annotations",
-    "googleapis/rpc/status",
-  ]
+  packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
   revision = "02b4e95473316948020af0b7a4f0f22c73929b0e"
 
@@ -2043,7 +2031,6 @@
     "github.com/inconshreveable/go-update",
     "github.com/jhump/protoreflect/desc",
     "github.com/jhump/protoreflect/grpcreflect",
-    "github.com/k0kubun/pp",
     "github.com/keybase/go-ps",
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
@@ -2065,7 +2052,6 @@
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/kubeutils",
-    "github.com/solo-io/go-utils/protoutils",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
@@ -2073,7 +2059,6 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache",
-    "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util",
     "github.com/solo-io/solo-kit/pkg/api/v1/propagator",
@@ -2094,7 +2079,6 @@
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",
-    "github.com/solo-io/solo-projects/projects/gloo/pkg/api/v1/plugins/ratelimit",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "go.opencensus.io/stats",
@@ -2102,8 +2086,6 @@
     "go.opencensus.io/tag",
     "go.opencensus.io/trace",
     "go.uber.org/zap",
-    "golang.org/x/net/context",
-    "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/reflection/grpc_reflection_v1alpha",

@@ -102,7 +102,7 @@ steps:
   id: 'compile'
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['release', 'docker-push', 'deploy-site', 'manifest']
+  args: ['docker-push', 'release', 'deploy-site', 'manifest']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
