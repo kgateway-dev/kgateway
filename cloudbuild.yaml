@@ -98,11 +98,12 @@ steps:
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
+    - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'compile'
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['release', 'docker-push', 'deploy-site', 'manifest']
+  args: ['docker-push', 'release', 'deploy-site', 'manifest']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
