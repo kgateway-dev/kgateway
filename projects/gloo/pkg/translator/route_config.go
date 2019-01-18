@@ -140,7 +140,7 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 			report(err, "translator error on route")
 		}
 
-		// run the plugins
+		// run the plugins for RoutePlugin
 		for _, plug := range t.plugins {
 			routePlugin, ok := plug.(plugins.RoutePlugin)
 			if !ok {
@@ -148,6 +148,16 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 			}
 			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
 				report(err, "plugin error on route")
+			}
+		}
+		// run the plugins for RoutePlugin
+		for _, plug := range t.plugins {
+			routePlugin, ok := plug.(plugins.RouteActionPlugin)
+			if !ok {
+				continue
+			}
+			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), nil, out.GetRoute()); err != nil {
+				report(err, "plugin error on process route action")
 			}
 		}
 	case *v1.Route_DirectResponseAction:
