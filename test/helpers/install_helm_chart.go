@@ -177,7 +177,7 @@ func WaitPodStatus(timeout, interval time.Duration, label, status string, finish
 				return errors.Errorf("%v in crash loop with logs %v", label, out)
 			}
 			if strings.Contains(out, "ErrImagePull") || strings.Contains(out, "ImagePullBackOff") {
-				out, _ = setup.KubectlOut("describe", "pod", "-l", "gloo="+label)
+				out, _ = setup.KubectlOut("describe", "pod", "-l", label)
 				return errors.Errorf("%v in ErrImagePull with description %v", label, out)
 			}
 			if finished(out) {
@@ -187,8 +187,8 @@ func WaitPodStatus(timeout, interval time.Duration, label, status string, finish
 	}
 }
 
-func KubeLogs(pod string) string {
-	out, err := setup.KubectlOut("logs", "-l", "gloo="+pod)
+func KubeLogs(label string) string {
+	out, err := setup.KubectlOut("logs", "-l", label)
 	if err != nil {
 		out = err.Error()
 	}
