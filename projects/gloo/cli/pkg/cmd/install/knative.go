@@ -40,7 +40,7 @@ func KnativeCmd(opts *options.Options) *cobra.Command {
 				imageVersion = version.Version
 			}
 
-			return applyManifest(glooManifestBytes, imageVersion)
+			return applyManifest(glooKnativeManifestBytes, imageVersion)
 		},
 	}
 	pflags := cmd.PersistentFlags()
