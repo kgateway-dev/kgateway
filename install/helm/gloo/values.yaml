@@ -10,9 +10,9 @@ settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: false
   # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
-  watchNamespaces: []
+  watch_namespaces: []
   # the namespace that Gloo should write discovery data (Upstreams)
-  writeNamespace: "gloo-system"
+  write_namespace: "gloo-system"
 
 
 # NEW
@@ -48,7 +48,7 @@ gateway_proxy:
       repository: soloio/gloo-envoy-wrapper
       pullpolicy: always
     http_port: 8080
-  configmap:
+  config_map:
     envoy:
       static:
         listeners:
@@ -70,7 +70,7 @@ ingress_proxy:
       pullpolicy: always
     http_port: 80
     https_port: 443
-  configmap:
+  config_map:
     envoy:
       static:
         listeners:
@@ -106,7 +106,7 @@ deployment:
     httpsPort: 443
     replicas: 1
 
-configmap:
+config_map:
   gatewayproxy:
     envoy:
       static:
