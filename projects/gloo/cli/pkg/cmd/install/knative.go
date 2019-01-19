@@ -57,6 +57,8 @@ func KnativeCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
+const knativeServingNamespace = "knative-serving"
+
 func knativeInstalled() (bool, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
@@ -71,7 +73,7 @@ func knativeInstalled() (bool, error) {
 		return false, err
 	}
 	for _, ns := range namespaces.Items {
-		if ns.Name == "knative-serving" {
+		if ns.Name == knativeServingNamespace {
 			return true, nil
 		}
 	}
