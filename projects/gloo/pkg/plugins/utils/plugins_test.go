@@ -106,6 +106,46 @@ var _ = Describe("Plugins", func() {
 			err = UnmarshalExtension(vhost.GetVirtualHostPlugins(), "test", outm)
 			Expect(outm).To(Equal(orginalMessage))
 		})
+
+		It("should work with route plugins", func() {
+
+			orginalMessage := &types.Api{Name: "test"}
+			pluginstruct, err := util.MessageToStruct(orginalMessage)
+			Expect(err).NotTo(HaveOccurred())
+
+			route := v1.Route{
+				RoutePlugins: &v1.RoutePlugins{
+					Extensions: &v1.Extensions{
+						Configs: map[string]*types.Struct{
+							"test": pluginstruct,
+						},
+					},
+				},
+			}
+			outm := new(types.Api)
+
+			err = UnmarshalExtension(route.GetRoutePlugins(), "test", outm)
+			Expect(outm).To(Equal(orginalMessage))
+		})
+
+		It("should work with secret plugins", func() {
+
+			orginalMessage := &types.Api{Name: "test"}
+			pluginstruct, err := util.MessageToStruct(orginalMessage)
+			Expect(err).NotTo(HaveOccurred())
+
+			secret := v1.Secret{
+				Kind: &v1.Secret_Extension{
+					Extension: &v1.Extension{
+						Config: pluginstruct,
+					},
+				},
+			}
+			outm := new(types.Api)
+
+			err = ExtensionToProto(secret.Kind.(*v1.Secret_Extension).Extension, "test", outm)
+			Expect(outm).To(Equal(orginalMessage))
+		})
 	})
 
 })
