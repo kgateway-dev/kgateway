@@ -6,6 +6,7 @@ type Image struct {
 	Tag        string `json:"tag"`
 	Repository string `json:"repository"`
 	PullPolicy string `json:"pull_policy"`
+	PullSecret string `json:"pull_secret"`
 }
 
 type Envoy struct {
@@ -15,6 +16,10 @@ type Envoy struct {
 type EnvoyStatic struct {
 	Listeners []string `json:"listeners"`
 	Clusters  []string `json:"clusters"`
+}
+
+type DeploymentSpec struct {
+	Replicas int `json:"replicas"`
 }
 
 // Gloo
@@ -30,6 +35,7 @@ type Gloo struct {
 type GlooDeployment struct {
 	Image   Image  `json:"image"`
 	XdsPort string `json:"xds_port"`
+	*DeploymentSpec
 }
 
 type Discovery struct {
@@ -38,6 +44,7 @@ type Discovery struct {
 
 type DiscoveryDeployment struct {
 	Image Image `json:"image"`
+	*DeploymentSpec
 }
 
 type Gateway struct {
@@ -46,6 +53,7 @@ type Gateway struct {
 
 type GatewayDeployment struct {
 	Image Image `json:"image"`
+	*DeploymentSpec
 }
 
 type GatewayProxy struct {
@@ -68,6 +76,7 @@ type Ingress struct {
 
 type IngressDeployment struct {
 	Image Image `json:"image"`
+	*DeploymentSpec
 }
 
 type IngressProxy struct {
@@ -79,6 +88,7 @@ type IngressProxyDeployment struct {
 	Image     Image  `json:"image"`
 	HttpPort  string `json:"http_port"`
 	HttpsPort string `json:"https_port"`
+	*DeploymentSpec
 }
 
 type IngressProxyConfigMap struct {

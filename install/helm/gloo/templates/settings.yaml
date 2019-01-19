@@ -12,9 +12,8 @@ spec:
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
-{{- if gt (len .Values.settings.watchNamespaces) 0 }}
+{{- with .Values.settings.watchNamespaces }}
   watchNamespaces:
-{{- range .Values.settings.watchNamespaces }}
   - {{ . }}
 {{- end }}
 {{- end }}

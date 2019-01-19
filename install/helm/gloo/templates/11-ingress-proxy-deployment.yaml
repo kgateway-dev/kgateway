@@ -7,7 +7,7 @@ metadata:
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.deployment.ingressProxy.replicas }}
+  replicas: {{ .Values.ingress_proxy.deployment.replicas }}
   selector:
     matchLabels:
       gloo: ingress-proxy
@@ -27,14 +27,14 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ .Values.deployment.ingressProxy.image }}
-        imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
+        image: "{{ .Values.ingress_proxy.deployment.image.repository }}:{{ .Values.ingress_proxy.deployment.image.tag }}"
+        imagePullPolicy: {{ .Values.ingress_proxy.deployment.image.pull_policy }}
         name: ingress-proxy
         ports:
-        - containerPort: {{ .Values.deployment.ingressProxy.httpPort }}
+        - containerPort: {{ .Values.ingress_proxy.deployment.http_port }}
           name: http
           protocol: TCP
-        - containerPort: {{ .Values.deployment.ingressProxy.httpsPort }}
+        - containerPort: {{ .Values.ingress_proxy.deployment.https_port }}
           name: https
           protocol: TCP
         volumeMounts:

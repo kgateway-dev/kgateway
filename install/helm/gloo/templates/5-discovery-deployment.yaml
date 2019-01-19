@@ -7,7 +7,7 @@ metadata:
   name: discovery
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.deployment.discovery.replicas }}
+  replicas: {{ .Values.discovery.deployment.replicas }}
   selector:
     matchLabels:
       gloo: discovery
@@ -17,8 +17,8 @@ spec:
         gloo: discovery
     spec:
       containers:
-      - image: {{ .Values.deployment.discovery.image }}
-        imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
+      - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
+        imagePullPolicy: {{ .Values.discovery.deployment.image.pull_policy }}
         name: discovery
         args: ["--namespace={{.Release.Namespace}}" ]
 

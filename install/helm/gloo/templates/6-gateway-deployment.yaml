@@ -7,7 +7,7 @@ metadata:
   name: gateway
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.deployment.gateway.replicas }}
+  replicas: {{ .Values.gateway.deployment.replicas }}
   selector:
     matchLabels:
       gloo: gateway
@@ -17,7 +17,7 @@ spec:
         gloo: gateway
     spec:
       containers:
-      - image: {{ .Values.deployment.gateway.image }}
-        imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
+      - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
+        imagePullPolicy: {{ .Values.gateway.deployment.image.pull_policy }}
         name: gateway
         args: ["--namespace", "{{.Release.Namespace}}" ]

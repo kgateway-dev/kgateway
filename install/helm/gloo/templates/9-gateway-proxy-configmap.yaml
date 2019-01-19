@@ -1,13 +1,14 @@
-# configmap
+# config_map
 apiVersion: v1
 data:
+  {{- if (empty .Values.gateway_proxy.config_map.data) }}
   envoy.yaml: |
     node:
-      cluster: gateway
+      cluster: ingress
       id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
       metadata:
         # this line must match !
-        role: "{{ .Release.Namespace }}~gateway-proxy"
+        role: "{{ .Release.Namespace }}~ingress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster
@@ -20,14 +21,9 @@ data:
                 address:
                   socket_address:
                     address: gloo
-                    port_value: {{ .Values.deployment.gloo.xdsPort }}
+                    port_value: {{ .Values.gloo.deployment.xds_port }}
         http2_protocol_options: {}
         type: STRICT_DNS
-{{- with .Values.configmap.gatewayproxy.envoy.static.clusters }}
-{{ toYaml . | indent 6}}{{ end }}
-{{- with .Values.configmap.gatewayproxy.envoy.static.listeners }}
-      listeners:
-{{ toYaml . | indent 6}}{{end}}
     dynamic_resources:
       ads_config:
         api_type: GRPC
@@ -43,6 +39,7 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
+  {{- else}}{{ toYaml .Values.gateway_proxy.config_map.data | indent 2}}{{- end}}
 kind: ConfigMap
 metadata:
   labels:

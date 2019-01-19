@@ -9,7 +9,7 @@ metadata:
 spec:
   ports:
   - name: grpc
-    port: {{ .Values.deployment.gloo.xdsPort }}
+    port: {{ .Values.gloo.deployment.xds_port }}
     protocol: TCP
   selector:
     gloo: gloo

@@ -18,48 +18,50 @@ settings:
 # NEW
 
 
-
 gloo:
   deployment:
     image:
       tag: 0.6.0
       repository: soloio/gloo
-      pullpolicy: always
+      pull_policy: Always
     xds_port: 9977
+    replicas: 1
 
 discovery:
   deployment:
     image:
       tag: 0.6.0
       repository: soloio/discovery
-      pullpolicy: always
+      pull_policy: Always
+    replicas: 1
 
 gateway:
   deployment:
     image:
       tag: 0.6.0
       repository: soloio/gateway
-      pullpolicy: always
+      pull_policy: Always
+    replicas: 1
 
 gateway_proxy:
   deployment:
     image:
       tag: 0.6.0
       repository: soloio/gloo-envoy-wrapper
-      pullpolicy: always
+      pull_policy: Always
     http_port: 8080
+    replicas: 1
   config_map:
-    envoy:
-      static:
-        listeners:
-        clusters:
+    data: ""
+
 
 ingress:
   deployment:
     image:
       tag: 0.6.0
       repository: soloio/ingress
-      pullpolicy: always
+      pull_policy: Always
+    replicas: 1
 
 
 ingress_proxy:
@@ -67,7 +69,7 @@ ingress_proxy:
     image:
       tag: 0.6.0
       repository: soloio/gloo-envoy-wrapper
-      pullpolicy: always
+      pull_policy: Always
     http_port: 80
     https_port: 443
   config_map:
@@ -76,45 +78,4 @@ ingress_proxy:
         listeners:
         clusters:
 
-
-
-
-# OLD
-
-deployment:
-  imagePullPolicy: Always
-  gloo:
-    xdsPort: 9977
-    image: soloio/gloo:0.6.5
-    replicas: 1
-  discovery:
-    image: soloio/discovery:0.6.5
-    replicas: 1
-  gateway:
-    image: soloio/gateway:0.6.5
-    replicas: 1
-  gatewayProxy:
-    image: soloio/gloo-envoy-wrapper:0.6.5
-    httpPort: 8080
-    replicas: 1
-  ingress:
-    image: soloio/ingress:0.6.5
-    replicas: 1
-  ingressProxy:
-    image: soloio/gloo-envoy-wrapper:0.6.5
-    httpPort: 80
-    httpsPort: 443
-    replicas: 1
-
-config_map:
-  gatewayproxy:
-    envoy:
-      static:
-        listeners:
-        clusters:
-  ingressproxy:
-    envoy:
-      static:
-        listeners:
-        clusters:
 

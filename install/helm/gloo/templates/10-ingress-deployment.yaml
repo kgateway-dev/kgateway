@@ -7,7 +7,7 @@ metadata:
   name: ingress
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.deployment.ingress.replicas }}
+  replicas: {{ .Values.ingress.deployment.replicas }}
   selector:
     matchLabels:
       gloo: ingress
@@ -17,8 +17,8 @@ spec:
         gloo: ingress
     spec:
       containers:
-      - image: {{ .Values.deployment.ingress.image }}
-        imagePullPolicy: {{ .Values.deployment.imagePullPolicy }}
+      - image: "{{ .Values.ingress.deployment.image.repository }}:{{ .Values.ingress.deployment.image.tag }}"
+        imagePullPolicy: {{ .Values.ingress.deployment.image.pull_policy }}
         name: ingress
         args: ["--namespace", "{{.Release.Namespace}}" ]
 {{- if .Values.settings.integrations.knative.enabled }}

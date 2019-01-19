@@ -57,16 +57,16 @@ metadata:
 
 ---
 # Source: gloo/templates/9-gateway-proxy-configmap.yaml
-# configmap
+# config_map
 apiVersion: v1
 data:
   envoy.yaml: |
     node:
-      cluster: gateway
+      cluster: ingress
       id: "{{.PodName}}.{{.PodNamespace}}"
       metadata:
         # this line must match !
-        role: "gloo-system~gateway-proxy"
+        role: "gloo-system~ingress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster
@@ -97,7 +97,7 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
-kind: ConfigMap
+    kind: ConfigMap
 metadata:
   labels:
     app: gloo
@@ -230,7 +230,11 @@ spec:
         gloo: ingress
     spec:
       containers:
+<<<<<<< HEAD:install/gloo.yaml
       - image: soloio/ingress:0.6.5
+=======
+      - image: "soloio/ingress:0.6.0"
+>>>>>>> value changes:install/kube.yaml
         imagePullPolicy: Always
         name: ingress
         args: ["--namespace", "gloo-system" ]
@@ -266,7 +270,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+<<<<<<< HEAD:install/gloo.yaml
         image: soloio/gloo-envoy-wrapper:0.6.5
+=======
+        image: "soloio/gloo-envoy-wrapper:0.6.0"
+>>>>>>> value changes:install/kube.yaml
         imagePullPolicy: Always
         name: ingress-proxy
         ports:
@@ -304,7 +312,11 @@ spec:
         gloo: gloo
     spec:
       containers:
+<<<<<<< HEAD:install/gloo.yaml
       - image: soloio/gloo:0.6.5
+=======
+      - image: "soloio/gloo:0.6.0"
+>>>>>>> value changes:install/kube.yaml
         imagePullPolicy: Always
         name: gloo
         ports:
@@ -335,7 +347,7 @@ spec:
         gloo: discovery
     spec:
       containers:
-      - image: soloio/discovery:0.6.5
+      - image: "soloio/discovery:0.6.0"
         imagePullPolicy: Always
         name: discovery
         args: ["--namespace=gloo-system" ]
@@ -362,7 +374,7 @@ spec:
         gloo: gateway
     spec:
       containers:
-      - image: soloio/gateway:0.6.5
+      - image: "soloio/gateway:0.6.0"
         imagePullPolicy: Always
         name: gateway
         args: ["--namespace", "gloo-system" ]
@@ -426,5 +438,25 @@ spec:
 
 ---
 # Source: gloo/templates/settings.yaml
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  bindAddr: 0.0.0.0:9977
+  discoveryNamespace: 
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
 
+---
+# Source: gloo/templates/14-clusteringress-proxy-deployment.yaml
+
+---
+# Source: gloo/templates/15-clusteringress-proxy-configmap.yaml
+
+---
+# Source: gloo/templates/16-clusteringress-proxy-service.yaml
 
