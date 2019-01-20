@@ -63,10 +63,10 @@ data:
   envoy.yaml: |
     node:
       cluster: ingress
-      id: "{{.PodName}}.{{.PodNamespace}}"
+      id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
       metadata:
         # this line must match !
-        role: "gloo-system~ingress-proxy"
+        role: "{{ .Release.Namespace }}~ingress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster
@@ -79,7 +79,7 @@ data:
                 address:
                   socket_address:
                     address: gloo
-                    port_value: 9977
+                    port_value: {{ .Values.gloo.deployment.xds_port }}
         http2_protocol_options: {}
         type: STRICT_DNS
     dynamic_resources:
@@ -97,7 +97,8 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
-    kind: ConfigMap
+  
+kind: ConfigMap
 metadata:
   labels:
     app: gloo

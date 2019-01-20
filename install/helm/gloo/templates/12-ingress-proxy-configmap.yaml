@@ -1,7 +1,7 @@
 # configmap
 apiVersion: v1
 data:
-  {{- if (empty .Values.ingress_proxy.config_map.data) }}
+{{ if (empty .Values.ingress_proxy.config_map.data) }}
   envoy.yaml: |
     node:
       cluster: ingress
@@ -39,7 +39,7 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
-    {{- else}}{{ toYaml .Values.ingress_proxy.config_map.data | indent 2}}{{- end}}
+{{- else}}{{ toYaml .Values.ingress_proxy.config_map.data | indent 2}}{{- end}}
 kind: ConfigMap
 metadata:
   labels:
