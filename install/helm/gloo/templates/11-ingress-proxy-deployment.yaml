@@ -15,6 +15,9 @@ spec:
     metadata:
       labels:
         gloo: ingress-proxy
+{{- with .Values.ingress_proxy.deployment.extra_annotations }}
+      annotations:
+{{toYaml  . | indent 8}}{{- end }}
     spec:
       containers:
       - args: ["--disable-hot-restart"]
@@ -37,6 +40,8 @@ spec:
         - containerPort: {{ .Values.ingress_proxy.deployment.https_port }}
           name: https
           protocol: TCP
+{{- with .Values.ingress_proxy.deployment.extra_ports }}
+{{toYaml  . | indent 8}}{{- end }}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config

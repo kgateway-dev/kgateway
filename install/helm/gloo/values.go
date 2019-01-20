@@ -62,8 +62,10 @@ type GatewayProxy struct {
 }
 
 type GatewayProxyDeployment struct {
-	Image    Image  `json:"image"`
-	HttpPort string `json:"http_port"`
+	Image       Image             `json:"image"`
+	HttpPort    string            `json:"http_port"`
+	ExtraPorts       map[string]string `json:"extra_ports"`
+	ExtraAnnotations map[string]string `json:"extra_annotations"`
 }
 
 type GatewayProxyConfigMap struct {
@@ -85,9 +87,11 @@ type IngressProxy struct {
 }
 
 type IngressProxyDeployment struct {
-	Image     Image  `json:"image"`
-	HttpPort  string `json:"http_port"`
-	HttpsPort string `json:"https_port"`
+	Image            Image             `json:"image"`
+	HttpPort         string            `json:"http_port"`
+	HttpsPort        string            `json:"https_port"`
+	ExtraPorts       map[string]string `json:"extra_ports"`
+	ExtraAnnotations map[string]string `json:"extra_annotations"`
 	*DeploymentSpec
 }
 

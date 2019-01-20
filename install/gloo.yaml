@@ -11,6 +11,7 @@ metadata:
 # configmap
 apiVersion: v1
 data:
+
   envoy.yaml: |
     node:
       cluster: ingress
@@ -60,13 +61,14 @@ metadata:
 # config_map
 apiVersion: v1
 data:
+
   envoy.yaml: |
     node:
       cluster: ingress
-      id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
+      id: "{{.PodName}}.{{.PodNamespace}}"
       metadata:
         # this line must match !
-        role: "{{ .Release.Namespace }}~ingress-proxy"
+        role: "gloo-system~ingress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster
@@ -79,7 +81,7 @@ data:
                 address:
                   socket_address:
                     address: gloo
-                    port_value: {{ .Values.gloo.deployment.xds_port }}
+                    port_value: 9977
         http2_protocol_options: {}
         type: STRICT_DNS
     dynamic_resources:
@@ -97,7 +99,6 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
-  
 kind: ConfigMap
 metadata:
   labels:
@@ -285,6 +286,10 @@ spec:
         - containerPort: 443
           name: https
           protocol: TCP
+        - containerPort: 8081
+          name: stats
+          protocol: TCP
+        
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
@@ -418,6 +423,10 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
+        - containerPort: 8081
+          name: stats
+          protocol: TCP
+        
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config

@@ -15,6 +15,9 @@ spec:
     metadata:
       labels:
         gloo: gateway-proxy
+{{- with .Values.gateway_proxy.deployment.extra_annotations }}
+      annotations:
+{{toYaml  . | indent 8}}{{- end }}
     spec:
       containers:
       - args: ["--disable-hot-restart"]
@@ -34,6 +37,8 @@ spec:
         - containerPort: {{ .Values.gateway_proxy.deployment.http_port }}
           name: http
           protocol: TCP
+{{- with .Values.gateway_proxy.deployment.extra_ports }}
+{{toYaml  . | indent 8}}{{- end }}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
