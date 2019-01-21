@@ -279,7 +279,10 @@ RELEASE_BINARIES :=
 ifeq ($(RELEASE),"true")
 	RELEASE_BINARIES := \
 		$(OUTPUT_DIR)/glooctl-linux-amd64 \
-		$(OUTPUT_DIR)/glooctl-darwin-amd64
+		$(OUTPUT_DIR)/glooctl-darwin-amd64 \
+		install/gloo.yaml \
+		install/gloo-knative.yaml \
+		install/integrations/knative-no-istio-0.3.0.yaml
 endif
 
 .PHONY: release-binaries

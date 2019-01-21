@@ -2,7 +2,6 @@ package install
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -32,9 +31,6 @@ const (
 	imagePullSecretName = "solo-io-docker-secret"
 )
 
-//go:generate sh -c "2gobytes -p install -a glooManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/gloo.yaml | sed 's@// date.*@@g' > gloo.yaml.go"
-//go:generate sh -c "2gobytes -p install -a glooKnativeManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/gloo-knative.yaml | sed 's@// date.*@@g' > gloo-knative.yaml.go"
-
 func KubeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kube",
@@ -53,18 +49,21 @@ func KubeCmd(opts *options.Options) *cobra.Command {
 				imageVersion = version.Version
 			}
 
-			manifest := glooManifestBytes
-
-			if opts.Install.DryRun {
-				fmt.Printf("%s", manifest)
-				return nil
+			glooManifestBytes, err := readGlooManifest(imageVersion)
+			if err != nil {
+				return errors.Wrapf(err, "reading gloo manifest")
 			}
-			return applyManifest(manifest, imageVersion)
+			return applyManifest(glooManifestBytes, imageVersion)
 		},
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
 	return cmd
+}
+
+func readGlooManifest(version string) ([]byte, error) {
+	urlTemplate := "https://github.com/solo-io/gloo/releases/download/v%s/gloo.yaml"
+	return ReadManifest(version, urlTemplate)
 }
 
 func applyManifest(manifest []byte, imageVersion string) error {

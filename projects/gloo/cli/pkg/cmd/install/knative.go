@@ -19,8 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:generate sh -c "2gobytes -p install -a knativeManifestBytes -i ${GOPATH}/src/github.com/solo-io/gloo/install/integrations/knative-no-istio-0.3.0.yaml | sed 's@// date.*@@g' > knative.yaml.go"
-
 func KnativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "knative",
@@ -31,7 +29,17 @@ func KnativeCmd(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			imageVersion := opts.Install.Version
+			if imageVersion == "" {
+				imageVersion = version.Version
+			}
+
 			if !installed {
+				knativeManifestBytes, err := readKnativeManifest(imageVersion)
+				if err != nil {
+					return errors.Wrapf(err, "reading knative manifest")
+				}
 				kubectl := exec.Command("kubectl", "apply", "-f", "-")
 				kubectl.Stdin = bytes.NewBuffer(knativeManifestBytes)
 				kubectl.Stdout = os.Stdout
@@ -45,23 +53,31 @@ func KnativeCmd(opts *options.Options) *cobra.Command {
 				return errors.Wrapf(err, "creating image pull secret")
 			}
 
-			imageVersion := opts.Install.Version
-			if imageVersion == "" {
-				imageVersion = version.Version
+			glooKnativeManifestBytes, err := readGlooKnativeManifest(imageVersion)
+			if err != nil {
+				return errors.Wrapf(err, "reading gloo knative manifest")
 			}
-
-			manifest := glooKnativeManifestBytes
 
 			if opts.Install.DryRun {
-				fmt.Printf("%s", manifest)
+				fmt.Printf("%s", glooKnativeManifestBytes)
 				return nil
 			}
-			return applyManifest(manifest, imageVersion)
+			return applyManifest(glooKnativeManifestBytes, imageVersion)
 		},
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
 	return cmd
+}
+
+func readKnativeManifest(version string) ([]byte, error) {
+	urlTemplate := "https://github.com/solo-io/gloo/releases/download/v%s/knative-no-istio-0.3.0.yaml"
+	return ReadManifest(version, urlTemplate)
+}
+
+func readGlooKnativeManifest(version string) ([]byte, error) {
+	urlTemplate := "https://github.com/solo-io/gloo/releases/download/v%s/gloo-knative.yaml"
+	return ReadManifest(version, urlTemplate)
 }
 
 const knativeServingNamespace = "knative-serving"
