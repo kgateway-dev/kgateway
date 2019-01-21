@@ -195,8 +195,10 @@ func getRestDestinationSpecInteractive(spec *options.RestDestinationSpec, restSp
 func AddRouteFlagsInteractive(opts *options.Options) error {
 	// collect vs list
 	vsByKey := make(map[string]core.ResourceRef)
-	vsKeys := []string{"leave empty (a virtualservice will be selected or created)"}
+	vsKeys := []string{"create a new virtualservice"}
+	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces() {
+		namespaces = append(namespaces, ns)
 		vsList, err := helpers.MustVirtualServiceClient().List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
@@ -207,31 +209,41 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 			vsKeys = append(vsKeys, ref.Key())
 		}
 	}
-	if len(vsKeys) == 0 {
-		fmt.Printf("no virtual services found, " +
-			"a default one will be created for this route\n")
-	} else {
-		var vsKey string
+
+	var vsKey string
+	if err := cliutil.ChooseFromList(
+		"Choose a Virtual Service to add the route to: (empty to add "+
+			"to a default virtual service. the default virtual service matches "+
+			"the '*' domain and will be created if it does not exist) ",
+		&vsKey,
+		vsKeys,
+	); err != nil {
+		return err
+	}
+	opts.Metadata.Name = vsByKey[vsKey].Name
+	opts.Metadata.Namespace = vsByKey[vsKey].Namespace
+
+	if opts.Metadata.Name == "" || opts.Metadata.Namespace == "" {
+		if err := cliutil.GetStringInput("name of the virtual service: ", &opts.Metadata.Name); err != nil {
+			return err
+		}
 		if err := cliutil.ChooseFromList(
-			"Choose a Virtual Service to add the route to: (empty to add "+
-				"to a default virtual service. the default virtual service matches "+
-				"the '*' domain and will be created if it does not exist) ",
-			&vsKey,
-			vsKeys,
+			"namespace of the virtual service: ",
+			&opts.Metadata.Namespace,
+			namespaces,
 		); err != nil {
 			return err
 		}
-		opts.Metadata.Name = vsByKey[vsKey].Name
-		opts.Metadata.Namespace = vsByKey[vsKey].Namespace
-	}
-
-	if err := cliutil.GetUint32InputDefault(
-		fmt.Sprintf("where do you want to insert the route in the "+
-			"virtual service's route list? "),
-		&opts.Add.Route.InsertIndex,
-		0,
-	); err != nil {
-		return err
+	} else {
+		// only get the insert index if the vs is predefined
+		if err := cliutil.GetUint32InputDefault(
+			fmt.Sprintf("where do you want to insert the route in the "+
+				"virtual service's route list? "),
+			&opts.Add.Route.InsertIndex,
+			0,
+		); err != nil {
+			return err
+		}
 	}
 
 	if err := getMatcherInteractive(&opts.Add.Route.Matcher); err != nil {

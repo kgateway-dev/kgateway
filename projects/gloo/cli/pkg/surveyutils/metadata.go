@@ -6,7 +6,7 @@ import (
 )
 
 func MetadataSurvey(metadata *core.Metadata) error {
-	if err := cliutil.GetStringInput("name of the resource: ", &metadata.Namespace); err != nil {
+	if err := cliutil.GetStringInput("name of the resource: ", &metadata.Name); err != nil {
 		return err
 	}
 	if err := cliutil.GetStringInput("namespace of the resource: ", &metadata.Namespace); err != nil {
