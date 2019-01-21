@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 namespace:
   create: true
 rbac:
@@ -15,14 +14,12 @@ settings:
   # the namespace that Gloo should write discovery data (Upstreams)
   writeNamespace: "gloo-system"
 
-
 # NEW
 
 
 gloo:
   deployment:
     image:
-      tag: 0.6.0
       repository: soloio/gloo
       pullPolicy: Always
     xdsPort: 9977
@@ -31,53 +28,44 @@ gloo:
 discovery:
   deployment:
     image:
-      pullPolicy: Always
       repository: soloio/discovery
-      tag: 0.6.6
+      pullPolicy: Always
     replicas: 1
+
 gateway:
   deployment:
     image:
-      pullPolicy: Always
       repository: soloio/gateway
-      tag: 0.6.6
+      pullPolicy: Always
     replicas: 1
+
 gatewayProxy:
+  deployment:
+    image:
+      repository: soloio/gloo-envoy-wrapper
+      pullPolicy: Always
+    httpPort: 8080
+    replicas: 1
   configMap:
     data: ""
-  deployment:
-    httpPort: "8080"
-    image:
-      pullPolicy: Always
-      repository: soloio/gloo-envoy-wrapper
-      tag: 0.6.6
-gloo:
-  deployment:
-    image:
-      pullPolicy: Always
-      repository: soloio/gloo
-      tag: 0.6.6
-    replicas: 1
-    xdsPort: "9977"
+
+
 ingress:
   deployment:
     image:
-      pullPolicy: Always
       repository: soloio/ingress
-      tag: 0.6.6
+      pullPolicy: Always
     replicas: 1
+
+
 ingressProxy:
+  deployment:
+    image:
+      repository: soloio/gloo-envoy-wrapper
+      pullPolicy: Always
+    httpPort: 80
+    httpsPort: 443
+    replicas: 1
   configMap:
     data: ""
-  deployment:
-    httpPort: "80"
-    httpsPort: "443"
-    image:
-      pullPolicy: Always
-    http_port: 80
-    https_port: 443
-  config_map:
-    envoy:
-      static:
-        listeners:
-        clusters:
+

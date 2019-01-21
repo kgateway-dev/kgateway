@@ -1,31 +1,48 @@
-package gloo
+package generate
+
+type Config struct {
+	Namespace    Namespace `json:"namespace"`
+	Rbac         Rbac `json:"rbac"`
+	Settings     Settings `json:"settings"`
+	Gloo         Gloo `json:"gloo"`
+	Discovery    Discovery `json:"discovery"`
+	Gateway      Gateway `json:"gateway"`
+	GatewayProxy GatewayProxy `json:"gatewayProxy"`
+	Ingress      Ingress `json:"ingress"`
+	IngressProxy IngressProxy `json:"ingressProxy"`
+}
+
+type Namespace struct {
+	Create bool `json:"create"`
+}
+
+type Rbac struct {
+	Create bool `json:"create"`
+}
 
 // Common
 type Image struct {
-	Name       string `json:"name"`
 	Tag        string `json:"tag"`
 	Repository string `json:"repository"`
 	PullPolicy string `json:"pullPolicy"`
-	PullSecret string `json:"pullSecret"`
-}
-
-type Envoy struct {
-	Static EnvoyStatic `json:"static"`
-}
-
-type EnvoyStatic struct {
-	Listeners []string `json:"listeners"`
-	Clusters  []string `json:"clusters"`
+	PullSecret string `json:"pullSecret,omitempty"`
 }
 
 type DeploymentSpec struct {
 	Replicas int `json:"replicas"`
 }
 
-// Gloo
+type Integrations struct {
+	Knative Knative `json:"knative"`
+}
+type Knative struct {
+	Enabled bool `json:"enabled"`
+}
+
 type Settings struct {
 	WatchNamespaces []string `json:"watchNamespaces"`
 	WriteNamespace  string   `json:"writeNamespace"`
+	Integrations    Integrations `json:"integrations"`
 }
 
 type Gloo struct {
@@ -34,7 +51,7 @@ type Gloo struct {
 
 type GlooDeployment struct {
 	Image   Image  `json:"image"`
-	XdsPort string `json:"xds_port"`
+	XdsPort string `json:"xdsPort"`
 	*DeploymentSpec
 }
 
@@ -62,14 +79,14 @@ type GatewayProxy struct {
 }
 
 type GatewayProxyDeployment struct {
-	Image       Image             `json:"image"`
-	HttpPort    string            `json:"httpPort"`
-	ExtraPorts       map[string]string `json:"extraPorts"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations"`
+	Image            Image             `json:"image"`
+	HttpPort         string            `json:"httpPort"`
+	ExtraPorts       map[string]string `json:"extraPorts,omitempty"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {
-	Envoy Envoy `json:"envoy"`
+	Data string `json:"data"`
 }
 
 type Ingress struct {
@@ -89,12 +106,12 @@ type IngressProxy struct {
 type IngressProxyDeployment struct {
 	Image            Image             `json:"image"`
 	HttpPort         string            `json:"httpPort"`
-	HttpsPort        string            `json:"https_port"`
-	ExtraPorts       map[string]string `json:"extraPorts"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations"`
+	HttpsPort        string            `json:"httpsPort"`
+	ExtraPorts       map[string]string `json:"extraPorts,omitempty"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec
 }
 
 type IngressProxyConfigMap struct {
-	Envoy Envoy `json:"envoy"`
+	Data string `json:"data"`
 }
