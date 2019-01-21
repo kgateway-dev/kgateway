@@ -14,9 +14,6 @@ settings:
   # the namespace that Gloo should write discovery data (Upstreams)
   writeNamespace: "gloo-system"
 
-# NEW
-
-
 gloo:
   deployment:
     image:
