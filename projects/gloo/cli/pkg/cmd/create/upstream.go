@@ -47,8 +47,6 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		},
 	}
 
-	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	cmd.AddCommand(
 		createUpstreamSubcommand(opts,
 			options.UpstreamType_Aws,

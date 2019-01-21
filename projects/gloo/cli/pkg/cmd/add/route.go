@@ -48,7 +48,6 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddRouteFlags(pflags, &opts.Add.Route)
 	cliutils.ApplyOptions(cmd, optionsFunc)
@@ -80,11 +79,7 @@ func selectOrCreateVirtualService(opts *options.Options) (*gatewayv1.VirtualServ
 		}
 	}
 
-	// TODO: edge case: check that default vs does not already exist with no * domains
-	if opts.Metadata.Name == "" {
-		opts.Metadata.Name = "default"
-	}
-
+	// TODO: edge case: check that a vs does not already exist with a * domain
 	// no vs exist with default domain
 	fmt.Printf("creating virtualservice %v with default domain *\n", opts.Metadata.Name)
 	return &gatewayv1.VirtualService{
