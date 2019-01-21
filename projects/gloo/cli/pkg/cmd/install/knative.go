@@ -2,6 +2,7 @@ package install
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -49,7 +50,13 @@ func KnativeCmd(opts *options.Options) *cobra.Command {
 				imageVersion = version.Version
 			}
 
-			return applyManifest(glooKnativeManifestBytes, imageVersion)
+			manifest := glooKnativeManifestBytes
+
+			if opts.Install.DryRun {
+				fmt.Printf("%s", manifest)
+				return nil
+			}
+			return applyManifest(manifest, imageVersion)
 		},
 	}
 	pflags := cmd.PersistentFlags()
