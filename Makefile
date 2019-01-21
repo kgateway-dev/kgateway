@@ -247,11 +247,11 @@ HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm
 
 .PHONY: manifest
-manifest: install/gloo.yaml bump-helm-version update-helm-chart
+manifest: prepare-helm install/gloo.yaml install/gloo-knative.yaml update-helm-chart
 
-bump-helm-version:
-	sed -i 's/version: .*/version: $(VERSION)/g' install/helm/gloo/Chart.yaml
-	sed -i 's@image: soloio/\(.*\):.*@image: soloio/\1:$(VERSION)@g' install/helm/gloo/values.yaml
+# creates Chart.yaml, values.yaml, values-knative.yaml
+prepare-helm:
+	go run install/helm/gloo/generate.go
 
 update-helm-chart:
 ifeq ($(RELEASE),"true")

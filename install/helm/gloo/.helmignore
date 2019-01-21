@@ -21,6 +21,7 @@
 *.tmproj
 
 # template files
-**-template.yaml
+*-template.yaml
 # generator files
-**.go
+*.go
+generate/
