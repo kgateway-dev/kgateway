@@ -114,10 +114,21 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/test/kube
 Get the URL of the Gloo-Knative Ingress:
 
 ```bash
-export INGRESS=$(glooctl gateway url --proxy clusteringress-proxy)
+export INGRESS=$(glooctl proxy url --proxy clusteringress-proxy)
 echo $INGRESS
 
 http://172.17.0.2:31345
+```
+
+Note: if your cluster is running in minishift, you'll need to run the following command to get an externally accessible 
+url: 
+
+```bash
+export INGRESS=$(glooctl proxy url --proxy clusteringress-proxy --local-cluster)
+echo $INGRESS
+
+http://192.168.99.163:32220
+
 ```
 
 Send a request to the app using `curl`:
