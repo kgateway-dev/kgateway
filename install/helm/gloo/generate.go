@@ -30,30 +30,43 @@ func main() {
 		version = latestKnownVersion
 	}
 	log.Printf("Generating helm files.")
-	if err := generateValues(version); err != nil {
-		log.Fatalf("generate failed!: %v", err)
+	if err := generateGlooValuesYaml(version); err != nil {
+		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
+	if err := generateChartYaml(version); err != nil {
+		log.Fatalf("generating values.yaml failed!: %v", err)
+	}
+
 }
 
-
-
-func readConfig(path string) (*generate.Config, error) {
-	var c generate.Config
-
+func readValuesYaml(path string, values *generate.Config) error {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed reading server config file: %s", path)
+		return errors.Wrapf(err, "failed reading server config file: %s", path)
 	}
 
-	if err := yaml.Unmarshal(bytes, &c); err != nil {
-		return nil, errors.Wrap(err, "failed parsing configuration file")
+	if err := yaml.Unmarshal(bytes, values); err != nil {
+		return errors.Wrap(err, "failed parsing configuration file")
 	}
 
-	return &c, nil
+	return nil
 }
 
-func writeConfig(config *generate.Config, path string) error {
-	bytes, err := yaml.Marshal(config)
+func readChartYaml(path string, chart *generate.Chart) error {
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return errors.Wrapf(err, "failed reading server config file: %s", path)
+	}
+
+	if err := yaml.Unmarshal(bytes, chart); err != nil {
+		return errors.Wrap(err, "failed parsing configuration file")
+	}
+
+	return nil
+}
+
+func writeValuesYaml(values *generate.Config, path string) error {
+	bytes, err := yaml.Marshal(values)
 	if err != nil {
 		return errors.Wrapf(err, "failed marshaling config struct")
 	}
@@ -65,9 +78,22 @@ func writeConfig(config *generate.Config, path string) error {
 	return nil
 }
 
-func generateValues(version string) error {
-	config, err := readConfig(inputPath)
+func writeChartYaml(chart *generate.Chart, path string) error {
+	bytes, err := yaml.Marshal(chart)
 	if err != nil {
+		return errors.Wrapf(err, "failed marshaling config struct")
+	}
+
+	err = ioutil.WriteFile(path, bytes, os.ModePerm)
+	if err != nil {
+		return errors.Wrapf(err, "failing writing config file")
+	}
+	return nil
+}
+
+func generateGlooValuesYaml(version string) error {
+	var config generate.Config
+	if err := readValuesYaml(glooValuesTemplate, &config); err != nil {
 		return err
 	}
 
@@ -78,5 +104,16 @@ func generateValues(version string) error {
 	config.Ingress.Deployment.Image.Tag = version
 	config.IngressProxy.Deployment.Image.Tag = version
 
-	return writeConfig(config, outputPath)
+	return writeValuesYaml(&config, glooValuesOutput)
+}
+
+func generateChartYaml(version string) error {
+	var chart generate.Chart
+	if err := readChartYaml(chartTemplate, &chart); err != nil {
+		return err
+	}
+
+	chart.Version = version
+
+	return writeChartYaml(&chart, chartOutput)
 }
