@@ -251,7 +251,7 @@ manifest: prepare-helm install/gloo.yaml install/gloo-knative.yaml update-helm-c
 
 # creates Chart.yaml, values.yaml, values-knative.yaml
 prepare-helm:
-	go run install/helm/gloo/generate.go
+	go run install/helm/gloo/generate.go $(VERSION)
 
 update-helm-chart:
 ifeq ($(RELEASE),"true")

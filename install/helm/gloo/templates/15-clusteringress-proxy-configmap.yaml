@@ -21,7 +21,7 @@ data:
                 address:
                   socket_address:
                     address: gloo
-                    port_value: {{ .Values.deployment.gloo.xdsPort }}
+                    port_value: {{ .Values.gloo.deployment.xdsPort }}
         http2_protocol_options: {}
         type: STRICT_DNS
     dynamic_resources:

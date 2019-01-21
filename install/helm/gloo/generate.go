@@ -19,15 +19,14 @@ var (
 	knativeValuesOutput = "install/helm/gloo/values-knative.yaml"
 	chartTemplate = "install/helm/gloo/Chart-template.yaml"
 	chartOutput = "install/helm/gloo/Chart.yaml"
-	latestKnownVersion = "0.6.6"
 )
 
 func main() {
 	var version string
-	if len(os.Args) >= 2 {
-		version = os.Args[1]
+	if len(os.Args) < 2 {
+		panic("Must provide version as argument")
 	} else {
-		version = latestKnownVersion
+		version = os.Args[1]
 	}
 	log.Printf("Generating helm files.")
 	if err := generateValuesYaml(version); err != nil {
