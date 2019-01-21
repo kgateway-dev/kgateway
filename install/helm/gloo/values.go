@@ -5,8 +5,8 @@ type Image struct {
 	Name       string `json:"name"`
 	Tag        string `json:"tag"`
 	Repository string `json:"repository"`
-	PullPolicy string `json:"pull_policy"`
-	PullSecret string `json:"pull_secret"`
+	PullPolicy string `json:"pullPolicy"`
+	PullSecret string `json:"pullSecret"`
 }
 
 type Envoy struct {
@@ -24,8 +24,8 @@ type DeploymentSpec struct {
 
 // Gloo
 type Settings struct {
-	WatchNamespaces []string `json:"watch_namespaces"`
-	WriteNamespace  string   `json:"write_namespace"`
+	WatchNamespaces []string `json:"watchNamespaces"`
+	WriteNamespace  string   `json:"writeNamespace"`
 }
 
 type Gloo struct {
@@ -58,14 +58,14 @@ type GatewayDeployment struct {
 
 type GatewayProxy struct {
 	Deployment GatewayProxyDeployment `json:"deployment"`
-	ConfigMap  GatewayProxyConfigMap  `json:"config_map"`
+	ConfigMap  GatewayProxyConfigMap  `json:"configMap"`
 }
 
 type GatewayProxyDeployment struct {
 	Image       Image             `json:"image"`
-	HttpPort    string            `json:"http_port"`
-	ExtraPorts       map[string]string `json:"extra_ports"`
-	ExtraAnnotations map[string]string `json:"extra_annotations"`
+	HttpPort    string            `json:"httpPort"`
+	ExtraPorts       map[string]string `json:"extraPorts"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations"`
 }
 
 type GatewayProxyConfigMap struct {
@@ -83,15 +83,15 @@ type IngressDeployment struct {
 
 type IngressProxy struct {
 	Deployment IngressProxyDeployment `json:"deployment"`
-	ConfigMap  IngressProxyConfigMap  `json:"config_map"`
+	ConfigMap  IngressProxyConfigMap  `json:"configMap"`
 }
 
 type IngressProxyDeployment struct {
 	Image            Image             `json:"image"`
-	HttpPort         string            `json:"http_port"`
+	HttpPort         string            `json:"httpPort"`
 	HttpsPort        string            `json:"https_port"`
-	ExtraPorts       map[string]string `json:"extra_ports"`
-	ExtraAnnotations map[string]string `json:"extra_annotations"`
+	ExtraPorts       map[string]string `json:"extraPorts"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations"`
 	*DeploymentSpec
 }
 

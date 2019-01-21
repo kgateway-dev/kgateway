@@ -8,7 +8,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   ports:
-  - port: {{ .Values.gateway_proxy.deployment.http_port }}
+  - port: {{ .Values.gatewayProxy.deployment.httpPort }}
     protocol: TCP
     name: http
   selector:

@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - image: "{{ .Values.ingress.deployment.image.repository }}:{{ .Values.ingress.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.ingress.deployment.image.pull_policy }}
+        imagePullPolicy: {{ .Values.ingress.deployment.image.pullPolicy }}
         name: ingress
         args: ["--namespace", "{{.Release.Namespace}}" ]
 {{- if .Values.settings.integrations.knative.enabled }}

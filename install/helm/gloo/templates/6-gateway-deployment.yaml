@@ -18,6 +18,6 @@ spec:
     spec:
       containers:
       - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.gateway.deployment.image.pull_policy }}
+        imagePullPolicy: {{ .Values.gateway.deployment.image.pullPolicy }}
         name: gateway
         args: ["--namespace", "{{.Release.Namespace}}" ]

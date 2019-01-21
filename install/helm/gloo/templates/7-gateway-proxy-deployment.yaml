@@ -7,7 +7,7 @@ metadata:
   name: gateway-proxy
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.gateway_proxy.deployment.replicas }}
+  replicas: {{ .Values.gatewayProxy.deployment.replicas }}
   selector:
     matchLabels:
       gloo: gateway-proxy
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         gloo: gateway-proxy
-{{- with .Values.gateway_proxy.deployment.extra_annotations }}
+{{- with .Values.gatewayProxy.deployment.extraAnnotations }}
       annotations:
 {{toYaml  . | indent 8}}{{- end }}
     spec:
@@ -30,21 +30,21 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ .Values.gateway_proxy.deployment.image.repository }}:{{ .Values.gateway_proxy.deployment.image.tag }}
-        imagePullPolicy: {{ .Values.gateway_proxy.deployment.image.pull_policy }}
+        image: {{ .Values.gatewayProxy.deployment.image.repository }}:{{ .Values.gatewayProxy.deployment.image.tag }}
+        imagePullPolicy: {{ .Values.gatewayProxy.deployment.image.pullPolicy }}
         name: gateway-proxy
         ports:
-        - containerPort: {{ .Values.gateway_proxy.deployment.http_port }}
+        - containerPort: {{ .Values.gatewayProxy.deployment.httpPort }}
           name: http
           protocol: TCP
-{{- with .Values.gateway_proxy.deployment.extra_ports }}
+{{- with .Values.gatewayProxy.deployment.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-      {{- if .Values.gateway_proxy.deployment.image.pull_secret }}
+      {{- if .Values.gatewayProxy.deployment.image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.gateway_proxy.deployment.image.pull_secret }}{{end}}
+        - name: {{ .Values.gatewayProxy.deployment.image.pullSecret }}{{end}}
       volumes:
       - configMap:
           name: gateway-envoy-config

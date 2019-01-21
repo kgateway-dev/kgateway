@@ -7,7 +7,7 @@ metadata:
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.ingress_proxy.deployment.replicas }}
+  replicas: {{ .Values.ingressProxy.deployment.replicas }}
   selector:
     matchLabels:
       gloo: ingress-proxy
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         gloo: ingress-proxy
-{{- with .Values.ingress_proxy.deployment.extra_annotations }}
+{{- with .Values.ingressProxy.deployment.extraAnnotations }}
       annotations:
 {{toYaml  . | indent 8}}{{- end }}
     spec:
@@ -30,17 +30,17 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: "{{ .Values.ingress_proxy.deployment.image.repository }}:{{ .Values.ingress_proxy.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.ingress_proxy.deployment.image.pull_policy }}
+        image: "{{ .Values.ingressProxy.deployment.image.repository }}:{{ .Values.ingressProxy.deployment.image.tag }}"
+        imagePullPolicy: {{ .Values.ingressProxy.deployment.image.pullPolicy }}
         name: ingress-proxy
         ports:
-        - containerPort: {{ .Values.ingress_proxy.deployment.http_port }}
+        - containerPort: {{ .Values.ingressProxy.deployment.httpPort }}
           name: http
           protocol: TCP
-        - containerPort: {{ .Values.ingress_proxy.deployment.https_port }}
+        - containerPort: {{ .Values.ingressProxy.deployment.httpsPort }}
           name: https
           protocol: TCP
-{{- with .Values.ingress_proxy.deployment.extra_ports }}
+{{- with .Values.ingressProxy.deployment.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
         volumeMounts:
         - mountPath: /etc/envoy

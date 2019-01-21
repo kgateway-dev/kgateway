@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.discovery.deployment.image.pull_policy }}
+        imagePullPolicy: {{ .Values.discovery.deployment.image.pullPolicy }}
         name: discovery
         args: ["--namespace={{.Release.Namespace}}" ]
 

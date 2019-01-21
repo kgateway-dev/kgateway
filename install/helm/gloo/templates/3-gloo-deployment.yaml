@@ -18,14 +18,14 @@ spec:
     spec:
       containers:
       - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.gloo.deployment.image.pull_policy }}
+        imagePullPolicy: {{ .Values.gloo.deployment.image.pullPolicy }}
         name: gloo
         ports:
-        - containerPort: {{ .Values.gloo.deployment.xds_port }}
+        - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc
           protocol: TCP
         args: ["--namespace", "{{.Release.Namespace}}" ]
-      {{- if .Values.gloo.deployment.image.pull_secret }}
+      {{- if .Values.gloo.deployment.image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.gloo.deployment.image.pull_secret }}{{end}}
+        - name: {{ .Values.gloo.deployment.image.pullSecret }}{{end}}
 
