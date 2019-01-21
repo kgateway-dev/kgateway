@@ -1,10 +1,10 @@
 package install
 
 import (
-	"net/http"
-	"io/ioutil"
 	"fmt"
 	"github.com/pkg/errors"
+	"io/ioutil"
+	"net/http"
 )
 
 func readFile(url string) ([]byte, error) {
