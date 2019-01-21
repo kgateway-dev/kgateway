@@ -10,7 +10,7 @@ type Options struct {
 	Metadata core.Metadata
 	Top      Top
 	Install  Install
-	Gateway  Gateway
+	Proxy    Proxy
 	Upgrade  Upgrade
 	Create   Create
 	Delete   Delete
@@ -27,6 +27,7 @@ type Top struct {
 }
 
 type Install struct {
+	DryRun     bool
 	Version    string
 	DockerAuth struct {
 		Email    string
@@ -36,17 +37,13 @@ type Install struct {
 	}
 }
 
-const (
-	ClusterProvider_GKE       = "GKE"
-	ClusterProvider_BareMetal = "BareMetal"
-)
-
-type Gateway struct {
-	ClusterProvider string
-	Proxy           string
-	Port            string
-	FollowLogs      bool
-	DebugLogs       bool
+type Proxy struct {
+	LocalCluster bool
+	SecurePort   bool
+	Name         string
+	Port         string
+	FollowLogs   bool
+	DebugLogs    bool
 }
 
 type Upgrade struct {

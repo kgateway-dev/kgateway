@@ -33,18 +33,18 @@ func logsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 	pflags := cmd.PersistentFlags()
-	pflags.BoolVarP(&opts.Gateway.DebugLogs, "debug", "d", true, "enable debug logging on the gateway proxy as part of this command")
-	pflags.BoolVarP(&opts.Gateway.FollowLogs, "follow", "f", false, "enable debug logging on the gateway proxy as part of this command")
+	pflags.BoolVarP(&opts.Proxy.DebugLogs, "debug", "d", true, "enable debug logging on the gateway proxy as part of this command")
+	pflags.BoolVarP(&opts.Proxy.FollowLogs, "follow", "f", false, "enable debug logging on the gateway proxy as part of this command")
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
 func getEnvoyLogs(opts *options.Options) error {
-	if opts.Gateway.DebugLogs {
+	if opts.Proxy.DebugLogs {
 
 		adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 		portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
-			"deployment/"+opts.Gateway.Proxy, adminPort)
+			"deployment/"+opts.Proxy.Name, adminPort)
 		portFwd.Stdout = os.Stderr
 		portFwd.Stderr = os.Stderr
 		if err := portFwd.Start(); err != nil {
@@ -95,8 +95,8 @@ func getEnvoyLogs(opts *options.Options) error {
 	}
 
 	logsCmd := exec.Command("kubectl", "logs", "-n", opts.Metadata.Namespace,
-		"deployment/"+opts.Gateway.Proxy, "-c", opts.Gateway.Proxy)
-	if opts.Gateway.FollowLogs {
+		"deployment/"+opts.Proxy.Name, "-c", opts.Proxy.Name)
+	if opts.Proxy.FollowLogs {
 		logsCmd.Args = append(logsCmd.Args, "-f")
 	}
 	logsCmd.Stdout = os.Stderr

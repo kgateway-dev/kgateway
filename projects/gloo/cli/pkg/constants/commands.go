@@ -23,12 +23,6 @@ var (
 		Aliases: []string{"r", "routes"},
 	}
 
-	GATEWAY_COMMAND = cobra.Command{
-		Use:     "gateway",
-		Aliases: []string{"gw"},
-		Short:   "interact with the Gloo Gateway/Ingress",
-	}
-
 	SECRET_COMMAND = cobra.Command{
 		Use:     "secret",
 		Aliases: []string{"s", "secret"},

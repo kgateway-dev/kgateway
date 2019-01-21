@@ -9,12 +9,12 @@ import (
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     constants.GATEWAY_COMMAND.Use,
-		Aliases: constants.GATEWAY_COMMAND.Aliases,
-		Short:   constants.GATEWAY_COMMAND.Short,
+		Use:     constants.PROXY_COMMAND.Use,
+		Aliases: constants.PROXY_COMMAND.Aliases,
+		Short:   "interact with proxy instances managed by Gloo",
 	}
-	cmd.PersistentFlags().StringVarP(&opts.Gateway.Proxy, "proxy", "p", "gateway-proxy", "the name of the proxy service to target with this command")
-	cmd.PersistentFlags().StringVar(&opts.Gateway.Port, "port", "http", "the name of the service port to connect to")
+	cmd.PersistentFlags().StringVarP(&opts.Proxy.Name, "name", "n", "gateway-proxy", "the name of the proxy service/deployment to use")
+	cmd.PersistentFlags().StringVar(&opts.Proxy.Port, "port", "http", "the name of the service port to connect to")
 
 	cmd.AddCommand(urlCmd(opts))
 	cmd.AddCommand(dumpCmd(opts))

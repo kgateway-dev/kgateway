@@ -20,7 +20,7 @@ var (
 	}
 
 	uniqueCommands = []string{
-		constants.GATEWAY_COMMAND.Use,
+		constants.PROXY_COMMAND.Use,
 		constants.INSTALL_COMMAND.Use,
 		constants.UPGRADE_COMMAND.Use,
 	}

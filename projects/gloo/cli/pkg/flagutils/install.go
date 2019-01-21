@@ -7,7 +7,8 @@ import (
 
 func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	addSecretFlags(set, install)
-	set.StringVar(&install.Version, "version", "", "Override the image versions used for deployment")
+	set.StringVarP(&install.Version, "version", "v", "", "Override the image versions used for deployment")
+	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 }
 
 func addSecretFlags(set *pflag.FlagSet, install *options.Install) {
