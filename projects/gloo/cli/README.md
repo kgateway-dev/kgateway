@@ -674,7 +674,7 @@ Flags:
 ---
 #### Gateway Config
 
-dump Envoy config from one of the gateway proxy instances
+dump Envoy config from one of the proxy instances
 
 Usage:
   glooctl gateway dump [flags]
@@ -687,7 +687,7 @@ Flags:
 ---
 #### Gateway Logs
 
-dump Envoy logs from one of the gateway proxy instances
+dump Envoy logs from one of the proxy instances
 
 Usage:
 ```bash
@@ -704,7 +704,7 @@ Flags:
 ---
 #### Gateway Stats
 
-dump Envoy stats from one of the gateway proxy instances
+dump Envoy stats from one of the proxy instances
 
 Usage:
 ```bash

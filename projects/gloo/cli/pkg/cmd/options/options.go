@@ -39,7 +39,6 @@ type Install struct {
 
 type Proxy struct {
 	LocalCluster bool
-	SecurePort   bool
 	Name         string
 	Port         string
 	FollowLogs   bool

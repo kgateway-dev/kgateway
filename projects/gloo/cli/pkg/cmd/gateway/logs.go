@@ -20,7 +20,7 @@ import (
 func logsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "logs",
-		Short: "dump Envoy logs from one of the gateway proxy instances" +
+		Short: "dump Envoy logs from one of the proxy instances" +
 			"" +
 			"Note: this will enable verbose logging on Envoy",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -33,8 +33,8 @@ func logsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 	pflags := cmd.PersistentFlags()
-	pflags.BoolVarP(&opts.Proxy.DebugLogs, "debug", "d", true, "enable debug logging on the gateway proxy as part of this command")
-	pflags.BoolVarP(&opts.Proxy.FollowLogs, "follow", "f", false, "enable debug logging on the gateway proxy as part of this command")
+	pflags.BoolVarP(&opts.Proxy.DebugLogs, "debug", "d", true, "enable debug logging on the proxy as part of this command")
+	pflags.BoolVarP(&opts.Proxy.FollowLogs, "follow", "f", false, "enable debug logging on the proxy as part of this command")
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

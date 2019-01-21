@@ -26,11 +26,11 @@ using Gloo easy.
       * [`glooctl create secret tls`](cli.md#create-tls-secret)
 * [Routes](cli.md#Routes)
      * [`glooctl add route`](cli.md#add-routes)
-* [Gateway](cli.md#Gateway)
-      * [`glooctl gateway url`](cli.md#gateway-url)
-      * [`glooctl gateway config`](cli.md#gateway-config)
-      * [`glooctl gateway logs`](cli.md#gateway-logs)
-      * [`glooctl gateway stats`](cli.md#gateway-stats)
+* [Proxy](cli.md#Proxy)
+      * [`glooctl proxy url`](cli.md#proxy-url)
+      * [`glooctl proxy config`](cli.md#proxy-config)
+      * [`glooctl proxy logs`](cli.md#proxy-logs)
+      * [`glooctl proxy stats`](cli.md#proxy-stats)
 
 
   
@@ -638,37 +638,37 @@ Global Flags:
 ---
 
 
-# Gateway
+# Proxy
 
-These commands can be used to interact directly with the Gateway (proxy) Gloo is managing.
+these commands can be used to interact directly with the Proxies Gloo is managing. They are useful for interacting with and debugging the proxies (Envoy instances) directly.
 
 ---
-#### Gateway URL
+#### Proxy URL
 
 
-Use this command to view the HTTP URL of the Gateway from outside the cluster. You can connect 
-to this address from a host on the same network (such as your laptop).
-
-print the http endpoint for the gateway ingress
+Use this command to view the HTTP URL of a Proxy reachable from outside the cluster. You can connect to this address from a host on the same network (such as the host machine, in the case of minikube/minishift).
 
 Usage:
 ```bash
-  glooctl gateway url [flags]
+  glooctl proxy url [flags]
 ```
 
 Flags:
 ```bash
-      --cluster-provider string   Indicate which provider is hosting your kubernetes control plane. If Kubernetes is running locally with minikube, specify 'Minikube' or leave empty. Note, this is not required if yoru kubernetes service is connected to an external load balancer, such as AWS ELB (default "Minikube")
-                                  Only used if `LoadBalancer` services are not supported by your Kubernetes cluster.
+  -l, --local-cluster      use when the target kubernetes cluster is running locally, e.g. in minikube or minishift. this will default to true if LoadBalanced services are not assigned external IPs by your cluster
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -i, --interactive   use interactive mode
+  -p, --name string   the name of the proxy service/deployment to use (default "gateway-proxy")
+      --port string   the name of the service port to connect to (default "http")
 ```
 
 ---
-#### Gateway Config
+#### Proxy Config
 
-dump Envoy config from one of the gateway proxy instances
+dump Envoy config from one of the proxy instances
 
 Usage:
-  glooctl gateway dump [flags]
+  glooctl proxy dump [flags]
 
 Flags:
   -h, --help               help for dump
@@ -676,13 +676,13 @@ Flags:
 
 
 ---
-#### Gateway Logs
+#### Proxy Logs
 
-dump Envoy logs from one of the gateway proxy instances
+dump Envoy logs from one of the proxy instances
 
 Usage:
 ```bash
-  glooctl gateway logs [flags]
+  glooctl proxy logs [flags]
 ```
 
 Flags:
@@ -693,13 +693,13 @@ Flags:
 
 
 ---
-#### Gateway Stats
+#### Proxy Stats
 
-dump Envoy stats from one of the gateway proxy instances
+dump Envoy stats from one of the proxy instances
 
 Usage:
 ```bash
-  glooctl gateway stats [flags]
+  glooctl proxy stats [flags]
 ```
 
 Flags:

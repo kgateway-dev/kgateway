@@ -24,6 +24,7 @@ func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 	cmd := &cobra.Command{
 		Use:   "url",
 		Short: "print the http endpoint for a proxy",
+		Long:  "Use this command to view the HTTP URL of a Proxy reachable from outside the cluster. You can connect to this address from a host on the same network (such as the host machine, in the case of minikube/minishift).",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ingressHost, err := getIngressHost(opts)
 			if err != nil {
@@ -34,9 +35,9 @@ func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&opts.Proxy.LocalCluster, "local-cluster", "l",false,
-		"use when the target kubernetes cluster is running locally, e.g. in minikube or minishift. this will default " +
-		"to true if LoadBalanced services are not assigned external IPs by your cluster")
+	cmd.PersistentFlags().BoolVarP(&opts.Proxy.LocalCluster, "local-cluster", "l", false,
+		"use when the target kubernetes cluster is running locally, e.g. in minikube or minishift. this will default "+
+			"to true if LoadBalanced services are not assigned external IPs by your cluster")
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
