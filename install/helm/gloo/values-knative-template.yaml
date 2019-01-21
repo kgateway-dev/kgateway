@@ -8,7 +8,9 @@ settings:
     knative:
       enabled: true
       proxy:
-        image: soloio/gloo-envoy-wrapper:0.5.0
+        image:
+          repository: soloio/gloo-envoy-wrapper
+          pullPolicy: Always
         httpPort: 80
         httpsPort: 443
         replicas: 1
@@ -18,27 +20,54 @@ settings:
   # the namespace that Gloo should write discovery data (Upstreams)
   writeNamespace: "gloo-system"
 
-deployment:
-  imagePullPolicy: Always
-  gloo:
+gloo:
+  deployment:
+    image:
+      repository: soloio/gloo
+      pullPolicy: Always
     xdsPort: 9977
-    image: soloio/gloo:0.5.0
     replicas: 1
-  discovery:
-    image: soloio/discovery:0.5.0
+
+discovery:
+  deployment:
+    image:
+      repository: soloio/discovery
+      pullPolicy: Always
     replicas: 1
-  gateway:
-    image: soloio/gateway:0.5.0
+
+gateway:
+  deployment:
+    image:
+      repository: soloio/gateway
+      pullPolicy: Always
     replicas: 1
-  gatewayProxy:
-    image: soloio/gloo-envoy-wrapper:0.5.0
+
+gatewayProxy:
+  deployment:
+    image:
+      repository: soloio/gloo-envoy-wrapper
+      pullPolicy: Always
     httpPort: 8080
     replicas: 1
-  ingress:
-    image: soloio/ingress:0.5.0
+  configMap:
+    data: ""
+
+
+ingress:
+  deployment:
+    image:
+      repository: soloio/ingress
+      pullPolicy: Always
     replicas: 1
-  ingressProxy:
-    image: soloio/gloo-envoy-wrapper:0.5.0
+
+
+ingressProxy:
+  deployment:
+    image:
+      repository: soloio/gloo-envoy-wrapper
+      pullPolicy: Always
     httpPort: 80
     httpsPort: 443
     replicas: 1
+  configMap:
+    data: ""

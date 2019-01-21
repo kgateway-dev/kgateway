@@ -13,8 +13,8 @@ import (
 //go:generate go run generate.go
 
 var (
-	glooValuesTemplate = "install/helm/gloo/values-template.yaml"
-	glooValuesOutput = "install/helm/gloo/values.yaml"
+	valuesTemplate = "install/helm/gloo/values-template.yaml"
+	valuesOutput = "install/helm/gloo/values.yaml"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput = "install/helm/gloo/values-knative.yaml"
 	chartTemplate = "install/helm/gloo/Chart-template.yaml"
@@ -30,11 +30,14 @@ func main() {
 		version = latestKnownVersion
 	}
 	log.Printf("Generating helm files.")
-	if err := generateGlooValuesYaml(version); err != nil {
+	if err := generateValuesYaml(version); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
+	if err := generateKnativeValuesYaml(version); err != nil {
+		log.Fatalf("generating values-knative.yaml failed!: %v", err)
+	}
 	if err := generateChartYaml(version); err != nil {
-		log.Fatalf("generating values.yaml failed!: %v", err)
+		log.Fatalf("generating Chart.yaml failed!: %v", err)
 	}
 }
 
@@ -64,9 +67,9 @@ func writeYaml(obj interface{}, path string) error {
 	return nil
 }
 
-func generateGlooValuesYaml(version string) error {
+func generateValuesYaml(version string) error {
 	var config generate.Config
-	if err := readYaml(glooValuesTemplate, &config); err != nil {
+	if err := readYaml(valuesTemplate, &config); err != nil {
 		return err
 	}
 
@@ -77,7 +80,27 @@ func generateGlooValuesYaml(version string) error {
 	config.Ingress.Deployment.Image.Tag = version
 	config.IngressProxy.Deployment.Image.Tag = version
 
-	return writeYaml(&config, glooValuesOutput)
+	return writeYaml(&config, valuesOutput)
+}
+
+func generateKnativeValuesYaml(version string) error {
+	var config generate.Config
+	if err := readYaml(knativeValuesTemplate, &config); err != nil {
+		return err
+	}
+
+	if config.Settings.Integrations.Knative.Enabled {
+		config.Settings.Integrations.Knative.Proxy.Image.Tag = version
+	}
+
+	config.Gloo.Deployment.Image.Tag = version
+	config.Discovery.Deployment.Image.Tag = version
+	config.Gateway.Deployment.Image.Tag = version
+	config.GatewayProxy.Deployment.Image.Tag = version
+	config.Ingress.Deployment.Image.Tag = version
+	config.IngressProxy.Deployment.Image.Tag = version
+
+	return writeYaml(&config, knativeValuesOutput)
 }
 
 func generateChartYaml(version string) error {

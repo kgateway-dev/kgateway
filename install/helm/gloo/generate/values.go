@@ -37,6 +37,14 @@ type Integrations struct {
 }
 type Knative struct {
 	Enabled bool `json:"enabled"`
+	Proxy   KnativeProxy `json:"proxy,omitempty"`
+}
+
+type KnativeProxy struct {
+	Image            Image             `json:"image"`
+	HttpPort         string            `json:"httpPort"`
+	HttpsPort        string            `json:"httpsPort"`
+	*DeploymentSpec
 }
 
 type Settings struct {
