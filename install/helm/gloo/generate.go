@@ -36,50 +36,23 @@ func main() {
 	if err := generateChartYaml(version); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
-
 }
 
-func readValuesYaml(path string, values *generate.Config) error {
+func readYaml(path string, obj interface{}) error {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return errors.Wrapf(err, "failed reading server config file: %s", path)
 	}
 
-	if err := yaml.Unmarshal(bytes, values); err != nil {
+	if err := yaml.Unmarshal(bytes, obj); err != nil {
 		return errors.Wrap(err, "failed parsing configuration file")
 	}
 
 	return nil
 }
 
-func readChartYaml(path string, chart *generate.Chart) error {
-	bytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return errors.Wrapf(err, "failed reading server config file: %s", path)
-	}
-
-	if err := yaml.Unmarshal(bytes, chart); err != nil {
-		return errors.Wrap(err, "failed parsing configuration file")
-	}
-
-	return nil
-}
-
-func writeValuesYaml(values *generate.Config, path string) error {
-	bytes, err := yaml.Marshal(values)
-	if err != nil {
-		return errors.Wrapf(err, "failed marshaling config struct")
-	}
-
-	err = ioutil.WriteFile(path, bytes, os.ModePerm)
-	if err != nil {
-		return errors.Wrapf(err, "failing writing config file")
-	}
-	return nil
-}
-
-func writeChartYaml(chart *generate.Chart, path string) error {
-	bytes, err := yaml.Marshal(chart)
+func writeYaml(obj interface{}, path string) error {
+	bytes, err := yaml.Marshal(obj)
 	if err != nil {
 		return errors.Wrapf(err, "failed marshaling config struct")
 	}
@@ -93,7 +66,7 @@ func writeChartYaml(chart *generate.Chart, path string) error {
 
 func generateGlooValuesYaml(version string) error {
 	var config generate.Config
-	if err := readValuesYaml(glooValuesTemplate, &config); err != nil {
+	if err := readYaml(glooValuesTemplate, &config); err != nil {
 		return err
 	}
 
@@ -104,16 +77,16 @@ func generateGlooValuesYaml(version string) error {
 	config.Ingress.Deployment.Image.Tag = version
 	config.IngressProxy.Deployment.Image.Tag = version
 
-	return writeValuesYaml(&config, glooValuesOutput)
+	return writeYaml(&config, glooValuesOutput)
 }
 
 func generateChartYaml(version string) error {
 	var chart generate.Chart
-	if err := readChartYaml(chartTemplate, &chart); err != nil {
+	if err := readYaml(chartTemplate, &chart); err != nil {
 		return err
 	}
 
 	chart.Version = version
 
-	return writeChartYaml(&chart, chartOutput)
+	return writeYaml(&chart, chartOutput)
 }
