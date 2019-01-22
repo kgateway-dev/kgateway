@@ -12,7 +12,7 @@ import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -52,6 +52,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	spec := staticSpec.Static
 	var foundSslPort bool
 	var hostname string
+
+	out.Type = envoyapi.Cluster_STATIC
 	for _, host := range spec.Hosts {
 		if host.Addr == "" {
 			return errors.Errorf("addr cannot be empty for host")
@@ -63,12 +65,12 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			foundSslPort = true
 		}
 		ip := net.ParseIP(host.Addr)
-		if ip != nil {
-			out.Type = envoyapi.Cluster_STATIC
-		} else {
-			out.Type = envoyapi.Cluster_STRICT_DNS
-			// for sni
-			hostname = host.Addr
+		if ip == nil {
+			// can't parse ip so this is a dns hostname.
+			// save the first hostname for use with sni
+			if hostname == "" {
+				hostname = host.Addr
+			}
 		}
 
 		if out.LoadAssignment == nil {
@@ -94,26 +96,36 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 					},
 				},
 			})
+	}
+
+	// if host port is 443 or if the user wants it, we will use TLS
+	if spec.UseTls || foundSslPort {
+		// tell envoy to use TLS to connect to this upstream
+		// TODO: support client certificates
+		out.TlsContext = &envoyauth.UpstreamTlsContext{
+			Sni: hostname,
+		}
+	}
+
+	// the upstream has a DNS name. to cover the case that it is an external service
+	// that requires the host header, we will add host rewrite.
+	if hostname != "" {
+		// set the type to strict dns
+		out.Type = envoyapi.Cluster_STRICT_DNS
+
 		// fix issue where ipv6 addr cannot bind
 		out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 
-		// if host port is 443 or if the user wants it, we will use TLS
-		if spec.UseTls || foundSslPort {
-			// tell envoy to use TLS to connect to this upstream
-			// TODO: support client certificates
-			out.TlsContext = &envoyauth.UpstreamTlsContext{
-				Sni: hostname,
-			}
-		}
-
-		// the upstream has a DNS name. to cover the case that it is an external service
-		// that requires the host header, we will add host rewrite.
-		if hostname != "" {
-			// cache the name of this upstream, we need to enable automatic host rewrite on routes
-			p.hostRewriteUpstreams[in.Metadata.Ref()] = true
-		}
-
+		// cache the name of this upstream, we need to enable automatic host rewrite on routes
+		p.hostRewriteUpstreams[in.Metadata.Ref()] = true
 	}
+
+	if spec.UseHttp2 {
+		if out.Http2ProtocolOptions == nil {
+			out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
+		}
+	}
+
 	return nil
 
 	// configure the cluster to use EDS:ADS and call it a day
