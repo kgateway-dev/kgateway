@@ -153,7 +153,7 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 		// run the plugins for RoutePlugin
 		for _, plug := range t.plugins {
 			routePlugin, ok := plug.(plugins.RouteActionPlugin)
-			if !ok {
+			if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
 				continue
 			}
 			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), nil, out.GetRoute()); err != nil {
