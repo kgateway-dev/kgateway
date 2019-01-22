@@ -63,4 +63,7 @@ echo "Uploading asset... "
 GH_ASSET="https://uploads.github.com/repos/$owner/$repo/releases/$id/assets?name=$(basename $filename)"
 
 curl --data-binary @"$filename" -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" $GH_ASSET
-curl -d $(shasum -a 256 ${filename}) -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" $GH_ASSET.sha256
+
+if [[ "$sha" == 'TRUE' ]]; then
+  curl -d $(shasum -a 256 ${filename}) -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" $GH_ASSET.sha256
+fi

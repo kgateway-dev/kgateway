@@ -280,7 +280,12 @@ RELEASE_BINARIES :=
 ifeq ($(RELEASE),"true")
 	RELEASE_BINARIES := \
 		$(OUTPUT_DIR)/glooctl-linux-amd64 \
-		$(OUTPUT_DIR)/glooctl-darwin-amd64 \
+		$(OUTPUT_DIR)/glooctl-darwin-amd64
+endif
+
+RELEASE_YAMLS :=
+ifeq ($(RELEASE),"true")
+	RELEASE_YAMLS := \
 		install/gloo.yaml \
 		install/gloo-knative.yaml \
 		install/integrations/knative-no-istio-0.3.0.yaml
@@ -289,14 +294,18 @@ endif
 .PHONY: release-binaries
 release-binaries: $(RELEASE_BINARIES)
 
+.PHONY: release-yamls
+release-yamls: $(RELEASE_YAMLS)
+
 # This is invoked by cloudbuild. When the bot gets a release notification, it kicks of a build with and provides a tag
 # variable that gets passed through to here as $TAGGED_VERSION. If no tag is provided, this is a no-op. If a tagged
 # version is provided, all the release binaries are uploaded to github.
 # Create new releases by clicking "Draft a new release" from https://github.com/solo-io/gloo/releases
 .PHONY: release
-release: release-binaries
+release: release-binaries release-yamls
 ifeq ($(RELEASE),"true")
-	@$(foreach BINARY,$(RELEASE_BINARIES),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(BINARY);)
+#	@$(foreach BINARY,$(RELEASE_BINARIES),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(BINARY) sha=TRUE;)
+	@$(foreach YAML,$(RELEASE_YAMLS),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(YAML);)
 endif
 
 #----------------------------------------------------------------------------------
