@@ -4,11 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gogo/protobuf/types"
 	"log"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/gogo/protobuf/types"
+
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/ghodss/yaml"
@@ -35,13 +37,13 @@ func GetYaml(pb proto.Message) []byte {
 
 func main() {
 	role := flag.String("r", "gloo-system~clusteringress-proxy", "role to register with")
+	port := flag.String("p", "9977", "gloo port")
 	//out := flag.String("o", "gostructs", "output fmt gostructs|yaml")
 	flag.Parse()
 	dr.Node.Metadata = &types.Struct{
-		Fields: map[string]*types.Value{"role": {Kind: &types.Value_StringValue{StringValue: *role}},
-	}}
+		Fields: map[string]*types.Value{"role": {Kind: &types.Value_StringValue{StringValue: *role}}}}
 
-	conn, err := grpc.Dial("localhost:9977", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:"+*port, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("dial err: %v", err)
 	}
@@ -54,8 +56,15 @@ func main() {
 			for _, filter := range fc.Filters {
 				if filter.Name == "envoy.http_connection_manager" {
 					var hcm envoyhttp.HttpConnectionManager
-					if err := envoyutil.StructToMessage(filter.Config, &hcm); err == nil {
-						hcms = append(hcms, hcm)
+					switch config := filter.ConfigType.(type) {
+					case *envoylistener.Filter_Config:
+						if err := envoyutil.StructToMessage(config.Config, &hcm); err == nil {
+							hcms = append(hcms, hcm)
+						}
+					case *envoylistener.Filter_TypedConfig:
+						if err := types.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
+							hcms = append(hcms, hcm)
+						}
 					}
 				}
 			}
