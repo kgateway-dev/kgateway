@@ -44,7 +44,7 @@ gatewayProxy:
     httpPort: 8080
     replicas: 1
   configMap:
-    data: ""
+    data:
 
 
 ingress:
@@ -64,5 +64,5 @@ ingressProxy:
     httpsPort: 443
     replicas: 1
   configMap:
-    data: ""
+    data:
 

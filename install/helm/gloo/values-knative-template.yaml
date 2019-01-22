@@ -50,8 +50,7 @@ gatewayProxy:
     httpPort: 8080
     replicas: 1
   configMap:
-    data: ""
-
+    data:
 
 ingress:
   deployment:
@@ -59,7 +58,6 @@ ingress:
       repository: soloio/ingress
       pullPolicy: Always
     replicas: 1
-
 
 ingressProxy:
   deployment:
@@ -70,4 +68,4 @@ ingressProxy:
     httpsPort: 443
     replicas: 1
   configMap:
-    data: ""
+    data:
