@@ -1,15 +1,15 @@
 package generate
 
 type Config struct {
-	Namespace    Namespace `json:"namespace"`
-	Rbac         Rbac `json:"rbac"`
-	Settings     Settings `json:"settings"`
-	Gloo         Gloo `json:"gloo"`
-	Discovery    Discovery `json:"discovery"`
-	Gateway      Gateway `json:"gateway"`
-	GatewayProxy GatewayProxy `json:"gatewayProxy"`
-	Ingress      Ingress `json:"ingress"`
-	IngressProxy IngressProxy `json:"ingressProxy"`
+	Namespace    *Namespace    `json:"namespace"`
+	Rbac         *Rbac         `json:"rbac"`
+	Settings     *Settings     `json:"settings"`
+	Gloo         *Gloo         `json:"gloo"`
+	Discovery    *Discovery    `json:"discovery,omitempty"`
+	Gateway      *Gateway      `json:"gateway,omitempty"`
+	GatewayProxy *GatewayProxy `json:"gatewayProxy,omitempty"`
+	Ingress      *Ingress      `json:"ingress,omitempty"`
+	IngressProxy *IngressProxy `json:"ingressProxy,omitempty"`
 }
 
 type Namespace struct {
@@ -33,93 +33,93 @@ type DeploymentSpec struct {
 }
 
 type Integrations struct {
-	Knative Knative `json:"knative"`
+	Knative *Knative `json:"knative"`
 }
 type Knative struct {
-	Enabled bool `json:"enabled"`
-	Proxy   KnativeProxy `json:"proxy,omitempty"`
+	Enabled bool         `json:"enabled"`
+	Proxy   *KnativeProxy `json:"proxy,omitempty"`
 }
 
 type KnativeProxy struct {
-	Image            Image             `json:"image"`
-	HttpPort         string            `json:"httpPort"`
-	HttpsPort        string            `json:"httpsPort"`
+	Image     *Image  `json:"image,omitempty"`
+	HttpPort  string `json:"httpPort,omitempty"`
+	HttpsPort string `json:"httpsPort,omitempty"`
 	*DeploymentSpec
 }
 
 type Settings struct {
-	WatchNamespaces []string `json:"watchNamespaces"`
-	WriteNamespace  string   `json:"writeNamespace"`
-	Integrations    Integrations `json:"integrations"`
+	WatchNamespaces []string     `json:"watchNamespaces"`
+	WriteNamespace  string       `json:"writeNamespace"`
+	Integrations    *Integrations `json:"integrations,omitempty"`
 }
 
 type Gloo struct {
-	Deployment GlooDeployment `json:"deployment"`
+	Deployment *GlooDeployment `json:"deployment,omitempty"`
 }
 
 type GlooDeployment struct {
-	Image   Image  `json:"image"`
-	XdsPort string `json:"xdsPort"`
+	Image   *Image  `json:"image,omitempty"`
+	XdsPort string `json:"xdsPort,omitempty"`
 	*DeploymentSpec
 }
 
 type Discovery struct {
-	Deployment DiscoveryDeployment `json:"deployment"`
+	Deployment *DiscoveryDeployment `json:"deployment,omitempty"`
 }
 
 type DiscoveryDeployment struct {
-	Image Image `json:"image"`
+	Image *Image `json:"image,omitempty"`
 	*DeploymentSpec
 }
 
 type Gateway struct {
-	Deployment GatewayDeployment `json:"deployment"`
+	Deployment *GatewayDeployment `json:"deployment,omitempty"`
 }
 
 type GatewayDeployment struct {
-	Image Image `json:"image"`
+	Image *Image `json:"image,omitempty"`
 	*DeploymentSpec
 }
 
 type GatewayProxy struct {
-	Deployment GatewayProxyDeployment `json:"deployment"`
-	ConfigMap  GatewayProxyConfigMap  `json:"configMap"`
+	Deployment *GatewayProxyDeployment `json:"deployment,omitempty"`
+	ConfigMap  *GatewayProxyConfigMap  `json:"configMap,omitempty"`
 }
 
 type GatewayProxyDeployment struct {
-	Image            Image             `json:"image"`
-	HttpPort         string            `json:"httpPort"`
-	ExtraPorts       map[string]string `json:"extraPorts,omitempty"`
+	Image            *Image             `json:"image,omitempty"`
+	HttpPort         string            `json:"httpPort,omitempty"`
+	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {
-	Data string `json:"data"`
+	Data map[string]string `json:"data"`
 }
 
 type Ingress struct {
-	Deployment IngressDeployment `json:"deployment"`
+	Deployment *IngressDeployment `json:"deployment,omitempty"`
 }
 
 type IngressDeployment struct {
-	Image Image `json:"image"`
+	Image *Image `json:"image,omitempty"`
 	*DeploymentSpec
 }
 
 type IngressProxy struct {
-	Deployment IngressProxyDeployment `json:"deployment"`
-	ConfigMap  IngressProxyConfigMap  `json:"configMap"`
+	Deployment *IngressProxyDeployment `json:"deployment,omitempty"`
+	ConfigMap  *IngressProxyConfigMap  `json:"configMap,omitempty"`
 }
 
 type IngressProxyDeployment struct {
-	Image            Image             `json:"image"`
-	HttpPort         string            `json:"httpPort"`
-	HttpsPort        string            `json:"httpsPort"`
-	ExtraPorts       map[string]string `json:"extraPorts,omitempty"`
+	Image            *Image             `json:"image,omitempty"`
+	HttpPort         string            `json:"httpPort,omitempty"`
+	HttpsPort        string            `json:"httpsPort,omitempty"`
+	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec
 }
 
 type IngressProxyConfigMap struct {
-	Data string `json:"data"`
+	Data map[string]string `json:"data,omitempty"`
 }
