@@ -29,10 +29,11 @@ func main() {
 		version = os.Args[1]
 	}
 	log.Printf("Generating helm files.")
-	if err := generateValuesYaml(version); err != nil {
+	config, err := generateGlooConfigAndWriteYaml(version)
+	if err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
-	if err := generateKnativeValuesYaml(version); err != nil {
+	if err := generateKnativeValuesYaml(config, version); err != nil {
 		log.Fatalf("generating values-knative.yaml failed!: %v", err)
 	}
 	if err := generateChartYaml(version); err != nil {
@@ -66,10 +67,10 @@ func writeYaml(obj interface{}, path string) error {
 	return nil
 }
 
-func generateValuesYaml(version string) error {
+func generateGlooConfigAndWriteYaml(version string) (*generate.Config, error) {
 	var config generate.Config
 	if err := readYaml(valuesTemplate, &config); err != nil {
-		return err
+		return nil, err
 	}
 
 	config.Gloo.Deployment.Image.Tag = version
@@ -79,25 +80,18 @@ func generateValuesYaml(version string) error {
 	config.Ingress.Deployment.Image.Tag = version
 	config.IngressProxy.Deployment.Image.Tag = version
 
-	return writeYaml(&config, valuesOutput)
+	err := writeYaml(&config, valuesOutput)
+	return &config, err
 }
 
-func generateKnativeValuesYaml(version string) error {
-	var config generate.Config
-	if err := readYaml(knativeValuesTemplate, &config); err != nil {
+func generateKnativeValuesYaml(config *generate.Config, version string) error {
+	var glooKnativeConfig generate.Config
+	if err := readYaml(knativeValuesTemplate, &glooKnativeConfig); err != nil {
 		return err
 	}
 
-	if config.Settings.Integrations.Knative.Enabled {
-		config.Settings.Integrations.Knative.Proxy.Image.Tag = version
-	}
-
-	config.Gloo.Deployment.Image.Tag = version
-	config.Discovery.Deployment.Image.Tag = version
-	config.Gateway.Deployment.Image.Tag = version
-	config.GatewayProxy.Deployment.Image.Tag = version
-	config.Ingress.Deployment.Image.Tag = version
-	config.IngressProxy.Deployment.Image.Tag = version
+	config.Settings.Integrations.Knative = glooKnativeConfig.Settings.Integrations.Knative
+	config.Settings.Integrations.Knative.Proxy.Image.Tag = version
 
 	return writeYaml(&config, knativeValuesOutput)
 }
