@@ -15,6 +15,10 @@ func readFile(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("http GET returned status %d", resp.StatusCode)
+	}
+
 	// Write the body to file
 	return ioutil.ReadAll(resp.Body)
 }
