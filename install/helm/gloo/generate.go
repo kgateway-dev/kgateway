@@ -13,12 +13,12 @@ import (
 //go:generate go run generate.go
 
 var (
-	valuesTemplate = "install/helm/gloo/values-template.yaml"
-	valuesOutput = "install/helm/gloo/values.yaml"
+	valuesTemplate        = "install/helm/gloo/values-template.yaml"
+	valuesOutput          = "install/helm/gloo/values.yaml"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
-	knativeValuesOutput = "install/helm/gloo/values-knative.yaml"
-	chartTemplate = "install/helm/gloo/Chart-template.yaml"
-	chartOutput = "install/helm/gloo/Chart.yaml"
+	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
+	chartTemplate         = "install/helm/gloo/Chart-template.yaml"
+	chartOutput           = "install/helm/gloo/Chart.yaml"
 )
 
 func main() {

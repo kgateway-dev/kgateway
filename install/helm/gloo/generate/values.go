@@ -36,20 +36,20 @@ type Integrations struct {
 	Knative *Knative `json:"knative"`
 }
 type Knative struct {
-	Enabled bool         `json:"enabled"`
+	Enabled bool          `json:"enabled"`
 	Proxy   *KnativeProxy `json:"proxy,omitempty"`
 }
 
 type KnativeProxy struct {
-	Image     *Image  `json:"image,omitempty"`
+	Image     *Image `json:"image,omitempty"`
 	HttpPort  string `json:"httpPort,omitempty"`
 	HttpsPort string `json:"httpsPort,omitempty"`
 	*DeploymentSpec
 }
 
 type Settings struct {
-	WatchNamespaces []string     `json:"watchNamespaces"`
-	WriteNamespace  string       `json:"writeNamespace"`
+	WatchNamespaces []string      `json:"watchNamespaces"`
+	WriteNamespace  string        `json:"writeNamespace"`
 	Integrations    *Integrations `json:"integrations,omitempty"`
 }
 
@@ -58,7 +58,7 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	Image   *Image  `json:"image,omitempty"`
+	Image   *Image `json:"image,omitempty"`
 	XdsPort string `json:"xdsPort,omitempty"`
 	*DeploymentSpec
 }
@@ -87,7 +87,7 @@ type GatewayProxy struct {
 }
 
 type GatewayProxyDeployment struct {
-	Image            *Image             `json:"image,omitempty"`
+	Image            *Image            `json:"image,omitempty"`
 	HttpPort         string            `json:"httpPort,omitempty"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
@@ -112,7 +112,7 @@ type IngressProxy struct {
 }
 
 type IngressProxyDeployment struct {
-	Image            *Image             `json:"image,omitempty"`
+	Image            *Image            `json:"image,omitempty"`
 	HttpPort         string            `json:"httpPort,omitempty"`
 	HttpsPort        string            `json:"httpsPort,omitempty"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
