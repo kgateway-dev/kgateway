@@ -71,7 +71,7 @@ func readKnativeManifest(opts *options.Options, urlTemplate string) ([]byte, err
 	if opts.Install.KnativeManifest != "" {
 		return readManifestFromFile(opts.Install.KnativeManifest)
 	}
-	if version.Version == version.UndefinedVersion {
+	if version.Version == version.UndefinedVersion || version.Version == version.DevVersion {
 		return nil, errors.Errorf("You must provide a file containing the knative manifest when running an unreleased version of glooctl.")
 	}
 	return readManifest(version.Version, urlTemplate)

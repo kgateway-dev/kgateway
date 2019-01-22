@@ -63,7 +63,7 @@ func readGlooManifest(opts *options.Options, urlTemplate string) ([]byte, error)
 	if opts.Top.File != "" {
 		return readManifestFromFile(opts.Top.File)
 	}
-	if version.Version == version.UndefinedVersion {
+	if version.Version == version.UndefinedVersion || version.Version == version.DevVersion {
 		return nil, errors.Errorf("You must provide a file containing the gloo manifest when running an unreleased version of glooctl.")
 	}
 	return readGlooManifestFromRelease(version.Version, urlTemplate)
