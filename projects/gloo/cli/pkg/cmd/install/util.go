@@ -19,11 +19,11 @@ func readFile(url string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func ReadManifest(version, urlTemplate string) ([]byte, error) {
+func readManifest(version, urlTemplate string) ([]byte, error) {
 	url := fmt.Sprintf(urlTemplate, version)
 	bytes, err := readFile(url)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error reading gloo manifest for version %s at url %s", version, url)
+		return nil, errors.Wrapf(err, "Error reading manifest for gloo version %s at url %s", version, url)
 	}
 	return bytes, nil
 }
