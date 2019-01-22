@@ -30,7 +30,7 @@ type Install struct {
 	DryRun     bool
 	File            string
 	KnativeManifest string
-	DockerAuth struct {
+	DockerAuth      struct {
 		Email    string
 		Username string
 		Password string
