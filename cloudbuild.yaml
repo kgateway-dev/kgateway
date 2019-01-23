@@ -24,13 +24,14 @@ steps:
   args: ['check-format']
   waitFor: ['dep']
   id: 'check-format'
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+- name: 'gcr.io/$PROJECT_ID/e2e-go'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
+  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
   dir: './gopath/src/github.com/solo-io/gloo'
-  entrypoint: go
-  args: ['get -v -u github.com/solo-io/solo-kit']
+  args: ['get', '-v', '-u', 'github.com/solo-io/solo-kit']
   waitFor: ['dep']
   id: 'get-solo-kit'
 - name: 'gcr.io/$PROJECT_ID/go-make'
@@ -41,6 +42,11 @@ steps:
     git init
     git add .
     git commit -m "set up dummy repo for diffing"
+    go get -u -v github.com/solo-io/solo-kit
+    if [[ $? -ne 0 ]]; then
+      echo "Could not go get solo-kit"
+      exit 1;
+    fi
     make generated-code -B
     if [[ $? -ne 0 ]]; then
       echo "Code generation failed"
