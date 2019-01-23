@@ -5,7 +5,6 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 )
 
-
 // remove 2gobytes generates
 //sh -c "2gobytes -p grpc -a annotationsDescriptorBytes -i google/api/annotations.proto.descriptor  | sed 's@// date.*@@g' > annotations.google.descriptor.go"
 //sh -c "2gobytes -p grpc -a httpDescriptorBytes -i google/api/http.proto.descriptor | sed 's@// date.*@@g' > http.google.descriptor.go"
