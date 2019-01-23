@@ -24,7 +24,15 @@ steps:
   args: ['check-format']
   waitFor: ['dep']
   id: 'check-format'
-
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  entrypoint: go
+  args: ['get -v -u github.com/solo-io/solo-kit']
+  waitFor: ['dep']
+  id: 'get-solo-kit'
 - name: 'gcr.io/$PROJECT_ID/go-make'
   entrypoint: 'bash'
   args:
@@ -48,7 +56,7 @@ steps:
   - 'GOPATH=/workspace/gopath'
   - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['dep']
+  waitFor: ['get-solo-kit']
   id: 'check-code-gen'
 
 # Run all the tests with ginkgo -r
