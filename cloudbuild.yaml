@@ -1,11 +1,50 @@
 steps:
 
+# Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
+# All steps after this must set GOPATH
 - name: 'gcr.io/$PROJECT_ID/dep'
   args: ['ensure']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
   id: 'dep'
+
+# Run some basic checks on the repo
+# 1) check formatting of go files
+# 2) ensure that make generated-code produces a clean diff
+
+# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
+# Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  entrypoint: make
+  args: ['check-format']
+  waitFor: ['dep']
+  id: 'check-format'
+
+- name: 'gcr.io/$PROJECT_ID/go-make'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    git init
+    git add .
+    git commit -m "set up dummy repo for diffing"
+    make generated-code -B
+    if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
+      echo "Generating code produced a non-empty diff"
+      exit 1;
+    fi
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  - 'TAGGED_VERSION=$TAG_NAME'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['dep']
+  id: ['check-code-gen']
 
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
@@ -34,6 +73,7 @@ steps:
   entrypoint: mkdir
   args: ['-p', './_output/helm']
   dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['dep']
 # sync helm repo data from google cloud bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
@@ -42,13 +82,13 @@ steps:
     - gs://solo-public-helm/
     - './_output/helm'
   dir: './gopath/src/github.com/solo-io/gloo'
+  id: 'setup-helm'
 
-
+# Docker related setup
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: mkdir
   args: ['/workspace/.docker']
   id: 'create-docker-creds-dir'
-
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms
@@ -60,19 +100,6 @@ steps:
   - --key=build-key
   waitFor: ['dep', 'create-docker-creds-dir']
   id: 'setup-docker-creds'
-
-# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
-# sets up redis, consul, kubectl, go with required environment variables
-# need to use the provided entrypoint
-# Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
-  dir: './gopath/src/github.com/solo-io/gloo'
-  entrypoint: make
-  args: ['check-format']
-  waitFor: ['dep']
 
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   env:
@@ -86,7 +113,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', '-failFast']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds', 'setup-docker']
 
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
