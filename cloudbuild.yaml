@@ -30,11 +30,10 @@ steps:
   args:
   - '-c'
   - |
-    git config --list
     git init
     git add .
     git commit -m "set up dummy repo for diffing"
-    git clone https://github.com/solo-io/solo-kit /workspace/gopath/github.com/solo-io/solo-kit
+    git clone https://github.com/solo-io/solo-kit /workspace/gopath/src/github.com/solo-io/solo-kit
     if [[ $? -ne 0 ]]; then
       echo "Could not get solo-kit"
       exit 1;
