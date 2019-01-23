@@ -44,7 +44,7 @@ steps:
   - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['dep']
-  id: ['check-code-gen']
+  id: 'check-code-gen'
 
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
