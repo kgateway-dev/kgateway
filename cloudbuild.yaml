@@ -46,6 +46,9 @@ steps:
   waitFor: ['dep']
   id: 'check-code-gen'
 
+# Run all the tests with ginkgo -r
+# This requires setting up envoy, AWS, helm, and docker
+# The e2e-gingko container provides everything else needed for running tests
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args:
@@ -55,7 +58,6 @@ steps:
     chmod +x /workspace/envoy
   waitFor: ['dep']
   id: 'get-envoy'
-
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms
@@ -67,7 +69,6 @@ steps:
   - --key=build-key
   waitFor: ['dep']
   id: 'setup-aws-creds'
-
 # Helm related setup
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: mkdir
@@ -83,12 +84,12 @@ steps:
     - './_output/helm'
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'setup-helm'
-
 # Docker related setup
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: mkdir
   args: ['/workspace/.docker']
   id: 'create-docker-creds-dir'
+  waitFor: ['dep']
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms
@@ -98,9 +99,8 @@ steps:
   - --location=global
   - --keyring=build
   - --key=build-key
-  waitFor: ['dep', 'create-docker-creds-dir']
+  waitFor: ['create-docker-creds-dir']
   id: 'setup-docker-creds'
-
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -113,13 +113,16 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', '-failFast']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds', 'setup-docker']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds', 'setup-helm']
 
+# Build everything
+# 1) Compile all docker images
+# 2) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
+# 3) Publish helm chart
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker login --username soloiobot --password $$DOCKER_HUB_PASSWORD']
   secretEnv: ['DOCKER_HUB_PASSWORD']
-
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker']
   env:
@@ -128,7 +131,6 @@ steps:
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'compile'
-
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker-push', 'manifest', 'release', 'deploy-site']
   env:
@@ -139,7 +141,6 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN', 'FIREBASE_TOKEN']
   id: 'release'
-
 # Sync helm chart data back to google storage bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
