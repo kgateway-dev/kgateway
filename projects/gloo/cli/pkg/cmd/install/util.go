@@ -2,9 +2,10 @@ package install
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 func readFile(url string) ([]byte, error) {
