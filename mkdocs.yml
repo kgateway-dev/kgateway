@@ -30,8 +30,6 @@ pages:
     - Static: v1/plugins/static/static.proto.sk.md
     - Consul: v1/plugins/consul/consul.proto.sk.md
     - Kubernetes: v1/plugins/kubernetes/kubernetes.proto.sk.md
-    - Sqoop: v1/plugins/sqoop/sqoop.proto.sk.md
-   # - Rate Limit: v1/plugins/ratelimit/ratelimit.proto.sk.md
     - gRPC: v1/plugins/grpc/grpc.proto.sk.md
     - Fault Injection: v1/plugins/faultinjection/fault.proto.sk.md
   - Core:
