@@ -43,7 +43,7 @@ clean:
 generated-code: $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=projects test
-$(OUTPUT_DIR)/.generated-code: install/gloo.yaml install/gloo-knative.yaml
+$(OUTPUT_DIR)/.generated-code:
 	go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
