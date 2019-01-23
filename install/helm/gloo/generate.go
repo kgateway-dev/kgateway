@@ -10,8 +10,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
-//go:generate go run generate.go
-
 var (
 	valuesTemplate        = "install/helm/gloo/values-template.yaml"
 	valuesOutput          = "install/helm/gloo/values.yaml"
