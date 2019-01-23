@@ -192,7 +192,7 @@ var _ = Describe("Happypath", func() {
 				return nil, nil
 			}
 
-			Eventually(getupstream, "15s", "0.5s").ShouldNot(BeNil())
+			Eventually(getupstream, "30s", "0.5s").ShouldNot(BeNil())
 
 			up, err := getupstream()
 			Expect(err).NotTo(HaveOccurred())
