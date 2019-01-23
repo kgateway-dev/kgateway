@@ -75,6 +75,7 @@ steps:
   args: ['-p', './_output/helm']
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['dep']
+  id: 'make-helm-dir'
 # sync helm repo data from google cloud bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
@@ -83,6 +84,7 @@ steps:
     - gs://solo-public-helm/
     - './_output/helm'
   dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['make-helm-dir']
   id: 'setup-helm'
 # Docker related setup
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
@@ -114,6 +116,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', '-failFast']
   waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds', 'setup-helm']
+  id: 'test'
 
 # Build everything
 # 1) Compile all docker images
@@ -123,6 +126,8 @@ steps:
   entrypoint: 'bash'
   args: ['-c', 'docker login --username soloiobot --password $$DOCKER_HUB_PASSWORD']
   secretEnv: ['DOCKER_HUB_PASSWORD']
+  id: 'docker-login'
+  waitFor: ['test']
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker']
   env:
@@ -130,6 +135,7 @@ steps:
     - 'GOPATH=/workspace/gopath'
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['docker-login']
   id: 'compile'
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker-push', 'manifest', 'release', 'deploy-site']
@@ -141,6 +147,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN', 'FIREBASE_TOKEN']
   id: 'release'
+  waitFor: ['compile']
 # Sync helm chart data back to google storage bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
@@ -149,6 +156,7 @@ steps:
     - './_output/helm'
     - gs://solo-public-helm/
   dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['release']
   id: 'set-helm-chart'
 
 
