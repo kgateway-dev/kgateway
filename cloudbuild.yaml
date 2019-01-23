@@ -36,6 +36,7 @@ steps:
     make generated-code -B
     if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
       echo "Generating code produced a non-empty diff"
+      git status --porcelain
       exit 1;
     fi
   env:
