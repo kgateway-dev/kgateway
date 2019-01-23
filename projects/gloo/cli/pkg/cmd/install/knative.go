@@ -46,10 +46,6 @@ func KnativeCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 
-			if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
-				return errors.Wrapf(err, "creating image pull secret")
-			}
-
 			glooKnativeManifestBytes, err := readGlooManifest(opts, glooKnativeUrlTemplate)
 			if err != nil {
 				return errors.Wrapf(err, "reading gloo knative manifest")
