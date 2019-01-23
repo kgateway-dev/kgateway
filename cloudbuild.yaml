@@ -34,6 +34,10 @@ steps:
     git add .
     git commit -m "set up dummy repo for diffing"
     make generated-code -B
+    if [[ $? -ne 0 ]]; then
+      echo "Code generation failed"
+      exit 1;
+    fi
     if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
       echo "Generating code produced a non-empty diff"
       git status --porcelain
