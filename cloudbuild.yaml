@@ -160,10 +160,6 @@ steps:
   waitFor: ['release']
   id: 'set-helm-chart'
 
-# TODO (rick): this could be expensive, but want to try
-options:
-  machineType: 'N1_HIGHCPU_32'
-
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
   secretEnv:
