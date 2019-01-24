@@ -3,6 +3,7 @@ package surveyutils
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -256,5 +257,66 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 		return err
 	}
 
+	return nil
+}
+
+func RemoveRouteFlagsInteractive(opts *options.Options) error {
+	// collect vs list
+	vsByKey := make(map[string]core.ResourceRef)
+	var vsKeys []string
+	var namespaces []string
+	for _, ns := range helpers.MustGetNamespaces() {
+		namespaces = append(namespaces, ns)
+		vsList, err := helpers.MustVirtualServiceClient().List(ns, clients.ListOpts{})
+		if err != nil {
+			return err
+		}
+		for _, vs := range vsList {
+			ref := vs.Metadata.Ref()
+			vsByKey[ref.Key()] = ref
+			vsKeys = append(vsKeys, ref.Key())
+		}
+	}
+
+	if len(vsKeys) == 0 {
+		return errors.Errorf("no virtual services found")
+	}
+
+	var vsKey string
+	if err := cliutil.ChooseFromList(
+		"Choose a Virtual Service from which to remove the route: ",
+		&vsKey,
+		vsKeys,
+	); err != nil {
+		return err
+	}
+	opts.Metadata.Name = vsByKey[vsKey].Name
+	opts.Metadata.Namespace = vsByKey[vsKey].Namespace
+
+	vs, err := helpers.MustVirtualServiceClient().Read(opts.Metadata.Namespace, opts.Metadata.Name,
+		clients.ReadOpts{Ctx: opts.Top.Ctx})
+	if err != nil {
+		return err
+	}
+	if vs.VirtualHost == nil {
+		return errors.Errorf("invalid virtual service %v", opts.Metadata.Ref())
+	}
+	if len(vs.VirtualHost.Routes) == 0 {
+		return errors.Errorf("no routes defined for virtual service %v", opts.Metadata.Ref())
+	}
+
+	var routes []string
+	for i, r := range vs.VirtualHost.Routes {
+		routes = append(routes, fmt.Sprintf("%v: %v", i, r.Matcher.PathSpecifier))
+	}
+
+	// get the route index
+	if err := cliutil.GetUint32InputDefault(
+		fmt.Sprintf("routes:\n%v\n\nwhich route do you wish to remove?", strings.Join(routes, "\n")),
+		&opts.Remove.Route.RemoveIndex,
+		0,
+	); err != nil {
+		return err
+	}
 	return nil
 }
