@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoyserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
