@@ -1,6 +1,7 @@
 package clusteringress_test
 
 import (
+	"github.com/solo-io/solo-kit/test/helpers"
 	"os"
 	"time"
 
@@ -29,15 +30,15 @@ var _ = Describe("ResourceClient", func() {
 		return
 	}
 	var (
-		resourceName      = "trusty"
+		resourceName      string
 		cfg               *rest.Config
 		knative           knativeclientset.Interface
 		kubeIngressClient knativev1alpha1.ClusterIngressInterface
 	)
 
 	BeforeEach(func() {
+		resourceName = "trusty-" + helpers.RandString(8)
 		var err error
-		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		// register knative crd just in case
