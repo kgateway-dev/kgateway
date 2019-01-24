@@ -61,7 +61,7 @@ Let's add a route like we did in the [basic routing tutorial](./basic_routing.md
 
 Let's try calling our new API:
 
-        export GATEWAY_URL=$(glooctl gateway url)
+        export GATEWAY_URL=$(glooctl proxy url)
         curl ${GATEWAY_URL}/api/posts      
         
 Now we should see output similar to:

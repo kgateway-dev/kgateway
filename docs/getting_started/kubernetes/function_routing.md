@@ -66,7 +66,7 @@ Let's take a look at the upstream that was created for our petstore service:
 We can see there are functions on our `default-petstore-8080` upstream. These functions were populated automatically by
 the `discovery` pod. You can see the function discovery service in action by running `kubectl logs -l gloo=discovery`
 
-The [function spec](../../v1/upstream.proto.sk.md) you see on the functions listed above belongs to the transformation plugin<!--(TODO)-->. This powerful
+The [function spec](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md) you see on the functions listed above belongs to the transformation plugin<!--(TODO)-->. This powerful
 plugin configures Gloo's [request/response transformation Envoy filter](https://github.com/solo-io/envoy-transformation)
 to perform transform requests to the structure expected by our petstore app.
 
@@ -92,7 +92,7 @@ Let's see how this plugin works by creating some routes to these functions in th
 
     Let's go ahead and test the route using `curl`:
     
-        export GATEWAY_URL=$(glooctl gateway url)
+        export GATEWAY_URL=$(glooctl proxy url)
         curl ${GATEWAY_URL}/petstore/findPet
 
         [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}] 
