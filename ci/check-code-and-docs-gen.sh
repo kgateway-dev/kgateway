@@ -30,3 +30,9 @@ if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
   git diff | cat
   exit 1;
 fi
+
+make site
+if [[ $? -ne 0 ]]; then
+  echo "Generating the site failed, check for warnings in the mkdocs build log"
+  exit 1;
+fi
