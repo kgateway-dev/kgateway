@@ -26,6 +26,8 @@ using Gloo easy.
       * [`glooctl create secret tls`](cli.md#create-tls-secret)
 * [Routes](cli.md#Routes)
      * [`glooctl add route`](cli.md#add-routes)
+     * [`glooctl remove route`](cli.md#remove-routes)
+     * [`glooctl route sort`](cli.md#sort-routes)
 * [Proxy](cli.md#Proxy)
       * [`glooctl proxy url`](cli.md#proxy-url)
       * [`glooctl proxy config`](cli.md#proxy-config)
@@ -584,13 +586,15 @@ Global Flags:
 
 # Routes
 
+
+---
+#### Add Routes
+
 Add HTTP routes to a virtualservice using the `glooctl add route` command.
 
 Adding routes in *interactive* mode is recommended for beginners.
 Simply run `glooctl add route -i` to use interactive mode.
 
----
-#### Add Routes
 
 Usage:
 ```bash
@@ -633,6 +637,66 @@ Global Flags:
 
 
 
+---
+#### Remove Routes
+
+Remove HTTP routes from a virtualservice using the `glooctl remove route` command.
+
+Usage:
+```bash
+  glooctl remove route [flags]
+```
+
+Aliases:
+```bash
+  route, r, routes
+```
+
+Flags:
+```bash
+  -h, --help            help for route
+  -x, --index uint32    remove the route with this index in the virtual service route list
+  -o, --output string   output format: (yaml, json, table)
+```
+
+Global Flags:
+```bash
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+```
+
+
+---
+#### Sort Routes
+
+The order of routes matters. A route is selected for a request based on the first matching route matcher in the virtual serivce's list. sort automatically sorts the routes in
+
+Sort existing routes on a virtualservice by their path length length using `glooctl route sort` 
+
+Usage:
+```bash
+  glooctl route sort [flags]
+```
+
+Aliases:
+```bash
+  sort, s
+```
+
+Flags:
+```bash
+  -h, --help            help for sort
+  -x, --index uint32    remove the route with this index in the virtual service route list
+  -o, --output string   output format: (yaml, json, table)
+```
+
+Global Flags:
+```bash
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+```
 
 
 ---
