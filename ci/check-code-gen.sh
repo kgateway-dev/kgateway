@@ -21,6 +21,7 @@ if [[ $? -ne 0 ]]; then
   echo "Code generation failed"
   exit 1;
 fi
+rm -rf _output
 if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
   echo "Generating code produced a non-empty diff"
   git status --porcelain
