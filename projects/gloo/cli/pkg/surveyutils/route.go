@@ -2,9 +2,6 @@ package surveyutils
 
 import (
 	"fmt"
-	"sort"
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -15,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"sort"
 )
 
 const (
@@ -307,16 +305,24 @@ func RemoveRouteFlagsInteractive(opts *options.Options) error {
 
 	var routes []string
 	for i, r := range vs.VirtualHost.Routes {
-		routes = append(routes, fmt.Sprintf("%v: %v", i, r.Matcher.PathSpecifier))
+		routes = append(routes, fmt.Sprintf("%v: %+v", i, r.Matcher.PathSpecifier))
 	}
 
-	// get the route index
-	if err := cliutil.GetUint32InputDefault(
-		fmt.Sprintf("routes:\n%v\n\nwhich route do you wish to remove?", strings.Join(routes, "\n")),
-		&opts.Remove.Route.RemoveIndex,
-		0,
+	var chosenRoute string
+	if err := cliutil.ChooseFromList(
+		"Choose a Virtual Service from which to remove the route: ",
+		&chosenRoute,
+		routes,
 	); err != nil {
 		return err
 	}
+
+	for i, route := range routes {
+		if route == chosenRoute {
+			opts.Remove.Route.RemoveIndex = uint32(i)
+			break
+		}
+	}
+
 	return nil
 }

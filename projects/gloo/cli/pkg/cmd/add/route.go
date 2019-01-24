@@ -188,6 +188,9 @@ func actionFromInput(input options.InputRoute) (*v1.Route_RouteAction, error) {
 	}
 	// TODO: multi destination
 	dest := input.Destination
+	if dest.Upstream.Name == "" {
+		return nil, errors.Errorf("must provide destination name")
+	}
 	spec, err := destSpecFromInput(dest.DestinationSpec)
 	if err != nil {
 		return nil, err

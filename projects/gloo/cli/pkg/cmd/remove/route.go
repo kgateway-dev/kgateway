@@ -1,10 +1,10 @@
 package remove
 
 import (
-	"github.com/solo-io/go-utils/cliutils"
-
+	"github.com/pkg/errors"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -48,21 +48,28 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 
 func removeRoute(opts *options.Options) error {
 	index := int(opts.Remove.Route.RemoveIndex)
-
-	virtualService, err := helpers.MustVirtualServiceClient().Read(opts.Metadata.Namespace, opts.Metadata.Name,
-		clients.ReadOpts{Ctx: opts.Top.Ctx})
-	if err != nil {
-		return err
+	if opts.Metadata.Name == "" {
+		return errors.Errorf("name of the target virtual service cannot be empty")
 	}
 
-	virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes[:index], virtualService.VirtualHost.Routes[:index]...)
+	vs, err := helpers.MustVirtualServiceClient().Read(opts.Metadata.Namespace, opts.Metadata.Name,
+		clients.ReadOpts{Ctx: opts.Top.Ctx})
+	if err != nil {
+		return errors.Wrapf(err, "reading vs %v", opts.Metadata.Ref())
+	}
 
-	out, err := helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
+	if routeCount := len(vs.VirtualHost.Routes); index >= routeCount {
+		return errors.Errorf("%v is greater than the number of routes on %v (%v)", index, vs.Metadata.Ref(), routeCount)
+	}
+
+	vs.VirtualHost.Routes = append(vs.VirtualHost.Routes[:index], vs.VirtualHost.Routes[index+1:]...)
+
+	out, err := helpers.MustVirtualServiceClient().Write(vs, clients.WriteOpts{
 		Ctx:               opts.Top.Ctx,
 		OverwriteExisting: true,
 	})
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "writing updated vs")
 	}
 
 	helpers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
