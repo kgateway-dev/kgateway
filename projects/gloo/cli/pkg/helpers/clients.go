@@ -16,6 +16,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var MemoryResourceClient *factory.MemoryResourceClientFactory
+
 func MustGetNamespaces() []string {
 	ns, err := GetNamespaces()
 	if err != nil {
@@ -26,6 +28,10 @@ func MustGetNamespaces() []string {
 
 // Note: requires RBAC permission to list namespaces at the cluster level
 func GetNamespaces() ([]string, error) {
+	if MemoryResourceClient != nil {
+		return []string{"default"}, nil
+	}
+
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
@@ -54,6 +60,10 @@ func MustUpstreamClient() v1.UpstreamClient {
 }
 
 func UpstreamClient() (v1.UpstreamClient, error) {
+	if MemoryResourceClient != nil {
+		return v1.NewUpstreamClient(MemoryResourceClient)
+	}
+
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
@@ -82,6 +92,10 @@ func MustProxyClient() v1.ProxyClient {
 }
 
 func ProxyClient() (v1.ProxyClient, error) {
+	if MemoryResourceClient != nil {
+		return v1.NewProxyClient(MemoryResourceClient)
+	}
+
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
@@ -110,6 +124,10 @@ func MustVirtualServiceClient() gatewayv1.VirtualServiceClient {
 }
 
 func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
+	if MemoryResourceClient != nil {
+		return gatewayv1.NewVirtualServiceClient(MemoryResourceClient)
+	}
+
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
@@ -138,6 +156,10 @@ func MustSecretClient() v1.SecretClient {
 }
 
 func secretClient() (v1.SecretClient, error) {
+	if MemoryResourceClient != nil {
+		return v1.NewSecretClient(MemoryResourceClient)
+	}
+
 	clientset, err := getKubernetesClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
