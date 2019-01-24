@@ -670,9 +670,9 @@ Global Flags:
 ---
 #### Sort Routes
 
-The order of routes matters. A route is selected for a request based on the first matching route matcher in the virtual serivce's list. sort automatically sorts the routes in
+The order of routes matters. A route is selected for a request based on the first matching route matcher in the virtual serivce's list. sort automatically sorts the routes in the virtual service 
 
-Sort existing routes on a virtualservice by their path length length using `glooctl route sort` 
+Sort existing routes on a virtualservice by their path length and matcher type (e.g. Prefix, Regex, Exact) length using `glooctl route sort` 
 
 Usage:
 ```bash
@@ -687,7 +687,6 @@ Aliases:
 Flags:
 ```bash
   -h, --help            help for sort
-  -x, --index uint32    remove the route with this index in the virtual service route list
   -o, --output string   output format: (yaml, json, table)
 ```
 
