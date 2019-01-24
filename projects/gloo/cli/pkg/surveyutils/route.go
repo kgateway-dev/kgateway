@@ -326,3 +326,39 @@ func RemoveRouteFlagsInteractive(opts *options.Options) error {
 
 	return nil
 }
+
+func SelectVirtualServiceInteractive(opts *options.Options) error {
+	// collect vs list
+	vsByKey := make(map[string]core.ResourceRef)
+	var vsKeys []string
+	var namespaces []string
+	for _, ns := range helpers.MustGetNamespaces() {
+		namespaces = append(namespaces, ns)
+		vsList, err := helpers.MustVirtualServiceClient().List(ns, clients.ListOpts{})
+		if err != nil {
+			return err
+		}
+		for _, vs := range vsList {
+			ref := vs.Metadata.Ref()
+			vsByKey[ref.Key()] = ref
+			vsKeys = append(vsKeys, ref.Key())
+		}
+	}
+
+	if len(vsKeys) == 0 {
+		return errors.Errorf("no virtual services found")
+	}
+
+	var vsKey string
+	if err := cliutil.ChooseFromList(
+		"Choose a Virtual Service: ",
+		&vsKey,
+		vsKeys,
+	); err != nil {
+		return err
+	}
+	opts.Metadata.Name = vsByKey[vsKey].Name
+	opts.Metadata.Namespace = vsByKey[vsKey].Namespace
+
+	return nil
+}

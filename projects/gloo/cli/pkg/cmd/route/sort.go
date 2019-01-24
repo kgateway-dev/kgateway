@@ -26,7 +26,7 @@ func Sort(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Com
 			"Usage: `glooctl route sort [--name virtual-service-name] [--namespace virtual-service-namespace]`",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Top.Interactive {
-				if err := surveyutils.RemoveRouteFlagsInteractive(opts); err != nil {
+				if err := surveyutils.SelectVirtualServiceInteractive(opts); err != nil {
 					return err
 				}
 			}
@@ -55,7 +55,7 @@ func sortRoutes(opts *options.Options) error {
 		return errors.Wrapf(err, "reading vs %v", opts.Metadata.Ref())
 	}
 
-	fmt.Printf("sorting %v routes with longest path first...", len(vs.VirtualHost.Routes))
+	fmt.Printf("sorting %v routes with longest path first...\n", len(vs.VirtualHost.Routes))
 	utils.SortRoutesLongestPathFirst(vs.VirtualHost.Routes)
 
 	out, err := helpers.MustVirtualServiceClient().Write(vs, clients.WriteOpts{

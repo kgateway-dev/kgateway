@@ -17,10 +17,10 @@ const (
 
 var _ = Describe("PathAsString", func() {
 	rand.Seed(time.Now().Unix())
-	makeRoute := func(pathType int, longPath bool) *v1.Route {
-		pathStr := "/short"
-		if longPath {
-			pathStr = "/looooonnggggggg"
+	makeRoute := func(pathType int, length int) *v1.Route {
+		pathStr := "/"
+		for i := 0; i < length; i++ {
+			pathStr += "s/"
 		}
 		m := &v1.Matcher{}
 		switch pathType {
@@ -39,8 +39,8 @@ var _ = Describe("PathAsString", func() {
 	makeSortedRoutes := func() []*v1.Route {
 		var routes []*v1.Route
 		for _, path := range []int{exact, regex, prefix} {
-			for _, long := range []bool{true, false} {
-				routes = append(routes, makeRoute(path, long))
+			for _, length := range []int{9, 6, 3} {
+				routes = append(routes, makeRoute(path, length))
 			}
 		}
 		return routes

@@ -24,7 +24,7 @@ func lessMatcher(m1, m2 *v1.Matcher) bool {
 		return pathTypePriority(m1) < pathTypePriority(m2)
 	}
 	// all else being equal
-	return PathAsString(m1) < PathAsString(m2)
+	return PathAsString(m1) > PathAsString(m2)
 }
 
 const (
