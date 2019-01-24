@@ -6,7 +6,7 @@ steps:
   args: ['cp', 'gs://solo-public-cache/gloo/gloo-dep.tar.gz', 'gloo-dep.tar.gz']
 - name: ubuntu
   entrypoint: 'bash'
-  args: ['-c', 'mkdir -p ./gopath/pkg/dep && tar -xvzf gloo-dep.tar.gz ./gopath/pkg/dep']
+  args: ['-c', 'mkdir -p ./gopath/pkg/dep && tar -xzf gloo-dep.tar.gz ./gopath/pkg/dep']
 
 # Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
