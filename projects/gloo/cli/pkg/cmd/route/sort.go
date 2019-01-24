@@ -54,8 +54,11 @@ func sortRoutes(opts *options.Options) error {
 		return errors.Wrapf(err, "reading vs %v", opts.Metadata.Ref())
 	}
 
-	fmt.Printf("sorting %v routes with longest path first...\n", len(vs.VirtualHost.Routes))
-	utils.SortRoutesLongestPathFirst(vs.VirtualHost.Routes)
+	fmt.Printf("sorting %v routes by:\n" +
+		"- exact < regex < prefix \n" +
+		"- longest path first \n" +
+		"...\n", len(vs.VirtualHost.Routes))
+	utils.SortRoutesByPath(vs.VirtualHost.Routes)
 
 	out, err := helpers.MustVirtualServiceClient().Write(vs, clients.WriteOpts{
 		Ctx:               opts.Top.Ctx,

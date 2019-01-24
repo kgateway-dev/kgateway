@@ -9,8 +9,7 @@ import (
 // routes are sorted in the following way:
 // 1. exact path < regex path < path prefix
 // 2. longer path string < shorter path string
-// TODO: ensure this function is used in upcoming work to merge virtual services
-func SortRoutesLongestPathFirst(routes []*v1.Route) {
+func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
 		return lessMatcher(routes[i].Matcher, routes[j].Matcher)
 	})

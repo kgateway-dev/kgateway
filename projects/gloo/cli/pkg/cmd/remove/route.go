@@ -25,7 +25,7 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 			"If no virtual service is specified for this command, glooctl add route will attempt to add it to a " +
 			"default virtualservice with domain '*'. if one does not exist, it will be created for you.\n\n" +
 			"" +
-			"Usage: `glooctl rm route [--name virtual-service-name] [--namespace namespace] [--index=X]`",
+			"Usage: `glooctl rm route [--name virtual-service-name] [--namespace namespace] [--index x]`",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Top.Interactive {
 				if err := surveyutils.RemoveRouteFlagsInteractive(opts); err != nil {
