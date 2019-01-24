@@ -27,27 +27,7 @@ steps:
   id: 'check-format'
 - name: 'gcr.io/$PROJECT_ID/go-make'
   entrypoint: 'bash'
-  args:
-  - '-c'
-  - |
-    git init
-    git add .
-    git commit -m "set up dummy repo for diffing"
-    git clone https://github.com/solo-io/solo-kit /workspace/gopath/src/github.com/solo-io/solo-kit
-    if [[ $? -ne 0 ]]; then
-      echo "Could not get solo-kit"
-      exit 1;
-    fi
-    make generated-code -B
-    if [[ $? -ne 0 ]]; then
-      echo "Code generation failed"
-      exit 1;
-    fi
-    if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
-      echo "Generating code produced a non-empty diff"
-      git status --porcelain
-      exit 1;
-    fi
+  args: ['ci/check-code-gen.sh']
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'

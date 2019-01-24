@@ -1,0 +1,12 @@
+steps:
+- name: 'gcr.io/$PROJECT_ID/dep'
+  args: ['ensure']
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+
+- name: gcr.io/cloud-builders/gsutil
+  args:
+  - rsync
+  - -r
+  - './gopath/pkg/dep'
+  - gs://solo-public-cache/gloo
