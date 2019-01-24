@@ -18,6 +18,8 @@ make update-deps
 
 PATH=/workspace/gopath/bin:$PATH
 
+set +e
+
 make generated-code -B
 if [[ $? -ne 0 ]]; then
   echo "Code generation failed"
