@@ -1,9 +1,10 @@
 package clusteringress_test
 
 import (
-	"github.com/solo-io/solo-kit/test/helpers"
 	"os"
 	"time"
+
+	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
