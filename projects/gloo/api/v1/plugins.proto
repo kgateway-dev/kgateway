@@ -16,7 +16,6 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/sqoop/sqoop.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
@@ -60,7 +59,6 @@ message DestinationSpec {
         azure.plugins.gloo.solo.io.DestinationSpec azure = 2;
         rest.plugins.gloo.solo.io.DestinationSpec rest = 3;
         grpc.plugins.gloo.solo.io.DestinationSpec grpc = 4;
-        sqoop.plugins.gloo.solo.io.DestinationSpec sqoop = 5;
     }
 }
 

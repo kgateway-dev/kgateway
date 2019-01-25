@@ -101,7 +101,6 @@ Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec 
 "azure": .azure.plugins.gloo.solo.io.DestinationSpec
 "rest": .rest.plugins.gloo.solo.io.DestinationSpec
 "grpc": .grpc.plugins.gloo.solo.io.DestinationSpec
-"sqoop": .sqoop.plugins.gloo.solo.io.DestinationSpec
 
 ```
 
@@ -111,7 +110,6 @@ Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec 
 | `azure` | [.azure.plugins.gloo.solo.io.DestinationSpec](plugins/azure/azure.proto.sk.md#DestinationSpec) |  |  |
 | `rest` | [.rest.plugins.gloo.solo.io.DestinationSpec](plugins/rest/rest.proto.sk.md#DestinationSpec) |  |  |
 | `grpc` | [.grpc.plugins.gloo.solo.io.DestinationSpec](plugins/grpc/grpc.proto.sk.md#DestinationSpec) |  |  |
-| `sqoop` | [.sqoop.plugins.gloo.solo.io.DestinationSpec](plugins/sqoop/sqoop.proto.sk.md#DestinationSpec) |  |  |
 
 
 

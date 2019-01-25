@@ -6,7 +6,6 @@ import "gogoproto/gogo.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/sqoop/sqoop.proto";
 
 
 // TODO: cna't use plugins/rest/rest.proto as it creates a import cycle in the generated go.
@@ -23,6 +22,5 @@ message ServiceSpec {
     oneof plugin_type {
         rest.plugins.gloo.solo.io.ServiceSpec rest = 1;
         grpc.plugins.gloo.solo.io.ServiceSpec grpc = 2;
-        sqoop.plugins.gloo.solo.io.ServiceSpec sqoop = 3;
     }
 }
