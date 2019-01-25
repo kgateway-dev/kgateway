@@ -85,6 +85,10 @@ steps:
   waitFor: ['make-helm-dir']
   id: 'setup-helm'
 # Docker related setup
+# grab this container immediately in parallel
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  entrypoint: ls
+  waitFor: ['-']
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: mkdir
   args: ['/workspace/.docker']
