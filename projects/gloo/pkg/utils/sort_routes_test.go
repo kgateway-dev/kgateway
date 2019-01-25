@@ -4,44 +4,22 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-const (
-	exact = iota
-	prefix
-	regex
-)
-
 var _ = Describe("PathAsString", func() {
 	rand.Seed(time.Now().Unix())
-	makeRoute := func(pathType int, length int) *v1.Route {
-		pathStr := "/"
-		for i := 0; i < length; i++ {
-			pathStr += "s/"
-		}
-		m := &v1.Matcher{}
-		switch pathType {
-		case exact:
-			m.PathSpecifier = &v1.Matcher_Exact{pathStr}
-		case prefix:
-			m.PathSpecifier = &v1.Matcher_Prefix{pathStr}
-		case regex:
-			m.PathSpecifier = &v1.Matcher_Regex{pathStr}
-		default:
-			panic("bad test")
-		}
-		return &v1.Route{Matcher: m}
-	}
 
 	makeSortedRoutes := func() []*v1.Route {
 		var routes []*v1.Route
-		for _, path := range []int{exact, regex, prefix} {
+		for _, path := range []int{helpers.ExactPath, helpers.RegexPath, helpers.PrefixPath} {
 			for _, length := range []int{9, 6, 3} {
-				routes = append(routes, makeRoute(path, length))
+				routes = append(routes, helpers.MakeRoute(path, length))
 			}
 		}
 		return routes
@@ -50,8 +28,8 @@ var _ = Describe("PathAsString", func() {
 	makeUnSortedRoutesWrongPriority := func() []*v1.Route {
 		var routes []*v1.Route
 		for _, length := range []int{9, 6, 3} {
-			for _, path := range []int{exact, regex, prefix} {
-				routes = append(routes, makeRoute(path, length))
+			for _, path := range []int{helpers.ExactPath, helpers.RegexPath, helpers.PrefixPath} {
+				routes = append(routes, helpers.MakeRoute(path, length))
 			}
 		}
 		return routes
@@ -59,9 +37,9 @@ var _ = Describe("PathAsString", func() {
 
 	makeUnSortedRoutesWrongPaths1 := func() []*v1.Route {
 		var routes []*v1.Route
-		for _, path := range []int{regex, exact, prefix} {
+		for _, path := range []int{helpers.RegexPath, helpers.ExactPath, helpers.PrefixPath} {
 			for _, length := range []int{9, 6, 3} {
-				routes = append(routes, makeRoute(path, length))
+				routes = append(routes, helpers.MakeRoute(path, length))
 			}
 		}
 		return routes
@@ -69,9 +47,9 @@ var _ = Describe("PathAsString", func() {
 
 	makeUnSortedRoutesWrongPaths2 := func() []*v1.Route {
 		var routes []*v1.Route
-		for _, path := range []int{regex, prefix, exact} {
+		for _, path := range []int{helpers.RegexPath, helpers.PrefixPath, helpers.ExactPath} {
 			for _, length := range []int{9, 6, 3} {
-				routes = append(routes, makeRoute(path, length))
+				routes = append(routes, helpers.MakeRoute(path, length))
 			}
 		}
 		return routes
@@ -79,9 +57,9 @@ var _ = Describe("PathAsString", func() {
 
 	makeUnSortedRoutesWrongPathPriority := func() []*v1.Route {
 		var routes []*v1.Route
-		for _, path := range []int{prefix, regex, exact} {
+		for _, path := range []int{helpers.PrefixPath, helpers.RegexPath, helpers.ExactPath} {
 			for _, length := range []int{9, 6, 3} {
-				routes = append(routes, makeRoute(path, length))
+				routes = append(routes, helpers.MakeRoute(path, length))
 			}
 		}
 		return routes
@@ -89,9 +67,9 @@ var _ = Describe("PathAsString", func() {
 
 	makeUnSortedRoutesWrongLength := func() []*v1.Route {
 		var routes []*v1.Route
-		for _, path := range []int{prefix, regex, exact} {
+		for _, path := range []int{helpers.PrefixPath, helpers.RegexPath, helpers.ExactPath} {
 			for _, length := range []int{6, 3, 9} {
-				routes = append(routes, makeRoute(path, length))
+				routes = append(routes, helpers.MakeRoute(path, length))
 			}
 		}
 		return routes
@@ -100,8 +78,8 @@ var _ = Describe("PathAsString", func() {
 	makeUnSortedRoutesWrongLengthPriority := func() []*v1.Route {
 		var routes []*v1.Route
 		for _, length := range []int{6, 3, 9} {
-			for _, path := range []int{prefix, regex, exact} {
-				routes = append(routes, makeRoute(path, length))
+			for _, path := range []int{helpers.PrefixPath, helpers.RegexPath, helpers.ExactPath} {
+				routes = append(routes, helpers.MakeRoute(path, length))
 			}
 		}
 		return routes
