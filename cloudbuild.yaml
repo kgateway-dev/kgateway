@@ -89,6 +89,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: ls
   waitFor: ['-']
+  id: 'grab-gingko-container'
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: mkdir
   args: ['/workspace/.docker']
