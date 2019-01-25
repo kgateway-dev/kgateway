@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -79,8 +80,13 @@ func selectOrCreateVirtualService(opts *options.Options) (*gatewayv1.VirtualServ
 		}
 	}
 
-	// TODO: edge case: check that a vs does not already exist with a * domain
-	// no vs exist with default domain
+	if opts.Metadata.Name == "" {
+		opts.Metadata.Name = "default"
+	}
+	if opts.Metadata.Namespace == "" {
+		opts.Metadata.Name = defaults.GlooSystem
+	}
+
 	fmt.Printf("creating virtualservice %v with default domain *\n", opts.Metadata.Name)
 	return &gatewayv1.VirtualService{
 		Metadata: opts.Metadata,
