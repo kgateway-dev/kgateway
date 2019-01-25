@@ -43,6 +43,7 @@ func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) 
 		},
 	}
 	pflags := cmd.PersistentFlags()
+	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddVirtualServiceFlags(pflags, &opts.Create.VirtualService)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
