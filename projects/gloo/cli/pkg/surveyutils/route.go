@@ -2,6 +2,8 @@ package surveyutils
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -12,7 +14,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"sort"
 )
 
 const (

@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"sort"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 // opinionated method to sort routes by convention
