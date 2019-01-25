@@ -13,7 +13,7 @@ nav:
     - Basic Routing: getting_started/kubernetes/basic_routing.md
     - Routing to external APIs: getting_started/kubernetes/external_api_routing.md
     - Function Routing: getting_started/kubernetes/function_routing.md
-- CLI reference: cli.md
+- CLI reference: cli/README.md
 - v1 API reference:
   - Overview: v1/gloo.solo.io.project.sk.md
   - Upstreams: v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md
