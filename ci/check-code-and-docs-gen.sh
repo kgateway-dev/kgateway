@@ -20,7 +20,7 @@ PATH=/workspace/gopath/bin:$PATH
 
 set +e
 
-make generated-code -B
+make generated-code -B > /dev/null
 if [[ $? -ne 0 ]]; then
   echo "Code generation failed"
   exit 1;
