@@ -31,7 +31,7 @@ Verify the CLI is installed and running correctly with:
 Once your Kubernetes cluster is up and running, run the following command to deploy Gloo and Envoy to the `gloo-system` namespace:
 
 ```bash
-glooctl install kube 
+glooctl install gateway 
 ```
 
 Check that the Gloo pods and services have been created:
@@ -67,3 +67,14 @@ questions on our [diligently staffed Slack channel](https://slack.solo.io/).
 
 See [Getting Started on Kubernetes](../getting_started/kubernetes/basic_routing.md) to get started creating routes with Gloo.
 
+
+### Uninstall 
+
+To tear down the installation at any point, you can simply run
+
+```bash
+
+kubectl delete namespace gloo-system
+```
+
+<!-- end -->

@@ -1,3 +1,4 @@
+{{- if or (.Values.ingress.enabled) (.Values.settings.integrations.knative.enabled) }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -25,4 +26,7 @@ spec:
         env:
         - name: "ENABLE_KNATIVE_INGRESS"
           value: "true"
+{{- end }}
+
+
 {{- end }}

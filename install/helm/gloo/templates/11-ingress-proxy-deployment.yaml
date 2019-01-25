@@ -1,3 +1,4 @@
+{{- if .Values.ingress.enabled }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -49,3 +50,5 @@ spec:
       - configMap:
           name: ingress-envoy-config
         name: envoy-config
+
+{{- end }}

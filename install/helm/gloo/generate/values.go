@@ -73,6 +73,7 @@ type DiscoveryDeployment struct {
 }
 
 type Gateway struct {
+	Enabled    bool               `json:"enabled"`
 	Deployment *GatewayDeployment `json:"deployment,omitempty"`
 }
 
@@ -98,6 +99,7 @@ type GatewayProxyConfigMap struct {
 }
 
 type Ingress struct {
+	Enabled    bool               `json:"enabled"`
 	Deployment *IngressDeployment `json:"deployment,omitempty"`
 }
 

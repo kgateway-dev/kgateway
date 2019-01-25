@@ -30,6 +30,7 @@ discovery:
     replicas: 1
 
 gateway:
+  enabled: true
   deployment:
     image:
       repository: soloio/gateway
@@ -48,6 +49,7 @@ gatewayProxy:
 
 
 ingress:
+  enabled: false
   deployment:
     image:
       repository: soloio/ingress

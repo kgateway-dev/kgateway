@@ -1,3 +1,4 @@
+{{- if .Values.ingress.enabled }}
 # configmap
 apiVersion: v1
 data:
@@ -46,3 +47,6 @@ metadata:
     app: gloo
   name: ingress-envoy-config
   namespace: {{ .Release.Namespace }}
+
+
+{{- end }}

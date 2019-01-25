@@ -1,3 +1,4 @@
+{{- if .Values.gateway.enabled }}
 # config_map
 apiVersion: v1
 data:
@@ -46,3 +47,5 @@ metadata:
     app: gloo
   name: gateway-envoy-config
   namespace: {{ .Release.Namespace }}
+
+{{- end }}
