@@ -1,0 +1,30 @@
+## glooctl upgrade
+
+upgrade glooctl binary
+
+### Synopsis
+
+upgrade glooctl binary
+
+```
+glooctl upgrade [flags]
+```
+
+### Options
+
+```
+  -h, --help             help for upgrade
+      --path string      Desired path for your upgraded glooctl binary. Defaults to the location of your currently executing binary.
+      --release string   Which glooctl release to download. Specify a git tag corresponding to the desired version of glooctl. (default "latest")
+```
+
+### Options inherited from parent commands
+
+```
+  -i, --interactive   use interactive mode
+```
+
+### SEE ALSO
+
+* [glooctl](glooctl.md)	 - CLI for Gloo
+
