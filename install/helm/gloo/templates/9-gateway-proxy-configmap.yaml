@@ -4,11 +4,11 @@ data:
 {{ if (empty .Values.gatewayProxy.configMap.data) }}
   envoy.yaml: |
     node:
-      cluster: ingress
+      cluster: gateway
       id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
       metadata:
         # this line must match !
-        role: "{{ .Release.Namespace }}~ingress-proxy"
+        role: "{{ .Release.Namespace }}~gateway-proxy"
     static_resources:
       clusters:
       - name: xds_cluster
