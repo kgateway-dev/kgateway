@@ -7,16 +7,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 )
 
 var _ = Describe("Upstream", func() {
 
 	BeforeEach(func() {
-		helpers.MemoryResourceClient = &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
+		helpers.UseMemoryClients()
 	})
 
 	It("should create static upstream", func() {

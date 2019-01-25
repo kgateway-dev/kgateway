@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -17,7 +18,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var MemoryResourceClient *factory.MemoryResourceClientFactory
+var memoryResourceClient *factory.MemoryResourceClientFactory
+
+func UseMemoryClients() {
+	memoryResourceClient = &factory.MemoryResourceClientFactory{
+		Cache: memory.NewInMemoryResourceCache(),
+	}
+}
 
 func MustGetNamespaces() []string {
 	ns, err := GetNamespaces()
@@ -29,7 +36,7 @@ func MustGetNamespaces() []string {
 
 // Note: requires RBAC permission to list namespaces at the cluster level
 func GetNamespaces() ([]string, error) {
-	if MemoryResourceClient != nil {
+	if memoryResourceClient != nil {
 		return []string{"default", defaults.GlooSystem}, nil
 	}
 
@@ -61,8 +68,8 @@ func MustUpstreamClient() v1.UpstreamClient {
 }
 
 func UpstreamClient() (v1.UpstreamClient, error) {
-	if MemoryResourceClient != nil {
-		return v1.NewUpstreamClient(MemoryResourceClient)
+	if memoryResourceClient != nil {
+		return v1.NewUpstreamClient(memoryResourceClient)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -93,8 +100,8 @@ func MustProxyClient() v1.ProxyClient {
 }
 
 func ProxyClient() (v1.ProxyClient, error) {
-	if MemoryResourceClient != nil {
-		return v1.NewProxyClient(MemoryResourceClient)
+	if memoryResourceClient != nil {
+		return v1.NewProxyClient(memoryResourceClient)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -125,8 +132,8 @@ func MustVirtualServiceClient() gatewayv1.VirtualServiceClient {
 }
 
 func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
-	if MemoryResourceClient != nil {
-		return gatewayv1.NewVirtualServiceClient(MemoryResourceClient)
+	if memoryResourceClient != nil {
+		return gatewayv1.NewVirtualServiceClient(memoryResourceClient)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -157,8 +164,8 @@ func MustSecretClient() v1.SecretClient {
 }
 
 func secretClient() (v1.SecretClient, error) {
-	if MemoryResourceClient != nil {
-		return v1.NewSecretClient(MemoryResourceClient)
+	if memoryResourceClient != nil {
+		return v1.NewSecretClient(memoryResourceClient)
 	}
 
 	clientset, err := getKubernetesClient()
