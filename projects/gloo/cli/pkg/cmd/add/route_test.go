@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Upstream", func() {
+var _ = Describe("Routes", func() {
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
@@ -25,7 +25,7 @@ var _ = Describe("Upstream", func() {
 		err := testutils.Glooctl("add route --path-exact /sample-route-1 --dest-name default-petstore-8080 --prefix-rewrite /api/pets")
 		Expect(err).NotTo(HaveOccurred())
 
-		up, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
-		Expect(up.Metadata.Name).To(Equal("default"))
+		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		Expect(vs.Metadata.Name).To(Equal("default"))
 	})
 })
