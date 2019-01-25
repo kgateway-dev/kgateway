@@ -13,7 +13,7 @@ import (
 
 var _ = Describe("Upstream", func() {
 
-	BeforeSuite(func() {
+	BeforeEach(func() {
 		helpers.MemoryResourceClient = &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
