@@ -1,12 +1,13 @@
 package utils
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"math/rand"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 const (
@@ -109,7 +110,7 @@ var _ = Describe("PathAsString", func() {
 	It("sorts the routes by longest path first", func() {
 		sortedRoutes := makeSortedRoutes()
 		expectedRoutes := makeSortedRoutes()
-		for count := 0; count < 100; count ++ {
+		for count := 0; count < 100; count++ {
 			rand.Shuffle(len(expectedRoutes), func(i, j int) {
 				expectedRoutes[i], expectedRoutes[j] = expectedRoutes[j], expectedRoutes[i]
 			})
