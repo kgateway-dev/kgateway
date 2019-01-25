@@ -17,10 +17,9 @@ var _ = Describe("Generate Options", func() {
 		Secrets:   []string{"s3"},
 	}
 
-	// https://github.com/solo-io/gloo/issues/210
-	PIt("should create the correct Secret options and map", func() {
+	It("should create the correct Secret options and map", func() {
 		genOpts, resMap := generateCommonResourceSelectOptions("secret", nsrMap)
-		Expect(genOpts).To(Equal([]string{
+		Expect(genOpts).To(ConsistOf([]string{
 			"ns1, s1",
 			"ns1, s2",
 			"ns2, s3",
@@ -50,6 +49,6 @@ var _ = Describe("Generate Options", func() {
 				Namespace: "ns2",
 			},
 		}
-		Expect(resMap).To(Equal(expectedMap))
+		Expect(resMap).To(BeEquivalentTo(expectedMap))
 	})
 })
