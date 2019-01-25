@@ -3,12 +3,9 @@ steps:
 # Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
 # These two steps should populate the cache
 - name: gcr.io/cloud-builders/gsutil
-  args: ['cp', 'gs://solo-public-cache/gloo/gloo-dep.tar.gz', 'gloo-dep.tar.gz']
-  id: 'download-dep-cache'
-- name: ubuntu
   entrypoint: 'bash'
-  args: ['-c', 'mkdir -p ./gopath/pkg/dep && tar -xzf gloo-dep.tar.gz']
-  id: 'untar-dep-cache'
+  args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -',]
+  id: 'download-untar-dep-cache'
 
 # Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
