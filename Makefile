@@ -61,9 +61,11 @@ $(OUTPUT_DIR)/.generated-code:
 docs/index.md: 
 	cat README.md | sed 's@docs/@@g' > $@
 
-site: docs/index.md
+site: docs/index.md docs/cli/glooctl.md
 	mkdocs build
 
+docs/cli/glooctl.md: $(shell find projects/gloo/cli -name "*.go" | grep -v test.go | grep -v '\.\#*')
+	go run projects/gloo/cli/cmd/docs/main.go
 # To run this, install firebase CLI and first run firebase login (requires solo account)
 # This is run by CI and is not intended to be run manually unless otherwise necessary
 .PHONY: deploy-site
@@ -71,6 +73,9 @@ deploy-site: site
 ifeq ($(RELEASE),"true")
 	firebase deploy --only hosting:gloo-docs
 endif
+
+serve-site: site
+	cd site && python -m SimpleHTTPServer
 
 #----------------------------------------------------------------------------------
 # Generate mocks
