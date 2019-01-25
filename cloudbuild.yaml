@@ -4,7 +4,7 @@ steps:
 # These two steps should populate the cache
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
-  args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -',]
+  args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -']
   id: 'download-untar-dep-cache'
 
 # Run dep to set up the project so it can be built and tested
