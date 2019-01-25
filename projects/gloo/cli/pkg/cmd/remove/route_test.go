@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Sort", func() {
+var _ = Describe("Remove Route", func() {
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
