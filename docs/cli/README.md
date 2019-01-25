@@ -8,6 +8,7 @@ using Gloo easy.
   * [Upgrade `glooctl`](#upgrade-the-cli)
   * [`glooctl install kube`](#install-gloo-on-kubernetes)
   * [Uninstall from Kubernetes](#uninstall-gloo-from-kubernetes)
+* [Reference](#Reference)
 * [Upstreams](#Upstreams)
   * [`glooctl get upstream`](glooctl_get_upstream.md)
   * [`glooctl create upstream`](glooctl_create_upstream.md)
