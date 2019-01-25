@@ -1,23 +1,15 @@
 package create_test
 
 import (
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 )
-
-func Glooctl(args string) error {
-	app := cmd.GlooCli("test")
-	app.SetArgs(strings.Split(args, " "))
-	return app.Execute()
-}
 
 var _ = Describe("Upstream", func() {
 
@@ -28,7 +20,7 @@ var _ = Describe("Upstream", func() {
 	})
 
 	It("should create static upstream", func() {
-		err := Glooctl("create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80")
+		err := testutils.Glooctl("create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80")
 		Expect(err).NotTo(HaveOccurred())
 
 		up, err := helpers.MustUpstreamClient().Read("gloo-system", "jsonplaceholder-80", clients.ReadOpts{})
