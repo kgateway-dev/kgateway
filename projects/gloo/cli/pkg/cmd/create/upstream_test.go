@@ -31,7 +31,7 @@ var _ = Describe("Upstream", func() {
 		err := Glooctl("create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80")
 		Expect(err).NotTo(HaveOccurred())
 
-		up, err := helpers.MustUpstreamClient().Read("default", "jsonplaceholder-80", clients.ReadOpts{})
+		up, err := helpers.MustUpstreamClient().Read("gloo-system", "jsonplaceholder-80", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(up.Metadata.Name).To(Equal("jsonplaceholder-80"))
 	})

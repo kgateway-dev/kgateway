@@ -12,9 +12,10 @@ func MetadataArgsParse(opts *options.Options, args []string) error {
 	}
 	switch {
 	case opts.Metadata.Name != "":
-		return nil
 	case opts.Metadata.Name == "" && len(args) > 0:
 		opts.Metadata.Name = args[0]
+	default:
+		return errors.Errorf("name must be specified in flag (--name) or via first arg")
 	}
-	return errors.Errorf("name must be specified in flag (--name) or via first arg")
+	return nil
 }
