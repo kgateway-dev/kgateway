@@ -26,12 +26,13 @@ type SetupOpts struct {
 	ExitOnError   bool
 }
 
+var once sync.Once
+
 func Main(opts SetupOpts) error {
 	start := time.Now()
 	loggingPrefix := opts.LoggingPrefix
 	check.CallCheck(loggingPrefix, version.Version, start)
 	// prevent panic if multiple flag.Parse called concurrently
-	var once sync.Once
 	once.Do(func() {
 		flag.Parse()
 	})
