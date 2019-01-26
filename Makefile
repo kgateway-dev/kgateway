@@ -55,6 +55,7 @@ $(OUTPUT_DIR)/.generated-code:
 	go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
+	mkdir -p $(OUTPUT_DIR)
 	touch $@
 
 .PHONY: docs/index.md
