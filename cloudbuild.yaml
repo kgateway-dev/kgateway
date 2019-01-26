@@ -117,7 +117,7 @@ steps:
   - 'RUN_KUBE_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['-r', '-failFast', "-p"]
+  args: ['-r', '-failFast']
   waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds', 'setup-helm']
   id: 'test'
 
