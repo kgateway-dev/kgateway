@@ -2,3 +2,4 @@
 values.yaml
 Chart.yaml
 values-knative.yaml
+values-ingress.yaml

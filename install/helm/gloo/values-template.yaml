@@ -50,21 +50,3 @@ gatewayProxy:
 
 ingress:
   enabled: false
-  deployment:
-    image:
-      repository: soloio/ingress
-      pullPolicy: Always
-    replicas: 1
-
-
-ingressProxy:
-  deployment:
-    image:
-      repository: soloio/gloo-envoy-wrapper
-      pullPolicy: Always
-    httpPort: 80
-    httpsPort: 443
-    replicas: 1
-  configMap:
-    data:
-

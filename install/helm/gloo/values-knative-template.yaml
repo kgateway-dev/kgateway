@@ -10,5 +10,9 @@ settings:
         httpsPort: 443
         replicas: 1
 
-# Everything else is the same as values-template.yaml
+gateway:
+  enabled: false
+
+ingress:
+  enabled: false
 
