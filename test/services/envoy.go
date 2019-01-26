@@ -9,12 +9,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"text/template"
 
 	"bytes"
 	"io"
 
 	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/config"
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -24,7 +26,12 @@ const (
 	containerName = "e2e_envoy"
 )
 
-var adminPort = 19000
+var adminPort = uint32(20000)
+var bindPort = uint32(10080)
+
+func NextBindPort() uint32 {
+	return atomic.AddUint32(&bindPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
+}
 
 func (ei *EnvoyInstance) buildBootstrap() string {
 	var b bytes.Buffer
@@ -69,7 +76,7 @@ dynamic_resources:
     ads: {}
   lds_config:
     ads: {}
-  
+
 admin:
   access_log_path: /dev/null
   address:
@@ -196,11 +203,10 @@ type EnvoyInstance struct {
 	useDocker     bool
 	GlooAddr      string // address for gloo and services
 	Port          uint32
-	AdminPort     int32
+	AdminPort     uint32
 }
 
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
-	adminPort = adminPort + 1
 
 	gloo := "127.0.0.1"
 	var err error
@@ -219,7 +225,7 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		envoypath: ef.envoypath,
 		useDocker: ef.useDocker,
 		GlooAddr:  gloo,
-		AdminPort: int32(adminPort),
+		AdminPort: atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil

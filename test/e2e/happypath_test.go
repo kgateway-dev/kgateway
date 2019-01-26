@@ -50,7 +50,7 @@ var _ = Describe("Happypath", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = 8080
+		envoyPort = services.NextBindPort()
 	})
 
 	AfterEach(func() {

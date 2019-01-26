@@ -25,6 +25,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
+	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
@@ -43,14 +44,14 @@ type TestClients struct {
 	GlooPort             int
 }
 
-var glooPort int32 = 8100
+var glooPort int32 = int32(30400 + config.GinkgoConfig.ParallelNode*1000)
 
 func RunGateway(ctx context.Context, justgloo bool) TestClients {
 	return RunGatewayWithNamespaceAndKubeClient(ctx, justgloo, defaults.GlooSystem, nil)
 }
 
 func RunGatewayWithNamespaceAndKubeClient(ctx context.Context, justgloo bool, ns string, kubeclient kubernetes.Interface) TestClients {
-	localglooPort := atomic.AddInt32(&glooPort, 1)
+	localglooPort := atomic.AddInt32(&glooPort, 1) + int32(config.GinkgoConfig.ParallelNode*1000)
 
 	cache := memory.NewInMemoryResourceCache()
 
