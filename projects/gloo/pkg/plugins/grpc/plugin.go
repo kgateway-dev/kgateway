@@ -80,9 +80,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	grpcSpec := grpcWrapper.Grpc
+	out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
 
-	if len(grpcSpec.GrpcServices) == 0 {
-		return errors.New("service_info.properties.service_names cannot be empty")
+	if grpcSpec == nil || len(grpcSpec.GrpcServices) == 0 {
+		// no services, this just marks the upstream as a grpc one.
+		return nil
 	}
 	descriptors, err := convertProto(grpcSpec.Descriptors)
 	if err != nil {
@@ -106,8 +108,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
 	}
-
-	out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
 
 	return nil
 }
