@@ -1,0 +1,34 @@
+## glooctl create virtualservice
+
+Create a Virtual Service
+
+### Synopsis
+
+A virtual service describes the set of routes to match for a set of domains. 
+Virtual services are containers for routes assigned to a domain or set of domains. 
+Virtual services must not have overlapping domains, as the virtual service to match a request is selected by the Host header (in HTTP1) or :authority header (in HTTP2). The routes within a virtual service 
+
+```
+glooctl create virtualservice [flags]
+```
+
+### Options
+
+```
+      --domains strings    comma seperated list of domains
+  -h, --help               help for virtualservice
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+```
+
+### Options inherited from parent commands
+
+```
+  -i, --interactive     use interactive mode
+  -o, --output string   output format: (yaml, json, table)
+```
+
+### SEE ALSO
+
+* [glooctl create](glooctl_create.md)	 - Create a Gloo resource
+

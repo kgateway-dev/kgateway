@@ -7,8 +7,7 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/hashicorp/go-multierror"
-
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"

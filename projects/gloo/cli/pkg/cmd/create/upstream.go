@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
@@ -111,8 +111,8 @@ func createUpstreamSubcommand(opts *options.Options, upstreamType, short, long s
 			return createUpstream(opts)
 		},
 	}
+	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &opts.Metadata)
 	flagutils.AddUpstreamFlags(cmd.PersistentFlags(), upstreamType, &opts.Create.InputUpstream)
-
 	return cmd
 }
 

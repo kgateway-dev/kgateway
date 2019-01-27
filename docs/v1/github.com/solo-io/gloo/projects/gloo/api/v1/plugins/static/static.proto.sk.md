@@ -29,6 +29,7 @@ Unlike upstreams created by service discovery, Static Upstreams must be created 
 "hosts": []static.plugins.gloo.solo.io.Host
 "use_tls": bool
 "service_spec": .plugins.gloo.solo.io.ServiceSpec
+"use_http2": bool
 
 ```
 
@@ -37,6 +38,7 @@ Unlike upstreams created by service discovery, Static Upstreams must be created 
 | `hosts` | [[]static.plugins.gloo.solo.io.Host](static.proto.sk.md#Host) | A list of addresses and ports at least one must be specified |  |
 | `use_tls` | `bool` | Attempt to use outbound TLS Gloo will automatically set this to true for port 443 |  |
 | `service_spec` | [.plugins.gloo.solo.io.ServiceSpec](../service_spec.proto.sk.md#ServiceSpec) | An optional Service Spec describing the service listening at this address |  |
+| `use_http2` | `bool` | Use http2 when communicating with this upstream |  |
 
 
 

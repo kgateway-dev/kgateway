@@ -4,6 +4,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/solo-kit/test/helpers"
+
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	knativev1alpha1 "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
@@ -29,15 +31,15 @@ var _ = Describe("ResourceClient", func() {
 		return
 	}
 	var (
-		resourceName      = "trusty"
+		resourceName      string
 		cfg               *rest.Config
 		knative           knativeclientset.Interface
 		kubeIngressClient knativev1alpha1.ClusterIngressInterface
 	)
 
 	BeforeEach(func() {
+		resourceName = "trusty-" + helpers.RandString(8)
 		var err error
-		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 		// register knative crd just in case

@@ -29,7 +29,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ .Values.settings.integrations.knative.proxy.image }}
+        image: {{ .Values.settings.integrations.knative.proxy.image.repository }}:{{ .Values.settings.integrations.knative.proxy.image.tag }}
         imagePullPolicy: {{ .Values.settings.integrations.knative.proxy.image.pullPolicy }}
         name: clusteringress-proxy
         ports:

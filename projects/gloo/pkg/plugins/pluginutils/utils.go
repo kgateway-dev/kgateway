@@ -4,7 +4,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 func getRouteActions(in *v1.Route, out *envoyroute.Route) (*v1.RouteAction, *envoyroute.RouteAction, error) {

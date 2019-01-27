@@ -41,3 +41,8 @@ func AddRouteFlags(set *pflag.FlagSet, route *options.InputRoute) {
 	set.Var(&route.Plugins.PrefixRewrite, "prefix-rewrite", "rewrite the matched portion of HTTP requests with this prefix.\n"+
 		"note that this will be overridden if your routes point to function destinations")
 }
+
+func RemoveRouteFlags(set *pflag.FlagSet, route *options.RemoveRoute) {
+	set.Uint32VarP(&route.RemoveIndex, "index", "x", 0, "remove the route with this index in the virtual service "+
+		"route list")
+}

@@ -92,7 +92,7 @@ Let's see how this plugin works by creating some routes to these functions in th
 
     Let's go ahead and test the route using `curl`:
     
-        export GATEWAY_URL=$(glooctl gateway url)
+        export GATEWAY_URL=$(glooctl proxy url)
         curl ${GATEWAY_URL}/petstore/findPet
 
         [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}] 

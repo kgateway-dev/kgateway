@@ -11,12 +11,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +34,7 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 			"If no virtual service is specified for this command, glooctl add route will attempt to add it to a " +
 			"default virtualservice with domain '*'. if one does not exist, it will be created for you.\n\n" +
 			"" +
-			"Usage: `glooctl add route [--name virtual-service-name] [--namespace namespace] [--index=X] ...`",
+			"Usage: `glooctl add route [--name virtual-service-name] [--namespace namespace] [--index x] ...`",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Top.Interactive {
 				if err := surveyutils.AddRouteFlagsInteractive(opts); err != nil {
@@ -79,8 +80,13 @@ func selectOrCreateVirtualService(opts *options.Options) (*gatewayv1.VirtualServ
 		}
 	}
 
-	// TODO: edge case: check that a vs does not already exist with a * domain
-	// no vs exist with default domain
+	if opts.Metadata.Name == "" {
+		opts.Metadata.Name = "default"
+	}
+	if opts.Metadata.Namespace == "" {
+		opts.Metadata.Name = defaults.GlooSystem
+	}
+
 	fmt.Printf("creating virtualservice %v with default domain *\n", opts.Metadata.Name)
 	return &gatewayv1.VirtualService{
 		Metadata: opts.Metadata,
@@ -182,6 +188,9 @@ func actionFromInput(input options.InputRoute) (*v1.Route_RouteAction, error) {
 	}
 	// TODO: multi destination
 	dest := input.Destination
+	if dest.Upstream.Name == "" {
+		return nil, errors.Errorf("must provide destination name")
+	}
 	spec, err := destSpecFromInput(dest.DestinationSpec)
 	if err != nil {
 		return nil, err

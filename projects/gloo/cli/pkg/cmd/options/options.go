@@ -135,6 +135,11 @@ type RestDestinationSpec struct {
 }
 
 type Remove struct {
+	Route RemoveRoute
+}
+
+type RemoveRoute struct {
+	RemoveIndex uint32
 }
 
 type InputVirtualService struct {

@@ -27,7 +27,6 @@ ServiceSpec configuration is opaque to Gloo and handled by Service Plugins.
 ```yaml
 "rest": .rest.plugins.gloo.solo.io.ServiceSpec
 "grpc": .grpc.plugins.gloo.solo.io.ServiceSpec
-"sqoop": .sqoop.plugins.gloo.solo.io.ServiceSpec
 
 ```
 
@@ -35,7 +34,6 @@ ServiceSpec configuration is opaque to Gloo and handled by Service Plugins.
 | ----- | ---- | ----------- |----------- | 
 | `rest` | [.rest.plugins.gloo.solo.io.ServiceSpec](rest/rest.proto.sk.md#ServiceSpec) |  |  |
 | `grpc` | [.grpc.plugins.gloo.solo.io.ServiceSpec](grpc/grpc.proto.sk.md#ServiceSpec) |  |  |
-| `sqoop` | [.sqoop.plugins.gloo.solo.io.ServiceSpec](sqoop/sqoop.proto.sk.md#ServiceSpec) |  |  |
 
 
 

@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/aws"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/grpc"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/swagger"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"

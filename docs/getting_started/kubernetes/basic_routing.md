@@ -185,7 +185,7 @@ Let's verify this:
 
 1. Let's test the route `/sample-route-1` using `curl`:
 
-        export GATEWAY_URL=$(glooctl gateway url)
+        export GATEWAY_URL=$(glooctl proxy url)
         curl ${GATEWAY_URL}/sample-route-1
         
         [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]

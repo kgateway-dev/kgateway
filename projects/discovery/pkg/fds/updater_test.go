@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/solo-io/gloo/projects/discovery/pkg/fds"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 
 	kubernetes_plugins_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"

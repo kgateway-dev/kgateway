@@ -9,7 +9,7 @@ You'll need to have Gloo installed on Kubernetes and have access to that Kuberne
 
 You'll also need access from the Kubernetes cluster to an external API. You can use whichever external API you wish; we'll use an API called [JSONPlaceholder](https://jsonplaceholder.typicode.com) which simulates a REST API for basic testing. 
 
-To route to an external API, we need to first create a Gloo [upstream](../../v1/upstream.proto.sk.md). A quick recap will show that a Gloo upstream is a network entry (think _host:port_) in the Gloo service catalog (or ["cluster" as Envoy proxy calls it](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager)). We'll use [glooctl create upstream](../../cli.md#create-upstreams) command to do this:
+To route to an external API, we need to first create a Gloo [upstream](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md). A quick recap will show that a Gloo upstream is a network entry (think _host:port_) in the Gloo service catalog (or ["cluster" as Envoy proxy calls it](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager)). We'll use [glooctl create upstream](../../cli/README.md#create-upstreams) command to do this:
 
         glooctl create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80
                
@@ -61,7 +61,7 @@ Let's add a route like we did in the [basic routing tutorial](./basic_routing.md
 
 Let's try calling our new API:
 
-        export GATEWAY_URL=$(glooctl gateway url)
+        export GATEWAY_URL=$(glooctl proxy url)
         curl ${GATEWAY_URL}/api/posts      
         
 Now we should see output similar to:

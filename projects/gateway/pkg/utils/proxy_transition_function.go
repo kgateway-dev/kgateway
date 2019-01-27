@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 func TransitionFunction(original, desired *v1.Proxy) (bool, error) {

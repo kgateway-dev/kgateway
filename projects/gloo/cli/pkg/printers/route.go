@@ -120,8 +120,6 @@ func Destinations(d *gloov1.Destination) string {
 		return "grpc"
 	case *gloov1.DestinationSpec_Rest:
 		return "rest"
-	case *gloov1.DestinationSpec_Sqoop:
-		return "sqoop"
 	default:
 		return "unknown"
 	}

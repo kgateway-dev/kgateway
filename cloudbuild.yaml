@@ -1,12 +1,52 @@
 steps:
 
+# Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
+# These two steps should populate the cache
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: 'bash'
+  args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -']
+  id: 'download-untar-dep-cache'
+
+# Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
+# All steps after this must set GOPATH
 - name: 'gcr.io/$PROJECT_ID/dep'
   args: ['ensure']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GIT_SSH_CONFIG=FALSE'
   id: 'dep'
 
+# Run some basic checks on the repo
+# 1) check formatting of go files
+# 2) ensure that make generated-code produces a clean diff
+# 3) ensure that the site is generated with no warnings (strict = true in mkdocs)
+
+# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
+# Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  entrypoint: make
+  args: ['check-format']
+  waitFor: ['dep']
+  id: 'check-format'
+- name: 'gcr.io/$PROJECT_ID/go-make'
+  entrypoint: 'bash'
+  args: ['ci/check-code-and-docs-gen.sh']
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  - 'TAGGED_VERSION=$TAG_NAME'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['dep']
+  id: 'check-code-and-docs-gen'
+
+# Run all the tests with ginkgo -r
+# This requires setting up envoy, AWS, helm, and docker
+# The e2e-gingko container provides everything else needed for running tests
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args:
@@ -16,7 +56,6 @@ steps:
     chmod +x /workspace/envoy
   waitFor: ['dep']
   id: 'get-envoy'
-
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms
@@ -28,12 +67,13 @@ steps:
   - --key=build-key
   waitFor: ['dep']
   id: 'setup-aws-creds'
-
 # Helm related setup
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: mkdir
   args: ['-p', './_output/helm']
   dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['dep']
+  id: 'make-helm-dir'
 # sync helm repo data from google cloud bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
@@ -42,13 +82,19 @@ steps:
     - gs://solo-public-helm/
     - './_output/helm'
   dir: './gopath/src/github.com/solo-io/gloo'
-
-
+  waitFor: ['make-helm-dir']
+  id: 'setup-helm'
+# Docker related setup
+# grab this container immediately in parallel
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  entrypoint: ls
+  waitFor: ['-']
+  id: 'grab-gingko-container'
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: mkdir
   args: ['/workspace/.docker']
   id: 'create-docker-creds-dir'
-
+  waitFor: ['dep']
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms
@@ -58,22 +104,8 @@ steps:
   - --location=global
   - --keyring=build
   - --key=build-key
-  waitFor: ['dep', 'create-docker-creds-dir']
+  waitFor: ['create-docker-creds-dir']
   id: 'setup-docker-creds'
-
-# e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
-# sets up redis, consul, kubectl, go with required environment variables
-# need to use the provided entrypoint
-# Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
-  dir: './gopath/src/github.com/solo-io/gloo'
-  entrypoint: make
-  args: ['check-format']
-  waitFor: ['dep']
-
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -85,14 +117,20 @@ steps:
   - 'RUN_KUBE_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['-r', '-failFast']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds']
+  args: ['-r', '-failFast', '-p']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-docker-creds', 'setup-helm']
+  id: 'test'
 
+# Build everything
+# 1) Compile all docker images
+# 2) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
+# 3) Publish helm chart
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker login --username soloiobot --password $$DOCKER_HUB_PASSWORD']
   secretEnv: ['DOCKER_HUB_PASSWORD']
-
+  id: 'docker-login'
+  waitFor: ['test']
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker']
   env:
@@ -100,8 +138,8 @@ steps:
     - 'GOPATH=/workspace/gopath'
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['docker-login']
   id: 'compile'
-
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker-push', 'manifest', 'release', 'deploy-site']
   env:
@@ -112,7 +150,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN', 'FIREBASE_TOKEN']
   id: 'release'
-
+  waitFor: ['compile']
 # Sync helm chart data back to google storage bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
@@ -121,8 +159,8 @@ steps:
     - './_output/helm'
     - gs://solo-public-helm/
   dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['release']
   id: 'set-helm-chart'
-
 
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key

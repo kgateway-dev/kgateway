@@ -3,6 +3,10 @@ package install
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -10,10 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	"io/ioutil"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"os"
-	"os/exec"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
@@ -22,7 +23,7 @@ import (
 // TODO: support configuring install namespace
 // requires changing a few places in the yaml as well
 const (
-	glooUrlTemplate     = "https://github.com/solo-io/gloo/releases/download/v%s/gloo.yaml"
+	glooUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/gloo.yaml"
 )
 
 func KubeCmd(opts *options.Options) *cobra.Command {
@@ -94,4 +95,3 @@ func registerSettingsCrd() error {
 
 	return settingsClient.Register()
 }
-

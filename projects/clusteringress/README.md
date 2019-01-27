@@ -114,7 +114,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/test/kube
 Get the URL of the Gloo-Knative Ingress:
 
 ```bash
-export INGRESS=$(glooctl proxy url --proxy clusteringress-proxy)
+export INGRESS=$(glooctl proxy url --name clusteringress-proxy)
 echo $INGRESS
 
 http://172.17.0.2:31345
@@ -124,7 +124,7 @@ Note: if your cluster is running in minishift, you'll need to run the following 
 url: 
 
 ```bash
-export INGRESS=$(glooctl proxy url --proxy clusteringress-proxy --local-cluster)
+export INGRESS=$(glooctl proxy url --name clusteringress-proxy --local-cluster)
 echo $INGRESS
 
 http://192.168.99.163:32220

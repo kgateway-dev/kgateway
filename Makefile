@@ -17,13 +17,21 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 
 #----------------------------------------------------------------------------------
-# Repo init
+# Repo setup
 #----------------------------------------------------------------------------------
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
 init:
 	git config core.hooksPath .githooks
+
+.PHONY: update-deps
+update-deps:
+	go get -u golang.org/x/tools/cmd/goimports
+	go get -u github.com/gogo/protobuf/gogoproto
+	go get -u github.com/gogo/protobuf/protoc-gen-gogo
+	go get -u github.com/lyft/protoc-gen-validate
+	go get -u github.com/paulvollmer/2gobytes
 
 #----------------------------------------------------------------------------------
 # Clean
@@ -43,7 +51,7 @@ clean:
 generated-code: $(OUTPUT_DIR)/.generated-code
 
 SUBDIRS:=projects test
-$(OUTPUT_DIR)/.generated-code: install/gloo.yaml install/gloo-knative.yaml
+$(OUTPUT_DIR)/.generated-code:
 	go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
@@ -53,9 +61,11 @@ $(OUTPUT_DIR)/.generated-code: install/gloo.yaml install/gloo-knative.yaml
 docs/index.md: 
 	cat README.md | sed 's@docs/@@g' > $@
 
-site: docs/index.md
+site: docs/index.md docs/cli/glooctl.md
 	mkdocs build
 
+docs/cli/glooctl.md: $(shell find projects/gloo/cli -name "*.go" | grep -v test.go | grep -v '\.\#*')
+	go run projects/gloo/cli/cmd/docs/main.go
 # To run this, install firebase CLI and first run firebase login (requires solo account)
 # This is run by CI and is not intended to be run manually unless otherwise necessary
 .PHONY: deploy-site
@@ -63,6 +73,9 @@ deploy-site: site
 ifeq ($(RELEASE),"true")
 	firebase deploy --only hosting:gloo-docs
 endif
+
+serve-site: site
+	cd site && python -m SimpleHTTPServer
 
 #----------------------------------------------------------------------------------
 # Generate mocks

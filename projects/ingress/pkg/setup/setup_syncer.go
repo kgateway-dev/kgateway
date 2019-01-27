@@ -14,7 +14,7 @@ import (
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
-	"github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/ingress/pkg/status"
 	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"

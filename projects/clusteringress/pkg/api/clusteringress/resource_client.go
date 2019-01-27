@@ -12,7 +12,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
-	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
