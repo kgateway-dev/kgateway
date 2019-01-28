@@ -14,5 +14,11 @@ gateway:
   enabled: false
 
 ingress:
+  # ingress proxy is disabled, but we still need the controller for knative
   enabled: false
+  deployment:
+    image:
+      repository: soloio/ingress
+      pullPolicy: Always
+    replicas: 1
 
