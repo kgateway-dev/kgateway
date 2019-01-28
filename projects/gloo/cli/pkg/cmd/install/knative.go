@@ -1,11 +1,12 @@
 package install
 
 import (
+	"time"
+
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -31,13 +32,13 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 			}
 
 			if !installed {
-				if err := installFromUrl(opts, knativeCrdsUrlTemplate); err != nil {
+				if err := installFromUri(opts, opts.Install.Knative.CrdManifestOverride, knativeCrdsUrlTemplate); err != nil {
 					return errors.Wrapf(err, "installing knative crds from manifest")
 				}
 				if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
 					return errors.Wrapf(err, "waiting for knative crds to become registered")
 				}
-				if err := installFromUrl(opts, knativeUrlTemplate); err != nil {
+				if err := installFromUri(opts, opts.Install.Knative.InstallManifestOverride, knativeUrlTemplate); err != nil {
 					return errors.Wrapf(err, "installing knative-serving from manifest")
 				}
 			}
@@ -45,7 +46,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 			if err := preInstall(opts); err != nil {
 				return errors.Wrapf(err, "pre-install failed")
 			}
-			if err := installFromUrl(opts, glooKnativeUrlTemplate); err != nil {
+			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooKnativeUrlTemplate); err != nil {
 				return errors.Wrapf(err, "installing ingress from manifest")
 			}
 			return nil
@@ -53,6 +54,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
+	flagutils.AddKnativeInstallFlags(pflags, &opts.Install.Knative)
 	return cmd
 }
 

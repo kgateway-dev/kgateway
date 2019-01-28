@@ -17,6 +17,10 @@ func GlooTestArtifactsDir() string {
 	return filepath.Join(GlooDir(), "test", "kube2e", "artifacts")
 }
 
+func GlooInstallDir() string {
+	return filepath.Join(GlooDir(), "install")
+}
+
 func GlooHelmChartDir() string {
-	return filepath.Join(GlooDir(), "install", "helm", "gloo")
+	return filepath.Join(GlooInstallDir(), "helm", "gloo")
 }

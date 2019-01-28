@@ -3,23 +3,26 @@ package install
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"io"
-	"io/ioutil"
 	kubev1 "k8s.io/api/core/v1"
 	kubeerrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"net/http"
-	"os"
-	"os/exec"
 )
 
 const (
@@ -37,15 +40,26 @@ func preInstall(opts *options.Options) error {
 	return nil
 }
 
-func installFromUrl(opts *options.Options, manifestUrlTemplate string) error {
+func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate string) error {
 	releaseVersion := version.Version
 	// override release version
 	if opts.Install.ReleaseVersion != "" {
 		releaseVersion = opts.Install.ReleaseVersion
 	}
-	manifestBytes, err := readReleaseManifest(releaseVersion, manifestUrlTemplate)
+
+	var uri string
+	if overrideUri != "" {
+		uri = overrideUri
+	} else {
+		if releaseVersion == version.UndefinedVersion || releaseVersion == version.DevVersion {
+			return errors.Errorf("you must provide a file or a release version containing the manifest when running an unreleased version of glooctl.")
+		}
+		uri = fmt.Sprintf(manifestUriTemplate, releaseVersion)
+	}
+
+	manifestBytes, err := readFile(uri)
 	if err != nil {
-		return errors.Wrapf(err, "reading gloo ingress manifest")
+		return errors.Wrapf(err, "reading manifest %v", uri)
 	}
 	if opts.Install.DryRun {
 		fmt.Printf("%s", manifestBytes)
@@ -87,7 +101,7 @@ func registerSettingsCrd() error {
 }
 
 func createImagePullSecretIfNeeded(install options.Install) error {
-	if err := createNamespaceIfNotExist(); err != nil {
+	if err := createNamespaceIfNotExist(installNamespace); err != nil {
 		return errors.Wrapf(err, "creating installation namespace")
 	}
 	dockerSecretDesired := install.DockerAuth.Username != "" ||
@@ -123,50 +137,53 @@ func createImagePullSecretIfNeeded(install options.Install) error {
 	)
 }
 
-func createNamespaceIfNotExist() error {
+func createNamespaceIfNotExist(namespace string) error {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return err
 	}
-	kube, err := kubernetes.NewForConfig(restCfg)
+	kubeClient, err := kubernetes.NewForConfig(restCfg)
 	if err != nil {
 		return err
 	}
 	installNamespace := &kubev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: installNamespace,
+			Name: namespace,
 		},
 	}
-	if _, err := kube.CoreV1().Namespaces().Create(installNamespace); err != nil && !kubeerrs.IsAlreadyExists(err) {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(installNamespace); err != nil && !kubeerrs.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
 }
 
-func readFile(url string) ([]byte, error) {
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+func readFile(uri string) ([]byte, error) {
+	var file io.Reader
+	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+		resp, err := http.Get(uri)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("http GET returned status %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.Errorf("http GET returned status %d", resp.StatusCode)
+		}
+
+		file = resp.Body
+	} else {
+		path, err := filepath.Abs(uri)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting absolute path for %v", uri)
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, errors.Wrapf(err, "opening file %v", path)
+		}
+		file = f
 	}
 
 	// Write the body to file
-	return ioutil.ReadAll(resp.Body)
-}
-
-func readReleaseManifest(releaseVersion, urlTemplate string) ([]byte, error) {
-	if releaseVersion == version.UndefinedVersion || releaseVersion == version.DevVersion {
-		return nil, errors.Errorf("You must provide a file containing the knative manifest when running an unreleased version of glooctl.")
-	}
-	url := fmt.Sprintf(urlTemplate, releaseVersion)
-	bytes, err := readFile(url)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error reading manifest for gloo version %s at url %s", releaseVersion, url)
-	}
-	return bytes, nil
+	return ioutil.ReadAll(file)
 }

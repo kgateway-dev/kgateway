@@ -9,7 +9,12 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	addSecretFlags(set, install)
 	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVar(&install.ReleaseVersion, "release", "", "install using this release version. defaults to the latest github release")
-	set.StringVarP(&install.File, "file", "f", "", "Path to the gloo install manifest")
+	set.StringVarP(&install.GlooManifestOverride, "file", "f", "", "Install Gloo from this kubernetes manifest yaml file rather than from a release")
+}
+
+func AddKnativeInstallFlags(set *pflag.FlagSet, knative *options.KnativeInstall) {
+	set.StringVar(&knative.CrdManifestOverride, "knative-crds-manifest", "", "Install Knative CRDs from this kubernetes manifest yaml file rather than from a release")
+	set.StringVar(&knative.InstallManifestOverride, "knative-install-manifest", "", "Install Knative Serving from this kubernetes manifest yaml file rather than from a release")
 }
 
 func addSecretFlags(set *pflag.FlagSet, install *options.Install) {

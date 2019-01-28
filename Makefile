@@ -271,7 +271,7 @@ HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm
 
 .PHONY: manifest
-manifest: prepare-helm install/gloo.yaml install/gloo-knative.yaml update-helm-chart
+manifest: prepare-helm install/gloo-gateway.yaml install/gloo-knative.yaml update-helm-chart
 
 # creates Chart.yaml, values.yaml, values-knative.yaml
 prepare-helm:
@@ -284,7 +284,7 @@ ifeq ($(RELEASE),"true")
 	helm repo index $(HELM_SYNC_DIR)
 endif
 
-install/gloo.yaml: $(shell find install/helm/gloo)
+install/gloo-gateway.yaml: $(shell find install/helm/gloo)
 	helm template install/helm/gloo --namespace gloo-system > $@
 
 install/gloo-knative.yaml: $(shell find install/helm/gloo)
@@ -313,7 +313,7 @@ endif
 RELEASE_YAMLS :=
 ifeq ($(RELEASE),"true")
 	RELEASE_YAMLS := \
-		install/gloo.yaml \
+		install/gloo-gateway.yaml \
 		install/gloo-knative.yaml \
 		install/gloo-ingress.yaml \
 		install/integrations/knative-crds-0.3.0.yaml \

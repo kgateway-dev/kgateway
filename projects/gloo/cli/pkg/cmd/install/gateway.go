@@ -10,7 +10,7 @@ import (
 )
 
 func gatewayCmd(opts *options.Options) *cobra.Command {
-	const glooGatewayUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/gloo.yaml"
+	const glooGatewayUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/gloo-gateway.yaml"
 	cmd := &cobra.Command{
 		Use:   "gateway",
 		Short: "install the Gloo Gateway on kubernetes",
@@ -19,7 +19,7 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 			if err := preInstall(opts); err != nil {
 				return errors.Wrapf(err, "pre-install failed")
 			}
-			if err := installFromUrl(opts, glooGatewayUrlTemplate); err != nil {
+			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooGatewayUrlTemplate); err != nil {
 				return errors.Wrapf(err, "installing ingress from manifest")
 			}
 			return nil
