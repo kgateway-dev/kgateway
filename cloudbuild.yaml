@@ -52,9 +52,11 @@ steps:
   args:
   - '-c'
   - |
-    gsutil cp gs://solo-public-artifacts.solo.io/envoy/547421c3922fbfab04ac90a732396c4b9878a052/envoy.stripped /workspace/envoy
+    ENVOY_VERSION=v$$(head -n1 ./projects/envoyinit/cmd/Dockerfile|cut -d: -f2)
+    gsutil cp gs://solo-public-artifacts.solo.io/envoy/$ENVOY_VERSION/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
   waitFor: ['dep']
+  dir: './gopath/src/github.com/solo-io/gloo'
   id: 'get-envoy'
 - name: gcr.io/cloud-builders/gcloud
   args:
