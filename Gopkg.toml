@@ -3,7 +3,7 @@
   unused-packages = true
 
 [[constraint]]
-  branch = "master"
+  revision = "6bb1dbbfcb2b3192849c3f0e6d3a6a6f038ded8b"
   name = "github.com/envoyproxy/go-control-plane"
 
 [[constraint]]
@@ -24,7 +24,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.2.17"
+  version = "0.2.21"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
