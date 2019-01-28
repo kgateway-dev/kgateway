@@ -59,12 +59,14 @@ var _ = Describe("Plugin", func() {
 
 	It("should not mark none grpc upstreams as http2", func() {
 		upstreamSpec.ServiceSpec.PluginType = nil
-		p.ProcessUpstream(params, upstream, out)
+		err := p.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
 		Expect(out.Http2ProtocolOptions).To(BeNil())
 	})
 
 	It("should mark grpc upstreams as http2", func() {
-		p.ProcessUpstream(params, upstream, out)
+		err := p.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
 		Expect(out.Http2ProtocolOptions).NotTo(BeNil())
 	})
 
