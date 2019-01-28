@@ -88,7 +88,7 @@ func applyRetries(in *v1.Route, out *envoyroute.Route) error {
 		numRetries = 1
 	}
 
-	routeAction.Route.RetryPolicy = &envoyroute.RouteAction_RetryPolicy{
+	routeAction.Route.RetryPolicy = &envoyroute.RetryPolicy{
 		RetryOn:       policy.RetryOn,
 		NumRetries:    &types.UInt32Value{Value: numRetries},
 		PerTryTimeout: policy.PerTryTimeout,
