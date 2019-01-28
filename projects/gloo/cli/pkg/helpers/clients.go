@@ -155,6 +155,38 @@ func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
 	return virtualServiceClient, nil
 }
 
+func MustSettingsClient() v1.SettingsClient {
+	client, err := SettingsClient()
+	if err != nil {
+		log.Fatalf("failed to create settoings client: %v", err)
+	}
+	return client
+}
+
+func SettingsClient() (v1.SettingsClient, error) {
+	if memoryResourceClient != nil {
+		return v1.NewSettingsClient(memoryResourceClient)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache()
+	settingsClient, err := v1.NewSettingsClient(&factory.KubeResourceClientFactory{
+		Crd:         v1.SettingsCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating settingss client")
+	}
+	if err := settingsClient.Register(); err != nil {
+		return nil, err
+	}
+	return settingsClient, nil
+}
+
 func MustSecretClient() v1.SecretClient {
 	client, err := secretClient()
 	if err != nil {
