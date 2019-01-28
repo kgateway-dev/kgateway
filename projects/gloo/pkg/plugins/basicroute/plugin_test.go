@@ -80,7 +80,7 @@ var _ = Describe("retries", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.RetryPolicy).NotTo(BeNil())
-		Expect(*routeAction.RetryPolicy).To(Equal(envoyroute.RouteAction_RetryPolicy{
+		Expect(*routeAction.RetryPolicy).To(Equal(envoyroute.RetryPolicy{
 			RetryOn: "if at first you don't succeed",
 			NumRetries: &types.UInt32Value{
 				Value: 5,
