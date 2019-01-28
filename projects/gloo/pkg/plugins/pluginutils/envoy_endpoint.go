@@ -13,7 +13,9 @@ func EnvoySingleEndpointLoadAssignment(out *envoyapi.Cluster, address string, po
 			{
 				LbEndpoints: []envoyendpoint.LbEndpoint{
 					{
-						Endpoint: EnvoyEndpoint(address, port),
+						HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
+							Endpoint: EnvoyEndpoint(address, port),
+						},
 					},
 				},
 			},

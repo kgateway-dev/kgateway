@@ -82,14 +82,16 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
 			envoyendpoint.LbEndpoint{
-				Endpoint: &envoyendpoint.Endpoint{
-					Address: &envoycore.Address{
-						Address: &envoycore.Address_SocketAddress{
-							SocketAddress: &envoycore.SocketAddress{
-								Protocol: envoycore.TCP,
-								Address:  host.Addr,
-								PortSpecifier: &envoycore.SocketAddress_PortValue{
-									PortValue: host.Port,
+				HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
+					Endpoint: &envoyendpoint.Endpoint{
+						Address: &envoycore.Address{
+							Address: &envoycore.Address_SocketAddress{
+								SocketAddress: &envoycore.SocketAddress{
+									Protocol: envoycore.TCP,
+									Address:  host.Addr,
+									PortSpecifier: &envoycore.SocketAddress_PortValue{
+										PortValue: host.Port,
+									},
 								},
 							},
 						},

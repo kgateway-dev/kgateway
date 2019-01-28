@@ -34,14 +34,16 @@ func loadAssignmentForCluster(clusterName string, clusterEndpoints []*v1.Endpoin
 	var endpoints []envoyendpoints.LbEndpoint
 	for _, addr := range clusterEndpoints {
 		lbEndpoint := envoyendpoints.LbEndpoint{
-			Endpoint: &envoyendpoints.Endpoint{
-				Address: &envoycore.Address{
-					Address: &envoycore.Address_SocketAddress{
-						SocketAddress: &envoycore.SocketAddress{
-							Protocol: envoycore.TCP,
-							Address:  addr.Address,
-							PortSpecifier: &envoycore.SocketAddress_PortValue{
-								PortValue: uint32(addr.Port),
+			HostIdentifier: &envoyendpoints.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpoints.Endpoint{
+					Address: &envoycore.Address{
+						Address: &envoycore.Address_SocketAddress{
+							SocketAddress: &envoycore.SocketAddress{
+								Protocol: envoycore.TCP,
+								Address:  addr.Address,
+								PortSpecifier: &envoycore.SocketAddress_PortValue{
+									PortValue: uint32(addr.Port),
+								},
 							},
 						},
 					},
