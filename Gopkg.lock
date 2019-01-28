@@ -201,8 +201,7 @@
   version = "v2.7.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:fd622670f9758275fd5b197911186488f7d8ea9b563729d58eb80b28d5c4e739"
+  digest = "1:fc7bb338bb59d2d6dd8627a40dfbae9908c81fdd541d3013e77de248628dd734"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -228,7 +227,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "a09b615551f6665e7f8321bbb899670b384224c0"
+  revision = "6bb1dbbfcb2b3192849c3f0e6d3a6a6f038ded8b"
 
 [[projects]]
   digest = "1:f1f2bd73c025d24c3b93abf6364bccb802cf2fdedaa44360804c67800e8fab8d"
@@ -1290,7 +1289,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:de84f859aa3ec1714c0c35d6b643a85ffb0e0aec4095c93d4835d2c32dd68556"
+  digest = "1:4c831cfea09fb0423b3ba183115dc7b4dca3551377a68a9513f3e7276df5a2ac"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1343,8 +1342,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "4aa5df4fc9a5f7af01daf6c4cf1a8adce340deb2"
-  version = "v0.2.18"
+  revision = "9757301091bf9d7be5902b307451b4bd1605d82d"
+  version = "v0.2.21"
 
 [[projects]]
   digest = "1:e01b05ba901239c783dfe56450bcde607fc858908529868259c9a8765dc176d0"
@@ -2065,6 +2064,7 @@
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
+    "github.com/onsi/ginkgo/config",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
