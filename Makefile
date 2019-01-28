@@ -129,15 +129,15 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 CLI_DIR=projects/gloo/cli
 
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
-	go build -ldflags=$(LDFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(CLI_DIR)/cmd/main.go
 
 
 $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(CLI_DIR)/cmd/main.go
 
 
 $(OUTPUT_DIR)/glooctl-darwin-amd64: $(SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build -ldflags=$(LDFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(CLI_DIR)/cmd/main.go
 
 .PHONY: glooctl
 glooctl: $(OUTPUT_DIR)/glooctl
@@ -154,7 +154,7 @@ GATEWAY_DIR=projects/gateway
 GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
 
 $(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(GATEWAY_DIR)/cmd/main.go
 
 
 .PHONY: gateway
@@ -174,7 +174,7 @@ INGRESS_DIR=projects/ingress
 INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(INGRESS_DIR)/cmd/main.go
 
 
 .PHONY: ingress
@@ -194,7 +194,7 @@ DISCOVERY_DIR=projects/discovery
 DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 
 $(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(DISCOVERY_DIR)/cmd/main.go
 
 
 .PHONY: discovery
@@ -214,7 +214,7 @@ GLOO_DIR=projects/gloo
 GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 
 $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(GLOO_DIR)/cmd/main.go
 
 
 .PHONY: gloo
@@ -234,7 +234,7 @@ ENVOYINIT_DIR=projects/envoyinit/cmd
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 
 $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=all="-N -l" -o $@ $(ENVOYINIT_DIR)/main.go
 
 .PHONY: envoyinit
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
@@ -252,7 +252,7 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl gateway discovery envoyinit
+build: gloo glooctl gateway discovery envoyinit ingress 
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
