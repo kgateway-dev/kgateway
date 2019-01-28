@@ -24,17 +24,17 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// Service spec describing GRPC upstreams. This will usually be filled automatically via function
-// discovery (if the upstream supports reflection).
-// If your upstream services is a GRPC service, use this service spec (an empty spec is fine), to
-// make sure that traffic to it is routed with http2.
+// Service spec describing GRPC upstreams. This will usually be filled
+// automatically via function discovery (if the upstream supports reflection).
+// If your upstream service is a GRPC service, use this service spec (an empty
+// spec is fine), to make sure that traffic to it is routed with http2.
 type ServiceSpec struct {
 	// Descriptors that contain information of the services listed below.
 	// this is a serialized google.protobuf.FileDescriptorSet
 	Descriptors []byte `protobuf:"bytes,1,opt,name=descriptors,proto3" json:"descriptors,omitempty"`
-	// List of services used by this upstream. For a grpc upstream where you don't need to use
-	// Gloo's function routing, this can be an empty list.
-	// These services must be present in the descriptors.
+	// List of services used by this upstream. For a grpc upstream where you don't
+	// need to use Gloo's function routing, this can be an empty list. These
+	// services must be present in the descriptors.
 	GrpcServices         []*ServiceSpec_GrpcService `protobuf:"bytes,2,rep,name=grpc_services,json=grpcServices,proto3" json:"grpc_services,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
@@ -145,7 +145,8 @@ type DestinationSpec struct {
 	Service string `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
 	// The name of the function.
 	Function string `protobuf:"bytes,3,opt,name=function,proto3" json:"function,omitempty"`
-	// Parameters describe how to extract the function parameters from the request.
+	// Parameters describe how to extract the function parameters from the
+	// request.
 	Parameters           *transformation.Parameters `protobuf:"bytes,4,opt,name=parameters,proto3" json:"parameters,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`

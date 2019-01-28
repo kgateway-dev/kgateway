@@ -21,10 +21,10 @@
 ### <a name="ServiceSpec">ServiceSpec</a>
 
  
-Service spec describing GRPC upstreams. This will usually be filled automatically via function
-discovery (if the upstream supports reflection).
-If your upstream services is a GRPC service, use this service spec (an empty spec is fine), to 
-make sure that traffic to it is routed with http2.
+Service spec describing GRPC upstreams. This will usually be filled
+automatically via function discovery (if the upstream supports reflection).
+If your upstream service is a GRPC service, use this service spec (an empty
+spec is fine), to make sure that traffic to it is routed with http2.
 
 ```yaml
 "descriptors": bytes
