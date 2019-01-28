@@ -79,17 +79,17 @@ func readGatewayConfig() (*generate.Config, error) {
 
 // install with gateway only
 func generateGatewayValuesYaml(version string) error {
-	config, err := readGatewayConfig()
+	cfg, err := readGatewayConfig()
 	if err != nil {
 		return err
 	}
 
-	config.Gloo.Deployment.Image.Tag = version
-	config.Discovery.Deployment.Image.Tag = version
-	config.Gateway.Deployment.Image.Tag = version
-	config.GatewayProxy.Deployment.Image.Tag = version
+	cfg.Gloo.Deployment.Image.Tag = version
+	cfg.Discovery.Deployment.Image.Tag = version
+	cfg.Gateway.Deployment.Image.Tag = version
+	cfg.GatewayProxy.Deployment.Image.Tag = version
 
-	return writeYaml(config, valuesOutput)
+	return writeYaml(cfg, valuesOutput)
 }
 
 // install with knative only
@@ -103,6 +103,9 @@ func generateKnativeValuesYaml(version string) error {
 		return err
 	}
 
+	cfg.Gloo.Deployment.Image.Tag = version
+	cfg.Discovery.Deployment.Image.Tag = version
+	cfg.Ingress.Deployment.Image.Tag = version
 	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
 
 	return writeYaml(&cfg, knativeValuesOutput)
@@ -119,6 +122,8 @@ func generateIngressValuesYaml(version string) error {
 		return err
 	}
 
+	cfg.Gloo.Deployment.Image.Tag = version
+	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Ingress.Deployment.Image.Tag = version
 	cfg.IngressProxy.Deployment.Image.Tag = version
 
