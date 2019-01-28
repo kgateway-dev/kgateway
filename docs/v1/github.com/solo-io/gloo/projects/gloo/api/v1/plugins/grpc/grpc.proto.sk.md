@@ -20,7 +20,11 @@
 ---
 ### <a name="ServiceSpec">ServiceSpec</a>
 
-
+ 
+Service spec describing GRPC upstreams. This will usually be filled automatically via function
+discovery (if the upstream supports reflection).
+If your upstream services is a GRPC service, use this service spec (an empty spec is fine), to 
+make sure that traffic to it is routed with http2.
 
 ```yaml
 "descriptors": bytes
@@ -30,8 +34,8 @@
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `descriptors` | `bytes` | TODO(yuval-k): ideally this should be google.protobuf.FileDescriptorSet but that doesn't work with gogoproto.equal_all. |  |
-| `grpc_services` | [[]grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService](grpc.proto.sk.md#GrpcService) |  |  |
+| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet |  |
+| `grpc_services` | [[]grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService](grpc.proto.sk.md#GrpcService) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |  |
 
 
 
@@ -39,7 +43,8 @@
 ---
 ### <a name="GrpcService">GrpcService</a>
 
-
+ 
+Describes a grpc service
 
 ```yaml
 "package_name": string
@@ -50,9 +55,9 @@
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `package_name` | `string` |  |  |
-| `service_name` | `string` |  |  |
-| `function_names` | `[]string` |  |  |
+| `package_name` | `string` | The package of this service. |  |
+| `service_name` | `string` | The service name of this service. |  |
+| `function_names` | `[]string` | The functions available in this service. |  |
 
 
 
@@ -61,7 +66,7 @@
 ### <a name="DestinationSpec">DestinationSpec</a>
 
  
-This is only for upstream with Grpc service spec
+This is only for upstream with Grpc service spec.
 
 ```yaml
 "package": string
@@ -73,10 +78,10 @@ This is only for upstream with Grpc service spec
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `package` | `string` |  |  |
-| `service` | `string` |  |  |
-| `function` | `string` |  |  |
-| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../transformation/parameters.proto.sk.md#Parameters) |  |  |
+| `package` | `string` | The proto package of the function. |  |
+| `service` | `string` | The name of the service of the function. |  |
+| `function` | `string` | The name of the function. |  |
+| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../transformation/parameters.proto.sk.md#Parameters) | Parameters describe how to extract the function parameters from the request. |  |
 
 
 

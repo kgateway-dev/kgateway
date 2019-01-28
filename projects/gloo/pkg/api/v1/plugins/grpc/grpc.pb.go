@@ -24,10 +24,17 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
+// Service spec describing GRPC upstreams. This will usually be filled automatically via function
+// discovery (if the upstream supports reflection).
+// If your upstream services is a GRPC service, use this service spec (an empty spec is fine), to
+// make sure that traffic to it is routed with http2.
 type ServiceSpec struct {
-	// TODO(yuval-k): ideally this should be google.protobuf.FileDescriptorSet
-	// but that doesn't work with gogoproto.equal_all.
-	Descriptors          []byte                     `protobuf:"bytes,1,opt,name=descriptors,proto3" json:"descriptors,omitempty"`
+	// Descriptors that contain information of the services listed below.
+	// this is a serialized google.protobuf.FileDescriptorSet
+	Descriptors []byte `protobuf:"bytes,1,opt,name=descriptors,proto3" json:"descriptors,omitempty"`
+	// List of services used by this upstream. For a grpc upstream where you don't need to use
+	// Gloo's function routing, this can be an empty list.
+	// These services must be present in the descriptors.
 	GrpcServices         []*ServiceSpec_GrpcService `protobuf:"bytes,2,rep,name=grpc_services,json=grpcServices,proto3" json:"grpc_services,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
@@ -72,9 +79,13 @@ func (m *ServiceSpec) GetGrpcServices() []*ServiceSpec_GrpcService {
 	return nil
 }
 
+// Describes a grpc service
 type ServiceSpec_GrpcService struct {
-	PackageName          string   `protobuf:"bytes,1,opt,name=package_name,json=packageName,proto3" json:"package_name,omitempty"`
-	ServiceName          string   `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	// The package of this service.
+	PackageName string `protobuf:"bytes,1,opt,name=package_name,json=packageName,proto3" json:"package_name,omitempty"`
+	// The service name of this service.
+	ServiceName string `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	// The functions available in this service.
 	FunctionNames        []string `protobuf:"bytes,3,rep,name=function_names,json=functionNames,proto3" json:"function_names,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -126,11 +137,15 @@ func (m *ServiceSpec_GrpcService) GetFunctionNames() []string {
 	return nil
 }
 
-// This is only for upstream with Grpc service spec
+// This is only for upstream with Grpc service spec.
 type DestinationSpec struct {
-	Package              string                     `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
-	Service              string                     `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
-	Function             string                     `protobuf:"bytes,3,opt,name=function,proto3" json:"function,omitempty"`
+	// The proto package of the function.
+	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
+	// The name of the service of the function.
+	Service string `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
+	// The name of the function.
+	Function string `protobuf:"bytes,3,opt,name=function,proto3" json:"function,omitempty"`
+	// Parameters describe how to extract the function parameters from the request.
 	Parameters           *transformation.Parameters `protobuf:"bytes,4,opt,name=parameters,proto3" json:"parameters,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
