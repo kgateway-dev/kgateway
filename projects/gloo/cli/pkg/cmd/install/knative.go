@@ -1,13 +1,11 @@
 package install
 
 import (
-	"fmt"
-
-	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -16,12 +14,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	knativeUrlTemplate     = "https://github.com/solo-io/gloo/releases/download/v%s/knative-no-istio-0.3.0.yaml"
-	glooKnativeUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/gloo-knative.yaml"
-)
-
-func KnativeCmd(opts *options.Options) *cobra.Command {
+func knativeCmd(opts *options.Options) *cobra.Command {
+	const (
+		knativeUrlTemplate     = "https://github.com/solo-io/gloo/releases/download/v%s/knative-no-istio-0.3.0.yaml"
+		knativeCrdsUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/knative-crds-0.3.0.yaml"
+		glooKnativeUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/gloo-knative.yaml"
+	)
 	cmd := &cobra.Command{
 		Use:   "knative",
 		Short: "install Knative with Gloo on kubernetes",
@@ -33,44 +31,29 @@ func KnativeCmd(opts *options.Options) *cobra.Command {
 			}
 
 			if !installed {
-				knativeManifestBytes, err := readKnativeManifest(opts, knativeUrlTemplate)
-				if err != nil {
-					return errors.Wrapf(err, "reading knative manifest")
+				if err := installFromUrl(opts, knativeCrdsUrlTemplate); err != nil {
+					return errors.Wrapf(err, "installing knative crds from manifest")
 				}
-				if opts.Install.DryRun {
-					fmt.Printf("%s", knativeManifestBytes)
-				} else {
-					if err := applyManifest(knativeManifestBytes); err != nil {
-						return err
-					}
+				if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
+					return errors.Wrapf(err, "waiting for knative crds to become registered")
+				}
+				if err := installFromUrl(opts, knativeUrlTemplate); err != nil {
+					return errors.Wrapf(err, "installing knative-serving from manifest")
 				}
 			}
 
-			glooKnativeManifestBytes, err := readGlooManifest(opts, glooKnativeUrlTemplate)
-			if err != nil {
-				return errors.Wrapf(err, "reading gloo knative manifest")
+			if err := preInstall(opts); err != nil {
+				return errors.Wrapf(err, "pre-install failed")
 			}
-
-			if opts.Install.DryRun {
-				fmt.Printf("%s", glooKnativeManifestBytes)
-				return nil
+			if err := installFromUrl(opts, glooKnativeUrlTemplate); err != nil {
+				return errors.Wrapf(err, "installing ingress from manifest")
 			}
-			return applyManifest(glooKnativeManifestBytes)
+			return nil
 		},
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
 	return cmd
-}
-
-func readKnativeManifest(opts *options.Options, urlTemplate string) ([]byte, error) {
-	if opts.Install.KnativeManifest != "" {
-		return readManifestFromFile(opts.Install.KnativeManifest)
-	}
-	if version.Version == version.UndefinedVersion || version.Version == version.DevVersion {
-		return nil, errors.Errorf("You must provide a file containing the knative manifest when running an unreleased version of glooctl.")
-	}
-	return readManifest(version.Version, urlTemplate)
 }
 
 const knativeServingNamespace = "knative-serving"
@@ -94,4 +77,21 @@ func knativeInstalled() (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// register knative crds first
+func waitForKnativeCrdsRegistered(timeout, interval time.Duration) error {
+	elapsed := time.Duration(0)
+	for {
+		select {
+		case <-time.After(interval):
+			if err := kubectl(nil, "get", "images.caching.internal.knative.dev"); err == nil {
+				return nil
+			}
+			elapsed += interval
+			if elapsed > timeout {
+				return errors.Errorf("failed to confirm knative crd registration after %v", timeout)
+			}
+		}
+	}
 }

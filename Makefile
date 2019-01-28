@@ -290,6 +290,9 @@ install/gloo.yaml: $(shell find install/helm/gloo)
 install/gloo-knative.yaml: $(shell find install/helm/gloo)
 	helm template install/helm/gloo --namespace gloo-system --values install/helm/gloo/values-knative.yaml > $@
 
+install/gloo-ingress.yaml: $(shell find install/helm/gloo)
+	helm template install/helm/gloo --namespace gloo-system --values install/helm/gloo/values-ingress.yaml > $@
+
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
@@ -312,6 +315,8 @@ ifeq ($(RELEASE),"true")
 	RELEASE_YAMLS := \
 		install/gloo.yaml \
 		install/gloo-knative.yaml \
+		install/gloo-ingress.yaml \
+		install/integrations/knative-crds-0.3.0.yaml \
 		install/integrations/knative-no-istio-0.3.0.yaml
 endif
 

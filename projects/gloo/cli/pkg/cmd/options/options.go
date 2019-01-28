@@ -27,10 +27,10 @@ type Top struct {
 }
 
 type Install struct {
-	DryRun          bool
-	File            string
-	KnativeManifest string
-	DockerAuth      struct {
+	DryRun         bool
+	File           string
+	ReleaseVersion string
+	DockerAuth     struct {
 		Email    string
 		Username string
 		Password string

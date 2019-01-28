@@ -13,8 +13,9 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Short: constants.INSTALL_COMMAND.Short,
 		Long:  constants.INSTALL_COMMAND.Long,
 	}
-	cmd.AddCommand(KubeCmd(opts))
-	cmd.AddCommand(KnativeCmd(opts))
+	cmd.AddCommand(gatewayCmd(opts))
+	cmd.AddCommand(ingressCmd(opts))
+	cmd.AddCommand(knativeCmd(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

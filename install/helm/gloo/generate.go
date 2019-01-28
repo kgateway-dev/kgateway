@@ -24,7 +24,8 @@ var (
 func main() {
 	var version string
 	if len(os.Args) < 2 {
-		panic("Must provide version as argument")
+		version = "testing-8671e8b9"
+		//panic("Must provide version as argument")
 	} else {
 		version = os.Args[1]
 	}

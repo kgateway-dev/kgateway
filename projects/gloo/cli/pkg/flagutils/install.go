@@ -8,7 +8,7 @@ import (
 func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	addSecretFlags(set, install)
 	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
-	set.StringVar(&install.KnativeManifest, "knative-manifest", "", "Path to the knative install manifest")
+	set.StringVar(&install.ReleaseVersion, "release", "", "install using this release version. defaults to the latest github release")
 	set.StringVarP(&install.File, "file", "f", "", "Path to the gloo install manifest")
 }
 
