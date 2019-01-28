@@ -157,6 +157,21 @@ func createNamespaceIfNotExist(namespace string) error {
 	return nil
 }
 
+func deleteNamespace(namespace string) error {
+	restCfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return err
+	}
+	kubeClient, err := kubernetes.NewForConfig(restCfg)
+	if err != nil {
+		return err
+	}
+	if err := kubeClient.CoreV1().Namespaces().Delete(namespace, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func readFile(uri string) ([]byte, error) {
 	var file io.Reader
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {

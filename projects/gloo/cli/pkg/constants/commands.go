@@ -56,7 +56,12 @@ var (
 	INSTALL_COMMAND = cobra.Command{
 		Use:   "install",
 		Short: "install gloo on different platforms",
-		Long:  "choose which system to install Gloo onto. options include: kubernetes",
+		Long:  "choose which version of Gloo to install.",
+	}
+
+	UNINSTALL_COMMAND = cobra.Command{
+		Use:   "uninstall",
+		Short: "uninstall gloo",
 	}
 
 	UPGRADE_COMMAND = cobra.Command{

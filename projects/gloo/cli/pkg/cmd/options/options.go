@@ -7,16 +7,17 @@ import (
 )
 
 type Options struct {
-	Metadata core.Metadata
-	Top      Top
-	Install  Install
-	Proxy    Proxy
-	Upgrade  Upgrade
-	Create   Create
-	Delete   Delete
-	Get      Get
-	Add      Add
-	Remove   Remove
+	Metadata  core.Metadata
+	Top       Top
+	Install   Install
+	Uninstall Uninstall
+	Proxy     Proxy
+	Upgrade   Upgrade
+	Create    Create
+	Delete    Delete
+	Get       Get
+	Add       Add
+	Remove    Remove
 }
 
 type Top struct {
@@ -37,6 +38,10 @@ type Install struct {
 	}
 	GlooManifestOverride string
 	Knative              KnativeInstall
+}
+
+type Uninstall struct {
+	Knative bool
 }
 
 type KnativeInstall struct {

@@ -50,7 +50,8 @@ func GlooCli(version string) *cobra.Command {
 		app.AddCommand(
 			get.RootCmd(opts),
 			del.RootCmd(opts),
-			install.RootCmd(opts),
+			install.InstallCmd(opts),
+			install.UninstallCmd(opts),
 			add.RootCmd(opts),
 			remove.RootCmd(opts),
 			route.RootCmd(opts),
