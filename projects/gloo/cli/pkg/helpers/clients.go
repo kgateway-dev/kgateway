@@ -158,7 +158,7 @@ func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
 func MustSettingsClient() v1.SettingsClient {
 	client, err := SettingsClient()
 	if err != nil {
-		log.Fatalf("failed to create settoings client: %v", err)
+		log.Fatalf("failed to create settings client: %v", err)
 	}
 	return client
 }
@@ -179,7 +179,7 @@ func SettingsClient() (v1.SettingsClient, error) {
 		SharedCache: cache,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating settingss client")
+		return nil, errors.Wrapf(err, "creating settings client")
 	}
 	if err := settingsClient.Register(); err != nil {
 		return nil, err
