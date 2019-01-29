@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gopkg.in/AlecAivazis/survey.v1"
+	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
 func GetYesInput(msg string) (bool, error) {
@@ -27,7 +27,7 @@ func GetStringInput(msg string, value *string) error {
 
 func GetStringInputDefault(msg string, value *string, defaultValue string) error {
 	prompt := &survey.Input{Message: msg, Default: defaultValue}
-	if err := survey.AskOne(prompt, value, nil); err != nil {
+	if err := AskOne(prompt, value, nil); err != nil {
 		return err
 	}
 	return nil
@@ -40,7 +40,7 @@ func GetUint32Input(msg string, value *uint32) error {
 func GetUint32InputDefault(msg string, value *uint32, defaultValue uint32) error {
 	var strValue string
 	prompt := &survey.Input{Message: msg, Default: strconv.Itoa(int(defaultValue))}
-	if err := survey.AskOne(prompt, &strValue, nil); err != nil {
+	if err := AskOne(prompt, &strValue, nil); err != nil {
 		return err
 	}
 	val, err := strconv.Atoi(strValue)
@@ -62,7 +62,7 @@ func GetBoolInputDefault(msg string, value *bool, defaultValue bool) error {
 		defaultValueStr = "y"
 	}
 	prompt := &survey.Input{Message: msg + " [y/N]: ", Default: defaultValueStr}
-	if err := survey.AskOne(prompt, &strValue, nil); err != nil {
+	if err := AskOne(prompt, &strValue, nil); err != nil {
 		return err
 	}
 	*value = strings.ToLower(defaultValueStr) == "y"
@@ -73,7 +73,7 @@ func GetStringSliceInput(msg string, value *[]string) error {
 	prompt := &survey.Input{Message: msg}
 	var lastChoice string
 	for {
-		if err := survey.AskOne(prompt, &lastChoice, nil); err != nil {
+		if err := AskOne(prompt, &lastChoice, nil); err != nil {
 			return err
 		}
 
@@ -95,7 +95,7 @@ func ChooseFromList(message string, choice *string, options []string) error {
 		Options: options,
 	}
 
-	if err := survey.AskOne(question, choice, survey.Required); err != nil {
+	if err := AskOne(question, choice, survey.Required); err != nil {
 		// this should not error
 		fmt.Println("error with input")
 		return err
@@ -114,7 +114,7 @@ func ChooseBool(message string, target *bool) error {
 	}
 
 	var choice string
-	if err := survey.AskOne(question, &choice, survey.Required); err != nil {
+	if err := AskOne(question, &choice, survey.Required); err != nil {
 		return err
 	}
 
@@ -140,7 +140,7 @@ func SelectJoinedData(message string, target *string, list []JoinerData) error {
 	}
 
 	var choice string
-	if err := survey.AskOne(question, &choice, survey.Required); err != nil {
+	if err := AskOne(question, &choice, survey.Required); err != nil {
 		return err
 	}
 

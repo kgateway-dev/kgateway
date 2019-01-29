@@ -15,7 +15,7 @@ func ResourceSelectMultiByNamespace(resources resources.ResourceList) (resources
 		Message: "Which namespaces would you like to search?",
 		Options: resources.Namespaces(),
 	}
-	err := survey.AskOne(prompt, &namespaces, nil)
+	err := cliutil.AskOne(prompt, &namespaces, nil)
 	resourceList := resources.FilterByNamespaces(namespaces)
 
 	return resourceList, err
@@ -27,7 +27,7 @@ func ResourceSelectByNamespace(resources resources.ResourceList) (resources.Reso
 		Message: "Which namespaces would you like to search?",
 		Options: resources.Namespaces(),
 	}
-	err := survey.AskOne(prompt, &namespace, nil)
+	err := cliutil.AskOne(prompt, &namespace, nil)
 	resourceList := resources.FilterByNamespaces([]string{namespace})
 
 	return resourceList, err
@@ -39,7 +39,7 @@ func ResourceSelectMultiByName(resources resources.ResourceList) (resources.Reso
 		Message: "Which items would you like to act on?",
 		Options: resources.Names(),
 	}
-	err := survey.AskOne(prompt, &resourceNames, nil)
+	err := cliutil.AskOne(prompt, &resourceNames, nil)
 	resourceList := resources.FilterByNames(resourceNames)
 
 	return resourceList, err
@@ -51,7 +51,7 @@ func ResourceSelectByName(message string, resources resources.ResourceList) (res
 		Message: message,
 		Options: resources.Names(),
 	}
-	err := survey.AskOne(prompt, &resourceName, nil)
+	err := cliutil.AskOne(prompt, &resourceName, nil)
 	resourceList := resources.FilterByNames([]string{resourceName})
 
 	return resourceList, err
@@ -67,7 +67,7 @@ func EnsureResourceByName(message string, static bool, source string, target *re
 			Message: message,
 			Options: resources.Names(),
 		}
-		if err := survey.AskOne(prompt, &resourceName, survey.Required); err != nil {
+		if err := cliutil.AskOne(prompt, &resourceName, survey.Required); err != nil {
 			return err
 		}
 	}

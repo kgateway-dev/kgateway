@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"gopkg.in/AlecAivazis/survey.v1"
+	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
 //NOTE these functions are good candidates for code generation
@@ -22,7 +22,7 @@ func ChooseResource(typeName string, menuDescription string, nsr NsResourceMap) 
 	}
 
 	var choice string
-	if err := survey.AskOne(question, &choice, survey.Required); err != nil {
+	if err := cliutil.AskOne(question, &choice, survey.Required); err != nil {
 		// this should not error
 		fmt.Println("error with input")
 		return core.ResourceRef{}, err
@@ -44,7 +44,7 @@ func ChooseResources(typeName string, menuDescription string, nsr NsResourceMap)
 	}
 
 	var choice []string
-	if err := survey.AskOne(question, &choice, survey.Required); err != nil {
+	if err := cliutil.AskOne(question, &choice, survey.Required); err != nil {
 		// this should not error
 		fmt.Println("error with input")
 		return []*core.ResourceRef{}, err
