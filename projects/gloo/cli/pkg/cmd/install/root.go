@@ -35,8 +35,8 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 				if err := kubectl(nil, "delete", "namespace", knativeServingNamespace); err != nil {
 					return errors.Wrapf(err, "delete knative failed")
 				}
-				return nil
 			}
+			return nil
 		},
 	}
 	pflags := cmd.PersistentFlags()
