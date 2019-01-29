@@ -10,7 +10,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	helpers2 "github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	kubeerrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 var _ = Describe("Ingress", func() {
@@ -25,5 +29,18 @@ var _ = Describe("Ingress", func() {
 			us = u
 			return us, err
 		}, time.Minute).Should(Not(BeNil()))
+
+		err = testutils.Glooctl("uninstall")
+		Expect(err).NotTo(HaveOccurred())
+
+		// uninstall should clear out all the crds from the namespace
+		Eventually(func() bool {
+			cfg, err := kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kube, err := kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = kube.CoreV1().Namespaces().Get("gloo-system", metav1.GetOptions{})
+			return err != nil && kubeerrs.IsNotFound(err)
+		}, time.Minute).Should(BeTrue())
 	})
 })

@@ -4,13 +4,20 @@ import (
 	"path/filepath"
 	"time"
 
+	"k8s.io/client-go/kubernetes"
+
+	helpers2 "github.com/solo-io/gloo/test/helpers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	helpers2 "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
+	"github.com/solo-io/go-utils/kubeutils"
+	kubeerrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Knative", func() {
@@ -34,5 +41,26 @@ var _ = Describe("Knative", func() {
 			us = u
 			return us, err
 		}, time.Minute).Should(Not(BeNil()))
+
+		err = testutils.Glooctl("uninstall")
+		Expect(err).NotTo(HaveOccurred())
+
+		// uninstall should delete both namespaces
+		Eventually(func() bool {
+			cfg, err := kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kube, err := kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = kube.CoreV1().Namespaces().Get("gloo-system", metav1.GetOptions{})
+			return err != nil && kubeerrs.IsNotFound(err)
+		}, time.Minute).Should(BeTrue())
+		Eventually(func() bool {
+			cfg, err := kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kube, err := kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = kube.CoreV1().Namespaces().Get("knative-serving", metav1.GetOptions{})
+			return err != nil && kubeerrs.IsNotFound(err)
+		}, time.Minute).Should(BeTrue())
 	})
 })
