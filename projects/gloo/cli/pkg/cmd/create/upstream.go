@@ -100,7 +100,7 @@ func createUpstreamSubcommand(opts *options.Options, upstreamType, short, long s
 				if upstreamType == options.UpstreamType_Consul || upstreamType == options.UpstreamType_Kube {
 					// Short circuit this error propagation. Before this was getting bubbled up after asking
 					// the user to provide metadata, which made for a bad experience. We can remove these checks
-					// when we implement interactive mode for these types. 
+					// when we implement interactive mode for these types.
 					return errors.Errorf("interactive mode not currently available for type %v", upstreamType)
 				}
 			}
