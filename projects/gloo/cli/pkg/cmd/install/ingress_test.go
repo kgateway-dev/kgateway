@@ -1,6 +1,7 @@
 package install_test
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -18,6 +19,13 @@ import (
 )
 
 var _ = Describe("Ingress", func() {
+	BeforeEach(func() {
+		err := testutils.Make(helpers2.GlooDir(), "install/gloo-ingress.yaml")
+		Expect(err).NotTo(HaveOccurred())
+	})
+	AfterEach(func() {
+		os.Remove(filepath.Join(helpers2.GlooDir(), "install", "gloo-ingress.yaml"))
+	})
 	It("should install the gloo ingress", func() {
 		err := testutils.Glooctl("install ingress --file " + filepath.Join(helpers2.GlooInstallDir(), "gloo-ingress.yaml"))
 		Expect(err).NotTo(HaveOccurred())

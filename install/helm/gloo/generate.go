@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	valuesTemplate        = "install/helm/gloo/values-template.yaml"
+	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
 	valuesOutput          = "install/helm/gloo/values.yaml"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
@@ -24,8 +24,7 @@ var (
 func main() {
 	var version string
 	if len(os.Args) < 2 {
-		version = "testing-8671e8b9"
-		//panic("Must provide version as argument")
+		panic("Must provide version as argument")
 	} else {
 		version = os.Args[1]
 	}

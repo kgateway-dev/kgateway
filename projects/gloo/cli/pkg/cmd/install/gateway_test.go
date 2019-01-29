@@ -1,6 +1,7 @@
 package install_test
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -21,6 +22,14 @@ import (
 )
 
 var _ = Describe("Gateway", func() {
+	BeforeEach(func() {
+		err := testutils.Make(helpers2.GlooDir(), "install/gloo-gateway.yaml")
+		Expect(err).NotTo(HaveOccurred())
+	})
+	AfterEach(func() {
+		os.Remove(filepath.Join(helpers2.GlooDir(), "install", "gloo-gateway.yaml"))
+	})
+
 	It("should install the gloo gateway", func() {
 		err := testutils.Glooctl("install gateway --file " + filepath.Join(helpers2.GlooInstallDir(), "gloo-gateway.yaml"))
 		Expect(err).NotTo(HaveOccurred())

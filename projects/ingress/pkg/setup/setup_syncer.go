@@ -92,7 +92,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	if !writeNamespaceProvided {
 		watchNamespaces = append(watchNamespaces, writeNamespace)
 	}
-	disableKubeIngress := os.Getenv("DISABLE_KUBE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
+	disableKubeIngress := os.Getenv("DISABLE_KUBE_INGRESS") == "true" || os.Getenv("DISABLE_KUBE_INGRESS") == "1"
 	enableKnative := os.Getenv("ENABLE_KNATIVE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
 
 	opts := Opts{

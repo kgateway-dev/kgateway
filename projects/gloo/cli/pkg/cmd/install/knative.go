@@ -32,7 +32,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 			}
 
 			// it's okay to update the installation if we own it
-			if !installed || !ours {
+			if !installed || ours {
 				if err := installFromUri(opts, opts.Install.Knative.CrdManifestOverride, knativeCrdsUrlTemplate); err != nil {
 					return errors.Wrapf(err, "installing knative crds from manifest")
 				}
@@ -44,7 +44,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 
-			if err := preInstall(opts); err != nil {
+			if err := preInstall(); err != nil {
 				return errors.Wrapf(err, "pre-install failed")
 			}
 			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooKnativeUrlTemplate); err != nil {

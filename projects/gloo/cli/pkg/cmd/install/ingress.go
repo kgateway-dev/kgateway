@@ -16,7 +16,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 		Short: "install the Gloo Ingress Controller on kubernetes",
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := preInstall(opts); err != nil {
+			if err := preInstall(); err != nil {
 				return errors.Wrapf(err, "pre-install failed")
 			}
 			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooIngressUrlTemplate); err != nil {

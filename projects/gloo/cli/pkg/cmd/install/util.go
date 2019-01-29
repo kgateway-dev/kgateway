@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -26,14 +26,10 @@ import (
 )
 
 const (
-	installNamespace    = defaults.GlooSystem
-	imagePullSecretName = "solo-io-docker-secret"
+	installNamespace = defaults.GlooSystem
 )
 
-func preInstall(opts *options.Options) error {
-	if err := createImagePullSecretIfNeeded(opts.Install); err != nil {
-		return errors.Wrapf(err, "creating image pull secret")
-	}
+func preInstall() error {
 	if err := registerSettingsCrd(); err != nil {
 		return errors.Wrapf(err, "registering settings crd")
 	}
@@ -41,20 +37,17 @@ func preInstall(opts *options.Options) error {
 }
 
 func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate string) error {
-	releaseVersion := version.Version
-	// override release version
-	if opts.Install.ReleaseVersion != "" {
-		releaseVersion = opts.Install.ReleaseVersion
-	}
-
 	var uri string
-	if overrideUri != "" {
+	switch {
+	case overrideUri != "":
 		uri = overrideUri
-	} else {
-		if releaseVersion == version.UndefinedVersion || releaseVersion == version.DevVersion {
+	case !version.IsReleaseVersion():
+		if opts.Install.ReleaseVersion == "" {
 			return errors.Errorf("you must provide a file or a release version containing the manifest when running an unreleased version of glooctl.")
 		}
-		uri = fmt.Sprintf(manifestUriTemplate, releaseVersion)
+		uri = fmt.Sprintf(manifestUriTemplate, opts.Install.ReleaseVersion)
+	default:
+		uri = fmt.Sprintf(manifestUriTemplate, version.Version)
 	}
 
 	manifestBytes, err := readFile(uri)
@@ -98,43 +91,6 @@ func registerSettingsCrd() error {
 	})
 
 	return settingsClient.Register()
-}
-
-func createImagePullSecretIfNeeded(install options.Install) error {
-	if err := createNamespaceIfNotExist(installNamespace); err != nil {
-		return errors.Wrapf(err, "creating installation namespace")
-	}
-	dockerSecretDesired := install.DockerAuth.Username != "" ||
-		install.DockerAuth.Password != "" ||
-		install.DockerAuth.Email != ""
-
-	if !dockerSecretDesired {
-		return nil
-	}
-
-	validOpts := install.DockerAuth.Username != "" &&
-		install.DockerAuth.Password != "" &&
-		install.DockerAuth.Email != "" &&
-		install.DockerAuth.Server != ""
-
-	if !validOpts {
-		return errors.Errorf("must provide one of each flag for docker authentication: \n" +
-			"--docker-email \n" +
-			"--docker-username \n" +
-			"--docker-password \n")
-	}
-
-	if install.DryRun {
-		return nil
-	}
-
-	return kubectl(nil, "create", "secret", "docker-registry", "-n", installNamespace,
-		"--docker-email", install.DockerAuth.Email,
-		"--docker-username", install.DockerAuth.Username,
-		"--docker-password", install.DockerAuth.Password,
-		"--docker-server", install.DockerAuth.Server,
-		imagePullSecretName,
-	)
 }
 
 func createNamespaceIfNotExist(namespace string) error {

@@ -29,12 +29,6 @@ type Top struct {
 type Install struct {
 	DryRun         bool
 	ReleaseVersion string
-	DockerAuth     struct {
-		Email    string
-		Username string
-		Password string
-		Server   string
-	}
 	GlooManifestOverride string
 	Knative              KnativeInstall
 }
