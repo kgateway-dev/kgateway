@@ -191,14 +191,12 @@ TODO a getting started for knative (move what we have)
 
 ### Uninstall 
 
-TODO: real uninstall x
-todo for knative - annotate what we install, use it to determine if its our namespace
+To uninstall Gloo and all related components, simply run
 
 ```bash
-
-glooctl uninstall X
+glooctl uninstall
 ```
 
-<!-- end -->
+Note that this will also remove Knative-Serving, if it was installed by Glooctl.
 
-glooctl install knative broken on latest release?
+<!-- end -->
