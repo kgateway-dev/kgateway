@@ -5,7 +5,7 @@ In this tutorial, we'll take a look at routing to services that live outside of 
 
 ### What you'll need
 
-You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the [Gloo installation](../../installation/kubernetes.md) for guidance on installing Gloo into Kubernetes. 
+You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the [Gloo installation](../../installation/README.md) for guidance on installing Gloo into Kubernetes. 
 
 You'll also need access from the Kubernetes cluster to an external API. You can use whichever external API you wish; we'll use an API called [JSONPlaceholder](https://jsonplaceholder.typicode.com) which simulates a REST API for basic testing. 
 

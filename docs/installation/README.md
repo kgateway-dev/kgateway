@@ -74,7 +74,7 @@ replicaset.apps/gloo-5b7b748dbf           1         1         1         5m
 ```
 
 
-TODO a ggetting started for gateway (rename of the kubernetes getting started)
+See [Getting Started on Kubernetes](../getting_started/kubernetes/basic_routing.md) to get started using the Gloo Gateway.
 
 ### 2b. Install the Gloo Ingress Controller to your Kubernetes Cluster using Glooctl
 
@@ -113,7 +113,7 @@ replicaset.apps/ingress-proxy-7b676c5b7   1         1         1         4s
 
 ```
 
-TODO a ggetting started for ingress 
+See [Getting Started with Kubernetes Ingress](../getting_started/kubernetes/basic_ingress.md) to get started using the Gloo Ingress Controller.
         
 
 ### 2c. Install the Gloo Knative Cluster Ingress to your Kubernetes Cluster using Glooctl
@@ -187,6 +187,12 @@ image.caching.internal.knative.dev/queue-proxy       2m
 ```
 
 TODO a getting started for knative (move what we have)
+
+
+### Next steps
+
+Everything should be up and running. If this process does not work, please [open an issue](https://github.com/solo-io/gloo/issues/new). We are happy to answer
+questions on our [diligently staffed Slack channel](https://slack.solo.io/).
 
 
 ### Uninstall 

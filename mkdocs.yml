@@ -7,7 +7,7 @@ nav:
   - Concepts: introduction/concepts.md
   - Developer Guide: dev/README.md
 - Installation:
-  - Installing on Kubernetes: installation/kubernetes.md
+  - Installing on Kubernetes: installation/README.md
 - Getting Started:
   - Kubernetes:
     - Basic Routing: getting_started/kubernetes/basic_routing.md

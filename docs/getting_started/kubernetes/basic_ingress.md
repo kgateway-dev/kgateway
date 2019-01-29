@@ -1,0 +1,49 @@
+## Basic Routing
+
+API Gateways can route incoming traffic to backend services. Gloo can automatically discover backend services based on plugins that it uses that know intimate details about the platform or environment on which it's running. In this tutorial we look at Gloo's basic upstream discovery and routing capabilities. For more advanced *function* routing, take a look at the [function routing](../function_routing) tutorial.
+
+### What you'll need
+- [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+- Kubernetes v1.8+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a great way to get a cluster up quickly.
+
+### Steps
+
+1. The Gloo Ingress [installed](../../installation/README.md) and running on Kubernetes. 
+ 
+1. Next, deploy the Pet Store app to kubernetes:
+
+       kubectl apply \
+         -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+
+1. Let's create a Kubernetes Ingress object to route requests to the petstore
+
+cat <<EOF | kubectl apply -f -
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+ name: petstore-ingress
+ namespace: default
+ annotations:
+    kubernetes.io/ingress.class: gloo
+spec:
+ rules:
+ - http:
+     paths:
+     - path: /.*
+       backend:
+         serviceName: petstore
+         servicePort: 8080
+EOF
+        
+       ingress.extensions "petstore-ingress" created
+
+1. Let's test the route `/api/pets` using `curl`:
+
+       export INGRESS_URL=$(glooctl proxy url --name ingress-proxy)
+       curl ${INGRESS_URL}/api/pets
+        
+       [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+        
+
+Great! our ingress is up and running. See https://kubernetes.io/docs/concepts/services-networking/ingress/ for more information 
+on using kubernetes ingress controllers.

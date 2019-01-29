@@ -8,8 +8,7 @@ API Gateways can route incoming traffic to backend services. Gloo can automatica
 
 ### Steps
 
-1. Gloo and Envoy [installed](../../installation/kubernetes.md) and running on Kubernetes. 
-
+1. The Gloo Gateway [installed](../../installation/README.md) and running on Kubernetes. 
  
 1. Next, deploy the Pet Store app to kubernetes:
 
