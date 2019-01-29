@@ -1,4 +1,4 @@
-## Basic Routing
+## Ingress Routing
 
 Kubernetes Ingress Controllers are used for simple traffic routing into a kubernetes cluster. When Gloo is installed with the 
 `glooctl install ingress` command, Gloo will configure Envoy as a Kubernetes Ingress Controller, supporting Ingress objects 

@@ -1,4 +1,4 @@
-## Basic Routing
+## Gateway Routing
 
 API Gateways can route incoming traffic to backend services. Gloo can automatically discover backend services based on plugins that it uses that know intimate details about the platform or environment on which it's running. In this tutorial we look at Gloo's basic upstream discovery and routing capabilities. For more advanced *function* routing, take a look at the [function routing](../function_routing) tutorial.
 
