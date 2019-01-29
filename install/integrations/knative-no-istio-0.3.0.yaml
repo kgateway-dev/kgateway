@@ -29,7 +29,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    istio-injection: enabled
+    app: gloo
   name: knative-serving
 
 ---
@@ -539,7 +539,7 @@ spec:
   template:
     metadata:
       annotations:
-        sidecar.istio.io/inject: "true"
+        sidecar.istio.io/inject: "false"
       labels:
         app: activator
         role: activator
@@ -616,7 +616,7 @@ spec:
   template:
     metadata:
       annotations:
-        sidecar.istio.io/inject: "true"
+        sidecar.istio.io/inject: "false"
       labels:
         app: autoscaler
     spec:
@@ -894,9 +894,9 @@ metadata:
 ---
 apiVersion: v1
 data:
-  gateway.knative-ingress-gateway: istio-ingressgateway.istio-system.svc.cluster.local
-  gateway.knative-shared-gateway: knative-ingressgateway.istio-system.svc.cluster.local
-  local-gateway.cluster-local-gateway: cluster-local-gateway.istio-system.svc.cluster.local
+  gateway.knative-ingress-gateway: clusteringress-proxy.gloo-system.svc.cluster.local
+  gateway.knative-shared-gateway: clusteringress-proxy.gloo-system.svc.cluster.local
+  local-gateway.cluster-local-gateway: clusteringress-proxy.gloo-system.svc.cluster.local
 kind: ConfigMap
 metadata:
   name: config-istio
