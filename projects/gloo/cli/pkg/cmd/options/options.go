@@ -10,7 +10,6 @@ type Options struct {
 	Metadata  core.Metadata
 	Top       Top
 	Install   Install
-	Uninstall Uninstall
 	Proxy     Proxy
 	Upgrade   Upgrade
 	Create    Create
@@ -38,10 +37,6 @@ type Install struct {
 	}
 	GlooManifestOverride string
 	Knative              KnativeInstall
-}
-
-type Uninstall struct {
-	Knative bool
 }
 
 type KnativeInstall struct {

@@ -12,10 +12,6 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVarP(&install.GlooManifestOverride, "file", "f", "", "Install Gloo from this kubernetes manifest yaml file rather than from a release")
 }
 
-func AddUninstallFlags(set *pflag.FlagSet, uninstall *options.Uninstall) {
-	set.BoolVar(&uninstall.Knative, "knative", false, "Also uninstall Knative-Serving")
-}
-
 func AddKnativeInstallFlags(set *pflag.FlagSet, knative *options.KnativeInstall) {
 	set.StringVar(&knative.CrdManifestOverride, "knative-crds-manifest", "", "Install Knative CRDs from this kubernetes manifest yaml file rather than from a release")
 	set.StringVar(&knative.InstallManifestOverride, "knative-install-manifest", "", "Install Knative Serving from this kubernetes manifest yaml file rather than from a release")
