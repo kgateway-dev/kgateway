@@ -26,12 +26,13 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 		Short: "install Knative with Gloo on kubernetes",
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			installed, err := knativeInstalled()
+			installed, ours, err := knativeInstalled()
 			if err != nil {
 				return err
 			}
 
-			if !installed {
+			// it's okay to update the installation if we own it
+			if !installed || !ours {
 				if err := installFromUri(opts, opts.Install.Knative.CrdManifestOverride, knativeCrdsUrlTemplate); err != nil {
 					return errors.Wrapf(err, "installing knative crds from manifest")
 				}
@@ -60,25 +61,26 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 
 const knativeServingNamespace = "knative-serving"
 
-func knativeInstalled() (bool, error) {
+func knativeInstalled() (bool, bool, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	kube, err := kubernetes.NewForConfig(restCfg)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	namespaces, err := kube.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	for _, ns := range namespaces.Items {
 		if ns.Name == knativeServingNamespace {
-			return true, nil
+			ours := ns.Labels != nil && ns.Labels["app"] == "gloo"
+			return true, ours, nil
 		}
 	}
-	return false, nil
+	return false, false, nil
 }
 
 // register knative crds first
