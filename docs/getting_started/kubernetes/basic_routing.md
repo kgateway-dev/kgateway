@@ -4,7 +4,7 @@ API Gateways can route incoming traffic to backend services. Gloo can automatica
 
 ### What you'll need
 - [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- Kubernetes v1.8+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a great way to get a cluster up quickly.
+- Kubernetes v1.11.3+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a great way to get a cluster up quickly.
 
 ### Steps
 

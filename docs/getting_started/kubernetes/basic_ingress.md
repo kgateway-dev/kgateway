@@ -1,10 +1,12 @@
 ## Basic Routing
 
-API Gateways can route incoming traffic to backend services. Gloo can automatically discover backend services based on plugins that it uses that know intimate details about the platform or environment on which it's running. In this tutorial we look at Gloo's basic upstream discovery and routing capabilities. For more advanced *function* routing, take a look at the [function routing](../function_routing) tutorial.
+Kubernetes Ingress Controllers are used for simple traffic routing into a kubernetes cluster. When Gloo is installed with the 
+`glooctl install ingress` command, Gloo will configure Envoy as a Kubernetes Ingress Controller, supporting Ingress objects 
+written with the annotation `kubernetes.io/ingress.class: gloo`.
 
 ### What you'll need
 - [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- Kubernetes v1.8+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a great way to get a cluster up quickly.
+- Kubernetes v1.11.3+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a great way to get a cluster up quickly.
 
 ### Steps
 
