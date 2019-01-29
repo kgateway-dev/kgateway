@@ -1,9 +1,10 @@
 package testutils
 
 import (
-	"github.com/pkg/errors"
 	"os/exec"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
 )
@@ -18,7 +19,7 @@ func Make(dir, args string) error {
 	make := exec.Command("make", strings.Split(args, " ")...)
 	make.Dir = dir
 	out, err := make.CombinedOutput()
-	if err !=  nil {
+	if err != nil {
 		return errors.Errorf("make failed with err: %s", out)
 	}
 	return nil

@@ -1,10 +1,11 @@
 package install_test
 
 import (
-	kubev1 "k8s.io/api/core/v1"
 	"os"
 	"path/filepath"
 	"time"
+
+	kubev1 "k8s.io/api/core/v1"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -14,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/go-utils/kubeutils"
