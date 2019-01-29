@@ -41,7 +41,7 @@ func AddUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options
 		addServiceSpecFlags = true
 		set.StringVar(&upstream.Kube.ServiceName, "kube-service", "",
 			"name of the kubernetes service")
-		set.StringVar(&upstream.Kube.ServiceNamespace, "kube-service-namespace", "defaukt",
+		set.StringVar(&upstream.Kube.ServiceNamespace, "kube-service-namespace", "default",
 			"namespace where the kubernetes service lives")
 		set.Uint32Var(&upstream.Kube.ServicePort, "kube-service-port", 80,
 			"the port exposed by the kubernetes service. for services with multiple ports, "+
