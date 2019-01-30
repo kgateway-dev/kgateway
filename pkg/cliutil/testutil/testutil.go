@@ -67,7 +67,7 @@ func (c *Console) PressDown() {
 	// Alternatively, you can use the values written here: gopkg.in/AlecAivazis/survey.v1/terminal/sequences.go
 	// But I used the CSI as I seems to be more standard
 
-	_, err := c.console.Write([]byte{27,'[','B'})
+	_, err := c.console.Write([]byte{27, '[', 'B'})
 	Expect(err).NotTo(HaveOccurred())
 }
 
