@@ -1147,6 +1147,14 @@
   version = "v1.0.0-rc1"
 
 [[projects]]
+  digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
+  version = "v1.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:3bf17a6e6eaa6ad24152148a631d18662f7212e21637c2699bff3369b7f00fa2"
   name = "github.com/petar/GoLLRB"
@@ -1289,7 +1297,8 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:02a33aa3f5cf12a1d007b2b3027054e568fb22342d6f5aae6b5a3057d3bd9942"
+  branch = "master"
+  digest = "1:79d3489a2d5f853b96934eef741acb24a81bbeb48da2c0f8ed34ed6418c82010"
   name = "github.com/solo-io/go-utils"
   packages = [
     "cliutils",
@@ -1300,10 +1309,10 @@
     "logger",
     "protoutils",
     "testutils",
+    "versionutils",
   ]
   pruneopts = "UT"
-  revision = "1c5b99da71805f3cee3f259242e2e09057411586"
-  version = "v0.1.0"
+  revision = "7d4977881613ab3e063134a823508c545d049a98"
 
 [[projects]]
   branch = "master"
@@ -2107,6 +2116,7 @@
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/protoutils",
     "github.com/solo-io/go-utils/testutils",
+    "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
