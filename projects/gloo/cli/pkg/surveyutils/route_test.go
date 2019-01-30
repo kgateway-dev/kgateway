@@ -43,19 +43,17 @@ var _ = Describe("Route", func() {
 
 	It("should select a route", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
-			c.ExpectString("vhost prompt:")
+			c.ExpectString("vsvc prompt:")
 			c.SendLine("")
 			c.ExpectString("route prompt:")
-			c.PressDown("")
+			c.PressDown()
 			c.SendLine("")
 			c.ExpectEOF()
 		}, func() {
 			var opts options.Options
-			idx, err := SelectRouteInteractive(&opts, "vhost prompt:", "route prompt:")
+			_, idx, err := SelectRouteInteractive(&opts, "vsvc prompt:", "route prompt:")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(idx).To(Equal(1))
 		})
-
 	})
-
 })

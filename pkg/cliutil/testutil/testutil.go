@@ -60,11 +60,22 @@ func (c *Console) ExpectString(s string) string {
 	return ret
 }
 
-func (c *Console) PressDown(s string) {
+func (c *Console) PressDown() {
+	// These codes are covered here: https://en.wikipedia.org/wiki/ANSI_escape_code
+	// see "Escape sequences" and "CSI sequences"
+	// 27 = Escape
+	// Alternatively, you can use the values written here: gopkg.in/AlecAivazis/survey.v1/terminal/sequences.go
+	// But I used the CSI as I seems to be more standard
+
+	_, err := c.console.Write([]byte{27,'[','B'})
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func (c *Console) Esc() {
 	// I grabbed this value from here: gopkg.in/AlecAivazis/survey.v1/terminal/sequences.go
 	// Originally I tried to use escape codes (https://en.wikipedia.org/wiki/ANSI_escape_code)
 	// but it didnt work
-	_, err := c.console.Write([]byte{0x0e})
+	_, err := c.console.Write([]byte{27})
 	Expect(err).NotTo(HaveOccurred())
 }
 
