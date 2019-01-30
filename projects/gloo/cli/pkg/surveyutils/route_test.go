@@ -37,8 +37,8 @@ var _ = Describe("Route", func() {
 				},
 			},
 		}
-		vsClient.Write(vs, clients.WriteOpts{})
-
+		_, err := vsClient.Write(vs, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should select a route", func() {
