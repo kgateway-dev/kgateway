@@ -269,7 +269,7 @@ func RemoveRouteFlagsInteractive(opts *options.Options) error {
 }
 
 func SelectRouteInteractive(opts *options.Options, virtualServicePrompt, routePrompt string) (int, error) {
-	SelectVirtualServiceInteractiveWithPrompt(opts, "Choose a Virtual Service: ")
+	SelectVirtualServiceInteractiveWithPrompt(opts, virtualServicePrompt)
 
 	vs, err := helpers.MustVirtualServiceClient().Read(opts.Metadata.Namespace, opts.Metadata.Name,
 		clients.ReadOpts{Ctx: opts.Top.Ctx})
