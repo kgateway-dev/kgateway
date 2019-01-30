@@ -272,7 +272,7 @@ func (ei *EnvoyInstance) runWithPort(port uint32) error {
 		return nil
 	}
 
-	args := []string{"--config-yaml", ei.envoycfg, "--v2-config-only", "--disable-hot-restart", "--log-level", "debug"}
+	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
 
 	// run directly
 	cmd := exec.Command(ei.envoypath, args...)
@@ -329,7 +329,7 @@ func runContainer(cfgpath string) error {
 		"-p", "8443:8443",
 		"-p", "19000:19000",
 		image,
-		"/usr/local/bin/envoy", "--v2-config-only", "--disable-hot-restart", "--log-level", "debug",
+		"/usr/local/bin/envoy", "--disable-hot-restart", "--log-level", "debug",
 		"--config-yaml", cfgpath,
 	}
 

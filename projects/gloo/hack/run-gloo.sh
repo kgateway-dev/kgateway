@@ -38,4 +38,4 @@ admin:
       port_value: 19000
 EOF
 
-./envoy -c ./envoy.yaml --v2-config-only
+./envoy -c ./envoy.yaml
