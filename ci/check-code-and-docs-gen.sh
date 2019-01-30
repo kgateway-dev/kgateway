@@ -15,6 +15,7 @@ git commit -m "set up dummy repo for diffing" -q
 git clone https://github.com/solo-io/solo-kit /workspace/gopath/src/github.com/solo-io/solo-kit
 
 make update-deps
+make pin-repos
 
 PATH=/workspace/gopath/bin:$PATH
 

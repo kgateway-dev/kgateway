@@ -34,6 +34,14 @@ update-deps:
 	go get -u github.com/lyft/protoc-gen-validate
 	go get -u github.com/paulvollmer/2gobytes
 
+.PHONY: pin-repos
+pin-repos:
+	go run pin_repos.go
+
+.PHONY: check-format
+check-format:
+	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
+
 #----------------------------------------------------------------------------------
 # Clean
 #----------------------------------------------------------------------------------
@@ -359,7 +367,3 @@ docker-kind: docker
 	docker save soloio/discovery:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
 	docker save soloio/gloo:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
 	docker save soloio/gloo-envoy-wrapper:$(VERSION) | docker exec -i $(KIND_CONTAINER_ID) docker load
-
-.PHONY: check-format
-check-format:
-	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
