@@ -38,26 +38,20 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 }
 
 func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
-	release, err := getRelease(ctx, upgrade.ReleaseTag)
+	glooctlBinaryName := fmt.Sprintf("glooctl-%v-amd64", runtime.GOOS)
+	release, err := getReleaseWithAsset(ctx, upgrade.ReleaseTag, glooctlBinaryName)
 	if err != nil {
 		return errors.Wrapf(err, "getting release '%v' from solo-io/gloo repository", upgrade.ReleaseTag)
 	}
 
-	glooctlBinaryName := fmt.Sprintf("glooctl-%v-amd64", runtime.GOOS)
-
 	fmt.Printf("downloading %v from release tag %v\n", glooctlBinaryName, release.GetTagName())
 
-	var downloadUrl string
-	for _, asset := range release.Assets {
-		if asset.GetName() == glooctlBinaryName {
-			downloadUrl = asset.GetBrowserDownloadURL()
-		}
-	}
-	if downloadUrl == "" {
+	asset := tryGetAssetWithName(release, glooctlBinaryName)
+	if asset == nil {
 		return errors.Errorf("could not find asset %v in release %v", glooctlBinaryName, release.GetTagName())
 	}
 
-	if err := downloadAsset(downloadUrl, upgrade.DownloadPath); err != nil {
+	if err := downloadAsset(asset.GetBrowserDownloadURL(), upgrade.DownloadPath); err != nil {
 		return errors.Wrapf(err, "downloading asset %v", glooctlBinaryName)
 	}
 
@@ -73,14 +67,33 @@ func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
 	return nil
 }
 
-func getRelease(ctx context.Context, tag string) (*github.RepositoryRelease, error) {
+func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName string) (*github.RepositoryRelease, error) {
 	g := github.NewClient(nil)
 	if tag == "latest" {
-		release, _, err := g.Repositories.GetLatestRelease(ctx, "solo-io", "gloo")
-		return release, err
+		// don't use latest tag, because that might not have the assets yet if the release build is running.
+		listOpts := github.ListOptions{PerPage:10}
+		releases, _, err := g.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error listing releases")
+		}
+		for _, release := range releases {
+			if tryGetAssetWithName(release, expectedAssetName) != nil {
+				return release, nil
+			}
+		}
+		return nil, errors.Errorf("couldn't find any recent release with the desired asset")
 	}
 	release, _, err := g.Repositories.GetReleaseByTag(ctx, "solo-io", "gloo", tag)
 	return release, err
+}
+
+func tryGetAssetWithName(release *github.RepositoryRelease, expectedAssetName string) *github.ReleaseAsset {
+	for _, asset := range release.Assets {
+		if asset.GetName() == expectedAssetName {
+			return &asset
+		}
+	}
+	return nil
 }
 
 func downloadAsset(downloadUrl string, destFile string) error {
