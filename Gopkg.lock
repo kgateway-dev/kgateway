@@ -1313,7 +1313,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:4c831cfea09fb0423b3ba183115dc7b4dca3551377a68a9513f3e7276df5a2ac"
+  digest = "1:49fa6bb355e585d6e5a2627ed0302ded2f05d68b90878f8c2083a65325a62814"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1366,8 +1366,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "9757301091bf9d7be5902b307451b4bd1605d82d"
-  version = "v0.2.21"
+  revision = "fe8867e1932dc9480e8b5c715f456b1a665786c0"
+  version = "v0.2.22"
 
 [[projects]]
   digest = "1:e01b05ba901239c783dfe56450bcde607fc858908529868259c9a8765dc176d0"
@@ -2040,6 +2040,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Netflix/go-expect",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
