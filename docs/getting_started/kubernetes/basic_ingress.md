@@ -14,38 +14,38 @@ written with the annotation `kubernetes.io/ingress.class: gloo`.
  
 1. Next, deploy the Pet Store app to kubernetes:
 
-       kubectl apply \
+        kubectl apply \
          -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 
 1. Let's create a Kubernetes Ingress object to route requests to the petstore
 
-cat <<EOF | kubectl apply -f -
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
- name: petstore-ingress
- namespace: default
- annotations:
-    kubernetes.io/ingress.class: gloo
-spec:
- rules:
- - http:
-     paths:
-     - path: /.*
-       backend:
-         serviceName: petstore
-         servicePort: 8080
-EOF
+        cat <<EOF | kubectl apply -f -
+        apiVersion: extensions/v1beta1
+        kind: Ingress
+        metadata:
+         name: petstore-ingress
+         namespace: default
+         annotations:
+            kubernetes.io/ingress.class: gloo
+        spec:
+         rules:
+         - http:
+             paths:
+             - path: /.*
+               backend:
+                 serviceName: petstore
+                 servicePort: 8080
+        EOF
         
        ingress.extensions "petstore-ingress" created
 
 1. Let's test the route `/api/pets` using `curl`:
 
-       export INGRESS_URL=$(glooctl proxy url --name ingress-proxy)
-       curl ${INGRESS_URL}/api/pets
+        export INGRESS_URL=$(glooctl proxy url --name ingress-proxy)
+        curl ${INGRESS_URL}/api/pets
         
-       [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+        [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
         
 
-Great! our ingress is up and running. See https://kubernetes.io/docs/concepts/services-networking/ingress/ for more information 
+Great! our ingress is up and running. See [https://kubernetes.io/docs/concepts/services-networking/ingress/](https://kubernetes.io/docs/concepts/services-networking/ingress/) for more information 
 on using kubernetes ingress controllers.

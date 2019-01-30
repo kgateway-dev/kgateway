@@ -9,10 +9,14 @@ nav:
 - Installation:
   - Installing on Kubernetes: installation/README.md
 - Getting Started:
-  - Kubernetes:
+  - Gateway:
     - Basic Routing: getting_started/kubernetes/basic_routing.md
     - Routing to external APIs: getting_started/kubernetes/external_api_routing.md
     - Function Routing: getting_started/kubernetes/function_routing.md
+  - Ingress:
+    - Kubernetes Ingress: getting_started/kubernetes/basic_ingress.md
+  - Knative:
+    - Knative Ingress: getting_started/kubernetes/gloo_with_knative.md
 - CLI reference: cli/README.md
 - v1 API reference:
   - Overview: v1/gloo.solo.io.project.sk.md

@@ -24,19 +24,19 @@ Verify the CLI is installed and running correctly with:
 There currently exist several options for deploying Gloo depending on your use case and 
 deployment platform.
 
-- [*Gateway*](#2a.-Install-the-Gloo-Gateway-to-your-Kubernetes-Cluster-using-Glooctl): Gloo's full feature set is 
+- [*Gateway*](#gateway): Gloo's full feature set is 
 available via its v1/Gateway API. The Gateway API is modeled on Envoy's own API with the use of opinionated defaults 
 to make complex configurations possible, while maintaining simplicity where desired.
 
-- [*Ingress*](#2b.-Install-the-Gloo-Ingress-Controller-to-your-Kubernetes-Cluster-using-Glooctl
-): Gloo will support configuration the Kubernetes Ingress resource, acting as a Kubernetes Ingress Controller. 
+- [*Ingress*](#ingress): Gloo will support configuration the Kubernetes Ingress resource, acting as a Kubernetes Ingress Controller. 
 Note that ingress objects must have the annotation `"kubernetes.io/ingress.class": "gloo"` to be processed by the Gloo Ingress.
 
-- [*Knative*](#2c.-Install-the-Gloo-Knative-Cluster-Ingress-to-your-Kubernetes-Cluster-using-Glooctl): Gloo will integrate 
+- [*Knative*](#knative): Gloo will integrate 
 automatically with Knative as a cluster-level ingress for [*Knative-Serving*](https://github.com/knative/serving). 
 Gloo can be used in this way as a lightweight replacement for Istio when using Knative-Serving.
 
 
+<a name="gateway"></a> 
 ### 2a. Install the Gloo Gateway to your Kubernetes Cluster using Glooctl
         
 Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Gateway to the `gloo-system` namespace:
@@ -76,6 +76,7 @@ replicaset.apps/gloo-5b7b748dbf           1         1         1         5m
 
 See [Getting Started on Kubernetes](../getting_started/kubernetes/basic_routing.md) to get started using the Gloo Gateway.
 
+<a name="ingress"></a> 
 ### 2b. Install the Gloo Ingress Controller to your Kubernetes Cluster using Glooctl
 
 Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Ingress to the `gloo-system` namespace:
@@ -116,6 +117,7 @@ replicaset.apps/ingress-proxy-7b676c5b7   1         1         1         4s
 See [Getting Started with Kubernetes Ingress](../getting_started/kubernetes/basic_ingress.md) to get started using the Gloo Ingress Controller.
         
 
+<a name="knative"></a> 
 ### 2c. Install the Gloo Knative Cluster Ingress to your Kubernetes Cluster using Glooctl
 
  
