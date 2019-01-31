@@ -1,10 +1,10 @@
 package generate
 
 type Config struct {
-	Namespace    *Namespace    `json:"namespace"`
-	Rbac         *Rbac         `json:"rbac"`
-	Settings     *Settings     `json:"settings"`
-	Gloo         *Gloo         `json:"gloo"`
+	Namespace    *Namespace    `json:"namespace,omitempty"`
+	Rbac         *Rbac         `json:"rbac,omitempty"`
+	Settings     *Settings     `json:"settings,omitempty"`
+	Gloo         *Gloo         `json:"gloo,omitempty"`
 	Discovery    *Discovery    `json:"discovery,omitempty"`
 	Gateway      *Gateway      `json:"gateway,omitempty"`
 	GatewayProxy *GatewayProxy `json:"gatewayProxy,omitempty"`
