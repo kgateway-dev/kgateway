@@ -153,7 +153,7 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxycli := testClients.ProxyClient
-		envoyPort := services.NextBindPort()
+		envoyPort := services.BindPort.NextPort()
 		proxy := &gloov1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "proxy",
@@ -209,7 +209,7 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxycli := testClients.ProxyClient
-		envoyPort := services.NextBindPort()
+		envoyPort := services.BindPort.NextPort()
 		proxy := &gloov1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "proxy",

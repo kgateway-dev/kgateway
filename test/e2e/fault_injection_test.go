@@ -45,7 +45,7 @@ var _ = Describe("Fault Injection", func() {
 			_, err := proxyCli.Write(proxy, opts)
 			Expect(err).NotTo(HaveOccurred())
 		}
-		envoyPort := services.NextBindPort()
+		envoyPort := services.BindPort.NextPort()
 
 		setupInitialProxy := func() {
 			proxy := getGlooProxyWithVersion(nil, nil, envoyPort, up, "")
