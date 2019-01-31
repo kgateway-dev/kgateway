@@ -18,7 +18,6 @@ var _ = Describe("Routes", func() {
 	BeforeEach(func() {
 		err := testutils.Glooctl("create upstream static default-petstore-8080 --static-hosts jsonplaceholder.typicode.com:80")
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 
 	It("should create static upstream", func() {
