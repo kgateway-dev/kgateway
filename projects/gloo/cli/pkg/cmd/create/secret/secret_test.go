@@ -34,45 +34,31 @@ var _ = Describe("Secret", func() {
 		Expect(*secret.GetAws()).To(Equal(aws))
 	})
 
-	Context("tls", func() {
-		var (
-			rootca     string
-			privatekey string
-			certchain  string
-		)
+	It("should create tls secret", func() {
+		rootca := mustWriteTestFile("foo")
+		defer os.Remove(rootca)
+		privatekey := mustWriteTestFile("bar")
+		defer os.Remove(privatekey)
+		certchain := mustWriteTestFile("baz")
+		defer os.Remove(certchain)
+		args := fmt.Sprintf(
+			"create secret tls test --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
+			rootca,
+			privatekey,
+			certchain)
 
-		BeforeEach(func() {
-			rootca = mustWriteTestFile("foo")
-			privatekey = mustWriteTestFile("bar")
-			certchain = mustWriteTestFile("baz")
-		})
+		err := testutils.Glooctl(args)
+		Expect(err).NotTo(HaveOccurred())
 
-		AfterEach(func() {
-			os.Remove(rootca)
-			os.Remove(privatekey)
-			os.Remove(certchain)
-		})
+		secret, err := helpers.MustSecretClient().Read("gloo-system", "test", clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
 
-		It("should create tls secret", func() {
-			args := fmt.Sprintf(
-				"create secret tls test --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
-				rootca,
-				privatekey,
-				certchain)
-
-			err := testutils.Glooctl(args)
-			Expect(err).NotTo(HaveOccurred())
-
-			secret, err := helpers.MustSecretClient().Read("gloo-system", "test", clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			tls := v1.TlsSecret{
-				RootCa: "foo",
-				PrivateKey: "bar",
-				CertChain: "baz",
-			}
-			Expect(*secret.GetTls()).To(Equal(tls))
-		})
+		tls := v1.TlsSecret{
+			RootCa: "foo",
+			PrivateKey: "bar",
+			CertChain: "baz",
+		}
+		Expect(*secret.GetTls()).To(Equal(tls))
 	})
 
 })
@@ -83,8 +69,6 @@ func mustWriteTestFile(contents string) string {
 	if err != nil {
 		log.Fatalf("Failed to create test file: %v", err)
 	}
-
-
 
 	text := []byte(contents)
 	if _, err = tmpFile.Write(text); err != nil {
