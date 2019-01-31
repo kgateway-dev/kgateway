@@ -3,3 +3,5 @@ _output
 .idea
 site
 .firebase
+
+install/gloo.yaml

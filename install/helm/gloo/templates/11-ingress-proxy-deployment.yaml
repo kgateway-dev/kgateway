@@ -46,6 +46,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+      {{- if .Values.ingressProxy.deployment.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.ingressProxy.deployment.image.pullSecret }}{{end}}
       volumes:
       - configMap:
           name: ingress-envoy-config
