@@ -54,9 +54,9 @@ var _ = Describe("Secret", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		tls := v1.TlsSecret{
-			RootCa: "foo",
+			RootCa:     "foo",
 			PrivateKey: "bar",
-			CertChain: "baz",
+			CertChain:  "baz",
 		}
 		Expect(*secret.GetTls()).To(Equal(tls))
 	})
