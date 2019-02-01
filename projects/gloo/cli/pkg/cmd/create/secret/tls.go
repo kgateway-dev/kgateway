@@ -3,8 +3,9 @@ package secret
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"io/ioutil"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
