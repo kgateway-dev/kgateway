@@ -36,7 +36,7 @@ type Integrations struct {
 	Knative *Knative `json:"knative"`
 }
 type Knative struct {
-	Enabled *bool          `json:"enabled"`
+	Enabled *bool         `json:"enabled"`
 	Proxy   *KnativeProxy `json:"proxy,omitempty"`
 }
 
@@ -73,7 +73,7 @@ type DiscoveryDeployment struct {
 }
 
 type Gateway struct {
-	Enabled    *bool               `json:"enabled"`
+	Enabled    *bool              `json:"enabled"`
 	Deployment *GatewayDeployment `json:"deployment,omitempty"`
 }
 
@@ -92,6 +92,7 @@ type GatewayProxyDeployment struct {
 	HttpPort         string            `json:"httpPort,omitempty"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+	*DeploymentSpec
 }
 
 type GatewayProxyConfigMap struct {
@@ -99,7 +100,7 @@ type GatewayProxyConfigMap struct {
 }
 
 type Ingress struct {
-	Enabled    *bool               `json:"enabled"`
+	Enabled    *bool              `json:"enabled"`
 	Deployment *IngressDeployment `json:"deployment,omitempty"`
 }
 
