@@ -71,7 +71,7 @@ func getReleaseWithAsset(ctx context.Context, tag string, expectedAssetName stri
 	g := github.NewClient(nil)
 	if tag == "latest" {
 		// don't use latest tag, because that might not have the assets yet if the release build is running.
-		listOpts := github.ListOptions{PerPage:10}
+		listOpts := github.ListOptions{PerPage: 10}
 		releases, _, err := g.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error listing releases")
