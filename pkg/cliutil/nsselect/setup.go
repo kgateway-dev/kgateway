@@ -1,6 +1,7 @@
 package nsselect
 
 import (
+	"context"
 	"fmt"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -21,7 +22,7 @@ func GetUpstreamClient() (*gloov1.UpstreamClient, error) {
 	upstreamClient, err := gloov1.NewUpstreamClient(&factory.KubeResourceClientFactory{
 		Crd:         gloov1.UpstreamCrd,
 		Cfg:         config,
-		SharedCache: kube.NewKubeCache(),
+		SharedCache: kube.NewKubeCache(context.TODO()),
 	})
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -76,7 +77,7 @@ func UpstreamClient() (v1.UpstreamClient, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache()
+	cache := kube.NewKubeCache(context.TODO())
 	upstreamClient, err := v1.NewUpstreamClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.UpstreamCrd,
 		Cfg:         cfg,
@@ -108,7 +109,7 @@ func ProxyClient() (v1.ProxyClient, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache()
+	cache := kube.NewKubeCache(context.TODO())
 	proxyClient, err := v1.NewProxyClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.ProxyCrd,
 		Cfg:         cfg,
@@ -140,7 +141,7 @@ func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache()
+	cache := kube.NewKubeCache(context.TODO())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(&factory.KubeResourceClientFactory{
 		Crd:         gatewayv1.VirtualServiceCrd,
 		Cfg:         cfg,
@@ -172,7 +173,7 @@ func SettingsClient() (v1.SettingsClient, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache()
+	cache := kube.NewKubeCache(context.TODO())
 	settingsClient, err := v1.NewSettingsClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.SettingsCrd,
 		Cfg:         cfg,

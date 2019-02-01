@@ -79,7 +79,7 @@ var _ = Describe("V1Emitter", func() {
 		proxyClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         ProxyCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		proxyClient, err = NewProxyClient(proxyClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -96,7 +96,7 @@ var _ = Describe("V1Emitter", func() {
 		upstreamClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         UpstreamCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		upstreamClient, err = NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())

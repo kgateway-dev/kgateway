@@ -55,7 +55,7 @@ var _ = Describe("V1Emitter", func() {
 		settingsClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         SettingsCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		settingsClient, err = NewSettingsClient(settingsClientFactory)
 		Expect(err).NotTo(HaveOccurred())

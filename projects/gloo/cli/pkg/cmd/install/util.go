@@ -2,6 +2,7 @@ package install
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -87,7 +88,7 @@ func registerSettingsCrd() error {
 	settingsClient, err := v1.NewSettingsClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.SettingsCrd,
 		Cfg:         cfg,
-		SharedCache: kube.NewKubeCache(),
+		SharedCache: kube.NewKubeCache(context.TODO()),
 	})
 
 	return settingsClient.Register()

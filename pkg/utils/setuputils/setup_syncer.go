@@ -19,7 +19,6 @@ type SetupFunc func(ctx context.Context,
 type SetupSyncer struct {
 	settingsRef   core.ResourceRef
 	setupFunc     SetupFunc
-	kubeCache     kube.SharedCache
 	inMemoryCache memory.InMemoryResourceCache
 }
 
@@ -27,7 +26,6 @@ func NewSetupSyncer(settingsRef core.ResourceRef, setupFunc SetupFunc) *SetupSyn
 	return &SetupSyncer{
 		settingsRef:   settingsRef,
 		setupFunc:     setupFunc,
-		kubeCache:     kube.NewKubeCache(),
 		inMemoryCache: memory.NewInMemoryResourceCache(),
 	}
 }
@@ -37,5 +35,5 @@ func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 	if err != nil {
 		return errors.Wrapf(err, "finding bootstrap configuration")
 	}
-	return s.setupFunc(ctx, s.kubeCache, s.inMemoryCache, settings)
+	return s.setupFunc(ctx, kube.NewKubeCache(ctx), s.inMemoryCache, settings)
 }

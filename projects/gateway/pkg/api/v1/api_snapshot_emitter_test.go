@@ -56,7 +56,7 @@ var _ = Describe("V1Emitter", func() {
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         GatewayCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		gatewayClient, err = NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -64,7 +64,7 @@ var _ = Describe("V1Emitter", func() {
 		virtualServiceClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         VirtualServiceCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		virtualServiceClient, err = NewVirtualServiceClient(virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())

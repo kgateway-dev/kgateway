@@ -67,7 +67,7 @@ var _ = Describe("V1Emitter", func() {
 		upstreamClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         UpstreamCrd,
 			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(),
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 		upstreamClient, err = NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())

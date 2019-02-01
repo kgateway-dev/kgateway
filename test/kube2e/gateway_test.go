@@ -1,6 +1,7 @@
 package kube2e_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,7 +26,7 @@ var _ = Describe("Kube2e: gateway", func() {
 	It("works", func() {
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
-		cache := kube.NewKubeCache()
+		cache := kube.NewKubeCache(context.TODO())
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         v1.GatewayCrd,
 			Cfg:         cfg,

@@ -37,7 +37,9 @@ func Main(opts SetupOpts) error {
 		flag.Parse()
 	})
 
-	settingsClient, err := KubeOrFileSettingsClient(setupDir)
+	ctx := contextutils.WithLogger(context.Background(), loggingPrefix)
+
+	settingsClient, err := KubeOrFileSettingsClient(ctx, setupDir)
 	if err != nil {
 		return err
 	}
@@ -50,7 +52,6 @@ func Main(opts SetupOpts) error {
 	}
 
 	emitter := v1.NewSetupEmitter(settingsClient)
-	ctx := contextutils.WithLogger(context.Background(), loggingPrefix)
 	settingsRef := core.ResourceRef{Namespace: setupNamespace, Name: setupName}
 	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc))
 	errs, err := eventLoop.Run([]string{setupNamespace}, clients.WatchOpts{
@@ -71,13 +72,13 @@ func Main(opts SetupOpts) error {
 
 // TODO (ilackarms): instead of using an heuristic here, read from a CLI flagg
 // first attempt to use kube crd, otherwise fall back to file
-func KubeOrFileSettingsClient(settingsDir string) (v1.SettingsClient, error) {
+func KubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.SettingsClient, error) {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err == nil {
 		return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
 			Crd:         v1.SettingsCrd,
 			Cfg:         cfg,
-			SharedCache: kube.NewKubeCache(),
+			SharedCache: kube.NewKubeCache(ctx),
 		})
 	}
 	return v1.NewSettingsClient(&factory.FileResourceClientFactory{
