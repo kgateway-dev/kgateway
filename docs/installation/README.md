@@ -188,8 +188,7 @@ image.caching.internal.knative.dev/fluentd-sidecar   2m
 image.caching.internal.knative.dev/queue-proxy       2m
 ```
 
-TODO a getting started for knative (move what we have)
-
+See [Getting Started with Gloo and Knative](../getting_started/kubernetes/gloo_with_knative.md) to get started using Gloo as your Knative Ingress.
 
 ### Next steps
 
