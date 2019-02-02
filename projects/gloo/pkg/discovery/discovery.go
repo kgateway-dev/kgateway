@@ -102,7 +102,7 @@ func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (cha
 						Ctx:      opts.Ctx,
 						Selector: selector,
 					}); err != nil {
-						aggregatedErrs <- err
+						aggregatedErrs <- errors.Wrapf(err, "reconciling %v desired upstreams", len(desiredUpstreams))
 					}
 					lock.Unlock()
 				case err := <-errs:
