@@ -48,9 +48,11 @@ type KnativeProxy struct {
 }
 
 type Settings struct {
-	WatchNamespaces []string      `json:"watchNamespaces"`
-	WriteNamespace  string        `json:"writeNamespace"`
+	WatchNamespaces []string      `json:"watchNamespaces,omitempty"`
+	WriteNamespace  string        `json:"writeNamespace,omitempty"`
 	Integrations    *Integrations `json:"integrations,omitempty"`
+	Create          bool          `json:"create,omitempty"`
+	Extensions      interface{}   `json:"extensions,omitempty"`
 }
 
 type Gloo struct {

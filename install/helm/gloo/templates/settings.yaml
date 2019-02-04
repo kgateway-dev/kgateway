@@ -6,12 +6,18 @@ metadata:
   name: default
   namespace: {{ .Release.Namespace }}
 spec:
-  bindAddr: 0.0.0.0:9977
+  bindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
+
+{{- if .Values.settings.extensions }}
+  extensions:
+{{- toYaml .Values.settings.extensions | nindent 4 }}
+{{- end }}
+
 {{- with .Values.settings.watchNamespaces }}
   watchNamespaces:
   - {{ . }}
