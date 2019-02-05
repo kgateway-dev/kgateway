@@ -148,12 +148,18 @@ $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
 $(OUTPUT_DIR)/glooctl-darwin-amd64: $(SOURCES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
+$(OUTPUT_DIR)/glooctl-windows-amd64.exe: $(SOURCES)
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+
+
 .PHONY: glooctl
 glooctl: $(OUTPUT_DIR)/glooctl
 .PHONY: glooctl-linux-amd64
 glooctl-linux-amd64: $(OUTPUT_DIR)/glooctl-linux-amd64
 .PHONY: glooctl-darwin-amd64
 glooctl-darwin-amd64: $(OUTPUT_DIR)/glooctl-darwin-amd64
+.PHONY: glooctl-windows-amd64
+glooctl-windows-amd64: $(OUTPUT_DIR)/glooctl-windows-amd64.exe
 
 #----------------------------------------------------------------------------------
 # Gateway
@@ -307,7 +313,8 @@ RELEASE_BINARIES :=
 ifeq ($(RELEASE),"true")
 	RELEASE_BINARIES := \
 		$(OUTPUT_DIR)/glooctl-linux-amd64 \
-		$(OUTPUT_DIR)/glooctl-darwin-amd64
+		$(OUTPUT_DIR)/glooctl-darwin-amd64 \
+		$(OUTPUT_DIR)/glooctl-windows-amd64.exe
 endif
 
 RELEASE_YAMLS :=
