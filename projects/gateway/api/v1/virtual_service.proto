@@ -7,6 +7,7 @@ option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 
@@ -23,12 +24,9 @@ message VirtualService {
     // If provided, the Gateway will serve TLS/SSL traffic for this set of routes
     gloo.solo.io.SslConfig ssl_config = 2;
 
-    // Display only, optional descriptive name. Ignored by Gloo.
-    // Since metadata.name is associated with the resource id, it cannot be
-    // changed without deleting and creating a new virtual service.
-    // DisplayName, however, can be updated as the virtual service evolves
-    // without altering Gloo's behavior. 
-    string display_name = 3;
+    // Display only, optional descriptive name.
+    // Unlike metadata.name, DisplayName can be changed without deleting the resource.
+    string display_name = 3 [(core.solo.io.skip_hashing) = true];
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation

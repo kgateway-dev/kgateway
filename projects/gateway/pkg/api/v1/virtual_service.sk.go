@@ -40,7 +40,6 @@ func (r *VirtualService) Hash() uint64 {
 		metaCopy,
 		r.VirtualHost,
 		r.SslConfig,
-		r.DisplayName,
 	)
 }
 
