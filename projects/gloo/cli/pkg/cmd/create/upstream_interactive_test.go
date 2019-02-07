@@ -18,6 +18,8 @@ var _ = Describe("Upstream", func() {
 		upstreamPrompt       = "What type of Upstream do you want to create?"
 		awsRegionPrompt      = "What region are the AWS services in for this upstream?"
 	    azureFunctionsPrompt = "What is the name of the Azure Functions app to associate with this upstream?"
+	    awsSecretPrompt      = "Choose an AWS credentials secret to link to this upstream"
+	    azureSecretPrompt    = "Choose an Azure credentials secret to link to this upstream"
 	)
 
 	BeforeEach(func() {
@@ -111,7 +113,7 @@ var _ = Describe("Upstream", func() {
 				c.SendLine("")
 				c.ExpectString(awsRegionPrompt)
 				c.SendLine("")
-				c.ExpectString("Choose an AWS credentials secret to link to this upstream")
+				c.ExpectString(awsSecretPrompt)
 				c.SendLine("")
 				c.ExpectEOF()
 			}, func() {
@@ -129,7 +131,7 @@ var _ = Describe("Upstream", func() {
 				c.SendLine("")
 				c.ExpectString(awsRegionPrompt)
 				c.SendLine("custom-region")
-				c.ExpectString("Choose an AWS credentials secret to link to this upstream")
+				c.ExpectString(awsSecretPrompt)
 				c.SendLine("")
 				c.ExpectEOF()
 			}, func() {
@@ -239,7 +241,7 @@ var _ = Describe("Upstream", func() {
 				c.SendLine("")
 				c.ExpectString(azureFunctionsPrompt)
 				c.SendLine("")
-				c.ExpectString("Choose an Azure credentials secret to link to this upstream")
+				c.ExpectString(azureSecretPrompt)
 				c.SendLine("")
 				c.ExpectEOF()
 			}, func() {
@@ -258,7 +260,7 @@ var _ = Describe("Upstream", func() {
 				c.SendLine("")
 				c.ExpectString(azureFunctionsPrompt)
 				c.SendLine("custom")
-				c.ExpectString("Choose an Azure credentials secret to link to this upstream")
+				c.ExpectString(azureSecretPrompt)
 				c.SendLine("")
 				c.ExpectEOF()
 			}, func() {
