@@ -15,10 +15,11 @@ glooctl create virtualservice [flags]
 ### Options
 
 ```
-      --domains strings    comma seperated list of domains
-  -h, --help               help for virtualservice
-      --name string        name of the resource to read or write
-  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+      --display-name string   descriptive name of virtual service (defaults to resource name)
+      --domains strings       comma seperated list of domains
+  -h, --help                  help for virtualservice
+      --name string           name of the resource to read or write
+  -n, --namespace string      namespace for reading or writing resources (default "gloo-system")
 ```
 
 ### Options inherited from parent commands

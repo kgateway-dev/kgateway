@@ -4,7 +4,7 @@ install gloo on different platforms
 
 ### Synopsis
 
-choose which system to install Gloo onto. options include: kubernetes
+choose which version of Gloo to install.
 
 ### Options
 
@@ -21,6 +21,7 @@ choose which system to install Gloo onto. options include: kubernetes
 ### SEE ALSO
 
 * [glooctl](glooctl.md)	 - CLI for Gloo
+* [glooctl install gateway](glooctl_install_gateway.md)	 - install the Gloo Gateway on kubernetes
+* [glooctl install ingress](glooctl_install_ingress.md)	 - install the Gloo Ingress Controller on kubernetes
 * [glooctl install knative](glooctl_install_knative.md)	 - install Knative with Gloo on kubernetes
-* [glooctl install kube](glooctl_install_kube.md)	 - install Gloo on kubernetes
 

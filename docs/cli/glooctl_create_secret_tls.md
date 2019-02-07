@@ -15,6 +15,8 @@ glooctl create secret tls [flags]
 ```
       --certchain string    filename of certchain for secret
   -h, --help                help for tls
+      --name string         name of the resource to read or write
+  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
       --privatekey string   filename of privatekey for secret
       --rootca string       filename of rootca for secret
 ```
