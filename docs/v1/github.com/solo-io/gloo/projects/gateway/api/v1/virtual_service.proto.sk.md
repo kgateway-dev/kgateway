@@ -35,7 +35,7 @@ Domains must be unique across all virtual services within a gateway (i.e. no ove
 | ----- | ---- | ----------- |----------- | 
 | `virtual_host` | [.gloo.solo.io.VirtualHost](../../../gloo/api/v1/proxy.proto.sk.md#VirtualHost) |  |  |
 | `ssl_config` | [.gloo.solo.io.SslConfig](../../../gloo/api/v1/proxy.proto.sk.md#SslConfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes |  |
-| `display_name` | `string` | Since virtual services are long-lived the purpose of a virtual service may change over time. Users may like to update the name to better reflect the purpose of the virtual service. Since metadata.name is associated with the resource id, it is not possible to change that value without deleting and recreating a resource. If additional fields such as this are needed, consider implementing a separate "auxillary data" object |  |
+| `display_name` | `string` | Display only, optional descriptive name. Ignored by Gloo. Since metadata.name is associated with the resource id, it cannot be changed without deleting and creating a new virtual service. DisplayName, however, can be updated as the virtual service evolves without altering Gloo's behavior. |  |
 | `status` | [.core.solo.io.Status](../../../../../solo-kit/api/v1/status.proto.sk.md#Status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../solo-kit/api/v1/metadata.proto.sk.md#Metadata) | Metadata contains the object metadata for this resource |  |
 

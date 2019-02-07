@@ -33,11 +33,11 @@ type VirtualService struct {
 	VirtualHost *v1.VirtualHost `protobuf:"bytes,1,opt,name=virtual_host,json=virtualHost" json:"virtual_host,omitempty"`
 	// If provided, the Gateway will serve TLS/SSL traffic for this set of routes
 	SslConfig *v1.SslConfig `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig" json:"ssl_config,omitempty"`
-	// Since virtual services are long-lived the purpose of a virtual service may change over time.
-	// Users may like to update the name to better reflect the purpose of the virtual service.
-	// Since metadata.name is associated with the resource id, it is not possible to change that
-	// value without deleting and recreating a resource.
-	// If additional fields such as this are needed, consider implementing a separate "auxillary data" object
+	// Display only, optional descriptive name. Ignored by Gloo.
+	// Since metadata.name is associated with the resource id, it cannot be
+	// changed without deleting and creating a new virtual service.
+	// DisplayName, however, can be updated as the virtual service evolves
+	// without altering Gloo's behavior.
 	DisplayName string `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation
@@ -53,7 +53,7 @@ func (m *VirtualService) Reset()         { *m = VirtualService{} }
 func (m *VirtualService) String() string { return proto.CompactTextString(m) }
 func (*VirtualService) ProtoMessage()    {}
 func (*VirtualService) Descriptor() ([]byte, []int) {
-	return fileDescriptor_virtual_service_2e2e6bb5e6dc7f41, []int{0}
+	return fileDescriptor_virtual_service_ea91d8bd6065e58c, []int{0}
 }
 func (m *VirtualService) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VirtualService.Unmarshal(m, b)
@@ -152,10 +152,10 @@ func (this *VirtualService) Equal(that interface{}) bool {
 }
 
 func init() {
-	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto", fileDescriptor_virtual_service_2e2e6bb5e6dc7f41)
+	proto.RegisterFile("github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto", fileDescriptor_virtual_service_ea91d8bd6065e58c)
 }
 
-var fileDescriptor_virtual_service_2e2e6bb5e6dc7f41 = []byte{
+var fileDescriptor_virtual_service_ea91d8bd6065e58c = []byte{
 	// 361 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xc1, 0x4e, 0xea, 0x40,
 	0x14, 0x86, 0x6f, 0xb9, 0x37, 0x5c, 0x19, 0x88, 0xc6, 0x86, 0x68, 0x61, 0x21, 0xc8, 0x8a, 0x8d,

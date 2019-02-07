@@ -23,11 +23,11 @@ message VirtualService {
     // If provided, the Gateway will serve TLS/SSL traffic for this set of routes
     gloo.solo.io.SslConfig ssl_config = 2;
 
-    // Since virtual services are long-lived the purpose of a virtual service may change over time.
-    // Users may like to update the name to better reflect the purpose of the virtual service.
-    // Since metadata.name is associated with the resource id, it is not possible to change that
-    // value without deleting and recreating a resource.
-    // If additional fields such as this are needed, consider implementing a separate "auxillary data" object
+    // Display only, optional descriptive name. Ignored by Gloo.
+    // Since metadata.name is associated with the resource id, it cannot be
+    // changed without deleting and creating a new virtual service.
+    // DisplayName, however, can be updated as the virtual service evolves
+    // without altering Gloo's behavior. 
     string display_name = 3;
 
     // Status indicates the validation status of this resource.
