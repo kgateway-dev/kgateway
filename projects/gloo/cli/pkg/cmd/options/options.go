@@ -143,7 +143,8 @@ type RemoveRoute struct {
 }
 
 type InputVirtualService struct {
-	Domains []string
+	Domains     []string
+	DisplayName string
 }
 
 const (

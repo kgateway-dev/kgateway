@@ -14,10 +14,11 @@ import (
 // PrintTable prints virtual services using tables to io.Writer
 func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Virtual Service", "Domains", "SSL", "Status", "Plugins", "Routes"})
+	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "Plugins", "Routes"})
 
 	for _, v := range list {
 		name := v.GetMetadata().Name
+		displayName := v.GetDisplayName()
 		domains := domains(v)
 		ssl := sslConfig(v)
 		status := v.Status.State.String()
@@ -29,9 +30,9 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 		}
 		for i, line := range routes {
 			if i == 0 {
-				table.Append([]string{name, domains, ssl, status, plugins, line})
+				table.Append([]string{name, displayName, domains, ssl, status, plugins, line})
 			} else {
-				table.Append([]string{"", "", "", "", "", line})
+				table.Append([]string{"", "", "", "", "", "", line})
 			}
 		}
 	}

@@ -71,11 +71,16 @@ func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualServic
 	if len(input.Domains) == 0 {
 		input.Domains = allDomains
 	}
+	displayName := meta.Name
+	if input.DisplayName != "" {
+		displayName = input.DisplayName
+	}
 	vs := &v1.VirtualService{
 		Metadata: meta,
 		VirtualHost: &gloov1.VirtualHost{
 			Domains: input.Domains,
 		},
+		DisplayName: displayName,
 	}
 
 	return vs, nil
