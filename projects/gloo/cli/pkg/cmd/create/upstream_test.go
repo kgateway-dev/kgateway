@@ -36,9 +36,47 @@ var _ = Describe("Upstream", func() {
 		up, err := helpers.MustUpstreamClient().Read("gloo-system", "aws-us-east-1", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		awsspec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Aws).Aws
-		Expect(awsspec.Region).To(Equal("us-east-1"))
-		Expect(awsspec.SecretRef.Name).To(Equal("aws-lambda-access"))
+		awsSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Aws).Aws
+		Expect(awsSpec.Region).To(Equal("us-east-1"))
+		Expect(awsSpec.SecretRef.Name).To(Equal("aws-lambda-access"))
 
 	})
+
+	Context("kube upstream", func() {
+
+		It("kube service name not provided", func() {
+			err := testutils.Glooctl("create upstream kube --name kube-upstream")
+			Expect(err).To(HaveOccurred())
+		})
+
+		expectKubeUpstream := func(name, namespace string, port uint32, selector map[string]string) {
+			up, err := helpers.MustUpstreamClient().Read("gloo-system", "kube-upstream", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			kubeSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube).Kube
+			Expect(kubeSpec.ServiceName).To(Equal(name))
+			Expect(kubeSpec.ServiceNamespace).To(Equal(namespace))
+			Expect(kubeSpec.ServicePort).To(Equal(port))
+			Expect(kubeSpec.Selector).To(BeEquivalentTo(selector))
+		}
+
+		It("should create kube upstream with default namespace and port", func() {
+			err := testutils.Glooctl("create upstream kube --name kube-upstream --kube-service kube-service")
+			Expect(err).NotTo(HaveOccurred())
+			expectKubeUpstream("kube-service", "default", uint32(80), nil)
+		})
+
+		It("should create kube upstream with custom namespace and port", func() {
+			err := testutils.Glooctl("create upstream kube --name kube-upstream --kube-service kube-service --kube-service-namespace custom --kube-service-port 100")
+			Expect(err).NotTo(HaveOccurred())
+			expectKubeUpstream("kube-service", "custom", uint32(100), nil)
+		})
+
+		It("should create kube upstream with labels selector", func() {
+			err := testutils.Glooctl("create upstream kube --name kube-upstream --kube-service kube-service --kube-service-labels foo=bar,gloo=baz")
+			Expect(err).NotTo(HaveOccurred())
+			expectKubeUpstream("kube-service", "default", uint32(80), map[string]string{"foo": "bar", "gloo": "baz"})
+		})
+	})
+
 })

@@ -47,12 +47,12 @@ func AddUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options
 			"the port exposed by the kubernetes service. for services with multiple ports, "+
 				"create an upstream for each port.")
 		set.StringSliceVar(&upstream.Kube.Selector.Entries, "kube-service-labels", []string{},
-			"labels to use for customized selection of pods for this upstream. can be used to select subsets of "+
+			"comma-separated list of labels (key=value) to use for customized selection of pods for this upstream. can be used to select subsets of "+
 				"pods for a service e.g. for blue-green deployment")
 	case options.UpstreamType_Static:
 		addServiceSpecFlags = true
 		set.StringSliceVar(&upstream.Static.Hosts, "static-hosts", []string{},
-			"list of hosts for the static upstream. these are hostnames or ips provided in the format "+
+			"comma-separated list of hosts for the static upstream. these are hostnames or ips provided in the format "+
 				"IP:PORT or HOSTNAME:PORT. if :PORT is missing, it will default to :80")
 		set.BoolVar(&upstream.Static.UseTls, "static-outbound-tls", false,
 			"connections Gloo manages to this cluster will attempt to use TLS for outbound connections. "+

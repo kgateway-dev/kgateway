@@ -185,6 +185,10 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			},
 		}
 	case options.UpstreamType_Kube:
+		if input.Kube.ServiceName == "" {
+			return nil, errors.Errorf("Must provide kube service name")
+		}
+
 		spec.UpstreamType = &v1.UpstreamSpec_Kube{
 			Kube: &kubernetes.UpstreamSpec{
 				ServiceName:      input.Kube.ServiceName,
