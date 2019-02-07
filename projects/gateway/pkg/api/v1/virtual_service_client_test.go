@@ -74,6 +74,7 @@ func VirtualServiceClientTest(namespace string, client VirtualServiceClient, nam
 	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
 	Expect(r1.VirtualHost).To(Equal(input.VirtualHost))
 	Expect(r1.SslConfig).To(Equal(input.SslConfig))
+	Expect(r1.DisplayName).To(Equal(input.DisplayName))
 	Expect(r1.Status).To(Equal(input.Status))
 
 	_, err = client.Write(input, clients.WriteOpts{
