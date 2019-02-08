@@ -36,7 +36,7 @@ func AddUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options
 		set.StringVar(&upstream.Consul.ServiceName, "consul-service", "",
 			"name of the service in the consul registry")
 		set.StringSliceVar(&upstream.Consul.ServiceTags, "consul-service-tags", []string{},
-			"tags for choosing a subset of the service in the consul registry")
+			"comma-separated list of tags for choosing a subset of the service in the consul registry")
 	case options.UpstreamType_Kube:
 		addServiceSpecFlags = true
 		set.StringVar(&upstream.Kube.ServiceName, "kube-service", "",
