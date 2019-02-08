@@ -3,6 +3,7 @@ package create_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
@@ -17,10 +18,6 @@ var _ = Describe("Upstream", func() {
 		helpers.UseMemoryClients()
 	})
 
-	const (
-		nameError = "name must be specified in flag (--name) or via first arg"
-	)
-
 	getUpstream := func(name string) *v1.Upstream {
 		up, err := helpers.MustUpstreamClient().Read("gloo-system", name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -31,7 +28,7 @@ var _ = Describe("Upstream", func() {
 		It("should error when no name provided", func() {
 			err := testutils.Glooctl("create upstream static --static-hosts jsonplaceholder.typicode.com:80")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(nameError))
+			Expect(err.Error()).To(Equal(argsutils.NameError))
 		})
 
 		It("should error when hosts not provided", func() {
@@ -56,7 +53,7 @@ var _ = Describe("Upstream", func() {
 		It("should error out when no name provided", func() {
 			err := testutils.Glooctl("create upstream aws --aws-secret-name aws-lambda-access")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(nameError))
+			Expect(err.Error()).To(Equal(argsutils.NameError))
 		})
 
 		It("should error out when no secret name provided", func() {
@@ -90,7 +87,7 @@ var _ = Describe("Upstream", func() {
 		It("should error out when no name provided", func() {
 			err := testutils.Glooctl("create upstream azure --azure-secret-name azure-secret")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(nameError))
+			Expect(err.Error()).To(Equal(argsutils.NameError))
 		})
 
 		It("should error out when no secret name provided", func() {
@@ -160,7 +157,7 @@ var _ = Describe("Upstream", func() {
 		It("should error out when no name provided", func() {
 			err := testutils.Glooctl("create upstream consul")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(nameError))
+			Expect(err.Error()).To(Equal(argsutils.NameError))
 		})
 
 		It("should error out when no consul service name provided", func() {

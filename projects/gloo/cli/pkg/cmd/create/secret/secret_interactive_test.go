@@ -51,8 +51,8 @@ var _ = Describe("Secret Interactive Mode", func() {
 	})
 
 	Context("Azure", func() {
-		// TODO: 
-		FIt("should work", func() {
+		// TODO: https://github.com/solo-io/gloo/issues/387, see comment below
+		PIt("should work", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString("Please choose a namespace")
 				c.SendLine("gloo-system")
