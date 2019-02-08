@@ -160,6 +160,12 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if svcSpec != nil {
 			return nil, errors.Errorf("%v does not support service spec", input.UpstreamType)
 		}
+		if input.Aws.Secret.Namespace == "" {
+			return nil, errors.Errorf("aws secret namespace must not be empty")
+		}
+		if input.Aws.Secret.Name == "" {
+			return nil, errors.Errorf("aws secret name must not be empty")
+		}
 		spec.UpstreamType = &v1.UpstreamSpec_Aws{
 			Aws: &aws.UpstreamSpec{
 				Region:    input.Aws.Region,
@@ -170,6 +176,12 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if svcSpec != nil {
 			return nil, errors.Errorf("%v does not support service spec", input.UpstreamType)
 		}
+		if input.Azure.Secret.Namespace == "" {
+			return nil, errors.Errorf("azure secret namespace must not be empty")
+		}
+		if input.Azure.Secret.Name == "" {
+			return nil, errors.Errorf("azure secret name must not be empty")
+		}
 		spec.UpstreamType = &v1.UpstreamSpec_Azure{
 			Azure: &azure.UpstreamSpec{
 				FunctionAppName: input.Azure.FunctionAppName,
@@ -177,6 +189,9 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			},
 		}
 	case options.UpstreamType_Consul:
+		if input.Consul.ServiceName == "" {
+			return nil, errors.Errorf("must provide consul service name")
+		}
 		spec.UpstreamType = &v1.UpstreamSpec_Consul{
 			Consul: &consul.UpstreamSpec{
 				ServiceName: input.Consul.ServiceName,

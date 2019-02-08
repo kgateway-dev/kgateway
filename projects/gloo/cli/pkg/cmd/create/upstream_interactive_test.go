@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Upstream", func() {
+var _ = Describe("Upstream Interactive Mode", func() {
 
 	const (
 		upstreamPrompt       = "What type of Upstream do you want to create?"
@@ -26,13 +26,10 @@ var _ = Describe("Upstream", func() {
 		helpers.UseMemoryClients()
 	})
 
-	It("kube doesn't support interactive", func() {
+	It("should not be allowed for Kube", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString(upstreamPrompt)
-			c.PressDown()
-			c.PressDown()
-			c.PressDown()
-			c.SendLine("")
+			c.SendLine("kube")
 			c.ExpectEOF()
 		}, func() {
 			var upstream options.InputUpstream
@@ -42,12 +39,10 @@ var _ = Describe("Upstream", func() {
 		})
 	})
 
-	It("consul doesn't support interactive", func() {
+	It("should not be allowed for Consul", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString(upstreamPrompt)
-			c.PressDown()
-			c.PressDown()
-			c.SendLine("")
+			c.SendLine("consul")
 			c.ExpectEOF()
 		}, func() {
 			var upstream options.InputUpstream
@@ -57,10 +52,10 @@ var _ = Describe("Upstream", func() {
 		})
 	})
 
-	It("aws interactive errors with no secret", func() {
+	It("should error out for AWS when there's no secret", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString(upstreamPrompt)
-			c.SendLine("")
+			c.SendLine("aws")
 			c.ExpectString(awsRegionPrompt)
 			c.SendLine("")
 			c.ExpectEOF()
@@ -73,7 +68,7 @@ var _ = Describe("Upstream", func() {
 		})
 	})
 
-	Context("aws interactive tests with secret", func() {
+	Context("AWS with secret", func() {
 
 		const (
 			awsSecretName      = "aws-secret"
@@ -107,10 +102,10 @@ var _ = Describe("Upstream", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("aws interactive with defaults", func() {
+		It("should work with defaults", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
-				c.SendLine("")
+				c.SendLine("aws")
 				c.ExpectString(awsRegionPrompt)
 				c.SendLine("")
 				c.ExpectString(awsSecretPrompt)
@@ -125,10 +120,10 @@ var _ = Describe("Upstream", func() {
 			})
 		})
 
-		It("aws interactive with custom region", func() {
+		It("should work with custom region", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
-				c.SendLine("")
+				c.SendLine("aws")
 				c.ExpectString(awsRegionPrompt)
 				c.SendLine("custom-region")
 				c.ExpectString(awsSecretPrompt)
@@ -144,14 +139,10 @@ var _ = Describe("Upstream", func() {
 		})
 	})
 
-	It("static upstream no hosts", func() {
+	It("should work for static with no hosts", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString(upstreamPrompt)
-			c.PressDown()
-			c.PressDown()
-			c.PressDown()
-			c.PressDown()
-			c.SendLine("")
+			c.SendLine("static")
 			c.ExpectString("Add another host for this upstream (empty to skip)? []")
 			c.SendLine("")
 			c.ExpectEOF()
@@ -163,14 +154,11 @@ var _ = Describe("Upstream", func() {
 		})
 	})
 
-	PIt("static upstream hosts", func() {
+	// TODO: https://github.com/solo-io/gloo/issues/387, see comment below
+	PIt("should work for static with hosts", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString(upstreamPrompt)
-			c.PressDown()
-			c.PressDown()
-			c.PressDown()
-			c.PressDown()
-			c.SendLine("")
+			c.SendLine("static")
 			c.ExpectString("Add another host for this upstream (empty to skip)? []")
 			c.SendLine("foo")
 			c.SendLine("") // can not figure out how to advance in this case, some idiosyncrasy with the slice prompt
@@ -183,11 +171,10 @@ var _ = Describe("Upstream", func() {
 		})
 	})
 
-	It("azure interactive errors with no secret", func() {
+	It("should error out for Azure when there's no secret", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString(upstreamPrompt)
-			c.PressDown()
-			c.SendLine("")
+			c.SendLine("azure")
 			c.ExpectString(azureFunctionsPrompt)
 			c.SendLine("")
 			c.ExpectEOF()
@@ -200,7 +187,7 @@ var _ = Describe("Upstream", func() {
 		})
 	})
 
-	Context("azure interactive tests with secret", func() {
+	Context("Azure with secret", func() {
 
 		const (
 			azureSecretName      = "azure-secret"
@@ -234,11 +221,10 @@ var _ = Describe("Upstream", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("azure interactive with defaults", func() {
+		It("should work with default function app name", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
-				c.PressDown()
-				c.SendLine("")
+				c.SendLine("azure")
 				c.ExpectString(azureFunctionsPrompt)
 				c.SendLine("")
 				c.ExpectString(azureSecretPrompt)
@@ -253,11 +239,10 @@ var _ = Describe("Upstream", func() {
 			})
 		})
 
-		It("azure interactive with custom region", func() {
+		It("should work with custom function app name", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
-				c.PressDown()
-				c.SendLine("")
+				c.SendLine("azure")
 				c.ExpectString(azureFunctionsPrompt)
 				c.SendLine("custom")
 				c.ExpectString(azureSecretPrompt)

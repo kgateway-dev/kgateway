@@ -25,7 +25,7 @@ func AddUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options
 	case options.UpstreamType_Azure:
 		set.StringVar(&upstream.Azure.FunctionAppName, "azure-app-name", "",
 			"name of the Azure Functions app to associate with this upstream")
-		set.StringVar(&upstream.Azure.Secret.Name, "azure-secret-name", defaults.GlooSystem,
+		set.StringVar(&upstream.Azure.Secret.Name, "azure-secret-name", "",
 			"name of a secret containing Azure credentials created with glooctl. See `glooctl create secret azure --help` "+
 				"for help creating secrets")
 		set.StringVar(&upstream.Azure.Secret.Namespace, "azure-secret-namespace", defaults.GlooSystem,
