@@ -69,7 +69,7 @@ var _ = Describe("Secret Interactive Mode", func() {
 				err := secret.AzureSecretArgsInteractive(&meta, &azureSecret)
 				Expect(err).NotTo(HaveOccurred())
 				expectMeta(meta)
-				Expect(azureSecret.ApiKeys.MustMap()).To(BeEquivalentTo(map[string]string{"foo":"bar","gloo":"baz"}))
+				Expect(azureSecret.ApiKeys.MustMap()).To(BeEquivalentTo(map[string]string{"foo": "bar", "gloo": "baz"}))
 			})
 		})
 	})
