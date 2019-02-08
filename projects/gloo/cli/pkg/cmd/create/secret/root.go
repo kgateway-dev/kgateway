@@ -19,6 +19,7 @@ func CreateCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobr
 		},
 	}
 	cmd.AddCommand(awsCmd(opts))
+	cmd.AddCommand(azureCmd(opts))
 	cmd.AddCommand(tlsCmd(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd

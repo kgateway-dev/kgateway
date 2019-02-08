@@ -2,17 +2,17 @@ package secret_test
 
 import (
 	"fmt"
-
-	"io/ioutil"
 	"os"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"io/ioutil"
 )
 
 var _ = Describe("Secret", func() {
@@ -21,47 +21,110 @@ var _ = Describe("Secret", func() {
 		helpers.UseMemoryClients()
 	})
 
-	It("should create aws secret", func() {
-		err := testutils.Glooctl("create secret aws --name test --namespace gloo-system --access-key foo --secret-key bar")
-		Expect(err).NotTo(HaveOccurred())
+	Context("AWS", func() {
+		It("should error if no name provided", func() {
+			err := testutils.Glooctl("create secret aws")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(argsutils.NameError))
+		})
 
-		secret, err := helpers.MustSecretClient().Read("gloo-system", "test", clients.ReadOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		shouldWork := func(command, namespace string) {
+			err := testutils.Glooctl(command)
+			Expect(err).NotTo(HaveOccurred())
 
-		aws := v1.AwsSecret{
-			AccessKey: "foo",
-			SecretKey: "bar",
+			secret, err := helpers.MustSecretClient().Read(namespace, "test", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			aws := v1.AwsSecret{
+				AccessKey: "foo",
+				SecretKey: "bar",
+			}
+			Expect(*secret.GetAws()).To(Equal(aws))
 		}
-		Expect(*secret.GetAws()).To(Equal(aws))
+
+		It("should work", func() {
+			shouldWork("create secret aws --name test --access-key foo --secret-key bar", "gloo-system")
+		})
+
+		It("should work as subcommand", func() {
+			shouldWork("create secret aws test --access-key foo --secret-key bar", "gloo-system")
+		})
+
+		It("should work in custom namespace", func() {
+			shouldWork("create secret aws test --namespace custom --access-key foo --secret-key bar", "custom")
+		})
 	})
 
-	It("should create tls secret", func() {
-		rootca := mustWriteTestFile("foo")
-		defer os.Remove(rootca)
-		privatekey := mustWriteTestFile("bar")
-		defer os.Remove(privatekey)
-		certchain := mustWriteTestFile("baz")
-		defer os.Remove(certchain)
-		args := fmt.Sprintf(
-			"create secret tls test --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
-			rootca,
-			privatekey,
-			certchain)
+	Context("Azure", func() {
+		It("should error if no name provided", func() {
+			err := testutils.Glooctl("create secret azure")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(argsutils.NameError))
+		})
 
-		err := testutils.Glooctl(args)
-		Expect(err).NotTo(HaveOccurred())
+		shouldWork := func(command, namespace string) {
+			err := testutils.Glooctl(command)
+			Expect(err).NotTo(HaveOccurred())
 
-		secret, err := helpers.MustSecretClient().Read("gloo-system", "test", clients.ReadOpts{})
-		Expect(err).NotTo(HaveOccurred())
+			secret, err := helpers.MustSecretClient().Read(namespace, "test", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
 
-		tls := v1.TlsSecret{
-			RootCa:     "foo",
-			PrivateKey: "bar",
-			CertChain:  "baz",
+			azure := v1.AzureSecret{
+				ApiKeys: map[string]string{
+					"foo":"bar",
+					"gloo":"baz",
+				},
+			}
+			Expect(*secret.GetAzure()).To(Equal(azure))
 		}
-		Expect(*secret.GetTls()).To(Equal(tls))
+
+		It("should work", func() {
+			shouldWork("create secret azure --name test --api-keys foo=bar,gloo=baz", "gloo-system")
+		})
+
+		It("should work as subcommand", func() {
+			shouldWork("create secret azure test --api-keys foo=bar,gloo=baz", "gloo-system")
+		})
+
+		It("should work with custom namespace", func() {
+			shouldWork("create secret azure test --namespace custom --api-keys foo=bar,gloo=baz", "custom")
+		})
 	})
 
+	Context("TLS", func() {
+		It("should error if no name provided", func() {
+			err := testutils.Glooctl("create secret tls")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(argsutils.NameError))
+		})
+
+		It("should work", func() {
+			rootca := mustWriteTestFile("foo")
+			defer os.Remove(rootca)
+			privatekey := mustWriteTestFile("bar")
+			defer os.Remove(privatekey)
+			certchain := mustWriteTestFile("baz")
+			defer os.Remove(certchain)
+			args := fmt.Sprintf(
+				"create secret tls test --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
+				rootca,
+				privatekey,
+				certchain)
+
+			err := testutils.Glooctl(args)
+			Expect(err).NotTo(HaveOccurred())
+
+			secret, err := helpers.MustSecretClient().Read("gloo-system", "test", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			tls := v1.TlsSecret{
+				RootCa:     "foo",
+				PrivateKey: "bar",
+				CertChain:  "baz",
+			}
+			Expect(*secret.GetTls()).To(Equal(tls))
+		})
+	})
 })
 
 func mustWriteTestFile(contents string) string {

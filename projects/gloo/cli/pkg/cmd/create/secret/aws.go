@@ -3,7 +3,7 @@ package secret
 import (
 	"context"
 	"fmt"
-
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 
@@ -12,41 +12,39 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/spf13/cobra"
 )
 
 func awsCmd(opts *options.Options) *cobra.Command {
-	meta := opts.Metadata
 	input := opts.Create.InputSecret.AwsSecret
 	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: `Create an AWS secret with the given name`,
 		Long:  `Create an AWS secret with the given name`,
 		RunE: func(c *cobra.Command, args []string) error {
-			if len(args) == 1 {
-				meta.Name = args[0]
+			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
+				return err
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := awsSecretArgsInteractive(&meta, &input); err != nil {
+				if err := awsSecretArgsInteractive(&opts.Metadata, &input); err != nil {
 					return err
 				}
 			}
 			// create the secret
-			if err := createAwsSecret(opts.Top.Ctx, meta, input); err != nil {
+			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, input); err != nil {
 				return err
 			}
-			fmt.Printf("Created AWS secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
+			fmt.Printf("Created AWS secret [%v] in namespace [%v]\n", opts.Metadata.Name, opts.Metadata.Namespace)
 			return nil
 		},
 	}
 
 	flags := cmd.Flags()
-	flagutils.AddMetadataFlags(flags, &meta)
+	flagutils.AddMetadataFlags(flags, &opts.Metadata)
 	flags.StringVar(&input.AccessKey, "access-key", "", "aws access key")
 	flags.StringVar(&input.SecretKey, "secret-key", "", "aws secret key")
 
