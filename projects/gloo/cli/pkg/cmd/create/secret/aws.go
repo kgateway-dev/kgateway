@@ -30,7 +30,7 @@ func awsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := awsSecretArgsInteractive(&opts.Metadata, &input); err != nil {
+				if err := AwsSecretArgsInteractive(&opts.Metadata, &input); err != nil {
 					return err
 				}
 			}
@@ -51,7 +51,7 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-func awsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) error {
+func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) error {
 	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
 		return err
 	}

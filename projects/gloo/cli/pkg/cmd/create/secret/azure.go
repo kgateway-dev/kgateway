@@ -30,7 +30,7 @@ func azureCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := azureSecretArgsInteractive(&opts.Metadata, &input); err != nil {
+				if err := AzureSecretArgsInteractive(&opts.Metadata, &input); err != nil {
 					return err
 				}
 			}
@@ -50,7 +50,7 @@ func azureCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-func azureSecretArgsInteractive(meta *core.Metadata, input *options.AzureSecret) error {
+func AzureSecretArgsInteractive(meta *core.Metadata, input *options.AzureSecret) error {
 	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
 		return err
 	}

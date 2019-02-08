@@ -31,7 +31,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := tlsSecretArgsInteractive(&opts.Metadata, &input); err != nil {
+				if err := TlsSecretArgsInteractive(&opts.Metadata, &input); err != nil {
 					return err
 				}
 			}
@@ -55,7 +55,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-func tlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) error {
+func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) error {
 	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
 		return err
 	}
