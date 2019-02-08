@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+const GatewayProxyName = "gateway-proxy"
+
 func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gloov1.Proxy, reporter.ResourceErrors) {
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -36,7 +38,7 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 	}
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      joinGatewayNames(snap.Gateways.List()) + "-proxy",
+			Name:      GatewayProxyName,
 			Namespace: namespace,
 		},
 		Listeners: listeners,
@@ -83,6 +85,9 @@ func desiredListener(gateway *v1.Gateway, virtualServices v1.VirtualServiceList,
 		if err != nil {
 			resourceErrs.AddError(gateway, err)
 			continue
+		}
+		if virtualService.VirtualHost == nil {
+			virtualService.VirtualHost = &gloov1.VirtualHost{}
 		}
 		virtualService.VirtualHost.Name = fmt.Sprintf("%v.%v", ref.Namespace, ref.Name)
 		virtualHosts = append(virtualHosts, virtualService.VirtualHost)
