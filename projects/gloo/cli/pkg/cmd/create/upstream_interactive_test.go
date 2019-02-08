@@ -17,9 +17,9 @@ var _ = Describe("Upstream", func() {
 	const (
 		upstreamPrompt       = "What type of Upstream do you want to create?"
 		awsRegionPrompt      = "What region are the AWS services in for this upstream?"
-	    azureFunctionsPrompt = "What is the name of the Azure Functions app to associate with this upstream?"
-	    awsSecretPrompt      = "Choose an AWS credentials secret to link to this upstream"
-	    azureSecretPrompt    = "Choose an Azure credentials secret to link to this upstream"
+		azureFunctionsPrompt = "What is the name of the Azure Functions app to associate with this upstream?"
+		awsSecretPrompt      = "Choose an AWS credentials secret to link to this upstream"
+		azureSecretPrompt    = "Choose an Azure credentials secret to link to this upstream"
 	)
 
 	BeforeEach(func() {
@@ -76,9 +76,9 @@ var _ = Describe("Upstream", func() {
 	Context("aws interactive tests with secret", func() {
 
 		const (
-			awsSecretName = "aws-secret"
+			awsSecretName      = "aws-secret"
 			awsSecretNamespace = "gloo-system"
-			defaultAwsRegion = "us-east-1"
+			defaultAwsRegion   = "us-east-1"
 		)
 
 		var (
@@ -101,7 +101,7 @@ var _ = Describe("Upstream", func() {
 			}
 			_, err := secretClient.Write(secret, clients.WriteOpts{})
 			secretRef = core.ResourceRef{
-				Name: awsSecretName,
+				Name:      awsSecretName,
 				Namespace: awsSecretNamespace,
 			}
 			Expect(err).NotTo(HaveOccurred())
@@ -228,7 +228,7 @@ var _ = Describe("Upstream", func() {
 			}
 			_, err := secretClient.Write(secret, clients.WriteOpts{})
 			secretRef = core.ResourceRef{
-				Name: azureSecretName,
+				Name:      azureSecretName,
 				Namespace: azureSecretNamespace,
 			}
 			Expect(err).NotTo(HaveOccurred())
@@ -274,4 +274,3 @@ var _ = Describe("Upstream", func() {
 	})
 
 })
-
