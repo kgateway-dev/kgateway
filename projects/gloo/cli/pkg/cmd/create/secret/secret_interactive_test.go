@@ -81,13 +81,22 @@ var _ = Describe("Secret Interactive Mode", func() {
 				c.SendLine("gloo-system")
 				c.ExpectString("name of secret")
 				c.SendLine("test-secret")
+				c.ExpectString("filename of rootca for secret")
+				c.SendLine("foo")
+				c.ExpectString("filename of privatekey for secret")
+				c.SendLine("bar")
+				c.ExpectString("filename of certchain for secret")
+				c.SendLine("baz")
 				c.ExpectEOF()
 			}, func() {
 				var meta core.Metadata
 				var tlsSecret options.TlsSecret
 				err := secret.TlsSecretArgsInteractive(&meta, &tlsSecret)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(err.Error()).To(Equal("interactive mode not currently available for type kube"))
+				expectMeta(meta)
+				Expect(tlsSecret.RootCaFilename).To(Equal("foo"))
+				Expect(tlsSecret.PrivateKeyFilename).To(Equal("bar"))
+				Expect(tlsSecret.CertChainFilename).To(Equal("baz"))
 			})
 		})
 	})
