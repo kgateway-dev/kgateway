@@ -87,26 +87,53 @@ var _ = Describe("Happypath", func() {
 
 	Describe("in memory", func() {
 
+		var up *gloov1.Upstream
+
 		BeforeEach(func() {
 			testClients = services.RunGateway(ctx, true)
 			err := envoyInstance.Run(testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
-		})
-		It("should not crash", func() {
-
-			var opts clients.WriteOpts
-			up := tu.Upstream
-			_, err := testClients.UpstreamClient.Write(up, opts)
+			up = tu.Upstream
+			_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not crash", func() {
 
 			proxycli := testClients.ProxyClient
 			proxy := getTrivialProxyForUpstream("default", envoyPort, up.Metadata.Ref())
-			_, err = proxycli.Write(proxy, opts)
+			_, err := proxycli.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			TestUpstremReachable()
 
+		})
+
+		Context("sad path", func() {
+			It("should error the proxy with two listeners with the same bind address", func() {
+
+				proxycli := testClients.ProxyClient
+				proxy := getTrivialProxyForUpstream("default", envoyPort, up.Metadata.Ref())
+				// add two identical listeners two see errors come up
+				proxy.Listeners = append(proxy.Listeners, proxy.Listeners[0])
+				_, err := proxycli.Write(proxy, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				getStatus := func() (core.Status_State, error) {
+					updatedProxy, err := proxycli.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
+					if err != nil {
+						return 0, err
+					}
+					return updatedProxy.Status.State, nil
+				}
+
+				Eventually(getStatus, "5s").ShouldNot(Equal(core.Status_Pending))
+				st, err := getStatus()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(st).To(Equal(core.Status_Rejected))
+
+			})
 		})
 	})
 	Describe("kubernetes happy path", func() {

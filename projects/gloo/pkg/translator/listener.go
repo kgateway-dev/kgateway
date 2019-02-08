@@ -14,11 +14,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 )
 
-func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, report reportFunc) *envoyapi.Listener {
+func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, translatorReport reportFunc) *envoyapi.Listener {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
 
-	report = func(err error, format string, args ...interface{}) {
-		report(err, "listener."+format, args...)
+	report := func(err error, format string, args ...interface{}) {
+		translatorReport(err, "listener."+format, args...)
 	}
 	validateListenerPorts(proxy, report)
 
