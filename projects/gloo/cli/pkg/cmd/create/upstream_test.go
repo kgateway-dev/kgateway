@@ -27,7 +27,7 @@ var _ = Describe("Upstream", func() {
 		return up
 	}
 
-	Context("static", func () {
+	Context("static", func() {
 		It("should error when no name provided", func() {
 			err := testutils.Glooctl("create upstream static --static-hosts jsonplaceholder.typicode.com:80")
 			Expect(err).To(HaveOccurred())
