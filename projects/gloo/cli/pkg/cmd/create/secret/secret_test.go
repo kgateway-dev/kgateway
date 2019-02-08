@@ -2,8 +2,8 @@ package secret_test
 
 import (
 	"fmt"
-	"os"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -71,8 +71,8 @@ var _ = Describe("Secret", func() {
 
 			azure := v1.AzureSecret{
 				ApiKeys: map[string]string{
-					"foo":"bar",
-					"gloo":"baz",
+					"foo":  "bar",
+					"gloo": "baz",
 				},
 			}
 			Expect(*secret.GetAzure()).To(Equal(azure))
