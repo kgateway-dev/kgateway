@@ -3,12 +3,14 @@ package translator
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -30,10 +32,13 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 		return nil, resourceErrs
 	}
 	validateGateways(snap.Gateways.List(), resourceErrs)
-	validateVirtualServices(snap.VirtualServices.List(), resourceErrs)
 	var listeners []*gloov1.Listener
 	for _, gateway := range snap.Gateways.List() {
-		listener := desiredListener(gateway, snap.VirtualServices.List(), resourceErrs)
+
+		virtualServices := getVirtualServiceForGateway(gateway, snap.VirtualServices.List(), resourceErrs)
+		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, virtualServices, resourceErrs)
+
+		listener := desiredListener(gateway, mergedVirtualServices)
 		listeners = append(listeners, listener)
 	}
 	return &gloov1.Proxy{
@@ -53,16 +58,122 @@ func joinGatewayNames(gateways v1.GatewayList) string {
 	return strings.Join(names, ".")
 }
 
-// TODO(ilackarms): implement validation func
 func validateGateways(gateways v1.GatewayList, resourceErrs reporter.ResourceErrors) {
+	bindAddresses := map[string]v1.GatewayList{}
+	// if two gateway (=listener) that belong to the same proxy share the same bind address,
+	// they are invalid.
+	for _, gw := range gateways {
+		bindAddress := fmt.Sprintf("%s:%d", gw.BindAddress, gw.BindPort)
+		bindAddresses[bindAddress] = append(bindAddresses[bindAddress], gw)
+	}
 
+	for addr, gateways := range bindAddresses {
+		if len(gateways) > 1 {
+			for _, gw := range gateways {
+				resourceErrs.AddError(gw, fmt.Errorf("bind-addres %s is not unique in a proxy. gateways: %s", addr, strings.Join(gatewaysRefsToString(gateways), ",")))
+			}
+		}
+	}
 }
 
-func validateVirtualServices(virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) {
-
+func gatewaysRefsToString(gateways v1.GatewayList) []string {
+	var ret []string
+	for _, gw := range gateways {
+		ret = append(ret, gw.Metadata.Ref().Key())
+	}
+	return ret
 }
 
-func desiredListener(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) *gloov1.Listener {
+func domainsToKey(domains []string) string {
+	// copy before mutating for good measure
+	domains = append([]string{}, domains...)
+	// sort, and join all domains with an out of band character, like ','
+	sort.Strings(domains)
+	return strings.Join(domains, ",")
+}
+
+func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
+
+	domainKeysSets := map[string]v1.VirtualServiceList{}
+	for _, vs := range virtualServices {
+		if vs.VirtualHost == nil {
+			continue
+		}
+		domainsKey := domainsToKey(vs.VirtualHost.Domains)
+		domainKeysSets[domainsKey] = append(domainKeysSets[domainsKey], vs)
+	}
+
+	domainSet := map[string][]string{}
+	// make sure each domain is only in one domain set
+	for k, vslist := range domainKeysSets {
+		// take the first one as they are all the same
+		domains := vslist[0].VirtualHost.Domains
+		for _, d := range domains {
+			domainSet[d] = append(domainSet[d], k)
+		}
+	}
+
+	// report errors
+	for domain, domainSetKeys := range domainSet {
+		if len(domainSetKeys) > 1 {
+			resourceErrs.AddError(gateway, fmt.Errorf("domain %s is present in more than one vservice set in this gateway", domain))
+		}
+	}
+	// return merged list
+	var ret v1.VirtualServiceList
+	for k, vslist := range domainKeysSets {
+		if len(vslist) == 1 {
+			// only one vservice, do nothing.
+			ret = append(ret, vslist[0])
+			continue
+		}
+
+		// take the first one as they are all the same
+		var routes []*gloov1.Route
+		var sslConfig *gloov1.SslConfig
+		var vhostPlugins *gloov1.VirtualHostPlugins
+		for _, vs := range vslist {
+			routes = append(routes, vs.VirtualHost.Routes...)
+			if sslConfig == nil {
+				sslConfig = vs.SslConfig
+			} else {
+				resourceErrs.AddError(gateway, fmt.Errorf("more than one ssl config is present in virtual service of these domains: %s", k))
+			}
+			if vhostPlugins == nil && vs.VirtualHost != nil &&
+				vs.VirtualHost.VirtualHostPlugins != nil {
+				vhostPlugins = vs.VirtualHost.VirtualHostPlugins
+			} else {
+				resourceErrs.AddError(gateway, fmt.Errorf("more than one vhost plugin is present in virtual service of these domains: %s", k))
+			}
+		}
+		glooutils.SortRoutesByPath(routes)
+
+		ref := core.Metadata{
+			Name:      getMergedName(vslist),
+			Namespace: ns,
+		}
+		mergedVs := &v1.VirtualService{
+			VirtualHost: &gloov1.VirtualHost{
+				Domains:            vslist[0].VirtualHost.Domains,
+				Routes:             routes,
+				Name:               fmt.Sprintf("%v.%v", ref.Namespace, ref.Name),
+				VirtualHostPlugins: vhostPlugins,
+			},
+			SslConfig: sslConfig,
+			Metadata:  ref,
+		}
+		ret = append(ret, mergedVs)
+	}
+
+	return ret
+}
+
+func getMergedName(virtualServices v1.VirtualServiceList) string {
+	/* MAJOR TODO better name */
+	return "todo.for.now.fix.before.PR"
+}
+
+func getVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
 	virtualServicesForGateway := gateway.VirtualServices
 	// add all virtual services if empty
 	if len(gateway.VirtualServices) == 0 {
@@ -74,11 +185,7 @@ func desiredListener(gateway *v1.Gateway, virtualServices v1.VirtualServiceList,
 		}
 	}
 
-	var (
-		virtualHosts []*gloov1.VirtualHost
-		sslConfigs   []*gloov1.SslConfig
-	)
-
+	var ret v1.VirtualServiceList
 	for _, ref := range virtualServicesForGateway {
 		// virtual service must live in the same namespace as gateway
 		virtualService, err := virtualServices.Find(ref.Strings())
@@ -86,12 +193,28 @@ func desiredListener(gateway *v1.Gateway, virtualServices v1.VirtualServiceList,
 			resourceErrs.AddError(gateway, err)
 			continue
 		}
+		ret = append(ret, virtualService)
+	}
+	return ret
+}
+
+func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList) *gloov1.Listener {
+
+	var (
+		virtualHosts []*gloov1.VirtualHost
+		sslConfigs   []*gloov1.SslConfig
+	)
+
+	for _, virtualService := range virtualServicesForGateway {
+		ref := virtualService.Metadata.Ref()
 		if virtualService.VirtualHost == nil {
 			virtualService.VirtualHost = &gloov1.VirtualHost{}
 		}
 		virtualService.VirtualHost.Name = fmt.Sprintf("%v.%v", ref.Namespace, ref.Name)
 		virtualHosts = append(virtualHosts, virtualService.VirtualHost)
+		sslConfigs = append(sslConfigs, virtualService.SslConfig)
 	}
+	// TODO: fix with ssl
 	return &gloov1.Listener{
 		Name:        gateway.Metadata.Name,
 		BindAddress: gateway.BindAddress,
