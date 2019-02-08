@@ -59,4 +59,14 @@ var _ = Describe("Translator", func() {
 		Expect(listener.VirtualHosts).To(HaveLen(1))
 	})
 
+	It("should translate two gateways with to one proxy with the same name", func() {
+		snap.Gateways[ns] = append(snap.Gateways[ns], &v1.Gateway{Metadata: core.Metadata{Namespace: ns, Name: "name"}})
+
+		proxy, _ := Translate(context.Background(), ns, snap)
+
+		Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+		Expect(proxy.Metadata.Namespace).To(Equal(ns))
+		Expect(proxy.Listeners).To(HaveLen(2))
+	})
+
 })
