@@ -226,7 +226,7 @@ func (u *updaterUpdater) detectType(url_ url.URL) (*detectResult, error) {
 
 	result := make(chan detectResult, 1)
 
-	// run all detections in paralel
+	// run all detections in parallel
 	var waitgroup sync.WaitGroup
 	for _, fp := range u.functionalPlugins {
 		waitgroup.Add(1)

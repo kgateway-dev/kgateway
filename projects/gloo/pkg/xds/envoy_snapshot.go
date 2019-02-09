@@ -22,7 +22,7 @@ import (
 )
 
 // Snapshot is an internally consistent snapshot of xDS resources.
-// Consistentcy is important for the convergence as different resource types
+// Consistently is important for the convergence as different resource types
 // from the snapshot may be delivered to the proxy in arbitrary order.
 type EnvoySnapshot struct {
 	// Endpoints are items in the EDS response payload.

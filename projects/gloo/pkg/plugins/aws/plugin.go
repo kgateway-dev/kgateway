@@ -178,7 +178,7 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 			return nil, nil
 		}
 
-		repsonsetransform := awsDestinationSpec.Aws.ResponseTrasnformation
+		repsonsetransform := awsDestinationSpec.Aws.ResponseTransformation
 		if !repsonsetransform {
 			return nil, nil
 		}

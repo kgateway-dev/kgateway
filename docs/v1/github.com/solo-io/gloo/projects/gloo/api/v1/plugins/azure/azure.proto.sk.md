@@ -89,7 +89,7 @@ The Function Spec contains data necessary for Gloo to invoke Azure functions
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `function_name` | `string` | The Fucntion Name of the FunctionSpec to be invoked. |  |
+| `function_name` | `string` | The Function Name of the FunctionSpec to be invoked. |  |
 
 
 

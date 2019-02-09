@@ -55,5 +55,5 @@ message DestinationSpec {
         ASYNC = 1;
     }
     // de-jsonify response bodies returned from aws lambda
-    bool response_trasnformation = 5;
+    bool response_transformation = 5;
 }

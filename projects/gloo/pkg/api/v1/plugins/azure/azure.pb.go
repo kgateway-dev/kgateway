@@ -165,7 +165,7 @@ func (m *UpstreamSpec_FunctionSpec) GetAuthLevel() UpstreamSpec_FunctionSpec_Aut
 }
 
 type DestinationSpec struct {
-	// The Fucntion Name of the FunctionSpec to be invoked.
+	// The Function Name of the FunctionSpec to be invoked.
 	FunctionName         string   `protobuf:"bytes,1,opt,name=function_name,json=functionName,proto3" json:"function_name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

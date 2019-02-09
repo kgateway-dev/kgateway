@@ -174,7 +174,7 @@ Let's see how this plugin works by creating some routes to these functions in th
     moment, since Envoy has [built everything internally around HTTP2](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http_connection_management), 
     we can use this `:path` header to pull template
     parameters. We could have used another header like `x-gloo` to pass in and then create our `rest-parameters`
-    with the `x-gloo` header and acomplish the same thing. We'll leave that as an exercise to the reader.
+    with the `x-gloo` header and accomplish the same thing. We'll leave that as an exercise to the reader.
     
 
 Tutorials for more advanced use-cases are coming soon. In the meantime, please see our plugin documentation<!--(TODO)-->

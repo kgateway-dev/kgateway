@@ -54,7 +54,7 @@ independently, or using `glooctl install knative`.
       block below into it. For detailed instructions on dockerizing a Go app, see
       [Deploying Go servers with Docker](https://blog.golang.org/docker).
       
-            # Use the offical Golang image to create a build artifact.
+            # Use the official Golang image to create a build artifact.
             # This is based on Debian and sets the GOPATH to /go.
             # https://hub.docker.com/_/golang
             FROM golang as builder

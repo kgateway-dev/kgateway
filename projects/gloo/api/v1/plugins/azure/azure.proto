@@ -39,6 +39,6 @@ message UpstreamSpec {
 }
 
 message DestinationSpec {
-    // The Fucntion Name of the FunctionSpec to be invoked.
+    // The Function Name of the FunctionSpec to be invoked.
     string function_name = 1;
 }

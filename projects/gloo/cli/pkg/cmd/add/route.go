@@ -223,7 +223,7 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 			DestinationType: &v1.DestinationSpec_Aws{
 				Aws: &aws.DestinationSpec{
 					LogicalName:            input.Aws.LogicalName,
-					ResponseTrasnformation: input.Aws.ResponseTransformation,
+					ResponseTransformation: input.Aws.ResponseTransformation,
 				},
 			},
 		}, nil

@@ -27,7 +27,7 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type LambdaPerRoute struct {
 	// The name of the function
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The qualifier of the function (defualts to $LATEST if not specified)
+	// The qualifier of the function (defaults to $LATEST if not specified)
 	Qualifier string `protobuf:"bytes,2,opt,name=qualifier,proto3" json:"qualifier,omitempty"`
 	// Invocation type - async or regular.
 	Async                bool     `protobuf:"varint,3,opt,name=async,proto3" json:"async,omitempty"`

@@ -33,7 +33,7 @@ AWS Lambda invocations.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | The name of the function |  |
-| `qualifier` | `string` | The qualifier of the function (defualts to $LATEST if not specified) |  |
+| `qualifier` | `string` | The qualifier of the function (defaults to $LATEST if not specified) |  |
 | `async` | `bool` | Invocation type - async or regular. |  |
 
 

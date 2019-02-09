@@ -15,7 +15,7 @@ glooctl create upstream kube [flags]
 ```
   -h, --help                            help for kube
       --kube-service string             name of the kubernetes service
-      --kube-service-labels strings     labels to use for customized selection of pods for this upstream. can be used to select subsets of pods for a service e.g. for blue-green deployment
+      --kube-service-labels strings     comma-separated list of labels (key=value) to use for customized selection of pods for this upstream. can be used to select subsets of pods for a service e.g. for blue-green deployment
       --kube-service-namespace string   namespace where the kubernetes service lives (default "default")
       --kube-service-port uint32        the port exposed by the kubernetes service. for services with multiple ports, create an upstream for each port. (default 80)
       --name string                     name of the resource to read or write

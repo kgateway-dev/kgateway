@@ -15,5 +15,5 @@ func addDisplayNameFlag(set *pflag.FlagSet, ptr *string) {
 }
 
 func addDomainsFlag(set *pflag.FlagSet, ptr *[]string) {
-	set.StringSliceVar(ptr, "domains", []string{}, "comma seperated list of domains")
+	set.StringSliceVar(ptr, "domains", []string{}, "comma separated list of domains")
 }

@@ -17,7 +17,7 @@ import "validate/validate.proto";
 message LambdaPerRoute {
   // The name of the function
   string name = 1 [ (validate.rules).string.min_bytes = 1 ];
-  // The qualifier of the function (defualts to $LATEST if not specified)
+  // The qualifier of the function (defaults to $LATEST if not specified)
   string qualifier = 2;
   // Invocation type - async or regular.
   bool async = 3;

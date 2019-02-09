@@ -75,7 +75,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 ```yaml
 "logical_name": string
 "invocation_style": .aws.plugins.gloo.solo.io.DestinationSpec.InvocationStyle
-"response_trasnformation": bool
+"response_transformation": bool
 
 ```
 
@@ -83,7 +83,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 | ----- | ---- | ----------- |----------- | 
 | `logical_name` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |  |
 | `invocation_style` | [.aws.plugins.gloo.solo.io.DestinationSpec.InvocationStyle](aws.proto.sk.md#InvocationStyle) | Can be either Sync or Async. |  |
-| `response_trasnformation` | `bool` | de-jsonify response bodies returned from aws lambda |  |
+| `response_transformation` | `bool` | de-jsonify response bodies returned from aws lambda |  |
 
 
 

@@ -2,7 +2,7 @@ package rest
 
 /*
 if this destination spec has rest service spec
-this will grab the parameters from the route extention
+this will grab the parameters from the route extension
 */
 import (
 	"context"
@@ -90,10 +90,10 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 			return nil, errors.Errorf("unknown function %v", funcname)
 		}
 
-		// copy to prevent changing the original in memoery.
+		// copy to prevent changing the original in memory.
 		transformation := *transformationorig
 
-		// add extentions from the destination spec
+		// add extensions from the destination spec
 		var err error
 		transformation.Extractors, err = p.createRequestExtractors(restDestinationSpec.Rest.Parameters)
 		if err != nil {

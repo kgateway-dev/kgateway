@@ -239,7 +239,7 @@ var _ = Describe("AWS Lambda", func() {
 													DestinationType: &gloov1.DestinationSpec_Aws{
 														Aws: &aws_plugin.DestinationSpec{
 															LogicalName:            "contact-form",
-															ResponseTrasnformation: true,
+															ResponseTransformation: true,
 														},
 													},
 												},

@@ -69,7 +69,7 @@ and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
 * The **Reporter** receives a validation report for every upstream and virtual service processed by the translator. Any invalid
   config objects are reported back to the user through the storage layer. Invalid objects are marked as "Rejected" with 
   detailed error messages describing mistakes in the user config.
-* The final snapshot is passed to the **xDS server**, which notifies Envoy of a succesful config update, updating the Envoy
+* The final snapshot is passed to the **xDS server**, which notifies Envoy of a successful config update, updating the Envoy
 cluster with a new configuration to match the desired state set by Gloo.   
 
 

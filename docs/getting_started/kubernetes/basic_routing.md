@@ -144,7 +144,7 @@ Let's verify this:
     We use the `--prefix-rewrite` to rewrite path on incoming requests
     to match the paths our petstore expects. 
     
-    Note that we have omitted the `--name` flag for selecting a virtual service. Routes are always assoicated 
+    Note that we have omitted the `--name` flag for selecting a virtual service. Routes are always associated 
     with a Virtual Service in Gloo, which groups routes by their domain. Since we skipped creating a 
     virtual service for this route, `my-virtual-service` will be created automatically for us.
 

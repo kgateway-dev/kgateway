@@ -26,7 +26,7 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Upstream Spec for Kubernetes Upstreams
 // Kubernetes Upstreams represent a set of one or more addressable pods for a Kubernetes Service
-// the Gloo Kubernetes Upstream maps to a single service port. Because Kubernetes Services support mulitple ports,
+// the Gloo Kubernetes Upstream maps to a single service port. Because Kubernetes Services support multiple ports,
 // Gloo requires that a different upstream be created for each port
 // Kubernetes Upstreams are typically generated automatically by Gloo from the Kubernetes API
 type UpstreamSpec struct {

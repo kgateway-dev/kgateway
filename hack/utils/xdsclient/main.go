@@ -123,16 +123,16 @@ func listendpoints(ctx context.Context, conn *grpc.ClientConn) []v2.ClusterLoadA
 	if err != nil {
 		log.Fatalf("endpoints err: %v", err)
 	}
-	var clas []v2.ClusterLoadAssignment
+	var class []v2.ClusterLoadAssignment
 
 	for _, anyCla := range dresp.Resources {
 
 		var cla v2.ClusterLoadAssignment
 		cla.Unmarshal(anyCla.Value)
 		pp.Printf("%v\n", cla)
-		clas = append(clas, cla)
+		class = append(class, cla)
 	}
-	return clas
+	return class
 }
 
 func listListeners(ctx context.Context, conn *grpc.ClientConn) []v2.Listener {
