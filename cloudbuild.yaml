@@ -3,7 +3,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-make'
   entrypoint: make
   args: ['check-spelling']
-  waitFor: []
+  waitFor: ['-']
   env:
   - 'LSCOMMAND=find'
   id: 'check-spelling'
@@ -13,7 +13,7 @@ steps:
   entrypoint: 'bash'
   args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -']
   id: 'download-untar-dep-cache'
-  waitFor: []
+  waitFor: ['-']
 
 # Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
