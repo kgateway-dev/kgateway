@@ -85,5 +85,7 @@ if [ -z "$SKIP_FILES"]; then
 else 
  FILTER_FILES="grep -v -e \"${SKIP_FILES}\""
 fi
-git ls-files | $FILTER_FILES | xargs "${TMP_DIR}/misspell" -i \
+
+LSCOMMAND=${LSCOMMAND:-"git ls-files"}
+$LSCOMMAND | $FILTER_FILES | xargs "${TMP_DIR}/misspell" -i \
   "${WHITELIST_WORDS}" ${MISSPELL_ARGS}
