@@ -33,6 +33,15 @@ steps:
   args: ['check-format']
   waitFor: ['dep']
   id: 'check-format'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  entrypoint: make
+  args: ['check-spelling']
+  waitFor: ['dep']
+  id: 'check-spelling'
 - name: 'gcr.io/$PROJECT_ID/go-make'
   entrypoint: 'bash'
   args: ['ci/check-code-and-docs-gen.sh']

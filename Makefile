@@ -42,6 +42,8 @@ pin-repos:
 check-format:
 	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
 
+check-spelling:
+	./ci/spell.sh check
 #----------------------------------------------------------------------------------
 # Clean
 #----------------------------------------------------------------------------------
