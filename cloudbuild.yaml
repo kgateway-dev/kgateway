@@ -33,7 +33,7 @@ steps:
   args: ['check-format']
   waitFor: ['dep']
   id: 'check-format'
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+- name: 'gcr.io/$PROJECT_ID/go-make'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
