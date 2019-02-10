@@ -1,6 +1,3 @@
-metaddata:
-  name: petstore
-  namespace: gloo-system
 upstream_spec:
   static:
     hosts:
