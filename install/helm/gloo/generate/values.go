@@ -87,6 +87,7 @@ type GatewayDeployment struct {
 type GatewayProxy struct {
 	Deployment *GatewayProxyDeployment `json:"deployment,omitempty"`
 	ConfigMap  *GatewayProxyConfigMap  `json:"configMap,omitempty"`
+	Service    *GatewayProxyService    `json:"service,omitempty"`
 }
 
 type GatewayProxyDeployment struct {
@@ -95,6 +96,9 @@ type GatewayProxyDeployment struct {
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec
+}
+type GatewayProxyService struct {
+	Type string `json:"type,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {

@@ -14,6 +14,6 @@ spec:
     name: http
   selector:
     gloo: gateway-proxy
-  type: LoadBalancer
+  type: {{ .Values.gatewayProxy.service.type }}
 
 {{- end }}

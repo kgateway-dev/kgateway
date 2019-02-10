@@ -44,6 +44,8 @@ gatewayProxy:
       pullPolicy: Always
     httpPort: 8080
     replicas: 1
+  service:
+    type: LoadBalancer
   configMap:
     data:
 
