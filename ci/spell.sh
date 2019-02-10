@@ -89,3 +89,5 @@ fi
 LSCOMMAND=${LSCOMMAND:-"git ls-files"}
 $LSCOMMAND | $FILTER_FILES | xargs "${TMP_DIR}/misspell" -i \
   "${WHITELIST_WORDS}" ${MISSPELL_ARGS}
+
+echo Done
