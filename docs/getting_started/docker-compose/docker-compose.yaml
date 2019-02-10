@@ -1,0 +1,12 @@
+version: '3'
+services:
+
+  gateway:
+    image: "soloio/gateway:0.6.19"
+    working_dir: /
+    command:
+    - "--dir=/data/"
+    volumes:
+    - ./data:/data/
+    ports:
+    - "8081:8081"
