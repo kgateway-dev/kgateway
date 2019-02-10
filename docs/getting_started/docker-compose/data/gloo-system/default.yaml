@@ -1,0 +1,13 @@
+bindAddr: 0.0.0.0:9977
+devMode: true
+discoveryNamespace: gloo-system
+directoryArtifactSource:
+  directory: /data/artifact
+directoryConfigSource:
+  directory: /data/config
+directorySecretSource:
+  directory: /data/secret
+metadata:
+  name: default
+  namespace: gloo-system
+refreshRate: 60s
