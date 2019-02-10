@@ -1,3 +1,6 @@
+metadata:
+  name: default
+  namespace: gloo-system
 bindAddr: 0.0.0.0:9977
 devMode: true
 discoveryNamespace: gloo-system
@@ -7,7 +10,6 @@ directoryConfigSource:
   directory: /data/config
 directorySecretSource:
   directory: /data/secret
-metadata:
-  name: default
-  namespace: gloo-system
 refreshRate: 60s
+watchNamespaces:
+- gloo-system
