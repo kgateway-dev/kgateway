@@ -1,4 +1,7 @@
-upstream_spec:
+metadata:
+  name: petstore
+  namespace: gloo-system
+upstreamSpec:
   static:
     hosts:
     - addr: petstore
