@@ -1,33 +1,8 @@
 # Install Gloo using Docker-Compose
 
-## Using glooctl
-
- 1. Make sure you have version 0.6.XX TODO XX or above of `glooctl` installed.
-    Please visit https://github.com/solo-io/glooctl to get latest version
- 2. Install gloo with the following command:
-
-```
-glooctl install docker [folder]
-```
-
-The command will create the `folder` if it doesn't already exist and
-write out the necessary docker-compose files.
-
- 3. Run `gloo` by running:
-
-```
-docker-compose up`
-```
-
-## Manually
-
+1. Clone the gloo repository, and cd to this example: `git clone https://github.com/solo-io/gloo && cd gloo/docs/getting_started/docker-compose`
 1. Run `./prepare-config-directories.sh`
-2. Run `docker compose up`
-3. `glooctl` commands should be run from this directory to interact with gloo
-
-Note: you will want to manually register your upstreams with `glooctl`
-(using `glooctl upstream create`). Their **Upstream Type** should be `static`
-(which requires statically listing IP/port combinations for the upstream).
+1. Run `docker compose up`
 
 # Example
 
@@ -35,7 +10,7 @@ This configuration comes pre-loaded with an example upstream:
 
 ```
 # view the upstream definition
-glooctl get uptreams -o yaml
+cat data/config/upstreams/gloo-system/petstore.yaml
 
 metaddata:
   name: petstore
@@ -45,22 +20,99 @@ upstream_spec:
     hosts:
     - addr: petstore
       port: 8080
-TODO
 
-# view functions auto discovered (may take a few seconds)
-glooctl upstream get
+# gloo will automatically discover functions (may take a few seconds)
 
-# create a route
-glooctl create route --path-exact /petstore/findPet --upstream petstore --function findPetById
+cat data/config/upstreams/gloo-system/petstore.yaml
+
+metadata:
+  name: petstore
+  namespace: gloo-system
+  resourceVersion: "4"
+status:
+  reportedBy: gloo
+  state: Accepted
+upstreamSpec:
+  static:
+    hosts:
+    - addr: petstore
+      port: 8080
+    serviceSpec:
+      rest:
+        swaggerInfo:
+          url: http://petstore:8080/swagger.json
+        transformations:
+          addPet:
+            body:
+              text: '{"id": {{ default(id, "") }},"name": "{{ default(name, "")}}","tag":
+                "{{ default(tag, "")}}"}'
+            headers:
+              :method:
+                text: POST
+              :path:
+                text: /api/pets
+              content-type:
+                text: application/json
+          deletePet:
+            headers:
+              :method:
+                text: DELETE
+              :path:
+                text: /api/pets/{{ default(id, "") }}
+              content-type:
+                text: application/json
+          findPetById:
+            body: {}
+            headers:
+              :method:
+                text: GET
+              :path:
+                text: /api/pets/{{ default(id, "") }}
+              content-length:
+                text: "0"
+              content-type: {}
+              transfer-encoding: {}
+          findPets:
+            body: {}
+            headers:
+              :method:
+                text: GET
+              :path:
+                text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit,
+                  "")}}
+              content-length:
+                text: "0"
+              content-type: {}
+              transfer-encoding: {}
+
+# see how the route is configured:
+cat data/config/virtualservices/gloo-system/default.yaml
+
+metadata:
+  name: default
+  namespace: gloo-system
+  resourceVersion: "2"
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy gloo-system gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
+virtualHost:
+  name: gloo-system.default
+  routes:
+  - matcher:
+      exact: /petstore/findPet
+    routeAction:
+      single:
+        destinationSpec:
+          rest:
+            functionName: findPetById
+        upstream:
+          name: petstore
+          namespace: gloo-system
 
 # try the route
 curl localhost:8080/petstore/findPet
 ```
-
-Documentation for [upstream spec](../../docs/v1/upstream.md) and
-the [static type](../../docs/plugins/static.md) can explain in more detail
-how to create upstreams you need.
-
-When service discovery is supported on Docker this step will no longer be necessary.
-
-Function discovery will still work as normal.
