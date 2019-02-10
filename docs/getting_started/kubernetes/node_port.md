@@ -17,7 +17,7 @@ When a kubernetes service is created with NodePort type, kubernetes chooses port
 
 This allows accessing the service simply by connecting to a 'node-ip:node-port' where node-ip is the ip of any node in the cluster, and noed-port is the NodePort assigned by kuberentes.
 
-One advantage of using a NodePort is that it allows relativly easy deployment on bare metal, as it is not depend on any load balancing component outside the cluster.
+One advantage of using a NodePort is that it allows relatively easy deployment on bare metal, as it is not depend on any load balancing component outside the cluster.
 
 ## How to use Gloo with NodePort?
 
