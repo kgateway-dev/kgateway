@@ -26,11 +26,11 @@ To install with Helm:
 
 1. Install Gloo from the Helm Repository: 
     
-        helm upgrade --install gloo/gloo 
+        helm install gloo/gloo 
     
      If you're using custom overrides:
 
-        helm upgrade --install gloo/gloo --values value-overerides.yaml
+        helm install gloo/gloo --values value-overerides.yaml
 
 
 <a name="Customizing-Helm-Options"></a>
