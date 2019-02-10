@@ -1,0 +1,8 @@
+metaddata:
+  name: petstore
+  namespace: gloo-system
+upstream_spec:
+  static:
+    hosts:
+    - addr: petstore
+      port: 8080
