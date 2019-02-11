@@ -37,7 +37,7 @@ For Example:
 
 ![gke services](gke.png "GKE Services")
 
-*NOTE:* You might not see see the address in the endpoint column immediately, as provisioning the cloud load balancer can take around 10 minutes. try waiting a few minutes, and clicking the REFRESH link on the top of the page. 
+*NOTE:* You might not see see the address in the endpoint column immediately, as provisioning the cloud load balancer can take around 10 minutes. Try waiting a few minutes, and clicking the REFRESH link on the top of the page. 
 
 You can now use the endpoints as your public address for requests.
 
