@@ -57,7 +57,8 @@ func getIngressHost(opts *options.Options) (string, error) {
 	svc, err := kube.CoreV1().Services(opts.Metadata.Namespace).Get(opts.Proxy.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
-			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'", opts.Proxy.Name)
+			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'",
+			opts.Proxy.Name, opts.Metadata.Namespace)
 	}
 	var svcPort *v1.ServicePort
 	switch len(svc.Spec.Ports) {
