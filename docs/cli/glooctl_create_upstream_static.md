@@ -1,3 +1,7 @@
+---
+title: "glooctl create upstream static"
+weight: 5
+---
 ## glooctl create upstream static
 
 Create a Static Upstream

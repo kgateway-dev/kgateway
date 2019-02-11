@@ -1,3 +1,7 @@
+---
+title: "glooctl add"
+weight: 5
+---
 ## glooctl add
 
 adds configuration to a top-level Gloo resource

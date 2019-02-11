@@ -1,3 +1,7 @@
+---
+title: "glooctl get"
+weight: 5
+---
 ## glooctl get
 
 Display one or a list of Gloo resources

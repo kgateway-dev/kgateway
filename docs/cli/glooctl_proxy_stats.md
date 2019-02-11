@@ -1,3 +1,7 @@
+---
+title: "glooctl proxy stats"
+weight: 5
+---
 ## glooctl proxy stats
 
 stats for one of the proxy instances

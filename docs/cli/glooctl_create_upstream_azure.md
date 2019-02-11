@@ -1,3 +1,7 @@
+---
+title: "glooctl create upstream azure"
+weight: 5
+---
 ## glooctl create upstream azure
 
 Create an Azure Upstream

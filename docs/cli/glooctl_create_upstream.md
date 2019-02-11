@@ -1,3 +1,7 @@
+---
+title: "glooctl create upstream"
+weight: 5
+---
 ## glooctl create upstream
 
 Create an Upstream Interactively

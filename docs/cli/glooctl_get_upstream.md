@@ -1,3 +1,7 @@
+---
+title: "glooctl get upstream"
+weight: 5
+---
 ## glooctl get upstream
 
 read an upstream or list upstreams in a namespace

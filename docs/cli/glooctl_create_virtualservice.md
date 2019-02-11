@@ -1,3 +1,7 @@
+---
+title: "glooctl create virtualservice"
+weight: 5
+---
 ## glooctl create virtualservice
 
 Create a Virtual Service

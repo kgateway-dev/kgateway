@@ -1,3 +1,7 @@
+---
+title: "glooctl remove route"
+weight: 5
+---
 ## glooctl remove route
 
 Remove a Route from a Virtual Service

@@ -1,3 +1,7 @@
+---
+title: "glooctl create secret"
+weight: 5
+---
 ## glooctl create secret
 
 Create a secret

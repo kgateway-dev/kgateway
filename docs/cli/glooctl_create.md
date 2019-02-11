@@ -1,3 +1,7 @@
+---
+title: "glooctl create"
+weight: 5
+---
 ## glooctl create
 
 Create a Gloo resource

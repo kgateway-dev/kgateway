@@ -1,3 +1,7 @@
+---
+title: "glooctl install ingress"
+weight: 5
+---
 ## glooctl install ingress
 
 install the Gloo Ingress Controller on kubernetes

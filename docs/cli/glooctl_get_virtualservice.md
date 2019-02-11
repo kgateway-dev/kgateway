@@ -1,3 +1,7 @@
+---
+title: "glooctl get virtualservice"
+weight: 5
+---
 ## glooctl get virtualservice
 
 read a virtualservice or list virtualservices in a namespace

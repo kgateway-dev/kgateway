@@ -1,3 +1,7 @@
+---
+title: "glooctl install knative"
+weight: 5
+---
 ## glooctl install knative
 
 install Knative with Gloo on kubernetes

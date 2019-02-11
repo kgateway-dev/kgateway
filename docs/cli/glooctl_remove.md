@@ -1,3 +1,7 @@
+---
+title: "glooctl remove"
+weight: 5
+---
 ## glooctl remove
 
 remove configuration items from a top-level Gloo resource

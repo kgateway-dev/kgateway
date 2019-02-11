@@ -1,3 +1,7 @@
+---
+title: "glooctl get virtualservice route"
+weight: 5
+---
 ## glooctl get virtualservice route
 
 get a list of routes for a given virtual service

@@ -1,3 +1,7 @@
+---
+title: "glooctl proxy"
+weight: 5
+---
 ## glooctl proxy
 
 interact with proxy instances managed by Gloo

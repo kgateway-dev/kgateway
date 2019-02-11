@@ -1,3 +1,7 @@
+---
+title: "glooctl proxy url"
+weight: 5
+---
 ## glooctl proxy url
 
 print the http endpoint for a proxy

@@ -1,3 +1,7 @@
+---
+title: "glooctl upgrade"
+weight: 5
+---
 ## glooctl upgrade
 
 upgrade glooctl binary

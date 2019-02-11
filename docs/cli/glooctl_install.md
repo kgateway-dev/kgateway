@@ -1,3 +1,7 @@
+---
+title: "glooctl install"
+weight: 5
+---
 ## glooctl install
 
 install gloo on different platforms

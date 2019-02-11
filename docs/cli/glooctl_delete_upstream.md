@@ -1,3 +1,7 @@
+---
+title: "glooctl delete upstream"
+weight: 5
+---
 ## glooctl delete upstream
 
 delete an upstream

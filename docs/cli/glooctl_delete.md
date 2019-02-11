@@ -1,3 +1,7 @@
+---
+title: "glooctl delete"
+weight: 5
+---
 ## glooctl delete
 
 Delete a Gloo resource

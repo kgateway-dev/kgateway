@@ -1,3 +1,7 @@
+---
+title: "glooctl proxy logs"
+weight: 5
+---
 ## glooctl proxy logs
 
 dump Envoy logs from one of the proxy instancesNote: this will enable verbose logging on Envoy

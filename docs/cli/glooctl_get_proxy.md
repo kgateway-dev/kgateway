@@ -1,3 +1,7 @@
+---
+title: "glooctl get proxy"
+weight: 5
+---
 ## glooctl get proxy
 
 read a proxy or list proxies in a namespace

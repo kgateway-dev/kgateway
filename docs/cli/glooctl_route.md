@@ -1,3 +1,7 @@
+---
+title: "glooctl route"
+weight: 5
+---
 ## glooctl route
 
 subcommands for interacting with routes within virtual services

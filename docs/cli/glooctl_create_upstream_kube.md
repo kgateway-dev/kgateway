@@ -1,3 +1,7 @@
+---
+title: "glooctl create upstream kube"
+weight: 5
+---
 ## glooctl create upstream kube
 
 Create a Kubernetes Upstream

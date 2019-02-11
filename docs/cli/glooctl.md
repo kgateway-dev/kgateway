@@ -1,3 +1,7 @@
+---
+title: "glooctl"
+weight: 5
+---
 ## glooctl
 
 CLI for Gloo

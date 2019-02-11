@@ -1,3 +1,7 @@
+---
+title: "glooctl create secret azure"
+weight: 5
+---
 ## glooctl create secret azure
 
 Create an Azure secret with the given name

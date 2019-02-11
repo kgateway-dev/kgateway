@@ -1,3 +1,7 @@
+---
+title: "glooctl create upstream consul"
+weight: 5
+---
 ## glooctl create upstream consul
 
 Create a Consul Upstream

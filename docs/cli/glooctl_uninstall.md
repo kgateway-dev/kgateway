@@ -1,3 +1,7 @@
+---
+title: "glooctl uninstall"
+weight: 5
+---
 ## glooctl uninstall
 
 uninstall gloo

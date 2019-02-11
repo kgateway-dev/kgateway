@@ -1,3 +1,7 @@
+---
+title: "glooctl delete proxy"
+weight: 5
+---
 ## glooctl delete proxy
 
 delete a proxy

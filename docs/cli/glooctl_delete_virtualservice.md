@@ -1,3 +1,7 @@
+---
+title: "glooctl delete virtualservice"
+weight: 5
+---
 ## glooctl delete virtualservice
 
 delete a virtualservice

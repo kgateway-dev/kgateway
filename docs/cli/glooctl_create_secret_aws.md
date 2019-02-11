@@ -1,3 +1,7 @@
+---
+title: "glooctl create secret aws"
+weight: 5
+---
 ## glooctl create secret aws
 
 Create an AWS secret with the given name

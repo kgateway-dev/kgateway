@@ -1,3 +1,7 @@
+---
+title: "glooctl add route"
+weight: 5
+---
 ## glooctl add route
 
 Add a Route to a Virtual Service

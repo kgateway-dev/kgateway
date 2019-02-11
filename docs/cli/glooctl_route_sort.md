@@ -1,3 +1,7 @@
+---
+title: "glooctl route sort"
+weight: 5
+---
 ## glooctl route sort
 
 sort routes on an existing virtual service

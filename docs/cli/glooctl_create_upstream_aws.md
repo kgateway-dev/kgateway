@@ -1,3 +1,7 @@
+---
+title: "glooctl create upstream aws"
+weight: 5
+---
 ## glooctl create upstream aws
 
 Create an Aws Upstream
