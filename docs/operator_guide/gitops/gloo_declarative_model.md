@@ -11,7 +11,7 @@ and controlling how that configuration is reviewed, merged, and deployed can hel
 Gloo Enterprise will be shipping with a feature that simplifies the design of a GitOps process. With Gloo Enterprise, when 
 users make changes in the Gloo UI, they will automatically persist in a changeset that is backed by a Git repository. 
 Only when the change is reviewed and merged in, the configuration will be deployed. Users will be able to see the current 
-deployed state, as well as the pending changeset changes, via the Gloo UI.  
+deployed state, as well as the pending changeset changes, via the Gloo UI. Contact us for more information about this feature. 
 
 ## Solo Kit, the declarative product generator
 
