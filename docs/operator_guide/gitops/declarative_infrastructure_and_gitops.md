@@ -17,8 +17,10 @@ the Git repository contains the source of truth for what is deployed to a cluste
 submitting changes (pull requests), for managing and approving change requests (code reviews), and for automatically deploying 
 new configuration when it merges in (CI/CD systems). 
 
-At Solo, we use GitOps to manage the state of our development and production environments, by integrating with [Google Cloud Build](https://cloud.google.com/cloud-build/).
+At Solo, we use GitOps to manage the state of our development and production environments, by integrating with 
+[GitHub](https://github.com) and [Google Cloud Build](https://cloud.google.com/cloud-build/).
 For example, when we want to deploy a new version of Gloo Enterprise to our dev instance, hosted on a [GKE](https://cloud.google.com/kubernetes-engine/) cluster, we open a 
-pull request that updates configuration. When this pull request is approved and merged in to the master branch, a build trigger runs 
+pull request in our repo containing the dev deployment state to update configuration. 
+When this pull request is approved and merged in to the master branch, a build trigger runs 
 `kubectl` to apply the new configuration. After this configuration is applied, a series of tests are run against the cluster, and 
 the team is notified via [Slack](https://slack.com/) about the updates. 
