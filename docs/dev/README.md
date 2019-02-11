@@ -10,8 +10,8 @@ Gloo is designed to be highly pluggable and easily extendable in each of the fol
 
 The reason Gloo is extendable in so many directions is due to its Kubernetes Operator-style design. By interacting with two CRDs, it is possible to customize Gloo to virtually any environment and use case:
 
-* [`v1.Upstreams`](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md) describe routable destinations for Gloo.
 * [`v1.Proxies`](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md) provide the routing configuration which Gloo will translate and apply to Envoy.
+* [`v1.Upstreams`](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md) describe routable destinations for Gloo.
 
 * **Proxies** represent a unified configuration to be applied to one or more instances of a proxy. You can think of the proxy of as tree like such:
 
@@ -43,7 +43,7 @@ The reason Gloo is extendable in so many directions is due to its Kubernetes Ope
   
   For this reason, a standard Gloo deployment contains one or more "importers", or controllers which programatically generate and write these CRDs to provide simpler, use-case specific APIs such as API Gateway and Ingress. [Sqoop](https://sqoop.solo.io/) is an advanced importer which creates routing configuration for Gloo from [**GraphQL Schemas**](https://graphql.org/). 
   
-  The following tutorial provide a brief example utilizing this lower-level Proxy API to build a controller to automatically configure Gloo without any user interaction.
+  [Click here for a tutorial providing a simple example utilizing this lower-level Proxy API](example-proxy-controller.md). This tutorial will walk you through building a Kubernetes controller to automatically configure Gloo without any user interaction]().
 
 * **Upstreams** represent destinations for routing requests in Gloo. Routes in Gloo specify one or more Upstreams (by name) as their destination. Upstreams have a `type` which is provided in their `upstreamSpec` field. Each type of upstream corresponds to an **Upstream Plugin**, which tells Gloo how to translate upstreams of that type to Envoy clusters. When a route is declared for an upstream, Gloo invokes the corresponding plugin for that type 
 

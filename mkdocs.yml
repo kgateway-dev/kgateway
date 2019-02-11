@@ -5,7 +5,6 @@ nav:
 - About:
   - Architecture: introduction/architecture.md
   - Concepts: introduction/concepts.md
-  - Developer Guide: dev/README.md
 - Installation:
   - Installing on Kubernetes: installation/README.md
 - Getting Started:
@@ -18,6 +17,9 @@ nav:
   - Knative:
     - Knative Ingress: getting_started/kubernetes/gloo_with_knative.md
 - CLI reference: cli/README.md
+- Developer Guides:
+  - Introduction: dev/README.md
+  - Routing Controllers: dev/example-proxy-controller.md
 - v1 API reference:
   - Overview: v1/gloo.solo.io.project.sk.md
   - Upstreams: v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md
