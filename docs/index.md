@@ -100,7 +100,9 @@ Community
 -----
 Join us on our slack channel: [https://slack.solo.io/](https://slack.solo.io/)
 
----
+Contributing
+-----
+Read the Solo.io [Contributor Guidelines.](dev/CONTRIBUTING.md)
 
 ### Thanks
 
