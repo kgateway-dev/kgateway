@@ -292,14 +292,16 @@ ifeq ($(RELEASE),"true")
 	helm repo index $(HELM_SYNC_DIR)
 endif
 
+HELMFLAGS := --namespace gloo-system --set namespace.create=true
+
 install/gloo-gateway.yaml: $(shell find install/helm/gloo)
-	helm template install/helm/gloo --namespace gloo-system > $@
+	helm template install/helm/gloo $(HELMFLAGS) > $@
 
 install/gloo-knative.yaml: $(shell find install/helm/gloo)
-	helm template install/helm/gloo --namespace gloo-system --values install/helm/gloo/values-knative.yaml > $@
+	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-knative.yaml > $@
 
 install/gloo-ingress.yaml: $(shell find install/helm/gloo)
-	helm template install/helm/gloo --namespace gloo-system --values install/helm/gloo/values-ingress.yaml > $@
+	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-ingress.yaml > $@
 
 #----------------------------------------------------------------------------------
 # Release
