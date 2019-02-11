@@ -24,7 +24,7 @@ A product can simply define it's custom API objects in protobuffer format, and S
 
 The architecture of solo kit-generated projects has a few advantages: 
 - Most of the code is automatically generated, speeding up development time.
-- The user interfaces (CLI, enterprise UI) are very simple -- they simply edit yaml configuration. 
+- The user interfaces (CLI, enterprise UI) are very simple -- they simply facilitate the editing of stored yaml configuration. 
 - Multiple solo kit products can run as a pipeline, each watching a writing a set of CRDs. For instance, Gloo deploys 
 with another service called Discovery, that automatically detects upstreams and endpoints from Kubernetes, AWS, and elsewhere. When those get
 written out to the storage layer, Gloo's main event loop now has an updated snapshot including the discovered objects.
