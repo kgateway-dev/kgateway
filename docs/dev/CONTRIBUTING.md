@@ -42,12 +42,12 @@ For significant changes to the repository, it’s important to settle on a desig
 3. **Agree on implementation plan.** Write a plan for how this feature or bug fix should be implemented. Should this be one pull request or multiple incremental improvements? Who is going to do each part?
 4. **Submit a work-in-progress PR** It's important to get feedback as early as possible to ensure that any big improvements end up being merged. Submit a pull request and label it `wip` to start getting feedback.
 5. **Review.** At least one Solo team member should sign off on the change before it’s merged. Look at the “code review” section below to learn about what we're looking for.
-6. **Merge and release!**
+6. **A Solo team memeber will merge and release!**
 
 ### Code review guidelines
 
 It’s important that every piece of code in Gloo is reviewed by at least one Solo team member familiar with that codebase.
 
-1. **CI check** A Solo team member needs to kick off the CI process.
+1. **CI check** A Solo team member needs to kick off the CI process by commenting `/test` on your PR.
 2. **Testing** 
 3. **Comments** 
