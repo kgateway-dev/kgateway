@@ -16,7 +16,8 @@ deployed state, as well as the pending changeset changes, via the Gloo UI.
 ## Solo Kit, the declarative product generator
 
 Gloo was created using [Solo Kit](https://github.com/solo-io/solo-kit), an open source library that simplifies the creation of declarative products.
-A product can simply define it's custom API objects in protobuffer format, and Solo Kit will automatically generate:
+A product can simply define it's custom API objects in [Protocol Buffer](https://developers.google.com/protocol-buffers/) format, 
+and Solo Kit will automatically generate:
 - Strongly typed clients for reading and writing those objects (i.e. `upstreams` or `virtualservices`). Solo Kit 
  clients are configured with a pluggable storage layer, and support Kubernetes CRDs, Consul, Vault, and many others out of the box. 
 - An event loop that watches a configuration snapshot. Products simply define the object types that make up a snapshot, and the namespaces to watch for config changes.
