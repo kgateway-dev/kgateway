@@ -15,6 +15,9 @@ spec:
     metadata:
       labels:
         gloo: gloo
+      {{- if .Values.gloo.deployment.annotations }}
+      annotations:
+{{ toYaml .Values.gloo.deployment.annotations | indent 8}}{{- end}}
     spec:
       containers:
       - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"

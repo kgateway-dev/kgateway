@@ -30,6 +30,7 @@ type Image struct {
 
 type DeploymentSpec struct {
 	Replicas int `json:"replicas"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type Integrations struct {
