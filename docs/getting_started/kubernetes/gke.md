@@ -21,13 +21,13 @@ Use kubectl to install gloo using it's released kubernetes manifest:
 kubectl apply -f https://github.com/solo-io/gloo/releases/download/v0.6.19/gloo-gateway.yaml
 ```
 
-In this example we are installing version 0.6.19. you can install any other released version.
+In this example we are installing version 0.6.19. You can install any other released version.
 
 The installation takes a few minutes to fully complete.
 
 # Access from the Internet
 
-Access your Gloo virtual services from the internet is easy with Google Kubernetes Engine.
+Accessing your Gloo virtual services from the internet is easy with Google Kubernetes Engine.
 
 Requests for Gloo's virtual services are routed via the `gateway-proxy` service. As the service type is *LoadBalancer*, Google will allocate a global IP address for it, and load balance requests on that IP address across the instances of the service.
 
