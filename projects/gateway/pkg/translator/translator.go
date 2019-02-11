@@ -214,7 +214,6 @@ func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualSe
 		virtualHosts = append(virtualHosts, virtualService.VirtualHost)
 		sslConfigs = append(sslConfigs, virtualService.SslConfig)
 	}
-	// TODO: fix with ssl
 	return &gloov1.Listener{
 		Name:        gateway.Metadata.Name,
 		BindAddress: gateway.BindAddress,
