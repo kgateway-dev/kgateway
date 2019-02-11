@@ -1,3 +1,8 @@
+---
+title: Installation
+weight: 5
+chapter: true
+---
 # Installing Gloo
 
 ## 1. Install Glooctl

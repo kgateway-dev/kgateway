@@ -1,3 +1,9 @@
+---
+title: Developer Guide
+weight: 5
+chapter: true
+---
+
 # Developer Guide
 
 Developing on Gloo can be a fun and rewarding experience. 

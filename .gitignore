@@ -5,3 +5,4 @@ site
 .firebase
 
 install/gloo.yaml
+_index.md
