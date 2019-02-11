@@ -2,6 +2,7 @@
 
 1. Clone the gloo repository, and cd to this example: `git clone https://github.com/solo-io/gloo && cd gloo/docs/getting_started/docker-compose`
 1. Run `./prepare-config-directories.sh`
+1. You can optionally set GLOO_VERSION environment variable to the gloo version you want (defaults to "0.6.19").
 1. Run `docker compose up`
 
 # Example
@@ -12,7 +13,7 @@ This configuration comes pre-loaded with an example upstream:
 # view the upstream definition
 cat data/config/upstreams/gloo-system/petstore.yaml
 
-metaddata:
+metadata:
   name: petstore
   namespace: gloo-system
 upstream_spec:

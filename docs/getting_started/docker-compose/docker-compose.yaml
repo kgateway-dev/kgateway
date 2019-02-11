@@ -2,7 +2,7 @@ version: '3'
 services:
 
   gloo:
-    image: "soloio/gloo:0.6.19"
+    image: "soloio/gloo:${GLOO_VERSION:-0.6.19}"
     working_dir: /
     command:
     - "--dir=/data/"
@@ -12,7 +12,7 @@ services:
     - "9977:9977"
 
   discovery:
-    image: "soloio/discovery:0.6.19"
+    image: "soloio/discovery:${GLOO_VERSION:-0.6.19}"
     working_dir: /
     command:
     - "--dir=/data/"
@@ -20,7 +20,7 @@ services:
     - ./data:/data/
 
   gateway:
-    image: "soloio/gateway:0.6.19"
+    image: "soloio/gateway:${GLOO_VERSION:-0.6.19}"
     working_dir: /
     command:
     - "--dir=/data/"
@@ -28,7 +28,7 @@ services:
     - ./data:/data/
 
   gateway-proxy:
-    image: soloio/gloo-envoy-wrapper:0.6.19
+    image: soloio/gloo-envoy-wrapper:${GLOO_VERSION:-0.6.19}
     entrypoint: ["envoy"]
     command: ["-c", "/config/envoy.yaml", "--disable-hot-restart"]
     volumes:
