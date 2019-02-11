@@ -1,4 +1,4 @@
-# Procduction deployment of Gloo 
+# Production deployment of Gloo 
 # Using a NodePort
 
 ## Motivation
