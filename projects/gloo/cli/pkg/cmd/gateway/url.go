@@ -100,7 +100,7 @@ func getIngressHost(opts *options.Options) (string, error) {
 
 func getNodeIp(svc *v1.Service, kube kubernetes.Interface) (string, error) {
 	// pick a node where one of our pods is running
-	pods, err := kube.CoreV1().Pods(svc.Name).List(metav1.ListOptions{
+	pods, err := kube.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(svc.Spec.Selector).String(),
 	})
 	if err != nil {
