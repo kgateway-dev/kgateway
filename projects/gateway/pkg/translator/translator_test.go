@@ -22,15 +22,26 @@ var _ = Describe("Translator", func() {
 	BeforeEach(func() {
 		snap = &v1.ApiSnapshot{
 			Gateways: v1.GatewaysByNamespace{
-				ns: v1.GatewayList{{Metadata: core.Metadata{Namespace: ns, Name: "name"}}},
+				ns: v1.GatewayList{
+					{
+						Metadata: core.Metadata{Namespace: ns, Name: "name"},
+						BindPort: 2,
+					},
+				},
 			},
 			VirtualServices: v1.VirtualServicesByNamespace{
 				ns: v1.VirtualServiceList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
+						VirtualHost: &gloov1.VirtualHost{
+							Domains: []string{"d1.com"},
+						},
 					},
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+						VirtualHost: &gloov1.VirtualHost{
+							Domains: []string{"d2.com"},
+						},
 					},
 				},
 			},
@@ -77,6 +88,25 @@ var _ = Describe("Translator", func() {
 		Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
 		Expect(proxy.Metadata.Namespace).To(Equal(ns))
 		Expect(proxy.Listeners).To(HaveLen(2))
+	})
+
+	Context("merge", func() {
+		BeforeEach(func() {
+			snap.VirtualServices[ns][1].VirtualHost.Domains = snap.VirtualServices[ns][0].VirtualHost.Domains
+		})
+
+		It("should translate 2 virtual services with the same domains to 1 virtual service", func() {
+
+			proxy, errs := Translate(context.Background(), ns, snap)
+
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+			Expect(proxy.Metadata.Namespace).To(Equal(ns))
+			Expect(proxy.Listeners).To(HaveLen(1))
+			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+			Expect(listener.VirtualHosts).To(HaveLen(1))
+		})
+
 	})
 
 })
