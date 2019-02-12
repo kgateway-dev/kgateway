@@ -12,7 +12,7 @@ To install with Helm:
         
 1. (Optional) Customize the Gloo installation with a `value-overrides.yaml` file: 
 
-        # examle value-overrides.yaml
+        # example value-overrides.yaml
         namespace:
           create: false
         settings:
