@@ -107,6 +107,40 @@ var _ = Describe("Translator", func() {
 			Expect(listener.VirtualHosts).To(HaveLen(1))
 		})
 
+		It("should not error with one contains plugins", func() {
+			snap.VirtualServices[ns][0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+
+			_, errs := Translate(context.Background(), ns, snap)
+
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+		})
+
+		It("should error with both having plugins", func() {
+			snap.VirtualServices[ns][0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+			snap.VirtualServices[ns][1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+
+			_, errs := Translate(context.Background(), ns, snap)
+
+			Expect(errs.Validate()).To(HaveOccurred())
+		})
+
+		It("should not error with one contains ssl config", func() {
+			snap.VirtualServices[ns][0].SslConfig = new(gloov1.SslConfig)
+
+			_, errs := Translate(context.Background(), ns, snap)
+
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+		})
+
+		It("should error with both having ssl config", func() {
+			snap.VirtualServices[ns][0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[ns][1].SslConfig = new(gloov1.SslConfig)
+
+			_, errs := Translate(context.Background(), ns, snap)
+
+			Expect(errs.Validate()).To(HaveOccurred())
+		})
+
 	})
 
 })

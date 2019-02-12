@@ -136,15 +136,18 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 			routes = append(routes, vs.VirtualHost.Routes...)
 			if sslConfig == nil {
 				sslConfig = vs.SslConfig
-			} else {
+			} else if vs.SslConfig != nil {
 				resourceErrs.AddError(gateway, fmt.Errorf("more than one ssl config is present in virtual service of these domains: %s", k))
 			}
+
+			havePlugins := vs.VirtualHost != nil &&
+				vs.VirtualHost.VirtualHostPlugins != nil
+
 			if vhostPlugins == nil {
-				if vs.VirtualHost != nil &&
-					vs.VirtualHost.VirtualHostPlugins != nil {
+				if havePlugins {
 					vhostPlugins = vs.VirtualHost.VirtualHostPlugins
 				}
-			} else {
+			} else if havePlugins {
 				resourceErrs.AddError(gateway, fmt.Errorf("more than one vhost plugin is present in virtual service of these domains: %s", k))
 			}
 		}
