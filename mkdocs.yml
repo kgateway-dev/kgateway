@@ -6,8 +6,8 @@ nav:
   - Architecture: introduction/architecture.md
   - Concepts: introduction/concepts.md
 - Installation:
-  - Simple Installion on Kubernetes: installation/README.md
-  - Advanced Installion on Kubernetes: installation/install_with_helm.md
+  - Simple Installation on Kubernetes: installation/README.md
+  - Advanced Installation on Kubernetes: installation/install_with_helm.md
 - Getting Started:
   - Gateway:
     - Basic Routing: getting_started/kubernetes/basic_routing.md
