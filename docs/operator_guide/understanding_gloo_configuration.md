@@ -4,7 +4,7 @@
 **NOTE**
 
 Gloo currently requires a running Kubernetes cluster to use as data store. We are adding additional storage options in 
-an upcoming release. For a quick test run of gloo, you can deploy gloo on `minikube`.
+an upcoming release. For a quick test run of Gloo, you can deploy Gloo on `minikube`.
 
 To be notified of the most recent updates, follow us on [Twitter](https://twitter.com/soloio_inc) and join our 
 [community Slack channel](http://slack.solo.io/).
