@@ -70,7 +70,7 @@ func validateGateways(gateways v1.GatewayList, resourceErrs reporter.ResourceErr
 	for addr, gateways := range bindAddresses {
 		if len(gateways) > 1 {
 			for _, gw := range gateways {
-				resourceErrs.AddError(gw, fmt.Errorf("bind-addres %s is not unique in a proxy. gateways: %s", addr, strings.Join(gatewaysRefsToString(gateways), ",")))
+				resourceErrs.AddError(gw, fmt.Errorf("bind-address %s is not unique in a proxy. gateways: %s", addr, strings.Join(gatewaysRefsToString(gateways), ",")))
 			}
 		}
 	}
@@ -120,11 +120,11 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 		}
 	}
 	// return merged list
-	var ret v1.VirtualServiceList
+	var mergedVirtualServices v1.VirtualServiceList
 	for k, vslist := range domainKeysSets {
 		if len(vslist) == 1 {
 			// only one vservice, do nothing.
-			ret = append(ret, vslist[0])
+			mergedVirtualServices = append(mergedVirtualServices, vslist[0])
 			continue
 		}
 
@@ -168,34 +168,34 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 			SslConfig: sslConfig,
 			Metadata:  ref,
 		}
-		ret = append(ret, mergedVs)
+		mergedVirtualServices = append(mergedVirtualServices, mergedVs)
 	}
 
-	return ret
+	return mergedVirtualServices
 }
 
 func getVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
-	virtualServicesForGateway := gateway.VirtualServices
+	virtualServiceRefs := gateway.VirtualServices
 	// add all virtual services if empty
 	if len(gateway.VirtualServices) == 0 {
 		for _, virtualService := range virtualServices {
-			virtualServicesForGateway = append(virtualServicesForGateway, core.ResourceRef{
+			virtualServiceRefs = append(virtualServiceRefs, core.ResourceRef{
 				Name:      virtualService.GetMetadata().Name,
 				Namespace: virtualService.GetMetadata().Namespace,
 			})
 		}
 	}
 
-	var ret v1.VirtualServiceList
-	for _, ref := range virtualServicesForGateway {
+	var virtualServicesForGateway v1.VirtualServiceList
+	for _, ref := range virtualServiceRefs {
 		virtualService, err := virtualServices.Find(ref.Strings())
 		if err != nil {
 			resourceErrs.AddError(gateway, err)
 			continue
 		}
-		ret = append(ret, virtualService)
+		virtualServicesForGateway = append(virtualServicesForGateway, virtualService)
 	}
-	return ret
+	return virtualServicesForGateway
 }
 
 func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList) *gloov1.Listener {
