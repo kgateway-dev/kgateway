@@ -154,7 +154,8 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 		glooutils.SortRoutesByPath(routes)
 
 		ref := core.Metadata{
-			Name:      getMergedName(vslist),
+			// name shouldnt matter as it this object is ephemeral.
+			Name:      k,
 			Namespace: ns,
 		}
 		mergedVs := &v1.VirtualService{
@@ -171,11 +172,6 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 	}
 
 	return ret
-}
-
-func getMergedName(virtualServices v1.VirtualServiceList) string {
-	/* MAJOR TODO better name */
-	return "todo.for.now.fix.before.PR"
 }
 
 func getVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
