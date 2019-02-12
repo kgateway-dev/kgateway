@@ -183,7 +183,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	})
 }
 
-func getclient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func(), error) {
+func getclient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func() error, error) {
 	var dialopts []grpc.DialOption
 	if url.Scheme != "https" {
 		dialopts = append(dialopts, grpc.WithInsecure())
@@ -193,11 +193,8 @@ func getclient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func(), 
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "dialing grpc on %v", url.Host)
 	}
-	closeConn := func() {
-		cc.Close()
-	}
 	refClient := grpcreflect.NewClient(ctx, reflectpb.NewServerReflectionClient(cc))
-	return refClient, closeConn, nil
+	return refClient, cc.Close, nil
 }
 
 func getDepTree(root *desc.FileDescriptor) []*descriptor.FileDescriptorProto {
