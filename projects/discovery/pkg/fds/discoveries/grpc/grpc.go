@@ -69,7 +69,7 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 	log := contextutils.LoggerFrom(ctx)
 	log.Debugf("attempting to detect GRPC for %s", f.upstream.Metadata.Name)
 
-	refClient,closeConn, err := getclient(ctx, url)
+	refClient, closeConn, err := getclient(ctx, url)
 	if err != nil {
 		return nil, err
 	}
