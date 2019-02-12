@@ -8,7 +8,7 @@ nav:
   - Developer Guide: dev/README.md
 - Installation:
   - Simple Installion on Kubernetes: installation/README.md
-  - Advaced Installion on Kubernetes: installation/install_with_helm.md
+  - Advanced Installion on Kubernetes: installation/install_with_helm.md
 - Getting Started:
   - Gateway:
     - Basic Routing: getting_started/kubernetes/basic_routing.md
