@@ -43,9 +43,12 @@ gatewayProxy:
       repository: soloio/gloo-envoy-wrapper
       pullPolicy: Always
     httpPort: 8080
+    httpsPort: 8443
     replicas: 1
   service:
     type: LoadBalancer
+    httpPort: 80
+    httpsPort: 443
   configMap:
     data:
 

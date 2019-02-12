@@ -9,9 +9,14 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   ports:
-  - port: {{ .Values.gatewayProxy.deployment.httpPort }}
+  - port: {{ .Values.gatewayProxy.service.httpPort }}
+    targetPort: {{ .Values.gatewayProxy.deployment.httpsPort }}
     protocol: TCP
     name: http
+  - port: {{ .Values.gatewayProxy.service.httpsPort }}
+    targetPort: {{ .Values.gatewayProxy.deployment.httpsPort }}
+    protocol: TCP
+    name: https
   selector:
     gloo: gateway-proxy
   type: {{ .Values.gatewayProxy.service.type }}

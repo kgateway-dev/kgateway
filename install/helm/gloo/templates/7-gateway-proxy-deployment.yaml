@@ -38,6 +38,9 @@ spec:
         - containerPort: {{ .Values.gatewayProxy.deployment.httpPort }}
           name: http
           protocol: TCP
+        - containerPort: {{ .Values.gatewayProxy.deployment.httpsPort }}
+          name: https
+          protocol: TCP
 {{- with .Values.gatewayProxy.deployment.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
         volumeMounts:

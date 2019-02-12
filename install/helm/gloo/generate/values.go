@@ -94,12 +94,15 @@ type GatewayProxy struct {
 type GatewayProxyDeployment struct {
 	Image            *Image            `json:"image,omitempty"`
 	HttpPort         string            `json:"httpPort,omitempty"`
+	HttpsPort        string            `json:"httpsPort,omitempty"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec
 }
 type GatewayProxyService struct {
-	Type string `json:"type,omitempty"`
+	Type      string `json:"type,omitempty"`
+	HttpPort  string `json:"httpPort,omitempty"`
+	HttpsPort string `json:"httpsPort,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {
