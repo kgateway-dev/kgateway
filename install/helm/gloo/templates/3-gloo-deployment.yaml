@@ -19,7 +19,8 @@ spec:
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
-        prometheus.io/scrape: "true"{{- end}}
+        prometheus.io/scrape: "true"
+      {{- end}}
     spec:
       containers:
       - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
@@ -33,7 +34,8 @@ spec:
         {{- if .Values.gloo.deployment.stats }}
         env:
           - name: START_STATS_SERVER
-            value: "true"{{- end}}
+            value: "true"
+        {{- end}}
       {{- if .Values.gloo.deployment.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.gloo.deployment.image.pullSecret }}{{end}}

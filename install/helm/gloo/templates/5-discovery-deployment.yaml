@@ -19,7 +19,8 @@ spec:
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
-        prometheus.io/scrape: "true"{{- end}}
+        prometheus.io/scrape: "true"
+      {{- end}}
     spec:
       containers:
       - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
@@ -29,5 +30,6 @@ spec:
         {{- if .Values.discovery.deployment.stats }}
         env:
           - name: START_STATS_SERVER
-            value: "true"{{- end}}
+            value: "true"
+        {{- end}}
 
