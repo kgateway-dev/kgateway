@@ -69,10 +69,12 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 	log := contextutils.LoggerFrom(ctx)
 	log.Debugf("attempting to detect GRPC for %s", f.upstream.Metadata.Name)
 
-	refClient, err := getclient(ctx, url)
+	refClient,closeConn, err := getclient(ctx, url)
 	if err != nil {
 		return nil, err
 	}
+
+	defer closeConn()
 
 	_, err = refClient.ListServices()
 	if err != nil {
@@ -114,10 +116,11 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 
 	log.Infof("%v discovered as a gRPC service", url)
 
-	refClient, err := getclient(ctx, url)
+	refClient, closeConn, err := getclient(ctx, url)
 	if err != nil {
 		return err
 	}
+	defer closeConn()
 
 	services, err := refClient.ListServices()
 	if err != nil {
@@ -180,7 +183,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	})
 }
 
-func getclient(ctx context.Context, url *url.URL) (*grpcreflect.Client, error) {
+func getclient(ctx context.Context, url *url.URL) (*grpcreflect.Client, func(), error) {
 	var dialopts []grpc.DialOption
 	if url.Scheme != "https" {
 		dialopts = append(dialopts, grpc.WithInsecure())
@@ -188,10 +191,13 @@ func getclient(ctx context.Context, url *url.URL) (*grpcreflect.Client, error) {
 
 	cc, err := grpc.Dial(url.Host, dialopts...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "dialing grpc on %v", url.Host)
+		return nil, nil, errors.Wrapf(err, "dialing grpc on %v", url.Host)
+	}
+	closeConn := func() {
+		cc.Close()
 	}
 	refClient := grpcreflect.NewClient(ctx, reflectpb.NewServerReflectionClient(cc))
-	return refClient, nil
+	return refClient, closeConn, nil
 }
 
 func getDepTree(root *desc.FileDescriptor) []*descriptor.FileDescriptorProto {
