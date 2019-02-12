@@ -3,7 +3,8 @@
 ---
 **NOTE**
 
-Gloo currently requires a running Kubernetes cluster to use as data store. We are working on supporting additional storage options.
+Gloo currently requires a running Kubernetes cluster to use as data store. We are adding additional storage options in 
+an upcoming release. For a quick test run of gloo, you can deploy gloo on `minikube`.
 
 To be notified of the most recent updates, follow us on [Twitter](https://twitter.com/soloio_inc) and join our 
 [community Slack channel](http://slack.solo.io/).
@@ -25,8 +26,8 @@ via the [Kubernetes REST API](https://kubernetes.io/docs/reference/using-api/api
 [Client Libraries](https://kubernetes.io/docs/reference/using-api/client-libraries/) built on top of it.
 2. **Your Gloo configuration lives close to the resources it applies to.** You don't need to run any additional software. 
 Your services and the configurations that define how traffic is routed to them share the same infrastructure and APIs. 
-Yet, by being defined as different resources, possibly in different namespaces, they are completely decoupled and 
-isolated from each other. You dont't have to worry about changes in your Kubernetes resources affecting your Gloo CRDs.
+Since Gloo resources are defined as their own resource class they are completely decoupled and isolated from one another. 
+You don't have to worry about changes in your Kubernetes resources affecting your Gloo CRDs.
 3. **You can leverage existing Kubernetes features to build additional functionality around Gloo.** Want to limit write 
 access to the Gloo configuration to sysadmins but give everyone else read access? Just use the Kubernetes RBAC API to 
 define the correspondent roles and permissions, like you would with any other Kubernetes resource.
@@ -137,9 +138,10 @@ virtualservices.gateway.solo.io   2019-02-11T20:37:04Z
 ```
 
 You can use the short resource name instead of the fully qualified one in your commands 
-(e.g. `kubectl get vs -n gloo-system` instead of `kubectl get virtualservices.gateway.solo.io/default -n gloo-system`). 
+(e.g. `kubectl get virtualservice -n gloo-system` or even `kubectl get vs -n gloo-system` instead of 
+`kubectl get virtualservices.gateway.solo.io/default -n gloo-system`).
 
-Try to run `kc describe crds/virtualservices.gateway.solo.io` to see what a Custom Resource Definition for a Gloo 
+Try to run `kubectl describe crds/virtualservices.gateway.solo.io` to see what a Custom Resource Definition for a Gloo 
 resource looks like.
 
 ### Writing Gloo resources with `kubectl`
@@ -284,7 +286,7 @@ service by running
 kubectl apply -f ~/my-virtual-service.yaml
 ```
 
-she will be presented with an error message:
+he will be presented with an error message:
 
 ```
 Error from server (Forbidden): virtualservices is forbidden: User "Bob" cannot create virtualservices in the namespace "gloo-system"
