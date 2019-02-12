@@ -67,6 +67,13 @@ var _ = Describe("Translator", func() {
 		Expect(listener.VirtualHosts).To(HaveLen(2))
 	})
 
+	It("should have no ssl config", func() {
+		proxy, _ := Translate(context.Background(), ns, snap)
+
+		Expect(proxy.Listeners).To(HaveLen(1))
+		Expect(proxy.Listeners[0].SslConfiguations).To(BeEmpty())
+	})
+
 	It("should translate an gateway to only have its vservices", func() {
 		snap.Gateways[ns][0].VirtualServices = []core.ResourceRef{snap.VirtualServices[ns][0].Metadata.Ref()}
 

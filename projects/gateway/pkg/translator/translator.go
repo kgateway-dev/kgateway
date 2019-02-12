@@ -213,7 +213,9 @@ func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualSe
 		}
 		virtualService.VirtualHost.Name = fmt.Sprintf("%v.%v", ref.Namespace, ref.Name)
 		virtualHosts = append(virtualHosts, virtualService.VirtualHost)
-		sslConfigs = append(sslConfigs, virtualService.SslConfig)
+		if virtualService.SslConfig != nil {
+			sslConfigs = append(sslConfigs, virtualService.SslConfig)
+		}
 	}
 	return &gloov1.Listener{
 		Name:        gateway.Metadata.Name,
