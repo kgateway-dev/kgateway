@@ -55,13 +55,16 @@ gloo.deployment.image.tag | string | tag for the gloo container
 gloo.deployment.image.pullPolicy | string | image pull policy for gloo container
 gloo.deployment.xdsPort | string | port where gloo serves xDS API to Envoy
 gloo.deployment.replicas | int | number of gloo xds server instances to deploy
+gloo.deployment.stats | bool | expose pod level stats
 discovery.deployment.image.repository | string | image name (registry/repository) for the discovery container. this container adds service discovery and function discovery to Gloo 
 discovery.deployment.image.tag | string | tag for the discovery container
 discovery.deployment.image.pullPolicy | string | image pull policy for discovery container
+discovery.deployment.stats | bool | expose pod level stats
 gateway.enabled | bool | enable Gloo API Gateway features
 gateway.deployment.image.repository | string | image name (registry/repository) for the gateway controller container. this container translates Gloo's VirtualService CRDs to the intermediary representation used by the gloo controller
 gateway.deployment.image.tag | string | tag for the gateway controller container
 gateway.deployment.image.pullPolicy | string | image pull policy for the gateway controller container
+gateway.deployment.stats | bool | expose pod level stats
 gatewayProxy.deployment.image.repository | string | image name (registry/repository) for the gateway proxy container. this proxy receives configuration created via VirtualService CRDs
 gatewayProxy.deployment.image.tag | string | tag for the gateway proxy container
 gatewayProxy.deployment.image.pullPolicy | string | image pull policy for the gateway proxy container
