@@ -16,10 +16,19 @@ spec:
     metadata:
       labels:
         gloo: gateway
+      {{- if .Values.gateway.deployment.stats }}
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9091"
+        prometheus.io/scrape: "true"{{- end}}
     spec:
       containers:
       - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.gateway.deployment.image.pullPolicy }}
         name: gateway
         args: ["--namespace", "{{.Release.Namespace}}" ]
+        {{- if .Values.gateway.deployment.stats }}
+        env:
+          - name: START_STATS_SERVER
+            value: "true"{{- end}}
 {{- end }}

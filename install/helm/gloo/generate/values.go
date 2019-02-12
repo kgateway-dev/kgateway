@@ -29,8 +29,8 @@ type Image struct {
 }
 
 type DeploymentSpec struct {
-	Replicas int `json:"replicas"`
-	Annotations map[string]string `json:"annotations,omitempty"`
+	Replicas int  `json:"replicas"`
+	Stats    bool `json:"stats"`
 }
 
 type Integrations struct {

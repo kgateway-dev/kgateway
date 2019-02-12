@@ -15,9 +15,11 @@ spec:
     metadata:
       labels:
         gloo: gloo
-      {{- if .Values.gloo.deployment.annotations }}
+      {{- if .Values.gloo.deployment.stats }}
       annotations:
-{{ toYaml .Values.gloo.deployment.annotations | indent 8}}{{- end}}
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9091"
+        prometheus.io/scrape: "true"{{- end}}
     spec:
       containers:
       - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
@@ -28,6 +30,10 @@ spec:
           name: grpc
           protocol: TCP
         args: ["--namespace", "{{.Release.Namespace}}" ]
+        {{- if .Values.gloo.deployment.stats }}
+        env:
+          - name: START_STATS_SERVER
+            value: "true"{{- end}}
       {{- if .Values.gloo.deployment.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.gloo.deployment.image.pullSecret }}{{end}}
