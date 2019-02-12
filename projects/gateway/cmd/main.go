@@ -1,10 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/setup"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/pkg/utils/stats"
-	"os"
 )
 
 const (
