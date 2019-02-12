@@ -188,7 +188,6 @@ func getVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.Virtual
 
 	var ret v1.VirtualServiceList
 	for _, ref := range virtualServicesForGateway {
-		// virtual service must live in the same namespace as gateway
 		virtualService, err := virtualServices.Find(ref.Strings())
 		if err != nil {
 			resourceErrs.AddError(gateway, err)
