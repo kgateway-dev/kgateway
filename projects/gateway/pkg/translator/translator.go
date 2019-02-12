@@ -155,7 +155,7 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 
 		ref := core.Metadata{
 			// name shouldnt matter as it this object is ephemeral.
-			Name:      k,
+			Name:      getMergedName(k),
 			Namespace: ns,
 		}
 		mergedVs := &v1.VirtualService{
@@ -172,6 +172,13 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 	}
 
 	return mergedVirtualServices
+}
+
+func getMergedName(k string) string {
+	if k == "" {
+		return "catchall"
+	}
+	return "merged-" + k
 }
 
 func getVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {

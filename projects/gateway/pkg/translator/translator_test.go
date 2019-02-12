@@ -114,6 +114,20 @@ var _ = Describe("Translator", func() {
 			Expect(listener.VirtualHosts).To(HaveLen(1))
 		})
 
+		It("should translate 2 virtual services with the empty domains", func() {
+			snap.VirtualServices[ns][1].VirtualHost.Domains = nil
+			snap.VirtualServices[ns][0].VirtualHost.Domains = nil
+
+			proxy, errs := Translate(context.Background(), ns, snap)
+
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+			Expect(proxy.Listeners).To(HaveLen(1))
+			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+			Expect(listener.VirtualHosts).To(HaveLen(1))
+			Expect(listener.VirtualHosts[0].Name).NotTo(BeEmpty())
+			Expect(listener.VirtualHosts[0].Name).NotTo(Equal(ns + "."))
+		})
+
 		It("should not error with one contains plugins", func() {
 			snap.VirtualServices[ns][0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 
