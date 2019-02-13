@@ -24,7 +24,8 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.2.24"
+  #version = "0.2.24"
+  revision = "ab22d24f63370ebb907dd7cf78a94aa84da6acf2"
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"

@@ -83,6 +83,18 @@ func (c *apiEmitter) VirtualService() VirtualServiceClient {
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -162,21 +174,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			snapshots <- &sentSnapshot
 		}
 
-		/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		   		// construct the first snapshot from all the configs that are currently there
-		   		// that guarantees that the first snapshot contains all the data.
-		   		for range watchNamespaces {
-		      gatewayNamespacedList := <- gatewayChan
-		      currentSnapshot.Gateways.Clear(gatewayNamespacedList.namespace)
-		      gatewayList := gatewayNamespacedList.list
-		   	currentSnapshot.Gateways.Add(gatewayList...)
-		      virtualServiceNamespacedList := <- virtualServiceChan
-		      currentSnapshot.VirtualServices.Clear(virtualServiceNamespacedList.namespace)
-		      virtualServiceList := virtualServiceNamespacedList.list
-		   	currentSnapshot.VirtualServices.Add(virtualServiceList...)
-		   		}
-		*/
-
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
 
@@ -197,16 +194,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				namespace := gatewayNamespacedList.namespace
 				gatewayList := gatewayNamespacedList.list
 
-				currentSnapshot.Gateways.Clear(namespace)
-				currentSnapshot.Gateways.Add(gatewayList...)
+				currentSnapshot.Gateways[namespace] = gatewayList
 			case virtualServiceNamespacedList := <-virtualServiceChan:
 				record()
 
 				namespace := virtualServiceNamespacedList.namespace
 				virtualServiceList := virtualServiceNamespacedList.list
 
-				currentSnapshot.VirtualServices.Clear(namespace)
-				currentSnapshot.VirtualServices.Add(virtualServiceList...)
+				currentSnapshot.VirtualServices[namespace] = virtualServiceList
 			}
 		}
 	}()

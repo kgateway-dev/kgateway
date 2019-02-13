@@ -118,14 +118,6 @@ func (list ClusterIngressList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list ClusterIngressList) ByNamespace() ClusteringressesByNamespace {
-	byNamespace := make(ClusteringressesByNamespace)
-	for _, clusterIngress := range list {
-		byNamespace.Add(clusterIngress)
-	}
-	return byNamespace
-}
-
 func (byNamespace ClusteringressesByNamespace) Add(clusterIngress ...*ClusterIngress) {
 	for _, item := range clusterIngress {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -145,7 +137,11 @@ func (byNamespace ClusteringressesByNamespace) List() ClusterIngressList {
 }
 
 func (byNamespace ClusteringressesByNamespace) Clone() ClusteringressesByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(ClusteringressesByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &ClusterIngress{}

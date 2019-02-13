@@ -108,14 +108,6 @@ func (list EndpointList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list EndpointList) ByNamespace() EndpointsByNamespace {
-	byNamespace := make(EndpointsByNamespace)
-	for _, endpoint := range list {
-		byNamespace.Add(endpoint)
-	}
-	return byNamespace
-}
-
 func (byNamespace EndpointsByNamespace) Add(endpoint ...*Endpoint) {
 	for _, item := range endpoint {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -135,7 +127,11 @@ func (byNamespace EndpointsByNamespace) List() EndpointList {
 }
 
 func (byNamespace EndpointsByNamespace) Clone() EndpointsByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(EndpointsByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Endpoint{}

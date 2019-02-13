@@ -106,14 +106,6 @@ func (list SecretList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list SecretList) ByNamespace() SecretsByNamespace {
-	byNamespace := make(SecretsByNamespace)
-	for _, secret := range list {
-		byNamespace.Add(secret)
-	}
-	return byNamespace
-}
-
 func (byNamespace SecretsByNamespace) Add(secret ...*Secret) {
 	for _, item := range secret {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -133,7 +125,11 @@ func (byNamespace SecretsByNamespace) List() SecretList {
 }
 
 func (byNamespace SecretsByNamespace) Clone() SecretsByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(SecretsByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Secret{}

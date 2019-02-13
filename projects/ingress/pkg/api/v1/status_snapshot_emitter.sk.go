@@ -83,6 +83,18 @@ func (c *statusEmitter) Ingress() IngressClient {
 }
 
 func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *StatusSnapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -162,21 +174,6 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			snapshots <- &sentSnapshot
 		}
 
-		/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		   		// construct the first snapshot from all the configs that are currently there
-		   		// that guarantees that the first snapshot contains all the data.
-		   		for range watchNamespaces {
-		      kubeServiceNamespacedList := <- kubeServiceChan
-		      currentSnapshot.Services.Clear(kubeServiceNamespacedList.namespace)
-		      kubeServiceList := kubeServiceNamespacedList.list
-		   	currentSnapshot.Services.Add(kubeServiceList...)
-		      ingressNamespacedList := <- ingressChan
-		      currentSnapshot.Ingresses.Clear(ingressNamespacedList.namespace)
-		      ingressList := ingressNamespacedList.list
-		   	currentSnapshot.Ingresses.Add(ingressList...)
-		   		}
-		*/
-
 		for {
 			record := func() { stats.Record(ctx, mStatusSnapshotIn.M(1)) }
 
@@ -197,16 +194,14 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 				namespace := kubeServiceNamespacedList.namespace
 				kubeServiceList := kubeServiceNamespacedList.list
 
-				currentSnapshot.Services.Clear(namespace)
-				currentSnapshot.Services.Add(kubeServiceList...)
+				currentSnapshot.Services[namespace] = kubeServiceList
 			case ingressNamespacedList := <-ingressChan:
 				record()
 
 				namespace := ingressNamespacedList.namespace
 				ingressList := ingressNamespacedList.list
 
-				currentSnapshot.Ingresses.Clear(namespace)
-				currentSnapshot.Ingresses.Add(ingressList...)
+				currentSnapshot.Ingresses[namespace] = ingressList
 			}
 		}
 	}()

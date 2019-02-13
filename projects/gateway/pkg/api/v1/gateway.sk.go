@@ -121,14 +121,6 @@ func (list GatewayList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list GatewayList) ByNamespace() GatewaysByNamespace {
-	byNamespace := make(GatewaysByNamespace)
-	for _, gateway := range list {
-		byNamespace.Add(gateway)
-	}
-	return byNamespace
-}
-
 func (byNamespace GatewaysByNamespace) Add(gateway ...*Gateway) {
 	for _, item := range gateway {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -148,7 +140,11 @@ func (byNamespace GatewaysByNamespace) List() GatewayList {
 }
 
 func (byNamespace GatewaysByNamespace) Clone() GatewaysByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(GatewaysByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Gateway{}

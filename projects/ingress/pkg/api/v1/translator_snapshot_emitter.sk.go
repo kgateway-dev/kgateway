@@ -95,6 +95,18 @@ func (c *translatorEmitter) Ingress() IngressClient {
 }
 
 func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TranslatorSnapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -197,25 +209,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			snapshots <- &sentSnapshot
 		}
 
-		/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		   		// construct the first snapshot from all the configs that are currently there
-		   		// that guarantees that the first snapshot contains all the data.
-		   		for range watchNamespaces {
-		      secretNamespacedList := <- secretChan
-		      currentSnapshot.Secrets.Clear(secretNamespacedList.namespace)
-		      secretList := secretNamespacedList.list
-		   	currentSnapshot.Secrets.Add(secretList...)
-		      upstreamNamespacedList := <- upstreamChan
-		      currentSnapshot.Upstreams.Clear(upstreamNamespacedList.namespace)
-		      upstreamList := upstreamNamespacedList.list
-		   	currentSnapshot.Upstreams.Add(upstreamList...)
-		      ingressNamespacedList := <- ingressChan
-		      currentSnapshot.Ingresses.Clear(ingressNamespacedList.namespace)
-		      ingressList := ingressNamespacedList.list
-		   	currentSnapshot.Ingresses.Add(ingressList...)
-		   		}
-		*/
-
 		for {
 			record := func() { stats.Record(ctx, mTranslatorSnapshotIn.M(1)) }
 
@@ -236,24 +229,21 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				namespace := secretNamespacedList.namespace
 				secretList := secretNamespacedList.list
 
-				currentSnapshot.Secrets.Clear(namespace)
-				currentSnapshot.Secrets.Add(secretList...)
+				currentSnapshot.Secrets[namespace] = secretList
 			case upstreamNamespacedList := <-upstreamChan:
 				record()
 
 				namespace := upstreamNamespacedList.namespace
 				upstreamList := upstreamNamespacedList.list
 
-				currentSnapshot.Upstreams.Clear(namespace)
-				currentSnapshot.Upstreams.Add(upstreamList...)
+				currentSnapshot.Upstreams[namespace] = upstreamList
 			case ingressNamespacedList := <-ingressChan:
 				record()
 
 				namespace := ingressNamespacedList.namespace
 				ingressList := ingressNamespacedList.list
 
-				currentSnapshot.Ingresses.Clear(namespace)
-				currentSnapshot.Ingresses.Add(ingressList...)
+				currentSnapshot.Ingresses[namespace] = ingressList
 			}
 		}
 	}()

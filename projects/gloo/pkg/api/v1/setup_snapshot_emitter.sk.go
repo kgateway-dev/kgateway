@@ -73,6 +73,18 @@ func (c *setupEmitter) Settings() SettingsClient {
 }
 
 func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *SetupSnapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -129,17 +141,6 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 			snapshots <- &sentSnapshot
 		}
 
-		/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		   		// construct the first snapshot from all the configs that are currently there
-		   		// that guarantees that the first snapshot contains all the data.
-		   		for range watchNamespaces {
-		      settingsNamespacedList := <- settingsChan
-		      currentSnapshot.Settings.Clear(settingsNamespacedList.namespace)
-		      settingsList := settingsNamespacedList.list
-		   	currentSnapshot.Settings.Add(settingsList...)
-		   		}
-		*/
-
 		for {
 			record := func() { stats.Record(ctx, mSetupSnapshotIn.M(1)) }
 
@@ -160,8 +161,7 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 				namespace := settingsNamespacedList.namespace
 				settingsList := settingsNamespacedList.list
 
-				currentSnapshot.Settings.Clear(namespace)
-				currentSnapshot.Settings.Add(settingsList...)
+				currentSnapshot.Settings[namespace] = settingsList
 			}
 		}
 	}()

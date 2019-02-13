@@ -113,6 +113,18 @@ func (c *apiEmitter) Upstream() UpstreamClient {
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -261,33 +273,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			snapshots <- &sentSnapshot
 		}
 
-		/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		   		// construct the first snapshot from all the configs that are currently there
-		   		// that guarantees that the first snapshot contains all the data.
-		   		for range watchNamespaces {
-		      artifactNamespacedList := <- artifactChan
-		      currentSnapshot.Artifacts.Clear(artifactNamespacedList.namespace)
-		      artifactList := artifactNamespacedList.list
-		   	currentSnapshot.Artifacts.Add(artifactList...)
-		      endpointNamespacedList := <- endpointChan
-		      currentSnapshot.Endpoints.Clear(endpointNamespacedList.namespace)
-		      endpointList := endpointNamespacedList.list
-		   	currentSnapshot.Endpoints.Add(endpointList...)
-		      proxyNamespacedList := <- proxyChan
-		      currentSnapshot.Proxies.Clear(proxyNamespacedList.namespace)
-		      proxyList := proxyNamespacedList.list
-		   	currentSnapshot.Proxies.Add(proxyList...)
-		      secretNamespacedList := <- secretChan
-		      currentSnapshot.Secrets.Clear(secretNamespacedList.namespace)
-		      secretList := secretNamespacedList.list
-		   	currentSnapshot.Secrets.Add(secretList...)
-		      upstreamNamespacedList := <- upstreamChan
-		      currentSnapshot.Upstreams.Clear(upstreamNamespacedList.namespace)
-		      upstreamList := upstreamNamespacedList.list
-		   	currentSnapshot.Upstreams.Add(upstreamList...)
-		   		}
-		*/
-
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
 
@@ -308,40 +293,35 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				namespace := artifactNamespacedList.namespace
 				artifactList := artifactNamespacedList.list
 
-				currentSnapshot.Artifacts.Clear(namespace)
-				currentSnapshot.Artifacts.Add(artifactList...)
+				currentSnapshot.Artifacts[namespace] = artifactList
 			case endpointNamespacedList := <-endpointChan:
 				record()
 
 				namespace := endpointNamespacedList.namespace
 				endpointList := endpointNamespacedList.list
 
-				currentSnapshot.Endpoints.Clear(namespace)
-				currentSnapshot.Endpoints.Add(endpointList...)
+				currentSnapshot.Endpoints[namespace] = endpointList
 			case proxyNamespacedList := <-proxyChan:
 				record()
 
 				namespace := proxyNamespacedList.namespace
 				proxyList := proxyNamespacedList.list
 
-				currentSnapshot.Proxies.Clear(namespace)
-				currentSnapshot.Proxies.Add(proxyList...)
+				currentSnapshot.Proxies[namespace] = proxyList
 			case secretNamespacedList := <-secretChan:
 				record()
 
 				namespace := secretNamespacedList.namespace
 				secretList := secretNamespacedList.list
 
-				currentSnapshot.Secrets.Clear(namespace)
-				currentSnapshot.Secrets.Add(secretList...)
+				currentSnapshot.Secrets[namespace] = secretList
 			case upstreamNamespacedList := <-upstreamChan:
 				record()
 
 				namespace := upstreamNamespacedList.namespace
 				upstreamList := upstreamNamespacedList.list
 
-				currentSnapshot.Upstreams.Clear(namespace)
-				currentSnapshot.Upstreams.Add(upstreamList...)
+				currentSnapshot.Upstreams[namespace] = upstreamList
 			}
 		}
 	}()

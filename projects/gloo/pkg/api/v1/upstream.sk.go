@@ -119,14 +119,6 @@ func (list UpstreamList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list UpstreamList) ByNamespace() UpstreamsByNamespace {
-	byNamespace := make(UpstreamsByNamespace)
-	for _, upstream := range list {
-		byNamespace.Add(upstream)
-	}
-	return byNamespace
-}
-
 func (byNamespace UpstreamsByNamespace) Add(upstream ...*Upstream) {
 	for _, item := range upstream {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -146,7 +138,11 @@ func (byNamespace UpstreamsByNamespace) List() UpstreamList {
 }
 
 func (byNamespace UpstreamsByNamespace) Clone() UpstreamsByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(UpstreamsByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Upstream{}

@@ -126,14 +126,6 @@ func (list SettingsList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list SettingsList) ByNamespace() SettingsByNamespace {
-	byNamespace := make(SettingsByNamespace)
-	for _, settings := range list {
-		byNamespace.Add(settings)
-	}
-	return byNamespace
-}
-
 func (byNamespace SettingsByNamespace) Add(settings ...*Settings) {
 	for _, item := range settings {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -153,7 +145,11 @@ func (byNamespace SettingsByNamespace) List() SettingsList {
 }
 
 func (byNamespace SettingsByNamespace) Clone() SettingsByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(SettingsByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Settings{}

@@ -1323,7 +1323,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:bc65fcacaff08d056e760eee34cf2aa1165fb8f6bffd89d019b5124102f1f394"
+  digest = "1:3803cea4195db728de25096c0603f5d971f969da20eb6d7d8cbdf2390cc29310"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1332,6 +1332,7 @@
     "pkg/api/v1/clients/factory",
     "pkg/api/v1/clients/file",
     "pkg/api/v1/clients/kube",
+    "pkg/api/v1/clients/kube/cache",
     "pkg/api/v1/clients/kube/controller",
     "pkg/api/v1/clients/kube/crd",
     "pkg/api/v1/clients/kube/crd/client/clientset/versioned",
@@ -1339,7 +1340,6 @@
     "pkg/api/v1/clients/kube/crd/client/clientset/versioned/typed/solo.io/v1",
     "pkg/api/v1/clients/kube/crd/solo.io/v1",
     "pkg/api/v1/clients/kubesecret",
-    "pkg/api/v1/clients/kubesecretplain",
     "pkg/api/v1/clients/memory",
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/control-plane/cache",
@@ -1354,10 +1354,12 @@
     "pkg/code-generator",
     "pkg/code-generator/cmd",
     "pkg/code-generator/codegen",
-    "pkg/code-generator/codegen/funcs",
     "pkg/code-generator/codegen/templates",
     "pkg/code-generator/docgen",
-    "pkg/code-generator/docgen/templates",
+    "pkg/code-generator/docgen/funcs",
+    "pkg/code-generator/docgen/options",
+    "pkg/code-generator/docgen/templates/markdown",
+    "pkg/code-generator/docgen/templates/restructured",
     "pkg/code-generator/model",
     "pkg/code-generator/parser",
     "pkg/errors",
@@ -1376,8 +1378,7 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "a8be3a112d249730039280d9f50f50fd8b453099"
-  version = "v0.2.24"
+  revision = "ab22d24f63370ebb907dd7cf78a94aa84da6acf2"
 
 [[projects]]
   digest = "1:e01b05ba901239c783dfe56450bcde607fc858908529868259c9a8765dc176d0"
@@ -2121,6 +2122,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube",
+    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache",
@@ -2132,6 +2134,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/resources",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources/core",
     "github.com/solo-io/solo-kit/pkg/code-generator/cmd",
+    "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",
     "github.com/solo-io/solo-kit/pkg/utils/cliutils",
     "github.com/solo-io/solo-kit/pkg/utils/contextutils",

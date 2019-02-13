@@ -118,14 +118,6 @@ func (list ProxyList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list ProxyList) ByNamespace() ProxiesByNamespace {
-	byNamespace := make(ProxiesByNamespace)
-	for _, proxy := range list {
-		byNamespace.Add(proxy)
-	}
-	return byNamespace
-}
-
 func (byNamespace ProxiesByNamespace) Add(proxy ...*Proxy) {
 	for _, item := range proxy {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -145,7 +137,11 @@ func (byNamespace ProxiesByNamespace) List() ProxyList {
 }
 
 func (byNamespace ProxiesByNamespace) Clone() ProxiesByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(ProxiesByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Proxy{}

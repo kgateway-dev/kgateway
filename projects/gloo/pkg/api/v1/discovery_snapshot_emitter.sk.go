@@ -83,6 +83,18 @@ func (c *discoveryEmitter) Upstream() UpstreamClient {
 }
 
 func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *DiscoverySnapshot, <-chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{""}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
+		}
+	}
+
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
@@ -162,21 +174,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			snapshots <- &sentSnapshot
 		}
 
-		/* TODO (yuval-k): figure out how to make this work to avoid a stale snapshot.
-		   		// construct the first snapshot from all the configs that are currently there
-		   		// that guarantees that the first snapshot contains all the data.
-		   		for range watchNamespaces {
-		      secretNamespacedList := <- secretChan
-		      currentSnapshot.Secrets.Clear(secretNamespacedList.namespace)
-		      secretList := secretNamespacedList.list
-		   	currentSnapshot.Secrets.Add(secretList...)
-		      upstreamNamespacedList := <- upstreamChan
-		      currentSnapshot.Upstreams.Clear(upstreamNamespacedList.namespace)
-		      upstreamList := upstreamNamespacedList.list
-		   	currentSnapshot.Upstreams.Add(upstreamList...)
-		   		}
-		*/
-
 		for {
 			record := func() { stats.Record(ctx, mDiscoverySnapshotIn.M(1)) }
 
@@ -197,16 +194,14 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				namespace := secretNamespacedList.namespace
 				secretList := secretNamespacedList.list
 
-				currentSnapshot.Secrets.Clear(namespace)
-				currentSnapshot.Secrets.Add(secretList...)
+				currentSnapshot.Secrets[namespace] = secretList
 			case upstreamNamespacedList := <-upstreamChan:
 				record()
 
 				namespace := upstreamNamespacedList.namespace
 				upstreamList := upstreamNamespacedList.list
 
-				currentSnapshot.Upstreams.Clear(namespace)
-				currentSnapshot.Upstreams.Add(upstreamList...)
+				currentSnapshot.Upstreams[namespace] = upstreamList
 			}
 		}
 	}()

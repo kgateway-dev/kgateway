@@ -107,14 +107,6 @@ func (list KubeServiceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list KubeServiceList) ByNamespace() ServicesByNamespace {
-	byNamespace := make(ServicesByNamespace)
-	for _, kubeService := range list {
-		byNamespace.Add(kubeService)
-	}
-	return byNamespace
-}
-
 func (byNamespace ServicesByNamespace) Add(kubeService ...*KubeService) {
 	for _, item := range kubeService {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -134,7 +126,11 @@ func (byNamespace ServicesByNamespace) List() KubeServiceList {
 }
 
 func (byNamespace ServicesByNamespace) Clone() ServicesByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(ServicesByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &KubeService{}

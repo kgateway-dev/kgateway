@@ -106,14 +106,6 @@ func (list ArtifactList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list ArtifactList) ByNamespace() ArtifactsByNamespace {
-	byNamespace := make(ArtifactsByNamespace)
-	for _, artifact := range list {
-		byNamespace.Add(artifact)
-	}
-	return byNamespace
-}
-
 func (byNamespace ArtifactsByNamespace) Add(artifact ...*Artifact) {
 	for _, item := range artifact {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -133,7 +125,11 @@ func (byNamespace ArtifactsByNamespace) List() ArtifactList {
 }
 
 func (byNamespace ArtifactsByNamespace) Clone() ArtifactsByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(ArtifactsByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Artifact{}

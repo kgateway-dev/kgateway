@@ -23,6 +23,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -59,6 +60,7 @@ var _ = Describe("V1Emitter", func() {
 
 		kubeServiceClientFactory := &factory.KubeConfigMapClientFactory{
 			Clientset: kube,
+			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
 		}
 		kubeServiceClient, err = NewKubeServiceClient(kubeServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -68,6 +70,7 @@ var _ = Describe("V1Emitter", func() {
 
 		ingressClientFactory := &factory.KubeConfigMapClientFactory{
 			Clientset: kube,
+			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
 		}
 		ingressClient, err = NewIngressClient(ingressClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -115,8 +118,10 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := kubeServiceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := kubeServiceClient.List(namespace2, clients.ListOpts{})
-					combined := nsList1.ByNamespace()
-					combined.Add(nsList2...)
+					combined := ServicesByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -173,8 +178,143 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := ingressClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := ingressClient.List(namespace2, clients.ListOpts{})
-					combined := nsList1.ByNamespace()
-					combined.Add(nsList2...)
+					combined := IngressesByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		ingress1a, err := ingressClient.Write(NewIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		ingress1b, err := ingressClient.Write(NewIngress(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotIngresses(IngressList{ingress1a, ingress1b}, nil)
+		ingress2a, err := ingressClient.Write(NewIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		ingress2b, err := ingressClient.Write(NewIngress(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotIngresses(IngressList{ingress1a, ingress1b, ingress2a, ingress2b}, nil)
+
+		err = ingressClient.Delete(ingress2a.Metadata.Namespace, ingress2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = ingressClient.Delete(ingress2b.Metadata.Namespace, ingress2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotIngresses(IngressList{ingress1a, ingress1b}, IngressList{ingress2a, ingress2b})
+
+		err = ingressClient.Delete(ingress1a.Metadata.Namespace, ingress1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = ingressClient.Delete(ingress1b.Metadata.Namespace, ingress1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotIngresses(nil, IngressList{ingress1a, ingress1b, ingress2a, ingress2b})
+	})
+	It("tracks snapshots on changes to any resource using AllNamespace", func() {
+		ctx := context.Background()
+		err := emitter.Register()
+		Expect(err).NotTo(HaveOccurred())
+
+		snapshots, errs, err := emitter.Snapshots([]string{""}, clients.WatchOpts{
+			Ctx:         ctx,
+			RefreshRate: time.Second,
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		var snap *StatusSnapshot
+
+		/*
+			KubeService
+		*/
+
+		assertSnapshotServices := func(expectServices KubeServiceList, unexpectServices KubeServiceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectServices {
+						if _, err := snap.Services.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectServices {
+						if _, err := snap.Services.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := kubeServiceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := kubeServiceClient.List(namespace2, clients.ListOpts{})
+					combined := ServicesByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		kubeService1a, err := kubeServiceClient.Write(NewKubeService(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeService1b, err := kubeServiceClient.Write(NewKubeService(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotServices(KubeServiceList{kubeService1a, kubeService1b}, nil)
+		kubeService2a, err := kubeServiceClient.Write(NewKubeService(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeService2b, err := kubeServiceClient.Write(NewKubeService(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotServices(KubeServiceList{kubeService1a, kubeService1b, kubeService2a, kubeService2b}, nil)
+
+		err = kubeServiceClient.Delete(kubeService2a.Metadata.Namespace, kubeService2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeServiceClient.Delete(kubeService2b.Metadata.Namespace, kubeService2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotServices(KubeServiceList{kubeService1a, kubeService1b}, KubeServiceList{kubeService2a, kubeService2b})
+
+		err = kubeServiceClient.Delete(kubeService1a.Metadata.Namespace, kubeService1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeServiceClient.Delete(kubeService1b.Metadata.Namespace, kubeService1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotServices(nil, KubeServiceList{kubeService1a, kubeService1b, kubeService2a, kubeService2b})
+
+		/*
+			Ingress
+		*/
+
+		assertSnapshotIngresses := func(expectIngresses IngressList, unexpectIngresses IngressList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectIngresses {
+						if _, err := snap.Ingresses.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectIngresses {
+						if _, err := snap.Ingresses.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := ingressClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := ingressClient.List(namespace2, clients.ListOpts{})
+					combined := IngressesByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}

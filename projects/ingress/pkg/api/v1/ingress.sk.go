@@ -106,14 +106,6 @@ func (list IngressList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-func (list IngressList) ByNamespace() IngressesByNamespace {
-	byNamespace := make(IngressesByNamespace)
-	for _, ingress := range list {
-		byNamespace.Add(ingress)
-	}
-	return byNamespace
-}
-
 func (byNamespace IngressesByNamespace) Add(ingress ...*Ingress) {
 	for _, item := range ingress {
 		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
@@ -133,7 +125,11 @@ func (byNamespace IngressesByNamespace) List() IngressList {
 }
 
 func (byNamespace IngressesByNamespace) Clone() IngressesByNamespace {
-	return byNamespace.List().Clone().ByNamespace()
+	cloned := make(IngressesByNamespace)
+	for ns, list := range byNamespace {
+		cloned[ns] = list.Clone()
+	}
+	return cloned
 }
 
 var _ resources.Resource = &Ingress{}
