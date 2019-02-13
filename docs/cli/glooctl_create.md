@@ -30,8 +30,8 @@ glooctl create [flags]
 
 ### SEE ALSO
 
-* [glooctl](glooctl.md)	 - CLI for Gloo
-* [glooctl create secret](glooctl_create_secret.md)	 - Create a secret
-* [glooctl create upstream](glooctl_create_upstream.md)	 - Create an Upstream Interactively
-* [glooctl create virtualservice](glooctl_create_virtualservice.md)	 - Create a Virtual Service
+* [glooctl](glooctl)	 - CLI for Gloo
+* [glooctl create secret](glooctl_create_secret)	 - Create a secret
+* [glooctl create upstream](glooctl_create_upstream)	 - Create an Upstream Interactively
+* [glooctl create virtualservice](glooctl_create_virtualservice)	 - Create a Virtual Service
 

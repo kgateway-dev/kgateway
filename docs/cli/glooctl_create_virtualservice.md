@@ -35,5 +35,5 @@ glooctl create virtualservice [flags]
 
 ### SEE ALSO
 
-* [glooctl create](glooctl_create.md)	 - Create a Gloo resource
+* [glooctl create](glooctl_create)	 - Create a Gloo resource
 

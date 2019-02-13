@@ -30,5 +30,5 @@ glooctl upgrade [flags]
 
 ### SEE ALSO
 
-* [glooctl](glooctl.md)	 - CLI for Gloo
+* [glooctl](glooctl)	 - CLI for Gloo
 

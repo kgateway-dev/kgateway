@@ -31,5 +31,5 @@ glooctl get upstream [flags]
 
 ### SEE ALSO
 
-* [glooctl get](glooctl_get.md)	 - Display one or a list of Gloo resources
+* [glooctl get](glooctl_get)	 - Display one or a list of Gloo resources
 

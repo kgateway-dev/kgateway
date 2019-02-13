@@ -31,5 +31,5 @@ glooctl get virtualservice route [flags]
 
 ### SEE ALSO
 
-* [glooctl get virtualservice](glooctl_get_virtualservice.md)	 - read a virtualservice or list virtualservices in a namespace
+* [glooctl get virtualservice](glooctl_get_virtualservice)	 - read a virtualservice or list virtualservices in a namespace
 

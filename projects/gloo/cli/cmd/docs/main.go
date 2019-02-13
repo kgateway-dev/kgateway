@@ -46,9 +46,14 @@ func renderFrontMatter(filename string) string {
 func main() {
 	app := cmd.GlooCli(version.Version)
 	disableAutoGenTag(app)
-	linkHandler := func(s string) string { return s }
-
-	err := doc.GenMarkdownTreeCustom(app, "./docs/cli", renderFrontMatter, linkHandler)
+	emptyStr := func(s string) string { return "" }
+	linkHandler := func(s string) string {
+		if strings.HasSuffix(s, ".md") {
+			return s[:len(s)-3]
+		}
+		return s
+	}
+	err := doc.GenMarkdownTreeCustom(app, "./docs/cli", emptyStr, linkHandler)
 	if err != nil {
 		log.Fatal(err)
 	}

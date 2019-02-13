@@ -26,9 +26,9 @@ these commands can be used to interact directly with the Proxies Gloo is managin
 
 ### SEE ALSO
 
-* [glooctl](glooctl.md)	 - CLI for Gloo
-* [glooctl proxy dump](glooctl_proxy_dump.md)	 - dump Envoy config from one of the proxy instances
-* [glooctl proxy logs](glooctl_proxy_logs.md)	 - dump Envoy logs from one of the proxy instancesNote: this will enable verbose logging on Envoy
-* [glooctl proxy stats](glooctl_proxy_stats.md)	 - stats for one of the proxy instances
-* [glooctl proxy url](glooctl_proxy_url.md)	 - print the http endpoint for a proxy
+* [glooctl](glooctl)	 - CLI for Gloo
+* [glooctl proxy dump](glooctl_proxy_dump)	 - dump Envoy config from one of the proxy instances
+* [glooctl proxy logs](glooctl_proxy_logs)	 - dump Envoy logs from one of the proxy instancesNote: this will enable verbose logging on Envoy
+* [glooctl proxy stats](glooctl_proxy_stats)	 - stats for one of the proxy instances
+* [glooctl proxy url](glooctl_proxy_url)	 - print the http endpoint for a proxy
 

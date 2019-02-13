@@ -31,5 +31,5 @@ glooctl install gateway [flags]
 
 ### SEE ALSO
 
-* [glooctl install](glooctl_install.md)	 - install gloo on different platforms
+* [glooctl install](glooctl_install)	 - install gloo on different platforms
 
