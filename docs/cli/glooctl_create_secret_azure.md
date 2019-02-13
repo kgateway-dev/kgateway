@@ -32,5 +32,5 @@ glooctl create secret azure [flags]
 
 ### SEE ALSO
 
-* [glooctl create secret](glooctl_create_secret)	 - Create a secret
+* [glooctl create secret](../glooctl_create_secret)	 - Create a secret
 

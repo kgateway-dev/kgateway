@@ -73,15 +73,10 @@ $(OUTPUT_DIR)/.generated-code:
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
 
-.PHONY: docs/README.md
-docs/README.md: 
-	cat README.md | sed 's@docs/@@g' > $@
-
-site: docs/README.md docs/cli/glooctl.md
+site: docs/cli/glooctl.md
 	# add front matter to generated docs
 	find docs/cli docs/v1 -name "*.md"
 	if [ ! -d themes ]; then  git clone https://github.com/matcornic/hugo-theme-learn.git themes/hugo-theme-learn; fi
-	for f in $$(find ./docs -name README.md ); do IDX=$$(dirname $$f)/_index.md; if [ ! -f "$$IDX" ];then ln -s README.md $$IDX; fi ;done
 	hugo --config docs.toml
 
 docs/cli/glooctl.md: $(shell find projects/gloo/cli -name "*.go" | grep -v test.go | grep -v '\.\#*')
@@ -95,7 +90,7 @@ ifeq ($(RELEASE),"true")
 endif
 
 serve-site: site
-	hugo --config docs.toml server
+	hugo --config docs.toml server -D
 
 #----------------------------------------------------------------------------------
 # Generate mocks

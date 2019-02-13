@@ -1,3 +1,8 @@
+---
+title: External API Routing
+weight: 3
+---
+
 ## External API Routing
 
 In this tutorial, we'll take a look at routing to services that live outside of your deployment platform and that have not been configured for automatic discovery. You can consider that these could be existing monoliths or static endpoints that do not lend themselves easily to be discovered. Gloo's power comes from it's ability to live in unpredictable and dynamic environments just fine, but for those use cases where we need to explicitly add upstreams, we can do that following these steps.
@@ -5,11 +10,11 @@ In this tutorial, we'll take a look at routing to services that live outside of 
 
 ### What you'll need
 
-You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the [Gloo installation](../../installation/README.md) for guidance on installing Gloo into Kubernetes. 
+You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the [Gloo installation](../installation/_index.md) for guidance on installing Gloo into Kubernetes. 
 
 You'll also need access from the Kubernetes cluster to an external API. You can use whichever external API you wish; we'll use an API called [JSONPlaceholder](https://jsonplaceholder.typicode.com) which simulates a REST API for basic testing. 
 
-To route to an external API, we need to first create a Gloo [upstream](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md). A quick recap will show that a Gloo upstream is a network entry (think _host:port_) in the Gloo service catalog (or ["cluster" as Envoy proxy calls it](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager)). We'll use [glooctl create upstream](../../cli/README.md#create-upstreams) command to do this:
+To route to an external API, we need to first create a Gloo [upstream](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md). A quick recap will show that a Gloo upstream is a network entry (think _host:port_) in the Gloo service catalog (or ["cluster" as Envoy proxy calls it](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager)). We'll use [glooctl create upstream](../cli/README.md#create-upstreams) command to do this:
 
         glooctl create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80
                
@@ -42,7 +47,7 @@ Gloo should now know about our `jsonplaceholder` upstream. To verify run `glooct
         
 Note that we explicitly specified the namespace otherwise `glooctl` would default to the `gloo-system` namespace.
 
-Let's add a route like we did in the [basic routing tutorial](./basic_routing.md) to route incoming traffic from `/api/posts` to our new jsonplaceholder upstream:
+Let's add a route like we did in the [basic routing tutorial](basic_routing.md) to route incoming traffic from `/api/posts` to our new jsonplaceholder upstream:
 
         
         glooctl add route \

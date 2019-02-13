@@ -1,4 +1,7 @@
-# Declarative Infrastructure and GitOps
+---
+title: "Declarative Infrastructure and GitOps"
+weight: 2
+---
 
 Kubernetes was built to support [declarative configuration management](https://kubernetes.io/docs/concepts/overview/object-management-kubectl/declarative-config/#how-apply-calculates-differences-and-merges-changes). 
 With Kubernetes, you can describe the desired state of your application through a set of configuration files, 

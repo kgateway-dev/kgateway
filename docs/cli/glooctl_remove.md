@@ -26,6 +26,6 @@ remove configuration items from a top-level Gloo resource
 
 ### SEE ALSO
 
-* [glooctl](glooctl)	 - CLI for Gloo
-* [glooctl remove route](glooctl_remove_route)	 - Remove a Route from a Virtual Service
+* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl remove route](../glooctl_remove_route)	 - Remove a Route from a Virtual Service
 

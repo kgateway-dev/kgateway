@@ -9,8 +9,8 @@
 Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generation API gateway. Gloo is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist. 
 
 
-[**Installation**](docs/installation/README.md) &nbsp; |
-&nbsp; [**Developers**](docs/dev/README.md) &nbsp; |
+[**Installation**](docs/installation/_index.md) &nbsp; |
+&nbsp; [**Developers**](docs/dev/_index.md) &nbsp; |
 &nbsp; [**Documentation**](https://gloo.solo.io) &nbsp; |
 &nbsp; [**Blog**](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600) &nbsp; |
 &nbsp; [**Slack**](https://slack.solo.io) &nbsp; |

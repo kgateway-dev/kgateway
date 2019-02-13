@@ -36,5 +36,5 @@ glooctl create upstream kube [flags]
 
 ### SEE ALSO
 
-* [glooctl create upstream](glooctl_create_upstream)	 - Create an Upstream Interactively
+* [glooctl create upstream](../glooctl_create_upstream)	 - Create an Upstream Interactively
 

@@ -1,4 +1,7 @@
-# Concepts
+---
+title: "Concepts"
+weight: 2
+---
 
 - [Overview](#Overview)
 - [Virtual Services](#virtual-services)

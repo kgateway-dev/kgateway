@@ -31,5 +31,5 @@ glooctl proxy stats [flags]
 
 ### SEE ALSO
 
-* [glooctl proxy](glooctl_proxy)	 - interact with proxy instances managed by Gloo
+* [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
 

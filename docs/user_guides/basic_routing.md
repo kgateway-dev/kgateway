@@ -1,3 +1,8 @@
+---
+title: Basic Routing
+weight: 1
+---
+
 ## Gateway Routing
 
 API Gateways can route incoming traffic to backend services. Gloo can automatically discover backend services based on plugins that it uses that know intimate details about the platform or environment on which it's running. In this tutorial we look at Gloo's basic upstream discovery and routing capabilities. For more advanced *function* routing, take a look at the [function routing](../function_routing) tutorial.
@@ -8,7 +13,7 @@ API Gateways can route incoming traffic to backend services. Gloo can automatica
 
 ### Steps
 
-1. The Gloo Gateway [installed](../../installation/README.md) and running on Kubernetes. 
+1. The Gloo Gateway [installed](../installation/_index.md) and running on Kubernetes. 
  
 1. Next, deploy the Pet Store app to kubernetes:
 

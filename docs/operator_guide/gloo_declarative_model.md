@@ -1,4 +1,7 @@
-# Gloo as declarative infrastructure
+---
+title: "Gloo as Declarative Infrastructure"
+weight: 3
+---
 
 At it's core, Gloo is a simple product that adheres to the declarative infrastructure model: 
 - It watches the current state, known as a **snapshot**, consisting of `proxies`, `secrets`, `endpoints`, `upstreams`, and `artifacts`. 

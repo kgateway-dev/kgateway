@@ -26,8 +26,8 @@ Delete a Gloo resource
 
 ### SEE ALSO
 
-* [glooctl](glooctl)	 - CLI for Gloo
-* [glooctl delete proxy](glooctl_delete_proxy)	 - delete a proxy
-* [glooctl delete upstream](glooctl_delete_upstream)	 - delete an upstream
-* [glooctl delete virtualservice](glooctl_delete_virtualservice)	 - delete a virtualservice
+* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl delete proxy](../glooctl_delete_proxy)	 - delete a proxy
+* [glooctl delete upstream](../glooctl_delete_upstream)	 - delete an upstream
+* [glooctl delete virtualservice](../glooctl_delete_virtualservice)	 - delete a virtualservice
 

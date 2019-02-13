@@ -1,4 +1,7 @@
-## Knative Cluster Ingress
+---
+title: Gloo with Knative
+weight: 5
+---
 
 Google's Knative project leverages a Kubernetes Cluster Ingress Controller to route requests to apps managed and autoscaled by Knative.
 At the time of writing, the only available options for Cluster Ingress are Istio and Gloo. This tutorial explains how to get started 
@@ -11,7 +14,7 @@ using Gloo as your Knative Cluster Ingress.
 
 ### Steps
 
-1. First, deploy the Gloo Cluster Ingress and Knative [installed](../../installation/README.md) on Kubernetes. Knative can be deployed 
+1. First, deploy the Gloo Cluster Ingress and Knative [installed](../installation/_index.md) on Kubernetes. Knative can be deployed 
 independently, or using `glooctl install knative`.
  
  

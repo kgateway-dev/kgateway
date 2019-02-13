@@ -1,4 +1,7 @@
-# Architecture
+---
+title: "Architecture"
+weight: 2
+---
 
 - [Overview](#Overview)
 - [Component Architecture](#component-architecture)

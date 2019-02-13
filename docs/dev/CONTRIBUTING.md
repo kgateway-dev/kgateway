@@ -1,4 +1,7 @@
-# Gloo Contributor Guide
+---
+title: "Contributor Guide"
+weight: 2
+---
 
 Excited about Gloo and want to help make it better? 
 

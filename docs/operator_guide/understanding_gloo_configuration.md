@@ -1,4 +1,7 @@
-# Understanding Gloo configuration
+---
+title: "Understanding Gloo Configuration"
+weight: 1
+---
 
 ---
 **NOTE**
@@ -13,7 +16,7 @@ To be notified of the most recent updates, follow us on [Twitter](https://twitte
 
 ## Configuration storage
 By default, Gloo leverages Kubernetes to implement its 
-[declarative infrastructure model](./gitops/gloo_declarative_model.md#gloo-as-declarative-infrastructure).
+[declarative infrastructure model](gloo_declarative_model.md#gloo-as-declarative-infrastructure).
 The Gloo configuration consists of a set of YAML documents that are stored in Kubernetes as
 [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources).
 Each of the Gloo configuration objects (virtual services, upstreams, etc.) is an instance of a 
@@ -35,7 +38,7 @@ define the correspondent roles and permissions, like you would with any other Ku
 Let's look at some concrete examples that illustrate the relationship between Gloo resources and Kubernetes CRDs.
 
 ### List Gloo resources with `kubectl`
-In the [Basic Routing chapter of the Getting Started guide](./../getting_started/kubernetes/basic_routing.md)
+In the [Basic Routing chapter of the Getting Started guide](../getting_started/basic_routing.md)
 we created a _Virtual Service_ containing one route to the `default-petstore-8080` _Upstream_ by submitting the following 
 command:
 

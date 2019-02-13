@@ -1,4 +1,7 @@
-# Installing Gloo with Helm
+---
+title: Installing Gloo with Helm
+weight: 1
+---
 
 This document outlines instructions for the setup and configuration of Gloo using Helm. This is the recommended install method for installing Gloo to your production environment as it offers rich customization to the Gloo control plane and the proxies Gloo manages.
 

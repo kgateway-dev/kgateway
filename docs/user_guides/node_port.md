@@ -1,11 +1,13 @@
-# Production deployment of Gloo 
-# Using a NodePort
+---
+title: Production Deployment Using NodePort
+weight: 7
+---
 
 ## Motivation
 By default, micro-services deployed in kubernetes have an internal flat network that is not accessible from the outside
 of the cluster. This is true even if you use kuberentes on a public cloud (like Amazon AWs or Google Cloud).
 
-A NodePort is a way to make kuberentes services available from outside the cluster (and potentially allow access from the internet).
+A NodePort is a way to make kubernetes services available from outside the cluster (and potentially allow access from the internet).
 
 In this document we will review how to expose Gloo via a NodePort.
 

@@ -27,8 +27,8 @@ Display one or a list of Gloo resources
 
 ### SEE ALSO
 
-* [glooctl](glooctl)	 - CLI for Gloo
-* [glooctl get proxy](glooctl_get_proxy)	 - read a proxy or list proxies in a namespace
-* [glooctl get upstream](glooctl_get_upstream)	 - read an upstream or list upstreams in a namespace
-* [glooctl get virtualservice](glooctl_get_virtualservice)	 - read a virtualservice or list virtualservices in a namespace
+* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl get proxy](../glooctl_get_proxy)	 - read a proxy or list proxies in a namespace
+* [glooctl get upstream](../glooctl_get_upstream)	 - read an upstream or list upstreams in a namespace
+* [glooctl get virtualservice](../glooctl_get_virtualservice)	 - read a virtualservice or list virtualservices in a namespace
 
