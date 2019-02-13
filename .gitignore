@@ -4,5 +4,6 @@ _output
 site
 .firebase
 
+themes
 install/gloo.yaml
 _index.md
