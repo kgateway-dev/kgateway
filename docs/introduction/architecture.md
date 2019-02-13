@@ -14,7 +14,7 @@ weight: 2
 
 Gloo aggregates back end services and provides function-to-function translation for clients, allowing decoupling from back end APIs
 
-![Overview](gloo_diagram.png "High Level Architecture")
+![Overview](../gloo_diagram.png "High Level Architecture")
 
 Clients issue requests or [emit events](https://github.com/solo-io/gloo-sdk-go) to routes defined on Gloo. These routes are mapped
 to functions on upstream services by Gloo's configuration (provided by clients of Gloo's API). 
@@ -46,7 +46,7 @@ In the most basic sense, Gloo is a translation engine and [Envoy xDS server](htt
 updates and responding immediately with v2 gRPC updates to Envoy. 
 
 
-![Component Architecture](component_architecture.png "Component Architecture")
+![Component Architecture](../component_architecture.png "Component Architecture")
 
 * The **Config Watcher** watches the storage layer for updates to user configuration objects ([Upstreams](concepts.md#Upstreams) and [Virtual Services](concepts.md#Virtual Services))
 * The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the [AWS Lambda Plugin](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk.md))
@@ -86,7 +86,7 @@ Gloo is supported by a suite of optional discovery services that automatically d
 gloo with upstreams and functions to simplify routing for users and self-service.  
 
 
-![Discovery Architecture](discovery_architecture.png "Discovery Architecture")
+![Discovery Architecture](../discovery_architecture.png "Discovery Architecture")
 
 Discovery services act as automated Gloo clients, automatically populating the storage layer with upstreams and functions
 to facilitate easy routing for users.
