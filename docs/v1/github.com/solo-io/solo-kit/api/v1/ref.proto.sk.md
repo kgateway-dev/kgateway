@@ -1,6 +1,6 @@
 
 ---
-title: "ref.proto.sk.md"
+title: "ref.proto"
 weight: 5
 ---
 

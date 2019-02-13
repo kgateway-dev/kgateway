@@ -1,6 +1,6 @@
 
 ---
-title: "fault.proto.sk.md"
+title: "fault.proto"
 weight: 5
 ---
 

@@ -1,6 +1,6 @@
 
 ---
-title: "rest.proto.sk.md"
+title: "rest.proto"
 weight: 5
 ---
 

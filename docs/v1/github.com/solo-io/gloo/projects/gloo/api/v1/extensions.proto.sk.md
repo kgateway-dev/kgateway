@@ -1,6 +1,6 @@
 
 ---
-title: "extensions.proto.sk.md"
+title: "extensions.proto"
 weight: 5
 ---
 

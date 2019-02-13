@@ -1,6 +1,6 @@
 
 ---
-title: "grpc.proto.sk.md"
+title: "grpc.proto"
 weight: 5
 ---
 

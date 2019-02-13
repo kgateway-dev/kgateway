@@ -1,6 +1,6 @@
 
 ---
-title: "filter.proto.sk.md"
+title: "filter.proto"
 weight: 5
 ---
 

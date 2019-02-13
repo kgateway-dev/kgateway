@@ -1,6 +1,6 @@
 
 ---
-title: "secret.proto.sk.md"
+title: "secret.proto"
 weight: 5
 ---
 

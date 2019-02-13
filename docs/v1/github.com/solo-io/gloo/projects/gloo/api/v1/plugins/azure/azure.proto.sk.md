@@ -1,6 +1,6 @@
 
 ---
-title: "azure.proto.sk.md"
+title: "azure.proto"
 weight: 5
 ---
 

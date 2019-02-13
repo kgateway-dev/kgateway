@@ -1,6 +1,6 @@
 
 ---
-title: "endpoint.proto.sk.md"
+title: "endpoint.proto"
 weight: 5
 ---
 

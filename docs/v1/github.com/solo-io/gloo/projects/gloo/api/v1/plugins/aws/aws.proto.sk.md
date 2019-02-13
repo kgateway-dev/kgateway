@@ -1,6 +1,6 @@
 
 ---
-title: "aws.proto.sk.md"
+title: "aws.proto"
 weight: 5
 ---
 

@@ -1,6 +1,6 @@
 
 ---
-title: "service.proto.sk.md"
+title: "service.proto"
 weight: 5
 ---
 

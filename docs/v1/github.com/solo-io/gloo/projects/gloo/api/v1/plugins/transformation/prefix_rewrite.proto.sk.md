@@ -1,6 +1,6 @@
 
 ---
-title: "prefix_rewrite.proto.sk.md"
+title: "prefix_rewrite.proto"
 weight: 5
 ---
 

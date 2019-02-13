@@ -1,6 +1,6 @@
 
 ---
-title: "artifact.proto.sk.md"
+title: "artifact.proto"
 weight: 5
 ---
 

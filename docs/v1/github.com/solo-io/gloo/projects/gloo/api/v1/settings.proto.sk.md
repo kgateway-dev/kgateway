@@ -1,6 +1,6 @@
 
 ---
-title: "settings.proto.sk.md"
+title: "settings.proto"
 weight: 5
 ---
 

@@ -1,6 +1,6 @@
 
 ---
-title: "virtual_service.proto.sk.md"
+title: "virtual_service.proto"
 weight: 5
 ---
 

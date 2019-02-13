@@ -1,6 +1,6 @@
 
 ---
-title: "plugins.proto.sk.md"
+title: "plugins.proto"
 weight: 5
 ---
 

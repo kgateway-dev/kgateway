@@ -1,6 +1,6 @@
 
 ---
-title: "upstream.proto.sk.md"
+title: "upstream.proto"
 weight: 5
 ---
 

@@ -1,6 +1,6 @@
 
 ---
-title: "kubernetes.proto.sk.md"
+title: "kubernetes.proto"
 weight: 5
 ---
 

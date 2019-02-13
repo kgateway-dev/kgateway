@@ -1,6 +1,6 @@
 
 ---
-title: "duration.proto.sk.md"
+title: "duration.proto"
 weight: 5
 ---
 

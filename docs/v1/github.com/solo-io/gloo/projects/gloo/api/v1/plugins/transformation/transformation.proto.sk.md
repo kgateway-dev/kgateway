@@ -1,6 +1,6 @@
 
 ---
-title: "transformation.proto.sk.md"
+title: "transformation.proto"
 weight: 5
 ---
 

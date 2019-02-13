@@ -1,6 +1,6 @@
 
 ---
-title: "ingress.proto.sk.md"
+title: "ingress.proto"
 weight: 5
 ---
 

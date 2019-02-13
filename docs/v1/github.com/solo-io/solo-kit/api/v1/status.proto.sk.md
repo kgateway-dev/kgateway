@@ -1,6 +1,6 @@
 
 ---
-title: "status.proto.sk.md"
+title: "status.proto"
 weight: 5
 ---
 

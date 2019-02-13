@@ -1,6 +1,6 @@
 
 ---
-title: "gateway.solo.io.project.sk.md"
+title: "gateway.solo.io.project"
 weight: 5
 ---
 

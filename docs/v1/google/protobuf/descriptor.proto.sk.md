@@ -1,6 +1,6 @@
 
 ---
-title: "descriptor.proto.sk.md"
+title: "descriptor.proto"
 weight: 5
 ---
 

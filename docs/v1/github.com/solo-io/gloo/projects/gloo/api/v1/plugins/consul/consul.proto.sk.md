@@ -1,6 +1,6 @@
 
 ---
-title: "consul.proto.sk.md"
+title: "consul.proto"
 weight: 5
 ---
 

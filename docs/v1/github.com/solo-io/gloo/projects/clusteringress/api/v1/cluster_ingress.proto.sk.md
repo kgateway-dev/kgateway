@@ -1,6 +1,6 @@
 
 ---
-title: "cluster_ingress.proto.sk.md"
+title: "cluster_ingress.proto"
 weight: 5
 ---
 

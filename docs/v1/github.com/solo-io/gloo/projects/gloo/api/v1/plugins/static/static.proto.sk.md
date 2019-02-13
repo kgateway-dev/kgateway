@@ -1,6 +1,6 @@
 
 ---
-title: "static.proto.sk.md"
+title: "static.proto"
 weight: 5
 ---
 

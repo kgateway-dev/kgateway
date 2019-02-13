@@ -1,6 +1,6 @@
 
 ---
-title: "solo-kit.proto.sk.md"
+title: "solo-kit.proto"
 weight: 5
 ---
 

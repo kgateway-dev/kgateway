@@ -1,6 +1,6 @@
 
 ---
-title: "proxy.proto.sk.md"
+title: "proxy.proto"
 weight: 5
 ---
 

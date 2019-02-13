@@ -1,6 +1,6 @@
 
 ---
-title: "struct.proto.sk.md"
+title: "struct.proto"
 weight: 5
 ---
 

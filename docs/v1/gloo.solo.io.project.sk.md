@@ -1,6 +1,6 @@
 
 ---
-title: "gloo.solo.io.project.sk.md"
+title: "gloo.solo.io.project"
 weight: 5
 ---
 

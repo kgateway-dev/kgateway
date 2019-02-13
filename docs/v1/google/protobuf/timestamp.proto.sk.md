@@ -1,6 +1,6 @@
 
 ---
-title: "timestamp.proto.sk.md"
+title: "timestamp.proto"
 weight: 5
 ---
 

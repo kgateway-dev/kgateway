@@ -1,6 +1,6 @@
 
 ---
-title: "retries.proto.sk.md"
+title: "retries.proto"
 weight: 5
 ---
 

@@ -1,6 +1,6 @@
 
 ---
-title: "wrappers.proto.sk.md"
+title: "wrappers.proto"
 weight: 5
 ---
 

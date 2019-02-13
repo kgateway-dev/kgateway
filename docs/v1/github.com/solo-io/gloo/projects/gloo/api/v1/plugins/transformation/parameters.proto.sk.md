@@ -1,6 +1,6 @@
 
 ---
-title: "parameters.proto.sk.md"
+title: "parameters.proto"
 weight: 5
 ---
 

@@ -1,6 +1,6 @@
 
 ---
-title: "gateway.proto.sk.md"
+title: "gateway.proto"
 weight: 5
 ---
 

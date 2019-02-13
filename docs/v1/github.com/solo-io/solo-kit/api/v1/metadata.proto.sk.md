@@ -1,6 +1,6 @@
 
 ---
-title: "metadata.proto.sk.md"
+title: "metadata.proto"
 weight: 5
 ---
 

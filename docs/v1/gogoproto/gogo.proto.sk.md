@@ -1,6 +1,6 @@
 
 ---
-title: "gogo.proto.sk.md"
+title: "gogo.proto"
 weight: 5
 ---
 
