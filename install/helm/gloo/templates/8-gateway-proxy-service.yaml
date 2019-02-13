@@ -10,7 +10,7 @@ metadata:
 spec:
   ports:
   - port: {{ .Values.gatewayProxy.service.httpPort }}
-    targetPort: {{ .Values.gatewayProxy.deployment.httpsPort }}
+    targetPort: {{ .Values.gatewayProxy.deployment.httpPort }}
     protocol: TCP
     name: http
   - port: {{ .Values.gatewayProxy.service.httpsPort }}
