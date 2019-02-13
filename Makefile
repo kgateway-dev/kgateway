@@ -69,7 +69,7 @@ $(OUTPUT_DIR)/.generated-code:
 	# add front matter for docs
 	for f in $$(find docs/v1/ -name "*.md" -not -name README.md); do fnosuffix=$${f%".sk.md"}; echo -e "---\ntitle: \"$$(basename $$fnosuffix |tr '._' ' ')\"\nweight: 5\n---\n$$(cat $$f)" > $$f ;done
 	# we are gloo
-	cp docs/v1/gloo.solo.io.project.sk.md docs/v1/README.md
+	cp docs/v1/gloo.solo.io.project.sk.md docs/v1/_index.md
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
 
