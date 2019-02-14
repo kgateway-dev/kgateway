@@ -26,7 +26,8 @@ Blogs & Demos
 
 Community
 -----
-Join us on our slack channel: [https://slack.solo.io/](https://slack.solo.io/)
+- Join us on our Slack channel: [https://slack.solo.io/](https://slack.solo.io/)
+- Follow us on Twitter: [https://twitter.com/soloio_inc](https://twitter.com/soloio_inc)
 
 ---
 
