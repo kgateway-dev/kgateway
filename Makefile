@@ -70,8 +70,6 @@ $(OUTPUT_DIR)/.generated-code:
 	touch $@
 
 site: docs/cli/glooctl.md
-	# add front matter to generated docs
-	find docs/cli docs/v1 -name "*.md"
 	if [ ! -d themes ]; then  git clone https://github.com/matcornic/hugo-theme-learn.git themes/hugo-theme-learn; fi
 	hugo --config docs.toml
 
