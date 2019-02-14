@@ -9,8 +9,7 @@
 Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generation API gateway. Gloo is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist. 
 
 
-[**Installation**](docs/installation/_index.md) &nbsp; |
-&nbsp; [**Developers**](docs/dev/_index.md) &nbsp; |
+[**Installation**](https://gloo.solo.io/installation/) &nbsp; |
 &nbsp; [**Documentation**](https://gloo.solo.io) &nbsp; |
 &nbsp; [**Blog**](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600) &nbsp; |
 &nbsp; [**Slack**](https://slack.solo.io) &nbsp; |
@@ -22,7 +21,6 @@ Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generatio
 
 - [**Using Gloo**](#using-gloo)
 - [**What makes Gloo unique**](#what-makes-gloo-unique)
-- [**Features**](#features)
 
 
 ## Using Gloo
@@ -37,70 +35,12 @@ Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generatio
 - **Full automated discovery lets users move fast**: Upon launch, Gloo creates a catalog of all available destinations, and continuously maintains it up to date. This takes the responsibility for 'bookkeeping' away from the developers, and guarantees that new feature become available as soon as they are ready. Gloo discovers across IaaS, PaaS and FaaS providers, as well as Swagger, gRPC, and GraphQL. 
 - **Gloo integrates intimately with the user's environment**: with Gloo, users are free to choose their favorite tools for scheduling (such as K8s, Nomad, OpenShift, etc), persistence (K8s, Consul, etcd, etc) and security (K8s, Vault). 
 
-    
-## Features
 
-**Supported Platforms**:
-
-- Kubernetes
-
-- HashiCorp Stack (Vault, Consul, Nomad)
-
-- AWS Lambda
-
-- Knative
-
-- Microsoft Azure Functions
-
-- Google Cloud Platform Functions
-
-**Routing Features**:
-
-- **Dynamic Load Balancing**: Load balance traffic across multiple upstream services.
-
-- **Health Checks**: Active and passive monitoring of your upstream services.
-
-- **OpenTracing**: Monitor requests using the well-supported OpenTracing standard
-
-- **Monitoring**: Export HTTP metrics to Prometheus or Statsd
-
-- **SSL**: Highly customizable options for adding SSL encryption to upstream services with full support for SNI.
-
-- **Transformations**: Add, remove, or manipulate HTTP requests and responses.
-
-- **Automated API Translation**: Automatically transform client requests to upstream API calls using Gloo’s Function Discovery
-
-- **CLI**: Control your Gloo cluster from the command line.
-
-- **Declarative API**: Gloo features a declarative YAML-based API; store your configuration as code and commit it with your projects.
-
-- **Failure Recovery**: Gloo is completely stateless and will immediately return to the desired configuration at boot time.
-
-- **Scalability**: Gloo acts as a control plane for Envoy, allowing Envoy instances and Gloo instances to be scaled independently. Both Gloo and Envoy are stateless.
-
-- **Performance**: Gloo leverages Envoy for its high performance and low footprint.
-
-- **Plugins**: Extendable architecture for adding functionality and integrations to Gloo.
-
-- **Tooling**: Build and Deployment tool for customized builds and deployment options
-
-- **Events**: Invoke APIs using CloudEvents.
-
-- **Pub/Sub**: Publish HTTP requests to NATS
-
-- **JSON-to-gRPC transcoding**: Connect JSON clients to gRPC services
-
-Blogs & Demos
------
-- [Announcement Blog](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600)
-- [Building hybrid app demo](https://www.youtube.com/watch?time_continue=1&v=ISR3G0CAZM0)
-
-
-Community
------
-Join us on our slack channel: [https://slack.solo.io/](https://slack.solo.io/)
-
----
+## Next Steps
+- Join us on our slack channel: [https://slack.solo.io/](https://slack.solo.io/)
+- Follow us on Twitter: [https://twitter.com/soloio_inc](https://twitter.com/soloio_inc)
+- Check out the docs: [https://gloo.solo.io](https://gloo.solo.io)
+- Check out the code and contribute: [Contribution Guide](docs/dev/CONTRIBUTING.md)
 
 ### Thanks
 
