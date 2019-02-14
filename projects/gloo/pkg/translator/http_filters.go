@@ -14,13 +14,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 )
 
-func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, listener *v1.HttpListener, rdsName string, report reportFunc) envoylistener.Filter {
-	httpFilters := t.computeHttpFilters(params, listener, report)
-	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
+const webSocketUpgradeType = "websocket"
 
-	httpConnMgr := &envoyhttp.HttpConnectionManager{
+func NewHttpConnectionManager(httpFilters []*envoyhttp.HttpFilter, rdsName string) *envoyhttp.HttpConnectionManager {
+	return &envoyhttp.HttpConnectionManager{
 		CodecType:  envoyhttp.AUTO,
 		StatPrefix: "http",
+		UpgradeConfigs: []*envoyhttp.HttpConnectionManager_UpgradeConfig{{
+			UpgradeType: webSocketUpgradeType,
+		}},
 		RouteSpecifier: &envoyhttp.HttpConnectionManager_Rds{
 			Rds: &envoyhttp.Rds{
 				ConfigSource: envoycore.ConfigSource{
@@ -33,6 +35,13 @@ func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, l
 		},
 		HttpFilters: httpFilters,
 	}
+}
+
+func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, listener *v1.HttpListener, rdsName string, report reportFunc) envoylistener.Filter {
+	httpFilters := t.computeHttpFilters(params, listener, report)
+	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
+
+	httpConnMgr := NewHttpConnectionManager(httpFilters, rdsName)
 
 	httpConnMgrCfg, err := envoyutil.MessageToStruct(httpConnMgr)
 	if err != nil {
