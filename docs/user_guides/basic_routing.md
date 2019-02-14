@@ -13,7 +13,7 @@ API Gateways can route incoming traffic to backend services. Gloo can automatica
 
 ### Steps
 
-1. The Gloo Gateway [installed](../installation/_index.md) and running on Kubernetes. 
+1. The Gloo Gateway [installed](../installation/_index) and running on Kubernetes. 
  
 1. Next, deploy the Pet Store app to kubernetes:
 
@@ -195,4 +195,4 @@ Let's verify this:
         [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
         
         
-Great! our gateway is up and running. Let's make things a bit more sophisticated in the next section with [Function Routing](function_routing.md).
+Great! our gateway is up and running. Let's make things a bit more sophisticated in the next section with [Function Routing](../function_routing).

@@ -13,7 +13,7 @@ written with the annotation `kubernetes.io/ingress.class: gloo`.
 
 ### Steps
 
-1. The Gloo Ingress [installed](../installation/_index.md) and running on Kubernetes. 
+1. The Gloo Ingress [installed](../../installation) and running on Kubernetes. 
  
 1. Next, deploy the Pet Store app to kubernetes:
 

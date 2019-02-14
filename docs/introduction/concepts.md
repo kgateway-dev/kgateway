@@ -24,7 +24,7 @@ The two top-level concepts in Gloo are **Virtual Services** and **Upstreams**.
 Route rules consist of a *matcher*, which specifies the kind of function calls to match (requests and events,  are currently supported), and the name of the destination (or destinations) to route them to.
 
 - **Upstreams** define destinations for routes. Upstreams tell Gloo what to route to. Upstreams may also define 
-[functions](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk.md#LambdaFunctionSpec) and [service specs](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto.sk.md) for *function-level routing*.
+[functions](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk#LambdaFunctionSpec) and [service specs](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto) for *function-level routing*.
 
 
 
@@ -129,10 +129,10 @@ types as well as new function types through our plugin interface.
 how to handle routing for the upstream based on its `spec` field. Upstreams have a type-specific `spec` field which must 
 be used to provide routing information to Gloo.
 
-The most basic upstream type is the [`static` upstream type](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto.sk.md), which tells Gloo
+The most basic upstream type is the [`static` upstream type](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto.sk), which tells Gloo
 a list of static hosts or dns names logically grouped together for an upstream. 
 More sophisticated upstream types include the kubernetes upstream and the 
-[AWS Lambda upstream](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk.md).
+[AWS Lambda upstream](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk).
 
 Let's walk through an example of a kubernetes upstream in order to understand how this works.
 
@@ -217,7 +217,7 @@ section.
 
 ### Secrets
 
-Certain plugins such as the [AWS Lambda Plugin](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk.md) require the use of secrets for authentication,
+Certain plugins such as the [AWS Lambda Plugin](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk) require the use of secrets for authentication,
 configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
 
 Gloo runs an independent (goroutine) controller to monitor secrets. Secrets are stored in their own secret storage layer.

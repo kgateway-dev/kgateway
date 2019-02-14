@@ -14,7 +14,7 @@ using Gloo as your Knative Cluster Ingress.
 
 ### Steps
 
-1. First, deploy the Gloo Cluster Ingress and Knative [installed](../installation/_index.md) on Kubernetes. Knative can be deployed 
+1. First, deploy the Gloo Cluster Ingress and Knative [installed](../../installation) on Kubernetes. Knative can be deployed 
 independently, or using `glooctl install knative`.
  
  

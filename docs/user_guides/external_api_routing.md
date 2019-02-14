@@ -10,11 +10,11 @@ In this tutorial, we'll take a look at routing to services that live outside of 
 
 ### What you'll need
 
-You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the [Gloo installation](../installation/_index.md) for guidance on installing Gloo into Kubernetes. 
+You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the [Gloo installation](../../installation) for guidance on installing Gloo into Kubernetes. 
 
 You'll also need access from the Kubernetes cluster to an external API. You can use whichever external API you wish; we'll use an API called [JSONPlaceholder](https://jsonplaceholder.typicode.com) which simulates a REST API for basic testing. 
 
-To route to an external API, we need to first create a Gloo [upstream](../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md). A quick recap will show that a Gloo upstream is a network entry (think _host:port_) in the Gloo service catalog (or ["cluster" as Envoy proxy calls it](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager)). We'll use [glooctl create upstream](../cli/README.md#create-upstreams) command to do this:
+To route to an external API, we need to first create a Gloo [upstream](../../v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk). A quick recap will show that a Gloo upstream is a network entry (think _host:port_) in the Gloo service catalog (or ["cluster" as Envoy proxy calls it](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager)). We'll use [glooctl create upstream](../../cli/glooctl_create_upstream) command to do this:
 
         glooctl create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80
                
@@ -28,7 +28,7 @@ To route to an external API, we need to first create a Gloo [upstream](../v1/git
         +--------------------+--------+---------+---------------------------------+
         
         
-In this case, we created a `static` upstream which means this is not something Gloo dynamically discovered on its own using its powerful upstream and function discovery mechanisms but rather that we added it explicitly. Feel free to explore the other `glooctl create upstream` options to creat additional upstream entries.         
+In this case, we created a `static` upstream which means this is not something Gloo dynamically discovered on its own using its powerful upstream and function discovery mechanisms but rather that we added it explicitly. Feel free to explore the other `glooctl create upstream` options to create additional upstream entries.         
 
 Gloo should now know about our `jsonplaceholder` upstream. To verify run `glooctl get upstream -n default` and notice the `Status` column:
 
@@ -47,7 +47,7 @@ Gloo should now know about our `jsonplaceholder` upstream. To verify run `glooct
         
 Note that we explicitly specified the namespace otherwise `glooctl` would default to the `gloo-system` namespace.
 
-Let's add a route like we did in the [basic routing tutorial](basic_routing.md) to route incoming traffic from `/api/posts` to our new jsonplaceholder upstream:
+Let's add a route like we did in the [basic routing tutorial](../basic_routing) to route incoming traffic from `/api/posts` to our new jsonplaceholder upstream:
 
         
         glooctl add route \

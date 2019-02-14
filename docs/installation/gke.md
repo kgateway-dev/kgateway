@@ -39,7 +39,7 @@ To find the address of your Gloo, go to the *Services* tab of your GKE, add `nam
 
 For Example:
 
-![gke services](../getting_started/gke.png "GKE Services")
+![gke services](../gke.png "GKE Services")
 
 *NOTE:* You might not see see the address in the endpoint column immediately, as provisioning the cloud load balancer can take around 10 minutes. Try waiting a few minutes, and clicking the REFRESH link on the top of the page. 
 
