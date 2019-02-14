@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("HttpFilters", func() {
 
-	It("should we have webscoket upgrade config", func() {
+	It("should have websocket upgrade config", func() {
 		hcm := NewHttpConnectionManager(nil, "rds")
 		Expect(hcm.UpgradeConfigs).To(HaveLen(1))
 		Expect(hcm.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
