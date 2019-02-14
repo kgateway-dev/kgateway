@@ -41,6 +41,7 @@ Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generatio
 - Follow us on Twitter: [https://twitter.com/soloio_inc](https://twitter.com/soloio_inc)
 - Check out the docs: [https://gloo.solo.io](https://gloo.solo.io)
 - Check out the code and contribute: [Contribution Guide](docs/dev/CONTRIBUTING.md)
+- Contribute to the [Docs](SITE.md)
 
 ### Thanks
 

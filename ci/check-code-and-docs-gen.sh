@@ -36,6 +36,6 @@ fi
 
 make site
 if [[ $? -ne 0 ]]; then
-  echo "Generating the site failed, check for warnings in the mkdocs build log"
+  echo "Generating the site failed, check for warnings in the Hugo build log"
   exit 1;
 fi
