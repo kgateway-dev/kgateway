@@ -46,22 +46,17 @@ home = [ "HTML", "JSON"]
   # Change default color scheme with a variant one. Can be "red", "blue", "green".
   themeVariant = "blue"
 
-  [[menu.shortcuts]] 
-name = "<i class='fab fa-github'></i> Github repo"
+[[menu.shortcuts]]
+name = "<i class='fab fa-github'></i> Github Repo"
 identifier = "ds"
 url = "https://github.com/solo-io/gloo"
 weight = 10
 
-# [[menu.shortcuts]]
-# name = "<i class='fas fa-camera'></i> Showcases"
-# url = "/showcase"
-# weight = 11
-
-# [[menu.shortcuts]]
-# name = "<i class='fas fa-bookmark'></i> Hugo Documentation"
-# identifier = "hugodoc"
-# url = "https://gohugo.io/"
-# weight = 20
+ [[menu.shortcuts]]
+ name = "<i class='fas fa-bookmark'></i> Solo.io Homepage"
+ identifier = "soloio"
+ url = "https://solo.io/"
+ weight = 20
 
 # [[menu.shortcuts]]
 # name = "<i class='fas fa-bullhorn'></i> Credits"
