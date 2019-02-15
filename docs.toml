@@ -19,7 +19,8 @@ home = [ "HTML", "JSON"]
   # Prefix URL to edit current page. Will display an "Edit this page" button on top right hand corner of every page. 
   # Useful to give opportunity to people to create merge request for your doc.
   # See the config.toml file from this documentation site to have an example.
-  editURL = "https://github.com/solo-io/gloo/tree/master/docs/"
+  # editURL = "https://github.com/solo-io/gloo/tree/master/docs/"
+  
   # Author of the site, will be used in meta information
   author = ""
   # Description of the site, will be used in meta information
