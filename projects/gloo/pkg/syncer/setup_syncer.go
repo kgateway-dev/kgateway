@@ -10,6 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -162,23 +163,8 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if writeNamespace == "" {
 		writeNamespace = defaults.GlooSystem
 	}
-	watchNamespaces := settings.WatchNamespaces
-	if len(watchNamespaces) == 0 {
-		watchNamespaces, err = bootstrap.ListAllNamespaces(cfg)
-		if err != nil {
-			return err
-		}
-	}
-	var writeNamespaceProvided bool
-	for _, ns := range watchNamespaces {
-		if ns == writeNamespace {
-			writeNamespaceProvided = true
-			break
-		}
-	}
-	if !writeNamespaceProvided {
-		watchNamespaces = append(watchNamespaces, writeNamespace)
-	}
+	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
+
 	empty := bootstrap.ControlPlane{}
 
 	if settings.BindAddr != s.previousBindAddr {
