@@ -1,7 +1,10 @@
 package bootstrap
 
 import (
+	"context"
 	"path/filepath"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -54,11 +57,13 @@ func ConfigFactoryForSettings(settings *v1.Settings,
 }
 
 // sharedCach OR resourceCrd+cfg must be non-nil
-func SecretFactoryForSettings(settings *v1.Settings,
+func SecretFactoryForSettings(ctx context.Context,
+	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
-	pluralName string,
 	cfg **rest.Config,
-	clientset *kubernetes.Interface) (factory.ResourceClientFactory, error) {
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache,
+	pluralName string) (factory.ResourceClientFactory, error) {
 	if settings.SecretSource == nil {
 		if sharedCache == nil {
 			return nil, errors.Errorf("internal error: shared cache cannot be nil")
@@ -70,23 +75,12 @@ func SecretFactoryForSettings(settings *v1.Settings,
 
 	switch source := settings.SecretSource.(type) {
 	case *v1.Settings_KubernetesSecretSource:
-		if cfg == nil {
-			c, err := kubeutils.GetConfig("", "")
-			if err != nil {
-				return nil, err
-			}
-			*cfg = c
-		}
-
-		if *clientset == nil {
-			cs, err := kubernetes.NewForConfig(*cfg)
-			if err != nil {
-				return nil, err
-			}
-			*clientset = cs
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache); err != nil {
+			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return &factory.KubeSecretClientFactory{
 			Clientset: *clientset,
+			Cache:     *kubeCoreCache,
 		}, nil
 	case *v1.Settings_VaultSecretSource:
 		return nil, errors.Errorf("vault configuration not implemented")
@@ -99,11 +93,13 @@ func SecretFactoryForSettings(settings *v1.Settings,
 }
 
 // sharedCach OR resourceCrd+cfg must be non-nil
-func ArtifactFactoryForSettings(settings *v1.Settings,
+func ArtifactFactoryForSettings(ctx context.Context,
+	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
-	pluralName string,
 	cfg **rest.Config,
-	clientset *kubernetes.Interface) (factory.ResourceClientFactory, error) {
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache,
+	pluralName string) (factory.ResourceClientFactory, error) {
 	if settings.SecretSource == nil {
 		if sharedCache == nil {
 			return nil, errors.Errorf("internal error: shared cache cannot be nil")
@@ -115,23 +111,12 @@ func ArtifactFactoryForSettings(settings *v1.Settings,
 
 	switch source := settings.ArtifactSource.(type) {
 	case *v1.Settings_KubernetesArtifactSource:
-		if cfg == nil {
-			c, err := kubeutils.GetConfig("", "")
-			if err != nil {
-				return nil, err
-			}
-			*cfg = c
-		}
-
-		if clientset == nil {
-			cs, err := kubernetes.NewForConfig(*cfg)
-			if err != nil {
-				return nil, err
-			}
-			*clientset = cs
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache); err != nil {
+			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return &factory.KubeSecretClientFactory{
 			Clientset: *clientset,
+			Cache:     *kubeCoreCache,
 		}, nil
 	case *v1.Settings_DirectoryArtifactSource:
 		return &factory.FileResourceClientFactory{
@@ -155,4 +140,32 @@ func ListAllNamespaces(cfg *rest.Config) ([]string, error) {
 		namespaces = append(namespaces, ns.Name)
 	}
 	return namespaces, nil
+}
+
+func initializeForKube(ctx context.Context,
+	cfg **rest.Config,
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache) error {
+	if cfg == nil {
+		c, err := kubeutils.GetConfig("", "")
+		if err != nil {
+			return err
+		}
+		*cfg = c
+	}
+
+	if *clientset == nil {
+		cs, err := kubernetes.NewForConfig(*cfg)
+		if err != nil {
+			return err
+		}
+		*clientset = cs
+	}
+
+	if *kubeCoreCache == nil {
+		*kubeCoreCache = cache.NewKubeCoreCache(ctx, *clientset)
+	}
+
+	return nil
+
 }

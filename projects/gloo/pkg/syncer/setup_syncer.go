@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	"github.com/gogo/protobuf/types"
@@ -97,8 +99,9 @@ func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, start bool) b
 
 func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
 	var (
-		cfg       *rest.Config
-		clientset kubernetes.Interface
+		cfg           *rest.Config
+		clientset     kubernetes.Interface
+		kubeCoreCache corecache.KubeCoreCache
 	)
 
 	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(
@@ -124,22 +127,26 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 
 	secretFactory, err := bootstrap.SecretFactoryForSettings(
+		ctx,
 		settings,
 		memCache,
-		v1.SecretCrd.Plural,
 		&cfg,
 		&clientset,
+		&kubeCoreCache,
+		v1.SecretCrd.Plural,
 	)
 	if err != nil {
 		return err
 	}
 
 	artifactFactory, err := bootstrap.ArtifactFactoryForSettings(
+		ctx,
 		settings,
 		memCache,
-		v1.ArtifactCrd.Plural,
 		&cfg,
 		&clientset,
+		&kubeCoreCache,
+		v1.ArtifactCrd.Plural,
 	)
 	if err != nil {
 		return err

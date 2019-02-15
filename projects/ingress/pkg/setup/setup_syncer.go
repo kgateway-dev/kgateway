@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+
 	"github.com/gogo/protobuf/types"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
@@ -30,8 +32,9 @@ import (
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
-		cfg       *rest.Config
-		clientset kubernetes.Interface
+		cfg           *rest.Config
+		clientset     kubernetes.Interface
+		kubeCoreCache cache.KubeCoreCache
 	)
 	proxyFactory, err := bootstrap.ConfigFactoryForSettings(
 		settings,
@@ -56,11 +59,13 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 
 	secretFactory, err := bootstrap.SecretFactoryForSettings(
+		ctx,
 		settings,
 		inMemoryCache,
-		gloov1.SecretCrd.Plural,
 		&cfg,
 		&clientset,
+		&kubeCoreCache,
+		gloov1.SecretCrd.Plural,
 	)
 	if err != nil {
 		return err
