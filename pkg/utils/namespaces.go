@@ -1,11 +1,18 @@
 package utils
 
-func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []string {
+func AllNamespaces(watchNamespaces []string) bool {
 
 	if len(watchNamespaces) == 0 {
-		return watchNamespaces
+		return true
 	}
 	if len(watchNamespaces) == 1 && watchNamespaces[0] == "" {
+		return true
+	}
+	return false
+}
+
+func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []string {
+	if AllNamespaces(watchNamespaces) {
 		return watchNamespaces
 	}
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 
+	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -86,8 +87,10 @@ func convertServices(ctx context.Context, watchNamespaces []string, services []*
 			continue
 		}
 
-		if !containsString(svc.Namespace, watchNamespaces) {
-			continue
+		if !utils.AllNamespaces(watchNamespaces) {
+			if !containsString(svc.Namespace, watchNamespaces) {
+				continue
+			}
 		}
 
 		upstreams = append(upstreams, upstreamsForService(ctx, svc, pods, writeNamespace)...)
