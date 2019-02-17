@@ -21,6 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -144,20 +145,27 @@ var _ = Describe("Happypath", func() {
 		})
 
 		var (
-			namespace  string
-			cfg        *rest.Config
-			kubeClient kubernetes.Interface
-			svc        *kubev1.Service
+			namespace      string
+			writeNamespace string
+			cfg            *rest.Config
+			kubeClient     kubernetes.Interface
+			svc            *kubev1.Service
 		)
 
 		BeforeEach(func() {
-			namespace = "gloo-e2e-" + helpers.RandString(8)
-			err := setup.SetupKubeForTest(namespace)
-			Expect(err).NotTo(HaveOccurred())
+			var err error
 			cfg, err = kubeutils.GetConfig("", "")
 			Expect(err).NotTo(HaveOccurred())
 			kubeClient, err = kubernetes.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		prepNamespace := func() {
+			namespace = "gloo-e2e-" + helpers.RandString(8)
+
+			err := setup.SetupKubeForTest(namespace)
+			Expect(err).NotTo(HaveOccurred())
+
 			svc, err = kubeClient.CoreV1().Services(namespace).Create(&kubev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace,
@@ -189,49 +197,91 @@ var _ = Describe("Happypath", func() {
 				}},
 			})
 			Expect(err).NotTo(HaveOccurred())
+		}
 
-			testClients = services.RunGatewayWithNamespaceAndKubeClient(ctx, true, namespace, kubeClient)
-			role := namespace + "~proxy"
-			err = envoyInstance.RunWithRole(role, testClients.GlooPort)
-			Expect(err).NotTo(HaveOccurred())
-
-		})
 		AfterEach(func() {
-			setup.TeardownKube(namespace)
+			if namespace != "" {
+				setup.TeardownKube(namespace)
+			}
 		})
 
-		It("should not crash", func() {
-
-			getupstream := func() (*gloov1.Upstream, error) {
-				l, err := testClients.UpstreamClient.List(namespace, clients.ListOpts{})
-				if err != nil {
-					return nil, err
-				}
-				for _, u := range l {
-					if u.Status.State == core.Status_Pending {
-						continue
-					}
-					if strings.Contains(u.Metadata.Name, svc.Name) {
-						Expect(u.Status.State).To(Equal(core.Status_Accepted))
-						return u, nil
-					}
-				}
-				return nil, nil
+		getupstream := func() (*gloov1.Upstream, error) {
+			l, err := testClients.UpstreamClient.List(writeNamespace, clients.ListOpts{})
+			if err != nil {
+				return nil, err
 			}
+			for _, u := range l {
+				if strings.Contains(u.Metadata.Name, svc.Name) && strings.Contains(u.Metadata.Name, svc.Namespace) {
+					return u, nil
+				}
+			}
+			return nil, fmt.Errorf("not found")
+		}
+		getstatus := func() (core.Status_State, error) {
+			u, err := getupstream()
+			if err != nil {
+				return core.Status_Pending, err
+			}
+			return u.Status.State, nil
+		}
 
-			Eventually(getupstream, "30s", "0.5s").ShouldNot(BeNil())
+		Context("specific namespace", func() {
 
-			up, err := getupstream()
-			Expect(err).NotTo(HaveOccurred())
+			BeforeEach(func() {
+				prepNamespace()
+				writeNamespace = namespace
+				ro := &services.RunOptions{
+					NsToWrite: writeNamespace,
+					NsToWatch: []string{"default", namespace},
+					WhatToRun: services.What{
+						DisableGateway: true,
+					},
+					KubeClient: kubeClient,
+				}
 
-			proxycli := testClients.ProxyClient
-			proxy := getTrivialProxyForUpstream(namespace, envoyPort, up.Metadata.Ref())
-			var opts clients.WriteOpts
-			_, err = proxycli.Write(proxy, opts)
-			Expect(err).NotTo(HaveOccurred())
+				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+				role := namespace + "~proxy"
+				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
+				Expect(err).NotTo(HaveOccurred())
+			})
 
-			TestUpstremReachable()
+			It("should discover service", func() {
+				Eventually(getstatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 
+				up, err := getupstream()
+				Expect(err).NotTo(HaveOccurred())
+
+				proxycli := testClients.ProxyClient
+				proxy := getTrivialProxyForUpstream(namespace, envoyPort, up.Metadata.Ref())
+				var opts clients.WriteOpts
+				_, err = proxycli.Write(proxy, opts)
+				Expect(err).NotTo(HaveOccurred())
+
+				TestUpstremReachable()
+			})
+		})
+
+		Context("all namespaces", func() {
+			BeforeEach(func() {
+				writeNamespace = defaults.GlooSystem
+				ro := &services.RunOptions{
+					NsToWrite: writeNamespace,
+					NsToWatch: []string{},
+					WhatToRun: services.What{
+						DisableGateway: true,
+					},
+					KubeClient: kubeClient,
+				}
+
+				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+
+				prepNamespace()
+			})
+
+			It("watch all namespaces", func() {
+				//Eventually(getstatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
+				Eventually(getupstream, "10s", "0.5s").ShouldNot(BeNil())
+			})
 		})
 
 	})
