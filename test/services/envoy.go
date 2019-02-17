@@ -84,12 +84,6 @@ admin:
       address: 0.0.0.0
       port_value: {{.AdminPort}}
 
-{{if .RatelimitAddr}}
-rate_limit_service:
-  grpc_service:
-    envoy_grpc:
-      cluster_name: ratelimit_cluster
-{{end}}
 `
 
 var parsedTemplate = template.Must(template.New("bootstrap").Parse(envoyConfigTemplate))
