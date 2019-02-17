@@ -2,6 +2,7 @@ package setuputils
 
 import (
 	"flag"
+	"os"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -19,6 +20,10 @@ func (i *arrayFlags) Set(value string) error {
 	return nil
 }
 
+const (
+	MY_POD_NAMESPACE = "MY_POD_NAMESPACE"
+)
+
 var (
 	setupNamespace string
 	setupName      string
@@ -27,7 +32,14 @@ var (
 
 // TODO (ilackarms): move to a flags package
 func init() {
-	flag.StringVar(&setupNamespace, "namespace", defaults.GlooSystem, "namespace to watch for settings crd/file")
+
+	// Allow for more dynamic setting of settings namespace
+	// Based on article https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#the-downward-api
+	defaultNamespace := os.Getenv(MY_POD_NAMESPACE)
+	if defaultNamespace == "" {
+		defaultNamespace = defaults.GlooSystem
+	}
+	flag.StringVar(&setupNamespace, "namespace", defaultNamespace, "namespace to watch for settings crd/file")
 	flag.StringVar(&setupName, "name", defaults.SettingsName, "name of settings crd/file to use")
 	flag.StringVar(&setupDir, "dir", "", "directory to find bootstrap settings if not using "+
 		"kubernetes crds")
