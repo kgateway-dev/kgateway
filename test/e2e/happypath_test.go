@@ -279,7 +279,6 @@ var _ = Describe("Happypath", func() {
 			})
 
 			It("watch all namespaces", func() {
-				//Eventually(getstatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 				Eventually(getupstream, "10s", "0.5s").ShouldNot(BeNil())
 			})
 		})
