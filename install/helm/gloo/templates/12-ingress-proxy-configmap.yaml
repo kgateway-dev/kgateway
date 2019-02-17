@@ -46,7 +46,6 @@ metadata:
   labels:
     app: gloo
   name: ingress-envoy-config
-  namespace: {{ .Release.Namespace }}
 
 
 {{- end }}

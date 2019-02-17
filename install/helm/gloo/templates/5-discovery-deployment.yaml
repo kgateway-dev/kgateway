@@ -5,7 +5,6 @@ metadata:
     app: gloo
     gloo: discovery
   name: discovery
-  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.discovery.deployment.replicas }}
   selector:
@@ -26,9 +25,12 @@ spec:
       - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.discovery.deployment.image.pullPolicy }}
         name: discovery
-        args: ["--namespace={{.Release.Namespace}}" ]
-        {{- if .Values.discovery.deployment.stats }}
         env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        {{- if .Values.discovery.deployment.stats }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}

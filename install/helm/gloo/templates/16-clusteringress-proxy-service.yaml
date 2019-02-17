@@ -6,7 +6,6 @@ metadata:
     app: gloo
     gloo: clusteringress-proxy
   name: clusteringress-proxy
-  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - port: {{ .Values.settings.integrations.knative.proxy.httpPort }}

@@ -6,7 +6,6 @@ metadata:
     app: gloo
     gloo: ingress
   name: ingress
-  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.ingress.deployment.replicas }}
   selector:
@@ -21,11 +20,11 @@ spec:
       - image: "{{ .Values.ingress.deployment.image.repository }}:{{ .Values.ingress.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.ingress.deployment.image.pullPolicy }}
         name: ingress
-        args: ["--namespace", "{{.Release.Namespace}}" ]
-{{- if or (.Values.settings.integrations.knative.enabled) (not .Values.ingress.enabled) }}
         env:
-{{- end }}
-
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
 {{- if .Values.settings.integrations.knative.enabled }}
         - name: "ENABLE_KNATIVE_INGRESS"
           value: "true"

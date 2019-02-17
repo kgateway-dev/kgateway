@@ -19,6 +19,8 @@ var (
 	ingressValuesOutput   = "install/helm/gloo/values-ingress.yaml"
 	chartTemplate         = "install/helm/gloo/Chart-template.yaml"
 	chartOutput           = "install/helm/gloo/Chart.yaml"
+
+	ifNotPresent = "IfNotPresent"
 )
 
 func main() {
@@ -89,6 +91,13 @@ func generateGatewayValuesYaml(version string) error {
 	cfg.Gateway.Deployment.Image.Tag = version
 	cfg.GatewayProxy.Deployment.Image.Tag = version
 
+	if version == "dev" {
+		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Gateway.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.GatewayProxy.Deployment.Image.PullPolicy = ifNotPresent
+	}
+
 	return writeYaml(cfg, valuesOutput)
 }
 
@@ -108,6 +117,13 @@ func generateKnativeValuesYaml(version string) error {
 	cfg.Ingress.Deployment.Image.Tag = version
 	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
 
+	if version == "dev" {
+		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Ingress.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Settings.Integrations.Knative.Proxy.Image.PullPolicy = ifNotPresent
+	}
+
 	return writeYaml(&cfg, knativeValuesOutput)
 }
 
@@ -126,6 +142,13 @@ func generateIngressValuesYaml(version string) error {
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Ingress.Deployment.Image.Tag = version
 	cfg.IngressProxy.Deployment.Image.Tag = version
+
+	if version == "dev" {
+		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Ingress.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.IngressProxy.Deployment.Image.PullPolicy = ifNotPresent
+	}
 
 	return writeYaml(&cfg, ingressValuesOutput)
 }

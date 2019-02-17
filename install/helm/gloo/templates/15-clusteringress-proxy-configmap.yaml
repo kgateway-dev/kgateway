@@ -44,5 +44,4 @@ metadata:
   labels:
     app: gloo
   name: clusteringress-envoy-config
-  namespace: {{ .Release.Namespace }}
 {{- end }}

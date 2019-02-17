@@ -6,7 +6,6 @@ metadata:
     app: gloo
     gloo: gateway-proxy
   name: gateway-proxy
-  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gatewayProxy.deployment.replicas }}
   selector:

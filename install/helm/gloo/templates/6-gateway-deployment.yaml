@@ -6,7 +6,6 @@ metadata:
     app: gloo
     gloo: gateway
   name: gateway
-  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gateway.deployment.replicas }}
   selector:
@@ -27,9 +26,12 @@ spec:
       - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.gateway.deployment.image.pullPolicy }}
         name: gateway
-        args: ["--namespace", "{{.Release.Namespace}}" ]
-        {{- if .Values.gateway.deployment.stats }}
         env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        {{- if .Values.gateway.deployment.stats }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}

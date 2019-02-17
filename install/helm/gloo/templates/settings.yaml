@@ -4,7 +4,6 @@ apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
   name: default
-  namespace: {{ .Release.Namespace }}
 spec:
   bindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}

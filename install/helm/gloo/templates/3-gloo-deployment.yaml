@@ -5,7 +5,6 @@ metadata:
     app: gloo
     gloo: gloo
   name: gloo
-  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gloo.deployment.replicas }}
   selector:
@@ -30,9 +29,12 @@ spec:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc
           protocol: TCP
-        args: ["--namespace", "{{.Release.Namespace}}" ]
-        {{- if .Values.gloo.deployment.stats }}
         env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        {{- if .Values.gloo.deployment.stats }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}

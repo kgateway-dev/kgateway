@@ -7,7 +7,6 @@ metadata:
     app: gloo
     gloo: clusteringress-proxy
   name: clusteringress-proxy
-  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.settings.integrations.knative.proxy.replicas }}
   selector:
