@@ -52,12 +52,14 @@ func getManifests(opts *options.Options, overrideUri, values string) ([]manifest
 	}
 
 	// use all default values
-	config := &chart.Config{Raw: values}
+	config := &chart.Config{Raw: "{}", Values: c.Values.Values}
+	fmt.Println(c.Values.Raw)
 	renderedTemplates, err := renderutil.Render(c, config, renderOpts)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(renderedTemplates)
+	//panic(err)
 	manifests := manifest.SplitManifests(renderedTemplates)
 	return tiller.SortByKind(manifests), nil
 }
