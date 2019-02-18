@@ -29,6 +29,7 @@ type Top struct {
 type Install struct {
 	DryRun               bool
 	ReleaseVersion       string
+	Namespace            string
 	GlooManifestOverride string
 	Knative              KnativeInstall
 }

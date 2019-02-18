@@ -8,7 +8,7 @@ data:
       id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
       metadata:
         # this line must match !
-        role: "{{ .Release.Namespace }}~clusteringress-proxy"
+        role: "{{ "{{" }}.PodNamespace{{ "}}" }}~clusteringress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster

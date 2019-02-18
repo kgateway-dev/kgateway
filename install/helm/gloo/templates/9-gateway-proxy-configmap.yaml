@@ -9,7 +9,7 @@ data:
       id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
       metadata:
         # this line must match !
-        role: "{{ .Release.Namespace }}~gateway-proxy"
+        role: "{{ "{{" }}.PodNamespace{{ "}}" }}~gateway-proxy"
     static_resources:
       clusters:
       - name: xds_cluster

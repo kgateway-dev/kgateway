@@ -4,18 +4,21 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"sigs.k8s.io/yaml"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -30,14 +33,17 @@ const (
 	installNamespace = defaults.GlooSystem
 )
 
-func preInstall() error {
+func preInstall(namespace string) error {
 	if err := registerSettingsCrd(); err != nil {
 		return errors.Wrapf(err, "registering settings crd")
+	}
+	if err := createNamespaceIfNotExist(namespace); err != nil {
+		return errors.Wrapf(err, "attempting to create new namespace")
 	}
 	return nil
 }
 
-func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate string) error {
+func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate string, helmValues *generate.Config) error {
 	var uri string
 	switch {
 	case overrideUri != "":
@@ -51,22 +57,42 @@ func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate stri
 		uri = fmt.Sprintf(manifestUriTemplate, version.Version)
 	}
 
-	manifestBytes, err := readFile(uri)
-	if err != nil {
-		return errors.Wrapf(err, "reading manifest %v", uri)
+	var manifestBytes []byte
+
+	if path.Ext(uri) == ".json" || path.Ext(uri) == ".yaml" ||  path.Ext(uri) == ".yml" {
+		var err error
+		manifestBytes, err = getFileManifestBytes(uri)
+		if err != nil {
+			return err
+		}
+	} else {
+		values := "{}"
+		if helmValues != nil {
+			byt, err := yaml.Marshal(helmValues)
+			if err != nil {
+				return errors.Wrapf(err, "could not turn values into bytes")
+			}
+			values = string(byt)
+		}
+		var err error
+		manifestBytes, err = getHelmManifestBytes(opts, uri, values)
+		if err != nil {
+			return err
+		}
 	}
+
 	if opts.Install.DryRun {
 		fmt.Printf("%s", manifestBytes)
 		return nil
 	}
-	if err := kubectlApply(manifestBytes); err != nil {
+	if err := kubectlApply(manifestBytes, opts.Install.Namespace); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
 }
 
-func kubectlApply(manifest []byte) error {
-	return kubectl(bytes.NewBuffer(manifest), "apply", "-f", "-")
+func kubectlApply(manifest []byte, namespace string) error {
+	return kubectl(bytes.NewBuffer(manifest), "apply", "-n", namespace, "-f", "-")
 }
 
 func kubectl(stdin io.Reader, args ...string) error {
@@ -114,29 +140,26 @@ func createNamespaceIfNotExist(namespace string) error {
 	return nil
 }
 
-func deleteNamespace(namespace string) error {
-	restCfg, err := kubeutils.GetConfig("", "")
+func getFileManifestBytes(uri string) ([]byte,error) {
+	manifestFile, err := readFile(uri)
 	if err != nil {
-		return err
+		return nil, errors.Wrapf(err, "getting manifest file %v", uri)
 	}
-	kubeClient, err := kubernetes.NewForConfig(restCfg)
+	defer manifestFile.Close()
+	manifestBytes, err := ioutil.ReadAll(manifestFile)
 	if err != nil {
-		return err
+		return nil, errors.Wrapf(err, "reading manifest file %v", uri)
 	}
-	if err := kubeClient.CoreV1().Namespaces().Delete(namespace, nil); err != nil {
-		return err
-	}
-	return nil
+	return manifestBytes, nil
 }
 
-func readFile(uri string) ([]byte, error) {
-	var file io.Reader
+func readFile(uri string) (io.ReadCloser, error) {
+	var file io.ReadCloser
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 		resp, err := http.Get(uri)
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			return nil, errors.Errorf("http GET returned status %d", resp.StatusCode)
@@ -157,5 +180,5 @@ func readFile(uri string) ([]byte, error) {
 	}
 
 	// Write the body to file
-	return ioutil.ReadAll(file)
+	return file, nil
 }

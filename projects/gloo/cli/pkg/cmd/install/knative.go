@@ -33,21 +33,21 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 
 			// it's okay to update the installation if we own it
 			if !installed || ours {
-				if err := installFromUri(opts, opts.Install.Knative.CrdManifestOverride, knativeCrdsUrlTemplate); err != nil {
+				if err := installFromUri(opts, opts.Install.Knative.CrdManifestOverride, knativeCrdsUrlTemplate, nil); err != nil {
 					return errors.Wrapf(err, "installing knative crds from manifest")
 				}
 				if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
 					return errors.Wrapf(err, "waiting for knative crds to become registered")
 				}
-				if err := installFromUri(opts, opts.Install.Knative.InstallManifestOverride, knativeUrlTemplate); err != nil {
+				if err := installFromUri(opts, opts.Install.Knative.InstallManifestOverride, knativeUrlTemplate, nil); err != nil {
 					return errors.Wrapf(err, "installing knative-serving from manifest")
 				}
 			}
 
-			if err := preInstall(); err != nil {
+			if err := preInstall(opts.Install.Namespace); err != nil {
 				return errors.Wrapf(err, "pre-install failed")
 			}
-			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooKnativeUrlTemplate); err != nil {
+			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooKnativeUrlTemplate, nil); err != nil {
 				return errors.Wrapf(err, "installing ingress from manifest")
 			}
 			return nil
