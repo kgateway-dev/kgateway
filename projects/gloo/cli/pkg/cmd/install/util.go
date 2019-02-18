@@ -59,7 +59,7 @@ func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate stri
 
 	var manifestBytes []byte
 
-	if path.Ext(uri) == ".json" || path.Ext(uri) == ".yaml" ||  path.Ext(uri) == ".yml" {
+	if path.Ext(uri) == ".json" || path.Ext(uri) == ".yaml" || path.Ext(uri) == ".yml" {
 		var err error
 		manifestBytes, err = getFileManifestBytes(uri)
 		if err != nil {
@@ -140,7 +140,7 @@ func createNamespaceIfNotExist(namespace string) error {
 	return nil
 }
 
-func getFileManifestBytes(uri string) ([]byte,error) {
+func getFileManifestBytes(uri string) ([]byte, error) {
 	manifestFile, err := readFile(uri)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting manifest file %v", uri)

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	glooHelmRepo                 = "https://storage.googleapis.com/solo-public-helm/charts/gloo-%s.tgz"
+	glooHelmRepo = "https://storage.googleapis.com/solo-public-helm/charts/gloo-%s.tgz"
 )
 
 var defaultKubeVersion = fmt.Sprintf("%s.%s", chartutil.DefaultKubeVersion.Major, chartutil.DefaultKubeVersion.Minor)
@@ -32,7 +32,7 @@ func getManifests(opts *options.Options, overrideUri, values string) ([]manifest
 	if overrideUri == "" {
 		overrideUri = fmt.Sprintf(glooHelmRepo, version.Version)
 	}
-	file ,err := readFile(overrideUri)
+	file, err := readFile(overrideUri)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func getManifests(opts *options.Options, overrideUri, values string) ([]manifest
 	return tiller.SortByKind(manifests), nil
 }
 
-func convertManifestToBytes(manifests []manifest.Manifest) ([]byte,error) {
+func convertManifestToBytes(manifests []manifest.Manifest) ([]byte, error) {
 	validManifests := make([]string, len(manifests))
 	for _, manifest := range manifests {
 		if !isEmptyManifest(manifest.Content) {
