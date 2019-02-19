@@ -45,7 +45,7 @@ home = [ "HTML", "JSON"]
   # Order sections in menu by "weight" or "title". Default to "weight"
   ordersectionsby = "weight"
   # Change default color scheme with a variant one. Can be "red", "blue", "green".
-  themeVariant = "blue"
+  themeVariant = "gloo"
 
 [[menu.shortcuts]]
 name = "<i class='fab fa-github'></i> Github Repo"
