@@ -217,7 +217,7 @@ var _ = Describe("Happypath", func() {
 			}
 			return nil, fmt.Errorf("not found")
 		}
-		getstatus := func() (core.Status_State, error) {
+		getStatus := func() (core.Status_State, error) {
 			u, err := getupstream()
 			if err != nil {
 				return core.Status_Pending, err
@@ -246,7 +246,7 @@ var _ = Describe("Happypath", func() {
 			})
 
 			It("should discover service", func() {
-				Eventually(getstatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
+				Eventually(getStatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 
 				up, err := getupstream()
 				Expect(err).NotTo(HaveOccurred())

@@ -88,21 +88,21 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		runOptions.Cache = memory.NewInMemoryResourceCache()
 	}
 
-	glooopts := DefaultGlooOpts(ctx, runOptions)
-	glooopts.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
+	glooOpts := DefaultGlooOpts(ctx, runOptions)
+	glooOpts.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
 	if !runOptions.WhatToRun.DisableGateway {
 		opts := DefaultTestConstructOpts(ctx, runOptions)
 		go gatewaysyncer.RunGateway(opts)
 	}
 
-	glooopts.Extensions = runOptions.ExtensionConfigs
-	glooopts.ControlPlane.StartGrpcServer = true
-	go syncer.RunGlooWithExtensions(glooopts, runOptions.Extensions)
+	glooOpts.Extensions = runOptions.ExtensionConfigs
+	glooOpts.ControlPlane.StartGrpcServer = true
+	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 	if !runOptions.WhatToRun.DisableFds {
-		go fds_syncer.RunFDS(glooopts)
+		go fds_syncer.RunFDS(glooOpts)
 	}
 	if !runOptions.WhatToRun.DisableUds {
-		go uds_syncer.RunUDS(glooopts)
+		go uds_syncer.RunUDS(glooOpts)
 	}
 
 	testclients := GetTestClients(runOptions.Cache)
