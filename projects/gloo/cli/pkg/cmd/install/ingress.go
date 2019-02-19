@@ -19,7 +19,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 			if err := preInstall(opts.Install.Namespace); err != nil {
 				return errors.Wrapf(err, "pre-install failed")
 			}
-			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooIngressUrlTemplate, "nil"); err != nil {
+			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooIngressUrlTemplate); err != nil {
 				return errors.Wrapf(err, "installing ingress from manifest")
 			}
 			return nil

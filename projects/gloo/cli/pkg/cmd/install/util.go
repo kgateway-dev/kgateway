@@ -41,7 +41,7 @@ func preInstall(namespace string) error {
 	return nil
 }
 
-func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate, helmValues string  ) error {
+func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate string) error {
 	var uri string
 	switch {
 	case overrideUri != "":
@@ -64,11 +64,8 @@ func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate, hel
 			return err
 		}
 	} else {
-		if helmValues == "" {
-			helmValues = "{}"
-		}
 		var err error
-		manifestBytes, err = getHelmManifestBytes(opts, uri, helmValues)
+		manifestBytes, err = getHelmManifestBytes(opts, uri)
 		if err != nil {
 			return err
 		}

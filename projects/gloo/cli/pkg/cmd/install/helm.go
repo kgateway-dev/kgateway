@@ -20,15 +20,15 @@ const (
 
 var defaultKubeVersion = fmt.Sprintf("%s.%s", chartutil.DefaultKubeVersion.Major, chartutil.DefaultKubeVersion.Minor)
 
-func getHelmManifestBytes(opts *options.Options, overrideUri, helmValues string ) ([]byte, error) {
-	manifests, err := getManifests(opts, overrideUri, helmValues)
+func getHelmManifestBytes(opts *options.Options, overrideUri string) ([]byte, error) {
+	manifests, err := getManifests(opts, overrideUri)
 	if err != nil {
 		return nil, err
 	}
 	return convertManifestToBytes(manifests)
 }
 
-func getManifests(opts *options.Options, overrideUri, values string) ([]manifest.Manifest, error) {
+func getManifests(opts *options.Options, overrideUri string) ([]manifest.Manifest, error) {
 	if overrideUri == "" {
 		overrideUri = fmt.Sprintf(glooHelmRepo, version.Version)
 	}
@@ -50,10 +50,9 @@ func getManifests(opts *options.Options, overrideUri, values string) ([]manifest
 	if err != nil {
 		return nil, errors.Wrapf(err, "loading chart")
 	}
-	fmt.Println(c.Files)
 
 	// config.Values is never used by helm
-	config := &chart.Config{Raw: values}
+	config := &chart.Config{Raw: "{}"}
 	renderedTemplates, err := renderutil.Render(c, config, renderOpts)
 	if err != nil {
 		return nil, err
