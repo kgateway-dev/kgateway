@@ -69,3 +69,7 @@
 [[override]]
   name = "k8s.io/apiserver"
   version = "kubernetes-1.13.1"
+
+[[override]]
+  name = "k8s.io/helm"
+  version = "v2.12.3"
