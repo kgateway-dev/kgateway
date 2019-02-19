@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"sigs.k8s.io/yaml"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -43,7 +41,7 @@ func preInstall(namespace string) error {
 	return nil
 }
 
-func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate string, helmValues *generate.Config) error {
+func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate, helmValues string  ) error {
 	var uri string
 	switch {
 	case overrideUri != "":
@@ -66,16 +64,11 @@ func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate stri
 			return err
 		}
 	} else {
-		values := "{}"
-		if helmValues != nil {
-			byt, err := yaml.Marshal(helmValues)
-			if err != nil {
-				return errors.Wrapf(err, "could not turn values into bytes")
-			}
-			values = string(byt)
+		if helmValues == "" {
+			helmValues = "{}"
 		}
 		var err error
-		manifestBytes, err = getHelmManifestBytes(opts, uri, values)
+		manifestBytes, err = getHelmManifestBytes(opts, uri, helmValues)
 		if err != nil {
 			return err
 		}

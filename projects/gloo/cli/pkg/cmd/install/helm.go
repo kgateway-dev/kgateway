@@ -20,7 +20,7 @@ const (
 
 var defaultKubeVersion = fmt.Sprintf("%s.%s", chartutil.DefaultKubeVersion.Major, chartutil.DefaultKubeVersion.Minor)
 
-func getHelmManifestBytes(opts *options.Options, overrideUri, helmValues string) ([]byte, error) {
+func getHelmManifestBytes(opts *options.Options, overrideUri, helmValues string ) ([]byte, error) {
 	manifests, err := getManifests(opts, overrideUri, helmValues)
 	if err != nil {
 		return nil, err
@@ -50,16 +50,15 @@ func getManifests(opts *options.Options, overrideUri, values string) ([]manifest
 	if err != nil {
 		return nil, errors.Wrapf(err, "loading chart")
 	}
+	fmt.Println(c.Files)
 
-	// use all default values
-	config := &chart.Config{Raw: "{}", Values: c.Values.Values}
-	fmt.Println(c.Values.Raw)
+	// config.Values is never used by helm
+	config := &chart.Config{Raw: values}
 	renderedTemplates, err := renderutil.Render(c, config, renderOpts)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(renderedTemplates)
-	//panic(err)
+
 	manifests := manifest.SplitManifests(renderedTemplates)
 	return tiller.SortByKind(manifests), nil
 }
