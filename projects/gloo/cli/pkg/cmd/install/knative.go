@@ -33,13 +33,13 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 
 			// it's okay to update the installation if we own it
 			if !installed || ours {
-				if err := installFromUri(opts, opts.Install.Knative.CrdManifestOverride, knativeCrdsUrlTemplate); err != nil {
+				if err := installFromUri(opts, "", knativeCrdsUrlTemplate); err != nil {
 					return errors.Wrapf(err, "installing knative crds from manifest")
 				}
 				if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
 					return errors.Wrapf(err, "waiting for knative crds to become registered")
 				}
-				if err := installFromUri(opts, opts.Install.Knative.InstallManifestOverride, knativeUrlTemplate); err != nil {
+				if err := installFromUri(opts, "", knativeUrlTemplate); err != nil {
 					return errors.Wrapf(err, "installing knative-serving from manifest")
 				}
 			}
@@ -55,7 +55,6 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
-	flagutils.AddKnativeInstallFlags(pflags, &opts.Install.Knative)
 	return cmd
 }
 

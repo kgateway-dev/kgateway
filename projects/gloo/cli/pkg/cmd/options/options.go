@@ -31,12 +31,6 @@ type Install struct {
 	ReleaseVersion       string
 	Namespace            string
 	GlooManifestOverride string
-	Knative              KnativeInstall
-}
-
-type KnativeInstall struct {
-	CrdManifestOverride     string
-	InstallManifestOverride string
 }
 
 type Proxy struct {
