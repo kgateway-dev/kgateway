@@ -205,7 +205,7 @@ var _ = Describe("Happypath", func() {
 			}
 		})
 
-		getupstream := func() (*gloov1.Upstream, error) {
+		getUpstream := func() (*gloov1.Upstream, error) {
 			l, err := testClients.UpstreamClient.List(writeNamespace, clients.ListOpts{})
 			if err != nil {
 				return nil, err
@@ -218,7 +218,7 @@ var _ = Describe("Happypath", func() {
 			return nil, fmt.Errorf("not found")
 		}
 		getStatus := func() (core.Status_State, error) {
-			u, err := getupstream()
+			u, err := getUpstream()
 			if err != nil {
 				return core.Status_Pending, err
 			}
@@ -248,7 +248,7 @@ var _ = Describe("Happypath", func() {
 			It("should discover service", func() {
 				Eventually(getStatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 
-				up, err := getupstream()
+				up, err := getUpstream()
 				Expect(err).NotTo(HaveOccurred())
 
 				proxycli := testClients.ProxyClient
@@ -279,7 +279,7 @@ var _ = Describe("Happypath", func() {
 			})
 
 			It("watch all namespaces", func() {
-				Eventually(getupstream, "10s", "0.5s").ShouldNot(BeNil())
+				Eventually(getUpstream, "10s", "0.5s").ShouldNot(BeNil())
 			})
 		})
 
