@@ -4,20 +4,23 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/go-utils/errors"
 	"io"
 	"io/ioutil"
-	"net/http"
+	"k8s.io/helm/pkg/chartutil"
+	"k8s.io/helm/pkg/manifest"
+	"k8s.io/helm/pkg/renderutil"
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
+	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -27,9 +30,18 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const (
-	installNamespace = defaults.GlooSystem
-)
+// Returns
+func getGlooVersion(opts *options.Options) (string, error) {
+	if !version.IsReleaseVersion() {
+		if opts.Install.ReleaseVersion == "" {
+			return "", errors.Errorf("you must provide a file or a release version " +
+				"containing the manifest when running an unreleased version of glooctl.")
+		}
+		return opts.Install.ReleaseVersion, nil
+	} else {
+		return version.Version, nil
+	}
+}
 
 func preInstall(namespace string) error {
 	if err := registerSettingsCrd(); err != nil {
@@ -41,41 +53,54 @@ func preInstall(namespace string) error {
 	return nil
 }
 
-func installFromUri(opts *options.Options, overrideUri, manifestUriTemplate string) error {
-	var uri string
-	switch {
-	case overrideUri != "":
-		uri = overrideUri
-	case !version.IsReleaseVersion():
-		if opts.Install.ReleaseVersion == "" {
-			return errors.Errorf("you must provide a file or a release version containing the manifest when running an unreleased version of glooctl.")
-		}
-		uri = fmt.Sprintf(manifestUriTemplate, opts.Install.ReleaseVersion)
-	default:
-		uri = fmt.Sprintf(manifestUriTemplate, version.Version)
-	}
-
+func installFromUri(manifestUri string, opts *options.Options, valuesFileName string) error {
 	var manifestBytes []byte
 
-	if path.Ext(uri) == ".json" || path.Ext(uri) == ".yaml" || path.Ext(uri) == ".yml" {
+	switch path.Ext(manifestUri) {
+	case ".json", ".yaml", ".yml":
 		var err error
-		manifestBytes, err = getFileManifestBytes(uri)
+		manifestBytes, err = getFileManifestBytes(manifestUri)
 		if err != nil {
 			return err
 		}
-	} else {
+	case ".tgz":
 		var err error
-		manifestBytes, err = getHelmManifestBytes(opts, uri)
+		renderOpts := renderutil.Options{
+			ReleaseOptions: chartutil.ReleaseOptions{
+				Namespace: opts.Install.Namespace,
+				Name:      "gloo",
+			},
+		}
+
+		filterFunc := func(manifest manifest.Manifest) (skip bool, content string, err error) {
+			return isEmptyManifest(manifest.Content), manifest.Content, nil
+		}
+
+		manifestBytes, err = install.GetHelmManifest(manifestUri, valuesFileName, renderOpts, filterFunc)
 		if err != nil {
 			return err
 		}
+	default:
+		return errors.Errorf("unsupported file extension in manifest URI: %s", path.Ext(manifestUri))
 	}
 
+	return installManifest(manifestBytes, opts)
+}
+
+func isEmptyManifest(manifest string) bool {
+	commentRegex := regexp.MustCompile("#.*")
+	removeComments := commentRegex.ReplaceAllString(manifest, "")
+	removeNewlines := strings.Replace(removeComments, "\n", "", -1)
+	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
+	return removeDashes == ""
+}
+
+func installManifest(manifest []byte, opts *options.Options) error {
 	if opts.Install.DryRun {
-		fmt.Printf("%s", manifestBytes)
+		fmt.Printf("%s", manifest)
 		return nil
 	}
-	if err := kubectlApply(manifestBytes, opts.Install.Namespace); err != nil {
+	if err := kubectlApply(manifest, opts.Install.Namespace); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
@@ -131,44 +156,15 @@ func createNamespaceIfNotExist(namespace string) error {
 }
 
 func getFileManifestBytes(uri string) ([]byte, error) {
-	manifestFile, err := readFile(uri)
+	manifestFile, err := cliutil.GetResource(uri)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting manifest file %v", uri)
 	}
+	//noinspection GoUnhandledErrorResult
 	defer manifestFile.Close()
 	manifestBytes, err := ioutil.ReadAll(manifestFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading manifest file %v", uri)
 	}
 	return manifestBytes, nil
-}
-
-func readFile(uri string) (io.ReadCloser, error) {
-	var file io.ReadCloser
-	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
-		resp, err := http.Get(uri)
-		if err != nil {
-			return nil, err
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, errors.Errorf("http GET returned status %d", resp.StatusCode)
-		}
-
-		file = resp.Body
-	} else {
-		path, err := filepath.Abs(uri)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting absolute path for %v", uri)
-		}
-
-		f, err := os.Open(path)
-		if err != nil {
-			return nil, errors.Wrapf(err, "opening file %v", path)
-		}
-		file = f
-	}
-
-	// Write the body to file
-	return file, nil
 }

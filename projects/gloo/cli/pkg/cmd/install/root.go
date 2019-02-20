@@ -27,7 +27,7 @@ func UninstallCmd(optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 		Short: constants.UNINSTALL_COMMAND.Short,
 		Long:  constants.UNINSTALL_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := kubectl(nil, "delete", "namespace", installNamespace); err != nil {
+			if err := kubectl(nil, "delete", "namespace", constants.DefaultInstallNamespace); err != nil {
 				return errors.Wrapf(err, "delete gloo failed")
 			}
 			knativeExists, isOurInstall, err := knativeInstalled()
@@ -35,7 +35,7 @@ func UninstallCmd(optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 				return errors.Wrapf(err, "finding knative installation")
 			}
 			if knativeExists && isOurInstall {
-				if err := kubectl(nil, "delete", "namespace", knativeServingNamespace); err != nil {
+				if err := kubectl(nil, "delete", "namespace", constants.KnativeServingNamespace); err != nil {
 					return errors.Wrapf(err, "delete knative failed")
 				}
 			}

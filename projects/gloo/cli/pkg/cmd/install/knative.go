@@ -1,6 +1,8 @@
 package install
 
 import (
+	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"time"
 
 	"github.com/solo-io/go-utils/errors"
@@ -16,39 +18,38 @@ import (
 )
 
 func knativeCmd(opts *options.Options) *cobra.Command {
-	const (
-		knativeUrlTemplate     = "https://github.com/solo-io/gloo/releases/download/v%s/knative-no-istio-0.3.0.yaml"
-		knativeCrdsUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/knative-crds-0.3.0.yaml"
-		glooKnativeUrlTemplate = "https://github.com/solo-io/gloo/releases/download/v%s/gloo-knative.yaml"
-	)
 	cmd := &cobra.Command{
 		Use:   "knative",
 		Short: "install Knative with Gloo on kubernetes",
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			installed, ours, err := knativeInstalled()
+
+			// Get Gloo release version
+			version, err := getGlooVersion(opts)
 			if err != nil {
 				return err
 			}
 
-			// it's okay to update the installation if we own it
-			if !installed || ours {
-				if err := installFromUri(opts, "", knativeCrdsUrlTemplate); err != nil {
-					return errors.Wrapf(err, "installing knative crds from manifest")
-				}
-				if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
-					return errors.Wrapf(err, "waiting for knative crds to become registered")
-				}
-				if err := installFromUri(opts, "", knativeUrlTemplate); err != nil {
-					return errors.Wrapf(err, "installing knative-serving from manifest")
+			// Get location of Gloo install manifest
+			manifestUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, version)
+			if manifestOverride := opts.Install.GlooManifestOverride; manifestOverride != "" {
+				manifestUri = manifestOverride
+			}
+
+			// Pre-install step writes to k8s. Run only if this is not a dry run.
+			if !opts.Install.DryRun {
+				if err := preInstall(opts.Install.Namespace); err != nil {
+					return errors.Wrapf(err, "pre-install failed")
 				}
 			}
 
-			if err := preInstall(opts.Install.Namespace); err != nil {
-				return errors.Wrapf(err, "pre-install failed")
+			// Internally checks for dry run
+			if err := installAdditionalKnativeResources(version, opts); err != nil {
+				return err
 			}
-			if err := installFromUri(opts, opts.Install.GlooManifestOverride, glooKnativeUrlTemplate); err != nil {
-				return errors.Wrapf(err, "installing ingress from manifest")
+
+			if err := installFromUri(manifestUri, opts, constants.KnativeValuesFileName); err != nil {
+				return errors.Wrapf(err, "installing knative from manifest")
 			}
 			return nil
 		},
@@ -58,9 +59,29 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-const knativeServingNamespace = "knative-serving"
+// Checks whether Knative needs to be installed or upgraded
+func installAdditionalKnativeResources(glooReleaseVersion string, options *options.Options) error {
+	installed, ours, err := knativeInstalled()
+	if err != nil {
+		return err
+	}
 
-func knativeInstalled() (bool, bool, error) {
+	// It's okay to update the installation if we own it
+	if !installed || ours {
+		if err := downloadAndInstall(fmt.Sprintf(constants.KnativeCrdsUrlTemplate, glooReleaseVersion), options); err != nil {
+			return errors.Wrapf(err, "installing knative crds from manifest")
+		}
+		if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
+			return errors.Wrapf(err, "waiting for knative crds to become registered")
+		}
+		if err := downloadAndInstall(fmt.Sprintf(constants.KnativeUrlTemplate, glooReleaseVersion), options); err != nil {
+			return errors.Wrapf(err, "installing knative-serving from manifest")
+		}
+	}
+	return nil
+}
+
+func knativeInstalled() (isInstalled bool, isOurs bool, err error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return false, false, err
@@ -74,7 +95,7 @@ func knativeInstalled() (bool, bool, error) {
 		return false, false, err
 	}
 	for _, ns := range namespaces.Items {
-		if ns.Name == knativeServingNamespace {
+		if ns.Name == constants.KnativeServingNamespace {
 			ours := ns.Labels != nil && ns.Labels["app"] == "gloo"
 			return true, ours, nil
 		}
@@ -97,4 +118,12 @@ func waitForKnativeCrdsRegistered(timeout, interval time.Duration) error {
 			}
 		}
 	}
+}
+
+func downloadAndInstall(manifestUri string, opts *options.Options) error {
+	manifest, err := getFileManifestBytes(manifestUri)
+	if err != nil {
+		return errors.Wrapf(err, "failed to download: %s", manifestUri)
+	}
+	return installManifest(manifest, opts)
 }
