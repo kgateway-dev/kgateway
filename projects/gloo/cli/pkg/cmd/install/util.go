@@ -9,14 +9,11 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
-	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/go-utils/errors"
 	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/manifest"
 	"k8s.io/helm/pkg/renderutil"
 
 	"github.com/solo-io/gloo/pkg/version"
@@ -44,17 +41,15 @@ func getGlooVersion(opts *options.Options) (string, error) {
 	}
 }
 
-func preInstall(namespace string) error {
-	if err := registerSettingsCrd(); err != nil {
-		return errors.Wrapf(err, "registering settings crd")
-	}
-	if err := createNamespaceIfNotExist(namespace); err != nil {
-		return errors.Wrapf(err, "attempting to create new namespace")
-	}
-	return nil
-}
-
 func installFromUri(manifestUri string, opts *options.Options, valuesFileName string) error {
+
+	// Pre-install step writes to k8s. Run only if this is not a dry run.
+	if !opts.Install.DryRun {
+		if err := preInstall(opts.Install.Namespace); err != nil {
+			return errors.Wrapf(err, "pre-install failed")
+		}
+	}
+
 	var manifestBytes []byte
 
 	switch path.Ext(manifestUri) {
@@ -73,11 +68,7 @@ func installFromUri(manifestUri string, opts *options.Options, valuesFileName st
 			},
 		}
 
-		filterFunc := func(manifest manifest.Manifest) (skip bool, content string, err error) {
-			return isEmptyManifest(manifest.Content), manifest.Content, nil
-		}
-
-		manifestBytes, err = install.GetHelmManifest(manifestUri, valuesFileName, renderOpts, filterFunc)
+		manifestBytes, err = install.GetHelmManifest(manifestUri, valuesFileName, renderOpts, install.ExcludeEmptyManifests)
 		if err != nil {
 			return err
 		}
@@ -88,12 +79,14 @@ func installFromUri(manifestUri string, opts *options.Options, valuesFileName st
 	return installManifest(manifestBytes, opts)
 }
 
-func isEmptyManifest(manifest string) bool {
-	commentRegex := regexp.MustCompile("#.*")
-	removeComments := commentRegex.ReplaceAllString(manifest, "")
-	removeNewlines := strings.Replace(removeComments, "\n", "", -1)
-	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
-	return removeDashes == ""
+func preInstall(namespace string) error {
+	if err := registerSettingsCrd(); err != nil {
+		return errors.Wrapf(err, "registering settings crd")
+	}
+	if err := createNamespaceIfNotExist(namespace); err != nil {
+		return errors.Wrapf(err, "attempting to create new namespace")
+	}
+	return nil
 }
 
 func installManifest(manifest []byte, opts *options.Options) error {

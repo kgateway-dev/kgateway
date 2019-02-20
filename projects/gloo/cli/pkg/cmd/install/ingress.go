@@ -31,12 +31,6 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 				manifestUri = manifestOverride
 			}
 
-			// Pre-install step writes to k8s. Run only if this is not a dry run.
-			if !opts.Install.DryRun {
-				if err := preInstall(opts.Install.Namespace); err != nil {
-					return errors.Wrapf(err, "pre-install failed")
-				}
-			}
 			if err := installFromUri(manifestUri, opts, constants.IngressValuesFileName); err != nil {
 				return errors.Wrapf(err, "installing ingress from manifest")
 			}

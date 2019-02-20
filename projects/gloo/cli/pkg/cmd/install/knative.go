@@ -37,21 +37,14 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				manifestUri = manifestOverride
 			}
 
-			// Pre-install step writes to k8s. Run only if this is not a dry run.
-			if !opts.Install.DryRun {
-				if err := preInstall(opts.Install.Namespace); err != nil {
-					return errors.Wrapf(err, "pre-install failed")
-				}
-			}
-
-			// Internally checks for dry run
-			if err := installAdditionalKnativeResources(version, opts); err != nil {
+			if err := installAdditionalKnativeResources(version, opts, opts.Install.DryRun); err != nil {
 				return err
 			}
 
 			if err := installFromUri(manifestUri, opts, constants.KnativeValuesFileName); err != nil {
 				return errors.Wrapf(err, "installing knative from manifest")
 			}
+
 			return nil
 		},
 	}
@@ -61,7 +54,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 }
 
 // Checks whether Knative needs to be installed or upgraded
-func installAdditionalKnativeResources(glooReleaseVersion string, options *options.Options) error {
+func installAdditionalKnativeResources(glooReleaseVersion string, options *options.Options, isDryRun bool) error {
 	installed, ours, err := knativeInstalled()
 	if err != nil {
 		return err
@@ -72,9 +65,14 @@ func installAdditionalKnativeResources(glooReleaseVersion string, options *optio
 		if err := downloadAndInstall(fmt.Sprintf(constants.KnativeCrdsUrlTemplate, glooReleaseVersion), options); err != nil {
 			return errors.Wrapf(err, "installing knative crds from manifest")
 		}
-		if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
-			return errors.Wrapf(err, "waiting for knative crds to become registered")
+
+		// Only run if this is not a dry run
+		if !isDryRun {
+			if err := waitForKnativeCrdsRegistered(time.Second*5, time.Millisecond*500); err != nil {
+				return errors.Wrapf(err, "waiting for knative crds to become registered")
+			}
 		}
+
 		if err := downloadAndInstall(fmt.Sprintf(constants.KnativeUrlTemplate, glooReleaseVersion), options); err != nil {
 			return errors.Wrapf(err, "installing knative-serving from manifest")
 		}
