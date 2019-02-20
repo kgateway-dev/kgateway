@@ -2,8 +2,9 @@ package install
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
