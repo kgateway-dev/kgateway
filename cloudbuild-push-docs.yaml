@@ -1,0 +1,40 @@
+# can be used to test the docs push locally
+# gcloud builds submit . --config cloudbuild-push-docs.yaml --substitutions TAG_NAME=v0.7.3
+
+steps:
+# Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
+# These two steps should populate the cache
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: 'bash'
+  args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -']
+  id: 'download-untar-dep-cache'
+  waitFor: ['-']
+
+# Run dep to set up the project so it can be built and tested
+# Dep modifies workspace so that the code is moved into the PROJECT_ROOT
+# All steps after this must set GOPATH
+- name: 'gcr.io/$PROJECT_ID/dep'
+  args: ['ensure']
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GIT_SSH_CONFIG=FALSE'
+  id: 'dep'
+
+- name: 'gcr.io/$PROJECT_ID/go-make'
+  args: ['push-docs']
+  env:
+  - 'TAGGED_VERSION=$TAG_NAME'
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  - 'HELM_HOME=/root/.helm' # tell helm where to find data
+  dir: './gopath/src/github.com/solo-io/gloo'
+  secretEnv: ['GITHUB_TOKEN']
+  id: 'push-docs'
+  waitFor: ['dep']
+
+secrets:
+- kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
+  secretEnv:
+    GITHUB_TOKEN: CiQABlzmSRpjt9c2jcCGU2lIk68qAkHIzIHUeYS+artlcens/7oSUQCCPGSG407g5usGvAhM+oL98Xir0fHWUiNe3827h9zdhmkCbrZpNqfVFkMhAxQ/ZlhC31+KwzWoHnDSb3RN7CoKj+gves6q7MMf7wNxSmC46A==
+
+timeout: 6600s

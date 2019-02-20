@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -46,7 +47,8 @@ func RunUDS(opts bootstrap.Opts) error {
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
-	disc := discovery.NewUpstreamDiscovery(opts.WatchNamespaces, opts.WriteNamespace, upstreamClient, discoveryPlugins)
+	watchNamespaces := utils.ProcessWatchNamespaces(opts.WatchNamespaces, opts.WriteNamespace)
+	disc := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, discoveryPlugins)
 
 	sync := NewDiscoverySyncer(disc,
 		discovery.Opts{}, // TODO(ilackarms)

@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -32,8 +33,9 @@ func DeployTestRunner(namespace, image string, port int32) error {
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Image: image,
-					Name:  "testrunner",
+					Image:           image,
+					ImagePullPolicy: v1.PullIfNotPresent,
+					Name:            "testrunner",
 				},
 			},
 		},
@@ -60,7 +62,9 @@ func DeployTestRunner(namespace, image string, port int32) error {
 	}); err != nil {
 		return err
 	}
-	if err := WaitPodsRunning(time.Minute, time.Second, "gloo=testrunner"); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	if err := WaitPodsRunning(ctx, time.Second, "gloo=testrunner"); err != nil {
 		return err
 	}
 	go func() {

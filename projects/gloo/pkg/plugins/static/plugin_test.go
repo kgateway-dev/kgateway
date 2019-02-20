@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -111,5 +112,12 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TlsContext).ToNot(BeNil())
 		})
 
+		It("should not override existing tls config", func() {
+			existing := &envoyauth.UpstreamTlsContext{}
+			out.TlsContext = existing
+			upstreamSpec.UseTls = true
+			p.ProcessUpstream(params, upstream, out)
+			Expect(out.TlsContext).To(BeIdenticalTo(existing))
+		})
 	})
 })

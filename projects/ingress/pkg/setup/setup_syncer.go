@@ -8,6 +8,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
 	clusteringressv1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	clusteringresstranslator "github.com/solo-io/gloo/projects/clusteringress/pkg/translator"
@@ -80,23 +81,8 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	if writeNamespace == "" {
 		writeNamespace = gloodefaults.GlooSystem
 	}
-	watchNamespaces := settings.WatchNamespaces
-	if len(watchNamespaces) == 0 {
-		watchNamespaces, err = bootstrap.ListAllNamespaces(cfg)
-		if err != nil {
-			return err
-		}
-	}
-	var writeNamespaceProvided bool
-	for _, ns := range watchNamespaces {
-		if ns == writeNamespace {
-			writeNamespaceProvided = true
-			break
-		}
-	}
-	if !writeNamespaceProvided {
-		watchNamespaces = append(watchNamespaces, writeNamespace)
-	}
+	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
+
 	disableKubeIngress := os.Getenv("DISABLE_KUBE_INGRESS") == "true" || os.Getenv("DISABLE_KUBE_INGRESS") == "1"
 	enableKnative := os.Getenv("ENABLE_KNATIVE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
 

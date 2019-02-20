@@ -9,6 +9,7 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 /*
 @solo-kit:resource.short_name=px
@@ -339,27 +340,3 @@ message DirectResponseAction {
     string body = 2;
 }
 
-// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
-message SslConfig {
-    oneof ssl_secrets {
-        /** SecretRef contains the secret ref to a gloo secret containing the following structure:
-        {
-            "tls.crt": <ca chain data...>,
-            "tls.key": <private key data...>
-        }
-        */
-        core.solo.io.ResourceRef secret_ref = 1;
-        // SSLFiles reference paths to certificates which are local to the proxy
-        SSLFiles ssl_files = 2;
-    }
-    // optional. the SNI domains that should be considered for TLS connections
-    repeated string sni_domains = 3;
-}
-
-// SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
-message SSLFiles {
-    string tls_cert = 1;
-    string tls_key = 2;
-    // for client cert validation. optional
-    string root_ca = 3;
-}

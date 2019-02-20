@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 )
 
@@ -336,34 +336,13 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 }
 
 func validateListenerSslConfig(listener *v1.Listener, secrets []*v1.Secret) error {
+	sslCfgTranslator := utils.NewSslConfigTranslator(secrets)
 	for _, ssl := range listener.SslConfiguations {
-		switch secret := ssl.SslSecrets.(type) {
-		case *v1.SslConfig_SecretRef:
-			if _, _, _, err := GetSslSecrets(*secret.SecretRef, secrets); err != nil {
-				return err
-			}
-		case *v1.SslConfig_SslFiles:
-			// TODO(ilackarms): validate SslFiles
+		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(ssl); err != nil {
+			return err
 		}
 	}
 	return nil
-}
-
-func GetSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, error) {
-	secret, err := secrets.Find(ref.Strings())
-	if err != nil {
-		return "", "", "", errors.Wrapf(err, "SSL secret not found")
-	}
-
-	sslSecret, ok := secret.Kind.(*v1.Secret_Tls)
-	if !ok {
-		return "", "", "", errors.Errorf("%v is not a TLS secret", secret.GetMetadata().Ref())
-	}
-
-	certChain := sslSecret.Tls.CertChain
-	privateKey := sslSecret.Tls.PrivateKey
-	rootCa := sslSecret.Tls.RootCa
-	return certChain, privateKey, rootCa, nil
 }
 
 func DataSourceFromString(str string) *envoycore.DataSource {

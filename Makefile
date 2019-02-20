@@ -61,9 +61,12 @@ clean:
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code
 
+# Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
+# Glooctl enterprise docs are pushed from the private repo.
 SUBDIRS:=projects test
 $(OUTPUT_DIR)/.generated-code:
 	go generate ./...
+	(rm docs/cli/glooctl* && go run projects/gloo/cli/cmd/docs/main.go)
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
@@ -292,13 +295,13 @@ endif
 
 HELMFLAGS := --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
 
-install/gloo-gateway.yaml: $(shell find install/helm/gloo)
+install/gloo-gateway.yaml: prepare-helm
 	helm template install/helm/gloo $(HELMFLAGS) > $@
 
-install/gloo-knative.yaml: $(shell find install/helm/gloo)
+install/gloo-knative.yaml: prepare-helm
 	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-knative.yaml > $@
 
-install/gloo-ingress.yaml: $(shell find install/helm/gloo)
+install/gloo-ingress.yaml: prepare-helm
 	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-ingress.yaml > $@
 
 #----------------------------------------------------------------------------------
@@ -342,8 +345,15 @@ release-yamls: $(RELEASE_YAMLS)
 .PHONY: release
 release: release-binaries release-yamls
 ifeq ($(RELEASE),"true")
+	ci/push-docs.sh tag=$(TAGGED_VERSION)
 	@$(foreach BINARY,$(RELEASE_BINARIES),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(BINARY) sha=TRUE;)
 	@$(foreach YAML,$(RELEASE_YAMLS),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(YAML);)
+endif
+
+.PHONY: push-docs
+push-docs:
+ifeq ($(RELEASE),"true")
+	ci/push-docs.sh tag=$(TAGGED_VERSION)
 endif
 
 #----------------------------------------------------------------------------------

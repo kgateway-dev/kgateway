@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -73,27 +74,53 @@ settings:
   # the namespace that Gloo should write discovery data (Upstreams)
   writeNamespace: {{ .Namespace }}
 
-deployment:
-  imagePullPolicy: IfNotPresent
-  gloo:
+gloo:
+  deployment:
+    image:
+      repository: soloio/gloo
+      tag: {{ .Version }}
+      pullPolicy: Never
+    replicas: 1
+    stats: true
     xdsPort: 9977
-    image: soloio/gloo:{{ .Version }}
+discovery:
+  deployment:
+    image:
+      repository: soloio/discovery
+      tag: {{ .Version }}
+      pullPolicy: Never
     replicas: 1
-  discovery:
-    image: soloio/discovery:{{ .Version }}
+    stats: true
+gateway:
+  deployment:
+    image:
+      repository: soloio/gateway
+      tag: {{ .Version }}
+      pullPolicy: Never
     replicas: 1
-  gateway:
-    image: soloio/gateway:{{ .Version }}
-    replicas: 1
-  gatewayProxy:
-    image: soloio/gloo-envoy-wrapper:{{ .Version }}
+    stats: true
+gatewayProxy:
+  deployment:
+    image:
+      repository: soloio/gloo-envoy-wrapper
+      tag: {{ .Version }}
+      pullPolicy: Never
     httpPort: 8080
+    httpsPort: 8443
     replicas: 1
-  ingress:
-    image: soloio/ingress:{{ .Version }}
+ingress:
+  deployment:
+    image:
+      repository: soloio/ingress
+      tag: {{ .Version }}
+      pullPolicy: Never
     replicas: 1
-  ingressProxy:
-    image: soloio/gloo-envoy-wrapper:{{ .Version }}
+ingressProxy:
+  deployment:
+    image:
+      repository: soloio/gloo-envoy-wrapper
+      tag: {{ .Version }}
+      pullPolicy: Never
     httpPort: 80
     httpsPort: 443
     replicas: 1
@@ -117,22 +144,24 @@ var glooPodLabels = []string{
 	"gloo=gloo",
 	"gloo=discovery",
 	"gloo=gateway",
-	"gloo=ingress",
+	"gloo=gateway-proxy",
 }
 
 func WaitGlooPods(timeout, interval time.Duration) error {
-	if err := WaitPodsRunning(timeout, interval, glooPodLabels...); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if err := WaitPodsRunning(ctx, interval, glooPodLabels...); err != nil {
 		return err
 	}
 	return nil
 }
 
-func WaitPodsRunning(timeout, interval time.Duration, labels ...string) error {
+func WaitPodsRunning(ctx context.Context, interval time.Duration, labels ...string) error {
 	finished := func(output string) bool {
 		return strings.Contains(output, "Running") || strings.Contains(output, "ContainerCreating")
 	}
 	for _, label := range labels {
-		if err := WaitPodStatus(timeout, interval, label, "Running", finished); err != nil {
+		if err := WaitPodStatus(ctx, interval, label, "Running or ContainerCreating", finished); err != nil {
 			return err
 		}
 	}
@@ -140,32 +169,32 @@ func WaitPodsRunning(timeout, interval time.Duration, labels ...string) error {
 		return strings.Contains(output, "Running")
 	}
 	for _, label := range labels {
-		if err := WaitPodStatus(timeout, interval, label, "Running", finished); err != nil {
+		if err := WaitPodStatus(ctx, interval, label, "Running", finished); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func WaitPodsTerminated(timeout, interval time.Duration, labels ...string) error {
+func WaitPodsTerminated(ctx context.Context, interval time.Duration, labels ...string) error {
 	for _, label := range labels {
 		finished := func(output string) bool {
 			return !strings.Contains(output, label)
 		}
-		if err := WaitPodStatus(timeout, interval, label, "terminated", finished); err != nil {
+		if err := WaitPodStatus(ctx, interval, label, "terminated", finished); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func WaitPodStatus(timeout, interval time.Duration, label, status string, finished func(output string) bool) error {
+func WaitPodStatus(ctx context.Context, interval time.Duration, label, status string, finished func(output string) bool) error {
 	tick := time.Tick(interval)
-
-	log.Debugf("waiting %v for pod %v to be %v...", timeout, label, status)
+	d, _ := ctx.Deadline()
+	log.Debugf("waiting till %v for pod %v to be %v...", d, label, status)
 	for {
 		select {
-		case <-time.After(timeout):
+		case <-ctx.Done():
 			return fmt.Errorf("timed out waiting for %v to be %v", label, status)
 		case <-tick:
 			out, err := setup.KubectlOut("get", "pod", "-l", label)

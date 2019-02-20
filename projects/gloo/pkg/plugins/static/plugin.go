@@ -104,8 +104,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if spec.UseTls || foundSslPort {
 		// tell envoy to use TLS to connect to this upstream
 		// TODO: support client certificates
-		out.TlsContext = &envoyauth.UpstreamTlsContext{
-			Sni: hostname,
+		if out.TlsContext == nil {
+			out.TlsContext = &envoyauth.UpstreamTlsContext{
+				Sni: hostname,
+			}
 		}
 	}
 

@@ -7,10 +7,10 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	gogo_types "github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 )
 
@@ -109,27 +109,16 @@ func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listene
 	}
 
 	var secureFilterChains []envoylistener.FilterChain
+
+	sslCfgTranslator := utils.NewSslConfigTranslator(snap.Secrets.List())
 	for _, sslConfig := range listener.SslConfiguations {
 		// get secrets
-		var (
-			certChain, privateKey, rootCa string
-			// if using a Secret ref, we will inline the certs in the tls config
-			inlineDataSource bool
-		)
-		switch sslSecrets := sslConfig.SslSecrets.(type) {
-		case *v1.SslConfig_SecretRef:
-			var err error
-			inlineDataSource = true
-			ref := sslSecrets.SecretRef
-			certChain, privateKey, rootCa, err = GetSslSecrets(*ref, snap.Secrets.List())
-			if err != nil {
-				report(err, "invalid secrets for listener %v", listener.Name)
-				continue
-			}
-		case *v1.SslConfig_SslFiles:
-			certChain, privateKey, rootCa = sslSecrets.SslFiles.TlsCert, sslSecrets.SslFiles.TlsKey, sslSecrets.SslFiles.RootCa
+		downstreamConfig, err := sslCfgTranslator.ResolveDownstreamSslConfig(sslConfig)
+		if err != nil {
+			report(err, "invalid secrets for listener %v", listener.Name)
+			continue
 		}
-		filterChain := newSslFilterChain(certChain, privateKey, rootCa, inlineDataSource, sslConfig.SniDomains, listenerFilters)
+		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listenerFilters)
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
@@ -148,72 +137,14 @@ func validateListenerPorts(proxy *v1.Proxy, report reportFunc) {
 	}
 }
 
-func newSslFilterChain(certChain, privateKey, rootCa string, inline bool, sniDomains []string, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
-	var certChainData, privateKeyData, rootCaData *envoycore.DataSource
-	if !inline {
-		certChainData = &envoycore.DataSource{
-			Specifier: &envoycore.DataSource_Filename{
-				Filename: certChain,
-			},
-		}
-		privateKeyData = &envoycore.DataSource{
-			Specifier: &envoycore.DataSource_Filename{
-				Filename: privateKey,
-			},
-		}
-		rootCaData = &envoycore.DataSource{
-			Specifier: &envoycore.DataSource_Filename{
-				Filename: rootCa,
-			},
-		}
-	} else {
-		certChainData = &envoycore.DataSource{
-			Specifier: &envoycore.DataSource_InlineString{
-				InlineString: certChain,
-			},
-		}
-		privateKeyData = &envoycore.DataSource{
-			Specifier: &envoycore.DataSource_InlineString{
-				InlineString: privateKey,
-			},
-		}
-		rootCaData = &envoycore.DataSource{
-			Specifier: &envoycore.DataSource_InlineString{
-				InlineString: rootCa,
-			},
-		}
-	}
-	var validationContext *envoyauth.CertificateValidationContext
-	var requireClientCert *gogo_types.BoolValue
-	if rootCa != "" {
-		requireClientCert = &gogo_types.BoolValue{Value: true}
-		validationContext = &envoyauth.CertificateValidationContext{
-			TrustedCa: rootCaData,
-		}
-	}
+func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
 
 	return envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters: listenerFilters,
-		TlsContext: &envoyauth.DownstreamTlsContext{
-			RequireClientCertificate: requireClientCert,
-			CommonTlsContext: &envoyauth.CommonTlsContext{
-				// default params
-				TlsParams: &envoyauth.TlsParameters{},
-				// TODO: configure client certificates
-				TlsCertificates: []*envoyauth.TlsCertificate{
-					{
-						CertificateChain: certChainData,
-						PrivateKey:       privateKeyData,
-					},
-				},
-				ValidationContextType: &envoyauth.CommonTlsContext_ValidationContext{
-					ValidationContext: validationContext,
-				},
-			},
-		},
+		Filters:    listenerFilters,
+		TlsContext: downstreamConfig,
 	}
 }
 

@@ -26,8 +26,6 @@ weight: 5
 - [RedirectAction](#RedirectAction)
 - [RedirectResponseCode](#RedirectResponseCode)
 - [DirectResponseAction](#DirectResponseAction)
-- [SslConfig](#SslConfig)
-- [SSLFiles](#SSLFiles)
   
 
 
@@ -94,7 +92,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `bind_address` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported |  |
 | `bind_port` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy |  |
 | `http_listener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#HttpListener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing |  |
-| `ssl_configuations` | [[]gloo.solo.io.SslConfig](../proxy.proto.sk#SslConfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
+| `ssl_configuations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#SslConfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
 
 
 
@@ -394,50 +392,6 @@ DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy
 | ----- | ---- | ----------- |----------- | 
 | `status` | `int` | Specifies the HTTP response status to be returned. |  |
 | `body` | `string` | Specifies the content of the response body. If this setting is omitted, no body is included in the generated response. Note: Headers can be specified using the Header Modification plugin in the enclosing Route, Virtual Host, or Listener. |  |
-
-
-
-
----
-### <a name="SslConfig">SslConfig</a>
-
- 
-SslConfig contains the options necessary to configure a virtual host or listener to use TLS
-
-```yaml
-"secret_ref": .core.solo.io.ResourceRef
-"ssl_files": .gloo.solo.io.SSLFiles
-"sni_domains": []string
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | * SecretRef contains the secret ref to a gloo secret containing the following structure: { "tls.crt": <ca chain data...>, "tls.key": <private key data...> } |  |
-| `ssl_files` | [.gloo.solo.io.SSLFiles](../proxy.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
-| `sni_domains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
-
-
-
-
----
-### <a name="SSLFiles">SSLFiles</a>
-
- 
-SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
-
-```yaml
-"tls_cert": string
-"tls_key": string
-"root_ca": string
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `tls_cert` | `string` |  |  |
-| `tls_key` | `string` |  |  |
-| `root_ca` | `string` | for client cert validation. optional |  |
 
 
 

@@ -54,3 +54,11 @@ It’s important that every piece of code in Gloo is reviewed by at least one So
 1. **CI check** A Solo team member needs to kick off the CI process by commenting `/test` on your PR.
 2. **Testing** 
 3. **Comments** 
+
+### Testing with coverage:
+
+To see coverage, run your tests in the package like so
+
+```
+ginkgo -cover && go tool cover -html *.coverprofile
+```

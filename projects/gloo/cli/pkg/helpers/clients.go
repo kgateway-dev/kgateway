@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -207,6 +209,7 @@ func secretClient() (v1.SecretClient, error) {
 	}
 	secretClient, err := v1.NewSecretClient(&factory.KubeSecretClientFactory{
 		Clientset: clientset,
+		Cache:     cache.NewKubeCoreCache(context.TODO(), clientset),
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating Secrets client")

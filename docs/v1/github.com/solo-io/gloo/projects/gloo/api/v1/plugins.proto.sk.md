@@ -129,6 +129,7 @@ Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`
 Each upstream type is handled by a corresponding Gloo plugin.
 
 ```yaml
+"ssl_config": .gloo.solo.io.UpstreamSslConfig
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
@@ -139,6 +140,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `ssl_config` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk#UpstreamSslConfig) |  |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#UpstreamSpec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#UpstreamSpec) |  |  |
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#UpstreamSpec) |  |  |

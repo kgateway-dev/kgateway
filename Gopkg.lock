@@ -1254,11 +1254,12 @@
   version = "v0.0.1"
 
 [[projects]]
-  digest = "1:5f4b78246f0bcb105b1e3b2b9e22b52a57cd02f57a8078572fe27c62f4a75ff7"
+  digest = "1:9dd8858ae7fa91d2477ec05605b000d3c1ad65e3a1e36f9bf8f97a170c05ea05"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
     "config",
+    "extensions/table",
     "internal/codelocation",
     "internal/containernode",
     "internal/failer",
@@ -1490,7 +1491,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:6f17043de4f91856227d088b40e7a1c55c3a5d2ca86a090c34addf2aaa0e4d4e"
+  digest = "1:e47b3f9b11cb5e1e505b4dc4a72c8dd4c50e6918df49c315d8197f51718b61de"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1545,8 +1546,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "8b9cf5bf4cadf2ddfac5ecfba6ee695264325537"
-  version = "v0.2.26"
+  revision = "73680f9c5837e9ea3e807d483f236f8080106d3e"
+  version = "v0.2.28"
 
 [[projects]]
   digest = "1:e01b05ba901239c783dfe56450bcde607fc858908529868259c9a8765dc176d0"
@@ -2458,6 +2459,7 @@
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
+    "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
@@ -2480,6 +2482,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
+    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server",

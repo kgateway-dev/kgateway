@@ -10,6 +10,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 
+	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -36,7 +37,10 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	if p.kubeShareFactory == nil {
 		p.kubeShareFactory = getInformerFactory(p.kube)
 	}
-	opts.Ctx = contextutils.WithLogger(opts.Ctx, "kube-uds")
+	ctx := contextutils.WithLogger(opts.Ctx, "kube-uds")
+	logger := contextutils.LoggerFrom(ctx)
+
+	logger.Infow("started", "watchns", watchNamespaces, "writens", writeNamespace)
 
 	watch := p.kubeShareFactory.Subscribe()
 
@@ -54,11 +58,13 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 			errs <- err
 			return
 		}
-
-		upstreamsChan <- convertServices(opts.Ctx, watchNamespaces, services, pods, discOpts, writeNamespace)
+		upstreams := convertServices(ctx, watchNamespaces, services, pods, discOpts, writeNamespace)
+		logger.Debugw("discovered services", "num", len(upstreams))
+		upstreamsChan <- upstreams
 	}
 
 	go func() {
+		defer logger.Info("ended")
 		defer p.kubeShareFactory.Unsubscribe(watch)
 		defer close(upstreamsChan)
 		defer close(errs)
@@ -71,7 +77,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 					return
 				}
 				discoverUpstreams()
-			case <-opts.Ctx.Done():
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -86,8 +92,10 @@ func convertServices(ctx context.Context, watchNamespaces []string, services []*
 			continue
 		}
 
-		if !containsString(svc.Namespace, watchNamespaces) {
-			continue
+		if !utils.AllNamespaces(watchNamespaces) {
+			if !containsString(svc.Namespace, watchNamespaces) {
+				continue
+			}
 		}
 
 		upstreams = append(upstreams, upstreamsForService(ctx, svc, pods, writeNamespace)...)

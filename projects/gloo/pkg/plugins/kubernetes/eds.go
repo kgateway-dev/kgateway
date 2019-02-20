@@ -83,7 +83,11 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 			errs <- err
 			return
 		}
-		endpointsChan <- list
+		select {
+		case <-opts.Ctx.Done():
+			return
+		case endpointsChan <- list:
+		}
 	}
 
 	go func() {

@@ -2,8 +2,11 @@ package kube2e_test
 
 import (
 	"os"
+	"sync"
 	"testing"
 	"time"
+
+	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -25,7 +28,10 @@ func TestKube2e(t *testing.T) {
 			"and is disabled by default. To enable, set RUN_KUBE2E_TESTS=1 in your env.")
 		return
 	}
-	RegisterFailHandler(Fail)
+
+	skhelpers.RegisterCommonFailHandlers()
+	skhelpers.SetupLog()
+	// RegisterFailHandler(Fail)
 	RunSpecs(t, "Kube2e Suite")
 }
 
@@ -34,18 +40,31 @@ var testRunnerPort int32
 var _ = BeforeSuite(func() {
 	// build and push images for test
 	version = helpers.TestVersion()
-	err := helpers.BuildPushContainers(version, true, true)
-	Expect(err).NotTo(HaveOccurred())
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer GinkgoRecover()
+		defer wg.Done()
+		err := helpers.BuildPushContainers(version, true, true)
+		Expect(err).NotTo(HaveOccurred())
+	}()
 
 	// todo (ilackarms): move randstring to stringutils package
 	namespace = "a" + stringutils.RandString(8)
 	testRunnerPort = 1234
+	wg.Add(1)
+	go func() {
+		defer GinkgoRecover()
+		defer wg.Done()
+		err := setup.SetupKubeForTest(namespace)
+		Expect(err).NotTo(HaveOccurred())
+		err = helpers.DeployTestRunner(namespace, defaultTestRunnerImage, testRunnerPort)
+		Expect(err).NotTo(HaveOccurred())
+	}()
+	wg.Wait()
 
-	err = setup.SetupKubeForTest(namespace)
-	Expect(err).NotTo(HaveOccurred())
-	err = helpers.DeployTestRunner(namespace, defaultTestRunnerImage, testRunnerPort)
-	Expect(err).NotTo(HaveOccurred())
-	err = helpers.DeployGlooWithHelm(namespace, version, false, true)
+	err := helpers.DeployGlooWithHelm(namespace, version, false, true)
 	Expect(err).NotTo(HaveOccurred())
 	err = helpers.WaitGlooPods(time.Minute, time.Second)
 	Expect(err).NotTo(HaveOccurred())

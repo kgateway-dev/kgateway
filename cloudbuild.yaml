@@ -125,7 +125,7 @@ steps:
   args: ['-c', 'docker login --username soloiobot --password $$DOCKER_HUB_PASSWORD']
   secretEnv: ['DOCKER_HUB_PASSWORD']
   id: 'docker-login'
-  waitFor: ['test']
+  waitFor: ['dep']
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker']
   env:
@@ -145,7 +145,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN', 'FIREBASE_TOKEN']
   id: 'release'
-  waitFor: ['compile']
+  waitFor: ['compile', 'test']
 # Sync helm chart data back to google storage bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
