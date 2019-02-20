@@ -3,6 +3,7 @@ package install
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
@@ -21,13 +22,13 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 	return cmd
 }
 
-func UninstallCmd(optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   constants.UNINSTALL_COMMAND.Use,
 		Short: constants.UNINSTALL_COMMAND.Short,
 		Long:  constants.UNINSTALL_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := kubectl(nil, "delete", "namespace", constants.DefaultInstallNamespace); err != nil {
+			if err := kubectl(nil, "delete", "namespace", opts.Uninstall.Namespace); err != nil {
 				return errors.Wrapf(err, "delete gloo failed")
 			}
 			knativeExists, isOurInstall, err := knativeInstalled()
@@ -42,6 +43,10 @@ func UninstallCmd(optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 			return nil
 		},
 	}
+
+	pFlags := cmd.PersistentFlags()
+	flagutils.AddUninstallFlags(pFlags, &opts.Uninstall)
+
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

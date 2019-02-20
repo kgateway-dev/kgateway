@@ -49,6 +49,9 @@ func GetHelmManifest(chartArchiveUri, valueFileName string, opts renderutil.Opti
 	// Apply filter functions to manifests
 	for _, filterFunc := range filterFunctions {
 		manifests, err = filterFunc(manifests)
+		if err != nil {
+			return nil, errors.Wrapf(err, "applying filter function")
+		}
 	}
 
 	// Collect manifests
