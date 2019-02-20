@@ -17,7 +17,8 @@ glooctl uninstall [flags]
 ### Options
 
 ```
-  -h, --help   help for uninstall
+  -h, --help               help for uninstall
+  -n, --namespace string   namespace in which Gloo is installed (default "gloo-system")
 ```
 
 ### Options inherited from parent commands

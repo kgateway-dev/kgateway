@@ -17,12 +17,11 @@ glooctl install knative [flags]
 ### Options
 
 ```
-  -d, --dry-run                           Dump the raw installation yaml instead of applying it to kubernetes
-  -f, --file string                       Install Gloo from this kubernetes manifest yaml file rather than from a release
-  -h, --help                              help for knative
-      --knative-crds-manifest string      Install Knative CRDs from this kubernetes manifest yaml file rather than from a release
-      --knative-install-manifest string   Install Knative Serving from this kubernetes manifest yaml file rather than from a release
-      --release string                    install using this release version. defaults to the latest github release
+  -d, --dry-run            Dump the raw installation yaml instead of applying it to kubernetes
+  -f, --file string        Install Gloo from this kubernetes manifest yaml file rather than from a release
+  -h, --help               help for knative
+  -n, --namespace string   namespace to install gloo into (default "gloo-system")
+      --release string     install using this release version. defaults to the latest github release
 ```
 
 ### Options inherited from parent commands
