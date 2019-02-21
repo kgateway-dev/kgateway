@@ -87,8 +87,8 @@ steps:
 # sync helm repo data from google cloud bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
-    - rsync
     - -m
+    - rsync
     - -r
     - gs://solo-public-helm/
     - './_output/helm'
@@ -150,8 +150,8 @@ steps:
 # Sync helm chart data back to google storage bucket
 - name: gcr.io/cloud-builders/gsutil
   args:
-    - rsync
     - -m
+    - rsync
     - -r
     - './_output/helm'
     - gs://solo-public-helm/
