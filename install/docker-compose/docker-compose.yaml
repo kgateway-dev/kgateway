@@ -1,0 +1,44 @@
+version: '3'
+services:
+
+  gloo:
+    image: "soloio/gloo:${GLOO_VERSION:-0.6.19}"
+    working_dir: /
+    command:
+    - "--dir=/data/"
+    volumes:
+    - ./data:/data/
+    ports:
+    - "9977:9977"
+
+  discovery:
+    image: "soloio/discovery:${GLOO_VERSION:-0.6.19}"
+    working_dir: /
+    command:
+    - "--dir=/data/"
+    volumes:
+    - ./data:/data/
+
+  gateway:
+    image: "soloio/gateway:${GLOO_VERSION:-0.6.19}"
+    working_dir: /
+    command:
+    - "--dir=/data/"
+    volumes:
+    - ./data:/data/
+
+  gateway-proxy:
+    image: soloio/gloo-envoy-wrapper:${GLOO_VERSION:-0.6.19}
+    entrypoint: ["envoy"]
+    command: ["-c", "/config/envoy.yaml", "--disable-hot-restart"]
+    volumes:
+    - ./data/envoy-config.yaml:/config/envoy.yaml:ro
+    ports:
+    - "8080:8080"
+    - "8443:8443"
+    - "19000:19000"
+
+  petstore:
+    image: soloio/petstore-example:latest
+    ports:
+    - "8090:8080"

@@ -1,0 +1,15 @@
+metadata:
+  name: default
+  namespace: gloo-system
+virtual_host:
+  routes:
+  - matcher:
+      exact: /petstore/findPet
+    route_action:
+      single:
+        upstream:
+          namespace: gloo-system
+          name: petstore
+        destination_spec:
+          rest:
+            function_name: findPetById
