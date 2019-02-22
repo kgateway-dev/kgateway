@@ -266,7 +266,7 @@ INSTALL_NAMESPACE ?= gloo-system
 .PHONY: manifest
 manifest: prepare-helm install/gloo-gateway.yaml install/gloo-knative.yaml update-helm-chart
 
-# creates Chart.yaml, values.yaml, values-knative.yaml
+# creates Chart.yaml, values.yaml, values-knative.yaml, values-ingress.yaml. See install/helm/gloo/README.md for more info.
 prepare-helm:
 	go run install/helm/gloo/generate.go $(VERSION)
 
@@ -311,9 +311,7 @@ ifeq ($(RELEASE),"true")
 	RELEASE_YAMLS := \
 		install/gloo-gateway.yaml \
 		install/gloo-knative.yaml \
-		install/gloo-ingress.yaml \
-		install/integrations/knative-crds-0.3.0.yaml \
-		install/integrations/knative-no-istio-0.3.0.yaml
+		install/gloo-ingress.yaml
 endif
 
 .PHONY: release-binaries

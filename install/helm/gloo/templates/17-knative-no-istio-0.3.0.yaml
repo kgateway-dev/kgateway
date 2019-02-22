@@ -1,3 +1,4 @@
+{{- if .Values.settings.integrations.knative.enabled }}
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -650,11 +651,12 @@ metadata:
 ---
 apiVersion: v1
 data:
-  gateway.knative-ingress-gateway: clusteringress-proxy.gloo-system.svc.cluster.local
-  gateway.knative-shared-gateway: clusteringress-proxy.gloo-system.svc.cluster.local
-  local-gateway.cluster-local-gateway: clusteringress-proxy.gloo-system.svc.cluster.local
+  gateway.knative-ingress-gateway: clusteringress-proxy.{{ .Release.Namespace }}.svc.cluster.local
+  gateway.knative-shared-gateway: clusteringress-proxy.{{ .Release.Namespace }}.svc.cluster.local
+  local-gateway.cluster-local-gateway: clusteringress-proxy.{{ .Release.Namespace }}.svc.cluster.local
 kind: ConfigMap
 metadata:
   name: config-istio
   namespace: knative-serving
 ---
+{{- end }}
