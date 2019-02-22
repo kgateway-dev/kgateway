@@ -6,6 +6,7 @@ metadata:
     app: gloo
     gloo: gateway-proxy
   name: gateway-proxy
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - port: {{ .Values.gatewayProxy.service.httpPort }}

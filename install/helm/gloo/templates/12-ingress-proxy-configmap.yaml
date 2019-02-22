@@ -1,6 +1,12 @@
 {{- if .Values.ingress.enabled }}
 # configmap
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingress-envoy-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
 data:
 {{ if (empty .Values.ingressProxy.configMap.data) }}
   envoy.yaml: |
@@ -41,11 +47,5 @@ data:
           address: 127.0.0.1
           port_value: 19000
 {{- else}}{{ toYaml .Values.ingressProxy.configMap.data | indent 2}}{{- end}}
-kind: ConfigMap
-metadata:
-  labels:
-    app: gloo
-  name: ingress-envoy-config
-
 
 {{- end }}

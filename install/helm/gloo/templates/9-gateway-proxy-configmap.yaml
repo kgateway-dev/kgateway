@@ -1,6 +1,12 @@
 {{- if .Values.gateway.enabled }}
 # config_map
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-envoy-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
 data:
 {{ if (empty .Values.gatewayProxy.configMap.data) }}
   envoy.yaml: |
@@ -41,10 +47,5 @@ data:
           address: 127.0.0.1
           port_value: 19000
 {{- else}}{{ toYaml .Values.gatewayProxy.configMap.data | indent 2}}{{- end}}
-kind: ConfigMap
-metadata:
-  labels:
-    app: gloo
-  name: gateway-envoy-config
 
 {{- end }}

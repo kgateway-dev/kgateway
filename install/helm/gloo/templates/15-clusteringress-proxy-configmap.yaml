@@ -1,6 +1,12 @@
 {{- if .Values.settings.integrations.knative.enabled }}
 # configmap
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clusteringress-envoy-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
 data:
   envoy.yaml: |
     node:
@@ -39,9 +45,4 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
-kind: ConfigMap
-metadata:
-  labels:
-    app: gloo
-  name: clusteringress-envoy-config
 {{- end }}

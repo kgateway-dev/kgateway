@@ -6,6 +6,7 @@ metadata:
     app: gloo
     gloo: ingress-proxy
   name: ingress-proxy
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - port: {{ .Values.ingressProxy.deployment.httpPort }}

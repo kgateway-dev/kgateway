@@ -6,6 +6,7 @@ metadata:
     app: gloo
     gloo: ingress
   name: ingress
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.ingress.deployment.replicas }}
   selector:

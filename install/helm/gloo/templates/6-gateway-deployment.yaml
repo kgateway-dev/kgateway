@@ -6,6 +6,7 @@ metadata:
     app: gloo
     gloo: gateway
   name: gateway
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gateway.deployment.replicas }}
   selector:
