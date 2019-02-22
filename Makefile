@@ -53,6 +53,7 @@ check-spelling:
 clean:
 	rm -rf _output
 	rm -fr site
+	git clean -xdf install
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
