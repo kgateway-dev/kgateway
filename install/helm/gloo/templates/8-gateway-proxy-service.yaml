@@ -7,6 +7,9 @@ metadata:
     gloo: gateway-proxy
   name: gateway-proxy
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.gatewayProxy.service.extraAnnotations }}
+  annotations:
+{{toYaml  . | indent 8}}{{- end }}
 spec:
   ports:
   - port: {{ .Values.gatewayProxy.service.httpPort }}
@@ -20,5 +23,8 @@ spec:
   selector:
     gloo: gateway-proxy
   type: {{ .Values.gatewayProxy.service.type }}
+  {{- if and (eq .Values.gatewayProxy.service.type "ClusterIP") .Values.gatewayProxy.service.clusterIP }}
+  clusterIP: {{ .Values.gatewayProxy.service.clusterIP }}
+  {{- end }}
 
 {{- end }}

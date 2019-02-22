@@ -100,9 +100,11 @@ type GatewayProxyDeployment struct {
 	*DeploymentSpec
 }
 type GatewayProxyService struct {
-	Type      string `json:"type,omitempty"`
-	HttpPort  string `json:"httpPort,omitempty"`
-	HttpsPort string `json:"httpsPort,omitempty"`
+	Type             string            `json:"type,omitempty"`
+	HttpPort         string            `json:"httpPort,omitempty"`
+	HttpsPort        string            `json:"httpsPort,omitempty"`
+	ClusterIP        string            `json:"clusterIP,omitempty"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {
