@@ -1,5 +1,5 @@
 namespace:
-  create: false
+  create: true
 rbac:
   create: true
 

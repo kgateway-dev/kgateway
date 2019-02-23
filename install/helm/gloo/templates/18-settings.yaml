@@ -22,4 +22,5 @@ spec:
   watchNamespaces:
   - {{ . }}
 {{- end }}
+
 {{- end }}
