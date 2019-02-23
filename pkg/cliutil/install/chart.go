@@ -11,14 +11,13 @@ import (
 	"strings"
 )
 
-const YamlDocumentSeparator = "\n---\n"
+const (
+	YamlDocumentSeparator = "\n---\n"
+	CrdFilePrefix         = "crds/"
+)
 
-// Renders the content of a the Helm chart archive located at the given URI.
-//   - chartArchiveUri: location of the chart, this can be either an http(s) address or a file path
-//   - valueFileName: if provided, the function will look for a value file with the given name in the archive and use it to override chart defaults
-//   - renderOptions: options to be used in the render
-//   - manifestFilter: a collection of functions that can be used to filter and transform the contents of the manifest. Will be applied in the given order.
-func GetHelmManifest(chartArchiveUri, valueFileName string, opts renderutil.Options, filterFunctions ...ManifestFilterFunc) ([]byte, error) {
+// Returns the Helm chart archive located at the given URI (can be either an http(s) address or a file path)
+func GetHelmArchive(chartArchiveUri string) (*chart.Chart, error) {
 
 	// Download chart archive
 	chartFile, err := cliutil.GetResource(chartArchiveUri)
@@ -33,13 +32,51 @@ func GetHelmManifest(chartArchiveUri, valueFileName string, opts renderutil.Opti
 	if err != nil {
 		return nil, errors.Wrapf(err, "loading chart archive")
 	}
+	return helmChart, err
+}
 
-	additionalValues, err := getAdditionalValues(helmChart, valueFileName)
+// Extracts the sub-chart that contains templates for the CRDs that have to be applied before the main chart.
+func GetCrdChart(helmChart *chart.Chart) (*chart.Chart, error) {
+	var crdFiles []*chartutil.BufferedFile
+	for _, file := range helmChart.Files {
+		if strings.HasPrefix(file.TypeUrl, CrdFilePrefix) {
+			crdFiles = append(crdFiles, &chartutil.BufferedFile{Name: strings.TrimPrefix(file.TypeUrl, CrdFilePrefix), Data: file.Value})
+		}
+	}
+	crdChart, err := chartutil.LoadFiles(crdFiles)
 	if err != nil {
-		return nil, errors.Wrapf(err, "reading value file")
+		return nil, err
+	}
+	return crdChart, nil
+}
+
+// Searches for the value file with the given name in the chart and returns its raw content.
+func GetValueFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
+	rawAdditionalValues := "{}"
+	if fileName != "" {
+		var found bool
+		for _, valueFile := range helmChart.Files {
+			if valueFile.TypeUrl == fileName {
+				rawAdditionalValues = string(valueFile.Value)
+			}
+			found = true
+		}
+		if !found {
+			return nil, errors.Errorf("could not find value file [%s] in Helm chart archive", fileName)
+		}
 	}
 
-	renderedTemplates, err := renderutil.Render(helmChart, additionalValues, opts)
+	// NOTE: config.Values is never used by helm
+	return &chart.Config{Raw: rawAdditionalValues}, nil
+}
+
+// Renders the content of the given Helm chart archive:
+//   - helmChart: the Gloo helm chart archive
+//   - overrideValues: value to override the chart defaults. NOTE: passing `nil` means "ignore the chart's default values"!
+//   - renderOptions: options to be used in the render
+//   - filterFunctions: a collection of functions that can be used to filter and transform the contents of the manifest. Will be applied in the given order.
+func RenderChart(helmChart *chart.Chart, overrideValues *chart.Config, renderOptions renderutil.Options, filterFunctions ...ManifestFilterFunc) ([]byte, error) {
+	renderedTemplates, err := renderutil.Render(helmChart, overrideValues, renderOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -61,24 +98,4 @@ func GetHelmManifest(chartArchiveUri, valueFileName string, opts renderutil.Opti
 	}
 
 	return []byte(strings.Join(manifestsContent, YamlDocumentSeparator)), nil
-}
-
-// Searches for the value file with the given name in the chart and returns its raw content.
-func getAdditionalValues(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
-	rawAdditionalValues := "{}"
-	if fileName != "" {
-		var found bool
-		for _, valueFile := range helmChart.Files {
-			if valueFile.TypeUrl == fileName {
-				rawAdditionalValues = string(valueFile.Value)
-			}
-			found = true
-		}
-		if !found {
-			return nil, errors.Errorf("could not find value file [%s] in Helm chart archive", fileName)
-		}
-	}
-
-	// NOTE: config.Values is never used by helm
-	return &chart.Config{Raw: rawAdditionalValues}, nil
 }

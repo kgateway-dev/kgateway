@@ -1,8 +1,6 @@
 package install
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -18,21 +16,8 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 		Short: "install the Gloo Gateway on kubernetes",
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			// Get Gloo release version
-			version, err := getGlooVersion(opts)
-			if err != nil {
-				return err
-			}
-
-			// Get location of Gloo install manifest
-			manifestUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, version)
-			if manifestOverride := opts.Install.GlooManifestOverride; manifestOverride != "" {
-				manifestUri = manifestOverride
-			}
-
-			if err := installFromUri(manifestUri, opts, ""); err != nil {
-				return errors.Wrapf(err, "installing gloo from helm")
+			if err := installGloo(opts, constants.GatewayValuesFileName); err != nil {
+				return errors.Wrapf(err, "installing gloo in gateway mode")
 			}
 			return nil
 		},

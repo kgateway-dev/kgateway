@@ -25,3 +25,5 @@
 # generator files
 *.go
 generate/
+
+README.md

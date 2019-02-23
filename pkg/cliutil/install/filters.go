@@ -20,6 +20,7 @@ var ExcludeEmptyManifests ManifestFilterFunc = func(input []manifest.Manifest) (
 		if !isEmptyManifest(manifest.Content) {
 			output = append(output, manifest)
 		}
+
 	}
 	return output, nil
 }
