@@ -14,10 +14,11 @@ Check the [Gloo docs](https://gloo.solo.io/installation/quick_start/#2-choosing-
 for a description of the different installation options.
 
 ## /crds
-This directory contains manifests for any Custom Resource Definition that should be part of the Gloo installation.
-When `glooctl` installs Gloo, it applies these manifests first. This is done in order to avoid race conditions 
-during the installation, i.e. situations where the CRDs are still pending when the manifest (which creates 
-instances of these CRDs) is applied.
+This directory contains a chart to build manifests for any Custom Resource Definition that should be part 
+of the Gloo installation. When `glooctl` installs Gloo, it renders the templates in this directory first, 
+using the same value files used by the regular Gloo chart for variable substitution. 
+This is done in order to avoid race conditions during the installation, i.e. situations where the CRDs 
+are still pending when the manifest (which creates instances of these CRDs) is applied.
 
 ## /templates
 This directory contains the Helm templates used to generate the Gloo manifests.

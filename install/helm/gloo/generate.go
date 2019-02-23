@@ -19,6 +19,8 @@ var (
 	ingressValuesOutput   = "install/helm/gloo/values-ingress.yaml"
 	chartTemplate         = "install/helm/gloo/Chart-template.yaml"
 	chartOutput           = "install/helm/gloo/Chart.yaml"
+	crdChartTemplate      = "install/helm/gloo/crds/Chart-template.yaml"
+	crdChartOutput        = "install/helm/gloo/crds/Chart.yaml"
 
 	ifNotPresent = "IfNotPresent"
 )
@@ -154,12 +156,23 @@ func generateIngressValuesYaml(version string) error {
 }
 
 func generateChartYaml(version string) error {
-	var chart generate.Chart
+	var chart, crdChart generate.Chart
 	if err := readYaml(chartTemplate, &chart); err != nil {
 		return err
 	}
 
 	chart.Version = version
 
-	return writeYaml(&chart, chartOutput)
+	if err := writeYaml(&chart, chartOutput); err != nil {
+		return err
+	}
+
+	if err := readYaml(crdChartTemplate, &crdChart); err != nil {
+		return err
+	}
+
+	crdChart.Version = version
+
+	return writeYaml(&crdChart, crdChartOutput)
+
 }

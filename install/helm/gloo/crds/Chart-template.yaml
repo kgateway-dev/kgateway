@@ -1,0 +1,4 @@
+apiVersion: v1
+name: gloo-crds
+sources:
+  - https://github.com/solo-io/gloo
