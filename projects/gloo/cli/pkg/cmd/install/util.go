@@ -13,8 +13,8 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/kubeutils"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/manifest"
 	"sigs.k8s.io/yaml"
@@ -64,7 +64,7 @@ func getGlooVersion(opts *options.Options) (string, error) {
 func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName string) error {
 
 	if path.Ext(helmArchiveUri) != ".tgz" && !strings.HasSuffix(helmArchiveUri, ".tar.gz") {
-		return errors.Errorf("unsupported file extension in manifest URI: %s", path.Ext(helmArchiveUri))
+		return errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", helmArchiveUri)
 	}
 
 	chart, err := install.GetHelmArchive(helmArchiveUri)
