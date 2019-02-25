@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -142,7 +141,6 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 func installManifest(manifest []byte, isDryRun bool) error {
 	if isDryRun {
 		fmt.Printf("%s", manifest)
-		ioutil.WriteFile("gloo-install-"+time.Now().String()+".yaml", manifest, 0777)
 		return nil
 	}
 	if err := kubectlApply(manifest); err != nil {

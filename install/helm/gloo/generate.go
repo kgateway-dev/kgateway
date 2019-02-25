@@ -13,6 +13,7 @@ import (
 var (
 	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
 	valuesOutput          = "install/helm/gloo/values.yaml"
+	crdValuesOutput       = "install/helm/gloo/crds/values.yaml"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
 	ingressValuesTemplate = "install/helm/gloo/values-ingress-template.yaml"
@@ -98,6 +99,10 @@ func generateGatewayValuesYaml(version string) error {
 		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.Gateway.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.GatewayProxy.Deployment.Image.PullPolicy = ifNotPresent
+	}
+
+	if err := writeYaml(cfg, crdValuesOutput); err != nil {
+		return err
 	}
 
 	return writeYaml(cfg, valuesOutput)
