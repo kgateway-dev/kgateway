@@ -37,14 +37,14 @@ func installGloo(opts *options.Options, valueFileName string) error {
 		return err
 	}
 
-	// Get location of Gloo install manifest
-	manifestUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, version)
-	if manifestOverride := opts.Install.GlooManifestOverride; manifestOverride != "" {
-		manifestUri = manifestOverride
+	// Get location of Gloo helm chart
+	helmChartArchiveUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, version)
+	if helmChartOverride := opts.Install.HelmChartOverride; helmChartOverride != "" {
+		helmChartArchiveUri = helmChartOverride
 	}
 
-	if err := installFromUri(manifestUri, opts, valueFileName); err != nil {
-		return errors.Wrapf(err, "installing knative from manifest")
+	if err := installFromUri(helmChartArchiveUri, opts, valueFileName); err != nil {
+		return errors.Wrapf(err, "installing Gloo from helm chart")
 	}
 	return nil
 }
@@ -61,13 +61,13 @@ func getGlooVersion(opts *options.Options) (string, error) {
 	}
 }
 
-func installFromUri(manifestUri string, opts *options.Options, valuesFileName string) error {
+func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName string) error {
 
-	if path.Ext(manifestUri) != ".tgz" {
-		return errors.Errorf("unsupported file extension in manifest URI: %s", path.Ext(manifestUri))
+	if path.Ext(helmArchiveUri) != ".tgz" && !strings.HasSuffix(helmArchiveUri, ".tar.gz") {
+		return errors.Errorf("unsupported file extension in manifest URI: %s", path.Ext(helmArchiveUri))
 	}
 
-	chart, err := install.GetHelmArchive(manifestUri)
+	chart, err := install.GetHelmArchive(helmArchiveUri)
 	if err != nil {
 		return errors.Wrapf(err, "retrieving gloo helm chart archive")
 	}

@@ -28,10 +28,10 @@ type Top struct {
 }
 
 type Install struct {
-	DryRun               bool
-	ReleaseVersion       string
-	Namespace            string
-	GlooManifestOverride string
+	DryRun            bool
+	ReleaseVersion    string
+	Namespace         string
+	HelmChartOverride string
 }
 
 type Uninstall struct {

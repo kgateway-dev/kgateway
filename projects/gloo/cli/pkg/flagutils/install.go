@@ -12,6 +12,6 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	if !version.IsReleaseVersion() {
 		set.StringVar(&install.ReleaseVersion, "release", "", "install using this release version. defaults to the latest github release")
 	}
-	set.StringVarP(&install.GlooManifestOverride, "file", "f", "", "Install Gloo from this kubernetes manifest yaml file rather than from a release")
+	set.StringVarP(&install.HelmChartOverride, "file", "f", "", "Install Gloo from this Helm chart archive file rather than from a release")
 	set.StringVarP(&install.Namespace, "namespace", "n", defaults.GlooSystem, "namespace to install gloo into")
 }
