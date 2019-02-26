@@ -14,3 +14,4 @@ spec:
     plural: settings
   scope: Namespaced
   version: v1
+---
