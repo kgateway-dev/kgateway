@@ -14,7 +14,7 @@ func Upstream(opts *options.Options) *cobra.Command {
 		Use:     constants.UPSTREAM_COMMAND.Use,
 		Aliases: constants.UPSTREAM_COMMAND.Aliases,
 		Short:   "read an upstream or list upstreams in a namespace",
-		Long:    "usage: glooctl get upstream [NAME] [--namespace=namespace] [-o FORMAT] [-o FORMAT]",
+		Long:    "usage: glooctl get upstream [NAME] [--namespace=namespace] [-o FORMAT]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			upstreams, err := common.GetUpstreams(common.GetName(args, opts), opts)
 			if err != nil {

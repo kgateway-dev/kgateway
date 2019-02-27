@@ -8,7 +8,7 @@ read an upstream or list upstreams in a namespace
 
 ### Synopsis
 
-usage: glooctl get upstream [NAME] [--namespace=namespace] [-o FORMAT] [-o FORMAT]
+usage: glooctl get upstream [NAME] [--namespace=namespace] [-o FORMAT]
 
 ```
 glooctl get upstream [flags]

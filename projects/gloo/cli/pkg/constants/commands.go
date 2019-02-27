@@ -69,4 +69,10 @@ var (
 		Aliases: []string{"ug"},
 		Short:   "upgrade glooctl binary",
 	}
+
+	EDIT_COMMAND = cobra.Command{
+		Use:     "edit",
+		Aliases: []string{"ed"},
+		Short:   "Edit a Gloo resource",
+	}
 )
