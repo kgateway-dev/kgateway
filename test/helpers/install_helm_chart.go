@@ -150,14 +150,14 @@ var glooPodLabels = []string{
 	"gloo=gateway-proxy",
 }
 
-//func WaitGlooPods(timeout, interval time.Duration) error {
-//	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-//	defer cancel()
-//	if err := WaitPodsRunning(ctx, interval, glooPodLabels...); err != nil {
-//		return err
-//	}
-//	return nil
-//}
+func WaitGlooPods(namespace string, timeout, interval time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if err := WaitPodsRunning(ctx, interval, namespace, glooPodLabels...); err != nil {
+		return err
+	}
+	return nil
+}
 
 func WaitPodsRunning(ctx context.Context, interval time.Duration, namespace string, labels ...string) error {
 	finished := func(output string) bool {
