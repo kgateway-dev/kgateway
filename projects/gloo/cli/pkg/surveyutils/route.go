@@ -274,17 +274,17 @@ func SelectRouteInteractive(opts *options.Options, virtualServicePrompt, routePr
 	if err != nil {
 		return nil, 0, err
 	}
+	routeindex, err := SelectRouteFromVirtualServiceInteractive(vsvc, routePrompt)
+	return vsvc, routeindex, err
+}
 
-	vs, err := helpers.MustVirtualServiceClient().Read(opts.Metadata.Namespace, opts.Metadata.Name,
-		clients.ReadOpts{Ctx: opts.Top.Ctx})
-	if err != nil {
-		return nil, 0, err
-	}
+func SelectRouteFromVirtualServiceInteractive(vs *gatewayv1.VirtualService, routePrompt string) (int, error) {
+
 	if vs.VirtualHost == nil {
-		return nil, 0, errors.Errorf("invalid virtual service %v", opts.Metadata.Ref())
+		return 0, errors.Errorf("invalid virtual service %v", vs.Metadata.Ref())
 	}
 	if len(vs.VirtualHost.Routes) == 0 {
-		return nil, 0, errors.Errorf("no routes defined for virtual service %v", opts.Metadata.Ref())
+		return 0, errors.Errorf("no routes defined for virtual service %v", vs.Metadata.Ref())
 	}
 
 	var routes []string
@@ -297,16 +297,16 @@ func SelectRouteInteractive(opts *options.Options, virtualServicePrompt, routePr
 		&chosenRoute,
 		routes,
 	); err != nil {
-		return nil, 0, err
+		return 0, err
 	}
 
 	for i, route := range routes {
 		if route == chosenRoute {
-			return vsvc, i, nil
+			return i, nil
 		}
 	}
 
-	return nil, 0, errors.Errorf("can't find route")
+	return 0, errors.Errorf("can't find route")
 }
 
 func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt string) (*gatewayv1.VirtualService, error) {
@@ -316,7 +316,7 @@ func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt str
 	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces() {
 		namespaces = append(namespaces, ns)
-		vsList, err := helpers.MustVirtualServiceClient().List(ns, clients.ListOpts{})
+		vsList, err := helpers.MustVirtualServiceClient().List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
