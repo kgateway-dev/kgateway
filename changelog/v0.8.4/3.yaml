@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: "ingresses only picked up in default namespace"
+  issueLink: https://github.com/solo-io/gloo/issues/476

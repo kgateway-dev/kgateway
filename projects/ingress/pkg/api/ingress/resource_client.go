@@ -187,7 +187,6 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 
 func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 
 	ingressObjList, err := rc.kube.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(opts.Selector).String(),
@@ -216,7 +215,6 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 
 func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	namespace = clients.DefaultNamespaceIfEmpty(namespace)
 	watch, err := rc.kube.ExtensionsV1beta1().Ingresses(namespace).Watch(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(opts.Selector).String(),
 	})
