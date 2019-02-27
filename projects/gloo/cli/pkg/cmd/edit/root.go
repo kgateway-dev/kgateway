@@ -14,7 +14,11 @@ import (
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
-	editFlags := editOptions.EditOptions{Options: opts}
+	editFlags := &editOptions.EditOptions{Options: opts}
+	return RootCmdWithEditOpts(editFlags, optionsFunc...)
+}
+
+func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     constants.EDIT_COMMAND.Use,
 		Aliases: constants.EDIT_COMMAND.Aliases,
@@ -22,7 +26,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Long:    constants.EDIT_COMMAND.Long,
 
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := argsutils.MetadataArgsParse(opts, args)
+			err := argsutils.MetadataArgsParse(opts.Options, args)
 			if err != nil {
 				return err
 			}
@@ -34,7 +38,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 	// add resource version flag. this is not needed in interactive mode, as we can do an edit
 	// atomically in that case
-	addEditFlags(cmd.PersistentFlags(), &editFlags)
+	addEditFlags(cmd.PersistentFlags(), opts)
 
 	cmd.AddCommand(upstream.RootCmd(&editFlags, optionsFunc...))
 	return cmd
