@@ -327,7 +327,7 @@ release-yamls: $(RELEASE_YAMLS)
 .PHONY: release
 release: release-binaries release-yamls
 ifeq ($(RELEASE),"true")
-	ci/push-docs.sh tag=$(TAGGED_VERSION)
+	go run push_docs.go
 	@$(foreach BINARY,$(RELEASE_BINARIES),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(BINARY) sha=TRUE;)
 	@$(foreach YAML,$(RELEASE_YAMLS),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(YAML);)
 endif
@@ -335,7 +335,7 @@ endif
 .PHONY: push-docs
 push-docs:
 ifeq ($(RELEASE),"true")
-	ci/push-docs.sh tag=$(TAGGED_VERSION)
+	go run push_docs.go
 endif
 
 #----------------------------------------------------------------------------------
