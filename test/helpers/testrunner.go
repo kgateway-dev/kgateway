@@ -27,7 +27,7 @@ func DeployTestRunner(namespace, image string, port int32) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testrunner",
 			Namespace: namespace,
-			// needed for WaitForPodsRunning
+			// needed for WaitPodsRunning
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
@@ -46,7 +46,7 @@ func DeployTestRunner(namespace, image string, port int32) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testrunner",
 			Namespace: namespace,
-			// needed for WaitForPodsRunning
+			// needed for WaitPodsRunning
 			Labels: labels,
 		},
 		Spec: v1.ServiceSpec{
@@ -64,11 +64,11 @@ func DeployTestRunner(namespace, image string, port int32) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	if err := WaitPodsRunning(ctx, time.Second, "gloo=testrunner"); err != nil {
+	if err := WaitPodsRunning(ctx, time.Second, namespace, "gloo=testrunner"); err != nil {
 		return err
 	}
 	go func() {
-		if err := StartSimpleHttpServer(port); err != nil {
+		if err := StartSimpleHttpServer(namespace, port); err != nil {
 			log.Warnf("failed to start HTTP Server in Test Runner: %v", err)
 		}
 	}()
@@ -92,7 +92,7 @@ const SimpleHttpResponse = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//E
 </body>
 </html>`
 
-func StartSimpleHttpServer(port int32) error {
-	_, err := setup.TestRunner("python", "-m", "SimpleHTTPServer", fmt.Sprintf("%v", port))
+func StartSimpleHttpServer(namespace string, port int32) error {
+	_, err := setup.TestRunner(namespace, "python", "-m", "SimpleHTTPServer", fmt.Sprintf("%v", port))
 	return err
 }

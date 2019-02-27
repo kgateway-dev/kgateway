@@ -1,15 +1,16 @@
-package kube2e_test
+package gateway_test
 
 import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/client-go/kubernetes"
 	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
@@ -21,7 +22,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -69,7 +69,8 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	AfterEach(func() {
 		cancel()
-		virtualServiceClient.Delete(namespace, "vs", clients.DeleteOpts{})
+		err := virtualServiceClient.Delete(namespace, "vs", clients.DeleteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("works", func() {
@@ -103,6 +104,8 @@ var _ = Describe("Kube2e: gateway", func() {
 		}, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
+		fmt.Println("wait for gateway to be created")
+
 		defaultGateway := defaults.DefaultGateway(namespace)
 		// wait for default gateway to be created
 		Eventually(func() (*v1.Gateway, error) {
@@ -118,16 +121,19 @@ var _ = Describe("Kube2e: gateway", func() {
 			Host:     gatewayProxy,
 			Service:  gatewayProxy,
 			Port:     gatewayPort,
-		}, namespace, helpers.SimpleHttpResponse, int(time.Minute))
+		}, namespace, helpers.SimpleHttpResponse, 1, time.Minute)
 	})
+
 	Context("native ssl ", func() {
+
 		BeforeEach(func() {
 			// get the certificate so it is generated in the background
 			go helpers.Certificate()
 		})
 
 		AfterEach(func() {
-			kubeClient.CoreV1().Secrets(namespace).Delete("secret", nil)
+			err := kubeClient.CoreV1().Secrets(namespace).Delete("secret", nil)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("works with ssl", func() {
@@ -179,10 +185,11 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			gatewayProxy := "gateway-proxy"
 			gatewayPort := int(443)
-			cafile := ToFile(helpers.Certificate())
-			defer os.Remove(cafile)
+			caFile := ToFile(helpers.Certificate())
+			//noinspection GoUnhandledErrorResult
+			defer os.Remove(caFile)
 
-			err = setup.Kubectl("cp", cafile, namespace+"/testrunner:/tmp/ca.crt")
+			err = setup.Kubectl("cp", caFile, namespace+"/testrunner:/tmp/ca.crt")
 			Expect(err).NotTo(HaveOccurred())
 
 			setup.CurlEventuallyShouldRespond(setup.CurlOpts{
@@ -193,7 +200,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Service:  gatewayProxy,
 				Port:     gatewayPort,
 				CaFile:   "/tmp/ca.crt",
-			}, namespace, helpers.SimpleHttpResponse, int(time.Minute))
+			}, namespace, helpers.SimpleHttpResponse, 1, time.Minute)
 		})
 	})
 })
@@ -204,6 +211,6 @@ func ToFile(content string) string {
 	n, err := f.WriteString(content)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	ExpectWithOffset(1, n).To(Equal(len(content)))
-	f.Close()
+	_ = f.Close()
 	return f.Name()
 }

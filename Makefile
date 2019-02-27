@@ -373,3 +373,63 @@ docker-kind: docker
 	kind load docker-image soloio/discovery:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image soloio/gloo:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image soloio/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+
+
+#----------------------------------------------------------------------------------
+# Build assets for Kube2e tests
+#----------------------------------------------------------------------------------
+#
+# The following targets are used to build the assets on which the kube2e tests rely upon. The flow is as follows:
+#
+#   1. Generate an identifier that is unique to this build (DOCKER_IMAGE_TAG)
+#   2. Build the images and tag them with this identifier
+#   3. Push the images to GCR
+#   4. Generate Gloo value files providing overrides to make the image elements point to GCR
+#      - override the repository prefix for all repository names (e.g. soloio/gateway -> gcr.io/solo-public/gateway)
+#      - set the tag for each image to DOCKER_IMAGE_TAG
+#   5. Package the Gloo Helm chart to the _test directory (also generate an index file)
+#
+# The Kube2e tests will use the generated Gloo Chart to install Gloo to the GKE test cluster.
+
+# Passed by cloudbuild
+GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
+BUILD_ID := $(BUILD_ID)
+
+DOCKER_IMAGE_TAG := test-$(BUILD_ID)
+OUTPUT_TEST_DIR := $(ROOTDIR)/_test
+DOCKER_REPO_PREFIX := gcr.io/$(GCLOUD_PROJECT_ID)
+TEST_DOCKER_TARGETS := gateway-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test
+
+.PHONY: build-test-assets
+build-test-assets: build-test-images build-test-chart
+
+
+.PHONY: build-test-images $(TEST_DOCKER_TARGETS)
+build-test-images: $(TEST_DOCKER_TARGETS)
+
+gateway-docker-test: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway -t $(DOCKER_REPO_PREFIX)/gateway:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO_PREFIX)/gateway:$(DOCKER_IMAGE_TAG)
+
+ingress-docker-test: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.ingress -t $(DOCKER_REPO_PREFIX)/ingress:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO_PREFIX)/ingress:$(DOCKER_IMAGE_TAG)
+
+discovery-docker-test: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.discovery
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.discovery -t $(DOCKER_REPO_PREFIX)/discovery:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO_PREFIX)/discovery:$(DOCKER_IMAGE_TAG)
+
+gloo-docker-test: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gloo -t $(DOCKER_REPO_PREFIX)/gloo:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO_PREFIX)/gloo:$(DOCKER_IMAGE_TAG)
+
+gloo-envoy-wrapper-docker-test: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit -t $(DOCKER_REPO_PREFIX)/gloo-envoy-wrapper:$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_REPO_PREFIX)/gloo-envoy-wrapper:$(DOCKER_IMAGE_TAG)
+
+.PHONY: build-test-chart
+build-test-chart: $(OUTPUT_DIR)/glooctl-linux-amd64
+	mkdir -p $(OUTPUT_TEST_DIR)
+	go run install/helm/gloo/generate.go $(DOCKER_IMAGE_TAG) $(DOCKER_REPO_PREFIX)
+	helm package --destination $(OUTPUT_TEST_DIR) $(HELM_DIR)/gloo
+	helm repo index $(OUTPUT_TEST_DIR)

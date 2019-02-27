@@ -1,8 +1,11 @@
 vendor
 _output
+_test
 .idea
 site
 .firebase
 
 themes
 install/gloo.yaml
+
+cloudbuild-local.yaml

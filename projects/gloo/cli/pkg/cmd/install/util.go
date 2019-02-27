@@ -72,6 +72,9 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 	}
 
 	values, err := install.GetValueFile(chart, valuesFileName)
+	if err != nil {
+		return errors.Wrapf(err, "retrieving value file: %s", valuesFileName)
+	}
 
 	crdChart, err := install.GetCrdChart(chart)
 	if err != nil {
@@ -171,7 +174,7 @@ func kubectl(stdin io.Reader, args ...string) error {
 func GetKnativeResourceFilterFunction() (install.ManifestFilterFunc, error) {
 	installed, ours, err := knativeInstalled()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "checking for knative installation")
 	}
 	skipKnativeInstall := installed && !ours
 	return func(input []manifest.Manifest) ([]manifest.Manifest, error) {

@@ -23,7 +23,7 @@ func DeployGlooWithHelm(namespace, imageVersion string, enableKnative, verbose b
 		return err
 	}
 	defer os.Remove(values.Name())
-	if _, err := io.Copy(values, GlooHelmValues(namespace, imageVersion, enableKnative)); err != nil {
+	if _, err := io.Copy(values, glooHelmValues(namespace, imageVersion, enableKnative)); err != nil {
 		return err
 	}
 	err = values.Close()
@@ -51,7 +51,7 @@ func DeployGlooWithHelm(namespace, imageVersion string, enableKnative, verbose b
 	return nil
 }
 
-func GlooHelmValues(namespace, version string, enableKnative bool) io.Reader {
+func glooHelmValues(namespace, version string, enableKnative bool) io.Reader {
 	b := &bytes.Buffer{}
 
 	err := template.Must(template.New("gloo-helm-values").Parse(`
@@ -150,21 +150,21 @@ var glooPodLabels = []string{
 	"gloo=gateway-proxy",
 }
 
-func WaitGlooPods(timeout, interval time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	if err := WaitPodsRunning(ctx, interval, glooPodLabels...); err != nil {
-		return err
-	}
-	return nil
-}
+//func WaitGlooPods(timeout, interval time.Duration) error {
+//	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+//	defer cancel()
+//	if err := WaitPodsRunning(ctx, interval, glooPodLabels...); err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
-func WaitPodsRunning(ctx context.Context, interval time.Duration, labels ...string) error {
+func WaitPodsRunning(ctx context.Context, interval time.Duration, namespace string, labels ...string) error {
 	finished := func(output string) bool {
 		return strings.Contains(output, "Running") || strings.Contains(output, "ContainerCreating")
 	}
 	for _, label := range labels {
-		if err := WaitPodStatus(ctx, interval, label, "Running or ContainerCreating", finished); err != nil {
+		if err := WaitPodStatus(ctx, interval, namespace, label, "Running or ContainerCreating", finished); err != nil {
 			return err
 		}
 	}
@@ -172,26 +172,26 @@ func WaitPodsRunning(ctx context.Context, interval time.Duration, labels ...stri
 		return strings.Contains(output, "Running")
 	}
 	for _, label := range labels {
-		if err := WaitPodStatus(ctx, interval, label, "Running", finished); err != nil {
+		if err := WaitPodStatus(ctx, interval, namespace, label, "Running", finished); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func WaitPodsTerminated(ctx context.Context, interval time.Duration, labels ...string) error {
-	for _, label := range labels {
-		finished := func(output string) bool {
-			return !strings.Contains(output, label)
-		}
-		if err := WaitPodStatus(ctx, interval, label, "terminated", finished); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+//func WaitPodsTerminated(ctx context.Context, interval time.Duration, labels ...string) error {
+//	for _, label := range labels {
+//		finished := func(output string) bool {
+//			return !strings.Contains(output, label)
+//		}
+//		if err := WaitPodStatus(ctx, interval, label, "terminated", finished); err != nil {
+//			return err
+//		}
+//	}
+//	return nil
+//}
 
-func WaitPodStatus(ctx context.Context, interval time.Duration, label, status string, finished func(output string) bool) error {
+func WaitPodStatus(ctx context.Context, interval time.Duration, namespace, label, status string, finished func(output string) bool) error {
 	tick := time.Tick(interval)
 	d, _ := ctx.Deadline()
 	log.Debugf("waiting till %v for pod %v to be %v...", d, label, status)
@@ -200,7 +200,7 @@ func WaitPodStatus(ctx context.Context, interval time.Duration, label, status st
 		case <-ctx.Done():
 			return fmt.Errorf("timed out waiting for %v to be %v", label, status)
 		case <-tick:
-			out, err := setup.KubectlOut("get", "pod", "-l", label)
+			out, err := setup.KubectlOut("get", "pod", "-l", label, "-n", namespace)
 			if err != nil {
 				return fmt.Errorf("failed getting pod: %v", err)
 			}
