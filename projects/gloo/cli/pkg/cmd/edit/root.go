@@ -40,7 +40,7 @@ func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.
 	// atomically in that case
 	addEditFlags(cmd.PersistentFlags(), opts)
 
-	cmd.AddCommand(upstream.RootCmd(&editFlags, optionsFunc...))
+	cmd.AddCommand(upstream.RootCmd(opts, optionsFunc...))
 	return cmd
 }
 
