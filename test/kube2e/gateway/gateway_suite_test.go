@@ -7,22 +7,16 @@ import (
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
-	"os"
 	"testing"
 )
 
-const (
-	// TODO(ilackarms): tie testrunner to solo CI test containers and then handle image tagging
-	defaultTestRunnerImage = "soloio/testrunner:latest"
-)
+// TODO(ilackarms): tie testrunner to solo CI test containers and then handle image tagging
+const defaultTestRunnerImage = "soloio/testrunner:latest"
 
 func TestGateway(t *testing.T) {
-	if os.Getenv("RUN_KUBE2E_TESTS") != "1" {
-		log.Warnf("This test builds and deploys images to dockerhub and kubernetes, " +
-			"and is disabled by default. To enable, set RUN_KUBE2E_TESTS=1 in your env.")
+	if kube2e.AreTestsDisabled() {
 		return
 	}
-
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Gateway Suite")
@@ -39,7 +33,7 @@ var _ = BeforeSuite(func() {
 
 	namespace = version
 
-	err = kube2e.GlooctlInstall(namespace, version)
+	err = kube2e.GlooctlInstall(namespace, version, kube2e.GATEWAY)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = helpers.DeployTestRunner(namespace, defaultTestRunnerImage, testRunnerPort)

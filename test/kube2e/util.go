@@ -3,11 +3,28 @@ package kube2e
 import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"k8s.io/helm/pkg/repo"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
+
+const (
+	GATEWAY = "gateway"
+	INGRESS = "ingress"
+	KNATIVE = "knative"
+)
+
+func AreTestsDisabled() bool {
+	if os.Getenv("RUN_KUBE2E_TESTS") != "1" {
+		log.Warnf("This test builds and deploys images to dockerhub and kubernetes, " +
+			"and is disabled by default. To enable, set RUN_KUBE2E_TESTS=1 in your env.")
+		return true
+	}
+	return false
+}
 
 // Returns the version identifier for the current build
 func GetTestVersion() (string, error) {
@@ -28,11 +45,10 @@ func GetTestVersion() (string, error) {
 	}
 }
 
-func GlooctlInstall(namespace, version string) error {
+func GlooctlInstall(namespace, version, deploymentType string) error {
 	return helpers.RunCommand(true,
 		"_output/glooctl-"+runtime.GOOS+"-amd64",
-		"install",
-		"gateway",
+		"install", deploymentType,
 		"-n", namespace,
 		"-f", strings.Join([]string{"_test/gloo-", version, ".tgz"}, ""),
 		"--release", version, // TODO: will not be needed anymore
