@@ -1466,7 +1466,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:1271c718ea74e4b1f43457e4d7af966733b5bb87f5b13dba63ba06e7dcddb7d1"
+  digest = "1:9ede3fa7cb7a0652b44c405afa87d75a39db23967b36a6a8d971cacea4df2572"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1483,7 +1483,7 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "56b68a48bcfd2f5c76c3e669af55b3cc1d7c78a0"
+  revision = "587bab12a2c729a407b804ea6cfe49b37f69b654"
 
 [[projects]]
   branch = "master"
@@ -2484,11 +2484,9 @@
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-checkpoint",
-    "github.com/solo-io/go-utils/changelogutils",
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/docsutils",
     "github.com/solo-io/go-utils/errors",
-    "github.com/solo-io/go-utils/githubutils",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/protoutils",
     "github.com/solo-io/go-utils/testutils",
@@ -2523,7 +2521,6 @@
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",
-    "github.com/spf13/afero",
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
     "github.com/spf13/pflag",
