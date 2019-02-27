@@ -292,7 +292,7 @@ var _ = Describe("Happypath", func() {
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(getStatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
+				Eventually(getStatus, "20s", "0.5s").Should(Equal(core.Status_Accepted))
 			})
 
 			It("should discover service", func() {
@@ -333,7 +333,7 @@ var _ = Describe("Happypath", func() {
 			})
 
 			It("watch all namespaces", func() {
-				Eventually(getStatus, "10s", "0.5s").Should(Equal(core.Status_Accepted))
+				Eventually(getStatus, "20s", "0.5s").Should(Equal(core.Status_Accepted))
 
 				up, err := getUpstream()
 				Expect(err).NotTo(HaveOccurred())
