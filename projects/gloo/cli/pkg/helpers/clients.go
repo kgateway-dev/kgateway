@@ -207,9 +207,13 @@ func secretClient() (v1.SecretClient, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
+	coreCache, err := cache.NewKubeCoreCache(context.TODO(), clientset)
+	if err != nil {
+		return nil, err
+	}
 	secretClient, err := v1.NewSecretClient(&factory.KubeSecretClientFactory{
 		Clientset: clientset,
-		Cache:     cache.NewKubeCoreCache(context.TODO(), clientset),
+		Cache:     coreCache,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating Secrets client")

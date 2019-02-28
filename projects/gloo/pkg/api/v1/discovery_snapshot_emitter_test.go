@@ -59,9 +59,11 @@ var _ = Describe("V1Emitter", func() {
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
 		secretClientFactory := &factory.KubeSecretClientFactory{
 			Clientset: kube,
-			Cache:     cache.NewKubeCoreCache(context.TODO(), kube),
+			Cache:     kcache,
 		}
 		secretClient, err = NewSecretClient(secretClientFactory)
 		Expect(err).NotTo(HaveOccurred())
