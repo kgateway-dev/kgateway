@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"time"
 )
 
 var _ = Describe("Kube2e: Ingress", func() {
@@ -69,6 +70,6 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Host:     ingressProxy,
 			Service:  ingressProxy,
 			Port:     ingressPort,
-		}, helpers.SimpleHttpResponse)
+		}, namespace, helpers.SimpleHttpResponse, int(time.Minute))
 	})
 })

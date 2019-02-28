@@ -165,7 +165,11 @@ func initializeForKube(ctx context.Context,
 	}
 
 	if *kubeCoreCache == nil {
-		*kubeCoreCache = cache.NewKubeCoreCache(ctx, *clientset)
+		coreCache, err := cache.NewKubeCoreCache(ctx, *clientset)
+		if err != nil {
+			return err
+		}
+		*kubeCoreCache = coreCache
 	}
 
 	return nil
