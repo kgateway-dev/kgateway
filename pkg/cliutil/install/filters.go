@@ -1,9 +1,10 @@
 package install
 
 import (
-	"k8s.io/helm/pkg/manifest"
 	"regexp"
 	"strings"
+
+	"k8s.io/helm/pkg/manifest"
 )
 
 // This type represents a function that can be used to filter and transform a list of manifests.

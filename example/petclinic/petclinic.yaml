@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic-db
+  namespace: default
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    app: petclinic-db
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: petclinic-db
+  namespace: default
+  labels:
+    app: petclinic-db
+spec:
+  selector:
+    matchLabels:
+      app: petclinic-db
+  serviceName: petclinic-db
+  template:
+    metadata:
+      labels:
+        app: petclinic-db
+    spec:
+      containers:
+      - name: petclinic-db
+        image: soloio/petclinic-db@sha256:da76e6d0fcfc5cb92a7e6128cca6bdb15249f79bb7971d10f1d7423ae67581cd
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: demo
+        - name: MYSQL_DATABASE
+          value: petclinic
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: sql-data
+      volumes:
+      - name: sql-data
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: petclinic
+  namespace: default
+  labels:
+    app: petclinic
+spec:
+  selector:
+    matchLabels:
+      app: petclinic
+  serviceName: petclinic
+  template:
+    metadata:
+      labels:
+        app: petclinic
+    spec:
+      containers:
+      - name: petclinic
+        image: soloio/petclinic@sha256:c145b92cf7f9d016206428b79313ba458d538598d1f3548c62749a8acddc474b
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http-ui
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic
+  namespace: default
+spec:
+  ports:
+  - name: http-ui
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: petclinic
+  sessionAffinity: None
+  type: ClusterIP

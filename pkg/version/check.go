@@ -8,22 +8,22 @@ import (
 
 func CheckVersions() error {
 	log.Printf("Checking expected solo kit and gloo versions...")
-	tomlTree, err := version.ParseToml()
+	tomlTree, err := versionutils.ParseToml()
 	if err != nil {
 		return err
 	}
 
-	expectedSoloKitVersion, err := version.GetVersion(version.SoloKitPkg, tomlTree)
+	expectedSoloKitVersion, err := versionutils.GetVersion(versionutils.SoloKitPkg, tomlTree)
 	if err != nil {
 		return err
 	}
 
 	log.Printf("Checking repo versions...")
-	actualSoloKitVersion, err := version.GetGitVersion("../solo-kit")
+	actualSoloKitVersion, err := versionutils.GetGitVersion("../solo-kit")
 	if err != nil {
 		return err
 	}
-	expectedTaggedSoloKitVersion := version.GetTag(expectedSoloKitVersion)
+	expectedTaggedSoloKitVersion := versionutils.GetTag(expectedSoloKitVersion)
 	if expectedTaggedSoloKitVersion != actualSoloKitVersion {
 		return errors.Errorf("Expected solo kit version %s, found solo kit version %s in repo. Run 'make pin-repos' or fix manually.", expectedTaggedSoloKitVersion, actualSoloKitVersion)
 	}

@@ -1483,8 +1483,13 @@
     "versionutils",
   ]
   pruneopts = "UT"
+<<<<<<< HEAD
   revision = "3f2665be45414869ead7118115043d72ef5920c9"
   version = "v0.2.7"
+=======
+  revision = "594125e202450886dd6cc80a925e3d824950843c"
+  version = "v0.2.5"
+>>>>>>> origin/master
 
 [[projects]]
   branch = "master"
@@ -1495,7 +1500,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:e47b3f9b11cb5e1e505b4dc4a72c8dd4c50e6918df49c315d8197f51718b61de"
+  digest = "1:7017c7c3ee4e833c3de92873c3d9fe3e9afc08190f476994ef57dfb88bb1c93c"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1550,8 +1555,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "73680f9c5837e9ea3e807d483f236f8080106d3e"
-  version = "v0.2.28"
+  revision = "b6ba2b73a5eb3b82fe9fb6076c5a1f9ea8b9d10c"
+  version = "v0.3.0"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"

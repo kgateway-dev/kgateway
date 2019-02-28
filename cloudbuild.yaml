@@ -54,7 +54,7 @@ steps:
 
 # Run all the tests with ginkgo -r
 # This requires setting up envoy, AWS, helm, and docker
-# The e2e-gingko container provides everything else needed for running tests
+# The e2e-ginkgo container provides everything else needed for running tests
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args:
@@ -100,7 +100,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   entrypoint: ls
   waitFor: ['-']
-  id: 'grab-gingko-container'
+  id: 'grab-ginkgo-container'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   env:

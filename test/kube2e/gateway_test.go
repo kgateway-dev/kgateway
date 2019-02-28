@@ -118,7 +118,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			Host:     gatewayProxy,
 			Service:  gatewayProxy,
 			Port:     gatewayPort,
-		}, helpers.SimpleHttpResponse, time.Minute)
+		}, namespace, helpers.SimpleHttpResponse, int(time.Minute))
 	})
 	Context("native ssl ", func() {
 		BeforeEach(func() {
@@ -193,7 +193,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Service:  gatewayProxy,
 				Port:     gatewayPort,
 				CaFile:   "/tmp/ca.crt",
-			}, helpers.SimpleHttpResponse, time.Minute)
+			}, namespace, helpers.SimpleHttpResponse, int(time.Minute))
 		})
 	})
 })

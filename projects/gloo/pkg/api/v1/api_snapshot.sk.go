@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -64,4 +66,55 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+}
+
+type ApiSnapshotStringer struct {
+	Version   uint64
+	Artifacts []string
+	Endpoints []string
+	Proxies   []string
+	Secrets   []string
+	Upstreams []string
+}
+
+func (ss ApiSnapshotStringer) String() string {
+	s := fmt.Sprintf("ApiSnapshot %v\n", ss.Version)
+
+	s += fmt.Sprintf("  Artifacts %v\n", len(ss.Artifacts))
+	for _, name := range ss.Artifacts {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Endpoints %v\n", len(ss.Endpoints))
+	for _, name := range ss.Endpoints {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Proxies %v\n", len(ss.Proxies))
+	for _, name := range ss.Proxies {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Secrets %v\n", len(ss.Secrets))
+	for _, name := range ss.Secrets {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Upstreams %v\n", len(ss.Upstreams))
+	for _, name := range ss.Upstreams {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	return s
+}
+
+func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
+	return ApiSnapshotStringer{
+		Version:   s.Hash(),
+		Artifacts: s.Artifacts.List().NamespacesDotNames(),
+		Endpoints: s.Endpoints.List().NamespacesDotNames(),
+		Proxies:   s.Proxies.List().NamespacesDotNames(),
+		Secrets:   s.Secrets.List().NamespacesDotNames(),
+		Upstreams: s.Upstreams.List().NamespacesDotNames(),
+	}
 }

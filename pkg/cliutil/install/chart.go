@@ -1,6 +1,8 @@
 package install
 
 import (
+	"strings"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/go-utils/errors"
 	"k8s.io/helm/pkg/chartutil"
@@ -8,7 +10,6 @@ import (
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/renderutil"
 	"k8s.io/helm/pkg/tiller"
-	"strings"
 )
 
 const (

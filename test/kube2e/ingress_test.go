@@ -1,6 +1,8 @@
 package kube2e_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/helpers"
@@ -69,6 +71,6 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Host:     ingressProxy,
 			Service:  ingressProxy,
 			Port:     ingressPort,
-		}, helpers.SimpleHttpResponse)
+		}, namespace, helpers.SimpleHttpResponse, int(time.Minute))
 	})
 })
