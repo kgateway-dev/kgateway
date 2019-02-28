@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: "fix typos in cloudbuild"
+  issueLink: https://github.com/solo-io/gloo/issues/471
