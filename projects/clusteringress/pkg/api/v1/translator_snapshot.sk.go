@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"fmt"
+
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
@@ -50,4 +52,41 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("clusteringresses", s.hashClusteringresses()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+}
+
+type TranslatorSnapshotStringer struct {
+	Version          uint64
+	Secrets          []string
+	Upstreams        []string
+	Clusteringresses []string
+}
+
+func (ss TranslatorSnapshotStringer) String() string {
+	s := fmt.Sprintf("TranslatorSnapshot %v\n", ss.Version)
+
+	s += fmt.Sprintf("  Secrets %v\n", len(ss.Secrets))
+	for _, name := range ss.Secrets {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Upstreams %v\n", len(ss.Upstreams))
+	for _, name := range ss.Upstreams {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Clusteringresses %v\n", len(ss.Clusteringresses))
+	for _, name := range ss.Clusteringresses {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	return s
+}
+
+func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
+	return TranslatorSnapshotStringer{
+		Version:          s.Hash(),
+		Secrets:          s.Secrets.List().NamespacesDotNames(),
+		Upstreams:        s.Upstreams.List().NamespacesDotNames(),
+		Clusteringresses: s.Clusteringresses.Names(),
+	}
 }
