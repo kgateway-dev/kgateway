@@ -1,4 +1,4 @@
 changelog:
-- type: FIX
+- type: NON_USER_FACING
   description: "fix typos in cloudbuild"
   issueLink: https://github.com/solo-io/gloo/issues/471
