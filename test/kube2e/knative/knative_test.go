@@ -19,8 +19,6 @@ var _ = Describe("Kube2e: Knative-Ingress", func() {
 
 	BeforeEach(func() {
 		deployKnativeTestService()
-		// TODO: improve
-		time.Sleep(3 * time.Second)
 	})
 
 	AfterEach(func() {
@@ -45,10 +43,10 @@ var _ = Describe("Kube2e: Knative-Ingress", func() {
 
 func deployKnativeTestService() {
 	b, err := ioutil.ReadFile(knativeTestServiceFile())
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	err = helpers.RunCommandInput(string(b), true, "kubectl", "apply", "-f", "-")
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
 func deleteKnativeTestService() error {
