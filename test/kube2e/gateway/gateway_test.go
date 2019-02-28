@@ -112,7 +112,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		// wait for default gateway to be created
 		Eventually(func() (*v1.Gateway, error) {
 			return gatewayClient.Read(namespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-		}, "5s", "0.5s").Should(Not(BeNil()))
+		}, "15s", "0.5s").Should(Not(BeNil()))
 
 		gatewayProxy := "gateway-proxy"
 		gatewayPort := int(80)
@@ -123,7 +123,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			Host:     gatewayProxy,
 			Service:  gatewayProxy,
 			Port:     gatewayPort,
-		}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute)
+		}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute*2)
 	})
 
 	Context("native ssl ", func() {
@@ -183,7 +183,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// wait for default gateway to be created
 			Eventually(func() (*v1.Gateway, error) {
 				return gatewayClient.Read(namespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			}, "10s", "0.5s").Should(Not(BeNil()))
+			}, "15s", "0.5s").Should(Not(BeNil()))
 
 			gatewayProxy := "gateway-proxy"
 			gatewayPort := int(443)
@@ -202,7 +202,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Service:  gatewayProxy,
 				Port:     gatewayPort,
 				CaFile:   "/tmp/ca.crt",
-			}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute)
+			}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute*2)
 		})
 	})
 })
