@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -40,4 +42,34 @@ func (s DiscoverySnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+}
+
+type DiscoverySnapshotStringer struct {
+	Version   uint64
+	Secrets   []string
+	Upstreams []string
+}
+
+func (ss DiscoverySnapshotStringer) String() string {
+	s := fmt.Sprintf("DiscoverySnapshot %v\n", ss.Version)
+
+	s += fmt.Sprintf("  Secrets %v\n", len(ss.Secrets))
+	for _, name := range ss.Secrets {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Upstreams %v\n", len(ss.Upstreams))
+	for _, name := range ss.Upstreams {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	return s
+}
+
+func (s DiscoverySnapshot) Stringer() DiscoverySnapshotStringer {
+	return DiscoverySnapshotStringer{
+		Version:   s.Hash(),
+		Secrets:   s.Secrets.List().NamespacesDotNames(),
+		Upstreams: s.Upstreams.List().NamespacesDotNames(),
+	}
 }

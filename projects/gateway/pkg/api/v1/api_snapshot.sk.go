@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -40,4 +42,34 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("virtualServices", s.hashVirtualServices()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+}
+
+type ApiSnapshotStringer struct {
+	Version         uint64
+	Gateways        []string
+	VirtualServices []string
+}
+
+func (ss ApiSnapshotStringer) String() string {
+	s := fmt.Sprintf("ApiSnapshot %v\n", ss.Version)
+
+	s += fmt.Sprintf("  Gateways %v\n", len(ss.Gateways))
+	for _, name := range ss.Gateways {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  VirtualServices %v\n", len(ss.VirtualServices))
+	for _, name := range ss.VirtualServices {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	return s
+}
+
+func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
+	return ApiSnapshotStringer{
+		Version:         s.Hash(),
+		Gateways:        s.Gateways.List().NamespacesDotNames(),
+		VirtualServices: s.VirtualServices.List().NamespacesDotNames(),
+	}
 }
