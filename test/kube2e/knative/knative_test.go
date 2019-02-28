@@ -18,7 +18,6 @@ var _ = Describe("Kube2e: Knative-Ingress", func() {
 
 	BeforeEach(func() {
 		deployKnativeTestService()
-
 		// TODO: improve
 		time.Sleep(3 * time.Second)
 	})

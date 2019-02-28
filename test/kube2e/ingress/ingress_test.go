@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/api/extensions/v1beta1"
@@ -72,6 +73,6 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Host:     ingressProxy,
 			Service:  ingressProxy,
 			Port:     ingressPort,
-		}, namespace, helpers.SimpleHttpResponse, 1, time.Minute)
+		}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute)
 	})
 })

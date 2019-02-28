@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/kube2e"
 	"io/ioutil"
 	"k8s.io/client-go/kubernetes"
 	"os"
@@ -94,7 +95,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
-									Upstream: core.ResourceRef{Namespace: namespace, Name: fmt.Sprintf("%s-%s-%v", namespace, "testrunner", testRunnerPort)},
+									Upstream: core.ResourceRef{Namespace: namespace, Name: fmt.Sprintf("%s-%s-%v", namespace, "testrunner", kube2e.TestRunnerPort)},
 								},
 							},
 						},
@@ -121,7 +122,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			Host:     gatewayProxy,
 			Service:  gatewayProxy,
 			Port:     gatewayPort,
-		}, namespace, helpers.SimpleHttpResponse, 1, time.Minute)
+		}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute)
 	})
 
 	Context("native ssl ", func() {
@@ -167,7 +168,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
-										Upstream: core.ResourceRef{Namespace: namespace, Name: fmt.Sprintf("%s-%s-%v", namespace, "testrunner", testRunnerPort)},
+										Upstream: core.ResourceRef{Namespace: namespace, Name: fmt.Sprintf("%s-%s-%v", namespace, "testrunner", kube2e.TestRunnerPort)},
 									},
 								},
 							},
@@ -200,7 +201,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Service:  gatewayProxy,
 				Port:     gatewayPort,
 				CaFile:   "/tmp/ca.crt",
-			}, namespace, helpers.SimpleHttpResponse, 1, time.Minute)
+			}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute)
 		})
 	})
 })

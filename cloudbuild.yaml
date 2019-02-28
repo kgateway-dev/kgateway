@@ -117,10 +117,7 @@ steps:
   waitFor: ['get-envoy', 'setup-aws-creds', 'setup-helm']
   id: 'test'
 
-# Build everything
-# 1) Compile all docker images
-# 2) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
-# 3) Publish helm chart
+# Build and tag docker images
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker login --username soloiobot --password $$DOCKER_HUB_PASSWORD']
@@ -133,9 +130,47 @@ steps:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
     - 'TAGGED_VERSION=$TAG_NAME'
+    - 'BUILD_ID=$BUILD_ID'
+    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['docker-login']
   id: 'compile'
+
+# Run regression tests
+- name: 'gcr.io/$PROJECT_ID/go-make'
+  args: ['build-test-assets']
+  env:
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GOPATH=/workspace/gopath'
+    - 'BUILD_ID=$BUILD_ID'
+    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+    - 'HELM_HOME=/root/.helm'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['compile']
+  id: 'build-test-assets'
+
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-a']
+  # wait for other tests to have finished before changing the kubernetes context
+  # TODO: verify if this is really needed
+  waitFor: ['build-test-assets', 'test']
+
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
+
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+  env:
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GOPATH=/workspace/gopath'
+    - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+    - 'CLOUDSDK_CONTAINER_CLUSTER=kube2e-tests'
+    - 'RUN_KUBE2E_TESTS=1'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  args: ['-r', 'test/kube2e']
+  id: 'regression-tests'
+
+# 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
+# 2) Publish helm chart
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker-push', 'manifest', 'release']
   env:
@@ -146,7 +181,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN']
   id: 'release'
-  waitFor: ['compile', 'test']
+  waitFor: ['test', 'regression-tests']
 # Sync helm chart data back to google storage bucket
 - name: gcr.io/cloud-builders/gsutil
   args:

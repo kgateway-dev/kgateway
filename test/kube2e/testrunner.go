@@ -1,19 +1,26 @@
-package helpers
+package kube2e
 
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/helpers"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/setup"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func DeployTestRunner(namespace, image string, port int32) error {
+const (
+	// TODO(ilackarms): tie testrunner to solo CI test containers and then handle image tagging
+	defaultTestRunnerImage = "soloio/testrunner:latest"
+	TestRunnerPort         = 1234
+)
+
+func deployTestRunner(namespace, image string, port int32) error {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return err
@@ -64,7 +71,7 @@ func DeployTestRunner(namespace, image string, port int32) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	if err := WaitPodsRunning(ctx, time.Second, namespace, "gloo=testrunner"); err != nil {
+	if err := helpers.WaitPodsRunning(ctx, time.Second, namespace, "gloo=testrunner"); err != nil {
 		return err
 	}
 	go func() {

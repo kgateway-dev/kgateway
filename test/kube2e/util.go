@@ -1,6 +1,7 @@
 package kube2e
 
 import (
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
@@ -26,6 +27,24 @@ func AreTestsDisabled() bool {
 	return false
 }
 
+func InstallGloo(deploymentType string) string {
+
+	version, err := GetTestVersion()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	log.Debugf("gloo test version is: %s", version)
+
+	namespace := version
+
+	err = glooctlInstall(namespace, version, deploymentType)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	err = deployTestRunner(namespace, defaultTestRunnerImage, TestRunnerPort)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	log.Debugf("successfully deployed test runner pod to namespace: %s", namespace)
+
+	return namespace
+}
+
 // Returns the version identifier for the current build
 func GetTestVersion() (string, error) {
 
@@ -45,7 +64,7 @@ func GetTestVersion() (string, error) {
 	}
 }
 
-func GlooctlInstall(namespace, version, deploymentType string) error {
+func glooctlInstall(namespace, version, deploymentType string) error {
 	return helpers.RunCommand(true,
 		"_output/glooctl-"+runtime.GOOS+"-amd64",
 		"install", deploymentType,
