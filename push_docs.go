@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
-	err := docsutils.CreateDocsPR("solo-io", "gloo", "gloo",
+	// assumes changelog goes into solo-docs/gloo/docs/changelog/gloo-changelog
+	err := docsutils.CreateDocsPRSimple("solo-io", "gloo",
 		"docs/v1/github.com/solo-io/gloo",
 		"docs/v1/github.com/solo-io/solo-kit",
 		"docs/v1/gogoproto",
