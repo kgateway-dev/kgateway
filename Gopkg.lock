@@ -1483,13 +1483,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-<<<<<<< HEAD
   revision = "3f2665be45414869ead7118115043d72ef5920c9"
   version = "v0.2.7"
-=======
-  revision = "594125e202450886dd6cc80a925e3d824950843c"
-  version = "v0.2.5"
->>>>>>> origin/master
 
 [[projects]]
   branch = "master"
