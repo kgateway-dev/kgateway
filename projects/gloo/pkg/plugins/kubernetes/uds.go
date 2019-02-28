@@ -18,13 +18,6 @@ const (
 	discoveryAnnotationTrue = "true"
 )
 
-var ignoredLabels = []string{
-	"pod-template-hash",        // it is common and provides nothing useful for discovery
-	"controller-revision-hash", // set by helm
-	"pod-template-generation",  // set by helm
-	"release",                  // set by helm
-}
-
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
 	if p.kubeShareFactory == nil {
 		p.kubeShareFactory = getInformerFactory(p.kube)

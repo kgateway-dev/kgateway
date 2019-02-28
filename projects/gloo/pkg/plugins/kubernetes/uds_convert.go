@@ -17,6 +17,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+var ignoredLabels = []string{
+	"pod-template-hash",        // it is common and provides nothing useful for discovery
+	"controller-revision-hash", // set by helm
+	"pod-template-generation",  // set by helm
+	"release",                  // set by helm
+}
+
 type UpstreamConverter interface {
 	UpstreamsForService(ctx context.Context, svc *kubev1.Service, pods []*kubev1.Pod) v1.UpstreamList
 }
@@ -49,22 +56,31 @@ func (uc *KubeUpstreamConverter) CreateUpstreamForLabels(ctx context.Context, un
 
 func GetUniqueLabelSets(svc *kubev1.Service, pods []*kubev1.Pod) []map[string]string {
 
-	uniqueLabelSets := []map[string]string{
-		svc.Spec.Selector,
+	var podlabelss []map[string]string
+	for _, pod := range pods {
+		if pod.Namespace != svc.Namespace {
+			continue
+		}
+		podlabelss = append(podlabelss, pod.ObjectMeta.Labels)
 	}
-	if len(svc.Spec.Selector) > 0 {
-		for _, pod := range pods {
-			if pod.Namespace != svc.Namespace {
-				continue
-			}
-			if !labels.AreLabelsInWhiteList(svc.Spec.Selector, pod.Labels) {
+
+	return GetUniqueLabelSetsForObjects(svc.Spec.Selector, podlabelss)
+}
+
+func GetUniqueLabelSetsForObjects(selector map[string]string, podlabelss []map[string]string) []map[string]string {
+	uniqueLabelSets := []map[string]string{
+		selector,
+	}
+	if len(selector) > 0 {
+		for _, podlabels := range podlabelss {
+			if !labels.AreLabelsInWhiteList(selector, podlabels) {
 				continue
 			}
 
 			// create upstreams for the extra labels beyond the selector
 			extendedLabels := make(map[string]string)
 		addExtendedLabels:
-			for k, v := range pod.Labels {
+			for k, v := range podlabels {
 				// special cases we ignore
 				for _, ignoredLabel := range ignoredLabels {
 					if k == ignoredLabel {
