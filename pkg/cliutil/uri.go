@@ -1,12 +1,13 @@
 package cliutil
 
 import (
-	"github.com/solo-io/go-utils/errors"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/solo-io/go-utils/errors"
 )
 
 // Get the resource identified by the given URI.

@@ -10,8 +10,6 @@ import (
 
 //go:generate go run generate.go
 
-
-
 func main() {
 	err := version.CheckVersions()
 	if err != nil {
