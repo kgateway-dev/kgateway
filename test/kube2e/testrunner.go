@@ -3,13 +3,14 @@ package kube2e
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/helpers"
 	"time"
+
+	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/setup"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )

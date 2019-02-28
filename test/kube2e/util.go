@@ -1,15 +1,16 @@
 package kube2e
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"k8s.io/helm/pkg/repo"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 const (

@@ -1,11 +1,12 @@
 package gateway_test
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
-	"testing"
 )
 
 func TestGateway(t *testing.T) {

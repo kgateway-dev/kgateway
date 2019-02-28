@@ -1,10 +1,9 @@
 package knative_test
 
 import (
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"testing"
+
+	"github.com/solo-io/gloo/test/kube2e"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -1,9 +1,10 @@
 package ingress_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -12,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"time"
 )
 
 var _ = Describe("Kube2e: Ingress", func() {
