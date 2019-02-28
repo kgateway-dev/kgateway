@@ -327,16 +327,14 @@ release-yamls: $(RELEASE_YAMLS)
 .PHONY: release
 release: release-binaries release-yamls
 ifeq ($(RELEASE),"true")
-	go run push_docs.go
 	@$(foreach BINARY,$(RELEASE_BINARIES),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(BINARY) sha=TRUE;)
 	@$(foreach YAML,$(RELEASE_YAMLS),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(YAML);)
 endif
 
+# The code does the proper checking for a TAGGED_VERSION
 .PHONY: push-docs
 push-docs:
-ifeq ($(RELEASE),"true")
 	go run push_docs.go
-endif
 
 #----------------------------------------------------------------------------------
 # Docker
