@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -28,6 +29,12 @@ func (t *testUpstreamWriterClient) Read(namespace, name string, opts clients.Rea
 	return nil, fmt.Errorf("test - no upstream")
 }
 
+type functionsCalled struct {
+	isUpstreamFunctional bool
+	detectUpstreamType   bool
+	detectFunctions      bool
+}
+
 type testDiscovery struct {
 	isUpstreamFunctionalResult bool
 	serviceSpec                *plugins.ServiceSpec
@@ -35,9 +42,15 @@ type testDiscovery struct {
 	detectFunctionsError       error
 	mutate                     UpstreamMutator
 
-	isUpstreamFunctional bool
-	detectUpstreamType   bool
-	detectFunctions      bool
+	functionsCalled atomic.Value
+}
+
+func (t *testDiscovery) getFunctionsCalled() functionsCalled {
+	return t.functionsCalled.Load().(functionsCalled)
+}
+
+func (t *testDiscovery) setFunctionsCalled(f functionsCalled) {
+	t.functionsCalled.Store(f)
 }
 
 func (t *testDiscovery) NewFunctionDiscovery(u *v1.Upstream) UpstreamFunctionDiscovery {
@@ -45,16 +58,22 @@ func (t *testDiscovery) NewFunctionDiscovery(u *v1.Upstream) UpstreamFunctionDis
 }
 
 func (t *testDiscovery) IsFunctional() bool {
-	t.isUpstreamFunctional = true
+	fc := t.getFunctionsCalled()
+	fc.isUpstreamFunctional = true
+	t.setFunctionsCalled(fc)
 	return t.isUpstreamFunctionalResult
 }
 func (t *testDiscovery) DetectType(ctx context.Context, url *url.URL) (*plugins.ServiceSpec, error) {
-	t.detectUpstreamType = true
+	fc := t.getFunctionsCalled()
+	fc.detectUpstreamType = true
+	t.setFunctionsCalled(fc)
 	return t.serviceSpec, t.detectUpstreamTypeError
 }
 
 func (t *testDiscovery) DetectFunctions(ctx context.Context, url *url.URL, dependencies func() Dependencies, out func(UpstreamMutator) error) error {
-	t.detectFunctions = true
+	fc := t.getFunctionsCalled()
+	fc.detectFunctions = true
+	t.setFunctionsCalled(fc)
 	if t.mutate != nil {
 		out(t.mutate)
 	}
@@ -92,6 +111,7 @@ var _ = Describe("Updater", func() {
 			resolveUrl: u,
 		}
 		testDisc = &testDiscovery{}
+		testDisc.functionsCalled.Store(functionsCalled{})
 		updater = NewUpdater(ctx, resolver, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
 		up = &v1.Upstream{
 			Metadata: core_solo_io.Metadata{
@@ -114,9 +134,10 @@ var _ = Describe("Updater", func() {
 		testDisc.isUpstreamFunctionalResult = true
 		updater.UpstreamAdded(up)
 		time.Sleep(time.Second / 10)
-		Expect(testDisc.isUpstreamFunctional).To(BeTrue())
-		Expect(testDisc.detectUpstreamType).To(BeFalse())
-		Expect(testDisc.detectFunctions).To(BeTrue())
+		fc := testDisc.getFunctionsCalled()
+		Expect(fc.isUpstreamFunctional).To(BeTrue())
+		Expect(fc.detectUpstreamType).To(BeFalse())
+		Expect(fc.detectFunctions).To(BeTrue())
 	})
 
 	It("should detect functions when upstream type is known", func() {
@@ -124,9 +145,10 @@ var _ = Describe("Updater", func() {
 		testDisc.serviceSpec = &plugins.ServiceSpec{}
 		updater.UpstreamAdded(up)
 		time.Sleep(time.Second / 10)
-		Expect(testDisc.isUpstreamFunctional).To(BeTrue())
-		Expect(testDisc.detectUpstreamType).To(BeTrue())
-		Expect(testDisc.detectFunctions).To(BeTrue())
+		fc := testDisc.getFunctionsCalled()
+		Expect(fc.isUpstreamFunctional).To(BeTrue())
+		Expect(fc.detectUpstreamType).To(BeTrue())
+		Expect(fc.detectFunctions).To(BeTrue())
 	})
 
 })

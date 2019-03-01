@@ -103,6 +103,7 @@ var _ = Describe("Upstream Interactive Mode", func() {
 		})
 
 		It("should work with defaults", func() {
+			localSecretRef := secretRef
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
 				c.SendLine("aws")
@@ -115,12 +116,13 @@ var _ = Describe("Upstream Interactive Mode", func() {
 				var upstream options.InputUpstream
 				err := AddUpstreamFlagsInteractive(&upstream)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(upstream.Aws.Secret).To(Equal(secretRef))
+				Expect(upstream.Aws.Secret).To(Equal(localSecretRef))
 				Expect(upstream.Aws.Region).To(Equal(defaultAwsRegion))
 			})
 		})
 
 		It("should work with custom region", func() {
+			localSecretRef := secretRef
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
 				c.SendLine("aws")
@@ -133,7 +135,7 @@ var _ = Describe("Upstream Interactive Mode", func() {
 				var upstream options.InputUpstream
 				err := AddUpstreamFlagsInteractive(&upstream)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(upstream.Aws.Secret).To(Equal(secretRef))
+				Expect(upstream.Aws.Secret).To(Equal(localSecretRef))
 				Expect(upstream.Aws.Region).To(Equal("custom-region"))
 			})
 		})
@@ -222,6 +224,8 @@ var _ = Describe("Upstream Interactive Mode", func() {
 		})
 
 		It("should work with default function app name", func() {
+			// copy the secret ref ttto appease the race detector
+			localSecretRef := secretRef
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
 				c.SendLine("azure")
@@ -234,12 +238,14 @@ var _ = Describe("Upstream Interactive Mode", func() {
 				var upstream options.InputUpstream
 				err := AddUpstreamFlagsInteractive(&upstream)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(upstream.Azure.Secret).To(Equal(secretRef))
+				Expect(upstream.Azure.Secret).To(Equal(localSecretRef))
 				Expect(upstream.Azure.FunctionAppName).To(Equal(""))
 			})
 		})
 
 		It("should work with custom function app name", func() {
+			localSecretRef := secretRef
+
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(upstreamPrompt)
 				c.SendLine("azure")
@@ -252,7 +258,7 @@ var _ = Describe("Upstream Interactive Mode", func() {
 				var upstream options.InputUpstream
 				err := AddUpstreamFlagsInteractive(&upstream)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(upstream.Azure.Secret).To(Equal(secretRef))
+				Expect(upstream.Azure.Secret).To(Equal(localSecretRef))
 				Expect(upstream.Azure.FunctionAppName).To(Equal("custom"))
 			})
 		})

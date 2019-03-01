@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -21,10 +22,19 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var memoryResourceClient *factory.MemoryResourceClientFactory
+var memResourceClient *factory.MemoryResourceClientFactory
+var lock sync.Mutex
+
+func getMemoryClients() *factory.MemoryResourceClientFactory {
+	lock.Lock()
+	defer lock.Unlock()
+	return memResourceClient
+}
 
 func UseMemoryClients() {
-	memoryResourceClient = &factory.MemoryResourceClientFactory{
+	lock.Lock()
+	defer lock.Unlock()
+	memResourceClient = &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
 }
@@ -39,6 +49,7 @@ func MustGetNamespaces() []string {
 
 // Note: requires RBAC permission to list namespaces at the cluster level
 func GetNamespaces() ([]string, error) {
+	memoryResourceClient := getMemoryClients()
 	if memoryResourceClient != nil {
 		return []string{"default", defaults.GlooSystem}, nil
 	}
@@ -71,6 +82,7 @@ func MustUpstreamClient() v1.UpstreamClient {
 }
 
 func UpstreamClient() (v1.UpstreamClient, error) {
+	memoryResourceClient := getMemoryClients()
 	if memoryResourceClient != nil {
 		return v1.NewUpstreamClient(memoryResourceClient)
 	}
@@ -103,6 +115,7 @@ func MustProxyClient() v1.ProxyClient {
 }
 
 func ProxyClient() (v1.ProxyClient, error) {
+	memoryResourceClient := getMemoryClients()
 	if memoryResourceClient != nil {
 		return v1.NewProxyClient(memoryResourceClient)
 	}
@@ -135,6 +148,7 @@ func MustVirtualServiceClient() gatewayv1.VirtualServiceClient {
 }
 
 func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
+	memoryResourceClient := getMemoryClients()
 	if memoryResourceClient != nil {
 		return gatewayv1.NewVirtualServiceClient(memoryResourceClient)
 	}
@@ -167,6 +181,7 @@ func MustSettingsClient() v1.SettingsClient {
 }
 
 func SettingsClient() (v1.SettingsClient, error) {
+	memoryResourceClient := getMemoryClients()
 	if memoryResourceClient != nil {
 		return v1.NewSettingsClient(memoryResourceClient)
 	}
@@ -199,6 +214,7 @@ func MustSecretClient() v1.SecretClient {
 }
 
 func secretClient() (v1.SecretClient, error) {
+	memoryResourceClient := getMemoryClients()
 	if memoryResourceClient != nil {
 		return v1.NewSecretClient(memoryResourceClient)
 	}
