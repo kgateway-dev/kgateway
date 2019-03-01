@@ -114,7 +114,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', '-failFast', '-p']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-helm']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-helm', 'check-code-and-docs-gen']
   id: 'test'
 
 # Build and tag docker images
@@ -123,7 +123,7 @@ steps:
   args: ['-c', 'docker login --username soloiobot --password $$DOCKER_HUB_PASSWORD']
   secretEnv: ['DOCKER_HUB_PASSWORD']
   id: 'docker-login'
-  waitFor: ['dep']
+  waitFor: ['test']
 - name: 'gcr.io/$PROJECT_ID/go-make'
   args: ['docker']
   env:
@@ -133,8 +133,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: './gopath/src/github.com/solo-io/gloo'
-  # We need to wait on code gen to finish to avoid compilation errors
-  waitFor: ['docker-login', 'check-code-and-docs-gen']
+  waitFor: ['docker-login']
   id: 'compile'
 
 # Run regression tests
