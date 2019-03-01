@@ -11,12 +11,12 @@ import (
 func main() {
 	tag, present := os.LookupEnv("TAGGED_VERSION")
 	if !present || tag == "" {
-		fmt.Printf("TAGGED_VERSION not found in environment, skipping docs PR.")
+		fmt.Printf("TAGGED_VERSION not found in environment, skipping docs PR.\n", tag)
 		os.Exit(0)
 	}
 	_, err := versionutils.ParseVersion(tag)
 	if err != nil {
-		fmt.Printf("TAGGED_VERSION %s is not a valid semver version, skipping docs PR.")
+		fmt.Printf("TAGGED_VERSION %s is not a valid semver version, skipping docs PR.\n", tag)
 		os.Exit(0)
 	}
 	// assumes changelog goes into solo-docs/gloo/docs/changelog/gloo-changelog
