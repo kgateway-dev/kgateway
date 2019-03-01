@@ -5,7 +5,6 @@ import (
 )
 
 func main() {
-	// tag set by utility
 	spec := docsutils.DocsPRSpec{
 		Owner: "solo-io",
 		Repo: "gloo",
