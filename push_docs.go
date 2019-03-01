@@ -32,8 +32,6 @@ func main() {
 			"docs/v1/gogoproto",
 			"docs/v1/google",
 		},
-		CliPrefix: "",
-		CliPath: "",
 	}
 
 	err = docsutils.CreateDocsPRFromSpec(&spec)
