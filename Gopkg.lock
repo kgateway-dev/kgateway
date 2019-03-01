@@ -1466,7 +1466,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:a92e0936d68d697fb8855da73073430c145aa8e4630d89210768116b15bfb7af"
+  digest = "1:27a7bc6f0e4de26048e31faa93c2c53bf568a1d0110ffd3fec17f18c48974886"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1476,11 +1476,9 @@
     "docsutils",
     "errors",
     "githubutils",
-    "kubeinstallutils",
     "kubeutils",
     "logger",
     "protoutils",
-    "testutils",
     "versionutils",
   ]
   pruneopts = "UT"
@@ -1677,12 +1675,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4a92e334cc69f7549a4f0f55a04afe3c2a52c31238a9cf47061455f99ad41dde"
+  digest = "1:a34509de07120be8f572769eb4be70ae782b5a04c0603a1a9054f08a90a97b30"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
+    "cast5",
     "ed25519",
     "ed25519/internal/edwards25519",
+    "openpgp",
+    "openpgp/armor",
+    "openpgp/clearsign",
+    "openpgp/elgamal",
+    "openpgp/errors",
+    "openpgp/packet",
+    "openpgp/s2k",
     "pbkdf2",
     "scrypt",
     "ssh/terminal",
@@ -2234,23 +2240,29 @@
   version = "kubernetes-1.13.1"
 
 [[projects]]
-  digest = "1:03170ab6a355ee2c646c063ae48e75ee206b42887e373ca58220ba0a88d9f6ba"
+  digest = "1:dffc9ae4f0605ba668c85a12e48b65c205b1a851d3ee53c19ccf0bf5023e8d16"
   name = "k8s.io/helm"
   packages = [
     "pkg/chartutil",
     "pkg/engine",
+    "pkg/getter",
+    "pkg/helm/environment",
+    "pkg/helm/helmpath",
     "pkg/hooks",
     "pkg/ignore",
     "pkg/kube",
     "pkg/manifest",
+    "pkg/plugin",
     "pkg/proto/hapi/chart",
     "pkg/proto/hapi/release",
     "pkg/proto/hapi/rudder",
     "pkg/proto/hapi/services",
     "pkg/proto/hapi/version",
+    "pkg/provenance",
     "pkg/releasetesting",
     "pkg/releaseutil",
     "pkg/renderutil",
+    "pkg/repo",
     "pkg/rudder",
     "pkg/storage",
     "pkg/storage/driver",
@@ -2259,6 +2271,8 @@
     "pkg/tiller",
     "pkg/tiller/environment",
     "pkg/timeconv",
+    "pkg/tlsutil",
+    "pkg/urlutil",
     "pkg/version",
   ]
   pruneopts = "UT"
@@ -2492,7 +2506,6 @@
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/protoutils",
-    "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
@@ -2559,6 +2572,7 @@
     "k8s.io/helm/pkg/manifest",
     "k8s.io/helm/pkg/proto/hapi/chart",
     "k8s.io/helm/pkg/renderutil",
+    "k8s.io/helm/pkg/repo",
     "k8s.io/helm/pkg/tiller",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
