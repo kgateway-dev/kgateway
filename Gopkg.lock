@@ -1466,7 +1466,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:c0419a9dd116cbe55b0086573a74a5d62e23d4d373dafccf3ac883feb533341f"
+  digest = "1:14a5e7b498cb45ae072da2c513c8495223a61172fa3aa5a9ac393dfc253c71fe"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1475,16 +1475,14 @@
     "docsutils",
     "errors",
     "githubutils",
-    "kubeinstallutils",
     "kubeutils",
     "logger",
     "protoutils",
-    "testutils",
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "03e2e6f17e9aa3dea60463877ab1050f0a2d74dd"
-  version = "v0.2.8"
+  revision = "d691aec5ebf933da195a78e2f5cd0d3357c772de"
+  version = "v0.2.9"
 
 [[projects]]
   branch = "master"
