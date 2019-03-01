@@ -53,7 +53,7 @@ var _ = Describe("Gateway", func() {
 
 			gatewaycli := testClients.GatewayClient
 
-			Eventually(func() (gatewayv1.GatewayList, error) { return gatewaycli.List(writeNamespace, clients.ListOpts{}) }, "5s", "0.1s").Should(HaveLen(2))
+			Eventually(func() (gatewayv1.GatewayList, error) { return gatewaycli.List(writeNamespace, clients.ListOpts{}) }, "10s", "0.1s").Should(HaveLen(2))
 			gw, err := gatewaycli.List(writeNamespace, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 

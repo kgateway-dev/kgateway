@@ -172,7 +172,7 @@ var _ = Describe("Happypath", func() {
 					return updatedProxy.Status.State, nil
 				}
 
-				Eventually(getStatus, "5s").ShouldNot(Equal(core.Status_Pending))
+				Eventually(getStatus, "10s").ShouldNot(Equal(core.Status_Pending))
 				st, err := getStatus()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(st).To(Equal(core.Status_Rejected))

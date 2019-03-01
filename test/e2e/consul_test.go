@@ -69,7 +69,7 @@ var _ = Describe("Consul", func() {
 				}
 			}
 			return consulUpstreams, nil
-		}, "5s", ".5s").Should(Not(BeZero()))
+		}, "10s", ".5s").Should(Not(BeZero()))
 
 	})
 })
