@@ -149,15 +149,6 @@ steps:
   waitFor: ['compile']
   id: 'build-test-assets'
 
-- name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-a']
-  # wait for other tests to have finished before changing the kubernetes context
-  # TODO: verify if this is really needed
-  waitFor: ['build-test-assets', 'test']
-
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
-
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -167,6 +158,7 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', 'test/kube2e']
+  waitFor: ['build-test-assets', 'test']
   id: 'regression-tests'
 
 # 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
@@ -200,4 +192,7 @@ secrets:
     GITHUB_TOKEN: CiQABlzmSYYiveU0gTxGH2139eaBUedjV3vNCxQmJU+nRPlfQ/YSUQCCPGSGzbGp49fwDYuefAx9V94b8mivdp9AqB7zQAa07VtGJmrGdg9ZuhKGFrrgqxwABE0LLVNHyngCSHYSYMH8Vn/mRtT7wQuEHBlKVGtqPw==
     DOCKER_HUB_PASSWORD: CiQABlzmSW0u+qhXDvTCxLnbi09Zm88eCU0wSdvFn1W+6WOpTgQSTgCCPGSGTAlMndrEkYOynPhDzTXrW1q1eAsQYjKOWOwZKodcQZ2WIzdvpOOjv+WrGTssWWg1uPFV4CnajT7DzeNAb7USkla1epatm6OnuQ==
 
-timeout: 6600s
+timeout: 3600s
+tags: ['gloo']
+options:
+  machineType: 'N1_HIGHCPU_8'

@@ -25,6 +25,26 @@ TEST_IMAGE_TAG := test-$(BUILD_ID)
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 GCR_REPO_PREFIX := gcr.io/$(GCLOUD_PROJECT_ID)
 
+
+#----------------------------------------------------------------------------------
+# Marcos
+#----------------------------------------------------------------------------------
+
+# This macro takes a relative path as its only argument and returns all the files
+# in the tree rooted at that directory that match the given criteria.
+get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
+
+# If both GCLOUD_PROJECT_ID and BUILD_ID are set, define a function that takes a docker image name
+# and returns a '-t' flag that can be passed to 'docker build' to create a tag for a test image.
+# If the function is not defined, any attempt at calling if will return nothing (it does not cause en error)
+ifneq ($(GCLOUD_PROJECT_ID),)
+ifneq ($(BUILD_ID),)
+define get_test_tag
+	-t $(GCR_REPO_PREFIX)/$(1):$(TEST_IMAGE_TAG)
+endef
+endif
+endif
+
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
@@ -111,20 +131,6 @@ generate-client-mocks:
      		$(word 3,$(subst :, , $(INFO))) \
      	;)
 
-#################
-#################
-#               #
-#     Build     #
-#               #
-#               #
-#################
-#################
-#################
-
-# This macro takes a relative path as its only argument and returns all the files
-# in the tree rooted at that directory that match the given criteria.
-get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
-
 #----------------------------------------------------------------------------------
 # glooctl
 #----------------------------------------------------------------------------------
@@ -174,7 +180,7 @@ $(OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
 gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway \
 		-t soloio/gateway:$(VERSION) \
-		-t $(GCR_REPO_PREFIX)/gateway:$(TEST_IMAGE_TAG)
+		$(call get_test_tag,gateway)
 
 #----------------------------------------------------------------------------------
 # Ingress
@@ -196,7 +202,7 @@ $(OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
 ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.ingress \
 		-t soloio/ingress:$(VERSION) \
-		-t $(GCR_REPO_PREFIX)/ingress:$(TEST_IMAGE_TAG)
+		$(call get_test_tag,ingress)
 
 #----------------------------------------------------------------------------------
 # Discovery
@@ -218,7 +224,7 @@ $(OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
 discovery-docker: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.discovery
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.discovery \
 		-t soloio/discovery:$(VERSION) \
-		-t $(GCR_REPO_PREFIX)/discovery:$(TEST_IMAGE_TAG)
+		$(call get_test_tag,discovery)
 
 #----------------------------------------------------------------------------------
 # Gloo
@@ -240,7 +246,7 @@ $(OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gloo \
 		-t soloio/gloo:$(VERSION) \
-		-t $(GCR_REPO_PREFIX)/gloo:$(TEST_IMAGE_TAG)
+		$(call get_test_tag,gloo)
 
 #----------------------------------------------------------------------------------
 # Envoy init
@@ -263,7 +269,7 @@ $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile
 gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t soloio/gloo-envoy-wrapper:$(VERSION) \
-		-t $(GCR_REPO_PREFIX)/gloo-envoy-wrapper:$(TEST_IMAGE_TAG)
+		$(call get_test_tag,gloo-envoy-wrapper)
 
 
 #----------------------------------------------------------------------------------

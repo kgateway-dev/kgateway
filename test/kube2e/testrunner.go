@@ -3,14 +3,14 @@ package kube2e
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/errors"
+	"strings"
 	"time"
-
-	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/setup"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -35,7 +35,7 @@ func deployTestRunner(namespace, image string, port int32) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testrunner",
 			Namespace: namespace,
-			// needed for WaitPodsRunning
+			// needed for waitPodsRunning
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
@@ -54,7 +54,7 @@ func deployTestRunner(namespace, image string, port int32) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testrunner",
 			Namespace: namespace,
-			// needed for WaitPodsRunning
+			// needed for waitPodsRunning
 			Labels: labels,
 		},
 		Spec: v1.ServiceSpec{
@@ -72,7 +72,7 @@ func deployTestRunner(namespace, image string, port int32) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	if err := helpers.WaitPodsRunning(ctx, time.Second, namespace, "gloo=testrunner"); err != nil {
+	if err := waitPodsRunning(ctx, time.Second, namespace, "gloo=testrunner"); err != nil {
 		return err
 	}
 	go func() {
@@ -81,6 +81,62 @@ func deployTestRunner(namespace, image string, port int32) error {
 		}
 	}()
 	return nil
+}
+
+func waitPodsRunning(ctx context.Context, interval time.Duration, namespace string, labels ...string) error {
+	finished := func(output string) bool {
+		return strings.Contains(output, "Running") || strings.Contains(output, "ContainerCreating")
+	}
+	for _, label := range labels {
+		if err := waitPodStatus(ctx, interval, namespace, label, "Running or ContainerCreating", finished); err != nil {
+			return err
+		}
+	}
+	finished = func(output string) bool {
+		return strings.Contains(output, "Running")
+	}
+	for _, label := range labels {
+		if err := waitPodStatus(ctx, interval, namespace, label, "Running", finished); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func waitPodStatus(ctx context.Context, interval time.Duration, namespace, label, status string, finished func(output string) bool) error {
+	tick := time.Tick(interval)
+	d, _ := ctx.Deadline()
+	log.Debugf("waiting till %v for pod %v to be %v...", d, label, status)
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timed out waiting for %v to be %v", label, status)
+		case <-tick:
+			out, err := setup.KubectlOut("get", "pod", "-l", label, "-n", namespace)
+			if err != nil {
+				return fmt.Errorf("failed getting pod: %v", err)
+			}
+			if strings.Contains(out, "CrashLoopBackOff") {
+				out = KubeLogs(label)
+				return errors.Errorf("%v in crash loop with logs %v", label, out)
+			}
+			if strings.Contains(out, "ErrImagePull") || strings.Contains(out, "ImagePullBackOff") {
+				out, _ = setup.KubectlOut("describe", "pod", "-l", label)
+				return errors.Errorf("%v in ErrImagePull with description %v", label, out)
+			}
+			if finished(out) {
+				return nil
+			}
+		}
+	}
+}
+
+func KubeLogs(label string) string {
+	out, err := setup.KubectlOut("logs", "-l", label)
+	if err != nil {
+		out = err.Error()
+	}
+	return out
 }
 
 // this response is given by the testrunner when the SimpleServer is started
