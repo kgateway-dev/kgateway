@@ -28,7 +28,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  revision = "4569bcdfce2a252b509c3e4fe269f2d0f65f381a"
+  revision = "bab9c5f4413a48f242d06bd1f29060444b92a658"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"

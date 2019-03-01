@@ -20,11 +20,23 @@ func main() {
 		os.Exit(0)
 	}
 	// assumes changelog goes into solo-docs/gloo/docs/changelog/gloo-changelog
-	err = docsutils.CreateDocsPRSimple("solo-io", "gloo", tag,
-		"docs/v1/github.com/solo-io/gloo",
-		"docs/v1/github.com/solo-io/solo-kit",
-		"docs/v1/gogoproto",
-		"docs/v1/google")
+	spec := docsutils.DocsPRSpec{
+		Owner: "solo-io",
+		Repo: "gloo",
+		Product: "gloo",
+		Project: "gloo",
+		Tag: tag,
+		ApiPaths: []string {
+			"docs/v1/github.com/solo-io/gloo",
+			"docs/v1/github.com/solo-io/solo-kit",
+			"docs/v1/gogoproto",
+			"docs/v1/google",
+		},
+		CliPrefix: "",
+		CliPath: "",
+	}
+
+	err = docsutils.CreateDocsPRFromSpec(&spec)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
