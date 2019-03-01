@@ -9,7 +9,7 @@ func main() {
 		Owner: "solo-io",
 		Repo: "gloo",
 		Product: "gloo",
-		Project: "gloo",
+		ChangelogPrefix: "gloo",
 		ApiPaths: []string {
 			"docs/v1/github.com/solo-io/gloo",
 			"docs/v1/github.com/solo-io/solo-kit",
