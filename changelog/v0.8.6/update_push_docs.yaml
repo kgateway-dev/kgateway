@@ -1,4 +1,7 @@
 changelog:
   - type: NON_USER_FACING
-    description: Update to PushDocsCli.
+    description: Update to PushDocsCli go utility.
     issueLink: https://github.com/solo-io/go-utils/issues/33
+  - type: NON_USER_FACTING
+    description: Update to MustGenerateCliDocs go utility.
+    issueLink: https://github.com/solo-io/go-utils/issues/35
