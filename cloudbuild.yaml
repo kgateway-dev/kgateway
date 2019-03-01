@@ -164,7 +164,7 @@ steps:
 # 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
 # 2) Publish helm chart
 - name: 'gcr.io/$PROJECT_ID/go-make'
-  args: ['docker-push', 'manifest', 'release']
+  args: ['docker-push', 'manifest', 'release', 'push-docs']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'

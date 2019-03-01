@@ -1466,12 +1466,15 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:4bb7dca5773dc01352dd427048caf22ee28dbfc9b82959077988f574b814dc32"
+  digest = "1:c0419a9dd116cbe55b0086573a74a5d62e23d4d373dafccf3ac883feb533341f"
   name = "github.com/solo-io/go-utils"
   packages = [
+    "changelogutils",
     "cliutils",
     "contextutils",
+    "docsutils",
     "errors",
+    "githubutils",
     "kubeinstallutils",
     "kubeutils",
     "logger",
@@ -1480,8 +1483,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "594125e202450886dd6cc80a925e3d824950843c"
-  version = "v0.2.5"
+  revision = "03e2e6f17e9aa3dea60463877ab1050f0a2d74dd"
+  version = "v0.2.8"
 
 [[projects]]
   branch = "master"
@@ -1549,6 +1552,17 @@
   pruneopts = "UT"
   revision = "b6ba2b73a5eb3b82fe9fb6076c5a1f9ea8b9d10c"
   version = "v0.3.0"
+
+[[projects]]
+  digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem",
+  ]
+  pruneopts = "UT"
+  revision = "f4711e4db9e9a1d3887343acb72b2bbfc2f686f5"
+  version = "v1.2.1"
 
 [[projects]]
   digest = "1:e01b05ba901239c783dfe56450bcde607fc858908529868259c9a8765dc176d0"
@@ -2488,6 +2502,7 @@
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/go-utils/cliutils",
+    "github.com/solo-io/go-utils/docsutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/protoutils",

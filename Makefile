@@ -9,7 +9,7 @@ RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)
 	# TAGGED_VERSION := $(shell git describe --tags)
 	# This doesn't work in CI, need to find another way...
-	TAGGED_VERSION := vdev	
+	TAGGED_VERSION := vdev
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
@@ -350,16 +350,14 @@ release-yamls: $(RELEASE_YAMLS)
 .PHONY: release
 release: release-binaries release-yamls
 ifeq ($(RELEASE),"true")
-	ci/push-docs.sh tag=$(TAGGED_VERSION)
 	@$(foreach BINARY,$(RELEASE_BINARIES),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(BINARY) sha=TRUE;)
 	@$(foreach YAML,$(RELEASE_YAMLS),ci/upload-github-release-asset.sh owner=solo-io repo=gloo tag=$(TAGGED_VERSION) filename=$(YAML);)
 endif
 
+# The code does the proper checking for a TAGGED_VERSION
 .PHONY: push-docs
 push-docs:
-ifeq ($(RELEASE),"true")
-	ci/push-docs.sh tag=$(TAGGED_VERSION)
-endif
+	go run push_docs.go
 
 #----------------------------------------------------------------------------------
 # Docker

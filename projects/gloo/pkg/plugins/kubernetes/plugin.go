@@ -15,6 +15,8 @@ type plugin struct {
 	kube kubernetes.Interface
 
 	kubeShareFactory KubePluginSharedFactory
+
+	UpstreamConverter UpstreamConverter
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -28,7 +30,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 func NewPlugin(kube kubernetes.Interface) plugins.Plugin {
 	return &plugin{
-		kube: kube,
+		kube:              kube,
+		UpstreamConverter: DefaultUpstreamConverter(),
 	}
 }
 

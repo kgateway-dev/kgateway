@@ -1,3 +1,7 @@
 changelog:
-- type: NON_USER_FACING
-  description: "add regression tests"
+  - type: NEW_FEATURE
+    description: Gloo releases now automatically publish a changelog to the docs.
+    issueLink: https://github.com/solo-io/gloo/issues/465
+  - type: NON_USER_FACING
+    description: The code for Gloo docs push has been converted into a reusable go-utils script.
+    issueLink: https://github.com/solo-io/go-utils/issues/19
