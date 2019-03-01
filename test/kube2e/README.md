@@ -16,7 +16,8 @@ The above command will also build all our docker images and deploy them to Googl
 image references in the chart expect them to be.
 
 ## Run test
-To run the regression tests, run the following command from this directory:
+To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster. You can then start the 
+tests by running the following command from this directory:
 
 ```bash
 ginkgo -r
