@@ -7,7 +7,7 @@ settings:
       enabled: true
       proxy:
         image:
-          repository: soloio/gloo-envoy-wrapper
+          repository: quay.io/solo-io/gloo-envoy-wrapper
           pullPolicy: Always
         httpPort: 80
         httpsPort: 443
@@ -21,7 +21,7 @@ ingress:
   enabled: false
   deployment:
     image:
-      repository: soloio/ingress
+      repository: quay.io/solo-io/ingress
       pullPolicy: Always
     replicas: 1
 

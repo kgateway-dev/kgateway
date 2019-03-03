@@ -17,7 +17,7 @@ settings:
 gloo:
   deployment:
     image:
-      repository: soloio/gloo
+      repository: quay.io/solo-io/gloo
       pullPolicy: Always
     xdsPort: 9977
     replicas: 1
@@ -25,7 +25,7 @@ gloo:
 discovery:
   deployment:
     image:
-      repository: soloio/discovery
+      repository: quay.io/solo-io/discovery
       pullPolicy: Always
     replicas: 1
 
@@ -33,14 +33,14 @@ gateway:
   enabled: true
   deployment:
     image:
-      repository: soloio/gateway
+      repository: quay.io/solo-io/gateway
       pullPolicy: Always
     replicas: 1
 
 gatewayProxy:
   deployment:
     image:
-      repository: soloio/gloo-envoy-wrapper
+      repository: quay.io/solo-io/gloo-envoy-wrapper
       pullPolicy: Always
     httpPort: 8080
     httpsPort: 8443

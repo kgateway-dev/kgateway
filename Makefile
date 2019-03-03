@@ -179,7 +179,7 @@ $(OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
 
 gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway \
-		-t soloio/gateway:$(VERSION) \
+		-t quay.io/solo-io/gateway:$(VERSION) \
 		$(call get_test_tag,gateway)
 
 #----------------------------------------------------------------------------------
@@ -201,7 +201,7 @@ $(OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
 
 ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.ingress \
-		-t soloio/ingress:$(VERSION) \
+		-t quay.io/solo-io/ingress:$(VERSION) \
 		$(call get_test_tag,ingress)
 
 #----------------------------------------------------------------------------------
@@ -223,7 +223,7 @@ $(OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
 
 discovery-docker: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.discovery
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.discovery \
-		-t soloio/discovery:$(VERSION) \
+		-t quay.io/solo-io/discovery:$(VERSION) \
 		$(call get_test_tag,discovery)
 
 #----------------------------------------------------------------------------------
@@ -245,7 +245,7 @@ $(OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 
 gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gloo \
-		-t soloio/gloo:$(VERSION) \
+		-t quay.io/solo-io/gloo:$(VERSION) \
 		$(call get_test_tag,gloo)
 
 #----------------------------------------------------------------------------------
@@ -268,7 +268,7 @@ $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile
 .PHONY: gloo-envoy-wrapper-docker
 gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
-		-t soloio/gloo-envoy-wrapper:$(VERSION) \
+		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) \
 		$(call get_test_tag,gloo-envoy-wrapper)
 
 
@@ -381,19 +381,19 @@ docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker in
 # docker-push is intended to be run by CI
 docker-push: $(DOCKER_IMAGES)
 ifeq ($(RELEASE),"true")
-	docker push soloio/gateway:$(VERSION) && \
-	docker push soloio/ingress:$(VERSION) && \
-	docker push soloio/discovery:$(VERSION) && \
-	docker push soloio/gloo:$(VERSION) && \
-	docker push soloio/gloo-envoy-wrapper:$(VERSION)
+	docker push quay.io/solo-io/gateway:$(VERSION) && \
+	docker push quay.io/solo-io/ingress:$(VERSION) && \
+	docker push quay.io/solo-io/discovery:$(VERSION) && \
+	docker push quay.io/solo-io/gloo:$(VERSION) && \
+	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
 endif
 
 docker-kind: docker
-	kind load docker-image soloio/gateway:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image soloio/ingress:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image soloio/discovery:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image soloio/gloo:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image soloio/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/gateway:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/ingress:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/discovery:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/gloo:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
 
 
 #----------------------------------------------------------------------------------
@@ -404,7 +404,7 @@ docker-kind: docker
 #
 #   1. Push the images to GCR (images have been tagged as $(GCR_REPO_PREFIX)/<image-name>:$(TEST_IMAGE_TAG)
 #   2. Generate Gloo value files providing overrides to make the image elements point to GCR
-#      - override the repository prefix for all repository names (e.g. soloio/gateway -> gcr.io/solo-public/gateway)
+#      - override the repository prefix for all repository names (e.g. quay.io/solo-io/gateway -> gcr.io/solo-public/gateway)
 #      - set the tag for each image to TEST_IMAGE_TAG
 #   3. Package the Gloo Helm chart to the _test directory (also generate an index file)
 #
