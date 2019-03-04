@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -219,11 +218,8 @@ func generateChartYaml(version string) error {
 
 }
 
-// We want to turn "soloio/gloo" into "<newPrefix>/gloo".
+// We want to turn "quay.io/solo-io/gloo" into "<newPrefix>/gloo".
 func replacePrefix(repository, newPrefix string) string {
-	if slashes := regexp.MustCompile("/").FindAllStringIndex(repository, -1); len(slashes) > 1 {
-		panic("more than one slash character found in repository name: " + repository)
-	}
 	// Remove trailing slash, if present
 	newPrefix = strings.TrimSuffix(newPrefix, "/")
 	return strings.Join([]string{newPrefix, path.Base(repository)}, "/")
