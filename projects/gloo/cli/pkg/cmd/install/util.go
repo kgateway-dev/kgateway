@@ -49,15 +49,12 @@ func installGloo(opts *options.Options, valueFileName string) error {
 }
 
 func getGlooVersion(opts *options.Options) (string, error) {
-	if !version.IsReleaseVersion() {
-		if opts.Install.ReleaseVersion == "" {
-			return "", errors.Errorf("you must provide a file or a release version " +
-				"containing the manifest when running an unreleased version of glooctl.")
-		}
-		return opts.Install.ReleaseVersion, nil
-	} else {
-		return version.Version, nil
+	if !version.IsReleaseVersion() && opts.Install.HelmChartOverride == "" {
+		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
+			"when running an unreleased version of glooctl")
 	}
+	return version.Version, nil
+
 }
 
 func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName string) error {

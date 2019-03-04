@@ -71,7 +71,6 @@ func glooctlInstall(namespace, version, deploymentType string) error {
 		"install", deploymentType,
 		"-n", namespace,
 		"-f", strings.Join([]string{"_test/gloo-", version, ".tgz"}, ""),
-		"--release", version, // TODO: will not be needed anymore
 	)
 }
 
