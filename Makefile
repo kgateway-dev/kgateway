@@ -328,7 +328,7 @@ upload-github-release-assets: build-cli render-yaml
 
 .PHONY: push-docs
 push-docs:
-	go run push_docs.go
+	go run ci/push_docs.go
 
 #----------------------------------------------------------------------------------
 # Docker

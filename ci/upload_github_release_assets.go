@@ -3,7 +3,7 @@ package main
 import "github.com/solo-io/go-utils/githubutils"
 
 func main() {
-	assets := make([]githubutils.ReleaseAssetSpec, 3)
+	assets := make([]githubutils.ReleaseAssetSpec, 6)
 	assets[0] = githubutils.ReleaseAssetSpec{
 		Name:       "glooctl-linux-amd64",
 		ParentPath: "_output",
