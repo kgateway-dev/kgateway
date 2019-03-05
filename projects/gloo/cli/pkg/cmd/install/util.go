@@ -2,10 +2,11 @@ package install
 
 import (
 	"fmt"
-	helmhooks "k8s.io/helm/pkg/hooks"
 	"path"
 	"strings"
 	"time"
+
+	helmhooks "k8s.io/helm/pkg/hooks"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
