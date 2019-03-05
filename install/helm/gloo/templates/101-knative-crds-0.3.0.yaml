@@ -24,6 +24,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: clusteringresses.networking.internal.knative.dev
+  annotations:
+    "helm.sh/hook": crd-install
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -51,6 +53,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: configurations.serving.knative.dev
+  annotations:
+    "helm.sh/hook": crd-install
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.latestCreatedRevisionName
@@ -87,6 +91,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: images.caching.internal.knative.dev
+  annotations:
+    "helm.sh/hook": crd-install
 spec:
   group: caching.internal.knative.dev
   names:
@@ -109,6 +115,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: podautoscalers.autoscaling.internal.knative.dev
+  annotations:
+    "helm.sh/hook": crd-install
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -138,6 +146,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: revisions.serving.knative.dev
+  annotations:
+    "helm.sh/hook": crd-install
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.serviceName
@@ -170,6 +180,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: routes.serving.knative.dev
+  annotations:
+    "helm.sh/hook": crd-install
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.domain
@@ -202,6 +214,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: services.serving.knative.dev
+  annotations:
+    "helm.sh/hook": crd-install
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.domain

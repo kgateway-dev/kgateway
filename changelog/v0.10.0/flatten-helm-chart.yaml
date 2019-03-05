@@ -1,0 +1,3 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Include GLoo CRDs as templates instead of them being a dedicated subchart.

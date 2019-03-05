@@ -16,7 +16,7 @@ import (
 
 const (
 	YamlDocumentSeparator = "\n---\n"
-	CrdFilePrefix         = "crds/"
+	CrdKindName           = "CustomResourceDefinition"
 )
 
 // Returns the Helm chart archive located at the given URI (can be either an http(s) address or a file path)
@@ -38,24 +38,9 @@ func GetHelmArchive(chartArchiveUri string) (*chart.Chart, error) {
 	return helmChart, err
 }
 
-// Extracts the sub-chart that contains templates for the CRDs that have to be applied before the main chart.
-func GetCrdChart(helmChart *chart.Chart) (*chart.Chart, error) {
-	var crdFiles []*chartutil.BufferedFile
-	for _, file := range helmChart.Files {
-		if strings.HasPrefix(file.TypeUrl, CrdFilePrefix) {
-			crdFiles = append(crdFiles, &chartutil.BufferedFile{Name: strings.TrimPrefix(file.TypeUrl, CrdFilePrefix), Data: file.Value})
-		}
-	}
-	crdChart, err := chartutil.LoadFiles(crdFiles)
-	if err != nil {
-		return nil, err
-	}
-	return crdChart, nil
-}
-
 // Searches for the value file with the given name in the chart and returns its raw content.
 // NOTE: this also sets the namespace.create attribute to 'true'.
-func GetValueFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
+func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
 	rawAdditionalValues := "{}"
 	if fileName != "" {
 		var found bool
