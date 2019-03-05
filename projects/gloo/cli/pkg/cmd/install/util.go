@@ -26,13 +26,13 @@ import (
 func installGloo(opts *options.Options, valueFileName string) error {
 
 	// Get Gloo release version
-	version, err := getGlooVersion(opts)
+	glooVersion, err := getGlooVersion(opts)
 	if err != nil {
 		return err
 	}
 
 	// Get location of Gloo helm chart
-	helmChartArchiveUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, version)
+	helmChartArchiveUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, glooVersion)
 	if helmChartOverride := opts.Install.HelmChartOverride; helmChartOverride != "" {
 		helmChartArchiveUri = helmChartOverride
 	}
@@ -72,6 +72,7 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 	renderOpts := renderutil.Options{
 		ReleaseOptions: chartutil.ReleaseOptions{
 			Namespace: opts.Install.Namespace,
+			Name:      "gloo",
 		},
 	}
 
