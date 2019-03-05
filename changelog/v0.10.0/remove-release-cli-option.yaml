@@ -1,3 +1,0 @@
-changelog:
-  - type: BREAKING_CHANGE
-    description: Remove `--release` option from `glooctl install` command.

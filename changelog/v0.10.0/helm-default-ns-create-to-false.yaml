@@ -1,3 +1,0 @@
-changelog:
-  - type: BREAKING_CHANGE
-    description: Set `namespace.create` to true in Helm value files in order to make `helm install` behavior less awkward.
