@@ -1,6 +1,8 @@
 package install
 
 import (
+	"github.com/ghodss/yaml"
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -52,6 +54,7 @@ func GetCrdChart(helmChart *chart.Chart) (*chart.Chart, error) {
 }
 
 // Searches for the value file with the given name in the chart and returns its raw content.
+// NOTE: this also sets the namespace.create attribute to 'true'.
 func GetValueFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
 	rawAdditionalValues := "{}"
 	if fileName != "" {
@@ -59,16 +62,31 @@ func GetValueFile(helmChart *chart.Chart, fileName string) (*chart.Config, error
 		for _, valueFile := range helmChart.Files {
 			if valueFile.TypeUrl == fileName {
 				rawAdditionalValues = string(valueFile.Value)
+				found = true
 			}
-			found = true
 		}
 		if !found {
 			return nil, errors.Errorf("could not find value file [%s] in Helm chart archive", fileName)
 		}
 	}
 
+	// Convert value file content to struct
+	valueStruct := &generate.Config{}
+	if err := yaml.Unmarshal([]byte(rawAdditionalValues), valueStruct); err != nil {
+		return nil, errors.Errorf("invalid format for value file [%s] in Helm chart archive", fileName)
+	}
+
+	// Namespace creation is disabled by default, otherwise install with helm will fail
+	// (`helm install --namespace=<namespace_name>` creates the given namespace)
+	valueStruct.Namespace = &generate.Namespace{Create: true}
+
+	valueBytes, err := yaml.Marshal(valueStruct)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed marshaling value file struct")
+	}
+
 	// NOTE: config.Values is never used by helm
-	return &chart.Config{Raw: rawAdditionalValues}, nil
+	return &chart.Config{Raw: string(valueBytes)}, nil
 }
 
 // Renders the content of the given Helm chart archive:
