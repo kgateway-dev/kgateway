@@ -17,6 +17,7 @@ import (
 const (
 	YamlDocumentSeparator = "\n---\n"
 	CrdKindName           = "CustomResourceDefinition"
+	NotesFileName         = "NOTES.txt"
 )
 
 // Returns the Helm chart archive located at the given URI (can be either an http(s) address or a file path)

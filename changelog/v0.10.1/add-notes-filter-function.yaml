@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add filter function to exclude NOTES.txt files during installation.

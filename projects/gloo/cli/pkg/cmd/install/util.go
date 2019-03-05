@@ -134,6 +134,7 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 
 	// Render and install CRD manifests
 	crdManifestBytes, err := install.RenderChart(chart, values, renderOpts,
+		install.ExcludeNotes,
 		filterKnativeResources,
 		filterCrds,
 		install.ExcludeEmptyManifests)
@@ -154,6 +155,7 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
+		install.ExcludeNotes,
 		filterKnativeResources,
 		install.ExcludeCrds,
 		install.ExcludeEmptyManifests)

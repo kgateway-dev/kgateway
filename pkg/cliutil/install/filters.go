@@ -63,6 +63,17 @@ var ExcludeCrds ManifestFilterFunc = func(input []manifest.Manifest) (output []m
 	return
 }
 
+// Filters out NOTES.txt files
+var ExcludeNotes ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
+	for _, man := range input {
+		if strings.HasSuffix(man.Name, NotesFileName) {
+			continue
+		}
+		output = append(output, man)
+	}
+	return
+}
+
 // If this is a knative deployment, we have to check whether knative itself is already installed in the cluster.
 // If knative is already installed and we don't own it, don't install/upgrade it (It's okay to update the installation if we own it).
 
