@@ -48,7 +48,7 @@ var ExcludeCrds ManifestFilterFunc = func(input []manifest.Manifest) (output []m
 				return nil, errors.Wrapf(err, "parsing resource: %s", doc)
 			}
 
-			// Skip non-CRD resources
+			// Keep only non-CRD resources
 			if resource.TypeMeta.Kind != CrdKindName {
 				nonCrdDocs = append(nonCrdDocs, doc)
 			}
