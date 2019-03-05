@@ -154,7 +154,7 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		filterKnativeResources,
-		install.ExcludeCrdDocs,
+		install.ExcludeCrds,
 		install.ExcludeEmptyManifests)
 	if err != nil {
 		return err

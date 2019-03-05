@@ -30,7 +30,7 @@ var ExcludeEmptyManifests ManifestFilterFunc = func(input []manifest.Manifest) (
 }
 
 // Filters out any CRD from each manifest
-var ExcludeCrdDocs ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
+var ExcludeCrds ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
 	for _, man := range input {
 
 		// Split manifest into individual YAML docs
