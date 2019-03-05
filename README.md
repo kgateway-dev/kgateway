@@ -40,8 +40,8 @@ Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generatio
 - Join us on our slack channel: [https://slack.solo.io/](https://slack.solo.io/)
 - Follow us on Twitter: [https://twitter.com/soloio_inc](https://twitter.com/soloio_inc)
 - Check out the docs: [https://gloo.solo.io](https://gloo.solo.io)
-- Check out the code and contribute: [Contribution Guide](docs/dev/CONTRIBUTING.md)
-- Contribute to the [Docs](SITE.md)
+- Check out the code and contribute: [Contribution Guide](CONTRIBUTING.md)
+- Contribute to the [Docs](https://github.com/solo-io/solo-docs)
 
 ### Thanks
 
