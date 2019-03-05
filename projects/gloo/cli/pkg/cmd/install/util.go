@@ -1,20 +1,15 @@
 package install
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
 	"path"
 	"strings"
 	"time"
 
+	helmhooks "k8s.io/helm/pkg/hooks"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/go-utils/kubeutils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/manifest"
 	"sigs.k8s.io/yaml"
 
@@ -49,15 +44,12 @@ func installGloo(opts *options.Options, valueFileName string) error {
 }
 
 func getGlooVersion(opts *options.Options) (string, error) {
-	if !version.IsReleaseVersion() {
-		if opts.Install.ReleaseVersion == "" {
-			return "", errors.Errorf("you must provide a file or a release version " +
-				"containing the manifest when running an unreleased version of glooctl.")
-		}
-		return opts.Install.ReleaseVersion, nil
-	} else {
-		return version.Version, nil
+	if !version.IsReleaseVersion() && opts.Install.HelmChartOverride == "" {
+		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
+			"when running an unreleased version of glooctl")
 	}
+	return version.Version, nil
+
 }
 
 func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName string) error {
@@ -71,169 +63,102 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		return errors.Wrapf(err, "retrieving gloo helm chart archive")
 	}
 
-	values, err := install.GetValueFile(chart, valuesFileName)
+	values, err := install.GetValuesFromFile(chart, valuesFileName)
 	if err != nil {
 		return errors.Wrapf(err, "retrieving value file: %s", valuesFileName)
-	}
-
-	crdChart, err := install.GetCrdChart(chart)
-	if err != nil {
-		return errors.Wrapf(err, "retrieving crd sub-chart")
 	}
 
 	// These are the .Release.* variables used during rendering
 	renderOpts := renderutil.Options{
 		ReleaseOptions: chartutil.ReleaseOptions{
 			Namespace: opts.Install.Namespace,
-			Name:      "gloo", // TODO: make configurable
 		},
 	}
 
 	// FILTER FUNCTION 1: Exclude knative install if necessary
-	filterKnativeResources, err := GetKnativeResourceFilterFunction()
+	filterKnativeResources, err := install.GetKnativeResourceFilterFunction()
 	if err != nil {
 		return err
 	}
 
-	// FILTER FUNCTION 2: Just collect the names of the CRD that need to be registered
+	// FILTER FUNCTION 2: Keep only CRDs and collect the names
 	var crdNames []string
-	extractCrdNames := func(input []manifest.Manifest) ([]manifest.Manifest, error) {
+	filterCrds := func(input []manifest.Manifest) ([]manifest.Manifest, error) {
+
+		var crdManifests []manifest.Manifest
 		for _, man := range input {
+
+			// Split manifest into individual YAML docs
+			crdDocs := make([]string, 0)
 			for _, doc := range strings.Split(man.Content, "---") {
 
 				// We need to define this ourselves, because if we unmarshal into `apiextensions.CustomResourceDefinition`
 				// we don't get the TypeMeta (in the yaml they are nested under `metadata`, but the k8s struct has
 				// them as top level fields...)
-				var crd struct{ Metadata v1.ObjectMeta }
-				if err := yaml.Unmarshal([]byte(doc), &crd); err != nil {
-					return nil, errors.Wrapf(err, "parsing CRD: %s", doc)
+				var resource struct {
+					Metadata v1.ObjectMeta
+					v1.TypeMeta
 				}
-				if crdName := crd.Metadata.Name; crdName != "" {
-					crdNames = append(crdNames, crdName)
+				if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+					return nil, errors.Wrapf(err, "parsing resource: %s", doc)
 				}
+
+				// Skip non-CRD resources
+				if resource.TypeMeta.Kind != install.CrdKindName {
+					continue
+				}
+
+				// Check whether the CRD is a Helm "crd-install" hook.
+				// If not, throw an error, because this will cause race conditions when installing with Helm (which is
+				// not the case here, but we want to validate the manifests whenever we have the chance)
+				helmCrdInstallHookAnnotation, ok := resource.Metadata.Annotations[helmhooks.HookAnno]
+				if !ok || helmCrdInstallHookAnnotation != helmhooks.CRDInstall {
+					return nil, errors.Errorf("CRD [%s] must be annotated as a Helm '%s' hook", resource.Metadata.Name, helmhooks.CRDInstall)
+				}
+
+				// Keep track of the CRD name
+				crdNames = append(crdNames, resource.Metadata.Name)
+
+				crdDocs = append(crdDocs, doc)
 			}
+
+			crdManifests = append(crdManifests, manifest.Manifest{
+				Name:    man.Name,
+				Head:    man.Head,
+				Content: strings.Join(crdDocs, install.YamlDocumentSeparator),
+			})
 		}
-		return input, nil
+
+		return crdManifests, nil
 	}
 
 	// Render and install CRD manifests
-	crdManifestBytes, err := install.RenderChart(crdChart, values, renderOpts, filterKnativeResources, extractCrdNames, install.ExcludeEmptyManifests)
+	crdManifestBytes, err := install.RenderChart(chart, values, renderOpts,
+		filterKnativeResources,
+		filterCrds,
+		install.ExcludeEmptyManifests)
 	if err != nil {
-		return errors.Wrapf(err, "rendering crd sub-chart")
+		return errors.Wrapf(err, "rendering crd manifests")
 	}
-	if err := installManifest(crdManifestBytes, opts.Install.DryRun); err != nil {
-		return errors.Wrapf(err, "installing crd manifest")
+	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun); err != nil {
+		return errors.Wrapf(err, "installing crd manifests")
 	}
 
 	// Only run if this is not a dry run
 	if !opts.Install.DryRun {
-		if err := waitForCrdsToBeRegistered(crdNames, time.Second*5, time.Millisecond*500); err != nil {
+		if err := install.WaitForCrdsToBeRegistered(crdNames, time.Second*5, time.Millisecond*500); err != nil {
 			return errors.Wrapf(err, "waiting for crds to be registered")
 		}
 
 	}
 
 	// Render and install Gloo manifest
-	manifestBytes, err := install.RenderChart(chart, values, renderOpts, filterKnativeResources, install.ExcludeEmptyManifests)
+	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
+		filterKnativeResources,
+		install.ExcludeCrds,
+		install.ExcludeEmptyManifests)
 	if err != nil {
 		return err
 	}
-	return installManifest(manifestBytes, opts.Install.DryRun)
-}
-
-func installManifest(manifest []byte, isDryRun bool) error {
-	if isDryRun {
-		fmt.Printf("%s", manifest)
-		return nil
-	}
-	if err := kubectlApply(manifest); err != nil {
-		return errors.Wrapf(err, "running kubectl apply on manifest")
-	}
-	return nil
-}
-
-func kubectlApply(manifest []byte) error {
-	return kubectl(bytes.NewBuffer(manifest), "apply", "-f", "-")
-}
-
-func kubectl(stdin io.Reader, args ...string) error {
-	kubectl := exec.Command("kubectl", args...)
-	if stdin != nil {
-		kubectl.Stdin = stdin
-	}
-	kubectl.Stdout = os.Stdout
-	kubectl.Stderr = os.Stderr
-	return kubectl.Run()
-}
-
-// If this is a knative deployment, we have to check whether knative itself is already installed in the cluster.
-// If knative is already installed and we don't own it, don't install/upgrade it (It's okay to update the installation if we own it).
-
-// If this is not a knative deployment, skipKnativeInstall might still evaluate to true, but in that case Helm will
-// filter out all the knative resources during template rendering.
-func GetKnativeResourceFilterFunction() (install.ManifestFilterFunc, error) {
-	installed, ours, err := knativeInstalled()
-	if err != nil {
-		return nil, errors.Wrapf(err, "checking for knative installation")
-	}
-	skipKnativeInstall := installed && !ours
-	return func(input []manifest.Manifest) ([]manifest.Manifest, error) {
-		var output []manifest.Manifest
-		for _, man := range input {
-			if strings.Contains(man.Name, "knative") && skipKnativeInstall {
-				continue
-			}
-			output = append(output, man)
-		}
-		return output, nil
-	}, nil
-
-}
-
-func knativeInstalled() (isInstalled bool, isOurs bool, err error) {
-	restCfg, err := kubeutils.GetConfig("", "")
-	if err != nil {
-		return false, false, err
-	}
-	kube, err := kubernetes.NewForConfig(restCfg)
-	if err != nil {
-		return false, false, err
-	}
-	namespaces, err := kube.CoreV1().Namespaces().List(metav1.ListOptions{})
-	if err != nil {
-		return false, false, err
-	}
-	for _, ns := range namespaces.Items {
-		if ns.Name == constants.KnativeServingNamespace {
-			ours := ns.Labels != nil && ns.Labels["app"] == "gloo"
-			return true, ours, nil
-		}
-	}
-	return false, false, nil
-}
-
-// register knative crds first
-func waitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
-	if len(crds) == 0 {
-		return nil
-	}
-
-	// TODO: think about improving
-	// Just pick the last crd in the list an wait for it to be created. It is reasonable to assume that by the time we
-	// get to applying the manifest the other ones will be ready as well.
-	crdName := crds[len(crds)-1]
-
-	elapsed := time.Duration(0)
-	for {
-		select {
-		case <-time.After(interval):
-			if err := kubectl(nil, "get", crdName); err == nil {
-				return nil
-			}
-			elapsed += interval
-			if elapsed > timeout {
-				return errors.Errorf("failed to confirm knative crd registration after %v", timeout)
-			}
-		}
-	}
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
 }

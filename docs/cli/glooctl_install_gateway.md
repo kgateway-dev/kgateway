@@ -21,7 +21,6 @@ glooctl install gateway [flags]
   -f, --file string        Install Gloo from this Helm chart archive file rather than from a release
   -h, --help               help for gateway
   -n, --namespace string   namespace to install gloo into (default "gloo-system")
-      --release string     install using this release version. defaults to the latest github release
 ```
 
 ### Options inherited from parent commands

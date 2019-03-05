@@ -15,15 +15,12 @@ import (
 var (
 	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
 	valuesOutput          = "install/helm/gloo/values.yaml"
-	crdValuesOutput       = "install/helm/gloo/crds/values.yaml"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
 	ingressValuesTemplate = "install/helm/gloo/values-ingress-template.yaml"
 	ingressValuesOutput   = "install/helm/gloo/values-ingress.yaml"
 	chartTemplate         = "install/helm/gloo/Chart-template.yaml"
 	chartOutput           = "install/helm/gloo/Chart.yaml"
-	crdChartTemplate      = "install/helm/gloo/crds/Chart-template.yaml"
-	crdChartOutput        = "install/helm/gloo/crds/Chart.yaml"
 
 	ifNotPresent = "IfNotPresent"
 )
@@ -115,10 +112,6 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.GatewayProxy.Deployment.Image.Repository = replacePrefix(cfg.GatewayProxy.Deployment.Image.Repository, repositoryPrefix)
 	}
 
-	if err := writeYaml(cfg, crdValuesOutput); err != nil {
-		return err
-	}
-
 	return writeYaml(cfg, valuesOutput)
 }
 
@@ -197,25 +190,14 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 }
 
 func generateChartYaml(version string) error {
-	var chart, crdChart generate.Chart
+	var chart generate.Chart
 	if err := readYaml(chartTemplate, &chart); err != nil {
 		return err
 	}
 
 	chart.Version = version
 
-	if err := writeYaml(&chart, chartOutput); err != nil {
-		return err
-	}
-
-	if err := readYaml(crdChartTemplate, &crdChart); err != nil {
-		return err
-	}
-
-	crdChart.Version = version
-
-	return writeYaml(&crdChart, crdChartOutput)
-
+	return writeYaml(&chart, chartOutput)
 }
 
 // We want to turn "quay.io/solo-io/gloo" into "<newPrefix>/gloo".
