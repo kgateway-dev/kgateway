@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Bump go-utils to pick up fix for uploaded sha hashes. 

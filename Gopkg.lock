@@ -1466,7 +1466,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:94afc1ee4fdabc40a60a73824fb68d1783391ab1a544fe30eb6a9d06f8bf461a"
+  digest = "1:08365e52e78f192c9b5c9dd7e6b50001d253bd88a140367ea95326d98224b692"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1482,8 +1482,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "36028dafd82bcd915151a82ef9653a8b698e92f6"
-  version = "v0.2.10"
+  revision = "e084fb30fbb39f78ce3dde57d5113fbf370d19ae"
+  version = "v0.2.14"
 
 [[projects]]
   branch = "master"
@@ -2570,6 +2570,7 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/helm/pkg/chartutil",
+    "k8s.io/helm/pkg/hooks",
     "k8s.io/helm/pkg/manifest",
     "k8s.io/helm/pkg/proto/hapi/chart",
     "k8s.io/helm/pkg/renderutil",
