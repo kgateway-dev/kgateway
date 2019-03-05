@@ -25,7 +25,7 @@ At this point you should be able to build the individual components that compris
 
 ```bash
 make gloo
-make glooctl X
+make glooctl
 make discovery
 make gateway
 make envoyinit

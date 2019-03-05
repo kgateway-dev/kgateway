@@ -5,3 +5,10 @@ home: https://gloo.solo.io/
 icon: https://raw.githubusercontent.com/solo-io/gloo/master/docs/img/Gloo-01.png
 sources:
   - https://github.com/solo-io/gloo
+keywords:
+  - apigateway
+  - kubernetes
+  - ingress
+  - mesh
+  - servicemesh
+  - istio

@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Now using the new UpdateReleaseAssetsCli in go-utils.
+  - type: BREAKING_CHANGE
+    description: Remove `--release` option from `glooctl install` command.
+    issueLink: https://github.com/solo-io/gloo/issues/493
+  - type: BREAKING_CHANGE
+    description: Set `namespace.create` to true in Helm value files in order to make `helm install` behavior less awkward.
+    issueLink: https://github.com/solo-io/gloo/issues/493
+  - type: BREAKING_CHANGE
+    description: Include Gloo CRDs as templates instead of them being a dedicated subchart.
+    issueLink: https://github.com/solo-io/gloo/issues/493
