@@ -1,8 +1,8 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: petclinic-db
-  namespace: default
 spec:
   ports:
   - name: mysql
@@ -17,7 +17,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: petclinic-db
-  namespace: default
   labels:
     app: petclinic-db
 spec:
@@ -48,12 +47,53 @@ spec:
       volumes:
       - name: sql-data
         emptyDir: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: petclinic-vets
+  name: petclinic-vets
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-vets
+  template:
+    metadata:
+      labels:
+        app: petclinic-vets
+    spec:
+      containers:
+      - command:
+        - /petclinic-vet
+        image: soloio/petclinic-vet@sha256:4bf705f28a032b2b3edd00ccaed58a7cb3ea6dedd005eecc2cde8e7a6ae71e70
+        imagePullPolicy: IfNotPresent
+        name: petclinic-vets
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic-vets
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+  selector:
+    app: petclinic-vets
+
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: petclinic
-  namespace: default
   labels:
     app: petclinic
 spec:
@@ -72,20 +112,16 @@ spec:
         ports:
         - containerPort: 8080
           protocol: TCP
-          name: http-ui
+          name: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: petclinic
-  namespace: default
 spec:
   ports:
-  - name: http-ui
-    port: 80
+  - name: http
+    port: 8080
     protocol: TCP
-    targetPort: 8080
   selector:
     app: petclinic
-  sessionAffinity: None
-  type: ClusterIP
