@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Include all Gloo CRDs in the Helm chart instead of relying on lazy registration by resource clients.
