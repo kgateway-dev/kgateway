@@ -145,6 +145,14 @@
   version = "v9"
 
 [[projects]]
+  digest = "1:1c9dffe45896d21dc8e183fdc3cdb405249e6c7dd3d00792e534af3597d5e4fc"
+  name = "github.com/avast/retry-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "08d411bf8302219fe47ca04dbdf9de892010c5e5"
+  version = "v2.2.0"
+
+[[projects]]
   digest = "1:546cda9f6b7b826b6a2d558e8de49909154481874d481e65fa74fe1352bccfae"
   name = "github.com/aws/aws-sdk-go"
   packages = [
@@ -1466,7 +1474,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:08365e52e78f192c9b5c9dd7e6b50001d253bd88a140367ea95326d98224b692"
+  digest = "1:f6daf8bb11b9805d80c9e6fbb3ca3c5dfac76f4cdc4fe55106cec2d833d4506f"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1482,8 +1490,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "e084fb30fbb39f78ce3dde57d5113fbf370d19ae"
-  version = "v0.2.14"
+  revision = "167df0ee2b8bde9d0944f00c650f19772b25d36b"
+  version = "v0.3.1"
 
 [[projects]]
   branch = "master"
