@@ -145,6 +145,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
     - 'HELM_HOME=/root/.helm'
+    - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['compile']
   id: 'build-test-assets'

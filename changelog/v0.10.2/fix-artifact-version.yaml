@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fixes a regression in the release process where release artifacts weren't properly versioned, causing install to not behave as expected.
+    issueLink: https://github.com/solo-io/gloo/issues/508
