@@ -1,8 +1,18 @@
 package main
 
-import "github.com/solo-io/go-utils/githubutils"
+import (
+	"fmt"
+	"github.com/solo-io/go-utils/githubutils"
+	"github.com/solo-io/go-utils/logger"
+	"github.com/solo-io/go-utils/versionutils"
+	"os/exec"
+	"runtime"
+	"strings"
+)
 
 func main() {
+	validateReleaseVersionOfCli()
+
 	assets := make([]githubutils.ReleaseAssetSpec, 6)
 	assets[0] = githubutils.ReleaseAssetSpec{
 		Name:       "glooctl-linux-amd64",
@@ -38,5 +48,18 @@ func main() {
 		SkipAlreadyExists: true,
 	}
 	githubutils.UploadReleaseAssetCli(&spec)
+}
+
+func validateReleaseVersionOfCli() {
+	releaseVersion := versionutils.GetReleaseVersionOrExitGracefully().String()[1:]
+	name := fmt.Sprintf("_output/glooctl-%s-amd64", runtime.GOOS)
+	cmd := exec.Command(name, "--version")
+	bytes, err := cmd.Output()
+	if err != nil {
+		logger.Fatalf("Error while trying to validate artifact version. Error was: %s", err.Error())
+	}
+	if !strings.HasSuffix(string(bytes), fmt.Sprintf("version %s\n", releaseVersion)) {
+		logger.Fatalf("Unexpected version output for glooctl: %s", string(bytes))
+	}
 }
 
