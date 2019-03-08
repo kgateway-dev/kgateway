@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl edit upstream
 
-read an upstream or list upstreams in a namespace
+edit an upstream in a namespace
 
 ### Synopsis
 

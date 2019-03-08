@@ -29,6 +29,6 @@ Edit a Gloo resource
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl edit upstream](../glooctl_edit_upstream)	 - read an upstream or list upstreams in a namespace
+* [glooctl edit upstream](../glooctl_edit_upstream)	 - edit an upstream in a namespace
 * [glooctl edit virtualservice](../glooctl_edit_virtualservice)	 - edit a virtualservice in a namespace
 

@@ -28,7 +28,7 @@ func RootCmd(opts *options.EditOptions, optionsFunc ...cliutils.OptionsFunc) *co
 	cmd := &cobra.Command{
 		Use:     constants.UPSTREAM_COMMAND.Use,
 		Aliases: constants.UPSTREAM_COMMAND.Aliases,
-		Short:   "read an upstream or list upstreams in a namespace",
+		Short:   "edit an upstream in a namespace",
 		Long:    "usage: glooctl edit upstream [NAME] [--namespace=namespace]",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Top.Interactive {
