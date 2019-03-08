@@ -27,4 +27,5 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	err := kube2e.GlooctlUninstall(namespace)
 	Expect(err).NotTo(HaveOccurred())
+
 })
