@@ -6,10 +6,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/testutils/install"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
 func TestGateway(t *testing.T) {
+	return
 	if kube2e.AreTestsDisabled() {
 		return
 	}
@@ -22,6 +24,7 @@ var namespace string
 
 var _ = BeforeSuite(func() {
 	namespace = kube2e.InstallGloo(kube2e.GATEWAY)
+	install.NewSoloTestHelper(nil)
 })
 
 var _ = AfterSuite(func() {
