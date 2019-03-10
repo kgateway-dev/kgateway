@@ -1480,7 +1480,8 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:33198f0f5c36a0a8217073623775d872043f2faa6bb3f37d380adbd748898cbd"
+  branch = "marco-temp"
+  digest = "1:8120dd3a880e7d9500b1b0a6a58e634e730e7e1581b87264ac7e5c333ef1cd61"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1500,8 +1501,7 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "a7c8ece03d8713231997a28a17cfbbe1b07c8a72"
-  version = "v0.4.0"
+  revision = "d9045020f3aa1701b767c53b474752a3482f1b4a"
 
 [[projects]]
   branch = "master"
