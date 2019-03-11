@@ -14,6 +14,9 @@ weight: 5
 - [SslConfig](#SslConfig)
 - [SSLFiles](#SSLFiles)
 - [UpstreamSslConfig](#UpstreamSslConfig)
+- [SDSConfig](#SDSConfig)
+- [CallCredentials](#CallCredentials)
+- [FileCredentialSource](#FileCredentialSource)
   
 
 
@@ -33,6 +36,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 ```yaml
 "secret_ref": .core.solo.io.ResourceRef
 "ssl_files": .gloo.solo.io.SSLFiles
+"sds": .gloo.solo.io.SDSConfig
 "sni_domains": []string
 
 ```
@@ -41,6 +45,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | ----- | ---- | ----------- |----------- | 
 | `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | * SecretRef contains the secret ref to a gloo secret containing the following structure: { "tls.crt": <ca chain data...>, "tls.key": <private key data...> } |  |
 | `ssl_files` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
+| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) |  |  |
 | `sni_domains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
 
 
@@ -77,6 +82,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 ```yaml
 "secret_ref": .core.solo.io.ResourceRef
 "ssl_files": .gloo.solo.io.SSLFiles
+"sds": .gloo.solo.io.SDSConfig
 "sni": string
 
 ```
@@ -85,7 +91,67 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | ----- | ---- | ----------- |----------- | 
 | `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) |  |  |
 | `ssl_files` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
+| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) |  |  |
 | `sni` | `string` | optional. the SNI domains that should be considered for TLS connections |  |
+
+
+
+
+---
+### <a name="SDSConfig">SDSConfig</a>
+
+
+
+```yaml
+"TargetUri": string
+"call_credentials": .gloo.solo.io.CallCredentials
+"certificates_secret_name": string
+"validation_context_name": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `TargetUri` | `string` |  |  |
+| `call_credentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk#CallCredentials) |  |  |
+| `certificates_secret_name` | `string` |  |  |
+| `validation_context_name` | `string` |  |  |
+
+
+
+
+---
+### <a name="CallCredentials">CallCredentials</a>
+
+
+
+```yaml
+"file_credential_source": .gloo.solo.io.CallCredentials.FileCredentialSource
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `file_credential_source` | [.gloo.solo.io.CallCredentials.FileCredentialSource](../ssl.proto.sk#FileCredentialSource) |  |  |
+
+
+
+
+---
+### <a name="FileCredentialSource">FileCredentialSource</a>
+
+
+
+```yaml
+"TokenFileName": string
+"Header": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `TokenFileName` | `string` |  |  |
+| `Header` | `string` |  |  |
 
 
 

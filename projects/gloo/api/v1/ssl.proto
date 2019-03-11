@@ -19,6 +19,8 @@ message SslConfig {
         core.solo.io.ResourceRef secret_ref = 1;
         // SSLFiles reference paths to certificates which are local to the proxy
         SSLFiles ssl_files = 2;
+
+        SDSConfig sds = 4;
     }
     // optional. the SNI domains that should be considered for TLS connections
     repeated string sni_domains = 3;
@@ -38,7 +40,25 @@ message UpstreamSslConfig {
         core.solo.io.ResourceRef secret_ref = 1;
         //  SSLFiles reference paths to certificates which are local to the proxy
         SSLFiles ssl_files = 2;
+
+        SDSConfig sds =4;
     }
     // optional. the SNI domains that should be considered for TLS connections
     string sni = 3;
+}
+
+message SDSConfig {
+    string TargetUri = 1;
+    CallCredentials call_credentials = 2;
+    string certificates_secret_name = 3;
+    string validation_context_name= 4;
+    // TODO add subject alt name?
+}
+
+message CallCredentials {
+    message FileCredentialSource {
+        string TokenFileName = 1;
+        string Header = 2;
+    }
+FileCredentialSource file_credential_source = 1;
 }

@@ -319,7 +319,7 @@
   revision = "6480d4af844c189cf5dd913db24ddd339d3a4f85"
 
 [[projects]]
-  digest = "1:fc7bb338bb59d2d6dd8627a40dfbae9908c81fdd541d3013e77de248628dd734"
+  digest = "1:337b6710f93230615f6008cae18120743c963b887a57a4ad52d68fb71bb51a62"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -335,6 +335,7 @@
     "envoy/config/filter/http/fault/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
+    "envoy/config/grpc_credential/v2alpha",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
     "envoy/config/ratelimit/v2",
@@ -345,7 +346,8 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "6bb1dbbfcb2b3192849c3f0e6d3a6a6f038ded8b"
+  revision = "0ad6fa1cf0b9b6ca8f3617a7188a568e81f40b87"
+  version = "v0.6.9"
 
 [[projects]]
   digest = "1:f1f2bd73c025d24c3b93abf6364bccb802cf2fdedaa44360804c67800e8fab8d"
@@ -2465,6 +2467,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
     "github.com/envoyproxy/go-control-plane/pkg/util",
