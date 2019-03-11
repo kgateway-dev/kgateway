@@ -1,12 +1,14 @@
 package knative_test
 
 import (
-	"github.com/solo-io/go-utils/testutils"
-	"github.com/solo-io/go-utils/testutils/helper"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/helper"
+
+	"github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,13 +24,13 @@ func TestKnative(t *testing.T) {
 	RunSpecs(t, "Knative Suite")
 }
 
-var testHelper *install.SoloTestHelper
+var testHelper *helper.SoloTestHelper
 
 var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
-	testHelper, err = install.NewSoloTestHelper(func(defaults install.TestConfig) install.TestConfig {
+	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
 		return defaults
@@ -36,7 +38,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Install Gloo
-	err = testHelper.InstallGloo(install.INGRESS, 5*time.Minute)
+	err = testHelper.InstallGloo(helper.INGRESS, 5*time.Minute)
 	Expect(err).NotTo(HaveOccurred())
 })
 

@@ -1,8 +1,9 @@
 package ingress_test
 
 import (
-	"github.com/solo-io/go-utils/testutils/helper"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -3,16 +3,17 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/testutils/helper"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/helper"
 
 	"k8s.io/client-go/kubernetes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"

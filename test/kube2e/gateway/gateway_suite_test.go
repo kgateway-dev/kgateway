@@ -1,11 +1,12 @@
 package gateway_test
 
 import (
-	"github.com/solo-io/go-utils/testutils"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -1,11 +1,12 @@
 package knative_test
 
 import (
-	"github.com/solo-io/go-utils/testutils/exec"
-	"github.com/solo-io/go-utils/testutils/helper"
 	"io/ioutil"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/exec"
+	"github.com/solo-io/go-utils/testutils/helper"
 
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 
