@@ -9,13 +9,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/testutils/install"
+	"github.com/solo-io/go-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
 func TestGateway(t *testing.T) {
-	if kube2e.AreTestsDisabled() {
+	if testutils.AreTestsDisabled() {
 		return
 	}
 	skhelpers.RegisterCommonFailHandlers()
@@ -23,13 +22,13 @@ func TestGateway(t *testing.T) {
 	RunSpecs(t, "Gateway Suite")
 }
 
-var helper *install.SoloTestHelper
+var testHelper *helper.SoloTestHelper
 
 var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
-	helper, err = install.NewSoloTestHelper(func(defaults install.TestConfig) install.TestConfig {
+	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
 		return defaults
@@ -37,15 +36,15 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Install Gloo
-	err = helper.InstallGloo(install.GATEWAY, 5*time.Minute)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
-	err := helper.UninstallGloo()
+	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
 
-	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "namespace", helper.InstallNamespace)
+	Eventually(func() error {
+		return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
 	}, "60s", "1s").Should(HaveOccurred())
 })

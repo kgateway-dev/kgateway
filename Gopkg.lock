@@ -1475,7 +1475,7 @@
 
 [[projects]]
   branch = "marco-temp"
-  digest = "1:678f11cfa810abdcbf1d4b53d11da7264a5c4ae5ebcf1393d9b13bd504937c46"
+  digest = "1:a7d42e1aa62ef4bd50f9033462bdb87109fc8aa03c5f9687f08956c45edff1ea"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1491,11 +1491,11 @@
     "protoutils",
     "testutils",
     "testutils/exec",
-    "testutils/install",
+    "testutils/helper",
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "2778e08a2df91a37f4824c5a8ffae708431bcd02"
+  revision = "0f60e4b45da9efdc9f83b8fd50372142e9bf9d6e"
 
 [[projects]]
   branch = "master"
@@ -2520,7 +2520,9 @@
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/logger",
     "github.com/solo-io/go-utils/protoutils",
-    "github.com/solo-io/go-utils/testutils/install",
+    "github.com/solo-io/go-utils/testutils",
+    "github.com/solo-io/go-utils/testutils/exec",
+    "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
@@ -2588,7 +2590,6 @@
     "k8s.io/helm/pkg/manifest",
     "k8s.io/helm/pkg/proto/hapi/chart",
     "k8s.io/helm/pkg/renderutil",
-    "k8s.io/helm/pkg/repo",
     "k8s.io/helm/pkg/tiller",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",

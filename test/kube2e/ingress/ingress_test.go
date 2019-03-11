@@ -1,13 +1,12 @@
 package ingress_test
 
 import (
+	"github.com/solo-io/go-utils/testutils/helper"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/kubeutils"
-	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -23,18 +22,18 @@ var _ = Describe("Kube2e: Ingress", func() {
 
 		kube, err := kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		kubeIngressClient := kube.ExtensionsV1beta1().Ingresses(namespace)
+		kubeIngressClient := kube.ExtensionsV1beta1().Ingresses(testHelper.InstallNamespace)
 
 		backend := &v1beta1.IngressBackend{
 			ServiceName: "testrunner",
 			ServicePort: intstr.IntOrString{
-				IntVal: testRunnerPort,
+				IntVal: helper.TestRunnerPort,
 			},
 		}
 		kubeIng, err := kubeIngressClient.Create(&v1beta1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        "simple-ingress-route",
-				Namespace:   namespace,
+				Namespace:   testHelper.InstallNamespace,
 				Annotations: map[string]string{"kubernetes.io/ingress.class": "gloo"},
 			},
 			Spec: v1beta1.IngressSpec{
@@ -66,13 +65,14 @@ var _ = Describe("Kube2e: Ingress", func() {
 
 		ingressProxy := "ingress-proxy"
 		ingressPort := 80
-		setup.CurlEventuallyShouldRespond(setup.CurlOpts{
-			Protocol: "http",
-			Path:     "/",
-			Method:   "GET",
-			Host:     ingressProxy,
-			Service:  ingressProxy,
-			Port:     ingressPort,
-		}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute*2)
+		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+			Protocol:          "http",
+			Path:              "/",
+			Method:            "GET",
+			Host:              ingressProxy,
+			Service:           ingressProxy,
+			Port:              ingressPort,
+			ConnectionTimeout: 5,
+		}, helper.SimpleHttpResponse, 1, time.Minute*2)
 	})
 })
