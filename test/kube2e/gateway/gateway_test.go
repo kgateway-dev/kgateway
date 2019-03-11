@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/testutils/install"
 	"io/ioutil"
 	"os"
 	"time"
@@ -71,7 +72,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	AfterEach(func() {
 		cancel()
-		err := virtualServiceClient.Delete(namespace, "vs", clients.DeleteOpts{})
+		err := virtualServiceClient.Delete(helper.InstallNamespace, "vs", clients.DeleteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -81,7 +82,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			Metadata: core.Metadata{
 				Name:      "vs",
-				Namespace: namespace,
+				Namespace: helper.InstallNamespace,
 			},
 			VirtualHost: &gloov1.VirtualHost{
 				Name:    "default",
@@ -96,7 +97,9 @@ var _ = Describe("Kube2e: gateway", func() {
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
-									Upstream: core.ResourceRef{Namespace: namespace, Name: fmt.Sprintf("%s-%s-%v", namespace, "testrunner", kube2e.TestRunnerPort)},
+									Upstream: core.ResourceRef{
+										Namespace: helper.InstallNamespace,
+										Name:      fmt.Sprintf("%s-%s-%v", helper.InstallNamespace, "testrunner", kube2e.TestRunnerPort)},
 								},
 							},
 						},
@@ -106,24 +109,22 @@ var _ = Describe("Kube2e: gateway", func() {
 		}, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		fmt.Println("wait for gateway to be created")
-
-		defaultGateway := defaults.DefaultGateway(namespace)
+		defaultGateway := defaults.DefaultGateway(helper.InstallNamespace)
 		// wait for default gateway to be created
 		Eventually(func() (*v1.Gateway, error) {
-			return gatewayClient.Read(namespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			return gatewayClient.Read(helper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 		}, "15s", "0.5s").Should(Not(BeNil()))
 
 		gatewayProxy := "gateway-proxy"
 		gatewayPort := int(80)
-		setup.CurlEventuallyShouldRespond(setup.CurlOpts{
+		helper.CurlEventuallyShouldRespond(install.CurlOpts{
 			Protocol: "http",
 			Path:     "/",
 			Method:   "GET",
 			Host:     gatewayProxy,
 			Service:  gatewayProxy,
 			Port:     gatewayPort,
-		}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute*2)
+		}, kube2e.SimpleHttpResponse, 1, time.Minute*2)
 	})
 
 	Context("native ssl ", func() {
@@ -134,19 +135,19 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		AfterEach(func() {
-			err := kubeClient.CoreV1().Secrets(namespace).Delete("secret", nil)
+			err := kubeClient.CoreV1().Secrets(helper.InstallNamespace).Delete("secret", nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("works with ssl", func() {
-			createdSecret, err := kubeClient.CoreV1().Secrets(namespace).Create(helpers.GetKubeSecret("secret", namespace))
+			createdSecret, err := kubeClient.CoreV1().Secrets(helper.InstallNamespace).Create(helpers.GetKubeSecret("secret", helper.InstallNamespace))
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = virtualServiceClient.Write(&v1.VirtualService{
 
 				Metadata: core.Metadata{
 					Name:      "vs",
-					Namespace: namespace,
+					Namespace: helper.InstallNamespace,
 				},
 				SslConfig: &gloov1.SslConfig{
 					SslSecrets: &gloov1.SslConfig_SecretRef{
@@ -169,7 +170,9 @@ var _ = Describe("Kube2e: gateway", func() {
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
-										Upstream: core.ResourceRef{Namespace: namespace, Name: fmt.Sprintf("%s-%s-%v", namespace, "testrunner", kube2e.TestRunnerPort)},
+										Upstream: core.ResourceRef{
+											Namespace: helper.InstallNamespace,
+											Name:      fmt.Sprintf("%s-%s-%v", helper.InstallNamespace, "testrunner", kube2e.TestRunnerPort)},
 									},
 								},
 							},
@@ -179,10 +182,10 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			defaultGateway := defaults.DefaultGateway(namespace)
+			defaultGateway := defaults.DefaultGateway(helper.InstallNamespace)
 			// wait for default gateway to be created
 			Eventually(func() (*v1.Gateway, error) {
-				return gatewayClient.Read(namespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+				return gatewayClient.Read(helper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
 			gatewayProxy := "gateway-proxy"
@@ -191,10 +194,10 @@ var _ = Describe("Kube2e: gateway", func() {
 			//noinspection GoUnhandledErrorResult
 			defer os.Remove(caFile)
 
-			err = setup.Kubectl("cp", caFile, namespace+"/testrunner:/tmp/ca.crt")
+			err = setup.Kubectl("cp", caFile, helper.InstallNamespace+"/testrunner:/tmp/ca.crt")
 			Expect(err).NotTo(HaveOccurred())
 
-			setup.CurlEventuallyShouldRespond(setup.CurlOpts{
+			helper.CurlEventuallyShouldRespond(install.CurlOpts{
 				Protocol: "https",
 				Path:     "/",
 				Method:   "GET",
@@ -202,7 +205,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Service:  gatewayProxy,
 				Port:     gatewayPort,
 				CaFile:   "/tmp/ca.crt",
-			}, namespace, kube2e.SimpleHttpResponse, 1, time.Minute*2)
+			}, kube2e.SimpleHttpResponse, 1, time.Minute*2)
 		})
 	})
 })

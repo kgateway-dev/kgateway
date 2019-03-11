@@ -36,7 +36,7 @@ func GetYaml(pb proto.Message) []byte {
 }
 
 func main() {
-	role := flag.String("r", "gloo-system~clusteringress-proxy", "role to register with")
+	role := flag.String("r", "test-marco-1~gateway-proxy", "role to register with")
 	port := flag.String("p", "9977", "gloo port")
 	//out := flag.String("o", "gostructs", "output fmt gostructs|yaml")
 	flag.Parse()

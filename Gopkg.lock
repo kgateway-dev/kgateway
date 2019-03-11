@@ -10,6 +10,17 @@
   version = "v0.33.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:6da51e5ec493ad2b44cb04129e2d0a068c8fb9bd6cb5739d199573558696bb94"
+  name = "github.com/Azure/go-ansiterm"
+  packages = [
+    ".",
+    "winterm",
+  ]
+  pruneopts = "UT"
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
+[[projects]]
   digest = "1:1fe87891e29a291377b0b2224b99fd857553dff7dce8a6ffb5fda003ce52a8b0"
   name = "github.com/Azure/go-autorest"
   packages = [
@@ -97,23 +108,12 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
-  branch = "master"
-  digest = "1:315c5f2f60c76d89b871c73f9bd5fe689cad96597afd50fb9992228ef80bdd34"
-  name = "github.com/alecthomas/template"
-  packages = [
-    ".",
-    "parse",
-  ]
-  pruneopts = "UT"
-  revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
-
-[[projects]]
-  branch = "master"
-  digest = "1:c198fdc381e898e8fb62b8eb62758195091c313ad18e52a3067366e1dda2fb3c"
-  name = "github.com/alecthomas/units"
+  digest = "1:87c2e02fb01c27060ccc5ba7c5a407cc91147726f8f40b70cceeedbc52b1f3a8"
+  name = "github.com/Sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+  revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -297,12 +297,15 @@
   version = "v2.7.0"
 
 [[projects]]
-  digest = "1:6c06722e816e161ff90421991ff7edc6d660936a835cfa666bd3ad606644a880"
+  digest = "1:53e99d883df3e940f5f0223795f300eb32b8c044f226132bfc0e74930f24ea4b"
   name = "github.com/docker/docker"
-  packages = ["pkg/term"]
+  packages = [
+    "pkg/term",
+    "pkg/term/windows",
+  ]
   pruneopts = "UT"
-  revision = "a8a31eff10544860d2188dddabdee4d727545796"
-  version = "v1.5.0"
+  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
+  version = "v1.13.1"
 
 [[projects]]
   branch = "master"
@@ -1087,12 +1090,12 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:0a69a1c0db3591fcefb47f115b224592c8dfa4368b7ba9fae509d5e16cdc95c8"
+  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
   pruneopts = "UT"
-  revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
-  version = "v1.0.1"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
 
 [[projects]]
   digest = "1:29d28429a93b076908a36420a7ecb2bf429d24c15a4b5e2c220ea00fc84b71af"
@@ -1383,12 +1386,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2e87c336c7d1830b28d0a4eba428c6e0d66aa6ddcc8fddd994eb80f1f6dd6a62"
+  digest = "1:63b68062b8968092eb86bedc4e68894bd096ea6b24920faca8b9dcf451f54bb5"
   name = "github.com/prometheus/common"
   packages = [
     "expfmt",
     "internal/bitbucket.org/ww/goautoneg",
-    "log",
     "model",
   ]
   pruneopts = "UT"
@@ -1456,14 +1458,6 @@
   revision = "e2103e2c35297fb7e17febb81e49b312087a2372"
 
 [[projects]]
-  digest = "1:87c2e02fb01c27060ccc5ba7c5a407cc91147726f8f40b70cceeedbc52b1f3a8"
-  name = "github.com/sirupsen/logrus"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
-  version = "v1.3.0"
-
-[[projects]]
   digest = "1:fa6bd41a75d99f159736704d3c8cd4529b15ca7725fd23796fe6541426a13564"
   name = "github.com/solo-io/envoy-operator"
   packages = ["pkg/downward"]
@@ -1481,7 +1475,7 @@
 
 [[projects]]
   branch = "marco-temp"
-  digest = "1:8120dd3a880e7d9500b1b0a6a58e634e730e7e1581b87264ac7e5c333ef1cd61"
+  digest = "1:678f11cfa810abdcbf1d4b53d11da7264a5c4ae5ebcf1393d9b13bd504937c46"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1501,7 +1495,7 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "d9045020f3aa1701b767c53b474752a3482f1b4a"
+  revision = "2778e08a2df91a37f4824c5a8ffae708431bcd02"
 
 [[projects]]
   branch = "master"
@@ -1763,14 +1757,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:df780b439dde92795fb8e6c5998bf90d177010e600aadc5f9588254bf04adcb0"
+  digest = "1:1da9d2022068957b5a7080b0f94d3d81bdba624a5ce7467912bd6d4330ba2c3f"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
     "windows",
-    "windows/registry",
-    "windows/svc/eventlog",
   ]
   pruneopts = "UT"
   revision = "ac767d655b305d4e9612f5f6e33120b9176c4ad4"
@@ -1892,14 +1884,6 @@
   pruneopts = "UT"
   revision = "fb519f89e19299d852ffdd9b734af122d2dcbd30"
   version = "v1.7.0"
-
-[[projects]]
-  digest = "1:c06d9e11d955af78ac3bbb26bd02e01d2f61f689e1a3bce2ef6fb683ef8a7f2d"
-  name = "gopkg.in/alecthomas/kingpin.v2"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
-  version = "v2.2.6"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
