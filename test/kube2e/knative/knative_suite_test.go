@@ -38,7 +38,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Install Gloo
-	err = testHelper.InstallGloo(helper.INGRESS, 5*time.Minute)
+	err = testHelper.InstallGloo(helper.KNATIVE, 5*time.Minute)
 	Expect(err).NotTo(HaveOccurred())
 })
 
