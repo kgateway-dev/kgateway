@@ -75,7 +75,7 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 }
 
 func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
-	const fileBasedMetadataPlugName = "envoy.grpc_credentials.file_based_metadata"
+	const metadataPluginName = "envoy.grpc_credentials.file_based_metadata"
 	config := &v2alpha.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
@@ -98,7 +98,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 			&envoycore.GrpcService_GoogleGrpc_CallCredentials{
 				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
 					FromPlugin: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
-						Name: fileBasedMetadataPlugName,
+						Name: metadataPluginName,
 						ConfigType: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
 							TypedConfig: any},
 					},
