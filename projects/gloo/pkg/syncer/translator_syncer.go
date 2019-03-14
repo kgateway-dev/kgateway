@@ -26,6 +26,12 @@ type translatorSyncer struct {
 	extensions []TranslatorSyncerExtension
 }
 
+type TranslatorSyncerExtensionParams struct {
+	SettingExtensions *v1.Extensions
+}
+
+type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
+
 type TranslatorSyncerExtension interface {
 	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) error
 }

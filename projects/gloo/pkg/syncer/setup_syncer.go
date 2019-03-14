@@ -163,7 +163,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 type Extensions struct {
 	PluginExtensions []plugins.Plugin
-	SyncerExtensions []TranslatorSyncerExtension
+	SyncerExtensions []TranslatorSyncerExtensionFactory
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -226,8 +226,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
+	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
-	sync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Extensions), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.SyncerExtensions)
+	var syncerExtensions []TranslatorSyncerExtension
+	params := TranslatorSyncerExtensionParams{
+		SettingExtensions: opts.Extensions,
+	}
+	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
+		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
+		if err != nil {
+			logger.Errorw("Error initializing extension", "error", err)
+			continue
+		}
+		syncerExtensions = append(syncerExtensions, syncerExtension)
+	}
+
+	sync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Extensions), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
 	eventLoop := v1.NewApiEventLoop(cache, sync)
 
 	errs := make(chan error)
@@ -244,8 +258,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, eventLoopErrs, "event_loop.gloo")
-
-	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
 	go func() {
 		for {
