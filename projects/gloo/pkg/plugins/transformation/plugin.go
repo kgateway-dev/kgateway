@@ -2,11 +2,9 @@ package transformation
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 const (
@@ -35,25 +33,13 @@ func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 	if in.RoutePlugins.Transformations == nil {
 		return nil
 	}
-	if out.PerFilterConfig == nil {
-		out.PerFilterConfig = make(map[string]*types.Struct)
-	}
-
-	configStruct, err := util.MessageToStruct(in.RoutePlugins.Transformations)
-	if err != nil {
-		return err
-	}
 
 	p.RequireTransformationFilter = true
-	out.PerFilterConfig[FilterName] = configStruct
-	return nil
+	return pluginutils.SetRoutePerFilterConfig(out, FilterName, in.RoutePlugins.Transformations)
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		{
-			HttpFilter: &envoyhttp.HttpFilter{Name: FilterName},
-			Stage:      pluginStage,
-		},
+		plugins.NewStagedFilter(FilterName, pluginStage),
 	}, nil
 }

@@ -9,13 +9,10 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	multierror "github.com/hashicorp/go-multierror"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 
-	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -114,15 +111,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		SecretKey: secretKey,
 	}
 
-	if out.ExtensionProtocolOptions == nil {
-		out.ExtensionProtocolOptions = make(map[string]*types.Struct)
-	}
-
-	lpeStruct, err := util.MessageToStruct(lpe)
+	err := pluginutils.SetExtenstionProtocolOptions(out, filterName, lpe)
 	if err != nil {
 		return errors.Wrapf(err, "converting aws protocol options to struct")
 	}
-	out.ExtensionProtocolOptions[filterName] = lpeStruct
 
 	return nil
 }
@@ -210,9 +202,6 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, nil
 	}
 	return []plugins.StagedHttpFilter{
-		{
-			HttpFilter: &envoyhttp.HttpFilter{Name: filterName},
-			Stage:      pluginStage,
-		},
+		plugins.NewStagedFilter(filterName, pluginStage),
 	}, nil
 }

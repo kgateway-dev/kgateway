@@ -14,6 +14,25 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
 )
 
+func SetRoutePerFilterConfig(out *envoyroute.Route, filterName string, protoext proto.Message) error {
+	if out.PerFilterConfig == nil {
+		out.PerFilterConfig = make(map[string]*types.Struct)
+	}
+	return setConfig(out.PerFilterConfig, filterName, protoext)
+}
+func SetVhostPerFilterConfig(out *envoyroute.VirtualHost, filterName string, protoext proto.Message) error {
+	if out.PerFilterConfig == nil {
+		out.PerFilterConfig = make(map[string]*types.Struct)
+	}
+	return setConfig(out.PerFilterConfig, filterName, protoext)
+}
+func SetWeightedClusterPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWeight, filterName string, protoext proto.Message) error {
+	if out.PerFilterConfig == nil {
+		out.PerFilterConfig = make(map[string]*types.Struct)
+	}
+	return setConfig(out.PerFilterConfig, filterName, protoext)
+}
+
 // Return Per-Filter config for destinations, we put them on the Route (single dest) or WeightedCluster (multi dest)
 type PerFilterConfigFunc func(spec *v1.Destination) (proto.Message, error)
 
@@ -66,7 +85,10 @@ func configureSingleDest(in *v1.Destination, out map[string]*types.Struct, filte
 	if err != nil {
 		return err
 	}
-	// the plugin decided not to configure this route
+	return setConfig(out, filterName, config)
+}
+
+func setConfig(out map[string]*types.Struct, filterName string, config proto.Message) error {
 	if config == nil {
 		return nil
 	}

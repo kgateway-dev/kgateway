@@ -11,14 +11,12 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/googleapis/google/api"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 
 	"encoding/base64"
 
-	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -271,22 +269,20 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 			fullName := genFullServiceName(grpcsvc.PackageName, grpcsvc.ServiceName)
 			fullServiceNames = append(fullServiceNames, fullName)
 		}
-		filterConfig, err := util.MessageToStruct(&envoytranscoder.GrpcJsonTranscoder{
+		filterConfig := &envoytranscoder.GrpcJsonTranscoder{
 			DescriptorSet: &envoytranscoder.GrpcJsonTranscoder_ProtoDescriptorBin{
 				ProtoDescriptorBin: descriptorBytes,
 			},
 			Services:                  fullServiceNames,
 			MatchIncomingRequestRoute: true,
-		})
+		}
+
+		shf, err := plugins.NewStagedFilterWithConfig(filterName, filterConfig, pluginStage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "ERROR: marshaling GrpcJsonTranscoder config")
 		}
 		filters = append(filters, plugins.StagedHttpFilter{
-			HttpFilter: &envoyhttp.HttpFilter{
-				Name:       filterName,
-				ConfigType: &envoyhttp.HttpFilter_Config{Config: filterConfig},
-			},
-			Stage: pluginStage,
+			shf,
 		})
 	}
 
