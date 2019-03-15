@@ -35,14 +35,14 @@ spec is fine), to make sure that traffic to it is routed with http2.
 
 ```yaml
 "descriptors": bytes
-"grpc_services": []grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService
+"grpcServices": []grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet |  |
-| `grpc_services` | [[]grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk#GrpcService) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |  |
+| `grpcServices` | [[]grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk#GrpcService) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |  |
 
 
 
@@ -54,17 +54,17 @@ spec is fine), to make sure that traffic to it is routed with http2.
 Describes a grpc service
 
 ```yaml
-"package_name": string
-"service_name": string
-"function_names": []string
+"packageName": string
+"serviceName": string
+"functionNames": []string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `package_name` | `string` | The package of this service. |  |
-| `service_name` | `string` | The service name of this service. |  |
-| `function_names` | `[]string` | The functions available in this service. |  |
+| `packageName` | `string` | The package of this service. |  |
+| `serviceName` | `string` | The service name of this service. |  |
+| `functionNames` | `[]string` | The functions available in this service. |  |
 
 
 

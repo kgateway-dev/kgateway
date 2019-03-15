@@ -35,16 +35,16 @@ in a particular region
 
 ```yaml
 "region": string
-"secret_ref": .core.solo.io.ResourceRef
-"lambda_functions": []aws.plugins.gloo.solo.io.LambdaFunctionSpec
+"secretRef": .core.solo.io.ResourceRef
+"lambdaFunctions": []aws.plugins.gloo.solo.io.LambdaFunctionSpec
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `region` | `string` | The AWS Region where the desired Lambda Functions exxist |  |
-| `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ``` |  |
-| `lambda_functions` | [[]aws.plugins.gloo.solo.io.LambdaFunctionSpec](../aws.proto.sk#LambdaFunctionSpec) | The list of Lambda Functions contained within this region. This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ``` |  |
+| `lambdaFunctions` | [[]aws.plugins.gloo.solo.io.LambdaFunctionSpec](../aws.proto.sk#LambdaFunctionSpec) | The list of Lambda Functions contained within this region. This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions |  |
 
 
 
@@ -58,16 +58,16 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 - qualifier for the function
 
 ```yaml
-"logical_name": string
-"lambda_function_name": string
+"logicalName": string
+"lambdaFunctionName": string
 "qualifier": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `logical_name` | `string` | the logical name gloo should associate with this function. if left empty, it will default to lambda_function_name+qualifier |  |
-| `lambda_function_name` | `string` | The Name of the Lambda Function as it appears in the AWS Lambda Portal |  |
+| `logicalName` | `string` | the logical name gloo should associate with this function. if left empty, it will default to lambda_function_name+qualifier |  |
+| `lambdaFunctionName` | `string` | The Name of the Lambda Function as it appears in the AWS Lambda Portal |  |
 | `qualifier` | `string` | The Qualifier for the Lambda Function. Qualifiers act as a kind of version for Lambda Functions. See https://docs.aws.amazon.com/lambda/latest/dg/API_Invoke.html for more info. |  |
 
 
@@ -80,17 +80,17 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda functions
 
 ```yaml
-"logical_name": string
-"invocation_style": .aws.plugins.gloo.solo.io.DestinationSpec.InvocationStyle
-"response_transformation": bool
+"logicalName": string
+"invocationStyle": .aws.plugins.gloo.solo.io.DestinationSpec.InvocationStyle
+"responseTransformation": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `logical_name` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |  |
-| `invocation_style` | [.aws.plugins.gloo.solo.io.DestinationSpec.InvocationStyle](../aws.proto.sk#InvocationStyle) | Can be either Sync or Async. |  |
-| `response_transformation` | `bool` | de-jsonify response bodies returned from aws lambda |  |
+| `logicalName` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |  |
+| `invocationStyle` | [.aws.plugins.gloo.solo.io.DestinationSpec.InvocationStyle](../aws.proto.sk#InvocationStyle) | Can be either Sync or Async. |  |
+| `responseTransformation` | `bool` | de-jsonify response bodies returned from aws lambda |  |
 
 
 

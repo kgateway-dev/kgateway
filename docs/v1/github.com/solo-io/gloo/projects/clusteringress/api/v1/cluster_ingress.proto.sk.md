@@ -31,8 +31,8 @@ A simple wrapper for a kNative ClusterIngress Object.
 ```yaml
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
-"cluster_ingress_spec": .google.protobuf.Any
-"cluster_ingress_status": .google.protobuf.Any
+"clusterIngressSpec": .google.protobuf.Any
+"clusterIngressStatus": .google.protobuf.Any
 
 ```
 
@@ -40,8 +40,8 @@ A simple wrapper for a kNative ClusterIngress Object.
 | ----- | ---- | ----------- |----------- | 
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) |  |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) |  |  |
-| `cluster_ingress_spec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the cluster ingress this resource wraps |  |
-| `cluster_ingress_status` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the ingress status of the cluster ingress object |  |
+| `clusterIngressSpec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the cluster ingress this resource wraps |  |
+| `clusterIngressStatus` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the ingress status of the cluster ingress object |  |
 
 
 

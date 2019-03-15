@@ -78,7 +78,7 @@ to be usable by Gloo.
 ```yaml
 "transformations": .transformation.plugins.gloo.solo.io.RouteTransformations
 "faults": .fault.plugins.gloo.solo.io.RouteFaults
-"prefix_rewrite": .transformation.plugins.gloo.solo.io.PrefixRewrite
+"prefixRewrite": .transformation.plugins.gloo.solo.io.PrefixRewrite
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "extensions": .gloo.solo.io.Extensions
@@ -89,7 +89,7 @@ to be usable by Gloo.
 | ----- | ---- | ----------- |----------- | 
 | `transformations` | [.transformation.plugins.gloo.solo.io.RouteTransformations](../plugins/transformation/transformation.proto.sk#RouteTransformations) |  |  |
 | `faults` | [.fault.plugins.gloo.solo.io.RouteFaults](../plugins/faultinjection/fault.proto.sk#RouteFaults) |  |  |
-| `prefix_rewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#PrefixRewrite) |  |  |
+| `prefixRewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#PrefixRewrite) |  |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#RetryPolicy) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#Extensions) |  |  |
@@ -129,7 +129,7 @@ Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`
 Each upstream type is handled by a corresponding Gloo plugin.
 
 ```yaml
-"ssl_config": .gloo.solo.io.UpstreamSslConfig
+"sslConfig": .gloo.solo.io.UpstreamSslConfig
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
@@ -140,7 +140,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `ssl_config` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk#UpstreamSslConfig) |  |  |
+| `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk#UpstreamSslConfig) |  |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#UpstreamSpec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#UpstreamSpec) |  |  |
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#UpstreamSpec) |  |  |

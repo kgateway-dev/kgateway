@@ -120,14 +120,14 @@ Describes a complete .proto file.
 "name": string
 "package": string
 "dependency": []string
-"public_dependency": []int
-"weak_dependency": []int
-"message_type": []google.protobuf.DescriptorProto
-"enum_type": []google.protobuf.EnumDescriptorProto
+"publicDependency": []int
+"weakDependency": []int
+"messageType": []google.protobuf.DescriptorProto
+"enumType": []google.protobuf.EnumDescriptorProto
 "service": []google.protobuf.ServiceDescriptorProto
 "extension": []google.protobuf.FieldDescriptorProto
 "options": .google.protobuf.FileOptions
-"source_code_info": .google.protobuf.SourceCodeInfo
+"sourceCodeInfo": .google.protobuf.SourceCodeInfo
 "syntax": string
 
 ```
@@ -137,14 +137,14 @@ Describes a complete .proto file.
 | `name` | `string` |  |  |
 | `package` | `string` |  |  |
 | `dependency` | `[]string` | Names of files imported by this file. |  |
-| `public_dependency` | `[]int` | Indexes of the public imported files in the dependency list above. |  |
-| `weak_dependency` | `[]int` | Indexes of the weak imported files in the dependency list. For Google-internal migration only. Do not use. |  |
-| `message_type` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#DescriptorProto) | All top-level definitions in this file. |  |
-| `enum_type` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#EnumDescriptorProto) |  |  |
+| `publicDependency` | `[]int` | Indexes of the public imported files in the dependency list above. |  |
+| `weakDependency` | `[]int` | Indexes of the weak imported files in the dependency list. For Google-internal migration only. Do not use. |  |
+| `messageType` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#DescriptorProto) | All top-level definitions in this file. |  |
+| `enumType` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#EnumDescriptorProto) |  |  |
 | `service` | [[]google.protobuf.ServiceDescriptorProto](../descriptor.proto.sk#ServiceDescriptorProto) |  |  |
 | `extension` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#FieldDescriptorProto) |  |  |
 | `options` | [.google.protobuf.FileOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/file-options) |  |  |
-| `source_code_info` | [.google.protobuf.SourceCodeInfo](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/source-code-info) | This field contains optional information about the original source code. You may safely remove this entire field without harming runtime functionality of the descriptors -- the information is needed only by development tools. |  |
+| `sourceCodeInfo` | [.google.protobuf.SourceCodeInfo](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/source-code-info) | This field contains optional information about the original source code. You may safely remove this entire field without harming runtime functionality of the descriptors -- the information is needed only by development tools. |  |
 | `syntax` | `string` | The syntax of the proto file. The supported values are "proto2" and "proto3". |  |
 
 
@@ -160,13 +160,13 @@ Describes a message type.
 "name": string
 "field": []google.protobuf.FieldDescriptorProto
 "extension": []google.protobuf.FieldDescriptorProto
-"nested_type": []google.protobuf.DescriptorProto
-"enum_type": []google.protobuf.EnumDescriptorProto
-"extension_range": []google.protobuf.DescriptorProto.ExtensionRange
-"oneof_decl": []google.protobuf.OneofDescriptorProto
+"nestedType": []google.protobuf.DescriptorProto
+"enumType": []google.protobuf.EnumDescriptorProto
+"extensionRange": []google.protobuf.DescriptorProto.ExtensionRange
+"oneofDecl": []google.protobuf.OneofDescriptorProto
 "options": .google.protobuf.MessageOptions
-"reserved_range": []google.protobuf.DescriptorProto.ReservedRange
-"reserved_name": []string
+"reservedRange": []google.protobuf.DescriptorProto.ReservedRange
+"reservedName": []string
 
 ```
 
@@ -175,13 +175,13 @@ Describes a message type.
 | `name` | `string` |  |  |
 | `field` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#FieldDescriptorProto) |  |  |
 | `extension` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#FieldDescriptorProto) |  |  |
-| `nested_type` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#DescriptorProto) |  |  |
-| `enum_type` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#EnumDescriptorProto) |  |  |
-| `extension_range` | [[]google.protobuf.DescriptorProto.ExtensionRange](../descriptor.proto.sk#ExtensionRange) |  |  |
-| `oneof_decl` | [[]google.protobuf.OneofDescriptorProto](../descriptor.proto.sk#OneofDescriptorProto) |  |  |
+| `nestedType` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#DescriptorProto) |  |  |
+| `enumType` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#EnumDescriptorProto) |  |  |
+| `extensionRange` | [[]google.protobuf.DescriptorProto.ExtensionRange](../descriptor.proto.sk#ExtensionRange) |  |  |
+| `oneofDecl` | [[]google.protobuf.OneofDescriptorProto](../descriptor.proto.sk#OneofDescriptorProto) |  |  |
 | `options` | [.google.protobuf.MessageOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/message-options) |  |  |
-| `reserved_range` | [[]google.protobuf.DescriptorProto.ReservedRange](../descriptor.proto.sk#ReservedRange) |  |  |
-| `reserved_name` | `[]string` | Reserved field names, which may not be used by fields in the same message. A given name may only be reserved once. |  |
+| `reservedRange` | [[]google.protobuf.DescriptorProto.ReservedRange](../descriptor.proto.sk#ReservedRange) |  |  |
+| `reservedName` | `[]string` | Reserved field names, which may not be used by fields in the same message. A given name may only be reserved once. |  |
 
 
 
@@ -238,11 +238,11 @@ Describes a field within a message.
 "number": int
 "label": .google.protobuf.FieldDescriptorProto.Label
 "type": .google.protobuf.FieldDescriptorProto.Type
-"type_name": string
+"typeName": string
 "extendee": string
-"default_value": string
-"oneof_index": int
-"json_name": string
+"defaultValue": string
+"oneofIndex": int
+"jsonName": string
 "options": .google.protobuf.FieldOptions
 
 ```
@@ -253,11 +253,11 @@ Describes a field within a message.
 | `number` | `int` |  |  |
 | `label` | [.google.protobuf.FieldDescriptorProto.Label](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-descriptor-proto.-label) |  |  |
 | `type` | [.google.protobuf.FieldDescriptorProto.Type](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-descriptor-proto.-type) | If type_name is set, this need not be set. If both this and type_name are set, this must be one of TYPE_ENUM, TYPE_MESSAGE or TYPE_GROUP. |  |
-| `type_name` | `string` | For message and enum types, this is the name of the type. If the name starts with a '.', it is fully-qualified. Otherwise, C++-like scoping rules are used to find the type (i.e. first the nested types within this message are searched, then within the parent, on up to the root namespace). |  |
+| `typeName` | `string` | For message and enum types, this is the name of the type. If the name starts with a '.', it is fully-qualified. Otherwise, C++-like scoping rules are used to find the type (i.e. first the nested types within this message are searched, then within the parent, on up to the root namespace). |  |
 | `extendee` | `string` | For extensions, this is the name of the type being extended. It is resolved in the same manner as type_name. |  |
-| `default_value` | `string` | For numeric types, contains the original text representation of the value. For booleans, "true" or "false". For strings, contains the default text contents (not escaped in any way). For bytes, contains the C escaped value. All bytes >= 128 are escaped. TODO(kenton): Base-64 encode? |  |
-| `oneof_index` | `int` | If set, gives the index of a oneof in the containing type's oneof_decl list. This field is a member of that oneof. |  |
-| `json_name` | `string` | JSON name of this field. The value is set by protocol compiler. If the user has set a "json_name" option on this field, that option's value will be used. Otherwise, it's deduced from the field's name by converting it to camelCase. |  |
+| `defaultValue` | `string` | For numeric types, contains the original text representation of the value. For booleans, "true" or "false". For strings, contains the default text contents (not escaped in any way). For bytes, contains the C escaped value. All bytes >= 128 are escaped. TODO(kenton): Base-64 encode? |  |
+| `oneofIndex` | `int` | If set, gives the index of a oneof in the containing type's oneof_decl list. This field is a member of that oneof. |  |
+| `jsonName` | `string` | JSON name of this field. The value is set by protocol compiler. If the user has set a "json_name" option on this field, that option's value will be used. Otherwise, it's deduced from the field's name by converting it to camelCase. |  |
 | `options` | [.google.protobuf.FieldOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-options) |  |  |
 
 
@@ -400,22 +400,22 @@ Describes a method of a service.
 
 ```yaml
 "name": string
-"input_type": string
-"output_type": string
+"inputType": string
+"outputType": string
 "options": .google.protobuf.MethodOptions
-"client_streaming": bool
-"server_streaming": bool
+"clientStreaming": bool
+"serverStreaming": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` |  |  |
-| `input_type` | `string` | Input and output type names. These are resolved in the same way as FieldDescriptorProto.type_name, but must refer to a message type. |  |
-| `output_type` | `string` |  |  |
+| `inputType` | `string` | Input and output type names. These are resolved in the same way as FieldDescriptorProto.type_name, but must refer to a message type. |  |
+| `outputType` | `string` |  |  |
 | `options` | [.google.protobuf.MethodOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/method-options) |  |  |
-| `client_streaming` | `bool` | Identifies if client streams multiple client messages |  Default: false |
-| `server_streaming` | `bool` | Identifies if server streams multiple server messages |  Default: false |
+| `clientStreaming` | `bool` | Identifies if client streams multiple client messages |  Default: false |
+| `serverStreaming` | `bool` | Identifies if server streams multiple server messages |  Default: false |
 
 
 
@@ -426,45 +426,45 @@ Describes a method of a service.
 
 
 ```yaml
-"java_package": string
-"java_outer_classname": string
-"java_multiple_files": bool
-"java_generate_equals_and_hash": bool
-"java_string_check_utf8": bool
-"optimize_for": .google.protobuf.FileOptions.OptimizeMode
-"go_package": string
-"cc_generic_services": bool
-"java_generic_services": bool
-"py_generic_services": bool
+"javaPackage": string
+"javaOuterClassname": string
+"javaMultipleFiles": bool
+"javaGenerateEqualsAndHash": bool
+"javaStringCheckUtf8": bool
+"optimizeFor": .google.protobuf.FileOptions.OptimizeMode
+"goPackage": string
+"ccGenericServices": bool
+"javaGenericServices": bool
+"pyGenericServices": bool
 "deprecated": bool
-"cc_enable_arenas": bool
-"objc_class_prefix": string
-"csharp_namespace": string
-"swift_prefix": string
-"php_class_prefix": string
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"ccEnableArenas": bool
+"objcClassPrefix": string
+"csharpNamespace": string
+"swiftPrefix": string
+"phpClassPrefix": string
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `java_package` | `string` | Sets the Java package where classes generated from this .proto will be placed. By default, the proto package is used, but this is often inappropriate because proto packages do not normally start with backwards domain names. |  |
-| `java_outer_classname` | `string` | If set, all the classes from the .proto file are wrapped in a single outer class with the given name. This applies to both Proto1 (equivalent to the old "--one_java_file" option) and Proto2 (where a .proto always translates to a single class, but you may want to explicitly choose the class name). |  |
-| `java_multiple_files` | `bool` | If set true, then the Java code generator will generate a separate .java file for each top-level message, enum, and service defined in the .proto file. Thus, these types will *not* be nested inside the outer class named by java_outer_classname. However, the outer class will still be generated to contain the file's getDescriptor() method as well as any top-level extensions defined in the file. |  Default: false |
-| `java_generate_equals_and_hash` | `bool` | This option does nothing. |  |
-| `java_string_check_utf8` | `bool` | If set true, then the Java2 code generator will generate code that throws an exception whenever an attempt is made to assign a non-UTF-8 byte sequence to a string field. Message reflection will do the same. However, an extension field still accepts non-UTF-8 byte sequences. This option has no effect on when used with the lite runtime. |  Default: false |
-| `optimize_for` | [.google.protobuf.FileOptions.OptimizeMode](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/file-options.-optimize-mode) |  |  Default: SPEED |
-| `go_package` | `string` | Sets the Go package where structs generated from this .proto will be placed. If omitted, the Go package will be derived from the following: - The basename of the package import path, if provided. - Otherwise, the package statement in the .proto file, if present. - Otherwise, the basename of the .proto file, without extension. |  |
-| `cc_generic_services` | `bool` | Should generic services be generated in each language? "Generic" services are not specific to any particular RPC system. They are generated by the main code generators in each language (without additional plugins). Generic services were the only kind of service generation supported by early versions of google.protobuf. Generic services are now considered deprecated in favor of using plugins that generate code specific to your particular RPC system. Therefore, these default to false. Old code which depends on generic services should explicitly set them to true. |  Default: false |
-| `java_generic_services` | `bool` |  |  Default: false |
-| `py_generic_services` | `bool` |  |  Default: false |
+| `javaPackage` | `string` | Sets the Java package where classes generated from this .proto will be placed. By default, the proto package is used, but this is often inappropriate because proto packages do not normally start with backwards domain names. |  |
+| `javaOuterClassname` | `string` | If set, all the classes from the .proto file are wrapped in a single outer class with the given name. This applies to both Proto1 (equivalent to the old "--one_java_file" option) and Proto2 (where a .proto always translates to a single class, but you may want to explicitly choose the class name). |  |
+| `javaMultipleFiles` | `bool` | If set true, then the Java code generator will generate a separate .java file for each top-level message, enum, and service defined in the .proto file. Thus, these types will *not* be nested inside the outer class named by java_outer_classname. However, the outer class will still be generated to contain the file's getDescriptor() method as well as any top-level extensions defined in the file. |  Default: false |
+| `javaGenerateEqualsAndHash` | `bool` | This option does nothing. |  |
+| `javaStringCheckUtf8` | `bool` | If set true, then the Java2 code generator will generate code that throws an exception whenever an attempt is made to assign a non-UTF-8 byte sequence to a string field. Message reflection will do the same. However, an extension field still accepts non-UTF-8 byte sequences. This option has no effect on when used with the lite runtime. |  Default: false |
+| `optimizeFor` | [.google.protobuf.FileOptions.OptimizeMode](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/file-options.-optimize-mode) |  |  Default: SPEED |
+| `goPackage` | `string` | Sets the Go package where structs generated from this .proto will be placed. If omitted, the Go package will be derived from the following: - The basename of the package import path, if provided. - Otherwise, the package statement in the .proto file, if present. - Otherwise, the basename of the .proto file, without extension. |  |
+| `ccGenericServices` | `bool` | Should generic services be generated in each language? "Generic" services are not specific to any particular RPC system. They are generated by the main code generators in each language (without additional plugins). Generic services were the only kind of service generation supported by early versions of google.protobuf. Generic services are now considered deprecated in favor of using plugins that generate code specific to your particular RPC system. Therefore, these default to false. Old code which depends on generic services should explicitly set them to true. |  Default: false |
+| `javaGenericServices` | `bool` |  |  Default: false |
+| `pyGenericServices` | `bool` |  |  Default: false |
 | `deprecated` | `bool` | Is this file deprecated? Depending on the target platform, this can emit Deprecated annotations for everything in the file, or it will be completely ignored; in the very least, this is a formalization for deprecating files. |  Default: false |
-| `cc_enable_arenas` | `bool` | Enables the use of arenas for the proto messages in this file. This applies only to generated classes for C++. |  Default: false |
-| `objc_class_prefix` | `string` | Sets the objective c class prefix which is prepended to all objective c generated classes from this .proto. There is no default. |  |
-| `csharp_namespace` | `string` | Namespace for generated classes; defaults to the package. |  |
-| `swift_prefix` | `string` | By default Swift generators will take the proto package and CamelCase it replacing '.' with underscore and use that to prefix the types/symbols defined. When this options is provided, they will use this value instead to prefix the types/symbols defined. |  |
-| `php_class_prefix` | `string` | Sets the php class prefix which is prepended to all php generated classes from this .proto. Default is empty. |  |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `ccEnableArenas` | `bool` | Enables the use of arenas for the proto messages in this file. This applies only to generated classes for C++. |  Default: false |
+| `objcClassPrefix` | `string` | Sets the objective c class prefix which is prepended to all objective c generated classes from this .proto. There is no default. |  |
+| `csharpNamespace` | `string` | Namespace for generated classes; defaults to the package. |  |
+| `swiftPrefix` | `string` | By default Swift generators will take the proto package and CamelCase it replacing '.' with underscore and use that to prefix the types/symbols defined. When this options is provided, they will use this value instead to prefix the types/symbols defined. |  |
+| `phpClassPrefix` | `string` | Sets the php class prefix which is prepended to all php generated classes from this .proto. Default is empty. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -490,21 +490,21 @@ Generated classes can be optimized for speed or code size.
 
 
 ```yaml
-"message_set_wire_format": bool
-"no_standard_descriptor_accessor": bool
+"messageSetWireFormat": bool
+"noStandardDescriptorAccessor": bool
 "deprecated": bool
-"map_entry": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"mapEntry": bool
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `message_set_wire_format` | `bool` | Set true to use the old proto1 MessageSet wire format for extensions. This is provided for backwards-compatibility with the MessageSet wire format. You should not use this for any other reason: It's less efficient, has fewer features, and is more complicated. The message must be defined exactly as follows: message Foo { option message_set_wire_format = true; extensions 4 to max; } Note that the message cannot have any defined fields; MessageSets only have extensions. All extensions of your type must be singular messages; e.g. they cannot be int32s, enums, or repeated messages. Because this is an option, the above two restrictions are not enforced by the protocol compiler. |  Default: false |
-| `no_standard_descriptor_accessor` | `bool` | Disables the generation of the standard "descriptor()" accessor, which can conflict with a field of the same name. This is meant to make migration from proto1 easier; new code should avoid fields named "descriptor". |  Default: false |
+| `messageSetWireFormat` | `bool` | Set true to use the old proto1 MessageSet wire format for extensions. This is provided for backwards-compatibility with the MessageSet wire format. You should not use this for any other reason: It's less efficient, has fewer features, and is more complicated. The message must be defined exactly as follows: message Foo { option message_set_wire_format = true; extensions 4 to max; } Note that the message cannot have any defined fields; MessageSets only have extensions. All extensions of your type must be singular messages; e.g. they cannot be int32s, enums, or repeated messages. Because this is an option, the above two restrictions are not enforced by the protocol compiler. |  Default: false |
+| `noStandardDescriptorAccessor` | `bool` | Disables the generation of the standard "descriptor()" accessor, which can conflict with a field of the same name. This is meant to make migration from proto1 easier; new code should avoid fields named "descriptor". |  Default: false |
 | `deprecated` | `bool` | Is this message deprecated? Depending on the target platform, this can emit Deprecated annotations for the message, or it will be completely ignored; in the very least, this is a formalization for deprecating messages. |  Default: false |
-| `map_entry` | `bool` | Whether the message is an automatically generated map entry type for the maps field. For maps fields: map<KeyType, ValueType> map_field = 1; The parsed descriptor looks like: message MapFieldEntry { option map_entry = true; optional KeyType key = 1; optional ValueType value = 2; } repeated MapFieldEntry map_field = 1; Implementations may choose not to generate the map_entry=true message, but use a native map in the target language to hold the keys and values. The reflection APIs in such implementions still need to work as if the field is a repeated message field. NOTE: Do not set the option in .proto files. Always use the maps syntax instead. The option should only be implicitly set by the proto compiler parser. |  |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `mapEntry` | `bool` | Whether the message is an automatically generated map entry type for the maps field. For maps fields: map<KeyType, ValueType> map_field = 1; The parsed descriptor looks like: message MapFieldEntry { option map_entry = true; optional KeyType key = 1; optional ValueType value = 2; } repeated MapFieldEntry map_field = 1; Implementations may choose not to generate the map_entry=true message, but use a native map in the target language to hold the keys and values. The reflection APIs in such implementions still need to work as if the field is a repeated message field. NOTE: Do not set the option in .proto files. Always use the maps syntax instead. The option should only be implicitly set by the proto compiler parser. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -521,7 +521,7 @@ Generated classes can be optimized for speed or code size.
 "lazy": bool
 "deprecated": bool
 "weak": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
@@ -533,7 +533,7 @@ Generated classes can be optimized for speed or code size.
 | `lazy` | `bool` | Should this field be parsed lazily? Lazy applies only to message-type fields. It means that when the outer message is initially parsed, the inner message's contents will not be parsed but instead stored in encoded form. The inner message will actually be parsed when it is first accessed. This is only a hint. Implementations are free to choose whether to use eager or lazy parsing regardless of the value of this option. However, setting this option true suggests that the protocol author believes that using lazy parsing on this field is worth the additional bookkeeping overhead typically needed to implement it. This option does not affect the public interface of any generated code; all method signatures remain the same. Furthermore, thread-safety of the interface is not affected by this option; const methods remain safe to call from multiple threads concurrently, while non-const methods continue to require exclusive access. Note that implementations may choose not to check required fields within a lazy sub-message. That is, calling IsInitialized() on the outer message may return true even if the inner message has missing required fields. This is necessary because otherwise the inner message would have to be parsed in order to perform the check, defeating the purpose of lazy parsing. An implementation which chooses not to check required fields must be consistent about it. That is, for any particular sub-message, the implementation must either *always* check its required fields, or *never* check its required fields, regardless of whether or not the message has been parsed. |  Default: false |
 | `deprecated` | `bool` | Is this field deprecated? Depending on the target platform, this can emit Deprecated annotations for accessors, or it will be completely ignored; in the very least, this is a formalization for deprecating fields. |  Default: false |
 | `weak` | `bool` | For Google-internal migration only. Do not use. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -572,13 +572,13 @@ Generated classes can be optimized for speed or code size.
 
 
 ```yaml
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -589,17 +589,17 @@ Generated classes can be optimized for speed or code size.
 
 
 ```yaml
-"allow_alias": bool
+"allowAlias": bool
 "deprecated": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `allow_alias` | `bool` | Set this option to true to allow mapping different tag names to the same value. |  |
+| `allowAlias` | `bool` | Set this option to true to allow mapping different tag names to the same value. |  |
 | `deprecated` | `bool` | Is this enum deprecated? Depending on the target platform, this can emit Deprecated annotations for the enum, or it will be completely ignored; in the very least, this is a formalization for deprecating enums. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -611,14 +611,14 @@ Generated classes can be optimized for speed or code size.
 
 ```yaml
 "deprecated": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `deprecated` | `bool` | Is this enum value deprecated? Depending on the target platform, this can emit Deprecated annotations for the enum value, or it will be completely ignored; in the very least, this is a formalization for deprecating enum values. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -630,14 +630,14 @@ Generated classes can be optimized for speed or code size.
 
 ```yaml
 "deprecated": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `deprecated` | `bool` | Is this service deprecated? Depending on the target platform, this can emit Deprecated annotations for the service, or it will be completely ignored; in the very least, this is a formalization for deprecating services. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -649,16 +649,16 @@ Generated classes can be optimized for speed or code size.
 
 ```yaml
 "deprecated": bool
-"idempotency_level": .google.protobuf.MethodOptions.IdempotencyLevel
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"idempotencyLevel": .google.protobuf.MethodOptions.IdempotencyLevel
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `deprecated` | `bool` | Is this method deprecated? Depending on the target platform, this can emit Deprecated annotations for the method, or it will be completely ignored; in the very least, this is a formalization for deprecating methods. |  Default: false |
-| `idempotency_level` | [.google.protobuf.MethodOptions.IdempotencyLevel](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/method-options.-idempotency-level) |  |  Default: IDEMPOTENCY_UNKNOWN |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `idempotencyLevel` | [.google.protobuf.MethodOptions.IdempotencyLevel](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/method-options.-idempotency-level) |  |  Default: IDEMPOTENCY_UNKNOWN |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
@@ -693,24 +693,24 @@ in them.
 
 ```yaml
 "name": []google.protobuf.UninterpretedOption.NamePart
-"identifier_value": string
-"positive_int_value": int
-"negative_int_value": int
-"double_value": float
-"string_value": bytes
-"aggregate_value": string
+"identifierValue": string
+"positiveIntValue": int
+"negativeIntValue": int
+"doubleValue": float
+"stringValue": bytes
+"aggregateValue": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | [[]google.protobuf.UninterpretedOption.NamePart](../descriptor.proto.sk#NamePart) |  |  |
-| `identifier_value` | `string` | The value of the uninterpreted option, in whatever type the tokenizer identified it as during parsing. Exactly one of these should be set. |  |
-| `positive_int_value` | `int` |  |  |
-| `negative_int_value` | `int` |  |  |
-| `double_value` | `float` |  |  |
-| `string_value` | `bytes` |  |  |
-| `aggregate_value` | `string` |  |  |
+| `identifierValue` | `string` | The value of the uninterpreted option, in whatever type the tokenizer identified it as during parsing. Exactly one of these should be set. |  |
+| `positiveIntValue` | `int` |  |  |
+| `negativeIntValue` | `int` |  |  |
+| `doubleValue` | `float` |  |  |
+| `stringValue` | `bytes` |  |  |
+| `aggregateValue` | `string` |  |  |
 
 
 
@@ -726,15 +726,15 @@ E.g.,{ ["foo", false], ["bar.baz", true], ["qux", false] } represents
 "foo.(bar.baz).qux".
 
 ```yaml
-"name_part": string
-"is_extension": bool
+"namePart": string
+"isExtension": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name_part` | `string` |  |  |
-| `is_extension` | `bool` |  |  |
+| `namePart` | `string` |  |  |
+| `isExtension` | `bool` |  |  |
 
 
 
@@ -766,9 +766,9 @@ FileDescriptorProto was generated.
 ```yaml
 "path": []int
 "span": []int
-"leading_comments": string
-"trailing_comments": string
-"leading_detached_comments": []string
+"leadingComments": string
+"trailingComments": string
+"leadingDetachedComments": []string
 
 ```
 
@@ -776,9 +776,9 @@ FileDescriptorProto was generated.
 | ----- | ---- | ----------- |----------- | 
 | `path` | `[]int` | Identifies which part of the FileDescriptorProto was defined at this location. Each element is a field number or an index. They form a path from the root FileDescriptorProto to the place where the definition. For example, this path: [ 4, 3, 2, 7, 1 ] refers to: file.message_type(3) // 4, 3 .field(7) // 2, 7 .name() // 1 This is because FileDescriptorProto.message_type has field number 4: repeated DescriptorProto message_type = 4; and DescriptorProto.field has field number 2: repeated FieldDescriptorProto field = 2; and FieldDescriptorProto.name has field number 1: optional string name = 1; Thus, the above path gives the location of a field name. If we removed the last element: [ 4, 3, 2, 7 ] this path refers to the whole field declaration (from the beginning of the label to the terminating semicolon). |  |
 | `span` | `[]int` | Always has exactly three or four elements: start line, start column, end line (optional, otherwise assumed same as start line), end column. These are packed into a single field for efficiency. Note that line and column numbers are zero-based -- typically you will want to add 1 to each before displaying to a user. |  |
-| `leading_comments` | `string` | If this SourceCodeInfo represents a complete declaration, these are any comments appearing before and after the declaration which appear to be attached to the declaration. A series of line comments appearing on consecutive lines, with no other tokens appearing on those lines, will be treated as a single comment. leading_detached_comments will keep paragraphs of comments that appear before (but not connected to) the current element. Each paragraph, separated by empty lines, will be one comment element in the repeated field. Only the comment content is provided; comment markers (e.g. //) are stripped out. For block comments, leading whitespace and an asterisk will be stripped from the beginning of each line other than the first. Newlines are included in the output. Examples: optional int32 foo = 1; // Comment attached to foo. // Comment attached to bar. optional int32 bar = 2; optional string baz = 3; // Comment attached to baz. // Another line attached to baz. // Comment attached to qux. // // Another line attached to qux. optional double qux = 4; // Detached comment for corge. This is not leading or trailing comments // to qux or corge because there are blank lines separating it from // both. // Detached comment for corge paragraph 2. optional string corge = 5; /* Block comment attached * to corge. Leading asterisks * will be removed. */ /* Block comment attached to * grault. */ optional int32 grault = 6; // ignored detached comments. |  |
-| `trailing_comments` | `string` |  |  |
-| `leading_detached_comments` | `[]string` |  |  |
+| `leadingComments` | `string` | If this SourceCodeInfo represents a complete declaration, these are any comments appearing before and after the declaration which appear to be attached to the declaration. A series of line comments appearing on consecutive lines, with no other tokens appearing on those lines, will be treated as a single comment. leading_detached_comments will keep paragraphs of comments that appear before (but not connected to) the current element. Each paragraph, separated by empty lines, will be one comment element in the repeated field. Only the comment content is provided; comment markers (e.g. //) are stripped out. For block comments, leading whitespace and an asterisk will be stripped from the beginning of each line other than the first. Newlines are included in the output. Examples: optional int32 foo = 1; // Comment attached to foo. // Comment attached to bar. optional int32 bar = 2; optional string baz = 3; // Comment attached to baz. // Another line attached to baz. // Comment attached to qux. // // Another line attached to qux. optional double qux = 4; // Detached comment for corge. This is not leading or trailing comments // to qux or corge because there are blank lines separating it from // both. // Detached comment for corge paragraph 2. optional string corge = 5; /* Block comment attached * to corge. Leading asterisks * will be removed. */ /* Block comment attached to * grault. */ optional int32 grault = 6; // ignored detached comments. |  |
+| `trailingComments` | `string` |  |  |
+| `leadingDetachedComments` | `[]string` |  |  |
 
 
 
@@ -810,7 +810,7 @@ source file, but may contain references to different source .proto files.
 
 ```yaml
 "path": []int
-"source_file": string
+"sourceFile": string
 "begin": int
 "end": int
 
@@ -819,7 +819,7 @@ source file, but may contain references to different source .proto files.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `path` | `[]int` | Identifies the element in the original source .proto file. This field is formatted the same as SourceCodeInfo.Location.path. |  |
-| `source_file` | `string` | Identifies the filesystem path to the original source .proto. |  |
+| `sourceFile` | `string` | Identifies the filesystem path to the original source .proto. |  |
 | `begin` | `int` | Identifies the starting offset in bytes in the generated code that relates to the identified object. |  |
 | `end` | `int` | Identifies the ending offset in bytes in the generated code that relates to the identified offset. The end offset should be one past the last relevant byte (so the length of the text = end - begin). |  |
 

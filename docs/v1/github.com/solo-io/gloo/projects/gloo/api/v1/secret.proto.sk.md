@@ -67,15 +67,15 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 
 ```yaml
-"access_key": string
-"secret_key": string
+"accessKey": string
+"secretKey": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `access_key` | `string` |  |  |
-| `secret_key` | `string` |  |  |
+| `accessKey` | `string` |  |  |
+| `secretKey` | `string` |  |  |
 
 
 
@@ -86,13 +86,13 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 
 ```yaml
-"api_keys": map<string, string>
+"apiKeys": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `api_keys` | `map<string, string>` |  |  |
+| `apiKeys` | `map<string, string>` |  |  |
 
 
 
@@ -103,17 +103,17 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 
 ```yaml
-"cert_chain": string
-"private_key": string
-"root_ca": string
+"certChain": string
+"privateKey": string
+"rootCa": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `cert_chain` | `string` |  |  |
-| `private_key` | `string` |  |  |
-| `root_ca` | `string` |  |  |
+| `certChain` | `string` |  |  |
+| `privateKey` | `string` |  |  |
+| `rootCa` | `string` |  |  |
 
 
 

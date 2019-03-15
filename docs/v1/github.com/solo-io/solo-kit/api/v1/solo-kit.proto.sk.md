@@ -28,19 +28,19 @@ weight: 5
 
 
 ```yaml
-"short_name": string
-"plural_name": string
-"cluster_scoped": bool
-"skip_docs_gen": bool
+"shortName": string
+"pluralName": string
+"clusterScoped": bool
+"skipDocsGen": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `short_name` | `string` | becomes the kubernetes short name for the generated crd |  |
-| `plural_name` | `string` | becomes the kubernetes plural name for the generated crd |  |
-| `cluster_scoped` | `bool` | the resource lives at the cluster level, namespace is ignored by the server |  |
-| `skip_docs_gen` | `bool` | indicates whether documentation generation has to be skipped for the given resource, defaults to false |  |
+| `shortName` | `string` | becomes the kubernetes short name for the generated crd |  |
+| `pluralName` | `string` | becomes the kubernetes plural name for the generated crd |  |
+| `clusterScoped` | `bool` | the resource lives at the cluster level, namespace is ignored by the server |  |
+| `skipDocsGen` | `bool` | indicates whether documentation generation has to be skipped for the given resource, defaults to false |  |
 
 
 

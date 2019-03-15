@@ -100,23 +100,23 @@ variants, absence of any variant indicates an error.
 The JSON representation for `Value` is JSON value.
 
 ```yaml
-"null_value": .google.protobuf.NullValue
-"number_value": float
-"string_value": string
-"bool_value": bool
-"struct_value": .google.protobuf.Struct
-"list_value": .google.protobuf.ListValue
+"nullValue": .google.protobuf.NullValue
+"numberValue": float
+"stringValue": string
+"boolValue": bool
+"structValue": .google.protobuf.Struct
+"listValue": .google.protobuf.ListValue
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `null_value` | [.google.protobuf.NullValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/null-value) | Represents a null value. |  |
-| `number_value` | `float` | Represents a double value. |  |
-| `string_value` | `string` | Represents a string value. |  |
-| `bool_value` | `bool` | Represents a boolean value. |  |
-| `struct_value` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Represents a structured value. |  |
-| `list_value` | [.google.protobuf.ListValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/list-value) | Represents a repeated `Value`. |  |
+| `nullValue` | [.google.protobuf.NullValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/null-value) | Represents a null value. |  |
+| `numberValue` | `float` | Represents a double value. |  |
+| `stringValue` | `string` | Represents a string value. |  |
+| `boolValue` | `bool` | Represents a boolean value. |  |
+| `structValue` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Represents a structured value. |  |
+| `listValue` | [.google.protobuf.ListValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/list-value) | Represents a repeated `Value`. |  |
 
 
 

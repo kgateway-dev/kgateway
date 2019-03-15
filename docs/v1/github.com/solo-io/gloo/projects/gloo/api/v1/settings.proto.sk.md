@@ -34,18 +34,18 @@ weight: 5
 
 
 ```yaml
-"discovery_namespace": string
-"watch_namespaces": []string
-"kubernetes_config_source": .gloo.solo.io.Settings.KubernetesCrds
-"directory_config_source": .gloo.solo.io.Settings.Directory
-"kubernetes_secret_source": .gloo.solo.io.Settings.KubernetesSecrets
-"vault_secret_source": .gloo.solo.io.Settings.VaultSecrets
-"directory_secret_source": .gloo.solo.io.Settings.Directory
-"kubernetes_artifact_source": .gloo.solo.io.Settings.KubernetesConfigmaps
-"directory_artifact_source": .gloo.solo.io.Settings.Directory
-"bind_addr": string
-"refresh_rate": .google.protobuf.Duration
-"dev_mode": bool
+"discoveryNamespace": string
+"watchNamespaces": []string
+"kubernetesConfigSource": .gloo.solo.io.Settings.KubernetesCrds
+"directoryConfigSource": .gloo.solo.io.Settings.Directory
+"kubernetesSecretSource": .gloo.solo.io.Settings.KubernetesSecrets
+"vaultSecretSource": .gloo.solo.io.Settings.VaultSecrets
+"directorySecretSource": .gloo.solo.io.Settings.Directory
+"kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
+"directoryArtifactSource": .gloo.solo.io.Settings.Directory
+"bindAddr": string
+"refreshRate": .google.protobuf.Duration
+"devMode": bool
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
@@ -54,18 +54,18 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `discovery_namespace` | `string` | namespace to write discovered data |  |
-| `watch_namespaces` | `[]string` | namespaces to watch for user config as well as services TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces... |  |
-| `kubernetes_config_source` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#KubernetesCrds) |  |  |
-| `directory_config_source` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
-| `kubernetes_secret_source` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#KubernetesSecrets) |  |  |
-| `vault_secret_source` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk#VaultSecrets) |  |  |
-| `directory_secret_source` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
-| `kubernetes_artifact_source` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#KubernetesConfigmaps) |  |  |
-| `directory_artifact_source` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
-| `bind_addr` | `string` | where the gloo xds server should bind (should not need configuration by user) |  |
-| `refresh_rate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how frequently to resync watches, etc |  |
-| `dev_mode` | `bool` | enable serving debug data on port 9090 |  |
+| `discoveryNamespace` | `string` | namespace to write discovered data |  |
+| `watchNamespaces` | `[]string` | namespaces to watch for user config as well as services TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces... |  |
+| `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#KubernetesCrds) |  |  |
+| `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
+| `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#KubernetesSecrets) |  |  |
+| `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk#VaultSecrets) |  |  |
+| `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
+| `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#KubernetesConfigmaps) |  |  |
+| `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
+| `bindAddr` | `string` | where the gloo xds server should bind (should not need configuration by user) |  |
+| `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how frequently to resync watches, etc |  |
+| `devMode` | `bool` | enable serving debug data on port 9090 |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#Extensions) | Settings for extensions |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |

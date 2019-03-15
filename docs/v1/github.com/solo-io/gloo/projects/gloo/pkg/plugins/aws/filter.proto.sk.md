@@ -54,8 +54,8 @@ AWS Lambda invocations.
 ```yaml
 "host": string
 "region": string
-"access_key": string
-"secret_key": string
+"accessKey": string
+"secretKey": string
 
 ```
 
@@ -63,8 +63,8 @@ AWS Lambda invocations.
 | ----- | ---- | ----------- |----------- | 
 | `host` | `string` | The host header for AWS this cluster |  |
 | `region` | `string` | The region for this cluster |  |
-| `access_key` | `string` | The access_key for AWS this cluster |  |
-| `secret_key` | `string` | The secret_key for AWS this cluster |  |
+| `accessKey` | `string` | The access_key for AWS this cluster |  |
+| `secretKey` | `string` | The secret_key for AWS this cluster |  |
 
 
 

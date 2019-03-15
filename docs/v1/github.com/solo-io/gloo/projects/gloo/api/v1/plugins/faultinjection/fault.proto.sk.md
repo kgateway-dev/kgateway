@@ -37,14 +37,14 @@ TODO: to solo-kit/api/envoy
 
 ```yaml
 "percentage": float
-"http_status": int
+"httpStatus": int
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `percentage` | `float` | Percentage of requests that should be aborted, defaulting to 0. This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
-| `http_status` | `int` | This should be a standard HTTP status, i.e. 503. Defaults to 0. |  |
+| `httpStatus` | `int` | This should be a standard HTTP status, i.e. 503. Defaults to 0. |  |
 
 
 
@@ -56,14 +56,14 @@ TODO: to solo-kit/api/envoy
 
 ```yaml
 "percentage": float
-"fixed_delay": .google.protobuf.Duration
+"fixedDelay": .google.protobuf.Duration
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `percentage` | `float` | Percentage of requests that should be delayed, defaulting to 0. This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
-| `fixed_delay` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Fixed delay, defaulting to 0. |  |
+| `fixedDelay` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Fixed delay, defaulting to 0. |  |
 
 
 

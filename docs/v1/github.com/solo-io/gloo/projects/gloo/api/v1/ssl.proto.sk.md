@@ -31,17 +31,17 @@ weight: 5
 SslConfig contains the options necessary to configure a virtual host or listener to use TLS
 
 ```yaml
-"secret_ref": .core.solo.io.ResourceRef
-"ssl_files": .gloo.solo.io.SSLFiles
-"sni_domains": []string
+"secretRef": .core.solo.io.ResourceRef
+"sslFiles": .gloo.solo.io.SSLFiles
+"sniDomains": []string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | * SecretRef contains the secret ref to a gloo secret containing the following structure: { "tls.crt": <ca chain data...>, "tls.key": <private key data...> } |  |
-| `ssl_files` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
-| `sni_domains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | * SecretRef contains the secret ref to a gloo secret containing the following structure: { "tls.crt": <ca chain data...>, "tls.key": <private key data...> } |  |
+| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
+| `sniDomains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
 
 
 
@@ -53,17 +53,17 @@ SslConfig contains the options necessary to configure a virtual host or listener
 SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
 
 ```yaml
-"tls_cert": string
-"tls_key": string
-"root_ca": string
+"tlsCert": string
+"tlsKey": string
+"rootCa": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `tls_cert` | `string` |  |  |
-| `tls_key` | `string` |  |  |
-| `root_ca` | `string` | for client cert validation. optional |  |
+| `tlsCert` | `string` |  |  |
+| `tlsKey` | `string` |  |  |
+| `rootCa` | `string` | for client cert validation. optional |  |
 
 
 
@@ -75,16 +75,16 @@ SSLFiles reference paths to certificates which can be read by the proxy off of i
 SslConfig contains the options necessary to configure a virtual host or listener to use TLS
 
 ```yaml
-"secret_ref": .core.solo.io.ResourceRef
-"ssl_files": .gloo.solo.io.SSLFiles
+"secretRef": .core.solo.io.ResourceRef
+"sslFiles": .gloo.solo.io.SSLFiles
 "sni": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) |  |  |
-| `ssl_files` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) |  |  |
+| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
 | `sni` | `string` | optional. the SNI domains that should be considered for TLS connections |  |
 
 

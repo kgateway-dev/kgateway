@@ -34,16 +34,16 @@ Azure Upstreams represent a collection of Azure Functions for a particular Azure
 within a particular Function App
 
 ```yaml
-"function_app_name": string
-"secret_ref": .core.solo.io.ResourceRef
+"functionAppName": string
+"secretRef": .core.solo.io.ResourceRef
 "functions": []azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `function_app_name` | `string` | The Name of the Azure Function App where the functions are grouped |  |
-| `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/). {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }} Note that this secret is not required unless Function Discovery is enabled |  |
+| `functionAppName` | `string` | The Name of the Azure Function App where the functions are grouped |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/). {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }} Note that this secret is not required unless Function Discovery is enabled |  |
 | `functions` | [[]azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec](../azure.proto.sk#FunctionSpec) |  |  |
 
 
@@ -57,15 +57,15 @@ Function Spec for Functions on Azure Functions Upstreams
 The Function Spec contains data necessary for Gloo to invoke Azure functions
 
 ```yaml
-"function_name": string
-"auth_level": .azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec.AuthLevel
+"functionName": string
+"authLevel": .azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec.AuthLevel
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `function_name` | `string` | The Name of the Azure Function as it appears in the Azure Functions Portal |  |
-| `auth_level` | [.azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec.AuthLevel](../azure.proto.sk#AuthLevel) | Auth Level can bve either "anonymous" "function" or "admin" See https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details |  |
+| `functionName` | `string` | The Name of the Azure Function as it appears in the Azure Functions Portal |  |
+| `authLevel` | [.azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec.AuthLevel](../azure.proto.sk#AuthLevel) | Auth Level can bve either "anonymous" "function" or "admin" See https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details |  |
 
 
 
@@ -90,13 +90,13 @@ The Function Spec contains data necessary for Gloo to invoke Azure functions
 
 
 ```yaml
-"function_name": string
+"functionName": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `function_name` | `string` | The Function Name of the FunctionSpec to be invoked. |  |
+| `functionName` | `string` | The Function Name of the FunctionSpec to be invoked. |  |
 
 
 
