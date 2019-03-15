@@ -281,9 +281,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		if err != nil {
 			return nil, errors.Wrapf(err, "ERROR: marshaling GrpcJsonTranscoder config")
 		}
-		filters = append(filters, plugins.StagedHttpFilter{
-			shf,
-		})
+		filters = append(filters, shf)
 	}
 
 	if len(filters) == 0 {

@@ -111,7 +111,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		SecretKey: secretKey,
 	}
 
-	err := pluginutils.SetExtenstionProtocolOptions(out, filterName, lpe)
+	err = pluginutils.SetExtenstionProtocolOptions(out, filterName, lpe)
 	if err != nil {
 		return errors.Wrapf(err, "converting aws protocol options to struct")
 	}
