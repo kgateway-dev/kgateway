@@ -7,6 +7,9 @@ metadata:
   name: gloo
   namespace: {{ .Release.Namespace }}
 spec:
+{{ if .Values.gloo.deployment.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ .Values.gloo.deployment.externalTrafficPolicy }}
+{{- end }}
   ports:
   - name: grpc
     port: {{ .Values.gloo.deployment.xdsPort }}

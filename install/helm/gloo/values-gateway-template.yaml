@@ -16,6 +16,7 @@ settings:
 
 gloo:
   deployment:
+    externalTrafficPolicy: Local
     image:
       repository: quay.io/solo-io/gloo
       pullPolicy: Always
