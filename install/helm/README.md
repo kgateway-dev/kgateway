@@ -6,7 +6,7 @@ This go script takes the `*-template.yaml` files in this directory and performs 
 to generate the following files:
 
 - `Chart.yaml`: contains information about the Gloo chart
-- `values.yaml`: default configuration values for the chart, used to generate manifest for the `gateway` deployment option
+- `values-gateway.yaml`: default configuration values for the chart, used to generate manifest for the `gateway` deployment option
 - `values-ingress.yaml`: values used to generate the manifest for the `ingress` deployment option
 - `values-knative.yaml`: values used to generate the manifest for the `knative` deployment option
 
