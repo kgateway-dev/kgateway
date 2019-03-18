@@ -2,6 +2,9 @@ package utils_test
 
 import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -56,36 +59,21 @@ var _ = Describe("Ssl", func() {
 			Entry("downstreamCfg", func() CertSource { return downstreamCfg }),
 		)
 
-	})
-	Context("san", func() {
+		Context("san", func() {
+			It("should error with san and not rootca", func() {
+				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				Expect(err).To(HaveOccurred())
+			})
 
-		BeforeEach(func() {
-			upstreamCfg = &v1.UpstreamSslConfig{
-				Sni: "test.com",
-				SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-					SslFiles: &v1.SSLFiles{
-						RootCa:  "rootca",
-						TlsCert: "tlscert",
-						TlsKey:  "tlskey",
-					},
-				},
-			}
-			configTranslator = NewSslConfigTranslator(nil)
-		})
-		It("should error with san and not rootca", func() {
-			upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
-			upstreamCfg.VerifySubjectAltName = []string{"test"}
-			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("should add SAN verification when provided", func() {
-			configTranslator = NewSslConfigTranslator(nil)
-			upstreamCfg.VerifySubjectAltName = []string{"test"}
-			c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
-			Expect(err).NotTo(HaveOccurred())
-			vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
-			Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+			It("should add SAN verification when provided", func() {
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				Expect(err).NotTo(HaveOccurred())
+				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
+				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+			})
 		})
 	})
 	Context("secret", func() {
@@ -131,7 +119,6 @@ var _ = Describe("Ssl", func() {
 			secret.Kind = &v1.Secret_Aws{}
 			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
 			Expect(err).To(HaveOccurred())
-
 		})
 
 		DescribeTable("should resolve from secret refs",
@@ -204,7 +191,108 @@ var _ = Describe("Ssl", func() {
 			Expect(cfg.Sni).To(Equal("test.com"))
 		})
 
+		Context("san", func() {
+			It("should error with san and not rootca", func() {
+				tlsSecret.RootCa = ""
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should add SAN verification when provided", func() {
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				Expect(err).NotTo(HaveOccurred())
+				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
+				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+			})
+		})
 	})
+
+	Context("sds", func() {
+		var (
+			sdsConfig *v1.SDSConfig
+		)
+		BeforeEach(func() {
+			sdsConfig = &v1.SDSConfig{
+				TargetUri:              "TargetUri",
+				CertificatesSecretName: "CertificatesSecretName",
+				ValidationContextName:  "ValidationContextName",
+				CallCredentials: &v1.CallCredentials{
+					FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
+						TokenFileName: "TokenFileName",
+						Header:        "Header",
+					},
+				},
+			}
+			upstreamCfg = &v1.UpstreamSslConfig{
+				Sni: "test.com",
+				SslSecrets: &v1.UpstreamSslConfig_Sds{
+					Sds: sdsConfig,
+				},
+			}
+			configTranslator = NewSslConfigTranslator(nil)
+		})
+
+		It("should have a sds setup", func() {
+			c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
+			Expect(c.ValidationContextType).ToNot(BeNil())
+
+			vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig).ValidationContextSdsSecretConfig
+			cert := c.TlsCertificateSdsSecretConfigs[0]
+			Expect(vctx.Name).To(Equal("ValidationContextName"))
+			Expect(cert.Name).To(Equal("CertificatesSecretName"))
+			// If they are no equivalent, it means that any serialization is different.
+			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
+			// and here: https://github.com/envoyproxy/envoy/pull/6241
+			// this may lead to envoy updates being too frequent
+			Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
+
+			getGrpcConfig := func(s *envoyauth.SdsSecretConfig) *envoycore.GrpcService_GoogleGrpc {
+				return s.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_GoogleGrpc_).GoogleGrpc
+			}
+
+			Expect(getGrpcConfig(vctx).ChannelCredentials).To(BeEquivalentTo(&envoycore.GrpcService_GoogleGrpc_ChannelCredentials{
+				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
+					LocalCredentials: &envoycore.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
+				},
+			}))
+			credPlugin := getGrpcConfig(vctx).CallCredentials[0].CredentialSpecifier.(*envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin).FromPlugin
+			Expect(credPlugin.Name).To(Equal(MetadataPluginName))
+			var credConfig v2alpha.FileBasedMetadataConfig
+			types.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
+
+			Expect(credConfig).To(BeEquivalentTo(v2alpha.FileBasedMetadataConfig{
+				SecretData: &envoycore.DataSource{
+					Specifier: &envoycore.DataSource_Filename{
+						Filename: "TokenFileName",
+					},
+				},
+				HeaderKey: "Header",
+			}))
+
+		})
+
+		Context("san", func() {
+			It("should error with san and not rootca", func() {
+				sdsConfig.ValidationContextName = ""
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should add SAN verification when provided", func() {
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				Expect(err).NotTo(HaveOccurred())
+				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_CombinedValidationContext).CombinedValidationContext
+				Expect(vctx.DefaultValidationContext.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+			})
+		})
+	})
+
 })
 
 func ValidateCommonContextFiles(tlsCfg *envoyauth.CommonTlsContext, err error) {

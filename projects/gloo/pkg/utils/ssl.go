@@ -13,6 +13,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+const (
+	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"
+)
+
 type SslConfigTranslator struct {
 	secrets v1.SecretList
 }
@@ -76,7 +80,6 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 }
 
 func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
-	const metadataPluginName = "envoy.grpc_credentials.file_based_metadata"
 	config := &v2alpha.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
@@ -99,7 +102,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 			&envoycore.GrpcService_GoogleGrpc_CallCredentials{
 				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
 					FromPlugin: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
-						Name: metadataPluginName,
+						Name: MetadataPluginName,
 						ConfigType: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
 							TypedConfig: any},
 					},
@@ -127,9 +130,12 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	}
 }
 
-func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig) (*envoyauth.CommonTlsContext, error) {
+func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []string) (*envoyauth.CommonTlsContext, error) {
 	if sslSecrets.CertificatesSecretName == "" && sslSecrets.ValidationContextName == "" {
 		return nil, fmt.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
+	}
+	if len(verifySan) != 0 && sslSecrets.ValidationContextName == "" {
+		return nil, fmt.Errorf("must provide validation context name if verifying SAN")
 	}
 	tlsContext := &envoyauth.CommonTlsContext{
 		// default params
@@ -141,8 +147,17 @@ func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig) (*envoyauth.Co
 	}
 
 	if sslSecrets.ValidationContextName != "" {
-		tlsContext.ValidationContextType = &envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig{
-			ValidationContextSdsSecretConfig: buildSds(sslSecrets.ValidationContextName, sslSecrets),
+		if len(verifySan) == 0 {
+			tlsContext.ValidationContextType = &envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig{
+				ValidationContextSdsSecretConfig: buildSds(sslSecrets.ValidationContextName, sslSecrets),
+			}
+		} else {
+			tlsContext.ValidationContextType = &envoyauth.CommonTlsContext_CombinedValidationContext{
+				CombinedValidationContext: &envoyauth.CommonTlsContext_CombinedCertificateValidationContext{
+					DefaultValidationContext:         &envoyauth.CertificateValidationContext{VerifySubjectAltName: verifySan},
+					ValidationContextSdsSecretConfig: buildSds(sslSecrets.ValidationContextName, sslSecrets),
+				},
+			}
 		}
 	}
 
@@ -167,7 +182,7 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
 		certChain, privateKey, rootCa = sslSecrets.TlsCert, sslSecrets.TlsKey, sslSecrets.RootCa
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
-		return s.handleSds(sslSecrets)
+		return s.handleSds(sslSecrets, cs.GetVerifySubjectAltName())
 	} else {
 		return nil, errors.New("no certificate information found")
 	}

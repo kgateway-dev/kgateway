@@ -10,16 +10,12 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 // SslConfig contains the options necessary to configure a virtual host or listener to use TLS
 message SslConfig {
     oneof ssl_secrets {
-        /** SecretRef contains the secret ref to a gloo secret containing the following structure:
-        {
-            "tls.crt": <ca chain data...>,
-            "tls.key": <private key data...>
-        }
-        */
+        // SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret.
+        // gloo tls secret can contain a root ca as well if verification is needed.
         core.solo.io.ResourceRef secret_ref = 1;
         // SSLFiles reference paths to certificates which are local to the proxy
         SSLFiles ssl_files = 2;
-
+        // Use secret discovery service.
         SDSConfig sds = 4;
     }
     // optional. the SNI domains that should be considered for TLS connections
@@ -41,10 +37,13 @@ message SSLFiles {
 // SslConfig contains the options necessary to configure a virtual host or listener to use TLS
 message UpstreamSslConfig {
     oneof ssl_secrets {
+
+        // SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret.
+        // gloo tls secret can contain a root ca as well if verification is needed.
         core.solo.io.ResourceRef secret_ref = 1;
         //  SSLFiles reference paths to certificates which are local to the proxy
         SSLFiles ssl_files = 2;
-
+        // Use secret discovery service.
         SDSConfig sds = 4;
     }
     // optional. the SNI domains that should be considered for TLS connections
@@ -56,17 +55,23 @@ message UpstreamSslConfig {
 }
 
 message SDSConfig {
+    // Target uri for the sds channel. currently only a unix domain socket is supported.
     string TargetUri = 1;
+    // Call credentials.
     CallCredentials call_credentials = 2;
+    // The name of the secret containing the certificate
     string certificates_secret_name = 3;
+    // The name of secret containing the validation context (i.e. root ca)
     string validation_context_name= 4;
-    // TODO add subject alt name?
 }
 
 message CallCredentials {
     message FileCredentialSource {
+        // File containing auth token.
         string TokenFileName = 1;
+        // Header to carry the token.
         string Header = 2;
     }
-FileCredentialSource file_credential_source = 1;
+    // Call credentials are coming from a file,
+    FileCredentialSource file_credential_source = 1;
 }

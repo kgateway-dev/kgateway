@@ -471,13 +471,17 @@ func _UpstreamSslConfig_OneofSizer(msg proto.Message) (n int) {
 }
 
 type SDSConfig struct {
-	TargetUri              string           `protobuf:"bytes,1,opt,name=TargetUri,proto3" json:"TargetUri,omitempty"`
-	CallCredentials        *CallCredentials `protobuf:"bytes,2,opt,name=call_credentials,json=callCredentials,proto3" json:"call_credentials,omitempty"`
-	CertificatesSecretName string           `protobuf:"bytes,3,opt,name=certificates_secret_name,json=certificatesSecretName,proto3" json:"certificates_secret_name,omitempty"`
-	ValidationContextName  string           `protobuf:"bytes,4,opt,name=validation_context_name,json=validationContextName,proto3" json:"validation_context_name,omitempty"`
-	XXX_NoUnkeyedLiteral   struct{}         `json:"-"`
-	XXX_unrecognized       []byte           `json:"-"`
-	XXX_sizecache          int32            `json:"-"`
+	// Target uri for the sds channel. currently only a unix domain socket is supported.
+	TargetUri string `protobuf:"bytes,1,opt,name=TargetUri,proto3" json:"TargetUri,omitempty"`
+	// Call credentials.
+	CallCredentials *CallCredentials `protobuf:"bytes,2,opt,name=call_credentials,json=callCredentials,proto3" json:"call_credentials,omitempty"`
+	// The name of the secret containing the certificate
+	CertificatesSecretName string `protobuf:"bytes,3,opt,name=certificates_secret_name,json=certificatesSecretName,proto3" json:"certificates_secret_name,omitempty"`
+	// The name of secret containing the validation context (i.e. root ca)
+	ValidationContextName string   `protobuf:"bytes,4,opt,name=validation_context_name,json=validationContextName,proto3" json:"validation_context_name,omitempty"`
+	XXX_NoUnkeyedLiteral  struct{} `json:"-"`
+	XXX_unrecognized      []byte   `json:"-"`
+	XXX_sizecache         int32    `json:"-"`
 }
 
 func (m *SDSConfig) Reset()         { *m = SDSConfig{} }
@@ -533,6 +537,7 @@ func (m *SDSConfig) GetValidationContextName() string {
 }
 
 type CallCredentials struct {
+	// Call credentials are coming from a file,
 	FileCredentialSource *CallCredentials_FileCredentialSource `protobuf:"bytes,1,opt,name=file_credential_source,json=fileCredentialSource,proto3" json:"file_credential_source,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                              `json:"-"`
 	XXX_unrecognized     []byte                                `json:"-"`
@@ -571,7 +576,9 @@ func (m *CallCredentials) GetFileCredentialSource() *CallCredentials_FileCredent
 }
 
 type CallCredentials_FileCredentialSource struct {
-	TokenFileName        string   `protobuf:"bytes,1,opt,name=TokenFileName,proto3" json:"TokenFileName,omitempty"`
+	// File containing auth token.
+	TokenFileName string `protobuf:"bytes,1,opt,name=TokenFileName,proto3" json:"TokenFileName,omitempty"`
+	// Header to carry the token.
 	Header               string   `protobuf:"bytes,2,opt,name=Header,proto3" json:"Header,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

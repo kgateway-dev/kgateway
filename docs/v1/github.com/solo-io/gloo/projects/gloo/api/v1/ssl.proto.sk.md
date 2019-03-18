@@ -44,9 +44,9 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | * SecretRef contains the secret ref to a gloo secret containing the following structure: { "tls.crt": <ca chain data...>, "tls.key": <private key data...> } |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed. |  |
 | `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
-| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) |  |  |
+| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) | Use secret discovery service. |  |
 | `sniDomains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
 
@@ -92,9 +92,9 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) |  |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed. |  |
 | `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
-| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) |  |  |
+| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) | Use secret discovery service. |  |
 | `sni` | `string` | optional. the SNI domains that should be considered for TLS connections |  |
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
 
@@ -116,10 +116,10 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `targetUri` | `string` |  |  |
-| `callCredentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk#CallCredentials) |  |  |
-| `certificatesSecretName` | `string` |  |  |
-| `validationContextName` | `string` |  |  |
+| `targetUri` | `string` | Target uri for the sds channel. currently only a unix domain socket is supported. |  |
+| `callCredentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk#CallCredentials) | Call credentials. |  |
+| `certificatesSecretName` | `string` | The name of the secret containing the certificate |  |
+| `validationContextName` | `string` | The name of secret containing the validation context (i.e. root ca) |  |
 
 
 
@@ -136,7 +136,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `fileCredentialSource` | [.gloo.solo.io.CallCredentials.FileCredentialSource](../ssl.proto.sk#FileCredentialSource) |  |  |
+| `fileCredentialSource` | [.gloo.solo.io.CallCredentials.FileCredentialSource](../ssl.proto.sk#FileCredentialSource) | Call credentials are coming from a file, |  |
 
 
 
@@ -154,8 +154,8 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `tokenFileName` | `string` |  |  |
-| `header` | `string` |  |  |
+| `tokenFileName` | `string` | File containing auth token. |  |
+| `header` | `string` | Header to carry the token. |  |
 
 
 
