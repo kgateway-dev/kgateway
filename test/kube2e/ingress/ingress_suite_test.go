@@ -1,6 +1,7 @@
 package ingress_test
 
 import (
+	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"os"
@@ -41,7 +42,7 @@ var _ = BeforeSuite(func() {
 
 	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), "")
 	Expect(err).NotTo(HaveOccurred())
-	Expect(locker.AcquireLock()).NotTo(HaveOccurred())
+	Expect(locker.AcquireLock(retry.Attempts(8), retry.Delay(2 * time.Second))).NotTo(HaveOccurred())
 
 	// Install Gloo
 	err = testHelper.InstallGloo(helper.INGRESS, 5*time.Minute)
