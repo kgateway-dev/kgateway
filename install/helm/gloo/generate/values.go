@@ -105,6 +105,7 @@ type GatewayProxyService struct {
 	HttpsPort        string            `json:"httpsPort,omitempty"`
 	ClusterIP        string            `json:"clusterIP,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+	ExternalTrafficPolicy string       `json:"externalTrafficPolicy,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {
