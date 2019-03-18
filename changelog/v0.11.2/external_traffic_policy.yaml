@@ -1,0 +1,4 @@
+changelog: 
+  - type: NEW_FEATURE
+    description: You can now override the ExternalTrafficPolicy for Gloo's deployment in the helm chart.
+    issueLink: https://github.com/solo-io/gloo/issues/558
