@@ -1,6 +1,8 @@
 package ingress_test
 
 import (
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,6 +26,7 @@ func TestIngress(t *testing.T) {
 }
 
 var testHelper *helper.SoloTestHelper
+var locker *clusterlock.TestClusterLocker
 
 var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
@@ -36,12 +39,17 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
+	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), "")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(locker.AcquireLock()).NotTo(HaveOccurred())
+
 	// Install Gloo
 	err = testHelper.InstallGloo(helper.INGRESS, 5*time.Minute)
 	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
+	defer locker.ReleaseLock()
 	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
 
