@@ -1,13 +1,14 @@
 package knative_test
 
 import (
-	"github.com/avast/retry-go"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/avast/retry-go"
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/go-utils/testutils/helper"
 
