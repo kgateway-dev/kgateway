@@ -36,11 +36,13 @@ Note to developers: new Listener Plugins must be added to this struct
 to be usable by Gloo.
 
 ```yaml
+"grpcWeb": .grpc_web.plugins.gloo.solo.io.GrpcWeb
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk#GrpcWeb) |  |  |
 
 
 
