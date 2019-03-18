@@ -25,6 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
@@ -45,7 +46,7 @@ import (
 type RunFunc func(opts bootstrap.Opts) error
 
 func NewSetupFunc() setuputils.SetupFunc {
-	return NewSetupFuncWithRun(RunGloo)
+	return NewSetupFuncWithRun(RunGloo, nil)
 }
 
 // used outside of this repo
@@ -53,12 +54,13 @@ func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunGlooWithExtensions(opts, extensions)
 	}
-	return NewSetupFuncWithRun(runWithExtensions)
+	return NewSetupFuncWithRun(runWithExtensions, &extensions)
 }
 
 // for use by UDS, FDS, other v1.SetupSyncers
-func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
+func NewSetupFuncWithRun(runFunc RunFunc, extensions *Extensions) setuputils.SetupFunc {
 	s := &setupSyncer{
+		extensions: extensions,
 		grpcServer: func(ctx context.Context) *grpc.Server {
 			return grpc.NewServer(grpc.StreamInterceptor(
 				grpc_middleware.ChainStreamServer(
@@ -77,19 +79,20 @@ func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
 }
 
 type setupSyncer struct {
+	extensions         *Extensions
 	runFunc            RunFunc
 	grpcServer         func(ctx context.Context) *grpc.Server
 	previousBindAddr   string
 	controlPlane       bootstrap.ControlPlane
 	cancelControlPlane context.CancelFunc
+	callbacks          xdsserver.Callbacks
 }
 
-func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, start bool) bootstrap.ControlPlane {
+func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
 	var c bootstrap.ControlPlane
 	c.GrpcServer = grpcServer
 	hasher := &xds.ProxyKeyHasher{}
 	snapshotCache := cache.NewSnapshotCache(true, hasher, contextutils.LoggerFrom(ctx))
-	var callbacks server.Callbacks // TODO(yuval-k): allow callbacks so we can wireup nack detector
 	xdsServer := server.NewServer(snapshotCache, callbacks)
 	envoyv2.RegisterAggregatedDiscoveryServiceServer(c.GrpcServer, xdsServer)
 	c.SnapshotCache = snapshotCache
@@ -133,7 +136,11 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if s.controlPlane == empty {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
-		s.controlPlane = NewControlPlane(ctx, s.grpcServer(ctx), true)
+		var callbacks xdsserver.Callbacks
+		if s.extensions != nil {
+			callbacks = s.extensions.XdsCallbacks
+		}
+		s.controlPlane = NewControlPlane(ctx, s.grpcServer(ctx), callbacks, true)
 		s.cancelControlPlane = cancel
 	}
 
@@ -164,6 +171,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 type Extensions struct {
 	PluginExtensions []plugins.Plugin
 	SyncerExtensions []TranslatorSyncerExtensionFactory
+	XdsCallbacks     xdsserver.Callbacks
 }
 
 func RunGloo(opts bootstrap.Opts) error {
