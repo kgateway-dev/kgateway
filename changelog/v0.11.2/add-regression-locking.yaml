@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add coarse locking around regression tests to improve success of concurrent CI builds.
+    issueLink: https://github.com/solo-io/gloo/issues/543
