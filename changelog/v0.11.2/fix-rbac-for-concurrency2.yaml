@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Make cluster role and cluster role bindings granular per type of gloo installation. 
+    issueLink: https://github.com/solo-io/gloo/issues/544
