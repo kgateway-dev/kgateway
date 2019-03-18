@@ -24,6 +24,10 @@ message SslConfig {
     }
     // optional. the SNI domains that should be considered for TLS connections
     repeated string sni_domains = 3;
+    
+    // Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
+    // note that a root_ca must be provided if this option is used.
+    repeated string verify_subject_alt_name = 5;
 }
 
 // SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
@@ -41,10 +45,14 @@ message UpstreamSslConfig {
         //  SSLFiles reference paths to certificates which are local to the proxy
         SSLFiles ssl_files = 2;
 
-        SDSConfig sds =4;
+        SDSConfig sds = 4;
     }
     // optional. the SNI domains that should be considered for TLS connections
     string sni = 3;
+
+    // Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
+    // note that a root_ca must be provided if this option is used.
+    repeated string verify_subject_alt_name = 5;
 }
 
 message SDSConfig {

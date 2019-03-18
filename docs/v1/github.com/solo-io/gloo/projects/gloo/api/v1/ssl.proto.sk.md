@@ -34,19 +34,21 @@ weight: 5
 SslConfig contains the options necessary to configure a virtual host or listener to use TLS
 
 ```yaml
-"secret_ref": .core.solo.io.ResourceRef
-"ssl_files": .gloo.solo.io.SSLFiles
+"secretRef": .core.solo.io.ResourceRef
+"sslFiles": .gloo.solo.io.SSLFiles
 "sds": .gloo.solo.io.SDSConfig
-"sni_domains": []string
+"sniDomains": []string
+"verifySubjectAltName": []string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | * SecretRef contains the secret ref to a gloo secret containing the following structure: { "tls.crt": <ca chain data...>, "tls.key": <private key data...> } |  |
-| `ssl_files` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | * SecretRef contains the secret ref to a gloo secret containing the following structure: { "tls.crt": <ca chain data...>, "tls.key": <private key data...> } |  |
+| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
 | `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) |  |  |
-| `sni_domains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
+| `sniDomains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
+| `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
 
 
 
@@ -80,19 +82,21 @@ SSLFiles reference paths to certificates which can be read by the proxy off of i
 SslConfig contains the options necessary to configure a virtual host or listener to use TLS
 
 ```yaml
-"secret_ref": .core.solo.io.ResourceRef
-"ssl_files": .gloo.solo.io.SSLFiles
+"secretRef": .core.solo.io.ResourceRef
+"sslFiles": .gloo.solo.io.SSLFiles
 "sds": .gloo.solo.io.SDSConfig
 "sni": string
+"verifySubjectAltName": []string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secret_ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) |  |  |
-| `ssl_files` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) |  |  |
+| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#SSLFiles) | SSLFiles reference paths to certificates which are local to the proxy |  |
 | `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#SDSConfig) |  |  |
 | `sni` | `string` | optional. the SNI domains that should be considered for TLS connections |  |
+| `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
 
 
 
@@ -103,19 +107,19 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 
 ```yaml
-"TargetUri": string
-"call_credentials": .gloo.solo.io.CallCredentials
-"certificates_secret_name": string
-"validation_context_name": string
+"targetUri": string
+"callCredentials": .gloo.solo.io.CallCredentials
+"certificatesSecretName": string
+"validationContextName": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `TargetUri` | `string` |  |  |
-| `call_credentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk#CallCredentials) |  |  |
-| `certificates_secret_name` | `string` |  |  |
-| `validation_context_name` | `string` |  |  |
+| `targetUri` | `string` |  |  |
+| `callCredentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk#CallCredentials) |  |  |
+| `certificatesSecretName` | `string` |  |  |
+| `validationContextName` | `string` |  |  |
 
 
 
@@ -126,13 +130,13 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 
 ```yaml
-"file_credential_source": .gloo.solo.io.CallCredentials.FileCredentialSource
+"fileCredentialSource": .gloo.solo.io.CallCredentials.FileCredentialSource
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `file_credential_source` | [.gloo.solo.io.CallCredentials.FileCredentialSource](../ssl.proto.sk#FileCredentialSource) |  |  |
+| `fileCredentialSource` | [.gloo.solo.io.CallCredentials.FileCredentialSource](../ssl.proto.sk#FileCredentialSource) |  |  |
 
 
 
@@ -143,15 +147,15 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 
 ```yaml
-"TokenFileName": string
-"Header": string
+"tokenFileName": string
+"header": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `TokenFileName` | `string` |  |  |
-| `Header` | `string` |  |  |
+| `tokenFileName` | `string` |  |  |
+| `header` | `string` |  |  |
 
 
 

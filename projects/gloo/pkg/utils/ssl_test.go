@@ -57,6 +57,37 @@ var _ = Describe("Ssl", func() {
 		)
 
 	})
+	Context("san", func() {
+
+		BeforeEach(func() {
+			upstreamCfg = &v1.UpstreamSslConfig{
+				Sni: "test.com",
+				SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+					SslFiles: &v1.SSLFiles{
+						RootCa:  "rootca",
+						TlsCert: "tlscert",
+						TlsKey:  "tlskey",
+					},
+				},
+			}
+			configTranslator = NewSslConfigTranslator(nil)
+		})
+		It("should error with san and not rootca", func() {
+			upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
+			upstreamCfg.VerifySubjectAltName = []string{"test"}
+			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should add SAN verification when provided", func() {
+			configTranslator = NewSslConfigTranslator(nil)
+			upstreamCfg.VerifySubjectAltName = []string{"test"}
+			c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
+			Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+		})
+	})
 	Context("secret", func() {
 		BeforeEach(func() {
 			tlsSecret = &v1.TlsSecret{
@@ -94,7 +125,6 @@ var _ = Describe("Ssl", func() {
 			configTranslator = NewSslConfigTranslator(nil)
 			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
 			Expect(err).To(HaveOccurred())
-
 		})
 
 		It("should error with wrong secret", func() {

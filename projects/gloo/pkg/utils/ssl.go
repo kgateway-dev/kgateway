@@ -55,6 +55,7 @@ type CertSource interface {
 	GetSecretRef() *core.ResourceRef
 	GetSslFiles() *v1.SSLFiles
 	GetSds() *v1.SDSConfig
+	GetVerifySubjectAltName() []string
 }
 
 func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSource {
@@ -201,12 +202,22 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 		return nil, errors.New("both or none of cert chain and private key must be provided")
 	}
 
+	sanList := cs.GetVerifySubjectAltName()
+
 	if rootCaData != nil {
-		tlsContext.ValidationContextType = &envoyauth.CommonTlsContext_ValidationContext{
+		validationCtx := &envoyauth.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoyauth.CertificateValidationContext{
 				TrustedCa: rootCaData,
 			},
 		}
+		if len(sanList) != 0 {
+			validationCtx.ValidationContext.VerifySubjectAltName = sanList
+		}
+		tlsContext.ValidationContextType = validationCtx
+
+	} else if len(sanList) != 0 {
+		return nil, errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
+
 	}
 
 	return tlsContext, nil
