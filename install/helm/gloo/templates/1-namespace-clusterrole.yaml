@@ -1,9 +1,10 @@
 {{- if .Values.rbac.create }}
 
+{{- if .Values.gateway.enabled }}
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-role
+    name: gloo-role-gateway
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
@@ -17,20 +18,55 @@ rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["settings", "upstreams", "proxies","virtualservices"]
   verbs: ["*"]
-{{- if .Values.gateway.enabled }}
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices", "gateways"]
   verbs: ["*"]
 {{- end -}}
+
 {{- if .Values.ingress.enabled }}
-- apiGroups: ["extensions", ""]
-  resources: ["ingresses"]
-  verbs: ["*"]
+  kind: ClusterRole
+   apiVersion: rbac.authorization.k8s.io/v1
+   metadata:
+   name: gloo-role-ingress
+   rules:
+   - apiGroups: [""]
+  resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
+    verbs: ["*"]
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apiextensions.k8s.io"]
+      resources: ["customresourcedefinitions"]
+      verbs: ["get", "create"]
+    - apiGroups: ["gloo.solo.io"]
+      resources: ["settings", "upstreams", "proxies","virtualservices"]
+      verbs: ["*"]
+    - apiGroups: ["extensions", ""]
+      resources: ["ingresses"]
+      verbs: ["*"]
 {{- end -}}
+
 {{- if .Values.settings.integrations.knative.enabled }}
-- apiGroups: ["networking.internal.knative.dev"]
-  resources: ["clusteringresses"]
-  verbs: ["get", "list", "watch"]
+  kind: ClusterRole
+   apiVersion: rbac.authorization.k8s.io/v1
+   metadata:
+   name: gloo-role-knative
+   rules:
+   - apiGroups: [""]
+  resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
+    verbs: ["*"]
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apiextensions.k8s.io"]
+      resources: ["customresourcedefinitions"]
+      verbs: ["get", "create"]
+    - apiGroups: ["gloo.solo.io"]
+      resources: ["settings", "upstreams", "proxies","virtualservices"]
+      verbs: ["*"]
+    - apiGroups: ["networking.internal.knative.dev"]
+      resources: ["clusteringresses"]
+      verbs: ["get", "list", "watch"]
 {{- end -}}
 
 {{- end -}}
