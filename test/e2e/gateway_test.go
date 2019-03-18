@@ -78,7 +78,7 @@ var _ = Describe("Gateway", func() {
 			_, err = vscli.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// make sure it propogates to proxy
+			// make sure it propagates to proxy
 			Eventually(
 				func() (int, error) {
 					numdisable := 0
