@@ -52,7 +52,6 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	defer locker.ReleaseLock()
-	// stop cleaning up after failures
 	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
 
