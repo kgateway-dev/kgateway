@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add coarse locking around regression tests to improve success of concurrent CI builds.
+    issueLink: https://github.com/solo-io/gloo/issues/543
+  - type: NON_USER_FACING
+    description: Set creds to kube2e cluster before running `regression-tests` step.
+    issueLink: https://github.com/solo-io/gloo/issues/541

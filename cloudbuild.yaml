@@ -150,7 +150,12 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['compile']
   id: 'build-test-assets'
-
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-a']
+  id: 'set-zone'
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
+  id: 'get-credentials'
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -160,7 +165,7 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', 'test/kube2e']
-  waitFor: ['build-test-assets', 'test']
+  waitFor: ['build-test-assets', 'test', 'get-credentials']
   id: 'regression-tests'
 
 # 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs

@@ -1474,7 +1474,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:76c863a74b670eac67d9564d50a124bf0cd2067ba4d9a521b7e36812c81694a9"
+  digest = "1:895e4708511088712de26601f976255b2930717d1f3fe2ff735e7d39784348c2"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1489,6 +1489,7 @@
     "logger",
     "protoutils",
     "testutils",
+    "testutils/clusterlock",
     "testutils/exec",
     "testutils/helper",
     "versionutils",
@@ -2451,6 +2452,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Netflix/go-expect",
+    "github.com/avast/retry-go",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
@@ -2521,6 +2523,7 @@
     "github.com/solo-io/go-utils/logger",
     "github.com/solo-io/go-utils/protoutils",
     "github.com/solo-io/go-utils/testutils",
+    "github.com/solo-io/go-utils/testutils/clusterlock",
     "github.com/solo-io/go-utils/testutils/exec",
     "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
