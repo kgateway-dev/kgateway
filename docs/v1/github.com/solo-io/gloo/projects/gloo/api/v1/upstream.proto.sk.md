@@ -34,19 +34,19 @@ Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`
 Each upstream type is handled by a corresponding Gloo plugin.
 
 ```yaml
-"upstream_spec": .gloo.solo.io.UpstreamSpec
+"upstreamSpec": .gloo.solo.io.UpstreamSpec
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
-"discovery_metadata": .gloo.solo.io.DiscoveryMetadata
+"discoveryMetadata": .gloo.solo.io.DiscoveryMetadata
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstream_spec` | [.gloo.solo.io.UpstreamSpec](../plugins.proto.sk#UpstreamSpec) | Type-specific configuration. Examples include static, kubernetes, and aws. The type-specific config for the upstream is called a spec. |  |
+| `upstreamSpec` | [.gloo.solo.io.UpstreamSpec](../plugins.proto.sk#UpstreamSpec) | Type-specific configuration. Examples include static, kubernetes, and aws. The type-specific config for the upstream is called a spec. |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) | Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
-| `discovery_metadata` | [.gloo.solo.io.DiscoveryMetadata](../upstream.proto.sk#DiscoveryMetadata) | Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here. |  |
+| `discoveryMetadata` | [.gloo.solo.io.DiscoveryMetadata](../upstream.proto.sk#DiscoveryMetadata) | Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here. |  |
 
 
 

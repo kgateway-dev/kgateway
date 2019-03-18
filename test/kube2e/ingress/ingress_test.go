@@ -73,7 +73,7 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Host:              ingressProxy,
 			Service:           ingressProxy,
 			Port:              ingressPort,
-			ConnectionTimeout: 5,
+			ConnectionTimeout: 10,
 		}, helper.SimpleHttpResponse, 1, time.Minute*2)
 	})
 })

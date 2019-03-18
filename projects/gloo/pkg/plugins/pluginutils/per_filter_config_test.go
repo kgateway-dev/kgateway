@@ -33,6 +33,30 @@ var _ = Describe("PerFilterConfig", func() {
 		name = "fakename"
 
 	})
+	Context("set per filter config", func() {
+		BeforeEach(func() {
+			out = &envoyroute.Route{}
+		})
+
+		It("should add per filter config to route", func() {
+			err := SetRoutePerFilterConfig(out, name, msg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.PerFilterConfig).To(HaveKeyWithValue(name, BeEquivalentTo(msg)))
+		})
+		It("should add per filter config to vhost", func() {
+			out := &envoyroute.VirtualHost{}
+			err := SetVhostPerFilterConfig(out, name, msg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.PerFilterConfig).To(HaveKeyWithValue(name, BeEquivalentTo(msg)))
+		})
+		It("should add per filter config to cluster weight", func() {
+			out := &envoyroute.WeightedCluster_ClusterWeight{}
+			err := SetWeightedClusterPerFilterConfig(out, name, msg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.PerFilterConfig).To(HaveKeyWithValue(name, BeEquivalentTo(msg)))
+		})
+	})
+
 	Context("single dests", func() {
 
 		BeforeEach(func() {

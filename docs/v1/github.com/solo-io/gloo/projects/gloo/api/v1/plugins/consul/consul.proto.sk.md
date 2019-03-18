@@ -33,19 +33,19 @@ Gloo requires that a different upstream be created for each port
 consul Upstreams are typically generated automatically by Gloo from the consul API
 
 ```yaml
-"service_name": string
-"service_tags": []string
-"service_spec": .plugins.gloo.solo.io.ServiceSpec
-"connect_enabled": bool
+"serviceName": string
+"serviceTags": []string
+"serviceSpec": .plugins.gloo.solo.io.ServiceSpec
+"connectEnabled": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `service_name` | `string` | The name of the Consul Service |  |
-| `service_tags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream |  |
-| `service_spec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#ServiceSpec) | An optional Service Spec describing the service listening at this address |  |
-| `connect_enabled` | `bool` | is this consul service connect enabled. |  |
+| `serviceName` | `string` | The name of the Consul Service |  |
+| `serviceTags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream |  |
+| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#ServiceSpec) | An optional Service Spec describing the service listening at this address |  |
+| `connectEnabled` | `bool` | is this consul service connect enabled. |  |
 
 
 

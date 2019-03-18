@@ -18,12 +18,13 @@ steps:
 # Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
 # All steps after this must set GOPATH
-- name: 'gcr.io/$PROJECT_ID/dep'
+- name: 'gcr.io/$PROJECT_ID/dep:0.1.5'
   args: ['ensure']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GIT_SSH_CONFIG=FALSE'
   id: 'dep'
+  waitFor: ['download-untar-dep-cache']
 
 # Run some basic checks on the repo
 # 1) check formatting of go files
@@ -32,7 +33,7 @@ steps:
 
 # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
 # Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
@@ -41,7 +42,7 @@ steps:
   args: ['check-format']
   waitFor: ['dep']
   id: 'check-format'
-- name: 'gcr.io/$PROJECT_ID/go-make'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.5'
   entrypoint: 'bash'
   args: ['ci/check-code-and-docs-gen.sh']
   env:
@@ -97,12 +98,12 @@ steps:
   id: 'setup-helm'
 # Docker related setup
 # grab this container immediately in parallel
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   entrypoint: ls
   waitFor: ['-']
   id: 'grab-ginkgo-container'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
@@ -124,7 +125,7 @@ steps:
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
   waitFor: ['test']
-- name: 'gcr.io/$PROJECT_ID/go-make'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.5'
   args: ['docker']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -137,7 +138,7 @@ steps:
   id: 'compile'
 
 # Run regression tests
-- name: 'gcr.io/$PROJECT_ID/go-make'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.5'
   args: ['build-test-assets']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -149,8 +150,13 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['compile']
   id: 'build-test-assets'
-
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo'
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-a']
+  id: 'set-zone'
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
+  id: 'get-credentials'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
@@ -159,12 +165,12 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', 'test/kube2e']
-  waitFor: ['build-test-assets', 'test']
+  waitFor: ['build-test-assets', 'test', 'get-credentials']
   id: 'regression-tests'
 
 # 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
 # 2) Publish helm chart
-- name: 'gcr.io/$PROJECT_ID/go-make'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.5'
   args: ['docker-push', 'manifest', 'upload-github-release-assets', 'push-docs']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'

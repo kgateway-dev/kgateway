@@ -17,20 +17,14 @@ rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["settings", "upstreams", "proxies","virtualservices"]
   verbs: ["*"]
-{{- if .Values.gateway.enabled }}
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices", "gateways"]
   verbs: ["*"]
-{{- end -}}
-{{- if .Values.ingress.enabled }}
 - apiGroups: ["extensions", ""]
   resources: ["ingresses"]
   verbs: ["*"]
-{{- end -}}
-{{- if .Values.settings.integrations.knative.enabled }}
 - apiGroups: ["networking.internal.knative.dev"]
   resources: ["clusteringresses"]
   verbs: ["get", "list", "watch"]
-{{- end -}}
 
 {{- end -}}

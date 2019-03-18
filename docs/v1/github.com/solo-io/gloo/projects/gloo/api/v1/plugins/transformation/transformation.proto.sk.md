@@ -41,15 +41,15 @@ TODO: to solo-kit/api/envoy
 
 
 ```yaml
-"request_transformation": .transformation.plugins.gloo.solo.io.Transformation
-"response_transformation": .transformation.plugins.gloo.solo.io.Transformation
+"requestTransformation": .transformation.plugins.gloo.solo.io.Transformation
+"responseTransformation": .transformation.plugins.gloo.solo.io.Transformation
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `request_transformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#Transformation) |  |  |
-| `response_transformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#Transformation) |  |  |
+| `requestTransformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#Transformation) |  |  |
+| `responseTransformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#Transformation) |  |  |
 
 
 
@@ -61,15 +61,15 @@ TODO: to solo-kit/api/envoy
 [#proto-status: experimental]
 
 ```yaml
-"transformation_template": .transformation.plugins.gloo.solo.io.TransformationTemplate
-"header_body_transform": .transformation.plugins.gloo.solo.io.HeaderBodyTransform
+"transformationTemplate": .transformation.plugins.gloo.solo.io.TransformationTemplate
+"headerBodyTransform": .transformation.plugins.gloo.solo.io.HeaderBodyTransform
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `transformation_template` | [.transformation.plugins.gloo.solo.io.TransformationTemplate](../transformation.proto.sk#TransformationTemplate) |  |  |
-| `header_body_transform` | [.transformation.plugins.gloo.solo.io.HeaderBodyTransform](../transformation.proto.sk#HeaderBodyTransform) |  |  |
+| `transformationTemplate` | [.transformation.plugins.gloo.solo.io.TransformationTemplate](../transformation.proto.sk#TransformationTemplate) |  |  |
+| `headerBodyTransform` | [.transformation.plugins.gloo.solo.io.HeaderBodyTransform](../transformation.proto.sk#HeaderBodyTransform) |  |  |
 
 
 
@@ -101,23 +101,23 @@ TODO: to solo-kit/api/envoy
 
 
 ```yaml
-"advanced_templates": bool
+"advancedTemplates": bool
 "extractors": map<string, .transformation.plugins.gloo.solo.io.Extraction>
 "headers": map<string, string>
 "body": .transformation.plugins.gloo.solo.io.InjaTemplate
 "passthrough": .transformation.plugins.gloo.solo.io.Passthrough
-"merge_extractors_to_body": .transformation.plugins.gloo.solo.io.MergeExtractorsToBody
+"mergeExtractorsToBody": .transformation.plugins.gloo.solo.io.MergeExtractorsToBody
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `advanced_templates` | `bool` |  |  |
+| `advancedTemplates` | `bool` |  |  |
 | `extractors` | `map<string, .transformation.plugins.gloo.solo.io.Extraction>` | Extractors are in the origin request language domain |  |
 | `headers` | `map<string, string>` |  |  |
 | `body` | [.transformation.plugins.gloo.solo.io.InjaTemplate](../transformation.proto.sk#InjaTemplate) |  |  |
 | `passthrough` | [.transformation.plugins.gloo.solo.io.Passthrough](../transformation.proto.sk#Passthrough) |  |  |
-| `merge_extractors_to_body` | [.transformation.plugins.gloo.solo.io.MergeExtractorsToBody](../transformation.proto.sk#MergeExtractorsToBody) |  |  |
+| `mergeExtractorsToBody` | [.transformation.plugins.gloo.solo.io.MergeExtractorsToBody](../transformation.proto.sk#MergeExtractorsToBody) |  |  |
 
 
 

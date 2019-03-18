@@ -30,16 +30,16 @@ weight: 5
 A simple wrapper for a Kubernetes Ingress Object.
 
 ```yaml
-"kube_ingress_spec": .google.protobuf.Any
-"kube_ingress_status": .google.protobuf.Any
+"kubeIngressSpec": .google.protobuf.Any
+"kubeIngressStatus": .google.protobuf.Any
 "metadata": .core.solo.io.Metadata
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `kube_ingress_spec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the kubernetes ingress this resource wraps |  |
-| `kube_ingress_status` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the ingress status of the kubernetes ingress object |  |
+| `kubeIngressSpec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the kubernetes ingress this resource wraps |  |
+| `kubeIngressStatus` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the ingress status of the kubernetes ingress object |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
 
 

@@ -58,17 +58,17 @@ SslConfig contains the options necessary to configure a virtual host or listener
 SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
 
 ```yaml
-"tls_cert": string
-"tls_key": string
-"root_ca": string
+"tlsCert": string
+"tlsKey": string
+"rootCa": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `tls_cert` | `string` |  |  |
-| `tls_key` | `string` |  |  |
-| `root_ca` | `string` | for client cert validation. optional |  |
+| `tlsCert` | `string` |  |  |
+| `tlsKey` | `string` |  |  |
+| `rootCa` | `string` | for client cert validation. optional |  |
 
 
 

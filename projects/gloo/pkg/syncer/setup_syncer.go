@@ -99,59 +99,6 @@ func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, start bool) b
 }
 
 func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) error {
-	var (
-		cfg           *rest.Config
-		clientset     kubernetes.Interface
-		kubeCoreCache corecache.KubeCoreCache
-	)
-
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		memCache,
-		kubeCache,
-		v1.UpstreamCrd,
-		&cfg,
-	)
-	if err != nil {
-		return err
-	}
-
-	proxyFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		memCache,
-		kubeCache,
-		v1.ProxyCrd,
-		&cfg,
-	)
-	if err != nil {
-		return err
-	}
-
-	secretFactory, err := bootstrap.SecretFactoryForSettings(
-		ctx,
-		settings,
-		memCache,
-		&cfg,
-		&clientset,
-		&kubeCoreCache,
-		v1.SecretCrd.Plural,
-	)
-	if err != nil {
-		return err
-	}
-
-	artifactFactory, err := bootstrap.ArtifactFactoryForSettings(
-		ctx,
-		settings,
-		memCache,
-		&cfg,
-		&clientset,
-		&kubeCoreCache,
-		v1.ArtifactCrd.Plural,
-	)
-	if err != nil {
-		return err
-	}
 
 	ipPort := strings.Split(settings.BindAddr, ":")
 	if len(ipPort) != 2 {
@@ -190,34 +137,33 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.cancelControlPlane = cancel
 	}
 
-	opts := bootstrap.Opts{
-		WriteNamespace:  writeNamespace,
-		WatchNamespaces: watchNamespaces,
-		Upstreams:       upstreamFactory,
-		Proxies:         proxyFactory,
-		Secrets:         secretFactory,
-		Artifacts:       artifactFactory,
-		WatchOpts: clients.WatchOpts{
-			Ctx:         ctx,
-			RefreshRate: refreshRate,
-		},
-		BindAddr: &net.TCPAddr{
-			IP:   net.ParseIP(ipPort[0]),
-			Port: port,
-		},
-		ControlPlane: s.controlPlane,
-		// if nil, kube plugin disabled
-		KubeClient: clientset,
-		DevMode:    true,
-		Extensions: settings.Extensions,
+	var clientset kubernetes.Interface
+	opts, err := BootstrapFactories(ctx, &clientset, kubeCache, memCache, settings)
+	if err != nil {
+		return err
 	}
+	opts.WriteNamespace = writeNamespace
+	opts.WatchNamespaces = watchNamespaces
+	opts.WatchOpts = clients.WatchOpts{
+		Ctx:         ctx,
+		RefreshRate: refreshRate,
+	}
+	opts.BindAddr = &net.TCPAddr{
+		IP:   net.ParseIP(ipPort[0]),
+		Port: port,
+	}
+	opts.ControlPlane = s.controlPlane
+	// if nil, kube plugin disabled
+	opts.KubeClient = clientset
+	opts.DevMode = true
+	opts.Extensions = settings.Extensions
 
 	return s.runFunc(opts)
 }
 
 type Extensions struct {
 	PluginExtensions []plugins.Plugin
-	SyncerExtensions []TranslatorSyncerExtension
+	SyncerExtensions []TranslatorSyncerExtensionFactory
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -280,8 +226,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
+	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
-	sync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Extensions), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, extensions.SyncerExtensions)
+	var syncerExtensions []TranslatorSyncerExtension
+	params := TranslatorSyncerExtensionParams{
+		SettingExtensions: opts.Extensions,
+	}
+	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
+		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
+		if err != nil {
+			logger.Errorw("Error initializing extension", "error", err)
+			continue
+		}
+		syncerExtensions = append(syncerExtensions, syncerExtension)
+	}
+
+	sync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Extensions), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
 	eventLoop := v1.NewApiEventLoop(cache, sync)
 
 	errs := make(chan error)
@@ -298,8 +258,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, eventLoopErrs, "event_loop.gloo")
-
-	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
 	go func() {
 		for {
@@ -330,4 +288,66 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 	return nil
+}
+
+func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {
+
+	var (
+		cfg           *rest.Config
+		kubeCoreCache corecache.KubeCoreCache
+	)
+
+	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(
+		settings,
+		memCache,
+		kubeCache,
+		v1.UpstreamCrd,
+		&cfg,
+	)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	proxyFactory, err := bootstrap.ConfigFactoryForSettings(
+		settings,
+		memCache,
+		kubeCache,
+		v1.ProxyCrd,
+		&cfg,
+	)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	secretFactory, err := bootstrap.SecretFactoryForSettings(
+		ctx,
+		settings,
+		memCache,
+		&cfg,
+		clientset,
+		&kubeCoreCache,
+		v1.SecretCrd.Plural,
+	)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	artifactFactory, err := bootstrap.ArtifactFactoryForSettings(
+		ctx,
+		settings,
+		memCache,
+		&cfg,
+		clientset,
+		&kubeCoreCache,
+		v1.ArtifactCrd.Plural,
+	)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+	return bootstrap.Opts{
+		Upstreams: upstreamFactory,
+		Proxies:   proxyFactory,
+		Secrets:   secretFactory,
+		Artifacts: artifactFactory,
+	}, nil
 }
