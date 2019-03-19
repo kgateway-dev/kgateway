@@ -2,10 +2,11 @@ package install
 
 import (
 	"fmt"
-	"k8s.io/helm/pkg/proto/hapi/chart"
 	"path"
 	"strings"
 	"time"
+
+	"k8s.io/helm/pkg/proto/hapi/chart"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -90,11 +91,11 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 }
 
 func doCrdInstall(
-		opts *options.Options,
-		chart *chart.Chart,
-		values *chart.Config,
-		renderOpts renderutil.Options,
-		knativeFilterFunction install.ManifestFilterFunc) error {
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options,
+	knativeFilterFunction install.ManifestFilterFunc) error {
 
 	// Keep only CRDs and collect the names
 	var crdNames []string
@@ -128,11 +129,11 @@ func doCrdInstall(
 }
 
 func doPreInstall(
-		opts *options.Options,
-		chart *chart.Chart,
-		values *chart.Config,
-		renderOpts renderutil.Options,
-		knativeFilterFunction install.ManifestFilterFunc) error {
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options,
+	knativeFilterFunction install.ManifestFilterFunc) error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,
@@ -146,11 +147,11 @@ func doPreInstall(
 }
 
 func doInstall(
-		opts *options.Options,
-		chart *chart.Chart,
-		values *chart.Config,
-		renderOpts renderutil.Options,
-		knativeFilterFunction install.ManifestFilterFunc) error {
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options,
+	knativeFilterFunction install.ManifestFilterFunc) error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,

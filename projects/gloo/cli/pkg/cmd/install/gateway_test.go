@@ -55,4 +55,11 @@ var _ = Describe("Gateway", func() {
 			return err != nil && kubeerrs.IsNotFound(err)
 		}, time.Minute).Should(BeTrue())
 	})
+
+	It("should print out the correct manifest on dry run ", func() {
+		manifest, err := testutils.GlooctlOut("install gateway --file " + filepath.Join(helpers2.GlooInstallDir(), "gloo-gateway.yaml") + " --dry-run")
+		Expect(err).NotTo(HaveOccurred())
+
+		parsedManifest
+	})
 })

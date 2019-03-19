@@ -909,6 +909,14 @@
   revision = "2f1d1f20f75d5404f53b9edf6b53ed5505508675"
 
 [[projects]]
+  digest = "1:8f3e1c572760f95e2b36c360396a9d4f9df9f53026b426208ef618b5112fd1fe"
+  name = "github.com/helm/helm"
+  packages = ["pkg/hooks"]
+  pruneopts = "UT"
+  revision = "79d07943b03aea2b76c12644b4b54733bc5958d6"
+  version = "v2.13.0"
+
+[[projects]]
   branch = "master"
   digest = "1:189c8f93f3242c4fc5902e9db5483e82f6d94ca4c35fad608f049cf5d9dada95"
   name = "github.com/hinshun/vt10x"
@@ -2489,6 +2497,7 @@
     "github.com/hashicorp/consul/agent/config",
     "github.com/hashicorp/consul/api",
     "github.com/hashicorp/go-multierror",
+    "github.com/helm/helm/pkg/hooks",
     "github.com/hinshun/vt10x",
     "github.com/inconshreveable/go-update",
     "github.com/jhump/protoreflect/desc",
@@ -2589,14 +2598,12 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/helm/pkg/chartutil",
-    "k8s.io/helm/pkg/hooks",
     "k8s.io/helm/pkg/manifest",
     "k8s.io/helm/pkg/proto/hapi/chart",
     "k8s.io/helm/pkg/renderutil",
     "k8s.io/helm/pkg/tiller",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
-    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
