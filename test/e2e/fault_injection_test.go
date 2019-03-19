@@ -40,16 +40,18 @@ var _ = Describe("Fault Injection", func() {
 			opts          clients.WriteOpts
 		)
 
-		setupProxy := func(proxy *gloov1.Proxy, up *gloov1.Upstream) {
+		setupProxy := func(proxy *gloov1.Proxy, up *gloov1.Upstream) error {
 			proxyCli := testClients.ProxyClient
 			_, err := proxyCli.Write(proxy, opts)
-			Expect(err).NotTo(HaveOccurred())
+			return err
 		}
+
 		envoyPort := services.NextBindPort()
 
 		setupInitialProxy := func() {
 			proxy := getGlooProxyWithVersion(nil, nil, envoyPort, up, "")
-			setupProxy(proxy, up)
+			err := setupProxy(proxy, up)
+			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() error {
 				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
 				if err != nil {
@@ -97,10 +99,12 @@ var _ = Describe("Fault Injection", func() {
 			}
 
 			Eventually(func() error {
-				proxy := getGlooProxy(testClients, abort, nil, envoyPort, up)
+				proxy, err := getGlooProxy(testClients, abort, nil, envoyPort, up)
+				if err != nil {
+					return err
+				}
 				opts.OverwriteExisting = true
-				setupProxy(proxy, up)
-				return nil
+				return setupProxy(proxy, up)
 			}, "10s", ".1s").Should(BeNil())
 
 			Eventually(func() error {
@@ -123,10 +127,12 @@ var _ = Describe("Fault Injection", func() {
 			}
 
 			Eventually(func() error {
-				proxy := getGlooProxy(testClients, nil, delay, envoyPort, up)
+				proxy, err := getGlooProxy(testClients, nil, delay, envoyPort, up)
+				if err != nil {
+					return err
+				}
 				opts.OverwriteExisting = true
-				setupProxy(proxy, up)
-				return nil
+				return setupProxy(proxy, up)
 			}, "10s", ".1s").Should(BeNil())
 
 			Eventually(func() error {
@@ -151,10 +157,12 @@ var _ = Describe("Fault Injection", func() {
 	})
 })
 
-func getGlooProxy(testClients services.TestClients, abort *fault.RouteAbort, delay *fault.RouteDelay, envoyPort uint32, up *gloov1.Upstream) *gloov1.Proxy {
+func getGlooProxy(testClients services.TestClients, abort *fault.RouteAbort, delay *fault.RouteDelay, envoyPort uint32, up *gloov1.Upstream) (*gloov1.Proxy, error) {
 	readProxy, err := testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
-	Expect(err).Should(BeNil())
-	return getGlooProxyWithVersion(abort, delay, envoyPort, up, readProxy.Metadata.ResourceVersion)
+	if err != nil {
+		return nil, err
+	}
+	return getGlooProxyWithVersion(abort, delay, envoyPort, up, readProxy.Metadata.ResourceVersion), nil
 }
 
 func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, envoyPort uint32, up *gloov1.Upstream, resourceVersion string) *gloov1.Proxy {

@@ -7,3 +7,5 @@ changelog:
     description: Double number of attempts before giving up on acquiring lock for gateway tests to allow more concurrent CI builds.
   - type: NON_USER_FACING
     description: Lock around cluster ingress tests that create and delete a cluster ingress CRD.
+  - type: NON_USER_FACING
+    description: Fix usage of `Eventually` inside fault injection tests. 
