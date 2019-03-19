@@ -148,6 +148,10 @@ func GetKnativeResourceFilterFunction() (ManifestFilterFunc, error) {
 		return nil, errors.Wrapf(err, "checking for knative installation")
 	}
 	skipKnativeInstall := installed && !ours
+	return KnativeResourceFilterFunction(skipKnativeInstall), nil
+}
+
+func KnativeResourceFilterFunction(skipKnativeInstall bool) ManifestFilterFunc {
 	return func(input []manifest.Manifest) ([]manifest.Manifest, error) {
 		var output []manifest.Manifest
 		for _, man := range input {
@@ -157,7 +161,7 @@ func GetKnativeResourceFilterFunction() (ManifestFilterFunc, error) {
 			output = append(output, man)
 		}
 		return output, nil
-	}, nil
+	}
 }
 
 var commentRegex = regexp.MustCompile("#.*")

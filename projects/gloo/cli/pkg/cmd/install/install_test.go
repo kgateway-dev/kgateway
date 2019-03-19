@@ -1,14 +1,11 @@
 package install_test
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/renderutil"
-	"strings"
 )
 
 var _ = Describe("Install", func() {
@@ -43,30 +40,5 @@ var _ = Describe("Install", func() {
 		output, err := testutils.GlooctlOut("install gateway --file foo.tgz")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(strings.HasPrefix(output, "Error: installing gloo in gateway mode: installing Gloo from helm chart: retrieving gloo helm chart archive")).To(BeTrue())
-	})
-	
-	Context("Testing install logic given chart", func() {
-		
-		var (
-			helmChart *chart.Chart
-			values *chart.Config
-			renderOpts renderutil.Options
-		)
-		
-		BeforeEach(func() {
-			helmChart, err := install.GetHelmArchive("https://storage.googleapis.com/solo-public-helm/charts/gloo-0.11.1.tgz")
-			Expect(err).NotTo(HaveOccurred())
-			values, err := install.GetValuesFromFile(helmChart, "")
-			Expect(err).NotTo(HaveOccurred())
-			// These are the .Release.* variables used during rendering
-			renderOpts = renderutil.Options{
-				ReleaseOptions: chartutil.ReleaseOptions{
-					Namespace: "gloo-system",
-					Name:      "gloo",
-				},
-			}
-		})
-
-
 	})
 })
