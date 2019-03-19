@@ -1,10 +1,11 @@
 package clusteringress_test
 
 import (
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"os"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/solo-kit/test/helpers"
 
@@ -14,7 +15,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
-	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"

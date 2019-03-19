@@ -1,9 +1,10 @@
 package install
 
 import (
+	"strings"
+
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
-	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/go-utils/errors"

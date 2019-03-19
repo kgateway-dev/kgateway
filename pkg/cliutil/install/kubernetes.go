@@ -3,15 +3,16 @@ package install
 import (
 	"bytes"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/go-utils/errors"
-	"github.com/solo-io/go-utils/kubeutils"
 	"io"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/go-utils/kubeutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func CheckKnativeInstallation() (isInstalled bool, isOurs bool, err error) {

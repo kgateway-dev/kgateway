@@ -1,11 +1,12 @@
 package install
 
 import (
-	"github.com/ghodss/yaml"
-	"github.com/solo-io/go-utils/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
 	"strings"
+
+	"github.com/ghodss/yaml"
+	"github.com/solo-io/go-utils/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/helm/pkg/manifest"
 )
