@@ -96,6 +96,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 				LocalCredentials: &envoycore.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
 			},
 		},
+		CredentialsFactoryName: MetadataPluginName,
 		CallCredentials: []*envoycore.GrpcService_GoogleGrpc_CallCredentials{
 			&envoycore.GrpcService_GoogleGrpc_CallCredentials{
 				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{

@@ -259,6 +259,8 @@ var _ = Describe("Ssl", func() {
 					LocalCredentials: &envoycore.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
 				},
 			}))
+			Expect(getGrpcConfig(vctx).CredentialsFactoryName).To(Equal(MetadataPluginName))
+
 			credPlugin := getGrpcConfig(vctx).CallCredentials[0].CredentialSpecifier.(*envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin).FromPlugin
 			Expect(credPlugin.Name).To(Equal(MetadataPluginName))
 			var credConfig v2alpha.FileBasedMetadataConfig
