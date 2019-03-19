@@ -46,7 +46,7 @@ import (
 type RunFunc func(opts bootstrap.Opts) error
 
 func NewSetupFunc() setuputils.SetupFunc {
-	return NewSetupFuncWithRun(RunGloo, nil)
+	return NewSetupFuncWithRunAndExtensions(RunGloo, nil)
 }
 
 // used outside of this repo
@@ -54,11 +54,15 @@ func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunGlooWithExtensions(opts, extensions)
 	}
-	return NewSetupFuncWithRun(runWithExtensions, &extensions)
+	return NewSetupFuncWithRunAndExtensions(runWithExtensions, &extensions)
 }
 
 // for use by UDS, FDS, other v1.SetupSyncers
-func NewSetupFuncWithRun(runFunc RunFunc, extensions *Extensions) setuputils.SetupFunc {
+func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
+	return NewSetupFuncWithRunAndExtensions(runFunc, nil)
+}
+
+func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) setuputils.SetupFunc {
 	s := &setupSyncer{
 		extensions: extensions,
 		grpcServer: func(ctx context.Context) *grpc.Server {
