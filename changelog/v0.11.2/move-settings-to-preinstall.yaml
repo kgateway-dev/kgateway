@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Gloo settings is now created as a pre-install step, to avoid a race condition with
+    issueLink: https://github.com/solo-io/gloo/issues/562
