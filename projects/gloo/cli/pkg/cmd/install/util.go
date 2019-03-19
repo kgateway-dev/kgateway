@@ -128,11 +128,11 @@ func doCrdInstall(
 }
 
 func doPreInstall(
-	opts *options.Options,
-	chart *chart.Chart,
-	values *chart.Config,
-	renderOpts renderutil.Options,
-	knativeFilterFunction install.ManifestFilterFunc) error {
+		opts *options.Options,
+		chart *chart.Chart,
+		values *chart.Config,
+		renderOpts renderutil.Options,
+		knativeFilterFunction install.ManifestFilterFunc) error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,
