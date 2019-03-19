@@ -91,10 +91,10 @@ func (s *envoyServer) FetchListeners(ctx context.Context, req *v2.DiscoveryReque
 	return s.Server.Fetch(ctx, req)
 }
 
-func (s *envoyServer) IncrementalClusters(_ v2.ClusterDiscoveryService_IncrementalClustersServer) error {
+func (s *envoyServer) DeltaClusters(_ v2.ClusterDiscoveryService_DeltaClustersServer) error {
 	return errors.New("not implemented")
 }
 
-func (s *envoyServer) IncrementalRoutes(_ v2.RouteDiscoveryService_IncrementalRoutesServer) error {
+func (s *envoyServer) DeltaRoutes(_ v2.RouteDiscoveryService_DeltaRoutesServer) error {
 	return errors.New("not implemented")
 }

@@ -56,7 +56,9 @@ func initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyap
 	}
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
-		out.Type = envoyapi.Cluster_EDS
+		out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+			Type: envoyapi.Cluster_EDS,
+		}
 	}
 	// this field can be overridden by plugins
 	out.ConnectTimeout = ClusterConnectionTimeout
@@ -65,9 +67,14 @@ func initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyap
 
 // TODO: add more validation here
 func validateCluster(c *envoyapi.Cluster) error {
-	if c.Type == envoyapi.Cluster_STATIC || c.Type == envoyapi.Cluster_STRICT_DNS || c.Type == envoyapi.Cluster_LOGICAL_DNS {
+	if c.GetClusterType() != nil {
+		// TODO(yuval-k): this is a custom cluster, we cant validate it for now.
+		return nil
+	}
+	clusterType := c.GetType()
+	if clusterType == envoyapi.Cluster_STATIC || clusterType == envoyapi.Cluster_STRICT_DNS || clusterType == envoyapi.Cluster_LOGICAL_DNS {
 		if len(c.Hosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
-			return errors.Errorf("cluster type %v specified but LoadAssignment was empty", c.Type.String())
+			return errors.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
 	return nil

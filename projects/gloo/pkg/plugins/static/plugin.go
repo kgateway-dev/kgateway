@@ -53,7 +53,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	var foundSslPort bool
 	var hostname string
 
-	out.Type = envoyapi.Cluster_STATIC
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_STATIC,
+	}
 	for _, host := range spec.Hosts {
 		if host.Addr == "" {
 			return errors.Errorf("addr cannot be empty for host")
@@ -115,7 +117,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	// that requires the host header, we will add host rewrite.
 	if hostname != "" {
 		// set the type to strict dns
-		out.Type = envoyapi.Cluster_STRICT_DNS
+		out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+			Type: envoyapi.Cluster_STRICT_DNS,
+		}
 
 		// fix issue where ipv6 addr cannot bind
 		out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
@@ -133,7 +137,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 
 	// configure the cluster to use EDS:ADS and call it a day
-	out.Type = envoyapi.Cluster_STATIC
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_STATIC,
+	}
 	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{
 			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
