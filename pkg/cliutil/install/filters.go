@@ -1,12 +1,13 @@
 package install
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/ghodss/yaml"
 	"github.com/helm/helm/pkg/hooks"
 	"github.com/solo-io/go-utils/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
-	"strings"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/helm/pkg/manifest"
 )
@@ -42,7 +43,7 @@ type resourceMatcherFunc func(resource resourceType) (bool, error)
 
 var preInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
 	helmPreInstallHook, ok := resource.Metadata.Annotations[hooks.HookAnno]
-	if !ok || helmPreInstallHook != hooks.PreInstall  {
+	if !ok || helmPreInstallHook != hooks.PreInstall {
 		return false, nil
 	}
 	return true, nil
@@ -72,7 +73,7 @@ var nonPreInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool
 	return !isPreInstall, err
 }
 
-var excludeByMatcher = func(input []manifest.Manifest, matches resourceMatcherFunc) (output [] manifest.Manifest, resourceNames []string, err error) {
+var excludeByMatcher = func(input []manifest.Manifest, matches resourceMatcherFunc) (output []manifest.Manifest, resourceNames []string, err error) {
 	resourceNames = make([]string, 0)
 	for _, man := range input {
 		// Split manifest into individual YAML docs
@@ -105,13 +106,13 @@ var excludeByMatcher = func(input []manifest.Manifest, matches resourceMatcherFu
 
 // Filters out any pre-install from each manifest
 var ExcludePreInstall ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
-	manifest, _, err :=  excludeByMatcher(input, preInstallMatcher)
+	manifest, _, err := excludeByMatcher(input, preInstallMatcher)
 	return manifest, err
 }
 
 // Filters out anything but pre-install
 var IncludeOnlyPreInstall ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
-	manifest, _, err :=  excludeByMatcher(input, nonPreInstallMatcher)
+	manifest, _, err := excludeByMatcher(input, nonPreInstallMatcher)
 	return manifest, err
 }
 
@@ -121,7 +122,7 @@ var ExcludeCrds ManifestFilterFunc = func(input []manifest.Manifest) (output []m
 	return manifest, err
 }
 
-var ExcludeNonCrds = func(input [] manifest.Manifest) (output [] manifest.Manifest, names []string, err error) {
+var ExcludeNonCrds = func(input []manifest.Manifest) (output []manifest.Manifest, names []string, err error) {
 	return excludeByMatcher(input, nonCrdInstallMatcher)
 }
 
