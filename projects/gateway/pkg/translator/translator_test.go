@@ -13,7 +13,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-const ns = "gloo-system"
+const (
+	ns  = "gloo-system"
+	ns2 = "gloo-system2"
+)
 
 var _ = Describe("Translator", func() {
 	var (
@@ -25,6 +28,12 @@ var _ = Describe("Translator", func() {
 				ns: v1.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
+						BindPort: 2,
+					},
+				},
+				ns2: v1.GatewayList{
+					{
+						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
 						BindPort: 2,
 					},
 				},
@@ -92,7 +101,7 @@ var _ = Describe("Translator", func() {
 		Expect(proxy.Listeners[0].SslConfiguations).To(BeEmpty())
 	})
 
-	It("should translate an gateway to only have its vservices", func() {
+	It("should translate a gateway to only have its vservices", func() {
 		snap.Gateways[ns][0].VirtualServices = []core.ResourceRef{snap.VirtualServices[ns][0].Metadata.Ref()}
 
 		proxy, errs := Translate(context.Background(), ns, snap)
@@ -140,6 +149,19 @@ var _ = Describe("Translator", func() {
 		listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 		Expect(listener.VirtualHosts).To(HaveLen(1))
 		Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name1"))
+	})
+
+	It("should error on two gateways with the same port in the same namespace", func() {
+		dupeGateway := v1.Gateway{
+			Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+			BindPort: 2,
+		}
+		snap.Gateways[ns] = append(snap.Gateways[ns], &dupeGateway)
+
+		_, errs := Translate(context.Background(), ns, snap)
+		err := errs.Validate()
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("bind-address :2 is not unique in a proxy. gateways: gloo-system.name,gloo-system.name2"))
 	})
 
 	Context("merge", func() {
