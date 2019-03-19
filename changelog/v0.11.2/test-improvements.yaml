@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Removed parallel flag which is slowing down test runs substantially and potentially causing flakes.
+  - type: NON_USER_FACING
+    description: Add test suite for cluster ingress status.
