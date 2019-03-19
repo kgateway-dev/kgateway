@@ -1,15 +1,13 @@
 package utils
 
 import (
-	"fmt"
-
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	gogo_types "github.com/gogo/protobuf/types"
 
-	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -132,10 +130,10 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 
 func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []string) (*envoyauth.CommonTlsContext, error) {
 	if sslSecrets.CertificatesSecretName == "" && sslSecrets.ValidationContextName == "" {
-		return nil, fmt.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
+		return nil, errors.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
 	if len(verifySan) != 0 && sslSecrets.ValidationContextName == "" {
-		return nil, fmt.Errorf("must provide validation context name if verifying SAN")
+		return nil, errors.Errorf("must provide validation context name if verifying SAN")
 	}
 	tlsContext := &envoyauth.CommonTlsContext{
 		// default params
@@ -184,7 +182,7 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
 		return s.handleSds(sslSecrets, cs.GetVerifySubjectAltName())
 	} else {
-		return nil, errors.New("no certificate information found")
+		return nil, errors.Errorf("no certificate information found")
 	}
 
 	dataSource := dataSourceGenerator(inlineDataSource)
@@ -214,7 +212,7 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 			},
 		}
 	} else if certChainData != nil || privateKeyData != nil {
-		return nil, errors.New("both or none of cert chain and private key must be provided")
+		return nil, errors.Errorf("both or none of cert chain and private key must be provided")
 	}
 
 	sanList := cs.GetVerifySubjectAltName()
@@ -231,7 +229,7 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 		tlsContext.ValidationContextType = validationCtx
 
 	} else if len(sanList) != 0 {
-		return nil, errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
+		return nil, errors.Errorf("a root_ca must be provided if verify_subject_alt_name is not empty")
 
 	}
 

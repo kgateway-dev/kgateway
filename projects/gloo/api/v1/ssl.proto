@@ -56,7 +56,7 @@ message UpstreamSslConfig {
 
 message SDSConfig {
     // Target uri for the sds channel. currently only a unix domain socket is supported.
-    string TargetUri = 1;
+    string target_uri = 1;
     // Call credentials.
     CallCredentials call_credentials = 2;
     // The name of the secret containing the certificate
@@ -68,9 +68,9 @@ message SDSConfig {
 message CallCredentials {
     message FileCredentialSource {
         // File containing auth token.
-        string TokenFileName = 1;
+        string token_file_name = 1;
         // Header to carry the token.
-        string Header = 2;
+        string header = 2;
     }
     // Call credentials are coming from a file,
     FileCredentialSource file_credential_source = 1;
