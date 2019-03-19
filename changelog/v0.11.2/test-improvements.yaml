@@ -3,3 +3,7 @@ changelog:
     description: Removed parallel flag which is slowing down test runs substantially and potentially causing flakes.
   - type: NON_USER_FACING
     description: Add test suite for cluster ingress status.
+  - type: NON_USER_FACING
+    description: Double number of attempts before giving up on acquiring lock for gateway tests to allow more concurrent CI builds.
+  - type: NON_USER_FACING
+    description: Lock around cluster ingress tests that create and delete a cluster ingress CRD. 
