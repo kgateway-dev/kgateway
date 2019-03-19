@@ -105,7 +105,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		// no dependencies
 	case *v2.Cluster:
 		// for EDS type, use cluster name or ServiceName override
-		if v.Type == v2.Cluster_EDS {
+		if v.GetType() == v2.Cluster_EDS {
 			rr := cache.XdsResourceReference{
 				Type: EndpointType,
 			}
@@ -173,7 +173,7 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 			// no dependencies
 		case *v2.Cluster:
 			// for EDS type, use cluster name or ServiceName override
-			if v.Type == v2.Cluster_EDS {
+			if v.GetType() == v2.Cluster_EDS {
 				if v.EdsClusterConfig != nil && v.EdsClusterConfig.ServiceName != "" {
 					out[v.EdsClusterConfig.ServiceName] = true
 				} else {

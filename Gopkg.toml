@@ -3,7 +3,7 @@
   unused-packages = true
 
 [[constraint]]
-  revision = "6bb1dbbfcb2b3192849c3f0e6d3a6a6f038ded8b"
+  version = "0.6.9"
   name = "github.com/envoyproxy/go-control-plane"
 
 [[constraint]]
@@ -24,7 +24,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.3.5"
+  version = "0.3.6"
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"

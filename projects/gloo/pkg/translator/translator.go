@@ -62,7 +62,7 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 ClusterLoop:
 	for _, c := range clusters {
-		if c.Type != envoyapi.Cluster_EDS {
+		if c.GetType() != envoyapi.Cluster_EDS {
 			continue
 		}
 		for _, ep := range endpoints {

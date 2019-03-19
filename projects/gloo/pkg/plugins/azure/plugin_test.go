@@ -85,7 +85,7 @@ var _ = Describe("Plugin", func() {
 				// Expect(out.Hosts[0].GetSocketAddress().Address).To(Equal("my-appwhos.azurewebsites.net"))
 				// Expect(out.Hosts[0].GetSocketAddress().PortSpecifier.(*envoycore.SocketAddress_PortValue).PortValue).To(BeEquivalentTo(443))
 				Expect(out.TlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
-				Expect(out.Type).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
+				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
 			})
 
@@ -102,7 +102,7 @@ var _ = Describe("Plugin", func() {
 				// Expect(out.Hosts[0].GetSocketAddress().Address).To(Equal("my-appwhos.azurewebsites.net"))
 				// Expect(out.Hosts[0].GetSocketAddress().PortSpecifier.(*envoycore.SocketAddress_PortValue).PortValue).To(BeEquivalentTo(443))
 				Expect(out.TlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
-				Expect(out.Type).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
+				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
 			})
 		})

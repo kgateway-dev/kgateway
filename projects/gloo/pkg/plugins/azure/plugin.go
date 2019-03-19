@@ -49,7 +49,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	p.recordedUpstreams[in.Metadata.Ref()] = azureUpstream
 
 	// configure Envoy cluster routing info
-	out.Type = envoyapi.Cluster_LOGICAL_DNS
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_LOGICAL_DNS,
+	}
 	// TODO(yuval-k): why do we need to make sure we use ipv4 only dns?
 	out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 	hostname := GetHostname(upstreamSpec.Azure)

@@ -19,11 +19,13 @@ func Glooctl(args string) error {
 }
 func GlooctlOut(args string) (string, error) {
 	stdOut := os.Stdout
+	stdErr := os.Stderr
 	r, w, err := os.Pipe()
 	if err != nil {
 		return "", err
 	}
 	os.Stdout = w
+	os.Stderr = w
 
 	app := cmd.GlooCli("test")
 	app.SetArgs(strings.Split(args, " "))
@@ -41,6 +43,7 @@ func GlooctlOut(args string) (string, error) {
 	// back to normal state
 	w.Close()
 	os.Stdout = stdOut // restoring the real stdout
+	os.Stderr = stdErr
 	out := <-outC
 
 	return strings.TrimSuffix(out, "\n"), nil

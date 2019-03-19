@@ -319,7 +319,7 @@
   revision = "6480d4af844c189cf5dd913db24ddd339d3a4f85"
 
 [[projects]]
-  digest = "1:fc7bb338bb59d2d6dd8627a40dfbae9908c81fdd541d3013e77de248628dd734"
+  digest = "1:337b6710f93230615f6008cae18120743c963b887a57a4ad52d68fb71bb51a62"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -335,6 +335,7 @@
     "envoy/config/filter/http/fault/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
+    "envoy/config/grpc_credential/v2alpha",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
     "envoy/config/ratelimit/v2",
@@ -345,7 +346,8 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "6bb1dbbfcb2b3192849c3f0e6d3a6a6f038ded8b"
+  revision = "0ad6fa1cf0b9b6ca8f3617a7188a568e81f40b87"
+  version = "v0.6.9"
 
 [[projects]]
   digest = "1:f1f2bd73c025d24c3b93abf6364bccb802cf2fdedaa44360804c67800e8fab8d"
@@ -907,6 +909,14 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "2f1d1f20f75d5404f53b9edf6b53ed5505508675"
+
+[[projects]]
+  digest = "1:8f3e1c572760f95e2b36c360396a9d4f9df9f53026b426208ef618b5112fd1fe"
+  name = "github.com/helm/helm"
+  packages = ["pkg/hooks"]
+  pruneopts = "UT"
+  revision = "79d07943b03aea2b76c12644b4b54733bc5958d6"
+  version = "v2.13.0"
 
 [[projects]]
   branch = "master"
@@ -1507,7 +1517,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:04dbf71dfd109b3d4dcf35d09df0e4d3bd4b89279735e27f2b1175ea04fd9efe"
+  digest = "1:127485ee50adcf506a0ceb44bb1e272500b130244c2c57bcae7622026be589c4"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1562,8 +1572,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "5814931156d118e53f46f2a67bf7ee2893321b94"
-  version = "v0.3.5"
+  revision = "25d18db7c1fd979f0c197e36464e46fea2ed9705"
+  version = "v0.3.6"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2467,6 +2477,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
     "github.com/envoyproxy/go-control-plane/pkg/util",
@@ -2489,6 +2500,7 @@
     "github.com/hashicorp/consul/agent/config",
     "github.com/hashicorp/consul/api",
     "github.com/hashicorp/go-multierror",
+    "github.com/helm/helm/pkg/hooks",
     "github.com/hinshun/vt10x",
     "github.com/inconshreveable/go-update",
     "github.com/jhump/protoreflect/desc",
@@ -2589,14 +2601,12 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/helm/pkg/chartutil",
-    "k8s.io/helm/pkg/hooks",
     "k8s.io/helm/pkg/manifest",
     "k8s.io/helm/pkg/proto/hapi/chart",
     "k8s.io/helm/pkg/renderutil",
     "k8s.io/helm/pkg/tiller",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
-    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
