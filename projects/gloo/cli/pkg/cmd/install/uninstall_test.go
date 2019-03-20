@@ -1,14 +1,15 @@
 package install_test
 
 import (
+	"io"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/spf13/pflag"
-	"io"
-	"strings"
 )
 
 type MockKubectl struct {
@@ -19,7 +20,7 @@ type MockKubectl struct {
 func NewMockKubectl(cmds ...string) *MockKubectl {
 	return &MockKubectl{
 		expected: cmds,
-		next: 0,
+		next:     0,
 	}
 }
 
@@ -54,8 +55,8 @@ var _ = Describe("Uninstall", func() {
 		Expect(cli.next).To(BeEquivalentTo(len(cli.expected)))
 	}
 
-	It("works with no args", func () {
-		flagSet.Parse([]string {})
+	It("works with no args", func() {
+		flagSet.Parse([]string{})
 		cli := NewMockKubectl(
 			"delete Deployment -l gloo -n gloo-system",
 			"delete Service -l gloo -n gloo-system",
@@ -63,8 +64,8 @@ var _ = Describe("Uninstall", func() {
 		uninstall(cli)
 	})
 
-	It("works with namespace", func () {
-		flagSet.Parse([]string { "-n", "foo" })
+	It("works with namespace", func() {
+		flagSet.Parse([]string{"-n", "foo"})
 		cli := NewMockKubectl(
 			"delete Deployment -l gloo -n foo",
 			"delete Service -l gloo -n foo",
@@ -72,8 +73,8 @@ var _ = Describe("Uninstall", func() {
 		uninstall(cli)
 	})
 
-	It("works with delete crds", func () {
-		flagSet.Parse([]string {"--delete-crds"})
+	It("works with delete crds", func() {
+		flagSet.Parse([]string{"--delete-crds"})
 		cli := NewMockKubectl(
 			"delete Deployment -l gloo -n gloo-system",
 			"delete Service -l gloo -n gloo-system",
@@ -82,8 +83,8 @@ var _ = Describe("Uninstall", func() {
 		uninstall(cli)
 	})
 
-	It("works with delete crds and namespace", func () {
-		flagSet.Parse([]string { "-n", "foo", "--delete-crds" })
+	It("works with delete crds and namespace", func() {
+		flagSet.Parse([]string{"-n", "foo", "--delete-crds"})
 		cli := NewMockKubectl(
 			"delete Deployment -l gloo -n foo",
 			"delete Service -l gloo -n foo",
@@ -92,8 +93,8 @@ var _ = Describe("Uninstall", func() {
 		uninstall(cli)
 	})
 
-	It("works with delete crds and namespace", func () {
-		flagSet.Parse([]string { "-n", "foo", "--delete-crds" })
+	It("works with delete crds and namespace", func() {
+		flagSet.Parse([]string{"-n", "foo", "--delete-crds"})
 		cli := NewMockKubectl(
 			"delete Deployment -l gloo -n foo",
 			"delete Service -l gloo -n foo",
@@ -102,30 +103,30 @@ var _ = Describe("Uninstall", func() {
 		uninstall(cli)
 	})
 
-	It("works with delete namespace", func () {
-		flagSet.Parse([]string {"--delete-namespace"})
+	It("works with delete namespace", func() {
+		flagSet.Parse([]string{"--delete-namespace"})
 		cli := NewMockKubectl(
 			"delete namespace gloo-system")
 		uninstall(cli)
 	})
 
-	It("works with delete namespace with custom namespace", func () {
-		flagSet.Parse([]string {"--delete-namespace", "-n", "foo"})
+	It("works with delete namespace with custom namespace", func() {
+		flagSet.Parse([]string{"--delete-namespace", "-n", "foo"})
 		cli := NewMockKubectl(
 			"delete namespace foo")
 		uninstall(cli)
 	})
 
-	It("works with delete namespace and crds", func () {
-		flagSet.Parse([]string {"--delete-namespace", "--delete-crds"})
+	It("works with delete namespace and crds", func() {
+		flagSet.Parse([]string{"--delete-namespace", "--delete-crds"})
 		cli := NewMockKubectl(
 			"delete namespace gloo-system",
 			deleteCrds)
 		uninstall(cli)
 	})
 
-	It("works with delete crds and namespace with custom namespace", func () {
-		flagSet.Parse([]string {"--delete-namespace", "--delete-crds", "-n", "foo"})
+	It("works with delete crds and namespace with custom namespace", func() {
+		flagSet.Parse([]string{"--delete-namespace", "--delete-crds", "-n", "foo"})
 		cli := NewMockKubectl(
 			"delete namespace foo",
 			deleteCrds)
@@ -133,7 +134,7 @@ var _ = Describe("Uninstall", func() {
 	})
 
 	It("works with delete all", func() {
-		flagSet.Parse([]string {"--all"})
+		flagSet.Parse([]string{"--all"})
 		cli := NewMockKubectl(
 			"delete namespace gloo-system",
 			deleteCrds,
@@ -143,7 +144,7 @@ var _ = Describe("Uninstall", func() {
 	})
 
 	It("works with delete all custom namespace", func() {
-		flagSet.Parse([]string {"--all", "-n", "foo"})
+		flagSet.Parse([]string{"--all", "-n", "foo"})
 		cli := NewMockKubectl(
 			"delete namespace foo",
 			deleteCrds,

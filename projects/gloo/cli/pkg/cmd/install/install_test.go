@@ -12,7 +12,7 @@ var _ = Describe("Install", func() {
 	NOTE: If these tests start failing, it could mean we've added a new kind of resource that gets created at install time.
 	These are strictly validated in the CLI installer so they can be cleaned up correctly during uninstall. To fix that issue,
 	add the new kind to the installKinds slice here: projects/gloo/cli/pkg/cmd/install/util.go
-	 */
+	*/
 
 	It("shouldn't get errors for gateway dry run", func() {
 		_, err := testutils.GlooctlOut("install gateway --file https://storage.googleapis.com/solo-public-helm/charts/gloo-0.11.1.tgz --dry-run")

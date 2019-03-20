@@ -2,10 +2,11 @@ package install
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/pkg/cliutil"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
 
 	"k8s.io/helm/pkg/proto/hapi/chart"
 
@@ -24,21 +25,21 @@ var (
 	// These will get cleaned up by uninstall always
 	GlooSystemKinds []string
 	// These will get cleaned up only if uninstall all is chosen
-	GlooRbacKinds   []string
+	GlooRbacKinds []string
 	// These will get cleaned up by uninstall if delete-crds or all is chosen
-	GlooCrdNames    []string
+	GlooCrdNames []string
 
-	installKinds     []string
+	installKinds []string
 )
 
 func init() {
-	GlooSystemKinds = []string {
+	GlooSystemKinds = []string{
 		"Deployment",
 		"Service",
 		"ConfigMap",
 	}
 
-	GlooRbacKinds = []string {
+	GlooRbacKinds = []string{
 		"ClusterRole",
 		"ClusterRoleBinding",
 	}
@@ -50,7 +51,7 @@ func init() {
 		installKinds = append(installKinds, kind)
 	}
 
-	GlooCrdNames = []string {
+	GlooCrdNames = []string{
 		"gateways.gateway.solo.io",
 		"proxies.gateway.solo.io",
 		"settings.gateway.solo.io",
@@ -237,4 +238,3 @@ func doKnativeInstall(
 	}
 	return install.InstallManifest(manifestBytes, opts.Install.DryRun, nil)
 }
-

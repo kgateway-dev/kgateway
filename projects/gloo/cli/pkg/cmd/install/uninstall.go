@@ -53,7 +53,7 @@ func deleteGlooSystem(cli install.KubeCli, namespace string) error {
 }
 
 func deleteGlooCrds(cli install.KubeCli) error {
-	args := []string { "delete", "crd" }
+	args := []string{"delete", "crd"}
 	for _, crd := range GlooCrdNames {
 		args = append(args, crd)
 	}

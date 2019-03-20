@@ -3,11 +3,12 @@ package install
 import (
 	"bytes"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/cliutil"
 	"io"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/errors"
@@ -102,7 +103,7 @@ type KubeCli interface {
 	Kubectl(stdin io.Reader, args ...string) error
 }
 
-type CmdKubectl struct {}
+type CmdKubectl struct{}
 
 func (k *CmdKubectl) Kubectl(stdin io.Reader, args ...string) error {
 	return Kubectl(stdin, args...)
