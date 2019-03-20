@@ -71,6 +71,9 @@ func InstallManifest(manifest []byte, isDryRun bool) error {
 		fmt.Println("\n---")
 		return nil
 	}
+	if isEmptyManifest(string(manifest)) {
+		return nil
+	}
 	if err := kubectlApply(manifest); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
