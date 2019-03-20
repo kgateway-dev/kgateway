@@ -14,7 +14,7 @@ func uninstallGloo(opts *options.Options) error {
 	return uninstallKnativeIfNecessary()
 }
 
-
+func delete
 
 func deleteNamespace(namespace string) error {
 	if err := install.Kubectl(nil, "delete", "namespace", namespace); err != nil {

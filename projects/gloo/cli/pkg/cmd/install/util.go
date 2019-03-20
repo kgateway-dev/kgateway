@@ -23,7 +23,8 @@ import (
 var installKinds []string
 
 func init() {
-	// When we install, make sure we know what we're installing. This validation is tested by
+	// When we install, make sure we know what we're installing, so we can later uninstall correctly.
+	// This validation is tested by projects/gloo/cli/pkg/cmd/install/install_test.go
 	installKinds = []string {
 		"Namespace",
 		"Deployment",
