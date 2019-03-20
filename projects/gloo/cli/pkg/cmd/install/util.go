@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"path"
 	"strings"
 	"time"
@@ -19,19 +20,42 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 )
 
+var (
+	// These will get cleaned up by uninstall always
+	GlooSystemKinds []string
+	// These will get cleaned up only if uninstall all is chosen
+	GlooRbacKinds   []string
+	// These will get cleaned up by uninstall if delete-crds or all is chosen
+	GlooCrdNames    []string
 
-var installKinds []string
+	installKinds     []string
+)
 
 func init() {
-	// When we install, make sure we know what we're installing, so we can later uninstall correctly.
-	// This validation is tested by projects/gloo/cli/pkg/cmd/install/install_test.go
-	installKinds = []string {
-		"Namespace",
+	GlooSystemKinds = []string {
 		"Deployment",
 		"Service",
 		"ConfigMap",
+	}
+
+	GlooRbacKinds = []string {
 		"ClusterRole",
 		"ClusterRoleBinding",
+	}
+
+	// When we install, make sure we know what we're installing, so we can later uninstall correctly.
+	// This validation is tested by projects/gloo/cli/pkg/cmd/install/install_test.go
+	installKinds = append(GlooSystemKinds, "Namespace")
+	for _, kind := range GlooRbacKinds {
+		installKinds = append(installKinds, kind)
+	}
+
+	GlooCrdNames = []string {
+		"gateways.gateway.solo.io",
+		"proxies.gateway.solo.io",
+		"settings.gateway.solo.io",
+		"upstreams.gateway.solo.io",
+		"virtualservices.gateway.solo.io",
 	}
 }
 
@@ -94,9 +118,7 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		return err
 	}
 
-	knativeFunc := install.KnativeResourceFilterFunction(skipKnativeInstall)
-
-	if err := doCrdInstall(opts, chart, values, renderOpts, knativeFunc); err != nil {
+	if err := doCrdInstall(opts, chart, values, renderOpts, skipKnativeInstall); err != nil {
 		return err
 	}
 
@@ -118,7 +140,7 @@ func doCrdInstall(
 	chart *chart.Chart,
 	values *chart.Config,
 	renderOpts renderutil.Options,
-	knativeFilterFunction install.ManifestFilterFunc) error {
+	skipKnativeInstall bool) error {
 
 	// Keep only CRDs and collect the names
 	var crdNames []string
@@ -131,16 +153,22 @@ func doCrdInstall(
 	// Render and install CRD manifests
 	crdManifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,
-		knativeFilterFunction,
+		install.KnativeResourceFilterFunction(skipKnativeInstall),
 		excludeNonCrdsAndCollectCrdNames,
 		install.ExcludeEmptyManifests)
 	if err != nil {
 		return errors.Wrapf(err, "rendering crd manifests")
 	}
+
+	// TODO: we currently skip validation when installing knative, we could enumerate knative CRDs and validate those too
+	if skipKnativeInstall {
+		if err := validateCrds(crdNames); err != nil {
+			return err
+		}
+	}
 	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun, []string{"CustomResourceDefinition"}); err != nil {
 		return errors.Wrapf(err, "installing crd manifests")
 	}
-
 	// Only run if this is not a dry run
 	if !opts.Install.DryRun {
 		if err := install.WaitForCrdsToBeRegistered(crdNames, time.Second*5, time.Millisecond*500); err != nil {
@@ -148,6 +176,15 @@ func doCrdInstall(
 		}
 	}
 
+	return nil
+}
+
+func validateCrds(crdNames []string) error {
+	for _, crdName := range crdNames {
+		if !cliutil.Contains(GlooCrdNames, crdName) {
+			return errors.Errorf("Unknown crd %s", crdName)
+		}
+	}
 	return nil
 }
 
