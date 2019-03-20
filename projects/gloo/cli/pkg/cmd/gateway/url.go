@@ -31,7 +31,7 @@ func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 			if err != nil {
 				return err
 			}
-			fmt.Printf("http://%v\n", ingressHost)
+			fmt.Printf("%v://%v\n", opts.Proxy.Port, ingressHost)
 			return nil
 		},
 	}
