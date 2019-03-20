@@ -7,3 +7,6 @@ changelog:
       remove the namespace and anything inside it. `--all` will delete the namespace, CRDs, and any gloo cluster
       roles or cluster role bindings.
     issueLink: https://github.com/solo-io/gloo/issues/433
+  - type: FIX
+    description: Fixes issue where the glooctl pre-install step could silently fail, causing custom settings to not be installed.
+    issueLink: https://github.com/solo-io/gloo/issues/571
