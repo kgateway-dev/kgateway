@@ -109,7 +109,7 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		return err
 	}
 
-	if err := doPreInstall(opts, chart, values, renderOpts); err != nil {
+	if err := doGlooPreInstall(opts, chart, values, renderOpts); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		}
 	}
 
-	return doInstall(opts, chart, values, renderOpts)
+	return doGlooInstall(opts, chart, values, renderOpts)
 }
 
 func doCrdInstall(
@@ -160,7 +160,7 @@ func doCrdInstall(
 	return nil
 }
 
-func doPreInstall(
+func doGlooPreInstall(
 	opts *options.Options,
 	chart *chart.Chart,
 	values *chart.Config,
@@ -177,7 +177,7 @@ func doPreInstall(
 	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
 }
 
-func doInstall(
+func doGlooInstall(
 	opts *options.Options,
 	chart *chart.Chart,
 	values *chart.Config,
