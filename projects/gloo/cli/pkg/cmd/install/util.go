@@ -19,6 +19,15 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 )
 
+
+var namespacedKinds []string
+
+func init() {
+	namespacedKinds = []string {
+		""
+	}
+}
+
 // Entry point for all three GLoo installation commands
 func installGloo(opts *options.Options, valueFileName string) error {
 

@@ -1,12 +1,10 @@
 package install
 
 import (
-	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -29,19 +27,7 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 		Short: constants.UNINSTALL_COMMAND.Short,
 		Long:  constants.UNINSTALL_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := install.Kubectl(nil, "delete", "namespace", opts.Uninstall.Namespace); err != nil {
-				return errors.Wrapf(err, "delete gloo failed")
-			}
-			knativeExists, isOurInstall, err := install.CheckKnativeInstallation()
-			if err != nil {
-				return errors.Wrapf(err, "finding knative installation")
-			}
-			if knativeExists && isOurInstall {
-				if err := install.Kubectl(nil, "delete", "namespace", constants.KnativeServingNamespace); err != nil {
-					return errors.Wrapf(err, "delete knative failed")
-				}
-			}
-			return nil
+			return uninstallGloo(opts)
 		},
 	}
 
