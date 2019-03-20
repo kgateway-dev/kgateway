@@ -30,10 +30,17 @@ var _ = Describe("UdsConvert", func() {
 		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
 		Expect(name).To(HaveLen(63))
 	})
-	It("should truncate long names with long of labels", func() {
+	It("should truncate long names with lot of labels", func() {
 		name := UpstreamName("test", "gloo-system", 12, map[string]string{"test": strings.Repeat("y", 120)})
 		Expect(len(name)).To(BeNumerically("<=", 63))
 	})
+
+	It("should handle colisions", func() {
+		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
+		name2 := UpstreamName(strings.Repeat("y", 120)+"2", "gloo-system", 12, nil)
+		Expect(name).ToNot(Equal(name2))
+	})
+
 	It("should ignore ignored labels", func() {
 
 		svcSelector := map[string]string{"app": "foo"}

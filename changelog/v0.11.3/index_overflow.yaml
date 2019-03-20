@@ -1,4 +1,4 @@
 changelog:
   - type: FIX
-    description: something useful here
+    description: Fix index overflow in discovery
     issueLink: https://github.com/solo-io/gloo/issues/569
