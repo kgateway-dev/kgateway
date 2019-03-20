@@ -98,21 +98,28 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		},
 	}
 
-	// FILTER FUNCTION 1: Exclude knative install if necessary
-	filterKnativeResources, err := install.GetKnativeResourceFilterFunction()
+	skipKnativeInstall, err := install.SkipKnativeInstall()
 	if err != nil {
 		return err
 	}
 
-	if err := doCrdInstall(opts, chart, values, renderOpts, filterKnativeResources); err != nil {
+	knativeFunc := install.KnativeResourceFilterFunction(skipKnativeInstall)
+
+	if err := doCrdInstall(opts, chart, values, renderOpts, knativeFunc); err != nil {
 		return err
 	}
 
-	if err := doPreInstall(opts, chart, values, renderOpts, filterKnativeResources); err != nil {
+	if err := doPreInstall(opts, chart, values, renderOpts); err != nil {
 		return err
 	}
 
-	return doInstall(opts, chart, values, renderOpts, filterKnativeResources)
+	if !skipKnativeInstall {
+		if err := doKnativeInstall(opts, chart, values, renderOpts); err != nil {
+			return err
+		}
+	}
+
+	return doInstall(opts, chart, values, renderOpts)
 }
 
 func doCrdInstall(
@@ -157,12 +164,11 @@ func doPreInstall(
 	opts *options.Options,
 	chart *chart.Chart,
 	values *chart.Config,
-	renderOpts renderutil.Options,
-	knativeFilterFunction install.ManifestFilterFunc) error {
+	renderOpts renderutil.Options) error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,
-		knativeFilterFunction,
+		install.KnativeResourceFilterFunction(true),
 		install.IncludeOnlyPreInstall,
 		install.ExcludeEmptyManifests)
 	if err != nil {
@@ -175,12 +181,11 @@ func doInstall(
 	opts *options.Options,
 	chart *chart.Chart,
 	values *chart.Config,
-	renderOpts renderutil.Options,
-	knativeFilterFunction install.ManifestFilterFunc) error {
+	renderOpts renderutil.Options) error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,
-		knativeFilterFunction,
+		install.KnativeResourceFilterFunction(true),
 		install.ExcludePreInstall,
 		install.ExcludeCrds,
 		install.ExcludeEmptyManifests)
@@ -189,3 +194,19 @@ func doInstall(
 	}
 	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
 }
+
+func doKnativeInstall(
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options) error {
+	// Exclude everything but knative non-crds
+	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
+		install.ExcludeNonKnative,
+		install.ExcludeCrds)
+	if err != nil {
+		return err
+	}
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
+}
+
