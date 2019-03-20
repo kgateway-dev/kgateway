@@ -128,17 +128,18 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 }
 
 func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
+	const maxLen = 63
+
 	var labelsTag string
 	if len(extraLabels) > 0 {
 		_, values := keysAndValues(extraLabels)
 		labelsTag = fmt.Sprintf("-%v", strings.Join(values, "-"))
 	}
 	name := fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort)
-	if len(name) > 63 {
+	if len(name) > maxLen {
 		hash := md5.Sum([]byte(name))
-		name = fmt.Sprintf("%s-%s-%v-%x", serviceNamespace, serviceName, servicePort, hash)
-		// todo: ilackarms: handle potential collisions
-		name = name[:63]
+		hexhash := fmt.Sprintf("%x", hash)
+		name = name[:maxLen-len(hexhash)] + hexhash
 	}
 	name = strings.Replace(name, ".", "-", -1)
 	return name
