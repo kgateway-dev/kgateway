@@ -2,6 +2,8 @@ namespace:
   create: false
 rbac:
   create: true
+crds:
+  create: true
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
