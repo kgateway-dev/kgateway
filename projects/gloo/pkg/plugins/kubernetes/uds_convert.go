@@ -138,7 +138,9 @@ func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extra
 		hash := md5.Sum([]byte(name))
 		name = fmt.Sprintf("%s-%s-%v-%x", serviceNamespace, serviceName, servicePort, hash)
 		// todo: ilackarms: handle potential collisions
-		name = name[:63]
+		if len(name) > 63 {
+			name = name[:63]
+		}
 	}
 	name = strings.Replace(name, ".", "-", -1)
 	return name

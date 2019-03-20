@@ -1,6 +1,8 @@
 package kubernetes_test
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -23,6 +25,14 @@ var _ = Describe("UdsConvert", func() {
 			map[string]string{"app": "foo", "env": "dev"},
 		}
 		Expect(result).To(Equal(expected))
+	})
+	It("should truncate long names", func() {
+		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
+		Expect(name).To(HaveLen(63))
+	})
+	It("should truncate long names with long of labels", func() {
+		name := UpstreamName("test", "gloo-system", 12, map[string]string{"test": strings.Repeat("y", 120)})
+		Expect(len(name)).To(BeNumerically("<=", 63))
 	})
 	It("should ignore ignored labels", func() {
 
