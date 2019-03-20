@@ -37,7 +37,7 @@ var _ = Describe("Secretconverter", func() {
 		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
 	})
 
-	It("should covnert to gloo secret kube in gloo format", func() {
+	It("should convert to gloo secret kube in gloo format", func() {
 		secret := &v1.Secret{
 			Kind: &v1.Secret_Tls{
 				Tls: &v1.TlsSecret{
