@@ -3,6 +3,7 @@ package install
 import (
 	"bytes"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"io"
 	"os"
 	"os/exec"
@@ -64,16 +65,29 @@ func WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) e
 }
 
 //noinspection GoNameStartsWithPackageName
-func InstallManifest(manifest []byte, isDryRun bool) error {
+func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string) error {
+	manifestString := string(manifest)
+	if isEmptyManifest(manifestString) {
+		return nil
+	}
+	if allowedKinds != nil {
+		manifestKinds, err := getKinds(manifestString)
+		if err != nil {
+			return errors.Wrapf(err, "validating manifest kinds")
+		}
+		for _, manifestKind := range manifestKinds {
+			if !cliutil.Contains(allowedKinds, manifestKind) {
+				return errors.Errorf("wasn't expecting to install object with kind %s", manifestKind)
+			}
+		}
+	}
 	if isDryRun {
 		fmt.Printf("%s", manifest)
 		// For safety, print a YAML separator so multiple invocations of this function will produce valid output
 		fmt.Println("\n---")
 		return nil
 	}
-	if isEmptyManifest(string(manifest)) {
-		return nil
-	}
+
 	if err := kubectlApply(manifest); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}

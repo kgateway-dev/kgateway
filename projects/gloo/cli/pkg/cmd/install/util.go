@@ -20,27 +20,17 @@ import (
 )
 
 
-var namespacedKinds []string
-var clusterWideKinds []string
-var otherAllowedKinds []string
+var installKinds []string
 
 func init() {
-	namespacedKinds = []string {
+	// When we install, make sure we know what we're installing. This validation is tested by
+	installKinds = []string {
+		"Namespace",
 		"Deployment",
 		"Service",
 		"ConfigMap",
-		"ReplicaSet",
-	}
-
-	clusterWideKinds = []string {
-		"CustomResourceDefinition",
 		"ClusterRole",
 		"ClusterRoleBinding",
-	}
-
-	otherAllowedKinds = []string {
-		"Settings",
-		"Namespace",
 	}
 }
 
@@ -146,7 +136,7 @@ func doCrdInstall(
 	if err != nil {
 		return errors.Wrapf(err, "rendering crd manifests")
 	}
-	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun); err != nil {
+	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun, []string{"CustomResourceDefinition"}); err != nil {
 		return errors.Wrapf(err, "installing crd manifests")
 	}
 
@@ -174,7 +164,7 @@ func doGlooPreInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, []string{"Settings"})
 }
 
 func doGlooInstall(
@@ -192,7 +182,7 @@ func doGlooInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, installKinds)
 }
 
 func doKnativeInstall(
@@ -207,6 +197,6 @@ func doKnativeInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, nil)
 }
 

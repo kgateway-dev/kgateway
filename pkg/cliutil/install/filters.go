@@ -179,3 +179,15 @@ func isEmptyManifest(manifest string) bool {
 	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
 	return removeDashes == ""
 }
+
+func getKinds(manifest string) ([]string, error) {
+	var kinds []string
+	for _, doc := range strings.Split(manifest, "---") {
+		var resource resourceType
+		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+			return nil, errors.Wrapf(err, "parsing resource: %s", doc)
+		}
+		kinds = append(kinds, resource.Kind)
+	}
+	return kinds, nil
+}
