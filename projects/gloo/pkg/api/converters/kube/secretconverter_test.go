@@ -37,7 +37,7 @@ var _ = Describe("Secretconverter", func() {
 		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
 	})
 
-	It("should NOT covnert to gloo secret kube secret", func() {
+	It("should covnert to gloo secret kube in gloo format", func() {
 		secret := &v1.Secret{
 			Kind: &v1.Secret_Tls{
 				Tls: &v1.TlsSecret{
@@ -51,9 +51,32 @@ var _ = Describe("Secretconverter", func() {
 			},
 		}
 		var t TLSSecretConverter
-		_, err := t.ToKubeSecret(context.Background(), nil, secret)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("not implemented"))
+		kubeSecret, err := t.ToKubeSecret(context.Background(), nil, secret)
+		Expect(err).NotTo(HaveOccurred())
+
+		// use default behavior
+		Expect(kubeSecret).To(BeNil())
+	})
+
+	It("should round trip kube ssl secret back to kube ssl secret", func() {
+		secret := &kubev1.Secret{
+			Type: kubev1.SecretTypeTLS,
+			Data: map[string][]byte{
+				kubev1.TLSCertKey:       []byte("cert"),
+				kubev1.TLSPrivateKeyKey: []byte("key"),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "s1",
+				Namespace: "ns",
+			},
+		}
+		var t TLSSecretConverter
+		resource, err := t.FromKubeSecret(context.Background(), nil, secret)
+		Expect(err).NotTo(HaveOccurred())
+		kubeSecret, err := t.ToKubeSecret(context.Background(), nil, resource)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(secret).To(Equal(kubeSecret))
 
 	})
 })
