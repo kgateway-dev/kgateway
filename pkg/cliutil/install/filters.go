@@ -191,3 +191,23 @@ func getKinds(manifest string) ([]string, error) {
 	}
 	return kinds, nil
 }
+
+func validateResourceLabels(manifest string, labels map[string]string) error {
+	if labels == nil {
+		return nil
+	}
+	for _, doc := range strings.Split(manifest, "---") {
+		var resource resourceType
+		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+			return errors.Wrapf(err, "parsing resource: %s", doc)
+		}
+		actualLabels := resource.Metadata.Labels
+		for k, v := range labels {
+			val, ok := actualLabels[k]
+			if !ok || v != val {
+				return errors.Errorf("validating labels: expected %s=%s", k, v)
+			}
+		}
+	}
+	return nil
+}

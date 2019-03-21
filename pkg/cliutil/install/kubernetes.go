@@ -66,22 +66,12 @@ func WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) e
 }
 
 //noinspection GoNameStartsWithPackageName
-func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string) error {
+func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expectedLabels map[string]string) error {
 	manifestString := string(manifest)
 	if isEmptyManifest(manifestString) {
 		return nil
 	}
-	if allowedKinds != nil {
-		manifestKinds, err := getKinds(manifestString)
-		if err != nil {
-			return errors.Wrapf(err, "validating manifest kinds")
-		}
-		for _, manifestKind := range manifestKinds {
-			if !cliutil.Contains(allowedKinds, manifestKind) {
-				return errors.Errorf("wasn't expecting to install object with kind %s", manifestKind)
-			}
-		}
-	}
+	validateManifest(manifestString, allowedKinds, expectedLabels)
 	if isDryRun {
 		fmt.Printf("%s", manifest)
 		// For safety, print a YAML separator so multiple invocations of this function will produce valid output
@@ -93,6 +83,21 @@ func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string) erro
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
+}
+
+func validateManifest(manifestString string, allowedKinds []string, expectedLabels map[string]string) error {
+	if allowedKinds != nil {
+		manifestKinds, err := getKinds(manifestString)
+		if err != nil {
+			return errors.Wrapf(err, "validating manifest kinds")
+		}
+		for _, manifestKind := range manifestKinds {
+			if !cliutil.Contains(allowedKinds, manifestKind) {
+				return errors.Errorf("wasn't expecting to install object with kind %s", manifestKind)
+			}
+		}
+	}
+	return validateResourceLabels(manifestString, expectedLabels)
 }
 
 func kubectlApply(manifest []byte) error {

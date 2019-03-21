@@ -30,6 +30,7 @@ var (
 	GlooCrdNames []string
 
 	installKinds []string
+	expectedLabels map[string]string
 )
 
 func init() {
@@ -57,6 +58,10 @@ func init() {
 		"settings.gateway.solo.io",
 		"upstreams.gateway.solo.io",
 		"virtualservices.gateway.solo.io",
+	}
+
+	expectedLabels = map[string]string {
+		"app": "gloo",
 	}
 }
 
@@ -167,7 +172,7 @@ func doCrdInstall(
 			return err
 		}
 	}
-	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun, []string{"CustomResourceDefinition"}); err != nil {
+	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun, []string{"CustomResourceDefinition"}, nil); err != nil {
 		return errors.Wrapf(err, "installing crd manifests")
 	}
 	// Only run if this is not a dry run
@@ -203,7 +208,7 @@ func doGlooPreInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, []string{"Settings"})
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, []string{"Settings"}, expectedLabels)
 }
 
 func doGlooInstall(
@@ -221,7 +226,7 @@ func doGlooInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, installKinds)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, installKinds, expectedLabels)
 }
 
 func doKnativeInstall(
@@ -236,5 +241,5 @@ func doKnativeInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, nil)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, nil, nil)
 }

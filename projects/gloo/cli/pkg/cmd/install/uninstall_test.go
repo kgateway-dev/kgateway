@@ -58,27 +58,27 @@ var _ = Describe("Uninstall", func() {
 	It("works with no args", func() {
 		flagSet.Parse([]string{})
 		cli := NewMockKubectl(
-			"delete Deployment -l gloo -n gloo-system",
-			"delete Service -l gloo -n gloo-system",
-			"delete ConfigMap -l gloo -n gloo-system")
+			"delete Deployment -l app=gloo -n gloo-system",
+			"delete Service -l app=gloo -n gloo-system",
+			"delete ConfigMap -l app=gloo -n gloo-system")
 		uninstall(cli)
 	})
 
 	It("works with namespace", func() {
 		flagSet.Parse([]string{"-n", "foo"})
 		cli := NewMockKubectl(
-			"delete Deployment -l gloo -n foo",
-			"delete Service -l gloo -n foo",
-			"delete ConfigMap -l gloo -n foo")
+			"delete Deployment -l app=gloo -n foo",
+			"delete Service -l app=gloo -n foo",
+			"delete ConfigMap -l app=gloo -n foo")
 		uninstall(cli)
 	})
 
 	It("works with delete crds", func() {
 		flagSet.Parse([]string{"--delete-crds"})
 		cli := NewMockKubectl(
-			"delete Deployment -l gloo -n gloo-system",
-			"delete Service -l gloo -n gloo-system",
-			"delete ConfigMap -l gloo -n gloo-system",
+			"delete Deployment -l app=gloo -n gloo-system",
+			"delete Service -l app=gloo -n gloo-system",
+			"delete ConfigMap -l app=gloo -n gloo-system",
 			deleteCrds)
 		uninstall(cli)
 	})
@@ -86,19 +86,9 @@ var _ = Describe("Uninstall", func() {
 	It("works with delete crds and namespace", func() {
 		flagSet.Parse([]string{"-n", "foo", "--delete-crds"})
 		cli := NewMockKubectl(
-			"delete Deployment -l gloo -n foo",
-			"delete Service -l gloo -n foo",
-			"delete ConfigMap -l gloo -n foo",
-			deleteCrds)
-		uninstall(cli)
-	})
-
-	It("works with delete crds and namespace", func() {
-		flagSet.Parse([]string{"-n", "foo", "--delete-crds"})
-		cli := NewMockKubectl(
-			"delete Deployment -l gloo -n foo",
-			"delete Service -l gloo -n foo",
-			"delete ConfigMap -l gloo -n foo",
+			"delete Deployment -l app=gloo -n foo",
+			"delete Service -l app=gloo -n foo",
+			"delete ConfigMap -l app=gloo -n foo",
 			deleteCrds)
 		uninstall(cli)
 	})
@@ -138,8 +128,8 @@ var _ = Describe("Uninstall", func() {
 		cli := NewMockKubectl(
 			"delete namespace gloo-system",
 			deleteCrds,
-			"delete ClusterRole -l gloo",
-			"delete ClusterRoleBinding -l gloo")
+			"delete ClusterRole -l app=gloo",
+			"delete ClusterRoleBinding -l app=gloo")
 		uninstall(cli)
 	})
 
@@ -148,8 +138,8 @@ var _ = Describe("Uninstall", func() {
 		cli := NewMockKubectl(
 			"delete namespace foo",
 			deleteCrds,
-			"delete ClusterRole -l gloo",
-			"delete ClusterRoleBinding -l gloo")
+			"delete ClusterRole -l app=gloo",
+			"delete ClusterRoleBinding -l app=gloo")
 		uninstall(cli)
 	})
 })
