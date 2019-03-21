@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
@@ -31,7 +30,6 @@ func logsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		},
 	}
 
-	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 	pflags := cmd.PersistentFlags()
 	pflags.BoolVarP(&opts.Proxy.DebugLogs, "debug", "d", true, "enable debug logging on the proxy as part of this command")
 	pflags.BoolVarP(&opts.Proxy.FollowLogs, "follow", "f", false, "enable debug logging on the proxy as part of this command")

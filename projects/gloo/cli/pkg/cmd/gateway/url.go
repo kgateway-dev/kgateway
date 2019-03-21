@@ -14,7 +14,6 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/spf13/cobra"
@@ -40,7 +39,6 @@ func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 	cmd.PersistentFlags().BoolVarP(&opts.Proxy.LocalCluster, "local-cluster", "l", false,
 		"use when the target kubernetes cluster is running locally, e.g. in minikube or minishift. this will default "+
 			"to true if LoadBalanced services are not assigned external IPs by your cluster")
-	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

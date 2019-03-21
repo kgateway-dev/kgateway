@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
@@ -32,7 +31,6 @@ func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			return nil
 		},
 	}
-	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -111,7 +109,6 @@ func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			return nil
 		},
 	}
-	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
