@@ -84,16 +84,26 @@ var _ = Describe("Plugin", func() {
 			}
 			Expect(out).To(Equal(envoy1min))
 		})
+		It("should process virtual hosts - empty specification", func() {
+			out := &envoyroute.VirtualHost{}
+			gloo1empty := &v1.VirtualHost{
+				CorsPolicy: &v1.CorsPolicy{},
+			}
+			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1empty, out)
+			Expect(err).NotTo(HaveOccurred())
+			envoy1empty := &envoyroute.VirtualHost{
+				Cors: &envoyroute.CorsPolicy{},
+			}
+			Expect(out).To(Equal(envoy1empty))
+		})
 		It("should process virtual hosts - null specification", func() {
 			out := &envoyroute.VirtualHost{}
 			gloo1null := &v1.VirtualHost{
-				CorsPolicy: &v1.CorsPolicy{},
+				CorsPolicy: nil,
 			}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1null, out)
 			Expect(err).NotTo(HaveOccurred())
-			envoy1null := &envoyroute.VirtualHost{
-				Cors: &envoyroute.CorsPolicy{},
-			}
+			envoy1null := &envoyroute.VirtualHost{}
 			Expect(out).To(Equal(envoy1null))
 		})
 	})

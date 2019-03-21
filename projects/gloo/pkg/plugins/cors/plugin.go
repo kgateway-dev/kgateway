@@ -21,6 +21,9 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessVirtualHost(params plugins.Params, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
+	if in.CorsPolicy == nil {
+		return nil
+	}
 	out.Cors = &envoyroute.CorsPolicy{}
 	return p.translateUserCorsConfig(in.CorsPolicy, out.Cors)
 }
