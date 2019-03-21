@@ -46,7 +46,7 @@ func GlooctlOut(args string) (string, error) {
 	os.Stderr = stdErr
 	out := <-outC
 
-	return strings.TrimSuffix(out, "\n"), nil
+	return strings.TrimSuffix(out, "\n"), err
 }
 
 func Make(dir, args string) error {

@@ -138,17 +138,14 @@ var ExcludeNotes ManifestFilterFunc = func(input []manifest.Manifest) (output []
 }
 
 // If this is a knative deployment, we have to check whether knative itself is already installed in the cluster.
-// If knative is already installed and we don't own it, don't install/upgrade it (It's okay to update the installation if we own it).
-
-// If this is not a knative deployment, skipKnativeInstall might still evaluate to true, but in that case Helm will
-// filter out all the knative resources during template rendering.
-func GetKnativeResourceFilterFunction() (ManifestFilterFunc, error) {
+// If knative is already installed and we don't own it, don't install/upgrade/uninstall it (It's okay to update the installation if we own it).
+func SkipKnativeInstall() (bool, error) {
 	installed, ours, err := CheckKnativeInstallation()
 	if err != nil {
-		return nil, errors.Wrapf(err, "checking for knative installation")
+		return true, errors.Wrapf(err, "checking for knative installation")
 	}
 	skipKnativeInstall := installed && !ours
-	return KnativeResourceFilterFunction(skipKnativeInstall), nil
+	return skipKnativeInstall, nil
 }
 
 func KnativeResourceFilterFunction(skipKnativeInstall bool) ManifestFilterFunc {
@@ -164,6 +161,16 @@ func KnativeResourceFilterFunction(skipKnativeInstall bool) ManifestFilterFunc {
 	}
 }
 
+var ExcludeNonKnative ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
+	for _, man := range input {
+		if !strings.Contains(man.Name, "knative") {
+			continue
+		}
+		output = append(output, man)
+	}
+	return output, nil
+}
+
 var commentRegex = regexp.MustCompile("#.*")
 
 func isEmptyManifest(manifest string) bool {
@@ -171,4 +178,36 @@ func isEmptyManifest(manifest string) bool {
 	removeNewlines := strings.Replace(removeComments, "\n", "", -1)
 	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
 	return removeDashes == ""
+}
+
+func getKinds(manifest string) ([]string, error) {
+	var kinds []string
+	for _, doc := range strings.Split(manifest, "---") {
+		var resource resourceType
+		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+			return nil, errors.Wrapf(err, "parsing resource: %s", doc)
+		}
+		kinds = append(kinds, resource.Kind)
+	}
+	return kinds, nil
+}
+
+func validateResourceLabels(manifest string, labels map[string]string) error {
+	if labels == nil {
+		return nil
+	}
+	for _, doc := range strings.Split(manifest, "---") {
+		var resource resourceType
+		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+			return errors.Wrapf(err, "parsing resource: %s", doc)
+		}
+		actualLabels := resource.Metadata.Labels
+		for k, v := range labels {
+			val, ok := actualLabels[k]
+			if !ok || v != val {
+				return errors.Errorf("validating labels: expected %s=%s on kind %s", k, v, resource.Kind)
+			}
+		}
+	}
+	return nil
 }

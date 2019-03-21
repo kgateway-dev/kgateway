@@ -3,6 +3,7 @@ package generate
 type Config struct {
 	Namespace    *Namespace    `json:"namespace,omitempty"`
 	Rbac         *Rbac         `json:"rbac,omitempty"`
+	Crds         *Crds         `json:"crds,omitempty"`
 	Settings     *Settings     `json:"settings,omitempty"`
 	Gloo         *Gloo         `json:"gloo,omitempty"`
 	Discovery    *Discovery    `json:"discovery,omitempty"`
@@ -17,6 +18,10 @@ type Namespace struct {
 }
 
 type Rbac struct {
+	Create bool `json:"create"`
+}
+
+type Crds struct {
 	Create bool `json:"create"`
 }
 

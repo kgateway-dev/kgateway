@@ -5,6 +5,9 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gloo-role-ingress
+    labels:
+        app: gloo
+        gloo: rbac
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]

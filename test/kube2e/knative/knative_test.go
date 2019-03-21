@@ -46,8 +46,11 @@ func deployKnativeTestService() {
 	b, err := ioutil.ReadFile(knativeTestServiceFile())
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	err = exec.RunCommandInput(string(b), testHelper.RootDir, true, "kubectl", "apply", "-f", "-")
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	// The webhook may take a bit of time to initially be responsive
+	// See: https://github.com/istio/istio/pull/7743/files
+	EventuallyWithOffset(1, func() error {
+		return exec.RunCommandInput(string(b), testHelper.RootDir, true, "kubectl", "apply", "-f", "-")
+	}, "30s", "5s").Should(BeNil())
 }
 
 func deleteKnativeTestService() error {
