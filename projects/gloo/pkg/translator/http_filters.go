@@ -43,14 +43,11 @@ func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, l
 
 	httpConnMgr := NewHttpConnectionManager(httpFilters, rdsName)
 
-	httpConnMgrCfg, err := envoyutil.MessageToStruct(httpConnMgr)
+	hcmFilter, err := NewFilterWithConfig(envoyutil.HTTPConnectionManager, httpConnMgr)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to convert proto message to struct"))
 	}
-	return envoylistener.Filter{
-		Name:       envoyutil.HTTPConnectionManager,
-		ConfigType: &envoylistener.Filter_Config{Config: httpConnMgrCfg},
-	}
+	return hcmFilter
 }
 
 func (t *translator) computeHttpFilters(params plugins.Params, listener *v1.HttpListener, report reportFunc) []*envoyhttp.HttpFilter {

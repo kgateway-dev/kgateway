@@ -1,0 +1,18 @@
+syntax = "proto3";
+package hcm.plugins.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+
+option (gogoproto.equal_all) = true;
+
+message HCMSettings {
+    bool skip_xff_append = 1;
+    string via = 2;
+    uint32 xff_num_trusted_hops = 3;
+    google.protobuf.BoolValue use_remote_address = 4;
+    google.protobuf.BoolValue generate_request_id = 5;
+    bool proxy_100_continue = 6;
+}
