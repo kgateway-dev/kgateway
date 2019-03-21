@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `core.solo.io` 
-##### Types:
+#### Types:
 
 
-- [ResourceRef](#ResourceRef)
+- [ResourceRef](#resourceref)
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="ResourceRef">ResourceRef</a>
+### ResourceRef
 
  
 A way to reference resources across namespaces

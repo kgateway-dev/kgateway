@@ -40,12 +40,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
  
-##### Types:
+#### Types:
 
 
-- [Struct](#Struct)
-- [Value](#Value)
-- [ListValue](#ListValue)
+- [Struct](#struct)
+- [Value](#value)
+- [ListValue](#listvalue)
   
 
  
@@ -53,7 +53,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ##### Enums:
 
 
-	- [NullValue](#NullValue)
+	- [NullValue](#nullvalue)
 
 
 
@@ -64,7 +64,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ---
-### <a name="Struct">Struct</a>
+### Struct
 
  
 `Struct` represents a structured data value, consisting of fields
@@ -89,7 +89,7 @@ The JSON representation for `Struct` is JSON object.
 
 
 ---
-### <a name="Value">Value</a>
+### Value
 
  
 `Value` represents a dynamically typed value which can be either
@@ -122,7 +122,7 @@ The JSON representation for `Value` is JSON value.
 
 
 ---
-### <a name="ListValue">ListValue</a>
+### ListValue
 
  
 `ListValue` is a wrapper around a repeated field of values.
@@ -136,12 +136,12 @@ The JSON representation for `ListValue` is JSON array.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `values` | [[]google.protobuf.Value](../struct.proto.sk#Value) | Repeated field of dynamically typed values. |  |
+| `values` | [[]google.protobuf.Value](../struct.proto.sk#value) | Repeated field of dynamically typed values. |  |
 
 
 
   
-### <a name="NullValue">NullValue</a>
+### NullValue
 
 Description: `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.

@@ -40,10 +40,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
  
-##### Types:
+#### Types:
 
 
-- [Any](#Any)
+- [Any](#any)
   
 
 
@@ -55,7 +55,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ---
-### <a name="Any">Any</a>
+### Any
 
  
 `Any` contains an arbitrary serialized protocol buffer message along with a

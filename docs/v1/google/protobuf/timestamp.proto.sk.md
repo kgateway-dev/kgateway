@@ -40,10 +40,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
  
-##### Types:
+#### Types:
 
 
-- [Timestamp](#Timestamp)
+- [Timestamp](#timestamp)
   
 
 
@@ -55,7 +55,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ---
-### <a name="Timestamp">Timestamp</a>
+### Timestamp
 
  
 A Timestamp represents a point in time independent of any time zone

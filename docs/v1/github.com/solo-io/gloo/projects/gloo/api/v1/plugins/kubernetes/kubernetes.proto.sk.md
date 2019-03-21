@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `kubernetes.plugins.gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [UpstreamSpec](#UpstreamSpec)
+- [UpstreamSpec](#upstreamspec)
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="UpstreamSpec">UpstreamSpec</a>
+### UpstreamSpec
 
  
 Upstream Spec for Kubernetes Upstreams
@@ -47,7 +47,7 @@ Kubernetes Upstreams are typically generated automatically by Gloo from the Kube
 | `serviceNamespace` | `string` | The namespace where the Service lives |  |
 | `servicePort` | `int` | The access port port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding port on the pod for routing. |  |
 | `selector` | `map<string, string>` | Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if any are provided here. (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) |  |
-| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#ServiceSpec) | An optional Service Spec describing the service listening at this address |  |
+| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address |  |
 
 
 

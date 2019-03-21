@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `clusteringress.gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [ClusterIngress](#ClusterIngress) **Top-Level Resource**
+- [ClusterIngress](#clusteringress) **Top-Level Resource**
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="ClusterIngress">ClusterIngress</a>
+### ClusterIngress
 
  
 A simple wrapper for a kNative ClusterIngress Object.
@@ -38,8 +38,8 @@ A simple wrapper for a kNative ClusterIngress Object.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) |  |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) |  |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) |  |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) |  |  |
 | `clusterIngressSpec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the cluster ingress this resource wraps |  |
 | `clusterIngressStatus` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the ingress status of the cluster ingress object |  |
 

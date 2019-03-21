@@ -14,17 +14,17 @@ TODO: to solo-kit/api/envoy
 
 
  
-##### Types:
+#### Types:
 
 
-- [RouteTransformations](#RouteTransformations)
-- [Transformation](#Transformation)
-- [Extraction](#Extraction)
-- [TransformationTemplate](#TransformationTemplate)
-- [InjaTemplate](#InjaTemplate)
-- [Passthrough](#Passthrough)
-- [MergeExtractorsToBody](#MergeExtractorsToBody)
-- [HeaderBodyTransform](#HeaderBodyTransform)
+- [RouteTransformations](#routetransformations)
+- [Transformation](#transformation)
+- [Extraction](#extraction)
+- [TransformationTemplate](#transformationtemplate)
+- [InjaTemplate](#injatemplate)
+- [Passthrough](#passthrough)
+- [MergeExtractorsToBody](#mergeextractorstobody)
+- [HeaderBodyTransform](#headerbodytransform)
   
 
 
@@ -36,7 +36,7 @@ TODO: to solo-kit/api/envoy
 
 
 ---
-### <a name="RouteTransformations">RouteTransformations</a>
+### RouteTransformations
 
 
 
@@ -48,14 +48,14 @@ TODO: to solo-kit/api/envoy
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `requestTransformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#Transformation) |  |  |
-| `responseTransformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#Transformation) |  |  |
+| `requestTransformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#transformation) |  |  |
+| `responseTransformation` | [.transformation.plugins.gloo.solo.io.Transformation](../transformation.proto.sk#transformation) |  |  |
 
 
 
 
 ---
-### <a name="Transformation">Transformation</a>
+### Transformation
 
  
 [#proto-status: experimental]
@@ -68,14 +68,14 @@ TODO: to solo-kit/api/envoy
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `transformationTemplate` | [.transformation.plugins.gloo.solo.io.TransformationTemplate](../transformation.proto.sk#TransformationTemplate) |  |  |
-| `headerBodyTransform` | [.transformation.plugins.gloo.solo.io.HeaderBodyTransform](../transformation.proto.sk#HeaderBodyTransform) |  |  |
+| `transformationTemplate` | [.transformation.plugins.gloo.solo.io.TransformationTemplate](../transformation.proto.sk#transformationtemplate) |  |  |
+| `headerBodyTransform` | [.transformation.plugins.gloo.solo.io.HeaderBodyTransform](../transformation.proto.sk#headerbodytransform) |  |  |
 
 
 
 
 ---
-### <a name="Extraction">Extraction</a>
+### Extraction
 
 
 
@@ -96,7 +96,7 @@ TODO: to solo-kit/api/envoy
 
 
 ---
-### <a name="TransformationTemplate">TransformationTemplate</a>
+### TransformationTemplate
 
 
 
@@ -115,15 +115,15 @@ TODO: to solo-kit/api/envoy
 | `advancedTemplates` | `bool` |  |  |
 | `extractors` | `map<string, .transformation.plugins.gloo.solo.io.Extraction>` | Extractors are in the origin request language domain |  |
 | `headers` | `map<string, string>` |  |  |
-| `body` | [.transformation.plugins.gloo.solo.io.InjaTemplate](../transformation.proto.sk#InjaTemplate) |  |  |
-| `passthrough` | [.transformation.plugins.gloo.solo.io.Passthrough](../transformation.proto.sk#Passthrough) |  |  |
-| `mergeExtractorsToBody` | [.transformation.plugins.gloo.solo.io.MergeExtractorsToBody](../transformation.proto.sk#MergeExtractorsToBody) |  |  |
+| `body` | [.transformation.plugins.gloo.solo.io.InjaTemplate](../transformation.proto.sk#injatemplate) |  |  |
+| `passthrough` | [.transformation.plugins.gloo.solo.io.Passthrough](../transformation.proto.sk#passthrough) |  |  |
+| `mergeExtractorsToBody` | [.transformation.plugins.gloo.solo.io.MergeExtractorsToBody](../transformation.proto.sk#mergeextractorstobody) |  |  |
 
 
 
 
 ---
-### <a name="InjaTemplate">InjaTemplate</a>
+### InjaTemplate
 
  
 custom functions:
@@ -143,7 +143,7 @@ extracted_value(name, index) -> from the extracted values
 
 
 ---
-### <a name="Passthrough">Passthrough</a>
+### Passthrough
 
 
 
@@ -158,7 +158,7 @@ extracted_value(name, index) -> from the extracted values
 
 
 ---
-### <a name="MergeExtractorsToBody">MergeExtractorsToBody</a>
+### MergeExtractorsToBody
 
 
 
@@ -173,7 +173,7 @@ extracted_value(name, index) -> from the extracted values
 
 
 ---
-### <a name="HeaderBodyTransform">HeaderBodyTransform</a>
+### HeaderBodyTransform
 
 
 

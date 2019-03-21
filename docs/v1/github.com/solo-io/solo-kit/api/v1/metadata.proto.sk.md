@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `core.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Metadata](#Metadata)
+- [Metadata](#metadata)
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="Metadata">Metadata</a>
+### Metadata
 
  
 *

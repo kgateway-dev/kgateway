@@ -8,13 +8,13 @@ weight: 5
 
 
 ### Package: `gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Secret](#Secret) **Top-Level Resource**
-- [AwsSecret](#AwsSecret)
-- [AzureSecret](#AzureSecret)
-- [TlsSecret](#TlsSecret)
+- [Secret](#secret) **Top-Level Resource**
+- [AwsSecret](#awssecret)
+- [AzureSecret](#azuresecret)
+- [TlsSecret](#tlssecret)
   
 
 
@@ -26,7 +26,7 @@ weight: 5
 
 
 ---
-### <a name="Secret">Secret</a>
+### Secret
 
  
 
@@ -52,17 +52,17 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk#AwsSecret) |  |  |
-| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk#AzureSecret) |  |  |
-| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk#TlsSecret) |  |  |
-| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk#Extension) |  |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
+| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk#awssecret) |  |  |
+| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk#azuresecret) |  |  |
+| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk#tlssecret) |  |  |
+| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk#extension) |  |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 
 
 
 
 ---
-### <a name="AwsSecret">AwsSecret</a>
+### AwsSecret
 
 
 
@@ -81,7 +81,7 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 
 ---
-### <a name="AzureSecret">AzureSecret</a>
+### AzureSecret
 
 
 
@@ -98,7 +98,7 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 
 ---
-### <a name="TlsSecret">TlsSecret</a>
+### TlsSecret
 
 
 

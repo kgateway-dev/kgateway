@@ -14,12 +14,12 @@ TODO: to solo-kit/api/envoy
 
 
  
-##### Types:
+#### Types:
 
 
-- [RouteAbort](#RouteAbort)
-- [RouteDelay](#RouteDelay)
-- [RouteFaults](#RouteFaults)
+- [RouteAbort](#routeabort)
+- [RouteDelay](#routedelay)
+- [RouteFaults](#routefaults)
   
 
 
@@ -31,7 +31,7 @@ TODO: to solo-kit/api/envoy
 
 
 ---
-### <a name="RouteAbort">RouteAbort</a>
+### RouteAbort
 
 
 
@@ -50,7 +50,7 @@ TODO: to solo-kit/api/envoy
 
 
 ---
-### <a name="RouteDelay">RouteDelay</a>
+### RouteDelay
 
 
 
@@ -69,7 +69,7 @@ TODO: to solo-kit/api/envoy
 
 
 ---
-### <a name="RouteFaults">RouteFaults</a>
+### RouteFaults
 
 
 
@@ -81,8 +81,8 @@ TODO: to solo-kit/api/envoy
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `abort` | [.fault.plugins.gloo.solo.io.RouteAbort](../fault.proto.sk#RouteAbort) |  |  |
-| `delay` | [.fault.plugins.gloo.solo.io.RouteDelay](../fault.proto.sk#RouteDelay) |  |  |
+| `abort` | [.fault.plugins.gloo.solo.io.RouteAbort](../fault.proto.sk#routeabort) |  |  |
+| `delay` | [.fault.plugins.gloo.solo.io.RouteDelay](../fault.proto.sk#routedelay) |  |  |
 
 
 

@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `core.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Resource](#Resource)
+- [Resource](#resource)
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="Resource">Resource</a>
+### Resource
 
 
 

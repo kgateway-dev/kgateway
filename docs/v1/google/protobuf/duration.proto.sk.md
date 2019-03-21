@@ -40,10 +40,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
  
-##### Types:
+#### Types:
 
 
-- [Duration](#Duration)
+- [Duration](#duration)
   
 
 
@@ -55,7 +55,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ---
-### <a name="Duration">Duration</a>
+### Duration
 
  
 A Duration represents a signed, fixed-length span of time represented

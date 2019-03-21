@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `gateway.solo.io` 
-##### Types:
+#### Types:
 
 
-- [VirtualService](#VirtualService) **Top-Level Resource**
+- [VirtualService](#virtualservice) **Top-Level Resource**
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="VirtualService">VirtualService</a>
+### VirtualService
 
  
 A virtual service describes the set of routes to match for a set of domains.
@@ -40,11 +40,11 @@ Domains must be unique across all virtual services within a gateway (i.e. no ove
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualHost` | [.gloo.solo.io.VirtualHost](../../../../gloo/api/v1/proxy.proto.sk#VirtualHost) |  |  |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk#SslConfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes |  |
+| `virtualHost` | [.gloo.solo.io.VirtualHost](../../../../gloo/api/v1/proxy.proto.sk#virtualhost) |  |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes |  |
 | `displayName` | `string` | Display only, optional descriptive name. Unlike metadata.name, DisplayName can be changed without deleting the resource. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 
 
 

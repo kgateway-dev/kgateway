@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `grpc_web.plugins.gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [GrpcWeb](#GrpcWeb)
+- [GrpcWeb](#grpcweb)
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="GrpcWeb">GrpcWeb</a>
+### GrpcWeb
 
  
 GrpcWeb support is enabled be default. Use this extension to disable it.

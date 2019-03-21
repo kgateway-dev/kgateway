@@ -8,11 +8,11 @@ weight: 5
 
 
 ### Package: `envoy.config.filter.http.aws.v2` 
-##### Types:
+#### Types:
 
 
-- [LambdaPerRoute](#LambdaPerRoute)
-- [LambdaProtocolExtension](#LambdaProtocolExtension)
+- [LambdaPerRoute](#lambdaperroute)
+- [LambdaProtocolExtension](#lambdaprotocolextension)
   
 
 
@@ -24,7 +24,7 @@ weight: 5
 
 
 ---
-### <a name="LambdaPerRoute">LambdaPerRoute</a>
+### LambdaPerRoute
 
  
 AWS Lambda contains the configuration necessary to perform transform regular http calls to
@@ -47,7 +47,7 @@ AWS Lambda invocations.
 
 
 ---
-### <a name="LambdaProtocolExtension">LambdaProtocolExtension</a>
+### LambdaProtocolExtension
 
 
 

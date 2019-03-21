@@ -14,10 +14,10 @@ TODO: to solo-kit/api/envoy
 
 
  
-##### Types:
+#### Types:
 
 
-- [RetryPolicy](#RetryPolicy)
+- [RetryPolicy](#retrypolicy)
   
 
 
@@ -29,7 +29,7 @@ TODO: to solo-kit/api/envoy
 
 
 ---
-### <a name="RetryPolicy">RetryPolicy</a>
+### RetryPolicy
 
  
 Retry Policy applied to a route

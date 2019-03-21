@@ -8,24 +8,24 @@ weight: 5
 
 
 ### Package: `gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Proxy](#Proxy) **Top-Level Resource**
-- [Listener](#Listener)
-- [HttpListener](#HttpListener)
-- [VirtualHost](#VirtualHost)
-- [Route](#Route)
-- [Matcher](#Matcher)
-- [HeaderMatcher](#HeaderMatcher)
-- [QueryParameterMatcher](#QueryParameterMatcher)
-- [RouteAction](#RouteAction)
-- [Destination](#Destination)
-- [MultiDestination](#MultiDestination)
-- [WeightedDestination](#WeightedDestination)
-- [RedirectAction](#RedirectAction)
-- [RedirectResponseCode](#RedirectResponseCode)
-- [DirectResponseAction](#DirectResponseAction)
+- [Proxy](#proxy) **Top-Level Resource**
+- [Listener](#listener)
+- [HttpListener](#httplistener)
+- [VirtualHost](#virtualhost)
+- [Route](#route)
+- [Matcher](#matcher)
+- [HeaderMatcher](#headermatcher)
+- [QueryParameterMatcher](#queryparametermatcher)
+- [RouteAction](#routeaction)
+- [Destination](#destination)
+- [MultiDestination](#multidestination)
+- [WeightedDestination](#weighteddestination)
+- [RedirectAction](#redirectaction)
+- [RedirectResponseCode](#redirectresponsecode)
+- [DirectResponseAction](#directresponseaction)
   
 
 
@@ -37,7 +37,7 @@ weight: 5
 
 
 ---
-### <a name="Proxy">Proxy</a>
+### Proxy
 
  
 
@@ -62,15 +62,15 @@ Node ID can be specified in Envoy with the `--service-node` flag, or in the Envo
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `listeners` | [[]gloo.solo.io.Listener](../proxy.proto.sk#Listener) | Define here each listener the proxy should create. Listeners define the a set of behaviors for a single bind address/port where the proxy will listen If no listeners are specified, the instances configured with the proxy resource will not accept connections. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
+| `listeners` | [[]gloo.solo.io.Listener](../proxy.proto.sk#listener) | Define here each listener the proxy should create. Listeners define the a set of behaviors for a single bind address/port where the proxy will listen If no listeners are specified, the instances configured with the proxy resource will not accept connections. |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 
 
 
 
 ---
-### <a name="Listener">Listener</a>
+### Listener
 
  
 Listeners define the address:port where the proxy will listen for incoming connections
@@ -91,14 +91,14 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `name` | `string` | the name of the listener. names must be unique for each listener within a proxy |  |
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported |  |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy |  |
-| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#HttpListener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing |  |
-| `sslConfiguations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#SslConfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
+| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing |  |
+| `sslConfiguations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
 
 
 
 
 ---
-### <a name="HttpListener">HttpListener</a>
+### HttpListener
 
  
 Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtualservices).
@@ -113,14 +113,14 @@ Some plugins can be configured to work both on the listener and virtual host lev
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk#VirtualHost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid |  |
-| `listenerPlugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#ListenerPlugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
+| `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid |  |
+| `listenerPlugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#listenerplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
 
 
 
 
 ---
-### <a name="VirtualHost">VirtualHost</a>
+### VirtualHost
 
  
 Virtual Hosts group an ordered list of routes under one or more domains.
@@ -140,14 +140,14 @@ If a request is not matched to any virtual host or a route therein, the target p
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | the logical name of the virtual host. names must be unique for each virtual host within a listener |  |
 | `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all virtual hosts or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto) |  |
-| `routes` | [[]gloo.solo.io.Route](../proxy.proto.sk#Route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
-| `virtualHostPlugins` | [.gloo.solo.io.VirtualHostPlugins](../plugins.proto.sk#VirtualHostPlugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
+| `routes` | [[]gloo.solo.io.Route](../proxy.proto.sk#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
+| `virtualHostPlugins` | [.gloo.solo.io.VirtualHostPlugins](../plugins.proto.sk#virtualhostplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
 
 
 
 
 ---
-### <a name="Route">Route</a>
+### Route
 
  
 *
@@ -164,17 +164,17 @@ Routes declare the entrypoints on virtual hosts and the action to take for match
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk#Matcher) | The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.) |  |
-| `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#RouteAction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. |  |
-| `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk#RedirectAction) | Redirect actions tell the proxy to return a redirect response to the downstream client |  |
-| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk#DirectResponseAction) | Return an arbitrary HTTP response directly, without proxying. |  |
-| `routePlugins` | [.gloo.solo.io.RoutePlugins](../plugins.proto.sk#RoutePlugins) | Route Plugins extend the behavior of routes. Route plugins include configuration such as retries, rate limiting, and request/resonse transformation. Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
+| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk#matcher) | The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.) |  |
+| `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. |  |
+| `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client |  |
+| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. |  |
+| `routePlugins` | [.gloo.solo.io.RoutePlugins](../plugins.proto.sk#routeplugins) | Route Plugins extend the behavior of routes. Route plugins include configuration such as retries, rate limiting, and request/resonse transformation. Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
 
 
 
 
 ---
-### <a name="Matcher">Matcher</a>
+### Matcher
 
  
 Parameters for matching routes to requests received by a Gloo-managed proxy
@@ -194,15 +194,15 @@ Parameters for matching routes to requests received by a Gloo-managed proxy
 | `prefix` | `string` | If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header. |  |
 | `exact` | `string` | If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed. |  |
 | `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a subsequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex */b[io]t* matches the path */bit* * The regex */b[io]t* matches the path */bot* * The regex */b[io]t* does not match the path */bite* * The regex */b[io]t* does not match the path */bit/bot* |  |
-| `headers` | [[]gloo.solo.io.HeaderMatcher](../proxy.proto.sk#HeaderMatcher) | Specifies a set of headers that the route should match on. The router will check the request’s headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |  |
-| `queryParameters` | [[]gloo.solo.io.QueryParameterMatcher](../proxy.proto.sk#QueryParameterMatcher) | Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur. |  |
+| `headers` | [[]gloo.solo.io.HeaderMatcher](../proxy.proto.sk#headermatcher) | Specifies a set of headers that the route should match on. The router will check the request’s headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |  |
+| `queryParameters` | [[]gloo.solo.io.QueryParameterMatcher](../proxy.proto.sk#queryparametermatcher) | Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur. |  |
 | `methods` | `[]string` | HTTP Method/Verb(s) to match on. If none specified, the matcher will ignore the HTTP Method |  |
 
 
 
 
 ---
-### <a name="HeaderMatcher">HeaderMatcher</a>
+### HeaderMatcher
 
  
 Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
@@ -229,7 +229,7 @@ Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTT
 
 
 ---
-### <a name="QueryParameterMatcher">QueryParameterMatcher</a>
+### QueryParameterMatcher
 
  
 Query parameter matching treats the query string of a request's :path header
@@ -252,7 +252,7 @@ as an ampersand-separated list of keys and/or key=value elements.
 
 
 ---
-### <a name="RouteAction">RouteAction</a>
+### RouteAction
 
  
 RouteActions are used to route matched requests to upstreams.
@@ -265,14 +265,14 @@ RouteActions are used to route matched requests to upstreams.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk#Destination) | Use SingleDestination to route to a single upstream |  |
-| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk#MultiDestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight) |  |
+| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk#destination) | Use SingleDestination to route to a single upstream |  |
+| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight) |  |
 
 
 
 
 ---
-### <a name="Destination">Destination</a>
+### Destination
 
  
 Destinations define routable destinations for proxied requests
@@ -285,14 +285,14 @@ Destinations define routable destinations for proxied requests
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#ResourceRef) | The upstream to route requests to |  |
-| `destinationSpec` | [.gloo.solo.io.DestinationSpec](../plugins.proto.sk#DestinationSpec) | Some upstreams utilize plugins which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
+| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to route requests to |  |
+| `destinationSpec` | [.gloo.solo.io.DestinationSpec](../plugins.proto.sk#destinationspec) | Some upstreams utilize plugins which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
 
 
 
 
 ---
-### <a name="MultiDestination">MultiDestination</a>
+### MultiDestination
 
  
 MultiDestination is a container for a set of weighted destinations. Gloo will load balance traffic for a single
@@ -305,13 +305,13 @@ route across multiple destinations according to their specified weights.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk#WeightedDestination) | This list must contain at least one destination or the listener housing this route will be invalid, causing Gloo to error the parent proxy resource. |  |
+| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk#weighteddestination) | This list must contain at least one destination or the listener housing this route will be invalid, causing Gloo to error the parent proxy resource. |  |
 
 
 
 
 ---
-### <a name="WeightedDestination">WeightedDestination</a>
+### WeightedDestination
 
  
 WeightedDestination attaches a weight to a single destination.
@@ -324,14 +324,14 @@ WeightedDestination attaches a weight to a single destination.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `destination` | [.gloo.solo.io.Destination](../proxy.proto.sk#Destination) |  |  |
+| `destination` | [.gloo.solo.io.Destination](../proxy.proto.sk#destination) |  |  |
 | `weight` | `int` | Weight must be greater than zero Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route |  |
 
 
 
 
 ---
-### <a name="RedirectAction">RedirectAction</a>
+### RedirectAction
 
  
 TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
@@ -352,7 +352,7 @@ Notice: RedirectAction is copioed directly from https://github.com/envoyproxy/en
 | `hostRedirect` | `string` | The host portion of the URL will be swapped with this value. |  |
 | `pathRedirect` | `string` | The path portion of the URL will be swapped with this value. |  |
 | `prefixRewrite` | `string` | Indicates that during redirection, the matched prefix (or path) should be swapped with this value. This option allows redirect URLs be dynamically created based on the request. Pay attention to the use of trailing slashes as mentioned in `RouteAction`'s `prefix_rewrite`. |  |
-| `responseCode` | [.gloo.solo.io.RedirectAction.RedirectResponseCode](../proxy.proto.sk#RedirectResponseCode) | The HTTP status code to use in the redirect response. The default response code is MOVED_PERMANENTLY (301). |  |
+| `responseCode` | [.gloo.solo.io.RedirectAction.RedirectResponseCode](../proxy.proto.sk#redirectresponsecode) | The HTTP status code to use in the redirect response. The default response code is MOVED_PERMANENTLY (301). |  |
 | `httpsRedirect` | `bool` | The scheme portion of the URL will be swapped with "https". |  |
 | `stripQuery` | `bool` | Indicates that during redirection, the query portion of the URL will be removed. Default value is false. |  |
 
@@ -360,7 +360,7 @@ Notice: RedirectAction is copioed directly from https://github.com/envoyproxy/en
 
 
 ---
-### <a name="RedirectResponseCode">RedirectResponseCode</a>
+### RedirectResponseCode
 
 
 
@@ -376,7 +376,7 @@ Notice: RedirectAction is copioed directly from https://github.com/envoyproxy/en
 
 
 ---
-### <a name="DirectResponseAction">DirectResponseAction</a>
+### DirectResponseAction
 
  
 TODO(ilackarms): evaluate how much to differentiate (or if even to include) DirectResponseAction
