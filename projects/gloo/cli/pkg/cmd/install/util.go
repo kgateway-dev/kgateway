@@ -29,7 +29,7 @@ var (
 	// These will get cleaned up by uninstall if delete-crds or all is chosen
 	GlooCrdNames []string
 
-	installKinds []string
+	installKinds   []string
 	expectedLabels map[string]string
 )
 
@@ -60,7 +60,7 @@ func init() {
 		"virtualservices.gateway.solo.io",
 	}
 
-	expectedLabels = map[string]string {
+	expectedLabels = map[string]string{
 		"app": "gloo",
 	}
 }
