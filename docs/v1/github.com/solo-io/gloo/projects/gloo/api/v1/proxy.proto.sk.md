@@ -26,7 +26,7 @@ weight: 5
 - [RedirectAction](#redirectaction)
 - [RedirectResponseCode](#redirectresponsecode)
 - [DirectResponseAction](#directresponseaction)
-- [CorsPolicy](#CorsPolicy)
+- [CorsPolicy](#corspolicy)
   
 
 
@@ -133,12 +133,8 @@ If a request is not matched to any virtual host or a route therein, the target p
 "name": string
 "domains": []string
 "routes": []gloo.solo.io.Route
-<<<<<<< HEAD
-"virtual_host_plugins": .gloo.solo.io.VirtualHostPlugins
-"cors_policy": .gloo.solo.io.CorsPolicy
-=======
 "virtualHostPlugins": .gloo.solo.io.VirtualHostPlugins
->>>>>>> master
+"corsPolicy": .gloo.solo.io.CorsPolicy
 
 ```
 
@@ -148,7 +144,7 @@ If a request is not matched to any virtual host or a route therein, the target p
 | `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all virtual hosts or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto) |  |
 | `routes` | [[]gloo.solo.io.Route](../proxy.proto.sk#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
 | `virtualHostPlugins` | [.gloo.solo.io.VirtualHostPlugins](../plugins.proto.sk#virtualhostplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
-| `cors_policy` | [.gloo.solo.io.CorsPolicy](../proxy.proto.sk#CorsPolicy) | CorsPolicy defines Cross-Origin Resource Sharing for a virtual service. |  |
+| `corsPolicy` | [.gloo.solo.io.CorsPolicy](../proxy.proto.sk#corspolicy) | CorsPolicy defines Cross-Origin Resource Sharing for a virtual service. |  |
 
 
 
@@ -404,31 +400,31 @@ DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy
 
 
 ---
-### <a name="CorsPolicy">CorsPolicy</a>
+### CorsPolicy
 
  
 CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 
 ```yaml
-"allow_origin": []string
-"allow_origin_regex": []string
-"allow_methods": []string
-"allow_headers": []string
-"expose_headers": []string
-"max_age": string
-"allow_credentials": bool
+"allowOrigin": []string
+"allowOriginRegex": []string
+"allowMethods": []string
+"allowHeaders": []string
+"exposeHeaders": []string
+"maxAge": string
+"allowCredentials": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `allow_origin` | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
-| `allow_origin_regex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
-| `allow_methods` | `[]string` | Specifies the content for the *access-control-allow-methods* header. |  |
-| `allow_headers` | `[]string` | Specifies the content for the *access-control-allow-headers* header. |  |
-| `expose_headers` | `[]string` | Specifies the content for the *access-control-expose-headers* header. |  |
-| `max_age` | `string` | Specifies the content for the *access-control-max-age* header. |  |
-| `allow_credentials` | `bool` | Specifies whether the resource allows credentials. |  |
+| `allowOrigin` | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
+| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
+| `allowMethods` | `[]string` | Specifies the content for the *access-control-allow-methods* header. |  |
+| `allowHeaders` | `[]string` | Specifies the content for the *access-control-allow-headers* header. |  |
+| `exposeHeaders` | `[]string` | Specifies the content for the *access-control-expose-headers* header. |  |
+| `maxAge` | `string` | Specifies the content for the *access-control-max-age* header. |  |
+| `allowCredentials` | `bool` | Specifies whether the resource allows credentials. |  |
 
 
 
