@@ -205,7 +205,7 @@ func validateResourceLabels(manifest string, labels map[string]string) error {
 		for k, v := range labels {
 			val, ok := actualLabels[k]
 			if !ok || v != val {
-				return errors.Errorf("validating labels: expected %s=%s", k, v)
+				return errors.Errorf("validating labels: expected %s=%s on kind %s", k, v, resource.Kind)
 			}
 		}
 	}
