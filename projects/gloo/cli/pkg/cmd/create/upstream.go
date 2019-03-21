@@ -46,7 +46,6 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			return createUpstream(opts)
 		},
 	}
-
 	cmd.AddCommand(
 		createUpstreamSubcommand(opts,
 			options.UpstreamType_Aws,
@@ -119,7 +118,6 @@ func createUpstreamSubcommand(opts *options.Options, upstreamType, short, long s
 			return createUpstream(opts)
 		},
 	}
-	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &opts.Metadata)
 	flagutils.AddUpstreamFlags(cmd.PersistentFlags(), upstreamType, &opts.Create.InputUpstream)
 	return cmd
 }

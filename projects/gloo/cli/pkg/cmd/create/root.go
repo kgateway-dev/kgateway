@@ -45,6 +45,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 	flagutils.AddFileFlag(cmd.LocalFlags(), &opts.Top.File)
 	flagutils.AddOutputFlag(cmd.PersistentFlags(), &opts.Top.Output)
+	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &opts.Metadata)
 
 	cmd.AddCommand(VirtualService(opts))
 	cmd.AddCommand(Upstream(opts))

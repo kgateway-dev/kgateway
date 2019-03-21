@@ -8,12 +8,12 @@ weight: 5
 
 
 ### Package: `rest.plugins.gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [ServiceSpec](#ServiceSpec)
-- [SwaggerInfo](#SwaggerInfo)
-- [DestinationSpec](#DestinationSpec)
+- [ServiceSpec](#servicespec)
+- [SwaggerInfo](#swaggerinfo)
+- [DestinationSpec](#destinationspec)
   
 
 
@@ -25,26 +25,26 @@ weight: 5
 
 
 ---
-### <a name="ServiceSpec">ServiceSpec</a>
+### ServiceSpec
 
 
 
 ```yaml
 "transformations": map<string, .transformation.plugins.gloo.solo.io.TransformationTemplate>
-"swagger_info": .rest.plugins.gloo.solo.io.ServiceSpec.SwaggerInfo
+"swaggerInfo": .rest.plugins.gloo.solo.io.ServiceSpec.SwaggerInfo
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `transformations` | `map<string, .transformation.plugins.gloo.solo.io.TransformationTemplate>` |  |  |
-| `swagger_info` | [.rest.plugins.gloo.solo.io.ServiceSpec.SwaggerInfo](../rest.proto.sk#SwaggerInfo) |  |  |
+| `swaggerInfo` | [.rest.plugins.gloo.solo.io.ServiceSpec.SwaggerInfo](../rest.proto.sk#swaggerinfo) |  |  |
 
 
 
 
 ---
-### <a name="SwaggerInfo">SwaggerInfo</a>
+### SwaggerInfo
 
 
 
@@ -63,23 +63,23 @@ weight: 5
 
 
 ---
-### <a name="DestinationSpec">DestinationSpec</a>
+### DestinationSpec
 
  
 This is only for upstream with REST service spec
 
 ```yaml
-"function_name": string
+"functionName": string
 "parameters": .transformation.plugins.gloo.solo.io.Parameters
-"response_transformation": .transformation.plugins.gloo.solo.io.TransformationTemplate
+"responseTransformation": .transformation.plugins.gloo.solo.io.TransformationTemplate
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `function_name` | `string` |  |  |
-| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk#Parameters) |  |  |
-| `response_transformation` | [.transformation.plugins.gloo.solo.io.TransformationTemplate](../../transformation/transformation.proto.sk#TransformationTemplate) |  |  |
+| `functionName` | `string` |  |  |
+| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk#parameters) |  |  |
+| `responseTransformation` | [.transformation.plugins.gloo.solo.io.TransformationTemplate](../../transformation/transformation.proto.sk#transformationtemplate) |  |  |
 
 
 

@@ -47,7 +47,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	// configure the cluster to use EDS:ADS and call it a day
-	out.Type = envoyapi.Cluster_EDS
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_EDS,
+	}
 	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{
 			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{

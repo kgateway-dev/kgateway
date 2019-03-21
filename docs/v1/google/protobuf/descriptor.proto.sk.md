@@ -47,40 +47,40 @@ without any other information (e.g. without reading its imports).
 
 
  
-##### Types:
+#### Types:
 
 
-- [FileDescriptorSet](#FileDescriptorSet)
-- [FileDescriptorProto](#FileDescriptorProto)
-- [DescriptorProto](#DescriptorProto)
-- [ExtensionRange](#ExtensionRange)
-- [ReservedRange](#ReservedRange)
-- [FieldDescriptorProto](#FieldDescriptorProto)
-- [Type](#Type)
-- [Label](#Label)
-- [OneofDescriptorProto](#OneofDescriptorProto)
-- [EnumDescriptorProto](#EnumDescriptorProto)
-- [EnumValueDescriptorProto](#EnumValueDescriptorProto)
-- [ServiceDescriptorProto](#ServiceDescriptorProto)
-- [MethodDescriptorProto](#MethodDescriptorProto)
-- [FileOptions](#FileOptions)
-- [OptimizeMode](#OptimizeMode)
-- [MessageOptions](#MessageOptions)
-- [FieldOptions](#FieldOptions)
-- [CType](#CType)
-- [JSType](#JSType)
-- [OneofOptions](#OneofOptions)
-- [EnumOptions](#EnumOptions)
-- [EnumValueOptions](#EnumValueOptions)
-- [ServiceOptions](#ServiceOptions)
-- [MethodOptions](#MethodOptions)
-- [IdempotencyLevel](#IdempotencyLevel)
-- [UninterpretedOption](#UninterpretedOption)
-- [NamePart](#NamePart)
-- [SourceCodeInfo](#SourceCodeInfo)
-- [Location](#Location)
-- [GeneratedCodeInfo](#GeneratedCodeInfo)
-- [Annotation](#Annotation)
+- [FileDescriptorSet](#filedescriptorset)
+- [FileDescriptorProto](#filedescriptorproto)
+- [DescriptorProto](#descriptorproto)
+- [ExtensionRange](#extensionrange)
+- [ReservedRange](#reservedrange)
+- [FieldDescriptorProto](#fielddescriptorproto)
+- [Type](#type)
+- [Label](#label)
+- [OneofDescriptorProto](#oneofdescriptorproto)
+- [EnumDescriptorProto](#enumdescriptorproto)
+- [EnumValueDescriptorProto](#enumvaluedescriptorproto)
+- [ServiceDescriptorProto](#servicedescriptorproto)
+- [MethodDescriptorProto](#methoddescriptorproto)
+- [FileOptions](#fileoptions)
+- [OptimizeMode](#optimizemode)
+- [MessageOptions](#messageoptions)
+- [FieldOptions](#fieldoptions)
+- [CType](#ctype)
+- [JSType](#jstype)
+- [OneofOptions](#oneofoptions)
+- [EnumOptions](#enumoptions)
+- [EnumValueOptions](#enumvalueoptions)
+- [ServiceOptions](#serviceoptions)
+- [MethodOptions](#methodoptions)
+- [IdempotencyLevel](#idempotencylevel)
+- [UninterpretedOption](#uninterpretedoption)
+- [NamePart](#namepart)
+- [SourceCodeInfo](#sourcecodeinfo)
+- [Location](#location)
+- [GeneratedCodeInfo](#generatedcodeinfo)
+- [Annotation](#annotation)
   
 
 
@@ -92,7 +92,7 @@ without any other information (e.g. without reading its imports).
 
 
 ---
-### <a name="FileDescriptorSet">FileDescriptorSet</a>
+### FileDescriptorSet
 
  
 The protocol compiler can output a FileDescriptorSet containing the .proto
@@ -105,13 +105,13 @@ files it parses.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `file` | [[]google.protobuf.FileDescriptorProto](../descriptor.proto.sk#FileDescriptorProto) |  |  |
+| `file` | [[]google.protobuf.FileDescriptorProto](../descriptor.proto.sk#filedescriptorproto) |  |  |
 
 
 
 
 ---
-### <a name="FileDescriptorProto">FileDescriptorProto</a>
+### FileDescriptorProto
 
  
 Describes a complete .proto file.
@@ -120,14 +120,14 @@ Describes a complete .proto file.
 "name": string
 "package": string
 "dependency": []string
-"public_dependency": []int
-"weak_dependency": []int
-"message_type": []google.protobuf.DescriptorProto
-"enum_type": []google.protobuf.EnumDescriptorProto
+"publicDependency": []int
+"weakDependency": []int
+"messageType": []google.protobuf.DescriptorProto
+"enumType": []google.protobuf.EnumDescriptorProto
 "service": []google.protobuf.ServiceDescriptorProto
 "extension": []google.protobuf.FieldDescriptorProto
 "options": .google.protobuf.FileOptions
-"source_code_info": .google.protobuf.SourceCodeInfo
+"sourceCodeInfo": .google.protobuf.SourceCodeInfo
 "syntax": string
 
 ```
@@ -137,21 +137,21 @@ Describes a complete .proto file.
 | `name` | `string` |  |  |
 | `package` | `string` |  |  |
 | `dependency` | `[]string` | Names of files imported by this file. |  |
-| `public_dependency` | `[]int` | Indexes of the public imported files in the dependency list above. |  |
-| `weak_dependency` | `[]int` | Indexes of the weak imported files in the dependency list. For Google-internal migration only. Do not use. |  |
-| `message_type` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#DescriptorProto) | All top-level definitions in this file. |  |
-| `enum_type` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#EnumDescriptorProto) |  |  |
-| `service` | [[]google.protobuf.ServiceDescriptorProto](../descriptor.proto.sk#ServiceDescriptorProto) |  |  |
-| `extension` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#FieldDescriptorProto) |  |  |
+| `publicDependency` | `[]int` | Indexes of the public imported files in the dependency list above. |  |
+| `weakDependency` | `[]int` | Indexes of the weak imported files in the dependency list. For Google-internal migration only. Do not use. |  |
+| `messageType` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#descriptorproto) | All top-level definitions in this file. |  |
+| `enumType` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#enumdescriptorproto) |  |  |
+| `service` | [[]google.protobuf.ServiceDescriptorProto](../descriptor.proto.sk#servicedescriptorproto) |  |  |
+| `extension` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#fielddescriptorproto) |  |  |
 | `options` | [.google.protobuf.FileOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/file-options) |  |  |
-| `source_code_info` | [.google.protobuf.SourceCodeInfo](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/source-code-info) | This field contains optional information about the original source code. You may safely remove this entire field without harming runtime functionality of the descriptors -- the information is needed only by development tools. |  |
+| `sourceCodeInfo` | [.google.protobuf.SourceCodeInfo](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/source-code-info) | This field contains optional information about the original source code. You may safely remove this entire field without harming runtime functionality of the descriptors -- the information is needed only by development tools. |  |
 | `syntax` | `string` | The syntax of the proto file. The supported values are "proto2" and "proto3". |  |
 
 
 
 
 ---
-### <a name="DescriptorProto">DescriptorProto</a>
+### DescriptorProto
 
  
 Describes a message type.
@@ -160,34 +160,34 @@ Describes a message type.
 "name": string
 "field": []google.protobuf.FieldDescriptorProto
 "extension": []google.protobuf.FieldDescriptorProto
-"nested_type": []google.protobuf.DescriptorProto
-"enum_type": []google.protobuf.EnumDescriptorProto
-"extension_range": []google.protobuf.DescriptorProto.ExtensionRange
-"oneof_decl": []google.protobuf.OneofDescriptorProto
+"nestedType": []google.protobuf.DescriptorProto
+"enumType": []google.protobuf.EnumDescriptorProto
+"extensionRange": []google.protobuf.DescriptorProto.ExtensionRange
+"oneofDecl": []google.protobuf.OneofDescriptorProto
 "options": .google.protobuf.MessageOptions
-"reserved_range": []google.protobuf.DescriptorProto.ReservedRange
-"reserved_name": []string
+"reservedRange": []google.protobuf.DescriptorProto.ReservedRange
+"reservedName": []string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` |  |  |
-| `field` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#FieldDescriptorProto) |  |  |
-| `extension` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#FieldDescriptorProto) |  |  |
-| `nested_type` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#DescriptorProto) |  |  |
-| `enum_type` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#EnumDescriptorProto) |  |  |
-| `extension_range` | [[]google.protobuf.DescriptorProto.ExtensionRange](../descriptor.proto.sk#ExtensionRange) |  |  |
-| `oneof_decl` | [[]google.protobuf.OneofDescriptorProto](../descriptor.proto.sk#OneofDescriptorProto) |  |  |
+| `field` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#fielddescriptorproto) |  |  |
+| `extension` | [[]google.protobuf.FieldDescriptorProto](../descriptor.proto.sk#fielddescriptorproto) |  |  |
+| `nestedType` | [[]google.protobuf.DescriptorProto](../descriptor.proto.sk#descriptorproto) |  |  |
+| `enumType` | [[]google.protobuf.EnumDescriptorProto](../descriptor.proto.sk#enumdescriptorproto) |  |  |
+| `extensionRange` | [[]google.protobuf.DescriptorProto.ExtensionRange](../descriptor.proto.sk#extensionrange) |  |  |
+| `oneofDecl` | [[]google.protobuf.OneofDescriptorProto](../descriptor.proto.sk#oneofdescriptorproto) |  |  |
 | `options` | [.google.protobuf.MessageOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/message-options) |  |  |
-| `reserved_range` | [[]google.protobuf.DescriptorProto.ReservedRange](../descriptor.proto.sk#ReservedRange) |  |  |
-| `reserved_name` | `[]string` | Reserved field names, which may not be used by fields in the same message. A given name may only be reserved once. |  |
+| `reservedRange` | [[]google.protobuf.DescriptorProto.ReservedRange](../descriptor.proto.sk#reservedrange) |  |  |
+| `reservedName` | `[]string` | Reserved field names, which may not be used by fields in the same message. A given name may only be reserved once. |  |
 
 
 
 
 ---
-### <a name="ExtensionRange">ExtensionRange</a>
+### ExtensionRange
 
 
 
@@ -206,7 +206,7 @@ Describes a message type.
 
 
 ---
-### <a name="ReservedRange">ReservedRange</a>
+### ReservedRange
 
  
 Range of reserved tag numbers. Reserved tag numbers may not be used by
@@ -228,7 +228,7 @@ not overlap.
 
 
 ---
-### <a name="FieldDescriptorProto">FieldDescriptorProto</a>
+### FieldDescriptorProto
 
  
 Describes a field within a message.
@@ -238,11 +238,11 @@ Describes a field within a message.
 "number": int
 "label": .google.protobuf.FieldDescriptorProto.Label
 "type": .google.protobuf.FieldDescriptorProto.Type
-"type_name": string
+"typeName": string
 "extendee": string
-"default_value": string
-"oneof_index": int
-"json_name": string
+"defaultValue": string
+"oneofIndex": int
+"jsonName": string
 "options": .google.protobuf.FieldOptions
 
 ```
@@ -253,18 +253,18 @@ Describes a field within a message.
 | `number` | `int` |  |  |
 | `label` | [.google.protobuf.FieldDescriptorProto.Label](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-descriptor-proto.-label) |  |  |
 | `type` | [.google.protobuf.FieldDescriptorProto.Type](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-descriptor-proto.-type) | If type_name is set, this need not be set. If both this and type_name are set, this must be one of TYPE_ENUM, TYPE_MESSAGE or TYPE_GROUP. |  |
-| `type_name` | `string` | For message and enum types, this is the name of the type. If the name starts with a '.', it is fully-qualified. Otherwise, C++-like scoping rules are used to find the type (i.e. first the nested types within this message are searched, then within the parent, on up to the root namespace). |  |
+| `typeName` | `string` | For message and enum types, this is the name of the type. If the name starts with a '.', it is fully-qualified. Otherwise, C++-like scoping rules are used to find the type (i.e. first the nested types within this message are searched, then within the parent, on up to the root namespace). |  |
 | `extendee` | `string` | For extensions, this is the name of the type being extended. It is resolved in the same manner as type_name. |  |
-| `default_value` | `string` | For numeric types, contains the original text representation of the value. For booleans, "true" or "false". For strings, contains the default text contents (not escaped in any way). For bytes, contains the C escaped value. All bytes >= 128 are escaped. TODO(kenton): Base-64 encode? |  |
-| `oneof_index` | `int` | If set, gives the index of a oneof in the containing type's oneof_decl list. This field is a member of that oneof. |  |
-| `json_name` | `string` | JSON name of this field. The value is set by protocol compiler. If the user has set a "json_name" option on this field, that option's value will be used. Otherwise, it's deduced from the field's name by converting it to camelCase. |  |
+| `defaultValue` | `string` | For numeric types, contains the original text representation of the value. For booleans, "true" or "false". For strings, contains the default text contents (not escaped in any way). For bytes, contains the C escaped value. All bytes >= 128 are escaped. TODO(kenton): Base-64 encode? |  |
+| `oneofIndex` | `int` | If set, gives the index of a oneof in the containing type's oneof_decl list. This field is a member of that oneof. |  |
+| `jsonName` | `string` | JSON name of this field. The value is set by protocol compiler. If the user has set a "json_name" option on this field, that option's value will be used. Otherwise, it's deduced from the field's name by converting it to camelCase. |  |
 | `options` | [.google.protobuf.FieldOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/field-options) |  |  |
 
 
 
 
 ---
-### <a name="Type">Type</a>
+### Type
 
 
 
@@ -293,7 +293,7 @@ Describes a field within a message.
 
 
 ---
-### <a name="Label">Label</a>
+### Label
 
 
 
@@ -307,7 +307,7 @@ Describes a field within a message.
 
 
 ---
-### <a name="OneofDescriptorProto">OneofDescriptorProto</a>
+### OneofDescriptorProto
 
  
 Describes a oneof.
@@ -327,7 +327,7 @@ Describes a oneof.
 
 
 ---
-### <a name="EnumDescriptorProto">EnumDescriptorProto</a>
+### EnumDescriptorProto
 
  
 Describes an enum type.
@@ -342,14 +342,14 @@ Describes an enum type.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` |  |  |
-| `value` | [[]google.protobuf.EnumValueDescriptorProto](../descriptor.proto.sk#EnumValueDescriptorProto) |  |  |
+| `value` | [[]google.protobuf.EnumValueDescriptorProto](../descriptor.proto.sk#enumvaluedescriptorproto) |  |  |
 | `options` | [.google.protobuf.EnumOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/enum-options) |  |  |
 
 
 
 
 ---
-### <a name="EnumValueDescriptorProto">EnumValueDescriptorProto</a>
+### EnumValueDescriptorProto
 
  
 Describes a value within an enum.
@@ -371,7 +371,7 @@ Describes a value within an enum.
 
 
 ---
-### <a name="ServiceDescriptorProto">ServiceDescriptorProto</a>
+### ServiceDescriptorProto
 
  
 Describes a service.
@@ -386,91 +386,91 @@ Describes a service.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` |  |  |
-| `method` | [[]google.protobuf.MethodDescriptorProto](../descriptor.proto.sk#MethodDescriptorProto) |  |  |
+| `method` | [[]google.protobuf.MethodDescriptorProto](../descriptor.proto.sk#methoddescriptorproto) |  |  |
 | `options` | [.google.protobuf.ServiceOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/service-options) |  |  |
 
 
 
 
 ---
-### <a name="MethodDescriptorProto">MethodDescriptorProto</a>
+### MethodDescriptorProto
 
  
 Describes a method of a service.
 
 ```yaml
 "name": string
-"input_type": string
-"output_type": string
+"inputType": string
+"outputType": string
 "options": .google.protobuf.MethodOptions
-"client_streaming": bool
-"server_streaming": bool
+"clientStreaming": bool
+"serverStreaming": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` |  |  |
-| `input_type` | `string` | Input and output type names. These are resolved in the same way as FieldDescriptorProto.type_name, but must refer to a message type. |  |
-| `output_type` | `string` |  |  |
+| `inputType` | `string` | Input and output type names. These are resolved in the same way as FieldDescriptorProto.type_name, but must refer to a message type. |  |
+| `outputType` | `string` |  |  |
 | `options` | [.google.protobuf.MethodOptions](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/method-options) |  |  |
-| `client_streaming` | `bool` | Identifies if client streams multiple client messages |  Default: false |
-| `server_streaming` | `bool` | Identifies if server streams multiple server messages |  Default: false |
+| `clientStreaming` | `bool` | Identifies if client streams multiple client messages |  Default: false |
+| `serverStreaming` | `bool` | Identifies if server streams multiple server messages |  Default: false |
 
 
 
 
 ---
-### <a name="FileOptions">FileOptions</a>
+### FileOptions
 
 
 
 ```yaml
-"java_package": string
-"java_outer_classname": string
-"java_multiple_files": bool
-"java_generate_equals_and_hash": bool
-"java_string_check_utf8": bool
-"optimize_for": .google.protobuf.FileOptions.OptimizeMode
-"go_package": string
-"cc_generic_services": bool
-"java_generic_services": bool
-"py_generic_services": bool
+"javaPackage": string
+"javaOuterClassname": string
+"javaMultipleFiles": bool
+"javaGenerateEqualsAndHash": bool
+"javaStringCheckUtf8": bool
+"optimizeFor": .google.protobuf.FileOptions.OptimizeMode
+"goPackage": string
+"ccGenericServices": bool
+"javaGenericServices": bool
+"pyGenericServices": bool
 "deprecated": bool
-"cc_enable_arenas": bool
-"objc_class_prefix": string
-"csharp_namespace": string
-"swift_prefix": string
-"php_class_prefix": string
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"ccEnableArenas": bool
+"objcClassPrefix": string
+"csharpNamespace": string
+"swiftPrefix": string
+"phpClassPrefix": string
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `java_package` | `string` | Sets the Java package where classes generated from this .proto will be placed. By default, the proto package is used, but this is often inappropriate because proto packages do not normally start with backwards domain names. |  |
-| `java_outer_classname` | `string` | If set, all the classes from the .proto file are wrapped in a single outer class with the given name. This applies to both Proto1 (equivalent to the old "--one_java_file" option) and Proto2 (where a .proto always translates to a single class, but you may want to explicitly choose the class name). |  |
-| `java_multiple_files` | `bool` | If set true, then the Java code generator will generate a separate .java file for each top-level message, enum, and service defined in the .proto file. Thus, these types will *not* be nested inside the outer class named by java_outer_classname. However, the outer class will still be generated to contain the file's getDescriptor() method as well as any top-level extensions defined in the file. |  Default: false |
-| `java_generate_equals_and_hash` | `bool` | This option does nothing. |  |
-| `java_string_check_utf8` | `bool` | If set true, then the Java2 code generator will generate code that throws an exception whenever an attempt is made to assign a non-UTF-8 byte sequence to a string field. Message reflection will do the same. However, an extension field still accepts non-UTF-8 byte sequences. This option has no effect on when used with the lite runtime. |  Default: false |
-| `optimize_for` | [.google.protobuf.FileOptions.OptimizeMode](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/file-options.-optimize-mode) |  |  Default: SPEED |
-| `go_package` | `string` | Sets the Go package where structs generated from this .proto will be placed. If omitted, the Go package will be derived from the following: - The basename of the package import path, if provided. - Otherwise, the package statement in the .proto file, if present. - Otherwise, the basename of the .proto file, without extension. |  |
-| `cc_generic_services` | `bool` | Should generic services be generated in each language? "Generic" services are not specific to any particular RPC system. They are generated by the main code generators in each language (without additional plugins). Generic services were the only kind of service generation supported by early versions of google.protobuf. Generic services are now considered deprecated in favor of using plugins that generate code specific to your particular RPC system. Therefore, these default to false. Old code which depends on generic services should explicitly set them to true. |  Default: false |
-| `java_generic_services` | `bool` |  |  Default: false |
-| `py_generic_services` | `bool` |  |  Default: false |
+| `javaPackage` | `string` | Sets the Java package where classes generated from this .proto will be placed. By default, the proto package is used, but this is often inappropriate because proto packages do not normally start with backwards domain names. |  |
+| `javaOuterClassname` | `string` | If set, all the classes from the .proto file are wrapped in a single outer class with the given name. This applies to both Proto1 (equivalent to the old "--one_java_file" option) and Proto2 (where a .proto always translates to a single class, but you may want to explicitly choose the class name). |  |
+| `javaMultipleFiles` | `bool` | If set true, then the Java code generator will generate a separate .java file for each top-level message, enum, and service defined in the .proto file. Thus, these types will *not* be nested inside the outer class named by java_outer_classname. However, the outer class will still be generated to contain the file's getDescriptor() method as well as any top-level extensions defined in the file. |  Default: false |
+| `javaGenerateEqualsAndHash` | `bool` | This option does nothing. |  |
+| `javaStringCheckUtf8` | `bool` | If set true, then the Java2 code generator will generate code that throws an exception whenever an attempt is made to assign a non-UTF-8 byte sequence to a string field. Message reflection will do the same. However, an extension field still accepts non-UTF-8 byte sequences. This option has no effect on when used with the lite runtime. |  Default: false |
+| `optimizeFor` | [.google.protobuf.FileOptions.OptimizeMode](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/file-options.-optimize-mode) |  |  Default: SPEED |
+| `goPackage` | `string` | Sets the Go package where structs generated from this .proto will be placed. If omitted, the Go package will be derived from the following: - The basename of the package import path, if provided. - Otherwise, the package statement in the .proto file, if present. - Otherwise, the basename of the .proto file, without extension. |  |
+| `ccGenericServices` | `bool` | Should generic services be generated in each language? "Generic" services are not specific to any particular RPC system. They are generated by the main code generators in each language (without additional plugins). Generic services were the only kind of service generation supported by early versions of google.protobuf. Generic services are now considered deprecated in favor of using plugins that generate code specific to your particular RPC system. Therefore, these default to false. Old code which depends on generic services should explicitly set them to true. |  Default: false |
+| `javaGenericServices` | `bool` |  |  Default: false |
+| `pyGenericServices` | `bool` |  |  Default: false |
 | `deprecated` | `bool` | Is this file deprecated? Depending on the target platform, this can emit Deprecated annotations for everything in the file, or it will be completely ignored; in the very least, this is a formalization for deprecating files. |  Default: false |
-| `cc_enable_arenas` | `bool` | Enables the use of arenas for the proto messages in this file. This applies only to generated classes for C++. |  Default: false |
-| `objc_class_prefix` | `string` | Sets the objective c class prefix which is prepended to all objective c generated classes from this .proto. There is no default. |  |
-| `csharp_namespace` | `string` | Namespace for generated classes; defaults to the package. |  |
-| `swift_prefix` | `string` | By default Swift generators will take the proto package and CamelCase it replacing '.' with underscore and use that to prefix the types/symbols defined. When this options is provided, they will use this value instead to prefix the types/symbols defined. |  |
-| `php_class_prefix` | `string` | Sets the php class prefix which is prepended to all php generated classes from this .proto. Default is empty. |  |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `ccEnableArenas` | `bool` | Enables the use of arenas for the proto messages in this file. This applies only to generated classes for C++. |  Default: false |
+| `objcClassPrefix` | `string` | Sets the objective c class prefix which is prepended to all objective c generated classes from this .proto. There is no default. |  |
+| `csharpNamespace` | `string` | Namespace for generated classes; defaults to the package. |  |
+| `swiftPrefix` | `string` | By default Swift generators will take the proto package and CamelCase it replacing '.' with underscore and use that to prefix the types/symbols defined. When this options is provided, they will use this value instead to prefix the types/symbols defined. |  |
+| `phpClassPrefix` | `string` | Sets the php class prefix which is prepended to all php generated classes from this .proto. Default is empty. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="OptimizeMode">OptimizeMode</a>
+### OptimizeMode
 
  
 Generated classes can be optimized for speed or code size.
@@ -485,32 +485,32 @@ Generated classes can be optimized for speed or code size.
 
 
 ---
-### <a name="MessageOptions">MessageOptions</a>
+### MessageOptions
 
 
 
 ```yaml
-"message_set_wire_format": bool
-"no_standard_descriptor_accessor": bool
+"messageSetWireFormat": bool
+"noStandardDescriptorAccessor": bool
 "deprecated": bool
-"map_entry": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"mapEntry": bool
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `message_set_wire_format` | `bool` | Set true to use the old proto1 MessageSet wire format for extensions. This is provided for backwards-compatibility with the MessageSet wire format. You should not use this for any other reason: It's less efficient, has fewer features, and is more complicated. The message must be defined exactly as follows: message Foo { option message_set_wire_format = true; extensions 4 to max; } Note that the message cannot have any defined fields; MessageSets only have extensions. All extensions of your type must be singular messages; e.g. they cannot be int32s, enums, or repeated messages. Because this is an option, the above two restrictions are not enforced by the protocol compiler. |  Default: false |
-| `no_standard_descriptor_accessor` | `bool` | Disables the generation of the standard "descriptor()" accessor, which can conflict with a field of the same name. This is meant to make migration from proto1 easier; new code should avoid fields named "descriptor". |  Default: false |
+| `messageSetWireFormat` | `bool` | Set true to use the old proto1 MessageSet wire format for extensions. This is provided for backwards-compatibility with the MessageSet wire format. You should not use this for any other reason: It's less efficient, has fewer features, and is more complicated. The message must be defined exactly as follows: message Foo { option message_set_wire_format = true; extensions 4 to max; } Note that the message cannot have any defined fields; MessageSets only have extensions. All extensions of your type must be singular messages; e.g. they cannot be int32s, enums, or repeated messages. Because this is an option, the above two restrictions are not enforced by the protocol compiler. |  Default: false |
+| `noStandardDescriptorAccessor` | `bool` | Disables the generation of the standard "descriptor()" accessor, which can conflict with a field of the same name. This is meant to make migration from proto1 easier; new code should avoid fields named "descriptor". |  Default: false |
 | `deprecated` | `bool` | Is this message deprecated? Depending on the target platform, this can emit Deprecated annotations for the message, or it will be completely ignored; in the very least, this is a formalization for deprecating messages. |  Default: false |
-| `map_entry` | `bool` | Whether the message is an automatically generated map entry type for the maps field. For maps fields: map<KeyType, ValueType> map_field = 1; The parsed descriptor looks like: message MapFieldEntry { option map_entry = true; optional KeyType key = 1; optional ValueType value = 2; } repeated MapFieldEntry map_field = 1; Implementations may choose not to generate the map_entry=true message, but use a native map in the target language to hold the keys and values. The reflection APIs in such implementions still need to work as if the field is a repeated message field. NOTE: Do not set the option in .proto files. Always use the maps syntax instead. The option should only be implicitly set by the proto compiler parser. |  |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `mapEntry` | `bool` | Whether the message is an automatically generated map entry type for the maps field. For maps fields: map<KeyType, ValueType> map_field = 1; The parsed descriptor looks like: message MapFieldEntry { option map_entry = true; optional KeyType key = 1; optional ValueType value = 2; } repeated MapFieldEntry map_field = 1; Implementations may choose not to generate the map_entry=true message, but use a native map in the target language to hold the keys and values. The reflection APIs in such implementions still need to work as if the field is a repeated message field. NOTE: Do not set the option in .proto files. Always use the maps syntax instead. The option should only be implicitly set by the proto compiler parser. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="FieldOptions">FieldOptions</a>
+### FieldOptions
 
 
 
@@ -521,7 +521,7 @@ Generated classes can be optimized for speed or code size.
 "lazy": bool
 "deprecated": bool
 "weak": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
@@ -533,13 +533,13 @@ Generated classes can be optimized for speed or code size.
 | `lazy` | `bool` | Should this field be parsed lazily? Lazy applies only to message-type fields. It means that when the outer message is initially parsed, the inner message's contents will not be parsed but instead stored in encoded form. The inner message will actually be parsed when it is first accessed. This is only a hint. Implementations are free to choose whether to use eager or lazy parsing regardless of the value of this option. However, setting this option true suggests that the protocol author believes that using lazy parsing on this field is worth the additional bookkeeping overhead typically needed to implement it. This option does not affect the public interface of any generated code; all method signatures remain the same. Furthermore, thread-safety of the interface is not affected by this option; const methods remain safe to call from multiple threads concurrently, while non-const methods continue to require exclusive access. Note that implementations may choose not to check required fields within a lazy sub-message. That is, calling IsInitialized() on the outer message may return true even if the inner message has missing required fields. This is necessary because otherwise the inner message would have to be parsed in order to perform the check, defeating the purpose of lazy parsing. An implementation which chooses not to check required fields must be consistent about it. That is, for any particular sub-message, the implementation must either *always* check its required fields, or *never* check its required fields, regardless of whether or not the message has been parsed. |  Default: false |
 | `deprecated` | `bool` | Is this field deprecated? Depending on the target platform, this can emit Deprecated annotations for accessors, or it will be completely ignored; in the very least, this is a formalization for deprecating fields. |  Default: false |
 | `weak` | `bool` | For Google-internal migration only. Do not use. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="CType">CType</a>
+### CType
 
 
 
@@ -553,7 +553,7 @@ Generated classes can be optimized for speed or code size.
 
 
 ---
-### <a name="JSType">JSType</a>
+### JSType
 
 
 
@@ -567,104 +567,104 @@ Generated classes can be optimized for speed or code size.
 
 
 ---
-### <a name="OneofOptions">OneofOptions</a>
+### OneofOptions
 
 
 
 ```yaml
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="EnumOptions">EnumOptions</a>
+### EnumOptions
 
 
 
 ```yaml
-"allow_alias": bool
+"allowAlias": bool
 "deprecated": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `allow_alias` | `bool` | Set this option to true to allow mapping different tag names to the same value. |  |
+| `allowAlias` | `bool` | Set this option to true to allow mapping different tag names to the same value. |  |
 | `deprecated` | `bool` | Is this enum deprecated? Depending on the target platform, this can emit Deprecated annotations for the enum, or it will be completely ignored; in the very least, this is a formalization for deprecating enums. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="EnumValueOptions">EnumValueOptions</a>
+### EnumValueOptions
 
 
 
 ```yaml
 "deprecated": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `deprecated` | `bool` | Is this enum value deprecated? Depending on the target platform, this can emit Deprecated annotations for the enum value, or it will be completely ignored; in the very least, this is a formalization for deprecating enum values. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="ServiceOptions">ServiceOptions</a>
+### ServiceOptions
 
 
 
 ```yaml
 "deprecated": bool
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `deprecated` | `bool` | Is this service deprecated? Depending on the target platform, this can emit Deprecated annotations for the service, or it will be completely ignored; in the very least, this is a formalization for deprecating services. |  Default: false |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="MethodOptions">MethodOptions</a>
+### MethodOptions
 
 
 
 ```yaml
 "deprecated": bool
-"idempotency_level": .google.protobuf.MethodOptions.IdempotencyLevel
-"uninterpreted_option": []google.protobuf.UninterpretedOption
+"idempotencyLevel": .google.protobuf.MethodOptions.IdempotencyLevel
+"uninterpretedOption": []google.protobuf.UninterpretedOption
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `deprecated` | `bool` | Is this method deprecated? Depending on the target platform, this can emit Deprecated annotations for the method, or it will be completely ignored; in the very least, this is a formalization for deprecating methods. |  Default: false |
-| `idempotency_level` | [.google.protobuf.MethodOptions.IdempotencyLevel](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/method-options.-idempotency-level) |  |  Default: IDEMPOTENCY_UNKNOWN |
-| `uninterpreted_option` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#UninterpretedOption) | The parser stores options it doesn't recognize here. See above. |  |
+| `idempotencyLevel` | [.google.protobuf.MethodOptions.IdempotencyLevel](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/method-options.-idempotency-level) |  |  Default: IDEMPOTENCY_UNKNOWN |
+| `uninterpretedOption` | [[]google.protobuf.UninterpretedOption](../descriptor.proto.sk#uninterpretedoption) | The parser stores options it doesn't recognize here. See above. |  |
 
 
 
 
 ---
-### <a name="IdempotencyLevel">IdempotencyLevel</a>
+### IdempotencyLevel
 
  
 Is this method side-effect-free (or safe in HTTP parlance), or idempotent,
@@ -681,7 +681,7 @@ methods, and PUT verb for idempotent methods instead of the default POST.
 
 
 ---
-### <a name="UninterpretedOption">UninterpretedOption</a>
+### UninterpretedOption
 
  
 A message representing a option the parser does not recognize. This only
@@ -693,30 +693,30 @@ in them.
 
 ```yaml
 "name": []google.protobuf.UninterpretedOption.NamePart
-"identifier_value": string
-"positive_int_value": int
-"negative_int_value": int
-"double_value": float
-"string_value": bytes
-"aggregate_value": string
+"identifierValue": string
+"positiveIntValue": int
+"negativeIntValue": int
+"doubleValue": float
+"stringValue": bytes
+"aggregateValue": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | [[]google.protobuf.UninterpretedOption.NamePart](../descriptor.proto.sk#NamePart) |  |  |
-| `identifier_value` | `string` | The value of the uninterpreted option, in whatever type the tokenizer identified it as during parsing. Exactly one of these should be set. |  |
-| `positive_int_value` | `int` |  |  |
-| `negative_int_value` | `int` |  |  |
-| `double_value` | `float` |  |  |
-| `string_value` | `bytes` |  |  |
-| `aggregate_value` | `string` |  |  |
+| `name` | [[]google.protobuf.UninterpretedOption.NamePart](../descriptor.proto.sk#namepart) |  |  |
+| `identifierValue` | `string` | The value of the uninterpreted option, in whatever type the tokenizer identified it as during parsing. Exactly one of these should be set. |  |
+| `positiveIntValue` | `int` |  |  |
+| `negativeIntValue` | `int` |  |  |
+| `doubleValue` | `float` |  |  |
+| `stringValue` | `bytes` |  |  |
+| `aggregateValue` | `string` |  |  |
 
 
 
 
 ---
-### <a name="NamePart">NamePart</a>
+### NamePart
 
  
 The name of the uninterpreted option.  Each string represents a segment in
@@ -726,21 +726,21 @@ E.g.,{ ["foo", false], ["bar.baz", true], ["qux", false] } represents
 "foo.(bar.baz).qux".
 
 ```yaml
-"name_part": string
-"is_extension": bool
+"namePart": string
+"isExtension": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name_part` | `string` |  |  |
-| `is_extension` | `bool` |  |  |
+| `namePart` | `string` |  |  |
+| `isExtension` | `bool` |  |  |
 
 
 
 
 ---
-### <a name="SourceCodeInfo">SourceCodeInfo</a>
+### SourceCodeInfo
 
  
 Encapsulates information about the original source file from which a
@@ -753,22 +753,22 @@ FileDescriptorProto was generated.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `location` | [[]google.protobuf.SourceCodeInfo.Location](../descriptor.proto.sk#Location) | A Location identifies a piece of source code in a .proto file which corresponds to a particular definition. This information is intended to be useful to IDEs, code indexers, documentation generators, and similar tools. For example, say we have a file like: message Foo { optional string foo = 1; } Let's look at just the field definition: optional string foo = 1; ^ ^^ ^^ ^ ^^^ a bc de f ghi We have the following locations: span path represents [a,i) [ 4, 0, 2, 0 ] The whole field definition. [a,b) [ 4, 0, 2, 0, 4 ] The label (optional). [c,d) [ 4, 0, 2, 0, 5 ] The type (string). [e,f) [ 4, 0, 2, 0, 1 ] The name (foo). [g,h) [ 4, 0, 2, 0, 3 ] The number (1). Notes: - A location may refer to a repeated field itself (i.e. not to any particular index within it). This is used whenever a set of elements are logically enclosed in a single code segment. For example, an entire extend block (possibly containing multiple extension definitions) will have an outer location whose path refers to the "extensions" repeated field without an index. - Multiple locations may have the same path. This happens when a single logical declaration is spread out across multiple places. The most obvious example is the "extend" block again -- there may be multiple extend blocks in the same scope, each of which will have the same path. - A location's span is not always a subset of its parent's span. For example, the "extendee" of an extension declaration appears at the beginning of the "extend" block and is shared by all extensions within the block. - Just because a location's span is a subset of some other location's span does not mean that it is a descendent. For example, a "group" defines both a type and a field in a single declaration. Thus, the locations corresponding to the type and field and their components will overlap. - Code which tries to interpret locations should probably be designed to ignore those that it doesn't understand, as more types of locations could be recorded in the future. |  |
+| `location` | [[]google.protobuf.SourceCodeInfo.Location](../descriptor.proto.sk#location) | A Location identifies a piece of source code in a .proto file which corresponds to a particular definition. This information is intended to be useful to IDEs, code indexers, documentation generators, and similar tools. For example, say we have a file like: message Foo { optional string foo = 1; } Let's look at just the field definition: optional string foo = 1; ^ ^^ ^^ ^ ^^^ a bc de f ghi We have the following locations: span path represents [a,i) [ 4, 0, 2, 0 ] The whole field definition. [a,b) [ 4, 0, 2, 0, 4 ] The label (optional). [c,d) [ 4, 0, 2, 0, 5 ] The type (string). [e,f) [ 4, 0, 2, 0, 1 ] The name (foo). [g,h) [ 4, 0, 2, 0, 3 ] The number (1). Notes: - A location may refer to a repeated field itself (i.e. not to any particular index within it). This is used whenever a set of elements are logically enclosed in a single code segment. For example, an entire extend block (possibly containing multiple extension definitions) will have an outer location whose path refers to the "extensions" repeated field without an index. - Multiple locations may have the same path. This happens when a single logical declaration is spread out across multiple places. The most obvious example is the "extend" block again -- there may be multiple extend blocks in the same scope, each of which will have the same path. - A location's span is not always a subset of its parent's span. For example, the "extendee" of an extension declaration appears at the beginning of the "extend" block and is shared by all extensions within the block. - Just because a location's span is a subset of some other location's span does not mean that it is a descendent. For example, a "group" defines both a type and a field in a single declaration. Thus, the locations corresponding to the type and field and their components will overlap. - Code which tries to interpret locations should probably be designed to ignore those that it doesn't understand, as more types of locations could be recorded in the future. |  |
 
 
 
 
 ---
-### <a name="Location">Location</a>
+### Location
 
 
 
 ```yaml
 "path": []int
 "span": []int
-"leading_comments": string
-"trailing_comments": string
-"leading_detached_comments": []string
+"leadingComments": string
+"trailingComments": string
+"leadingDetachedComments": []string
 
 ```
 
@@ -776,15 +776,15 @@ FileDescriptorProto was generated.
 | ----- | ---- | ----------- |----------- | 
 | `path` | `[]int` | Identifies which part of the FileDescriptorProto was defined at this location. Each element is a field number or an index. They form a path from the root FileDescriptorProto to the place where the definition. For example, this path: [ 4, 3, 2, 7, 1 ] refers to: file.message_type(3) // 4, 3 .field(7) // 2, 7 .name() // 1 This is because FileDescriptorProto.message_type has field number 4: repeated DescriptorProto message_type = 4; and DescriptorProto.field has field number 2: repeated FieldDescriptorProto field = 2; and FieldDescriptorProto.name has field number 1: optional string name = 1; Thus, the above path gives the location of a field name. If we removed the last element: [ 4, 3, 2, 7 ] this path refers to the whole field declaration (from the beginning of the label to the terminating semicolon). |  |
 | `span` | `[]int` | Always has exactly three or four elements: start line, start column, end line (optional, otherwise assumed same as start line), end column. These are packed into a single field for efficiency. Note that line and column numbers are zero-based -- typically you will want to add 1 to each before displaying to a user. |  |
-| `leading_comments` | `string` | If this SourceCodeInfo represents a complete declaration, these are any comments appearing before and after the declaration which appear to be attached to the declaration. A series of line comments appearing on consecutive lines, with no other tokens appearing on those lines, will be treated as a single comment. leading_detached_comments will keep paragraphs of comments that appear before (but not connected to) the current element. Each paragraph, separated by empty lines, will be one comment element in the repeated field. Only the comment content is provided; comment markers (e.g. //) are stripped out. For block comments, leading whitespace and an asterisk will be stripped from the beginning of each line other than the first. Newlines are included in the output. Examples: optional int32 foo = 1; // Comment attached to foo. // Comment attached to bar. optional int32 bar = 2; optional string baz = 3; // Comment attached to baz. // Another line attached to baz. // Comment attached to qux. // // Another line attached to qux. optional double qux = 4; // Detached comment for corge. This is not leading or trailing comments // to qux or corge because there are blank lines separating it from // both. // Detached comment for corge paragraph 2. optional string corge = 5; /* Block comment attached * to corge. Leading asterisks * will be removed. */ /* Block comment attached to * grault. */ optional int32 grault = 6; // ignored detached comments. |  |
-| `trailing_comments` | `string` |  |  |
-| `leading_detached_comments` | `[]string` |  |  |
+| `leadingComments` | `string` | If this SourceCodeInfo represents a complete declaration, these are any comments appearing before and after the declaration which appear to be attached to the declaration. A series of line comments appearing on consecutive lines, with no other tokens appearing on those lines, will be treated as a single comment. leading_detached_comments will keep paragraphs of comments that appear before (but not connected to) the current element. Each paragraph, separated by empty lines, will be one comment element in the repeated field. Only the comment content is provided; comment markers (e.g. //) are stripped out. For block comments, leading whitespace and an asterisk will be stripped from the beginning of each line other than the first. Newlines are included in the output. Examples: optional int32 foo = 1; // Comment attached to foo. // Comment attached to bar. optional int32 bar = 2; optional string baz = 3; // Comment attached to baz. // Another line attached to baz. // Comment attached to qux. // // Another line attached to qux. optional double qux = 4; // Detached comment for corge. This is not leading or trailing comments // to qux or corge because there are blank lines separating it from // both. // Detached comment for corge paragraph 2. optional string corge = 5; /* Block comment attached * to corge. Leading asterisks * will be removed. */ /* Block comment attached to * grault. */ optional int32 grault = 6; // ignored detached comments. |  |
+| `trailingComments` | `string` |  |  |
+| `leadingDetachedComments` | `[]string` |  |  |
 
 
 
 
 ---
-### <a name="GeneratedCodeInfo">GeneratedCodeInfo</a>
+### GeneratedCodeInfo
 
  
 Describes the relationship between generated code and its original source
@@ -798,19 +798,19 @@ source file, but may contain references to different source .proto files.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `annotation` | [[]google.protobuf.GeneratedCodeInfo.Annotation](../descriptor.proto.sk#Annotation) | An Annotation connects some span of text in generated code to an element of its generating .proto file. |  |
+| `annotation` | [[]google.protobuf.GeneratedCodeInfo.Annotation](../descriptor.proto.sk#annotation) | An Annotation connects some span of text in generated code to an element of its generating .proto file. |  |
 
 
 
 
 ---
-### <a name="Annotation">Annotation</a>
+### Annotation
 
 
 
 ```yaml
 "path": []int
-"source_file": string
+"sourceFile": string
 "begin": int
 "end": int
 
@@ -819,7 +819,7 @@ source file, but may contain references to different source .proto files.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `path` | `[]int` | Identifies the element in the original source .proto file. This field is formatted the same as SourceCodeInfo.Location.path. |  |
-| `source_file` | `string` | Identifies the filesystem path to the original source .proto. |  |
+| `sourceFile` | `string` | Identifies the filesystem path to the original source .proto. |  |
 | `begin` | `int` | Identifies the starting offset in bytes in the generated code that relates to the identified object. |  |
 | `end` | `int` | Identifies the ending offset in bytes in the generated code that relates to the identified offset. The end offset should be one past the last relevant byte (so the length of the text = end - begin). |  |
 

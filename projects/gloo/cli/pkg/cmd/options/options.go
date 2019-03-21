@@ -34,7 +34,10 @@ type Install struct {
 }
 
 type Uninstall struct {
-	Namespace string
+	Namespace       string
+	DeleteCrds      bool
+	DeleteNamespace bool
+	DeleteAll       bool
 }
 
 type Proxy struct {

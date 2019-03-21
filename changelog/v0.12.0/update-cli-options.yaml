@@ -1,0 +1,7 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: |
+      Make sure namespace (and name, where applicable) are added as top-level options, to improve the docs.
+      This is breaking because now extensions to the CLI need to make sure they don't try to add namespace
+      if it is already provided by the top-level command.
+    issueLink: https://github.com/solo-io/gloo/issues/582

@@ -8,11 +8,11 @@ weight: 5
 
 
 ### Package: `core.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Status](#Status)
-- [State](#State)
+- [Status](#status)
+- [State](#state)
   
 
 
@@ -24,7 +24,7 @@ weight: 5
 
 
 ---
-### <a name="Status">Status</a>
+### Status
 
  
 *
@@ -34,23 +34,23 @@ Statuses are meant to be read-only by users
 ```yaml
 "state": .core.solo.io.Status.State
 "reason": string
-"reported_by": string
-"subresource_statuses": map<string, .core.solo.io.Status>
+"reportedBy": string
+"subresourceStatuses": map<string, .core.solo.io.Status>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `state` | [.core.solo.io.Status.State](../status.proto.sk#State) | State is the enum indicating the state of the resource |  |
+| `state` | [.core.solo.io.Status.State](../status.proto.sk#state) | State is the enum indicating the state of the resource |  |
 | `reason` | `string` | Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty |  |
-| `reported_by` | `string` | Reference to the reporter who wrote this status |  |
-| `subresource_statuses` | `map<string, .core.solo.io.Status>` | Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource |  |
+| `reportedBy` | `string` | Reference to the reporter who wrote this status |  |
+| `subresourceStatuses` | `map<string, .core.solo.io.Status>` | Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource |  |
 
 
 
 
 ---
-### <a name="State">State</a>
+### State
 
 
 

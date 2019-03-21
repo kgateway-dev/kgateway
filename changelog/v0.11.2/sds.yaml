@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add sds support for upstreams to allow integration with istio
+    issueLink: https://github.com/solo-io/gloo/issues/510

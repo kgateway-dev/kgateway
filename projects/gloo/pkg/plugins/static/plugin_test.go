@@ -64,7 +64,7 @@ var _ = Describe("Plugin", func() {
 
 		It("use strict dns", func() {
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.Type).To(Equal(envoyapi.Cluster_STRICT_DNS))
+			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STRICT_DNS))
 		})
 
 		It("use static if only has ips", func() {
@@ -77,7 +77,7 @@ var _ = Describe("Plugin", func() {
 			}}
 
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.Type).To(Equal(envoyapi.Cluster_STATIC))
+			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STATIC))
 		})
 
 		It("use dns if has mixed addresses", func() {
@@ -90,7 +90,7 @@ var _ = Describe("Plugin", func() {
 			}}
 
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.Type).To(Equal(envoyapi.Cluster_STRICT_DNS))
+			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STRICT_DNS))
 		})
 	})
 

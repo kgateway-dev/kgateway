@@ -95,7 +95,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 SUBDIRS:=projects test
 $(OUTPUT_DIR)/.generated-code:
 	go generate ./...
-	(rm docs/cli/glooctl* && go run projects/gloo/cli/cmd/docs/main.go)
+	(rm docs/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go)
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)

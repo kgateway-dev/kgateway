@@ -14,10 +14,10 @@ TODO: to solo-kit/api/envoy
 
 
  
-##### Types:
+#### Types:
 
 
-- [PrefixRewrite](#PrefixRewrite)
+- [PrefixRewrite](#prefixrewrite)
   
 
 
@@ -29,19 +29,19 @@ TODO: to solo-kit/api/envoy
 
 
 ---
-### <a name="PrefixRewrite">PrefixRewrite</a>
+### PrefixRewrite
 
  
 if set, prefix_rewrite will be used to rewrite the matched HTTP Path prefix on requests to this value.
 
 ```yaml
-"prefix_rewrite": string
+"prefixRewrite": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `prefix_rewrite` | `string` | Set to an empty string to remove the matched HTTP Path prefix |  |
+| `prefixRewrite` | `string` | Set to an empty string to remove the matched HTTP Path prefix |  |
 
 
 

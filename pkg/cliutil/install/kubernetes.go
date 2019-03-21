@@ -3,15 +3,18 @@ package install
 import (
 	"bytes"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/go-utils/errors"
-	"github.com/solo-io/go-utils/kubeutils"
 	"io"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/go-utils/kubeutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func CheckKnativeInstallation() (isInstalled bool, isOurs bool, err error) {
@@ -63,21 +66,52 @@ func WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) e
 }
 
 //noinspection GoNameStartsWithPackageName
-func InstallManifest(manifest []byte, isDryRun bool) error {
+func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expectedLabels map[string]string) error {
+	manifestString := string(manifest)
+	if isEmptyManifest(manifestString) {
+		return nil
+	}
+	validateManifest(manifestString, allowedKinds, expectedLabels)
 	if isDryRun {
 		fmt.Printf("%s", manifest)
 		// For safety, print a YAML separator so multiple invocations of this function will produce valid output
 		fmt.Println("\n---")
 		return nil
 	}
+
 	if err := kubectlApply(manifest); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
 }
 
+func validateManifest(manifestString string, allowedKinds []string, expectedLabels map[string]string) error {
+	if allowedKinds != nil {
+		manifestKinds, err := getKinds(manifestString)
+		if err != nil {
+			return errors.Wrapf(err, "validating manifest kinds")
+		}
+		for _, manifestKind := range manifestKinds {
+			if !cliutil.Contains(allowedKinds, manifestKind) {
+				return errors.Errorf("wasn't expecting to install object with kind %s", manifestKind)
+			}
+		}
+	}
+	return validateResourceLabels(manifestString, expectedLabels)
+}
+
 func kubectlApply(manifest []byte) error {
 	return Kubectl(bytes.NewBuffer(manifest), "apply", "-f", "-")
+}
+
+type KubeCli interface {
+	Kubectl(stdin io.Reader, args ...string) error
+}
+
+type CmdKubectl struct{}
+
+func (k *CmdKubectl) Kubectl(stdin io.Reader, args ...string) error {
+	return Kubectl(stdin, args...)
 }
 
 func Kubectl(stdin io.Reader, args ...string) error {

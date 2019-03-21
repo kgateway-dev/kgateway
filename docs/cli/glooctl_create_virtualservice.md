@@ -22,15 +22,15 @@ glooctl create virtualservice [flags]
       --display-name string   descriptive name of virtual service (defaults to resource name)
       --domains strings       comma separated list of domains
   -h, --help                  help for virtualservice
-      --name string           name of the resource to read or write
-  -n, --namespace string      namespace for reading or writing resources (default "gloo-system")
 ```
 
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -o, --output string      output format: (yaml, json, table)
 ```
 
 ### SEE ALSO

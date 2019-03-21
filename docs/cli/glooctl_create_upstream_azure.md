@@ -21,15 +21,15 @@ glooctl create upstream azure [flags]
       --azure-secret-name glooctl create secret azure --help        name of a secret containing Azure credentials created with glooctl. See glooctl create secret azure --help for help creating secrets
       --azure-secret-namespace glooctl create secret azure --help   namespace where the Azure secret lives. See glooctl create secret azure --help for help creating secrets (default "gloo-system")
   -h, --help                                                        help for azure
-      --name string                                                 name of the resource to read or write
-  -n, --namespace string                                            namespace for reading or writing resources (default "gloo-system")
 ```
 
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -o, --output string      output format: (yaml, json, table)
 ```
 
 ### SEE ALSO

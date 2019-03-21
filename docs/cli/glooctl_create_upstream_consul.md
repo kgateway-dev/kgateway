@@ -20,16 +20,16 @@ glooctl create upstream consul [flags]
       --consul-service string         name of the service in the consul registry
       --consul-service-tags strings   comma-separated list of tags for choosing a subset of the service in the consul registry
   -h, --help                          help for consul
-      --name string                   name of the resource to read or write
-  -n, --namespace string              namespace for reading or writing resources (default "gloo-system")
       --service-spec-type string      if set, Gloo supports additional routing features to upstreams with a service spec. The service spec defines a set of features 
 ```
 
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -o, --output string      output format: (yaml, json, table)
 ```
 
 ### SEE ALSO

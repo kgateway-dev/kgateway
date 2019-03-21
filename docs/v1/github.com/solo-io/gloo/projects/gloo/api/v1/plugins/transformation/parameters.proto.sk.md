@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `transformation.plugins.gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Parameters](#Parameters)
+- [Parameters](#parameters)
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="Parameters">Parameters</a>
+### Parameters
 
 
 

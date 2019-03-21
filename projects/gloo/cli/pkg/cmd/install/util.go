@@ -6,21 +6,64 @@ import (
 	"strings"
 	"time"
 
-	helmhooks "k8s.io/helm/pkg/hooks"
+	"github.com/solo-io/gloo/pkg/cliutil"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/helm/pkg/manifest"
-	"sigs.k8s.io/yaml"
+	"k8s.io/helm/pkg/proto/hapi/chart"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/errors"
 	"k8s.io/helm/pkg/chartutil"
+	"k8s.io/helm/pkg/manifest"
 	"k8s.io/helm/pkg/renderutil"
 
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 )
+
+var (
+	// These will get cleaned up by uninstall always
+	GlooSystemKinds []string
+	// These will get cleaned up only if uninstall all is chosen
+	GlooRbacKinds []string
+	// These will get cleaned up by uninstall if delete-crds or all is chosen
+	GlooCrdNames []string
+
+	installKinds   []string
+	expectedLabels map[string]string
+)
+
+func init() {
+	GlooSystemKinds = []string{
+		"Deployment",
+		"Service",
+		"ConfigMap",
+	}
+
+	GlooRbacKinds = []string{
+		"ClusterRole",
+		"ClusterRoleBinding",
+	}
+
+	// When we install, make sure we know what we're installing, so we can later uninstall correctly.
+	// This validation is tested by projects/gloo/cli/pkg/cmd/install/install_test.go
+	installKinds = append(GlooSystemKinds, "Namespace")
+	for _, kind := range GlooRbacKinds {
+		installKinds = append(installKinds, kind)
+	}
+
+	GlooCrdNames = []string{
+		"gateways.gateway.solo.io",
+		"proxies.gateway.solo.io",
+		"settings.gateway.solo.io",
+		"upstreams.gateway.solo.io",
+		"virtualservices.gateway.solo.io",
+	}
+
+	expectedLabels = map[string]string{
+		"app": "gloo",
+	}
+}
 
 // Entry point for all three GLoo installation commands
 func installGloo(opts *options.Options, valueFileName string) error {
@@ -76,92 +119,127 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		},
 	}
 
-	// FILTER FUNCTION 1: Exclude knative install if necessary
-	filterKnativeResources, err := install.GetKnativeResourceFilterFunction()
+	skipKnativeInstall, err := install.SkipKnativeInstall()
 	if err != nil {
 		return err
 	}
 
-	// FILTER FUNCTION 2: Keep only CRDs and collect the names
-	var crdNames []string
-	filterCrds := func(input []manifest.Manifest) ([]manifest.Manifest, error) {
+	if err := doCrdInstall(opts, chart, values, renderOpts, skipKnativeInstall); err != nil {
+		return err
+	}
 
-		var crdManifests []manifest.Manifest
-		for _, man := range input {
+	if err := doGlooPreInstall(opts, chart, values, renderOpts); err != nil {
+		return err
+	}
 
-			// Split manifest into individual YAML docs
-			crdDocs := make([]string, 0)
-			for _, doc := range strings.Split(man.Content, "---") {
-
-				// We need to define this ourselves, because if we unmarshal into `apiextensions.CustomResourceDefinition`
-				// we don't get the TypeMeta (in the yaml they are nested under `metadata`, but the k8s struct has
-				// them as top level fields...)
-				var resource struct {
-					Metadata v1.ObjectMeta
-					v1.TypeMeta
-				}
-				if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
-					return nil, errors.Wrapf(err, "parsing resource: %s", doc)
-				}
-
-				// Skip non-CRD resources
-				if resource.TypeMeta.Kind != install.CrdKindName {
-					continue
-				}
-
-				// Check whether the CRD is a Helm "crd-install" hook.
-				// If not, throw an error, because this will cause race conditions when installing with Helm (which is
-				// not the case here, but we want to validate the manifests whenever we have the chance)
-				helmCrdInstallHookAnnotation, ok := resource.Metadata.Annotations[helmhooks.HookAnno]
-				if !ok || helmCrdInstallHookAnnotation != helmhooks.CRDInstall {
-					return nil, errors.Errorf("CRD [%s] must be annotated as a Helm '%s' hook", resource.Metadata.Name, helmhooks.CRDInstall)
-				}
-
-				// Keep track of the CRD name
-				crdNames = append(crdNames, resource.Metadata.Name)
-
-				crdDocs = append(crdDocs, doc)
-			}
-
-			crdManifests = append(crdManifests, manifest.Manifest{
-				Name:    man.Name,
-				Head:    man.Head,
-				Content: strings.Join(crdDocs, install.YamlDocumentSeparator),
-			})
+	if !skipKnativeInstall {
+		if err := doKnativeInstall(opts, chart, values, renderOpts); err != nil {
+			return err
 		}
+	}
 
-		return crdManifests, nil
+	return doGlooInstall(opts, chart, values, renderOpts)
+}
+
+func doCrdInstall(
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options,
+	skipKnativeInstall bool) error {
+
+	// Keep only CRDs and collect the names
+	var crdNames []string
+	excludeNonCrdsAndCollectCrdNames := func(input []manifest.Manifest) ([]manifest.Manifest, error) {
+		manifests, resourceNames, err := install.ExcludeNonCrds(input)
+		crdNames = resourceNames
+		return manifests, err
 	}
 
 	// Render and install CRD manifests
 	crdManifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,
-		filterKnativeResources,
-		filterCrds,
+		install.KnativeResourceFilterFunction(skipKnativeInstall),
+		excludeNonCrdsAndCollectCrdNames,
 		install.ExcludeEmptyManifests)
 	if err != nil {
 		return errors.Wrapf(err, "rendering crd manifests")
 	}
-	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun); err != nil {
+
+	// TODO: we currently skip validation when installing knative, we could enumerate knative CRDs and validate those too
+	if skipKnativeInstall {
+		if err := validateCrds(crdNames); err != nil {
+			return err
+		}
+	}
+	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun, []string{"CustomResourceDefinition"}, nil); err != nil {
 		return errors.Wrapf(err, "installing crd manifests")
 	}
-
 	// Only run if this is not a dry run
 	if !opts.Install.DryRun {
 		if err := install.WaitForCrdsToBeRegistered(crdNames, time.Second*5, time.Millisecond*500); err != nil {
 			return errors.Wrapf(err, "waiting for crds to be registered")
 		}
-
 	}
 
+	return nil
+}
+
+func validateCrds(crdNames []string) error {
+	for _, crdName := range crdNames {
+		if !cliutil.Contains(GlooCrdNames, crdName) {
+			return errors.Errorf("Unknown crd %s", crdName)
+		}
+	}
+	return nil
+}
+
+func doGlooPreInstall(
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options) error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
 		install.ExcludeNotes,
-		filterKnativeResources,
+		install.KnativeResourceFilterFunction(true),
+		install.IncludeOnlyPreInstall,
+		install.ExcludeEmptyManifests)
+	if err != nil {
+		return err
+	}
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, []string{"Settings"}, expectedLabels)
+}
+
+func doGlooInstall(
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options) error {
+	// Render and install Gloo manifest
+	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
+		install.ExcludeNotes,
+		install.KnativeResourceFilterFunction(true),
+		install.ExcludePreInstall,
 		install.ExcludeCrds,
 		install.ExcludeEmptyManifests)
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, installKinds, expectedLabels)
+}
+
+func doKnativeInstall(
+	opts *options.Options,
+	chart *chart.Chart,
+	values *chart.Config,
+	renderOpts renderutil.Options) error {
+	// Exclude everything but knative non-crds
+	manifestBytes, err := install.RenderChart(chart, values, renderOpts,
+		install.ExcludeNonKnative,
+		install.ExcludeCrds)
+	if err != nil {
+		return err
+	}
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, nil, nil)
 }

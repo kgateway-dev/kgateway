@@ -7,8 +7,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -46,8 +44,6 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-
-	flagutils.AddMetadataFlags(flags, &opts.Metadata)
 
 	flags.StringVar(&input.RootCaFilename, "rootca", "", "filename of rootca for secret")
 	flags.StringVar(&input.PrivateKeyFilename, "privatekey", "", "filename of privatekey for secret")

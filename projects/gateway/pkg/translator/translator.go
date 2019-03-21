@@ -20,10 +20,12 @@ const GatewayProxyName = "gateway-proxy"
 func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gloov1.Proxy, reporter.ResourceErrors) {
 	logger := contextutils.LoggerFrom(ctx)
 
+	filteredGateways := filterGatewaysForNamespace(snap.Gateways.List(), namespace)
+
 	resourceErrs := make(reporter.ResourceErrors)
-	resourceErrs.Accept(snap.Gateways.List().AsInputResources()...)
+	resourceErrs.Accept(filteredGateways.AsInputResources()...)
 	resourceErrs.Accept(snap.VirtualServices.List().AsInputResources()...)
-	if len(snap.Gateways.List()) == 0 {
+	if len(filteredGateways) == 0 {
 		logger.Debugf("%v had no gateways", snap.Hash())
 		return nil, resourceErrs
 	}
@@ -31,9 +33,9 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 		logger.Debugf("%v had no virtual services", snap.Hash())
 		return nil, resourceErrs
 	}
-	validateGateways(snap.Gateways.List(), resourceErrs)
+	validateGateways(filteredGateways, resourceErrs)
 	var listeners []*gloov1.Listener
-	for _, gateway := range snap.Gateways.List() {
+	for _, gateway := range filteredGateways {
 
 		virtualServices := getVirtualServiceForGateway(gateway, snap.VirtualServices.List(), resourceErrs)
 		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, virtualServices, resourceErrs)
@@ -48,6 +50,19 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 		},
 		Listeners: listeners,
 	}, resourceErrs
+}
+
+// https://github.com/solo-io/gloo/issues/538
+// Gloo should only pay attention to gateways it creates, i.e. in it's write namespace, to support
+// handling multiple gloo installations
+func filterGatewaysForNamespace(gateways v1.GatewayList, namespace string) v1.GatewayList {
+	var filteredGateways v1.GatewayList
+	for _, gateway := range gateways {
+		if gateway.Metadata.Namespace == namespace {
+			filteredGateways = append(filteredGateways, gateway)
+		}
+	}
+	return filteredGateways
 }
 
 func joinGatewayNames(gateways v1.GatewayList) string {
@@ -244,7 +259,8 @@ func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualSe
 		BindPort:    gateway.BindPort,
 		ListenerType: &gloov1.Listener_HttpListener{
 			HttpListener: &gloov1.HttpListener{
-				VirtualHosts: virtualHosts,
+				VirtualHosts:    virtualHosts,
+				ListenerPlugins: gateway.Plugins,
 			},
 		},
 		SslConfiguations: sslConfigs,

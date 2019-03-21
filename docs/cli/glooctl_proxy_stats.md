@@ -17,16 +17,16 @@ glooctl proxy stats [flags]
 ### Options
 
 ```
-  -h, --help               help for stats
-  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -h, --help   help for stats
 ```
 
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive   use interactive mode
-  -p, --name string   the name of the proxy service/deployment to use (default "gateway-proxy")
-      --port string   the name of the service port to connect to (default "http")
+  -i, --interactive        use interactive mode
+      --name string        the name of the proxy service/deployment to use (default "gateway-proxy")
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+      --port string        the name of the service port to connect to (default "http")
 ```
 
 ### SEE ALSO

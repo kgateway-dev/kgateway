@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `plugins.gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [ServiceSpec](#ServiceSpec)
+- [ServiceSpec](#servicespec)
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="ServiceSpec">ServiceSpec</a>
+### ServiceSpec
 
  
 Describes APIs and application-level information for services
@@ -39,8 +39,8 @@ ServiceSpec configuration is opaque to Gloo and handled by Service Plugins.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rest` | [.rest.plugins.gloo.solo.io.ServiceSpec](../rest/rest.proto.sk#ServiceSpec) |  |  |
-| `grpc` | [.grpc.plugins.gloo.solo.io.ServiceSpec](../grpc/grpc.proto.sk#ServiceSpec) |  |  |
+| `rest` | [.rest.plugins.gloo.solo.io.ServiceSpec](../rest/rest.proto.sk#servicespec) |  |  |
+| `grpc` | [.grpc.plugins.gloo.solo.io.ServiceSpec](../grpc/grpc.proto.sk#servicespec) |  |  |
 
 
 

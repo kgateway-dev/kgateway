@@ -17,9 +17,11 @@ glooctl create [flags]
 ### Options
 
 ```
-  -f, --file string     file to be read or written to
-  -h, --help            help for create
-  -o, --output string   output format: (yaml, json, table)
+  -f, --file string        file to be read or written to
+  -h, --help               help for create
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -o, --output string      output format: (yaml, json, table)
 ```
 
 ### Options inherited from parent commands

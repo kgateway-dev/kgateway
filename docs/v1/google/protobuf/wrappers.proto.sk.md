@@ -44,18 +44,18 @@ typed field and its default value.
 
 
  
-##### Types:
+#### Types:
 
 
-- [DoubleValue](#DoubleValue)
-- [FloatValue](#FloatValue)
-- [Int64Value](#Int64Value)
-- [UInt64Value](#UInt64Value)
-- [Int32Value](#Int32Value)
-- [UInt32Value](#UInt32Value)
-- [BoolValue](#BoolValue)
-- [StringValue](#StringValue)
-- [BytesValue](#BytesValue)
+- [DoubleValue](#doublevalue)
+- [FloatValue](#floatvalue)
+- [Int64Value](#int64value)
+- [UInt64Value](#uint64value)
+- [Int32Value](#int32value)
+- [UInt32Value](#uint32value)
+- [BoolValue](#boolvalue)
+- [StringValue](#stringvalue)
+- [BytesValue](#bytesvalue)
   
 
 
@@ -67,7 +67,7 @@ typed field and its default value.
 
 
 ---
-### <a name="DoubleValue">DoubleValue</a>
+### DoubleValue
 
  
 Wrapper message for `double`.
@@ -87,7 +87,7 @@ The JSON representation for `DoubleValue` is JSON number.
 
 
 ---
-### <a name="FloatValue">FloatValue</a>
+### FloatValue
 
  
 Wrapper message for `float`.
@@ -107,7 +107,7 @@ The JSON representation for `FloatValue` is JSON number.
 
 
 ---
-### <a name="Int64Value">Int64Value</a>
+### Int64Value
 
  
 Wrapper message for `int64`.
@@ -127,7 +127,7 @@ The JSON representation for `Int64Value` is JSON string.
 
 
 ---
-### <a name="UInt64Value">UInt64Value</a>
+### UInt64Value
 
  
 Wrapper message for `uint64`.
@@ -147,7 +147,7 @@ The JSON representation for `UInt64Value` is JSON string.
 
 
 ---
-### <a name="Int32Value">Int32Value</a>
+### Int32Value
 
  
 Wrapper message for `int32`.
@@ -167,7 +167,7 @@ The JSON representation for `Int32Value` is JSON number.
 
 
 ---
-### <a name="UInt32Value">UInt32Value</a>
+### UInt32Value
 
  
 Wrapper message for `uint32`.
@@ -187,7 +187,7 @@ The JSON representation for `UInt32Value` is JSON number.
 
 
 ---
-### <a name="BoolValue">BoolValue</a>
+### BoolValue
 
  
 Wrapper message for `bool`.
@@ -207,7 +207,7 @@ The JSON representation for `BoolValue` is JSON `true` and `false`.
 
 
 ---
-### <a name="StringValue">StringValue</a>
+### StringValue
 
  
 Wrapper message for `string`.
@@ -227,7 +227,7 @@ The JSON representation for `StringValue` is JSON string.
 
 
 ---
-### <a name="BytesValue">BytesValue</a>
+### BytesValue
 
  
 Wrapper message for `bytes`.

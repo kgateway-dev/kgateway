@@ -22,16 +22,16 @@ glooctl create upstream kube [flags]
       --kube-service-labels strings     comma-separated list of labels (key=value) to use for customized selection of pods for this upstream. can be used to select subsets of pods for a service e.g. for blue-green deployment
       --kube-service-namespace string   namespace where the kubernetes service lives (default "default")
       --kube-service-port uint32        the port exposed by the kubernetes service. for services with multiple ports, create an upstream for each port. (default 80)
-      --name string                     name of the resource to read or write
-  -n, --namespace string                namespace for reading or writing resources (default "gloo-system")
       --service-spec-type string        if set, Gloo supports additional routing features to upstreams with a service spec. The service spec defines a set of features 
 ```
 
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -o, --output string      output format: (yaml, json, table)
 ```
 
 ### SEE ALSO

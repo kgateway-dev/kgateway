@@ -8,15 +8,15 @@ weight: 5
 
 
 ### Package: `gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Settings](#Settings) **Top-Level Resource**
-- [KubernetesCrds](#KubernetesCrds)
-- [KubernetesSecrets](#KubernetesSecrets)
-- [VaultSecrets](#VaultSecrets)
-- [KubernetesConfigmaps](#KubernetesConfigmaps)
-- [Directory](#Directory)
+- [Settings](#settings) **Top-Level Resource**
+- [KubernetesCrds](#kubernetescrds)
+- [KubernetesSecrets](#kubernetessecrets)
+- [VaultSecrets](#vaultsecrets)
+- [KubernetesConfigmaps](#kubernetesconfigmaps)
+- [Directory](#directory)
   
 
 
@@ -28,24 +28,24 @@ weight: 5
 
 
 ---
-### <a name="Settings">Settings</a>
+### Settings
 
  
 
 
 ```yaml
-"discovery_namespace": string
-"watch_namespaces": []string
-"kubernetes_config_source": .gloo.solo.io.Settings.KubernetesCrds
-"directory_config_source": .gloo.solo.io.Settings.Directory
-"kubernetes_secret_source": .gloo.solo.io.Settings.KubernetesSecrets
-"vault_secret_source": .gloo.solo.io.Settings.VaultSecrets
-"directory_secret_source": .gloo.solo.io.Settings.Directory
-"kubernetes_artifact_source": .gloo.solo.io.Settings.KubernetesConfigmaps
-"directory_artifact_source": .gloo.solo.io.Settings.Directory
-"bind_addr": string
-"refresh_rate": .google.protobuf.Duration
-"dev_mode": bool
+"discoveryNamespace": string
+"watchNamespaces": []string
+"kubernetesConfigSource": .gloo.solo.io.Settings.KubernetesCrds
+"directoryConfigSource": .gloo.solo.io.Settings.Directory
+"kubernetesSecretSource": .gloo.solo.io.Settings.KubernetesSecrets
+"vaultSecretSource": .gloo.solo.io.Settings.VaultSecrets
+"directorySecretSource": .gloo.solo.io.Settings.Directory
+"kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
+"directoryArtifactSource": .gloo.solo.io.Settings.Directory
+"bindAddr": string
+"refreshRate": .google.protobuf.Duration
+"devMode": bool
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
@@ -54,27 +54,27 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `discovery_namespace` | `string` | namespace to write discovered data |  |
-| `watch_namespaces` | `[]string` | namespaces to watch for user config as well as services TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces... |  |
-| `kubernetes_config_source` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#KubernetesCrds) |  |  |
-| `directory_config_source` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
-| `kubernetes_secret_source` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#KubernetesSecrets) |  |  |
-| `vault_secret_source` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk#VaultSecrets) |  |  |
-| `directory_secret_source` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
-| `kubernetes_artifact_source` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#KubernetesConfigmaps) |  |  |
-| `directory_artifact_source` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#Directory) |  |  |
-| `bind_addr` | `string` | where the gloo xds server should bind (should not need configuration by user) |  |
-| `refresh_rate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how frequently to resync watches, etc |  |
-| `dev_mode` | `bool` | enable serving debug data on port 9090 |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#Extensions) | Settings for extensions |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
+| `discoveryNamespace` | `string` | namespace to write discovered data |  |
+| `watchNamespaces` | `[]string` | namespaces to watch for user config as well as services TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces... |  |
+| `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#kubernetescrds) |  |  |
+| `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
+| `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#kubernetessecrets) |  |  |
+| `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk#vaultsecrets) |  |  |
+| `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
+| `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#kubernetesconfigmaps) |  |  |
+| `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
+| `bindAddr` | `string` | where the gloo xds server should bind (should not need configuration by user) |  |
+| `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how frequently to resync watches, etc |  |
+| `devMode` | `bool` | enable serving debug data on port 9090 |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
 
 
 
 
 ---
-### <a name="KubernetesCrds">KubernetesCrds</a>
+### KubernetesCrds
 
  
 ilackarms(todo: make sure these are configurable)
@@ -90,7 +90,7 @@ ilackarms(todo: make sure these are configurable)
 
 
 ---
-### <a name="KubernetesSecrets">KubernetesSecrets</a>
+### KubernetesSecrets
 
 
 
@@ -105,7 +105,7 @@ ilackarms(todo: make sure these are configurable)
 
 
 ---
-### <a name="VaultSecrets">VaultSecrets</a>
+### VaultSecrets
 
 
 
@@ -120,7 +120,7 @@ ilackarms(todo: make sure these are configurable)
 
 
 ---
-### <a name="KubernetesConfigmaps">KubernetesConfigmaps</a>
+### KubernetesConfigmaps
 
 
 
@@ -135,7 +135,7 @@ ilackarms(todo: make sure these are configurable)
 
 
 ---
-### <a name="Directory">Directory</a>
+### Directory
 
 
 

@@ -319,7 +319,7 @@
   revision = "6480d4af844c189cf5dd913db24ddd339d3a4f85"
 
 [[projects]]
-  digest = "1:fc7bb338bb59d2d6dd8627a40dfbae9908c81fdd541d3013e77de248628dd734"
+  digest = "1:337b6710f93230615f6008cae18120743c963b887a57a4ad52d68fb71bb51a62"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -335,6 +335,7 @@
     "envoy/config/filter/http/fault/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
+    "envoy/config/grpc_credential/v2alpha",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
     "envoy/config/ratelimit/v2",
@@ -345,7 +346,8 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "6bb1dbbfcb2b3192849c3f0e6d3a6a6f038ded8b"
+  revision = "0ad6fa1cf0b9b6ca8f3617a7188a568e81f40b87"
+  version = "v0.6.9"
 
 [[projects]]
   digest = "1:f1f2bd73c025d24c3b93abf6364bccb802cf2fdedaa44360804c67800e8fab8d"
@@ -907,6 +909,14 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "2f1d1f20f75d5404f53b9edf6b53ed5505508675"
+
+[[projects]]
+  digest = "1:8f3e1c572760f95e2b36c360396a9d4f9df9f53026b426208ef618b5112fd1fe"
+  name = "github.com/helm/helm"
+  packages = ["pkg/hooks"]
+  pruneopts = "UT"
+  revision = "79d07943b03aea2b76c12644b4b54733bc5958d6"
+  version = "v2.13.0"
 
 [[projects]]
   branch = "master"
@@ -1474,7 +1484,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:76c863a74b670eac67d9564d50a124bf0cd2067ba4d9a521b7e36812c81694a9"
+  digest = "1:895e4708511088712de26601f976255b2930717d1f3fe2ff735e7d39784348c2"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1489,13 +1499,14 @@
     "logger",
     "protoutils",
     "testutils",
+    "testutils/clusterlock",
     "testutils/exec",
     "testutils/helper",
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "53120bd8b4acdb2e0486f21f5d672419c3fcd0c0"
-  version = "v0.5.0"
+  revision = "94b56d174b345de8c59b6312228ccbd9c21b3581"
+  version = "v0.5.1"
 
 [[projects]]
   branch = "master"
@@ -1506,7 +1517,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:155f1b5daff601582d60bf0cf717222b544f7540b2992f82a72ddbae5576decb"
+  digest = "1:6c172d601e7943ee80ec60c660069073bf36b79a32ea511574c78c3a9b20af0b"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1561,8 +1572,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "6dbbf377211f93ed8dbc6689bfc6cf5aa4a3f821"
-  version = "v0.3.1"
+  revision = "e722533e9c1f1a41eee32a256ff5c09a20f2bd03"
+  version = "v0.3.10"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2451,6 +2462,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Netflix/go-expect",
+    "github.com/avast/retry-go",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
@@ -2465,6 +2477,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
     "github.com/envoyproxy/go-control-plane/pkg/util",
@@ -2487,6 +2500,7 @@
     "github.com/hashicorp/consul/agent/config",
     "github.com/hashicorp/consul/api",
     "github.com/hashicorp/go-multierror",
+    "github.com/helm/helm/pkg/hooks",
     "github.com/hinshun/vt10x",
     "github.com/inconshreveable/go-update",
     "github.com/jhump/protoreflect/desc",
@@ -2521,6 +2535,7 @@
     "github.com/solo-io/go-utils/logger",
     "github.com/solo-io/go-utils/protoutils",
     "github.com/solo-io/go-utils/testutils",
+    "github.com/solo-io/go-utils/testutils/clusterlock",
     "github.com/solo-io/go-utils/testutils/exec",
     "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
@@ -2586,14 +2601,12 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/helm/pkg/chartutil",
-    "k8s.io/helm/pkg/hooks",
     "k8s.io/helm/pkg/manifest",
     "k8s.io/helm/pkg/proto/hapi/chart",
     "k8s.io/helm/pkg/renderutil",
     "k8s.io/helm/pkg/tiller",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
-    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

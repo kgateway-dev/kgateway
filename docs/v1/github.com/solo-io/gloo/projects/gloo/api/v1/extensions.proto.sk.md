@@ -8,11 +8,11 @@ weight: 5
 
 
 ### Package: `gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Extensions](#Extensions)
-- [Extension](#Extension)
+- [Extensions](#extensions)
+- [Extension](#extension)
   
 
 
@@ -24,7 +24,7 @@ weight: 5
 
 
 ---
-### <a name="Extensions">Extensions</a>
+### Extensions
 
 
 
@@ -41,7 +41,7 @@ weight: 5
 
 
 ---
-### <a name="Extension">Extension</a>
+### Extension
 
 
 

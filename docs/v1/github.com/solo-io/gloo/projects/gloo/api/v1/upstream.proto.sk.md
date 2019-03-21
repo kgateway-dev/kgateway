@@ -8,11 +8,11 @@ weight: 5
 
 
 ### Package: `gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Upstream](#Upstream) **Top-Level Resource**
-- [DiscoveryMetadata](#DiscoveryMetadata)
+- [Upstream](#upstream) **Top-Level Resource**
+- [DiscoveryMetadata](#discoverymetadata)
   
 
 
@@ -24,7 +24,7 @@ weight: 5
 
 
 ---
-### <a name="Upstream">Upstream</a>
+### Upstream
 
  
 
@@ -34,25 +34,25 @@ Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`
 Each upstream type is handled by a corresponding Gloo plugin.
 
 ```yaml
-"upstream_spec": .gloo.solo.io.UpstreamSpec
+"upstreamSpec": .gloo.solo.io.UpstreamSpec
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
-"discovery_metadata": .gloo.solo.io.DiscoveryMetadata
+"discoveryMetadata": .gloo.solo.io.DiscoveryMetadata
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstream_spec` | [.gloo.solo.io.UpstreamSpec](../plugins.proto.sk#UpstreamSpec) | Type-specific configuration. Examples include static, kubernetes, and aws. The type-specific config for the upstream is called a spec. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#Status) | Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
-| `discovery_metadata` | [.gloo.solo.io.DiscoveryMetadata](../upstream.proto.sk#DiscoveryMetadata) | Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here. |  |
+| `upstreamSpec` | [.gloo.solo.io.UpstreamSpec](../plugins.proto.sk#upstreamspec) | Type-specific configuration. Examples include static, kubernetes, and aws. The type-specific config for the upstream is called a spec. |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `discoveryMetadata` | [.gloo.solo.io.DiscoveryMetadata](../upstream.proto.sk#discoverymetadata) | Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here. |  |
 
 
 
 
 ---
-### <a name="DiscoveryMetadata">DiscoveryMetadata</a>
+### DiscoveryMetadata
 
  
 created by discovery services

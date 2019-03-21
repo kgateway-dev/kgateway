@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Only consider gateways in the write namespace, so installations in different namespaces with overlapping discovery won't fail to set up the proxy.
+    issueLink: https://github.com/solo-io/gloo/issues/538

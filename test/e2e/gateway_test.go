@@ -8,6 +8,7 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
@@ -49,11 +50,62 @@ var _ = Describe("Gateway", func() {
 			cancel()
 		})
 
+		BeforeEach(func() {
+			// wait for the two gateways to be created.
+			Eventually(func() (gatewayv1.GatewayList, error) {
+				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+			}, "10s", "0.1s").Should(HaveLen(2))
+		})
+
+		It("should should disable grpc web filter", func() {
+
+			gatewaycli := testClients.GatewayClient
+			gw, err := gatewaycli.List(writeNamespace, clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			for _, g := range gw {
+				g.Plugins = &gloov1.ListenerPlugins{
+					GrpcWeb: &grpc_web.GrpcWeb{
+						Disable: true,
+					},
+				}
+				gatewaycli.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			}
+
+			// write a virtual service so we have a proxy
+			vscli := testClients.VirtualServiceClient
+			vs := getTrivialVirtualServiceForUpstream("default", core.ResourceRef{Name: "test", Namespace: "test"})
+			_, err = vscli.Write(vs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// make sure it propagates to proxy
+			Eventually(
+				func() (int, error) {
+					numdisable := 0
+					proxy, err := testClients.ProxyClient.Read(writeNamespace, "gateway-proxy", clients.ReadOpts{})
+					if err != nil {
+						return 0, err
+					}
+					for _, l := range proxy.Listeners {
+						if h := l.GetHttpListener(); h != nil {
+							if p := h.GetListenerPlugins(); p != nil {
+								if grpcweb := p.GetGrpcWeb(); grpcweb != nil {
+									if grpcweb.Disable {
+										numdisable++
+									}
+								}
+							}
+
+						}
+					}
+					return numdisable, nil
+				}, "5s", "0.1s").Should(Equal(2))
+
+		})
+
 		It("should create 2 gateway", func() {
 
 			gatewaycli := testClients.GatewayClient
-
-			Eventually(func() (gatewayv1.GatewayList, error) { return gatewaycli.List(writeNamespace, clients.ListOpts{}) }, "10s", "0.1s").Should(HaveLen(2))
 			gw, err := gatewaycli.List(writeNamespace, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 

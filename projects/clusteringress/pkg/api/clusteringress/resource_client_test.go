@@ -4,6 +4,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/testutils/clusterlock"
+
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
@@ -31,6 +34,7 @@ var _ = Describe("ResourceClient", func() {
 		return
 	}
 	var (
+		locker            *clusterlock.TestClusterLocker
 		resourceName      string
 		cfg               *rest.Config
 		knative           knativeclientset.Interface
@@ -44,6 +48,11 @@ var _ = Describe("ResourceClient", func() {
 		Expect(err).NotTo(HaveOccurred())
 		// register knative crd just in case
 		apiexts, err := clientset.NewForConfig(cfg)
+
+		locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), "")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(locker.AcquireLock()).NotTo(HaveOccurred())
+
 		Expect(err).NotTo(HaveOccurred())
 		_, err = apiexts.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&v1beta1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -85,6 +94,7 @@ var _ = Describe("ResourceClient", func() {
 		kubeIngressClient = knative.NetworkingV1alpha1().ClusterIngresses()
 	})
 	AfterEach(func() {
+		defer locker.ReleaseLock()
 		// register knative crd just in case
 		apiexts, err := clientset.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())

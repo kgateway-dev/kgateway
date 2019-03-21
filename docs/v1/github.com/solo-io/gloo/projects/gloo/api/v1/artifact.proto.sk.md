@@ -8,10 +8,10 @@ weight: 5
 
 
 ### Package: `gloo.solo.io` 
-##### Types:
+#### Types:
 
 
-- [Artifact](#Artifact) **Top-Level Resource**
+- [Artifact](#artifact) **Top-Level Resource**
   
 
 
@@ -23,7 +23,7 @@ weight: 5
 
 
 ---
-### <a name="Artifact">Artifact</a>
+### Artifact
 
  
 
@@ -45,7 +45,7 @@ Supported artifact backends can be selected in Gloo's boostrap options.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `data` | `string` | Raw data data being stored |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#Metadata) | Metadata contains the object metadata for this resource |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 
 
 
