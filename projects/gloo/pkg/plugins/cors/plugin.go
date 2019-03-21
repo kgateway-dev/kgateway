@@ -32,6 +32,8 @@ func (p *plugin) translateUserCorsConfig(in *v1.CorsPolicy, out *envoyroute.Cors
 	out.AllowHeaders = strings.Join(in.AllowHeaders, ",")
 	out.ExposeHeaders = strings.Join(in.ExposeHeaders, ",")
 	out.MaxAge = in.MaxAge
-	out.AllowCredentials = &types.BoolValue{Value: in.AllowCredentials}
+	if in.AllowCredentials {
+		out.AllowCredentials = &types.BoolValue{Value: in.AllowCredentials}
+	}
 	return nil
 }
