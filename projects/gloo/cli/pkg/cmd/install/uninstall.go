@@ -36,7 +36,7 @@ func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 
 func deleteRbac(cli install.KubeCli) error {
 	for _, rbacKind := range GlooRbacKinds {
-		if err := cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo,gloo=rbac"); err != nil {
+		if err := cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo"); err != nil {
 			return errors.Wrapf(err, "delete rbac failed")
 		}
 	}
