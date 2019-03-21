@@ -79,7 +79,6 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 		// RateLimits: nil,
 		// RequestHeadersToAdd: nil,
 		// ResponseHeadersToRemove: nil,
-		// Cors: nil,
 		// Auth: nil,
 	}
 
