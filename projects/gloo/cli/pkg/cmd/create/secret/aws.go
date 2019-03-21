@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-
-	"github.com/aws/aws-sdk-go/aws/credentials"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -45,7 +43,6 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flagutils.AddMetadataFlags(flags, &opts.Metadata)
 	flags.StringVar(&input.AccessKey, "access-key", "", "aws access key")
 	flags.StringVar(&input.SecretKey, "secret-key", "", "aws secret key")
 

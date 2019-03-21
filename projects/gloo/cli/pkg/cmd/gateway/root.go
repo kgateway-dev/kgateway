@@ -3,6 +3,7 @@ package gateway
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 	cmd.PersistentFlags().StringVarP(&opts.Proxy.Name, "name", "p", "gateway-proxy", "the name of the proxy service/deployment to use")
 	cmd.PersistentFlags().StringVar(&opts.Proxy.Port, "port", "http", "the name of the service port to connect to")
+
+	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
 
 	cmd.AddCommand(urlCmd(opts))
 	cmd.AddCommand(dumpCmd(opts))
