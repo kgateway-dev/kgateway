@@ -19,8 +19,6 @@ glooctl create secret tls [flags]
 ```
       --certchain string    filename of certchain for secret
   -h, --help                help for tls
-      --name string         name of the resource to read or write
-  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
       --privatekey string   filename of privatekey for secret
       --rootca string       filename of rootca for secret
 ```
@@ -28,8 +26,10 @@ glooctl create secret tls [flags]
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -o, --output string      output format: (yaml, json, table)
 ```
 
 ### SEE ALSO

@@ -17,18 +17,18 @@ glooctl proxy logs [flags]
 ### Options
 
 ```
-  -d, --debug              enable debug logging on the proxy as part of this command (default true)
-  -f, --follow             enable debug logging on the proxy as part of this command
-  -h, --help               help for logs
-  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -d, --debug    enable debug logging on the proxy as part of this command (default true)
+  -f, --follow   enable debug logging on the proxy as part of this command
+  -h, --help     help for logs
 ```
 
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive   use interactive mode
-  -p, --name string   the name of the proxy service/deployment to use (default "gateway-proxy")
-      --port string   the name of the service port to connect to (default "http")
+  -i, --interactive        use interactive mode
+  -p, --name string        the name of the proxy service/deployment to use (default "gateway-proxy")
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+      --port string        the name of the service port to connect to (default "http")
 ```
 
 ### SEE ALSO

@@ -19,16 +19,16 @@ glooctl create secret aws [flags]
 ```
       --access-key string   aws access key
   -h, --help                help for aws
-      --name string         name of the resource to read or write
-  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
       --secret-key string   aws secret key
 ```
 
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive     use interactive mode
-  -o, --output string   output format: (yaml, json, table)
+  -i, --interactive        use interactive mode
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -o, --output string      output format: (yaml, json, table)
 ```
 
 ### SEE ALSO
