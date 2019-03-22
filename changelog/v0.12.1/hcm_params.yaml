@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow providing parameters to fine tune the http connection manager.
+    issueLink: https://github.com/solo-io/gloo/issues/591
