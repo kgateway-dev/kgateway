@@ -39,24 +39,25 @@ gateway:
       pullPolicy: Always
     replicas: 1
 
-gatewayProxy:
-  deployment:
-    image:
-      repository: quay.io/solo-io/gloo-envoy-wrapper
-      pullPolicy: Always
-    httpPort: 8080
-    httpsPort: 8443
-    replicas: 1
-  service:
-    type: LoadBalancer
-    # clusterIP: None
-    httpPort: 80
-    httpsPort: 443
-  # Annotation example: setup ssl with aws cert when service.type is LoadBalancer
-  # extraAnnotations:
-  #   service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:EXAMPLE_CERT
-  configMap:
-    data:
+gatewayProxies:
+  gateway-proxy:
+    deployment:
+      image:
+        repository: quay.io/solo-io/gloo-envoy-wrapper
+        pullPolicy: Always
+      httpPort: 8080
+      httpsPort: 8443
+      replicas: 1
+    service:
+      type: LoadBalancer
+      # clusterIP: None
+      httpPort: 80
+      httpsPort: 443
+    # Annotation example: setup ssl with aws cert when service.type is LoadBalancer
+    # extraAnnotations:
+    #   service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:EXAMPLE_CERT
+    configMap:
+      data:
 
 
 ingress:
