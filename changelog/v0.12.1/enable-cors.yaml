@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add support for CORS on virtual services.
+    issueLink: https://github.com/solo-io/gloo/issues/589
