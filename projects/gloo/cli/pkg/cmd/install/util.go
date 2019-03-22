@@ -74,6 +74,7 @@ type GlooInstallSpec struct {
 	PreInstallKinds []string
 	InstallKinds    []string
 	Crds            []string
+	ExtraValues     map[string]string
 }
 
 // Entry point for all three GLoo installation commands
@@ -99,6 +100,7 @@ func installGloo(opts *options.Options, valueFileName string) error {
 		PreInstallKinds: preInstallKinds,
 		InstallKinds: installKinds,
 		Crds: GlooCrdNames,
+		ExtraValues: nil,
 	}
 
 	return InstallGloo(opts, installSpec)
@@ -130,7 +132,7 @@ func installFromUri(opts *options.Options, spec GlooInstallSpec) error {
 		return errors.Wrapf(err, "retrieving gloo helm chart archive")
 	}
 
-	values, err := install.GetValuesFromFile(chart, spec.ValueFileName)
+	values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.ExtraValues)
 	if err != nil {
 		return errors.Wrapf(err, "retrieving value file: %s", spec.ValueFileName)
 	}
