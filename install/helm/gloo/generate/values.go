@@ -1,16 +1,16 @@
 package generate
 
 type Config struct {
-	Namespace    *Namespace    `json:"namespace,omitempty"`
-	Rbac         *Rbac         `json:"rbac,omitempty"`
-	Crds         *Crds         `json:"crds,omitempty"`
-	Settings     *Settings     `json:"settings,omitempty"`
-	Gloo         *Gloo         `json:"gloo,omitempty"`
-	Discovery    *Discovery    `json:"discovery,omitempty"`
-	Gateway      *Gateway      `json:"gateway,omitempty"`
-	GatewayProxy *GatewayProxy `json:"gatewayProxy,omitempty"`
-	Ingress      *Ingress      `json:"ingress,omitempty"`
-	IngressProxy *IngressProxy `json:"ingressProxy,omitempty"`
+	Namespace      *Namespace              `json:"namespace,omitempty"`
+	Rbac           *Rbac                   `json:"rbac,omitempty"`
+	Crds           *Crds                   `json:"crds,omitempty"`
+	Settings       *Settings               `json:"settings,omitempty"`
+	Gloo           *Gloo                   `json:"gloo,omitempty"`
+	Discovery      *Discovery              `json:"discovery,omitempty"`
+	Gateway        *Gateway                `json:"gateway,omitempty"`
+	GatewayProxies map[string]GatewayProxy `json:"gatewayProxies,omitempty"`
+	Ingress        *Ingress                `json:"ingress,omitempty"`
+	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 }
 
 type Namespace struct {
