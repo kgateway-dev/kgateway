@@ -14,22 +14,22 @@ import (
 )
 
 func SetRoutePerFilterConfig(out *envoyroute.Route, filterName string, protoext proto.Message) error {
-	if out.PerFilterConfig == nil {
-		out.PerFilterConfig = make(map[string]*types.Struct)
+	if out.TypedPerFilterConfig == nil {
+		out.TypedPerFilterConfig = make(map[string]*types.Any)
 	}
-	return setConfig(out.PerFilterConfig, filterName, protoext)
+	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
 }
 func SetVhostPerFilterConfig(out *envoyroute.VirtualHost, filterName string, protoext proto.Message) error {
-	if out.PerFilterConfig == nil {
-		out.PerFilterConfig = make(map[string]*types.Struct)
+	if out.TypedPerFilterConfig == nil {
+		out.TypedPerFilterConfig = make(map[string]*types.Any)
 	}
-	return setConfig(out.PerFilterConfig, filterName, protoext)
+	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
 }
 func SetWeightedClusterPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWeight, filterName string, protoext proto.Message) error {
-	if out.PerFilterConfig == nil {
-		out.PerFilterConfig = make(map[string]*types.Struct)
+	if out.TypedPerFilterConfig == nil {
+		out.TypedPerFilterConfig = make(map[string]*types.Any)
 	}
-	return setConfig(out.PerFilterConfig, filterName, protoext)
+	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
 }
 
 // Return Per-Filter config for destinations, we put them on the Route (single dest) or WeightedCluster (multi dest)
