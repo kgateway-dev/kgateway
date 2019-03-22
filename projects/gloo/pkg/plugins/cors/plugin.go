@@ -6,9 +6,11 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -62,4 +64,18 @@ func runtimeConstEnabled() *envoycore.RuntimeFractionalPercent {
 		// Disabling the RuntimeKey field provides the "const" property
 		// RuntimeKey: "intentionally_disabled"
 	}
+}
+
+const (
+	// filter info
+	pluginStage = plugins.PostInAuth
+)
+
+func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error){
+	return []plugins.StagedHttpFilter{
+		{
+			HttpFilter: &envoyhttp.HttpFilter{Name: envoyutil.CORS},
+			Stage:      pluginStage,
+		},
+	}, nil
 }
