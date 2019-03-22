@@ -32,7 +32,7 @@ import "google/protobuf/duration.proto";
 // to be usable by Gloo.
 message ListenerPlugins {
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
-    hcm.plugins.gloo.solo.io.HCMSettings hcm_settings = 2;
+    hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
 }
 
 // Plugin-specific configuration that lives on virtual hosts

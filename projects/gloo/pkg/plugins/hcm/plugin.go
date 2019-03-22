@@ -31,7 +31,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
 	if hl, ok := in.ListenerType.(*v1.Listener_HttpListener); ok {
-		hcmSettings := hl.HttpListener.ListenerPlugins.HcmSettings
+		hcmSettings := hl.HttpListener.ListenerPlugins.HttpConnectionManagerSettings
 		if hcmSettings != nil {
 			for _, f := range out.FilterChains {
 				for i, filter := range f.Filters {
@@ -50,6 +50,13 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 						cfg.Via = hcmSettings.Via
 						cfg.GenerateRequestId = hcmSettings.GenerateRequestId
 						cfg.Proxy_100Continue = hcmSettings.Proxy_100Continue
+						cfg.StreamIdleTimeout = hcmSettings.StreamIdleTimeout
+						cfg.IdleTimeout = hcmSettings.IdleTimeout
+						cfg.MaxRequestHeadersKb = hcmSettings.MaxRequestHeadersKb
+						cfg.RequestTimeout = hcmSettings.RequestTimeout
+						cfg.DrainTimeout = hcmSettings.DrainTimeout
+						cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
+						cfg.ServerName = hcmSettings.ServerName
 
 						f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &cfg)
 						// this should never error
