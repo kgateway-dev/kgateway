@@ -29,8 +29,9 @@ var (
 	// These will get cleaned up by uninstall if delete-crds or all is chosen
 	GlooCrdNames []string
 
-	preInstallKinds []string
-	installKinds   []string
+	// Set up during pre-install (settings only)
+	GlooPreInstallKinds []string
+	GlooInstallKinds   []string
 	ExpectedLabels map[string]string
 )
 
@@ -48,9 +49,13 @@ func init() {
 
 	// When we install, make sure we know what we're installing, so we can later uninstall correctly.
 	// This validation is tested by projects/gloo/cli/pkg/cmd/install/install_test.go
-	installKinds = append(GlooSystemKinds, "Namespace")
+	GlooInstallKinds = append(GlooSystemKinds, "Namespace")
 	for _, kind := range GlooRbacKinds {
-		installKinds = append(installKinds, kind)
+		GlooInstallKinds = append(GlooInstallKinds, kind)
+	}
+
+	GlooPreInstallKinds = []string{
+		"Settings",
 	}
 
 	GlooCrdNames = []string{
@@ -97,8 +102,8 @@ func installGloo(opts *options.Options, valueFileName string) error {
 		ValueFileName: valueFileName,
 		ProductName: "gloo",
 		ExpectedLabels: ExpectedLabels,
-		PreInstallKinds: preInstallKinds,
-		InstallKinds: installKinds,
+		PreInstallKinds: GlooPreInstallKinds,
+		InstallKinds: GlooInstallKinds,
 		Crds: GlooCrdNames,
 		ExtraValues: nil,
 	}
