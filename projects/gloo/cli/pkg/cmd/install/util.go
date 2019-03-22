@@ -29,8 +29,9 @@ var (
 	// These will get cleaned up by uninstall if delete-crds or all is chosen
 	GlooCrdNames []string
 
+	preInstallKinds []string
 	installKinds   []string
-	expectedLabels map[string]string
+	ExpectedLabels map[string]string
 )
 
 func init() {
@@ -60,9 +61,19 @@ func init() {
 		"virtualservices.gateway.solo.io",
 	}
 
-	expectedLabels = map[string]string{
+	ExpectedLabels = map[string]string{
 		"app": "gloo",
 	}
+}
+
+type GlooInstallSpec struct {
+	ProductName     string // gloo or glooe
+	HelmArchiveUri  string
+	ValueFileName   string
+	ExpectedLabels  map[string]string
+	PreInstallKinds []string
+	InstallKinds    []string
+	Crds            []string
 }
 
 // Entry point for all three GLoo installation commands
@@ -80,10 +91,17 @@ func installGloo(opts *options.Options, valueFileName string) error {
 		helmChartArchiveUri = helmChartOverride
 	}
 
-	if err := installFromUri(helmChartArchiveUri, opts, valueFileName); err != nil {
-		return errors.Wrapf(err, "installing Gloo from helm chart")
+	installSpec := GlooInstallSpec{
+		HelmArchiveUri: helmChartArchiveUri,
+		ValueFileName: valueFileName,
+		ProductName: "gloo",
+		ExpectedLabels: ExpectedLabels,
+		PreInstallKinds: preInstallKinds,
+		InstallKinds: installKinds,
+		Crds: GlooCrdNames,
 	}
-	return nil
+
+	return InstallGloo(opts, installSpec)
 }
 
 func getGlooVersion(opts *options.Options) (string, error) {
@@ -92,30 +110,36 @@ func getGlooVersion(opts *options.Options) (string, error) {
 			"when running an unreleased version of glooctl")
 	}
 	return version.Version, nil
-
 }
 
-func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName string) error {
+func InstallGloo(opts *options.Options, spec GlooInstallSpec) error {
+	if err := installFromUri(opts, spec); err != nil {
+		return errors.Wrapf(err, "installing Gloo from helm chart")
+	}
+	return nil
+}
 
-	if path.Ext(helmArchiveUri) != ".tgz" && !strings.HasSuffix(helmArchiveUri, ".tar.gz") {
-		return errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", helmArchiveUri)
+func installFromUri(opts *options.Options, spec GlooInstallSpec) error {
+
+	if path.Ext(spec.HelmArchiveUri) != ".tgz" && !strings.HasSuffix(spec.HelmArchiveUri, ".tar.gz") {
+		return errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", spec.HelmArchiveUri)
 	}
 
-	chart, err := install.GetHelmArchive(helmArchiveUri)
+	chart, err := install.GetHelmArchive(spec.HelmArchiveUri)
 	if err != nil {
 		return errors.Wrapf(err, "retrieving gloo helm chart archive")
 	}
 
-	values, err := install.GetValuesFromFile(chart, valuesFileName)
+	values, err := install.GetValuesFromFile(chart, spec.ValueFileName)
 	if err != nil {
-		return errors.Wrapf(err, "retrieving value file: %s", valuesFileName)
+		return errors.Wrapf(err, "retrieving value file: %s", spec.ValueFileName)
 	}
 
 	// These are the .Release.* variables used during rendering
 	renderOpts := renderutil.Options{
 		ReleaseOptions: chartutil.ReleaseOptions{
 			Namespace: opts.Install.Namespace,
-			Name:      "gloo",
+			Name:      spec.ProductName,
 		},
 	}
 
@@ -124,11 +148,11 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		return err
 	}
 
-	if err := doCrdInstall(opts, chart, values, renderOpts, skipKnativeInstall); err != nil {
+	if err := doCrdInstall(opts, spec, chart, values, renderOpts, skipKnativeInstall); err != nil {
 		return err
 	}
 
-	if err := doGlooPreInstall(opts, chart, values, renderOpts); err != nil {
+	if err := doGlooPreInstall(opts, spec, chart, values, renderOpts); err != nil {
 		return err
 	}
 
@@ -138,11 +162,12 @@ func installFromUri(helmArchiveUri string, opts *options.Options, valuesFileName
 		}
 	}
 
-	return doGlooInstall(opts, chart, values, renderOpts)
+	return doGlooInstall(opts, spec, chart, values, renderOpts)
 }
 
 func doCrdInstall(
 	opts *options.Options,
+	spec GlooInstallSpec,
 	chart *chart.Chart,
 	values *chart.Config,
 	renderOpts renderutil.Options,
@@ -168,7 +193,7 @@ func doCrdInstall(
 
 	// TODO: we currently skip validation when installing knative, we could enumerate knative CRDs and validate those too
 	if skipKnativeInstall {
-		if err := validateCrds(crdNames); err != nil {
+		if err := validateCrds(spec, crdNames); err != nil {
 			return err
 		}
 	}
@@ -185,9 +210,9 @@ func doCrdInstall(
 	return nil
 }
 
-func validateCrds(crdNames []string) error {
+func validateCrds(spec GlooInstallSpec, crdNames []string) error {
 	for _, crdName := range crdNames {
-		if !cliutil.Contains(GlooCrdNames, crdName) {
+		if !cliutil.Contains(spec.Crds, crdName) {
 			return errors.Errorf("Unknown crd %s", crdName)
 		}
 	}
@@ -196,6 +221,7 @@ func validateCrds(crdNames []string) error {
 
 func doGlooPreInstall(
 	opts *options.Options,
+	spec GlooInstallSpec,
 	chart *chart.Chart,
 	values *chart.Config,
 	renderOpts renderutil.Options) error {
@@ -208,11 +234,12 @@ func doGlooPreInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, []string{"Settings"}, expectedLabels)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, spec.PreInstallKinds, spec.ExpectedLabels)
 }
 
 func doGlooInstall(
 	opts *options.Options,
+	spec GlooInstallSpec,
 	chart *chart.Chart,
 	values *chart.Config,
 	renderOpts renderutil.Options) error {
@@ -226,7 +253,7 @@ func doGlooInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, installKinds, expectedLabels)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, spec.InstallKinds, spec.ExpectedLabels)
 }
 
 func doKnativeInstall(
