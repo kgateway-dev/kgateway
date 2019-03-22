@@ -28,7 +28,7 @@ var _ = Describe("Plugin", func() {
 		allowHeaders1     = []string{"allowH1", "allow2"}
 		exposeHeaders1    = []string{"exHeader", "eh2"}
 		maxAge1           = "5555"
-		enabled = &envoyroute.CorsPolicy_FilterEnabled{}
+		enabled           = &envoyroute.CorsPolicy_FilterEnabled{}
 	)
 
 	BeforeEach(func() {
@@ -48,13 +48,13 @@ var _ = Describe("Plugin", func() {
 			CorsPolicy: in1,
 		}
 		enabled = &envoyroute.CorsPolicy_FilterEnabled{
-				FilterEnabled: &envoycore.RuntimeFractionalPercent{
-					DefaultValue: &envoytype.FractionalPercent{
-						Numerator: 100,
-						Denominator: envoytype.FractionalPercent_HUNDRED,
-					},
+			FilterEnabled: &envoycore.RuntimeFractionalPercent{
+				DefaultValue: &envoytype.FractionalPercent{
+					Numerator:   100,
+					Denominator: envoytype.FractionalPercent_HUNDRED,
 				},
-			}
+			},
+		}
 
 		out1 := &envoyroute.CorsPolicy{
 			AllowOrigin:      allowOrigin1,
@@ -92,7 +92,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			envoy1min := &envoyroute.VirtualHost{
 				Cors: &envoyroute.CorsPolicy{
-					AllowOrigin: allowOrigin1,
+					AllowOrigin:      allowOrigin1,
 					EnabledSpecifier: enabled,
 				},
 			}
