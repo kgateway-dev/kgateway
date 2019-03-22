@@ -2,10 +2,10 @@ package translator
 
 import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
 func UpstreamToClusterName(upstream core.ResourceRef) string {
@@ -19,14 +19,14 @@ func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filte
 	}
 
 	if config != nil {
-		marshalledConf, err := protoutils.MarshalStruct(config)
+		marshalledConf, err := types.MarshalAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
 			return envoylistener.Filter{}, err
 		}
 
-		s.ConfigType = &envoylistener.Filter_Config{
-			Config: marshalledConf,
+		s.ConfigType = &envoylistener.Filter_TypedConfig{
+			TypedConfig: marshalledConf,
 		}
 	}
 
@@ -40,7 +40,7 @@ func ParseConfig(c configObject, config proto.Message) error {
 	}
 	structt := c.GetConfig()
 	if structt != nil {
-		return protoutils.UnmarshalStruct(structt, config)
+		return envoyutil.StructToMessage(structt, config)
 	}
 	return nil
 }

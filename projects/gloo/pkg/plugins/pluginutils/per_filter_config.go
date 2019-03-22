@@ -6,7 +6,6 @@ import (
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
-	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
@@ -51,10 +50,10 @@ func MarkPerFilterConfig(ctx context.Context, in *v1.Route, out *envoyroute.Rout
 		}
 		return configureMultiDest(dest.Multi, multiClusterSpecifier.WeightedClusters, filterName, perFilterConfig)
 	case *v1.RouteAction_Single:
-		if out.PerFilterConfig == nil {
-			out.PerFilterConfig = make(map[string]*types.Struct)
+		if out.TypedPerFilterConfig == nil {
+			out.TypedPerFilterConfig = make(map[string]*types.Any)
 		}
-		return configureSingleDest(dest.Single, out.PerFilterConfig, filterName, perFilterConfig)
+		return configureSingleDest(dest.Single, out.TypedPerFilterConfig, filterName, perFilterConfig)
 	}
 
 	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.Destination).Name())
@@ -68,10 +67,10 @@ func configureMultiDest(in *v1.MultiDestination, out *envoyroute.WeightedCluster
 		return errors.Errorf("number of input destinations did not match number of destination weighted clusters")
 	}
 	for i := range in.Destinations {
-		if out.Clusters[i].PerFilterConfig == nil {
-			out.Clusters[i].PerFilterConfig = make(map[string]*types.Struct)
+		if out.Clusters[i].TypedPerFilterConfig == nil {
+			out.Clusters[i].TypedPerFilterConfig = make(map[string]*types.Any)
 		}
-		err := configureSingleDest(in.Destinations[i].Destination, out.Clusters[i].PerFilterConfig, filterName, perFilterConfig)
+		err := configureSingleDest(in.Destinations[i].Destination, out.Clusters[i].TypedPerFilterConfig, filterName, perFilterConfig)
 		if err != nil {
 			return err
 		}
@@ -80,7 +79,7 @@ func configureMultiDest(in *v1.MultiDestination, out *envoyroute.WeightedCluster
 	return nil
 }
 
-func configureSingleDest(in *v1.Destination, out map[string]*types.Struct, filterName string, perFilterConfig PerFilterConfigFunc) error {
+func configureSingleDest(in *v1.Destination, out map[string]*types.Any, filterName string, perFilterConfig PerFilterConfigFunc) error {
 	config, err := perFilterConfig(in)
 	if err != nil {
 		return err
@@ -88,14 +87,15 @@ func configureSingleDest(in *v1.Destination, out map[string]*types.Struct, filte
 	return setConfig(out, filterName, config)
 }
 
-func setConfig(out map[string]*types.Struct, filterName string, config proto.Message) error {
+func setConfig(out map[string]*types.Any, filterName string, config proto.Message) error {
 	if config == nil {
 		return nil
 	}
-	configStruct, err := util.MessageToStruct(config)
+
+	configAny, err := types.MarshalAny(config)
 	if err != nil {
 		return err
 	}
-	out[filterName] = configStruct
+	out[filterName] = configAny
 	return nil
 }
