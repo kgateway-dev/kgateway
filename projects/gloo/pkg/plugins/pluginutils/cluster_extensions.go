@@ -2,7 +2,6 @@ package pluginutils
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
@@ -11,13 +10,23 @@ import (
 func SetExtenstionProtocolOptions(out *envoyapi.Cluster, filterName string, protoext proto.Message) error {
 
 	if out.ExtensionProtocolOptions == nil {
-		out.ExtensionProtocolOptions = make(map[string]*types.Struct)
+		out.TypedExtensionProtocolOptions = make(map[string]*types.Any)
 	}
 
-	protoextStruct, err := util.MessageToStruct(protoext)
+	marshalledProtoExt, err := types.MarshalAny(protoext)
 	if err != nil {
 		return errors.Wrapf(err, "converting extension "+filterName+" protocol options to struct")
 	}
-	out.ExtensionProtocolOptions[filterName] = protoextStruct
+	out.TypedExtensionProtocolOptions[filterName] = marshalledProtoExt
+	return nil
+}
+
+func GetExtenstionProtocolOptions(out *envoyapi.Cluster, filterName string, protoext proto.Message) error {
+	if out.TypedExtensionProtocolOptions == nil {
+		return nil
+	}
+	if marshalledProtoExt, ok := out.TypedExtensionProtocolOptions[filterName]; ok {
+		return types.UnmarshalAny(marshalledProtoExt, protoext)
+	}
 	return nil
 }
