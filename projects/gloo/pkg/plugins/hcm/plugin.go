@@ -68,4 +68,5 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 			}
 		}
 	}
+	return nil
 }
