@@ -30,40 +30,49 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
-	if hl, ok := in.ListenerType.(*v1.Listener_HttpListener); ok {
-		hcmSettings := hl.HttpListener.ListenerPlugins.HttpConnectionManagerSettings
-		if hcmSettings != nil {
-			for _, f := range out.FilterChains {
-				for i, filter := range f.Filters {
-					if filter.Name == envoyutil.HTTPConnectionManager {
-						// get config
-						var cfg envoyhttp.HttpConnectionManager
-						err := translatorutil.ParseConfig(&filter, &cfg)
-						// this should never error
-						if err != nil {
-							return err
-						}
+	hl, ok := in.ListenerType.(*v1.Listener_HttpListener)
+	if !ok {
+		return nil
+	}
+	if hl.HttpListener == nil {
+		return nil
+	}
+	if hl.HttpListener.ListenerPlugins == nil {
+		return nil
+	}
+	hcmSettings := hl.HttpListener.ListenerPlugins.HttpConnectionManagerSettings
+	if hcmSettings == nil {
+		return nil
+	}
+	for _, f := range out.FilterChains {
+		for i, filter := range f.Filters {
+			if filter.Name == envoyutil.HTTPConnectionManager {
+				// get config
+				var cfg envoyhttp.HttpConnectionManager
+				err := translatorutil.ParseConfig(&filter, &cfg)
+				// this should never error
+				if err != nil {
+					return err
+				}
 
-						cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
-						cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
-						cfg.SkipXffAppend = hcmSettings.SkipXffAppend
-						cfg.Via = hcmSettings.Via
-						cfg.GenerateRequestId = hcmSettings.GenerateRequestId
-						cfg.Proxy_100Continue = hcmSettings.Proxy_100Continue
-						cfg.StreamIdleTimeout = hcmSettings.StreamIdleTimeout
-						cfg.IdleTimeout = hcmSettings.IdleTimeout
-						cfg.MaxRequestHeadersKb = hcmSettings.MaxRequestHeadersKb
-						cfg.RequestTimeout = hcmSettings.RequestTimeout
-						cfg.DrainTimeout = hcmSettings.DrainTimeout
-						cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
-						cfg.ServerName = hcmSettings.ServerName
+				cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
+				cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
+				cfg.SkipXffAppend = hcmSettings.SkipXffAppend
+				cfg.Via = hcmSettings.Via
+				cfg.GenerateRequestId = hcmSettings.GenerateRequestId
+				cfg.Proxy_100Continue = hcmSettings.Proxy_100Continue
+				cfg.StreamIdleTimeout = hcmSettings.StreamIdleTimeout
+				cfg.IdleTimeout = hcmSettings.IdleTimeout
+				cfg.MaxRequestHeadersKb = hcmSettings.MaxRequestHeadersKb
+				cfg.RequestTimeout = hcmSettings.RequestTimeout
+				cfg.DrainTimeout = hcmSettings.DrainTimeout
+				cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
+				cfg.ServerName = hcmSettings.ServerName
 
-						f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &cfg)
-						// this should never error
-						if err != nil {
-							return err
-						}
-					}
+				f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &cfg)
+				// this should never error
+				if err != nil {
+					return err
 				}
 			}
 		}
