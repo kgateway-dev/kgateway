@@ -26,6 +26,8 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
+// Contains various settings for Envoy's http connection manager.
+// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
 type HttpConnectionManagerSettings struct {
 	SkipXffAppend        bool               `protobuf:"varint,1,opt,name=skip_xff_append,json=skipXffAppend,proto3" json:"skip_xff_append,omitempty"`
 	Via                  string             `protobuf:"bytes,2,opt,name=via,proto3" json:"via,omitempty"`

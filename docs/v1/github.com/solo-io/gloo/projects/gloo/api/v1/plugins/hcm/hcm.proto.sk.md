@@ -25,7 +25,9 @@ weight: 5
 ---
 ### HttpConnectionManagerSettings
 
-
+ 
+Contains various settings for Envoy's http connection manager.
+See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
 
 ```yaml
 "skipXffAppend": bool

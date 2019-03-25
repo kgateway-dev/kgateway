@@ -9,6 +9,8 @@ import "google/protobuf/duration.proto";
 
 option (gogoproto.equal_all) = true;
 
+// Contains various settings for Envoy's http connection manager.
+// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
 message HttpConnectionManagerSettings {
     bool skip_xff_append = 1;
     string via = 2;
