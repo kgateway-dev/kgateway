@@ -10,7 +10,7 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -74,7 +74,7 @@ const (
 	pluginStage = plugins.PostInAuth
 )
 
-func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error){
+func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
 		{
 			HttpFilter: &envoyhttp.HttpFilter{Name: envoyutil.CORS},
