@@ -16,83 +16,45 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+type perCorsTestData struct {
+	up            *gloov1.Upstream
+	envoyInstance *services.EnvoyInstance
+	envoyPort     uint32
+	envoyAdminUrl string
+}
+type corsTestData struct {
+	testClients services.TestClients
+	ctx         context.Context
+	per         perCorsTestData
+}
+
 var _ = Describe("CORS", func() {
 
-	var (
-		testClients services.TestClients
-		ctx         context.Context
-	)
+	var td corsTestData
 
 	BeforeEach(func() {
-		ctx, _ = context.WithCancel(context.Background())
-		t := services.RunGateway(ctx, true)
-		testClients = t
+		td.ctx, _ = context.WithCancel(context.Background())
+		td.testClients = services.RunGateway(td.ctx, true)
+		td.per = perCorsTestData{}
 	})
 
 	Context("with envoy", func() {
 
-		var (
-			envoyInstance *services.EnvoyInstance
-			up            *gloov1.Upstream
-			opts          clients.WriteOpts
-
-			envoyPort     uint32
-			activeCors    *gloov1.CorsPolicy
-			envoyAdminUrl string
-		)
-
-		setupProxy := func(proxy *gloov1.Proxy) error {
-			proxyCli := testClients.ProxyClient
-			p, err := proxyCli.Write(proxy, opts)
-			fmt.Println("made proxy:")
-			fmt.Println(p)
-			return err
-		}
-
-		setupInitialProxy := func() {
-			envoyPort = services.NextBindPort()
-			proxy := getGlooCorsProxyWithVersion(envoyPort, up, "", activeCors)
-			err := setupProxy(proxy)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() error {
-				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
-				if err != nil {
-					return err
-				}
-				return nil
-			}, "10s", ".1s").Should(BeNil())
-		}
-
-		setupUpstream := func() {
-			tu := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-			// drain channel as we dont care about it
-			go func() {
-				for range tu.C {
-				}
-			}()
-			var opts clients.WriteOpts
-			up = tu.Upstream
-			fmt.Println("up")
-			fmt.Println(up)
-			_, err := testClients.UpstreamClient.Write(up, opts)
-			Expect(err).NotTo(HaveOccurred())
-		}
-
 		BeforeEach(func() {
 			var err error
-			envoyInstance, err = envoyFactory.NewEnvoyInstance()
+			td.per.envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
-			envoyAdminUrl = fmt.Sprintf("http://%s:%d/config_dump", "localhost", envoyInstance.AdminPort)
+			td.per.envoyAdminUrl = fmt.Sprintf("http://%s:%d/config_dump", "localhost", td.per.envoyInstance.AdminPort)
 
-			err = envoyInstance.Run(testClients.GlooPort)
+			err = td.per.envoyInstance.Run(td.testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
-			setupUpstream()
+			td.per.up = td.setupUpstream()
 		})
 
 		AfterEach(func() {
-			if envoyInstance != nil {
-				envoyInstance.Clean()
+			if td.per.envoyInstance != nil {
+				td.per.envoyInstance.Clean()
 			}
 		})
 
@@ -108,20 +70,21 @@ var _ = Describe("CORS", func() {
 				MaxAge:           "",
 				AllowCredentials: false,
 			}
-			activeCors = cors
-			setupInitialProxy()
+			By("Setup initial proxy")
+			td.setupInitialProxy(cors)
+			By("Set cors")
 			Eventually(func() error {
-				proxy, err := getGlooCorsProxy(testClients, envoyPort, up, cors)
+				proxy, err := td.getGlooCorsProxy(cors)
 				if err != nil {
 					return err
 				}
-				opts.OverwriteExisting = true
-				return setupProxy(proxy)
+				return td.setupProxy(proxy)
 			}, "10s", ".1s").Should(BeNil())
 
 			envoyConfig := ""
+			By("Get config")
 			Eventually(func() error {
-				r, err := http.Get(envoyAdminUrl)
+				r, err := http.Get(td.per.envoyAdminUrl)
 				if err != nil {
 					return err
 				}
@@ -141,15 +104,15 @@ var _ = Describe("CORS", func() {
 	})
 })
 
-func getGlooCorsProxy(testClients services.TestClients, envoyPort uint32, up *gloov1.Upstream, cors *gloov1.CorsPolicy) (*gloov1.Proxy, error) {
-	readProxy, err := testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
+func (td *corsTestData) getGlooCorsProxy(cors *gloov1.CorsPolicy) (*gloov1.Proxy, error) {
+	readProxy, err := td.testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
 	if err != nil {
 		return nil, err
 	}
-	return getGlooCorsProxyWithVersion(envoyPort, up, readProxy.Metadata.ResourceVersion, cors), nil
+	return td.per.getGlooCorsProxyWithVersion(td.per.up, readProxy.Metadata.ResourceVersion, cors), nil
 }
 
-func getGlooCorsProxyWithVersion(envoyPort uint32, up *gloov1.Upstream, resourceVersion string, cors *gloov1.CorsPolicy) *gloov1.Proxy {
+func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(up *gloov1.Upstream, resourceVersion string, cors *gloov1.CorsPolicy) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
 			Name:            "proxy",
@@ -159,7 +122,7 @@ func getGlooCorsProxyWithVersion(envoyPort uint32, up *gloov1.Upstream, resource
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
 			BindAddress: "127.0.0.1",
-			BindPort:    envoyPort,
+			BindPort:    ptd.envoyPort,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
 					VirtualHosts: []*gloov1.VirtualHost{{
@@ -188,4 +151,37 @@ func getGlooCorsProxyWithVersion(envoyPort uint32, up *gloov1.Upstream, resource
 			},
 		}},
 	}
+}
+
+func (td *corsTestData) setupProxy(proxy *gloov1.Proxy) error {
+	proxyCli := td.testClients.ProxyClient
+	_, err := proxyCli.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
+	return err
+}
+
+func (td *corsTestData) setupInitialProxy(activeCors *gloov1.CorsPolicy) {
+	td.per.envoyPort = services.NextBindPort()
+	proxy := td.per.getGlooCorsProxyWithVersion(td.per.up, "", activeCors)
+	err := td.setupProxy(proxy)
+	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", td.per.envoyPort))
+		if err != nil {
+			return err
+		}
+		return nil
+	}, "10s", ".1s").Should(BeNil())
+}
+
+func (td *corsTestData) setupUpstream() *gloov1.Upstream {
+	tu := v1helpers.NewTestHttpUpstream(td.ctx, td.per.envoyInstance.LocalAddr())
+	// drain channel as we don't care about it
+	go func() {
+		for range tu.C {
+		}
+	}()
+	up := tu.Upstream
+	_, err := td.testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
+	Expect(err).NotTo(HaveOccurred())
+	return up
 }
