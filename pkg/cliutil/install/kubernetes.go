@@ -89,6 +89,9 @@ func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expe
 }
 
 func filterExcludedResources(manifest string, excludeResources ResourceMatcherFunc) (string, error) {
+	if excludeResources == nil {
+		return manifest, nil
+	}
 	content, _, err := excludeManifestContentByMatcher(manifest, excludeResources)
 	return content, err
 }
