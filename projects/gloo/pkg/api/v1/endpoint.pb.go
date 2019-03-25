@@ -27,7 +27,6 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 //
 //@solo-kit:resource.short_name=ep
 //@solo-kit:resource.plural_name=endpoints
-//@solo-kit:resource.resource_groups=api.gloo.solo.io
 //
 //Endpoints represent dynamically discovered address/ports where an upstream service is listening
 type Endpoint struct {

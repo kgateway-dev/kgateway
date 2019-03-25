@@ -25,24 +25,48 @@ var _ = Describe("DiscoveryEventLoop", func() {
 
 	BeforeEach(func() {
 
-		secretClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-		secretClient, err := NewSecretClient(secretClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-
 		upstreamClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		upstreamClient, err := NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewDiscoveryEmitter(secretClient, upstreamClient)
+		secretClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		secretClient, err := NewSecretClient(secretClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		proxyClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		proxyClient, err := NewProxyClient(proxyClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		artifactClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		artifactClient, err := NewArtifactClient(artifactClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		endpointClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		endpointClient, err := NewEndpointClient(endpointClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		emitter = NewDiscoveryEmitter(upstreamClient, secretClient, proxyClient, artifactClient, endpointClient)
 	})
 	It("runs sync function on a new snapshot", func() {
+		_, err = emitter.Upstream().Write(NewUpstream(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Secret().Write(NewSecret(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.Upstream().Write(NewUpstream(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.Proxy().Write(NewProxy(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.Artifact().Write(NewArtifact(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.Endpoint().Write(NewEndpoint(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockDiscoverySyncer{}
 		el := NewDiscoveryEventLoop(emitter, sync)

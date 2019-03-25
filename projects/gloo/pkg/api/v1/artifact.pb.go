@@ -27,7 +27,6 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 //
 //@solo-kit:resource.short_name=art
 //@solo-kit:resource.plural_name=artifacts
-//@solo-kit:resource.resource_groups=api.gloo.solo.io
 //
 //Gloo Artifacts are used by Gloo to store small bits of binary or file data.
 //

@@ -42,6 +42,6 @@
         "name": "Endpoint",
         "package": "gloo.solo.io"
       }
-    ],
+    ]
   }
 }

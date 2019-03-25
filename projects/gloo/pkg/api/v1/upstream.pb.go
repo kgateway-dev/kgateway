@@ -27,7 +27,6 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 //
 //@solo-kit:resource.short_name=us
 //@solo-kit:resource.plural_name=upstreams
-//@solo-kit:resource.resource_groups=api.gloo.solo.io,discovery.gloo.solo.io,translator.supergloo.solo.io
 //
 // Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
 // [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster) in Envoy terminology.

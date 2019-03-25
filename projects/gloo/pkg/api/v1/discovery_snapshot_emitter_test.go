@@ -40,8 +40,11 @@ var _ = Describe("V1Emitter", func() {
 		name1, name2   = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg            *rest.Config
 		emitter        DiscoveryEmitter
-		secretClient   SecretClient
 		upstreamClient UpstreamClient
+		secretClient   SecretClient
+		proxyClient    ProxyClient
+		artifactClient ArtifactClient
+		endpointClient EndpointClient
 	)
 
 	BeforeEach(func() {
@@ -55,6 +58,14 @@ var _ = Describe("V1Emitter", func() {
 		err = setup.SetupKubeForTest(namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		var kube kubernetes.Interface
+		// Upstream Constructor
+		upstreamClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         UpstreamCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
+		}
+		upstreamClient, err = NewUpstreamClient(upstreamClientFactory)
+		Expect(err).NotTo(HaveOccurred())
 		// Secret Constructor
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
@@ -67,15 +78,39 @@ var _ = Describe("V1Emitter", func() {
 		}
 		secretClient, err = NewSecretClient(secretClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		// Upstream Constructor
-		upstreamClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         UpstreamCrd,
+		// Proxy Constructor
+		proxyClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         ProxyCrd,
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
-		upstreamClient, err = NewUpstreamClient(upstreamClientFactory)
+		proxyClient, err = NewProxyClient(proxyClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewDiscoveryEmitter(secretClient, upstreamClient)
+		// Artifact Constructor
+		kube, err = kubernetes.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
+		artifactClientFactory := &factory.KubeConfigMapClientFactory{
+			Clientset: kube,
+			Cache:     kcache,
+		}
+		artifactClient, err = NewArtifactClient(artifactClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		// Endpoint Constructor
+		kube, err = kubernetes.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
+		Expect(err).NotTo(HaveOccurred())
+		endpointClientFactory := &factory.KubeConfigMapClientFactory{
+			Clientset: kube,
+			Cache:     kcache,
+		}
+		endpointClient, err = NewEndpointClient(endpointClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		emitter = NewDiscoveryEmitter(upstreamClient, secretClient, proxyClient, artifactClient, endpointClient)
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace1)
@@ -95,6 +130,66 @@ var _ = Describe("V1Emitter", func() {
 		var snap *DiscoverySnapshot
 
 		/*
+			Upstream
+		*/
+
+		assertSnapshotUpstreams := func(expectUpstreams UpstreamList, unexpectUpstreams UpstreamList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectUpstreams {
+						if _, err := snap.Upstreams.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectUpstreams {
+						if _, err := snap.Upstreams.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
+					combined := UpstreamsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		upstream1a, err := upstreamClient.Write(NewUpstream(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstream1b, err := upstreamClient.Write(NewUpstream(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, nil)
+		upstream2a, err := upstreamClient.Write(NewUpstream(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstream2b, err := upstreamClient.Write(NewUpstream(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)
+
+		err = upstreamClient.Delete(upstream2a.Metadata.Namespace, upstream2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamClient.Delete(upstream2b.Metadata.Namespace, upstream2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, UpstreamList{upstream2a, upstream2b})
+
+		err = upstreamClient.Delete(upstream1a.Metadata.Namespace, upstream1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamClient.Delete(upstream1b.Metadata.Namespace, upstream1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(nil, UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
+
+		/*
 			Secret
 		*/
 
@@ -155,21 +250,21 @@ var _ = Describe("V1Emitter", func() {
 		assertSnapshotSecrets(nil, SecretList{secret1a, secret1b, secret2a, secret2b})
 
 		/*
-			Upstream
+			Proxy
 		*/
 
-		assertSnapshotUpstreams := func(expectUpstreams UpstreamList, unexpectUpstreams UpstreamList) {
+		assertSnapshotProxies := func(expectProxies ProxyList, unexpectProxies ProxyList) {
 		drain:
 			for {
 				select {
 				case snap = <-snapshots:
-					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+					for _, expected := range expectProxies {
+						if _, err := snap.Proxies.List().Find(expected.Metadata.Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
-					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+					for _, unexpected := range unexpectProxies {
+						if _, err := snap.Proxies.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -177,9 +272,9 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
-					combined := UpstreamsByNamespace{
+					nsList1, _ := proxyClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := proxyClient.List(namespace2, clients.ListOpts{})
+					combined := ProxiesByNamespace{
 						namespace1: nsList1,
 						namespace2: nsList2,
 					}
@@ -187,32 +282,152 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-		upstream1a, err := upstreamClient.Write(NewUpstream(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		proxy1a, err := proxyClient.Write(NewProxy(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		upstream1b, err := upstreamClient.Write(NewUpstream(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, nil)
-		upstream2a, err := upstreamClient.Write(NewUpstream(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		upstream2b, err := upstreamClient.Write(NewUpstream(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		proxy1b, err := proxyClient.Write(NewProxy(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)
-
-		err = upstreamClient.Delete(upstream2a.Metadata.Namespace, upstream2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		assertSnapshotProxies(ProxyList{proxy1a, proxy1b}, nil)
+		proxy2a, err := proxyClient.Write(NewProxy(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream2b.Metadata.Namespace, upstream2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, UpstreamList{upstream2a, upstream2b})
-
-		err = upstreamClient.Delete(upstream1a.Metadata.Namespace, upstream1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream1b.Metadata.Namespace, upstream1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		proxy2b, err := proxyClient.Write(NewProxy(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreams(nil, UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
+		assertSnapshotProxies(ProxyList{proxy1a, proxy1b, proxy2a, proxy2b}, nil)
+
+		err = proxyClient.Delete(proxy2a.Metadata.Namespace, proxy2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = proxyClient.Delete(proxy2b.Metadata.Namespace, proxy2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotProxies(ProxyList{proxy1a, proxy1b}, ProxyList{proxy2a, proxy2b})
+
+		err = proxyClient.Delete(proxy1a.Metadata.Namespace, proxy1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = proxyClient.Delete(proxy1b.Metadata.Namespace, proxy1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotProxies(nil, ProxyList{proxy1a, proxy1b, proxy2a, proxy2b})
+
+		/*
+			Artifact
+		*/
+
+		assertSnapshotArtifacts := func(expectArtifacts ArtifactList, unexpectArtifacts ArtifactList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectArtifacts {
+						if _, err := snap.Artifacts.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectArtifacts {
+						if _, err := snap.Artifacts.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := artifactClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := artifactClient.List(namespace2, clients.ListOpts{})
+					combined := ArtifactsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		artifact1a, err := artifactClient.Write(NewArtifact(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		artifact1b, err := artifactClient.Write(NewArtifact(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b}, nil)
+		artifact2a, err := artifactClient.Write(NewArtifact(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		artifact2b, err := artifactClient.Write(NewArtifact(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b, artifact2a, artifact2b}, nil)
+
+		err = artifactClient.Delete(artifact2a.Metadata.Namespace, artifact2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = artifactClient.Delete(artifact2b.Metadata.Namespace, artifact2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b}, ArtifactList{artifact2a, artifact2b})
+
+		err = artifactClient.Delete(artifact1a.Metadata.Namespace, artifact1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = artifactClient.Delete(artifact1b.Metadata.Namespace, artifact1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(nil, ArtifactList{artifact1a, artifact1b, artifact2a, artifact2b})
+
+		/*
+			Endpoint
+		*/
+
+		assertSnapshotEndpoints := func(expectEndpoints EndpointList, unexpectEndpoints EndpointList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectEndpoints {
+						if _, err := snap.Endpoints.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectEndpoints {
+						if _, err := snap.Endpoints.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := endpointClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := endpointClient.List(namespace2, clients.ListOpts{})
+					combined := EndpointsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		endpoint1a, err := endpointClient.Write(NewEndpoint(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		endpoint1b, err := endpointClient.Write(NewEndpoint(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b}, nil)
+		endpoint2a, err := endpointClient.Write(NewEndpoint(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		endpoint2b, err := endpointClient.Write(NewEndpoint(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b, endpoint2a, endpoint2b}, nil)
+
+		err = endpointClient.Delete(endpoint2a.Metadata.Namespace, endpoint2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = endpointClient.Delete(endpoint2b.Metadata.Namespace, endpoint2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b}, EndpointList{endpoint2a, endpoint2b})
+
+		err = endpointClient.Delete(endpoint1a.Metadata.Namespace, endpoint1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = endpointClient.Delete(endpoint1b.Metadata.Namespace, endpoint1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(nil, EndpointList{endpoint1a, endpoint1b, endpoint2a, endpoint2b})
 	})
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
@@ -228,6 +443,66 @@ var _ = Describe("V1Emitter", func() {
 		var snap *DiscoverySnapshot
 
 		/*
+			Upstream
+		*/
+
+		assertSnapshotUpstreams := func(expectUpstreams UpstreamList, unexpectUpstreams UpstreamList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectUpstreams {
+						if _, err := snap.Upstreams.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectUpstreams {
+						if _, err := snap.Upstreams.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
+					combined := UpstreamsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		upstream1a, err := upstreamClient.Write(NewUpstream(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstream1b, err := upstreamClient.Write(NewUpstream(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, nil)
+		upstream2a, err := upstreamClient.Write(NewUpstream(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstream2b, err := upstreamClient.Write(NewUpstream(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)
+
+		err = upstreamClient.Delete(upstream2a.Metadata.Namespace, upstream2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamClient.Delete(upstream2b.Metadata.Namespace, upstream2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, UpstreamList{upstream2a, upstream2b})
+
+		err = upstreamClient.Delete(upstream1a.Metadata.Namespace, upstream1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamClient.Delete(upstream1b.Metadata.Namespace, upstream1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreams(nil, UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
+
+		/*
 			Secret
 		*/
 
@@ -288,21 +563,21 @@ var _ = Describe("V1Emitter", func() {
 		assertSnapshotSecrets(nil, SecretList{secret1a, secret1b, secret2a, secret2b})
 
 		/*
-			Upstream
+			Proxy
 		*/
 
-		assertSnapshotUpstreams := func(expectUpstreams UpstreamList, unexpectUpstreams UpstreamList) {
+		assertSnapshotProxies := func(expectProxies ProxyList, unexpectProxies ProxyList) {
 		drain:
 			for {
 				select {
 				case snap = <-snapshots:
-					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+					for _, expected := range expectProxies {
+						if _, err := snap.Proxies.List().Find(expected.Metadata.Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
-					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+					for _, unexpected := range unexpectProxies {
+						if _, err := snap.Proxies.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -310,9 +585,9 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
-					combined := UpstreamsByNamespace{
+					nsList1, _ := proxyClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := proxyClient.List(namespace2, clients.ListOpts{})
+					combined := ProxiesByNamespace{
 						namespace1: nsList1,
 						namespace2: nsList2,
 					}
@@ -320,31 +595,151 @@ var _ = Describe("V1Emitter", func() {
 				}
 			}
 		}
-		upstream1a, err := upstreamClient.Write(NewUpstream(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		proxy1a, err := proxyClient.Write(NewProxy(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		upstream1b, err := upstreamClient.Write(NewUpstream(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, nil)
-		upstream2a, err := upstreamClient.Write(NewUpstream(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		upstream2b, err := upstreamClient.Write(NewUpstream(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		proxy1b, err := proxyClient.Write(NewProxy(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)
-
-		err = upstreamClient.Delete(upstream2a.Metadata.Namespace, upstream2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		assertSnapshotProxies(ProxyList{proxy1a, proxy1b}, nil)
+		proxy2a, err := proxyClient.Write(NewProxy(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream2b.Metadata.Namespace, upstream2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotUpstreams(UpstreamList{upstream1a, upstream1b}, UpstreamList{upstream2a, upstream2b})
-
-		err = upstreamClient.Delete(upstream1a.Metadata.Namespace, upstream1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream1b.Metadata.Namespace, upstream1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		proxy2b, err := proxyClient.Write(NewProxy(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreams(nil, UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
+		assertSnapshotProxies(ProxyList{proxy1a, proxy1b, proxy2a, proxy2b}, nil)
+
+		err = proxyClient.Delete(proxy2a.Metadata.Namespace, proxy2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = proxyClient.Delete(proxy2b.Metadata.Namespace, proxy2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotProxies(ProxyList{proxy1a, proxy1b}, ProxyList{proxy2a, proxy2b})
+
+		err = proxyClient.Delete(proxy1a.Metadata.Namespace, proxy1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = proxyClient.Delete(proxy1b.Metadata.Namespace, proxy1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotProxies(nil, ProxyList{proxy1a, proxy1b, proxy2a, proxy2b})
+
+		/*
+			Artifact
+		*/
+
+		assertSnapshotArtifacts := func(expectArtifacts ArtifactList, unexpectArtifacts ArtifactList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectArtifacts {
+						if _, err := snap.Artifacts.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectArtifacts {
+						if _, err := snap.Artifacts.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := artifactClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := artifactClient.List(namespace2, clients.ListOpts{})
+					combined := ArtifactsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		artifact1a, err := artifactClient.Write(NewArtifact(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		artifact1b, err := artifactClient.Write(NewArtifact(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b}, nil)
+		artifact2a, err := artifactClient.Write(NewArtifact(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		artifact2b, err := artifactClient.Write(NewArtifact(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b, artifact2a, artifact2b}, nil)
+
+		err = artifactClient.Delete(artifact2a.Metadata.Namespace, artifact2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = artifactClient.Delete(artifact2b.Metadata.Namespace, artifact2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(ArtifactList{artifact1a, artifact1b}, ArtifactList{artifact2a, artifact2b})
+
+		err = artifactClient.Delete(artifact1a.Metadata.Namespace, artifact1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = artifactClient.Delete(artifact1b.Metadata.Namespace, artifact1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotArtifacts(nil, ArtifactList{artifact1a, artifact1b, artifact2a, artifact2b})
+
+		/*
+			Endpoint
+		*/
+
+		assertSnapshotEndpoints := func(expectEndpoints EndpointList, unexpectEndpoints EndpointList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectEndpoints {
+						if _, err := snap.Endpoints.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectEndpoints {
+						if _, err := snap.Endpoints.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := endpointClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := endpointClient.List(namespace2, clients.ListOpts{})
+					combined := EndpointsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		endpoint1a, err := endpointClient.Write(NewEndpoint(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		endpoint1b, err := endpointClient.Write(NewEndpoint(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b}, nil)
+		endpoint2a, err := endpointClient.Write(NewEndpoint(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		endpoint2b, err := endpointClient.Write(NewEndpoint(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b, endpoint2a, endpoint2b}, nil)
+
+		err = endpointClient.Delete(endpoint2a.Metadata.Namespace, endpoint2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = endpointClient.Delete(endpoint2b.Metadata.Namespace, endpoint2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(EndpointList{endpoint1a, endpoint1b}, EndpointList{endpoint2a, endpoint2b})
+
+		err = endpointClient.Delete(endpoint1a.Metadata.Namespace, endpoint1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = endpointClient.Delete(endpoint1b.Metadata.Namespace, endpoint1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotEndpoints(nil, EndpointList{endpoint1a, endpoint1b, endpoint2a, endpoint2b})
 	})
 })
