@@ -85,7 +85,8 @@ func installGloo(opts *options.Options, valueFileName string) error {
 	if err != nil {
 		return err
 	}
-	return InstallGloo(opts, *spec)
+	kubeInstallClient := DefaultKubeInstallClient{}
+	return InstallGloo(opts, *spec, &kubeInstallClient)
 }
 
 func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSpec, error) {
@@ -118,8 +119,8 @@ func getGlooVersion(opts *options.Options) (string, error) {
 	return version.Version, nil
 }
 
-func InstallGloo(opts *options.Options, spec GlooInstallSpec) error {
-	installer, err := NewGlooStagedInstaller(opts, spec, &DefaultKubeInstallClient{})
+func InstallGloo(opts *options.Options, spec GlooInstallSpec, client KubeInstallClient) error {
+	installer, err := NewGlooStagedInstaller(opts, spec, client)
 	if err != nil {
 		return err
 	}
