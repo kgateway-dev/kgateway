@@ -7,7 +7,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/helm/helm/pkg/hooks"
 	"github.com/solo-io/go-utils/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/helm/pkg/manifest"
 )
@@ -31,7 +31,7 @@ type ResourceType struct {
 var ExcludeEmptyManifests ManifestFilterFunc = func(input []manifest.Manifest) ([]manifest.Manifest, error) {
 	var output []manifest.Manifest
 	for _, manifest := range input {
-		if !isEmptyManifest(manifest.Content) {
+		if !IsEmptyManifest(manifest.Content) {
 			output = append(output, manifest)
 		}
 
@@ -111,6 +111,21 @@ var excludeManifestContentByMatcher = func(input string, matches ResourceMatcher
 	return
 }
 
+var ExcludeMatchingResources = func(matcherFunc ResourceMatcherFunc) ManifestFilterFunc {
+	if matcherFunc == nil {
+		return IdentityFilterFunc
+	}
+	return func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
+		manifest, _, err := excludeByMatcher(input, matcherFunc)
+		return manifest, err
+	}
+}
+
+var IdentityFilterFunc ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
+	output = input
+	return
+}
+
 // Filters out any pre-install from each manifest
 var ExcludePreInstall ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
 	manifest, _, err := excludeByMatcher(input, preInstallMatcher)
@@ -144,22 +159,11 @@ var ExcludeNotes ManifestFilterFunc = func(input []manifest.Manifest) (output []
 	return
 }
 
-// If this is a knative deployment, we have to check whether knative itself is already installed in the cluster.
-// If knative is already installed and we don't own it, don't install/upgrade/uninstall it (It's okay to update the installation if we own it).
-func SkipKnativeInstall() (bool, error) {
-	installed, ours, err := CheckKnativeInstallation()
-	if err != nil {
-		return true, errors.Wrapf(err, "checking for knative installation")
-	}
-	skipKnativeInstall := installed && !ours
-	return skipKnativeInstall, nil
-}
-
-func KnativeResourceFilterFunction(skipKnativeInstall bool) ManifestFilterFunc {
+func KnativeResourceFilterFunction(skipKnative bool) ManifestFilterFunc {
 	return func(input []manifest.Manifest) ([]manifest.Manifest, error) {
 		var output []manifest.Manifest
 		for _, man := range input {
-			if strings.Contains(man.Name, "knative") && skipKnativeInstall {
+			if strings.Contains(man.Name, "knative") && skipKnative {
 				continue
 			}
 			output = append(output, man)
@@ -167,6 +171,8 @@ func KnativeResourceFilterFunction(skipKnativeInstall bool) ManifestFilterFunc {
 		return output, nil
 	}
 }
+
+var ExcludeKnative ManifestFilterFunc = KnativeResourceFilterFunction(true)
 
 var ExcludeNonKnative ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
 	for _, man := range input {
@@ -180,41 +186,21 @@ var ExcludeNonKnative ManifestFilterFunc = func(input []manifest.Manifest) (outp
 
 var commentRegex = regexp.MustCompile("#.*")
 
-func isEmptyManifest(manifest string) bool {
+func IsEmptyManifest(manifest string) bool {
 	removeComments := commentRegex.ReplaceAllString(manifest, "")
 	removeNewlines := strings.Replace(removeComments, "\n", "", -1)
 	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
 	return removeDashes == ""
 }
 
-func getKinds(manifest string) ([]string, error) {
-	var kinds []string
+func GetResources(manifest string) ([]ResourceType, error) {
+	var resources []ResourceType
 	for _, doc := range strings.Split(manifest, "---") {
 		var resource ResourceType
 		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
 			return nil, errors.Wrapf(err, "parsing resource: %s", doc)
 		}
-		kinds = append(kinds, resource.Kind)
+		resources = append(resources, resource)
 	}
-	return kinds, nil
-}
-
-func validateResourceLabels(manifest string, labels map[string]string) error {
-	if labels == nil {
-		return nil
-	}
-	for _, doc := range strings.Split(manifest, "---") {
-		var resource ResourceType
-		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
-			return errors.Wrapf(err, "parsing resource: %s", doc)
-		}
-		actualLabels := resource.Metadata.Labels
-		for k, v := range labels {
-			val, ok := actualLabels[k]
-			if !ok || v != val {
-				return errors.Errorf("validating labels: expected %s=%s on kind %s", k, v, resource.Kind)
-			}
-		}
-	}
-	return nil
+	return resources, nil
 }

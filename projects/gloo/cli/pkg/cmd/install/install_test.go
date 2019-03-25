@@ -49,12 +49,12 @@ var _ = Describe("Install", func() {
 	It("should error when not providing file with valid extension", func() {
 		_, err := testutils.GlooctlOut("install gateway --file foo")
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("installing gloo in gateway mode: installing Gloo from helm chart: unsupported file extension for Helm chart URI: [foo]. Extension must either be .tgz or .tar.gz"))
+		Expect(err.Error()).To(ContainSubstring("installing gloo in gateway mode: unsupported file extension for Helm chart URI: [foo]. Extension must either be .tgz or .tar.gz"))
 	})
 
 	It("should error when not providing valid file", func() {
 		_, err := testutils.GlooctlOut("install gateway --file foo.tgz")
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("installing gloo in gateway mode: installing Gloo from helm chart: retrieving gloo helm chart archive"))
+		Expect(err.Error()).To(ContainSubstring("installing gloo in gateway mode: retrieving gloo helm chart archive: opening file"))
 	})
 })

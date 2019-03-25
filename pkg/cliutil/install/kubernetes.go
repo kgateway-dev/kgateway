@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/cliutil"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -66,16 +64,13 @@ func WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) e
 }
 
 //noinspection GoNameStartsWithPackageName
-func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expectedLabels map[string]string, excludeResources ResourceMatcherFunc) error {
+func InstallManifest(manifest []byte, isDryRun bool, excludeResources ResourceMatcherFunc) error {
 	manifestString, err := filterExcludedResources(string(manifest), excludeResources)
 	if err != nil {
 		return errors.Wrapf(err, "filtering excluded resources from manifest")
 	}
-	if isEmptyManifest(manifestString) {
+	if IsEmptyManifest(manifestString) {
 		return nil
-	}
-	if err := validateManifest(manifestString, allowedKinds, expectedLabels); err != nil {
-		return err
 	}
 	if isDryRun {
 		fmt.Printf("%s", manifestString)
@@ -84,7 +79,7 @@ func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expe
 		return nil
 	}
 
-	if err := kubectlApply([]byte(manifestString)); err != nil {
+	if err := KubectlApply([]byte(manifestString)); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
@@ -98,22 +93,7 @@ func filterExcludedResources(manifest string, excludeResources ResourceMatcherFu
 	return content, err
 }
 
-func validateManifest(manifestString string, allowedKinds []string, expectedLabels map[string]string) error {
-	if allowedKinds != nil {
-		manifestKinds, err := getKinds(manifestString)
-		if err != nil {
-			return errors.Wrapf(err, "validating manifest kinds")
-		}
-		for _, manifestKind := range manifestKinds {
-			if !cliutil.Contains(allowedKinds, manifestKind) {
-				return errors.Errorf("wasn't expecting to install object with kind %s", manifestKind)
-			}
-		}
-	}
-	return validateResourceLabels(manifestString, expectedLabels)
-}
-
-func kubectlApply(manifest []byte) error {
+func KubectlApply(manifest []byte) error {
 	return Kubectl(bytes.NewBuffer(manifest), "apply", "-f", "-")
 }
 
