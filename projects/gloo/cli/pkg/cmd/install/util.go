@@ -27,7 +27,7 @@ var (
 )
 
 func init() {
-	GlooPreInstallKinds = []string{ "Namespace" }
+	GlooPreInstallKinds = []string{"Namespace"}
 
 	GlooSystemKinds = []string{
 		"Deployment",
