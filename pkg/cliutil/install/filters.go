@@ -22,7 +22,7 @@ type ManifestFilterFunc func(input []manifest.Manifest) (output []manifest.Manif
 // We need to define this ourselves, because if we unmarshal into `apiextensions.CustomResourceDefinition`
 // we don't get the ObjectMeta (in the yaml they are nested under `metadata`, but the k8s struct has
 // them as top level fields...)
-type resourceType struct {
+type ResourceType struct {
 	Metadata v1.ObjectMeta
 	v1.TypeMeta
 }
@@ -39,9 +39,9 @@ var ExcludeEmptyManifests ManifestFilterFunc = func(input []manifest.Manifest) (
 	return output, nil
 }
 
-type resourceMatcherFunc func(resource resourceType) (bool, error)
+type ResourceMatcherFunc func(resource ResourceType) (bool, error)
 
-var preInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var preInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	helmPreInstallHook, ok := resource.Metadata.Annotations[hooks.HookAnno]
 	if !ok || helmPreInstallHook != hooks.PreInstall {
 		return false, nil
@@ -49,7 +49,7 @@ var preInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, e
 	return true, nil
 }
 
-var crdInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var crdInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	crdKind := resource.TypeMeta.Kind == CrdKindName
 	if crdKind {
 		// Check whether the CRD is a Helm "crd-install" hook.
@@ -63,24 +63,24 @@ var crdInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, e
 	return crdKind, nil
 }
 
-var nonCrdInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var nonCrdInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	isCrdInstall, err := crdInstallMatcher(resource)
 	return !isCrdInstall, err
 }
 
-var nonPreInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var nonPreInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	isPreInstall, err := preInstallMatcher(resource)
 	return !isPreInstall, err
 }
 
-var excludeByMatcher = func(input []manifest.Manifest, matches resourceMatcherFunc) (output []manifest.Manifest, resourceNames []string, err error) {
+var excludeByMatcher = func(input []manifest.Manifest, matches ResourceMatcherFunc) (output []manifest.Manifest, resourceNames []string, err error) {
 	resourceNames = make([]string, 0)
 	for _, man := range input {
 		// Split manifest into individual YAML docs
 		nonMatching := make([]string, 0)
 		for _, doc := range strings.Split(man.Content, "---") {
 
-			var resource resourceType
+			var resource ResourceType
 			if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
 				return nil, nil, errors.Wrapf(err, "parsing resource: %s", doc)
 			}
@@ -183,7 +183,7 @@ func isEmptyManifest(manifest string) bool {
 func getKinds(manifest string) ([]string, error) {
 	var kinds []string
 	for _, doc := range strings.Split(manifest, "---") {
-		var resource resourceType
+		var resource ResourceType
 		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
 			return nil, errors.Wrapf(err, "parsing resource: %s", doc)
 		}
@@ -197,7 +197,7 @@ func validateResourceLabels(manifest string, labels map[string]string) error {
 		return nil
 	}
 	for _, doc := range strings.Split(manifest, "---") {
-		var resource resourceType
+		var resource ResourceType
 		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
 			return errors.Wrapf(err, "parsing resource: %s", doc)
 		}
