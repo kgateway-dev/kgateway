@@ -18,7 +18,7 @@ var (
 	// These will get cleaned up by uninstall if delete-crds or all is chosen
 	GlooCrdNames []string
 
-	// Set up during pre-install (settings only)
+	// Set up during pre-install (for OS gloo, namespace only)
 	GlooPreInstallKinds []string
 	GlooInstallKinds    []string
 	ExpectedLabels      map[string]string
@@ -27,6 +27,8 @@ var (
 )
 
 func init() {
+	GlooPreInstallKinds = []string{ "Namespace" }
+
 	GlooSystemKinds = []string{
 		"Deployment",
 		"Service",
@@ -38,14 +40,7 @@ func init() {
 		"ClusterRoleBinding",
 	}
 
-	// When we install, make sure we know what we're installing, so we can later uninstall correctly.
-	// This validation is tested by projects/gloo/cli/pkg/cmd/install/install_test.go
-	GlooInstallKinds = append(GlooSystemKinds, "Namespace")
-	GlooInstallKinds = append(GlooInstallKinds, GlooRbacKinds...)
-
-	GlooPreInstallKinds = []string{
-		"Settings",
-	}
+	GlooInstallKinds = append(GlooSystemKinds, GlooRbacKinds...)
 
 	GlooCrdNames = []string{
 		"gateways.gateway.solo.io",

@@ -110,9 +110,10 @@ var _ = Describe("Install", func() {
 		It("does nothing on preinstall", func() {
 			err := installer.DoPreInstall()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(validator.applied).To(BeFalse())
+			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			Expect(validator.resources).To(BeEmpty())
+			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
 		It("installs expected kinds for gloo", func() {
@@ -155,9 +156,10 @@ var _ = Describe("Install", func() {
 		It("does nothing on preinstall", func() {
 			err := installer.DoPreInstall()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(validator.applied).To(BeFalse())
+			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			Expect(validator.resources).To(BeEmpty())
+			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
 		It("installs expected kinds for gloo", func() {
@@ -203,9 +205,10 @@ var _ = Describe("Install", func() {
 		It("does nothing on preinstall", func() {
 			err := installer.DoPreInstall()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(validator.applied).To(BeFalse())
+			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			Expect(validator.resources).To(BeEmpty())
+			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
 		It("installs expected kinds for gloo", func() {
@@ -252,9 +255,10 @@ var _ = Describe("Install", func() {
 		It("does nothing on preinstall", func() {
 			err := installer.DoPreInstall()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(validator.applied).To(BeFalse())
+			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			Expect(validator.resources).To(BeEmpty())
+			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
 		It("installs expected kinds for gloo", func() {
@@ -300,9 +304,10 @@ var _ = Describe("Install", func() {
 		It("does nothing on preinstall", func() {
 			err := installer.DoPreInstall()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(validator.applied).To(BeFalse())
+			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			Expect(validator.resources).To(BeEmpty())
+			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
 		It("installs expected kinds for gloo", func() {
