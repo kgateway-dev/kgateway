@@ -2,8 +2,6 @@ package install_test
 
 import (
 	"fmt"
-	"path/filepath"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
@@ -12,12 +10,6 @@ import (
 // NOTE: This needs to be run from the repo root to find the test asset created in the BeforeSuite
 
 var _ = Describe("Install", func() {
-
-	var file string
-
-	BeforeEach(func() {
-		file = filepath.Join(RootDir, "_test/gloo-test-unit-testing.tgz")
-	})
 
 	/**
 	NOTE: If these tests start failing, it could mean we've added a new kind of resource that gets created at install time.

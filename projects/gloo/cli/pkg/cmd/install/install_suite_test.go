@@ -17,6 +17,7 @@ func TestInstall(t *testing.T) {
 }
 
 var RootDir string
+var file string
 
 // NOTE: This needs to be run from the root of the repo as the working directory
 var _ = BeforeSuite(func() {
@@ -25,5 +26,12 @@ var _ = BeforeSuite(func() {
 	RootDir = filepath.Join(cwd, "../../../../../..")
 
 	err = testutils.Make(RootDir, "build-test-chart BUILD_ID=unit-testing")
+	Expect(err).NotTo(HaveOccurred())
+
+	file = filepath.Join(RootDir, "_test/gloo-test-unit-testing.tgz")
+})
+
+var _ = AfterSuite(func() {
+	err := os.Remove(file)
 	Expect(err).NotTo(HaveOccurred())
 })
