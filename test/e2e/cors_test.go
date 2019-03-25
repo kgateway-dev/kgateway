@@ -32,6 +32,11 @@ var _ = Describe("CORS", func() {
 
 	var td corsTestData
 
+	const (
+		corsFilterString       = `"name": "envoy.cors"`
+		corsActiveConfigString = `"cors":`
+	)
+
 	BeforeEach(func() {
 		td.ctx, _ = context.WithCancel(context.Background())
 		td.testClients = services.RunGateway(td.ctx, true)
@@ -97,8 +102,44 @@ var _ = Describe("CORS", func() {
 				return nil
 			}, "10s", ".1s").Should(BeNil())
 
-			Expect(envoyConfig).To(MatchRegexp("cors"))
+			Expect(envoyConfig).To(MatchRegexp(corsFilterString))
+			Expect(envoyConfig).To(MatchRegexp(corsActiveConfigString))
 			Expect(envoyConfig).To(MatchRegexp(allowedOrigin))
+
+		})
+		It("should run without cors", func() {
+
+			cors := &gloov1.CorsPolicy{}
+			cors = nil
+			By("Setup initial proxy")
+			td.setupInitialProxy(cors)
+			By("Set cors")
+			Eventually(func() error {
+				proxy, err := td.getGlooCorsProxy(cors)
+				if err != nil {
+					return err
+				}
+				return td.setupProxy(proxy)
+			}, "10s", ".1s").Should(BeNil())
+
+			envoyConfig := ""
+			By("Get config")
+			Eventually(func() error {
+				r, err := http.Get(td.per.envoyAdminUrl)
+				if err != nil {
+					return err
+				}
+				p := new(bytes.Buffer)
+				if _, err := io.Copy(p, r.Body); err != nil {
+					return err
+				}
+				defer r.Body.Close()
+				envoyConfig = p.String()
+				return nil
+			}, "10s", ".1s").Should(BeNil())
+
+			Expect(envoyConfig).To(MatchRegexp(corsFilterString))
+			Expect(envoyConfig).NotTo(MatchRegexp(corsActiveConfigString))
 
 		})
 	})
