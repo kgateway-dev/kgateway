@@ -113,6 +113,7 @@ steps:
   - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
   - 'RUN_KUBE_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
+  - 'HELM_HOME=/root/.helm'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', '-failFast', '-race']
   waitFor: ['get-envoy', 'setup-aws-creds', 'setup-helm', 'check-code-and-docs-gen']

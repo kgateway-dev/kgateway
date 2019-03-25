@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Return the correct URL for glooctl proxy url --name https
+    issueLink: https://github.com/solo-io/gloo/issues/577
+  - type: BREAKING_CHANGE
+    description: Remove the shorthand params for glooctl proxy url --name
+    issueLink: https://github.com/solo-io/gloo/issues/577

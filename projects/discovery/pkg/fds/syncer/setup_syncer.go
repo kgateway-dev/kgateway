@@ -33,7 +33,7 @@ func RunFDS(opts bootstrap.Opts) error {
 		return err
 	}
 
-	cache := v1.NewDiscoveryEmitter(secretClient, upstreamClient)
+	cache := v1.NewDiscoveryEmitter(upstreamClient, secretClient)
 
 	var resolvers fds.Resolvers
 	for _, plug := range registry.Plugins(opts) {

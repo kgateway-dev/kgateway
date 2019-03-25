@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: EDS currently only watches write namespace, should watch all watch namespaces.
+    issueLink: https://github.com/solo-io/gloo/issues/599

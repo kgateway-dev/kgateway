@@ -14,7 +14,6 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 /*
 @solo-kit:resource.short_name=px
 @solo-kit:resource.plural_name=proxies
-@solo-kit:resource.resource_groups=api.gloo.solo.io
 
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
 Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
@@ -123,6 +122,9 @@ message VirtualHost {
     //   `"plugin_name": {..//plugin_config...}`
     // to allow specifying multiple plugins.
     VirtualHostPlugins virtual_host_plugins = 4;
+
+    // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+    CorsPolicy cors_policy = 5;
 }
 
 /**
@@ -340,3 +342,37 @@ message DirectResponseAction {
     string body = 2;
 }
 
+
+// CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+message CorsPolicy {
+  // Specifies the origins that will be allowed to make CORS requests.
+  //
+  // An origin is allowed if either allow_origin or allow_origin_regex match.
+  repeated string allow_origin = 1;
+
+  // Specifies regex patterns that match origins that will be allowed to make
+  // CORS requests.
+  //
+  // An origin is allowed if either allow_origin or allow_origin_regex match.
+  repeated string allow_origin_regex = 2;
+
+  // Specifies the content for the *access-control-allow-methods* header.
+  repeated string allow_methods = 3;
+
+  // Specifies the content for the *access-control-allow-headers* header.
+  repeated string allow_headers = 4;
+
+  // Specifies the content for the *access-control-expose-headers* header.
+  repeated string expose_headers = 5;
+
+  // Specifies the content for the *access-control-max-age* header.
+  string max_age = 6;
+
+  // Specifies whether the resource allows credentials.
+  bool allow_credentials = 7;
+
+  // Envoy supports toggling CORS during runtime. Implement as need arises.
+  // Allows a preview of CORS settings. If set, evaluates and reports CORS but
+  // does not enforce it.
+  // bool preview = 8;
+}

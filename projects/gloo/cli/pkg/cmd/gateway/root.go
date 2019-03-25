@@ -15,7 +15,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Short:   "interact with proxy instances managed by Gloo",
 		Long:    "these commands can be used to interact directly with the Proxies Gloo is managing. They are useful for interacting with and debugging the proxies (Envoy instances) directly.",
 	}
-	cmd.PersistentFlags().StringVarP(&opts.Proxy.Name, "name", "p", "gateway-proxy", "the name of the proxy service/deployment to use")
+	cmd.PersistentFlags().StringVar(&opts.Proxy.Name, "name", "gateway-proxy", "the name of the proxy service/deployment to use")
 	cmd.PersistentFlags().StringVar(&opts.Proxy.Port, "port", "http", "the name of the service port to connect to")
 
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
