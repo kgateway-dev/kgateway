@@ -74,7 +74,9 @@ func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expe
 	if isEmptyManifest(manifestString) {
 		return nil
 	}
-	validateManifest(manifestString, allowedKinds, expectedLabels)
+	if err := validateManifest(manifestString, allowedKinds, expectedLabels); err != nil {
+		return err
+	}
 	if isDryRun {
 		fmt.Printf("%s", manifestString)
 		// For safety, print a YAML separator so multiple invocations of this function will produce valid output
