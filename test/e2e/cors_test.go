@@ -88,32 +88,9 @@ var _ = Describe("CORS", func() {
 				MaxAge:           "",
 				AllowCredentials: false,
 			}
-			By("Setup initial proxy")
-			td.setupInitialProxy(cors)
-			By("Set cors")
-			Eventually(func() error {
-				proxy, err := td.getGlooCorsProxy(cors)
-				if err != nil {
-					return err
-				}
-				return td.setupProxy(proxy)
-			}, "10s", ".1s").Should(BeNil())
 
-			envoyConfig := ""
-			By("Get config")
-			Eventually(func() error {
-				r, err := http.Get(td.per.envoyAdminUrl)
-				if err != nil {
-					return err
-				}
-				p := new(bytes.Buffer)
-				if _, err := io.Copy(p, r.Body); err != nil {
-					return err
-				}
-				defer r.Body.Close()
-				envoyConfig = p.String()
-				return nil
-			}, "10s", ".1s").Should(BeNil())
+			td.setupInitialProxy(cors)
+			envoyConfig := td.per.getEnvoyConfig()
 
 			By("Check config")
 			Expect(envoyConfig).To(MatchRegexp(corsFilterString))
@@ -139,39 +116,11 @@ var _ = Describe("CORS", func() {
 
 		})
 		It("should run without cors", func() {
-
-			cors := &gloov1.CorsPolicy{}
-			cors = nil
-			By("Setup initial proxy")
-			td.setupInitialProxy(cors)
-			By("Set cors")
-			Eventually(func() error {
-				proxy, err := td.getGlooCorsProxy(cors)
-				if err != nil {
-					return err
-				}
-				return td.setupProxy(proxy)
-			}, "10s", ".1s").Should(BeNil())
-
-			envoyConfig := ""
-			By("Get config")
-			Eventually(func() error {
-				r, err := http.Get(td.per.envoyAdminUrl)
-				if err != nil {
-					return err
-				}
-				p := new(bytes.Buffer)
-				if _, err := io.Copy(p, r.Body); err != nil {
-					return err
-				}
-				defer r.Body.Close()
-				envoyConfig = p.String()
-				return nil
-			}, "10s", ".1s").Should(BeNil())
+			td.setupInitialProxy(nil)
+			envoyConfig := td.per.getEnvoyConfig()
 
 			Expect(envoyConfig).To(MatchRegexp(corsFilterString))
 			Expect(envoyConfig).NotTo(MatchRegexp(corsActiveConfigString))
-
 		})
 	})
 })
@@ -181,10 +130,10 @@ func (td *corsTestData) getGlooCorsProxy(cors *gloov1.CorsPolicy) (*gloov1.Proxy
 	if err != nil {
 		return nil, err
 	}
-	return td.per.getGlooCorsProxyWithVersion(td.per.up, readProxy.Metadata.ResourceVersion, cors), nil
+	return td.per.getGlooCorsProxyWithVersion(readProxy.Metadata.ResourceVersion, cors), nil
 }
 
-func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(up *gloov1.Upstream, resourceVersion string, cors *gloov1.CorsPolicy) *gloov1.Proxy {
+func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, cors *gloov1.CorsPolicy) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
 			Name:            "proxy",
@@ -210,7 +159,7 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(up *gloov1.Upstream, res
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
-											Upstream: up.Metadata.Ref(),
+											Upstream: ptd.up.Metadata.Ref(),
 										},
 									},
 								},
@@ -231,9 +180,10 @@ func (td *corsTestData) setupProxy(proxy *gloov1.Proxy) error {
 	return err
 }
 
-func (td *corsTestData) setupInitialProxy(activeCors *gloov1.CorsPolicy) {
+func (td *corsTestData) setupInitialProxy(cors *gloov1.CorsPolicy) {
+	By("Setup proxy")
 	td.per.envoyPort = services.NextBindPort()
-	proxy := td.per.getGlooCorsProxyWithVersion(td.per.up, "", activeCors)
+	proxy := td.per.getGlooCorsProxyWithVersion("", cors)
 	err := td.setupProxy(proxy)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(func() error {
@@ -242,6 +192,14 @@ func (td *corsTestData) setupInitialProxy(activeCors *gloov1.CorsPolicy) {
 			return err
 		}
 		return nil
+	}, "10s", ".1s").Should(BeNil())
+	// Call with retries to ensure proxy is available
+	Eventually(func() error {
+		proxy, err := td.getGlooCorsProxy(cors)
+		if err != nil {
+			return err
+		}
+		return td.setupProxy(proxy)
 	}, "10s", ".1s").Should(BeNil())
 }
 
@@ -283,4 +241,23 @@ func (ptd *perCorsTestData) getOptions(origin, method string) http.Header {
 		return nil
 	}, "10s", ".1s").Should(BeNil())
 	return h
+}
+
+func (ptd *perCorsTestData) getEnvoyConfig() string {
+	By("Get config")
+	envoyConfig := ""
+	Eventually(func() error {
+		r, err := http.Get(ptd.envoyAdminUrl)
+		if err != nil {
+			return err
+		}
+		p := new(bytes.Buffer)
+		if _, err := io.Copy(p, r.Body); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+		envoyConfig = p.String()
+		return nil
+	}, "10s", ".1s").Should(BeNil())
+	return envoyConfig
 }
