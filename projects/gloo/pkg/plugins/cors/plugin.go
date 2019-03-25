@@ -17,6 +17,9 @@ import (
 type plugin struct {
 }
 
+var _ plugins.Plugin = new(plugin)
+var _ plugins.HttpFilterPlugin = new(plugin)
+
 func NewPlugin() *plugin {
 	return &plugin{}
 }
