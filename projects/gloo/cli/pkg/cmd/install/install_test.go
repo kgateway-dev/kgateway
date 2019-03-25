@@ -8,15 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 )
 
-// NOTE: This needs to be run from the repo root to find the test asset created in the BeforeSuite
-
 var _ = Describe("Install", func() {
-
-	/**
-	NOTE: If these tests start failing, it could mean we've added a new kind of resource that gets created at install time.
-	These are strictly validated in the CLI installer so they can be cleaned up correctly during uninstall. To fix that issue,
-	add the new kind to the installKinds slice here: projects/gloo/cli/pkg/cmd/install/util.go
-	*/
 
 	It("shouldn't get errors for gateway dry run", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run", file))
