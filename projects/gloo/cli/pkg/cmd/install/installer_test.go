@@ -58,13 +58,13 @@ var _ = Describe("Install", func() {
 
 	expectKinds := func(resources []install2.ResourceType, kinds []string) {
 		for _, resource := range resources {
-			Expect(kinds).To(ContainElement(resource.Kind))
+			ExpectWithOffset(1, kinds).To(ContainElement(resource.Kind))
 		}
 	}
 
 	expectNames := func(resources []install2.ResourceType, names []string) {
 		for _, resource := range resources {
-			Expect(names).To(ContainElement(resource.Metadata.Name))
+			ExpectWithOffset(1, names).To(ContainElement(resource.Metadata.Name))
 		}
 	}
 
@@ -73,8 +73,8 @@ var _ = Describe("Install", func() {
 			actualLabels := resource.Metadata.Labels
 			for k, v := range labels {
 				val, ok := actualLabels[k]
-				Expect(ok).To(BeTrue())
-				Expect(v).To(BeEquivalentTo(val))
+				ExpectWithOffset(1, ok).To(BeTrue())
+				ExpectWithOffset(1, v).To(BeEquivalentTo(val))
 			}
 		}
 	}
@@ -82,7 +82,7 @@ var _ = Describe("Install", func() {
 	expectNamespace := func(resources []install2.ResourceType, namespace string) {
 		for _, resource := range resources {
 			if resource.Metadata.Namespace != "" {
-				Expect(resource.Metadata.Namespace).To(BeEquivalentTo(namespace))
+				ExpectWithOffset(1, resource.Metadata.Namespace).To(BeEquivalentTo(namespace))
 			}
 		}
 	}

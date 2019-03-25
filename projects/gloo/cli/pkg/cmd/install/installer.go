@@ -22,7 +22,7 @@ import (
 type KubeInstallClient interface {
 	KubectlApply(manifest []byte) error
 	WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error
-	CheckKnativeInstallation() (bool, bool, error) // isInstalled, isOurs, error
+	CheckKnativeInstallation() (isInstalled bool, isOurs bool, err error)
 }
 
 type DefaultKubeInstallClient struct{}
