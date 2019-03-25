@@ -3,9 +3,7 @@ package cors
 import (
 	"strings"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,7 +26,6 @@ var _ = Describe("Plugin", func() {
 		allowHeaders1     = []string{"allowH1", "allow2"}
 		exposeHeaders1    = []string{"exHeader", "eh2"}
 		maxAge1           = "5555"
-		enabled           = &envoyroute.CorsPolicy_FilterEnabled{}
 	)
 
 	BeforeEach(func() {
@@ -47,14 +44,6 @@ var _ = Describe("Plugin", func() {
 		gloo1 = &v1.VirtualHost{
 			CorsPolicy: in1,
 		}
-		enabled = &envoyroute.CorsPolicy_FilterEnabled{
-			FilterEnabled: &envoycore.RuntimeFractionalPercent{
-				DefaultValue: &envoytype.FractionalPercent{
-					Numerator:   100,
-					Denominator: envoytype.FractionalPercent_HUNDRED,
-				},
-			},
-		}
 
 		out1 := &envoyroute.CorsPolicy{
 			AllowOrigin:      allowOrigin1,
@@ -64,7 +53,6 @@ var _ = Describe("Plugin", func() {
 			ExposeHeaders:    strings.Join(exposeHeaders1, ","),
 			MaxAge:           maxAge1,
 			AllowCredentials: &types.BoolValue{Value: allowCredentials1},
-			EnabledSpecifier: enabled,
 		}
 		envoy1 = &envoyroute.VirtualHost{
 			Cors: out1,
@@ -92,8 +80,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			envoy1min := &envoyroute.VirtualHost{
 				Cors: &envoyroute.CorsPolicy{
-					AllowOrigin:      allowOrigin1,
-					EnabledSpecifier: enabled,
+					AllowOrigin: allowOrigin1,
 				},
 			}
 			Expect(out).To(Equal(envoy1min))
