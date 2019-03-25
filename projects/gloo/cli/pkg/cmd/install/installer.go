@@ -19,19 +19,19 @@ import (
 	"k8s.io/helm/pkg/renderutil"
 )
 
-type KubeInstallClient interface {
+type GlooKubeInstallClient interface {
 	KubectlApply(manifest []byte) error
 	WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error
 	CheckKnativeInstallation() (isInstalled bool, isOurs bool, err error)
 }
 
-type DefaultKubeInstallClient struct{}
+type DefaultGlooKubeInstallClient struct{}
 
-func (i *DefaultKubeInstallClient) KubectlApply(manifest []byte) error {
+func (i *DefaultGlooKubeInstallClient) KubectlApply(manifest []byte) error {
 	return install.KubectlApply(manifest)
 }
 
-func (i *DefaultKubeInstallClient) WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
+func (i *DefaultGlooKubeInstallClient) WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
 	if len(crds) == 0 {
 		return nil
 	}
@@ -56,7 +56,7 @@ func (i *DefaultKubeInstallClient) WaitForCrdsToBeRegistered(crds []string, time
 	}
 }
 
-func (i *DefaultKubeInstallClient) CheckKnativeInstallation() (bool, bool, error) {
+func (i *DefaultGlooKubeInstallClient) CheckKnativeInstallation() (bool, bool, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return false, false, err
@@ -83,25 +83,25 @@ type ManifestInstaller interface {
 	InstallCrds(crdNames []string, manifest []byte) error
 }
 
-type KubeManifestInstaller struct {
-	KubeInstallClient KubeInstallClient
+type GlooKubeManifestInstaller struct {
+	GlooKubeInstallClient GlooKubeInstallClient
 }
 
-func (i *KubeManifestInstaller) InstallManifest(manifest []byte) error {
+func (i *GlooKubeManifestInstaller) InstallManifest(manifest []byte) error {
 	if install.IsEmptyManifest(string(manifest)) {
 		return nil
 	}
-	if err := i.KubeInstallClient.KubectlApply(manifest); err != nil {
+	if err := i.GlooKubeInstallClient.KubectlApply(manifest); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
 }
 
-func (i *KubeManifestInstaller) InstallCrds(crdNames []string, manifest []byte) error {
+func (i *GlooKubeManifestInstaller) InstallCrds(crdNames []string, manifest []byte) error {
 	if err := i.InstallManifest(manifest); err != nil {
 		return err
 	}
-	if err := i.KubeInstallClient.WaitForCrdsToBeRegistered(crdNames, time.Second*5, time.Millisecond*500); err != nil {
+	if err := i.GlooKubeInstallClient.WaitForCrdsToBeRegistered(crdNames, time.Second*5, time.Millisecond*500); err != nil {
 		return errors.Wrapf(err, "waiting for crds to be registered")
 	}
 	return nil
@@ -145,7 +145,7 @@ type DefaultGlooStagedInstaller struct {
 	manifestInstaller    ManifestInstaller
 }
 
-func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client KubeInstallClient) (GlooStagedInstaller, error) {
+func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client GlooKubeInstallClient) (GlooStagedInstaller, error) {
 	if path.Ext(spec.HelmArchiveUri) != ".tgz" && !strings.HasSuffix(spec.HelmArchiveUri, ".tar.gz") {
 		return nil, errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", spec.HelmArchiveUri)
 	}
@@ -181,8 +181,8 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 	if opts.Install.DryRun {
 		manifestInstaller = &DryRunManifestInstaller{}
 	} else {
-		manifestInstaller = &KubeManifestInstaller{
-			KubeInstallClient: client,
+		manifestInstaller = &GlooKubeManifestInstaller{
+			GlooKubeInstallClient: client,
 		}
 	}
 
