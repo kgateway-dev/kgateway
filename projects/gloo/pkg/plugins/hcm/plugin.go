@@ -56,7 +56,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					return err
 				}
 
-				copySeetings(&cfg, hcmSettings)
+				copySettings(&cfg, hcmSettings)
 
 				f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &cfg)
 				// this should never error
@@ -69,7 +69,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	return nil
 }
 
-func copySeetings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) {
+func copySettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) {
 	cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
 	cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
 	cfg.SkipXffAppend = hcmSettings.SkipXffAppend
