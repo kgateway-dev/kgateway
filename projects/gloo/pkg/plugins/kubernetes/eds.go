@@ -3,11 +3,12 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"sort"
 	"strings"
 
 	"github.com/mitchellh/hashstructure"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -18,7 +19,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
+var _ discovery.DiscoveryPlugin = new(plugin)
+
+func (p *plugin) WatchEndpoints(watchNamespaces []string, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	if p.kubeShareFactory == nil {
 		p.kubeShareFactory = getInformerFactory(p.kube)
 	}

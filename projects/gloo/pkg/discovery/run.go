@@ -2,69 +2,56 @@ package discovery
 
 import (
 	"context"
+	"time"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/utils/errutils"
-	"go.uber.org/zap"
 )
 
-// run once, watch upstreams
-func RunEds(upstreamClient v1.UpstreamClient, disc *EndpointDiscovery, watchNamespaces []string, opts clients.WatchOpts) (chan error, error) {
-	errs := make(chan error)
+type syncer struct {
+	eds         *EndpointDiscovery
+	refreshRate time.Duration
+	discOpts    Opts
+}
 
-	publsherr := func(err error) {
-		select {
-		case errs <- err:
-		default:
-			contextutils.LoggerFrom(opts.Ctx).Desugar().Warn("received error and cannot aggregate it.", zap.Error(err))
-		}
+func NewDiscoverySyncer(disc *EndpointDiscovery, discOpts Opts, refreshRate time.Duration) v1.DiscoverySyncer {
+	s := &syncer{
+		eds:         disc,
+		refreshRate: refreshRate,
+		discOpts:    discOpts,
+	}
+	return s
+}
+
+func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
+	ctx = contextutils.WithLogger(ctx, "syncer")
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams.List()))
+	defer logger.Infof("end sync %v", snap.Hash())
+
+	logger.Debugf("%v", snap)
+
+	opts := clients.WatchOpts{
+		Ctx:         ctx,
+		RefreshRate: s.refreshRate,
 	}
 
-	for _, ns := range watchNamespaces {
-		if ns == "" && len(watchNamespaces) > 1 {
-			return nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
-				"specific namespaces or \"\" AllNamespaces, but not both.")
-		}
-	}
-
-	upstreams, upstreamErrs, err := upstreamClient.Watch(watchNamespace, opts)
+	udsErrs, err := s.eds.StartEds(snap.Upstreams.List(), opts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "beginning upstream watch")
+		return err
 	}
-	ctx := opts.Ctx
+
 	go func() {
-		var cancel context.CancelFunc = func() {}
-		defer func() { cancel() }()
 		for {
 			select {
-			case err, ok := <-upstreamErrs:
-				if !ok {
-					return
-				}
-				publsherr(err)
-			case upstreamList, ok := <-upstreams:
-				if !ok {
-					return
-				}
-				cancel()
-				opts.Ctx, cancel = context.WithCancel(ctx)
-
-				if len(upstreamList) == 0 {
-					continue
-				}
-
-				edsErrs, err := disc.StartEds(upstreamList, opts)
-				if err != nil {
-					publsherr(err)
-					continue
-				}
-				go errutils.AggregateErrs(opts.Ctx, errs, edsErrs, "eds.discovery.gloo")
-
+			case err := <-udsErrs:
+				contextutils.LoggerFrom(ctx).Errorf("error in EDS: %v", err)
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
-	return errs, nil
+
+	return nil
 }

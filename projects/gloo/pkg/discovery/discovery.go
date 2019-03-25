@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -32,7 +32,7 @@ type DiscoveryPlugin interface {
 	// EDS API
 	// start the EDS watch which sends a new list of endpoints on any change
 	// will send only endpoints for upstreams configured with TrackUpstreams
-	WatchEndpoints(watchNamespaces []string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error)
+	WatchEndpoints(watchNamespaces []string, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error)
 }
 
 type UpstreamDiscovery struct {
@@ -70,16 +70,6 @@ func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
 		discoveryPlugins:   discoveryPlugins,
 	}
 }
-
-//func NewEndpointDiscovery(writeNamespace string,
-//	endpointsClient v1.EndpointClient,
-//	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
-//	return &EndpointDiscovery{
-//		writeNamespace:     writeNamespace,
-//		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
-//		discoveryPlugins:   discoveryPlugins,
-//	}
-//}
 
 // launch a goroutine for all the UDS plugins
 func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (chan error, error) {
@@ -155,7 +145,7 @@ func aggregateUpstreams(endpointsByUds map[DiscoveryPlugin]v1.UpstreamList) v1.U
 // launch a goroutine for all the UDS plugins with a single cancel to close them all
 func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (chan error, error) {
 	aggregatedErrs := make(chan error)
-	endpointsByUds := make(map[DiscoveryPlugin]v1.EndpointList)
+	endpointsByEds := make(map[DiscoveryPlugin]v1.EndpointList)
 	lock := sync.Mutex{}
 	for _, eds := range d.discoveryPlugins {
 		endpoints, errs, err := eds.WatchEndpoints(d.watchNamespaces, upstreamsToTrack, opts)
@@ -172,8 +162,8 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 						return
 					}
 					lock.Lock()
-					endpointsByUds[eds] = endpointList
-					desiredEndpoints := aggregateEndpoints(endpointsByUds)
+					endpointsByEds[eds] = endpointList
+					desiredEndpoints := aggregateEndpoints(endpointsByEds)
 					if err := d.endpointReconciler.Reconcile(d.writeNamespace, desiredEndpoints, txnEndpoint, clients.ListOpts{
 						Ctx:      opts.Ctx,
 						Selector: opts.Selector,
