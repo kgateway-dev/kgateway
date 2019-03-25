@@ -6,6 +6,7 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
@@ -55,19 +56,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					return err
 				}
 
-				cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
-				cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
-				cfg.SkipXffAppend = hcmSettings.SkipXffAppend
-				cfg.Via = hcmSettings.Via
-				cfg.GenerateRequestId = hcmSettings.GenerateRequestId
-				cfg.Proxy_100Continue = hcmSettings.Proxy_100Continue
-				cfg.StreamIdleTimeout = hcmSettings.StreamIdleTimeout
-				cfg.IdleTimeout = hcmSettings.IdleTimeout
-				cfg.MaxRequestHeadersKb = hcmSettings.MaxRequestHeadersKb
-				cfg.RequestTimeout = hcmSettings.RequestTimeout
-				cfg.DrainTimeout = hcmSettings.DrainTimeout
-				cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
-				cfg.ServerName = hcmSettings.ServerName
+				copySeetings(&cfg, hcmSettings)
 
 				f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &cfg)
 				// this should never error
@@ -78,4 +67,20 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		}
 	}
 	return nil
+}
+
+func copySeetings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) {
+	cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
+	cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
+	cfg.SkipXffAppend = hcmSettings.SkipXffAppend
+	cfg.Via = hcmSettings.Via
+	cfg.GenerateRequestId = hcmSettings.GenerateRequestId
+	cfg.Proxy_100Continue = hcmSettings.Proxy_100Continue
+	cfg.StreamIdleTimeout = hcmSettings.StreamIdleTimeout
+	cfg.IdleTimeout = hcmSettings.IdleTimeout
+	cfg.MaxRequestHeadersKb = hcmSettings.MaxRequestHeadersKb
+	cfg.RequestTimeout = hcmSettings.RequestTimeout
+	cfg.DrainTimeout = hcmSettings.DrainTimeout
+	cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
+	cfg.ServerName = hcmSettings.ServerName
 }
