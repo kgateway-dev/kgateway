@@ -2,10 +2,11 @@ package install_test
 
 import (
 	"fmt"
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"path/filepath"
 )
 
 // NOTE: This needs to be run from the repo root to find the test asset created in the BeforeSuite
