@@ -73,34 +73,41 @@ var nonPreInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool
 	return !isPreInstall, err
 }
 
-var excludeByMatcher = func(input []manifest.Manifest, matches ResourceMatcherFunc) (output []manifest.Manifest, resourceNames []string, err error) {
-	resourceNames = make([]string, 0)
+var excludeByMatcher = func(input []manifest.Manifest, matches ResourceMatcherFunc) (output []manifest.Manifest, allResourceNames []string, err error) {
 	for _, man := range input {
-		// Split manifest into individual YAML docs
-		nonMatching := make([]string, 0)
-		for _, doc := range strings.Split(man.Content, "---") {
-
-			var resource ResourceType
-			if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
-				return nil, nil, errors.Wrapf(err, "parsing resource: %s", doc)
-			}
-
-			isMatch, err := matches(resource)
-			if err != nil {
-				return nil, nil, err
-			}
-			if !isMatch {
-				resourceNames = append(resourceNames, resource.Metadata.Name)
-				nonMatching = append(nonMatching, doc)
-			}
+		content, resourceNames, err := ExcludeManifestContentByMatcher(man.Content, matches)
+		if err != nil {
+			return nil, nil, err
 		}
-
+		allResourceNames = append(allResourceNames, resourceNames...)
 		output = append(output, manifest.Manifest{
 			Name:    man.Name,
 			Head:    man.Head,
-			Content: strings.Join(nonMatching, YamlDocumentSeparator),
+			Content: content,
 		})
 	}
+	return
+}
+
+var ExcludeManifestContentByMatcher = func(input string, matches ResourceMatcherFunc) (output string, resourceNames []string, err error) {
+	var nonMatching []string
+	for _, doc := range strings.Split(input, "---") {
+
+		var resource ResourceType
+		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+			return "", nil, errors.Wrapf(err, "parsing resource: %s", doc)
+		}
+
+		isMatch, err := matches(resource)
+		if err != nil {
+			return "", nil, err
+		}
+		if !isMatch {
+			resourceNames = append(resourceNames, resource.Metadata.Name)
+			nonMatching = append(nonMatching, doc)
+		}
+	}
+	output = strings.Join(nonMatching, YamlDocumentSeparator)
 	return
 }
 

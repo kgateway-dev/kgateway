@@ -72,14 +72,15 @@ func init() {
 }
 
 type GlooInstallSpec struct {
-	ProductName     string // gloo or glooe
-	HelmArchiveUri  string
-	ValueFileName   string
-	ExpectedLabels  map[string]string
-	PreInstallKinds []string
-	InstallKinds    []string
-	Crds            []string
-	ExtraValues     map[string]string
+	ProductName      string // gloo or glooe
+	HelmArchiveUri   string
+	ValueFileName    string
+	ExpectedLabels   map[string]string
+	PreInstallKinds  []string
+	InstallKinds     []string
+	Crds             []string
+	ExtraValues      map[string]string
+	ExcludeResources install.ResourceMatcherFunc
 }
 
 // Entry point for all three GLoo installation commands
@@ -106,6 +107,7 @@ func installGloo(opts *options.Options, valueFileName string) error {
 		InstallKinds: GlooInstallKinds,
 		Crds: GlooCrdNames,
 		ExtraValues: nil,
+		ExcludeResources: nil,
 	}
 
 	return InstallGloo(opts, installSpec)
@@ -204,7 +206,7 @@ func doCrdInstall(
 			return err
 		}
 	}
-	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun, []string{"CustomResourceDefinition"}, nil); err != nil {
+	if err := install.InstallManifest(crdManifestBytes, opts.Install.DryRun, []string{"CustomResourceDefinition"}, nil, nil); err != nil {
 		return errors.Wrapf(err, "installing crd manifests")
 	}
 	// Only run if this is not a dry run
@@ -241,7 +243,7 @@ func doGlooPreInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, spec.PreInstallKinds, spec.ExpectedLabels)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, spec.PreInstallKinds, spec.ExpectedLabels, spec.ExcludeResources)
 }
 
 func doGlooInstall(
@@ -260,7 +262,7 @@ func doGlooInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, spec.InstallKinds, spec.ExpectedLabels)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, spec.InstallKinds, spec.ExpectedLabels, spec.ExcludeResources)
 }
 
 func doKnativeInstall(
@@ -275,5 +277,5 @@ func doKnativeInstall(
 	if err != nil {
 		return err
 	}
-	return install.InstallManifest(manifestBytes, opts.Install.DryRun, nil, nil)
+	return install.InstallManifest(manifestBytes, opts.Install.DryRun, nil, nil, nil)
 }

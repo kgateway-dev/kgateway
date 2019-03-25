@@ -66,7 +66,7 @@ func WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) e
 }
 
 //noinspection GoNameStartsWithPackageName
-func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expectedLabels map[string]string) error {
+func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expectedLabels map[string]string, excludeResources ResourceMatcherFunc) error {
 	manifestString := string(manifest)
 	if isEmptyManifest(manifestString) {
 		return nil
@@ -83,6 +83,10 @@ func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expe
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
+}
+
+func filterExcludedResources(manifest string, excludeResources ResourceMatcherFunc) error {
+
 }
 
 func validateManifest(manifestString string, allowedKinds []string, expectedLabels map[string]string) error {
