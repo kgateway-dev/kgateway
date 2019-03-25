@@ -12,6 +12,6 @@ type endpointController struct {
 
 var _ discovery.DiscoveryPlugin = new(plugin)
 
-func (p *plugin) WatchEndpoints(watchNamespaces []string, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
+func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	return nil, nil, errors.Errorf("not implemented")
 }

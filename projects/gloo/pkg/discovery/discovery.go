@@ -32,7 +32,7 @@ type DiscoveryPlugin interface {
 	// EDS API
 	// start the EDS watch which sends a new list of endpoints on any change
 	// will send only endpoints for upstreams configured with TrackUpstreams
-	WatchEndpoints(watchNamespaces []string, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error)
+	WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error)
 }
 
 type UpstreamDiscovery struct {
@@ -148,7 +148,7 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 	endpointsByEds := make(map[DiscoveryPlugin]v1.EndpointList)
 	lock := sync.Mutex{}
 	for _, eds := range d.discoveryPlugins {
-		endpoints, errs, err := eds.WatchEndpoints(d.watchNamespaces, d.writeNamespace, upstreamsToTrack, opts)
+		endpoints, errs, err := eds.WatchEndpoints(d.writeNamespace, upstreamsToTrack, opts)
 		if err != nil {
 			contextutils.LoggerFrom(opts.Ctx).Warnw("initializing EDS plugin failed", "plugin", reflect.TypeOf(eds).String(), "error", err)
 			continue
