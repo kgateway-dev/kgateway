@@ -1,8 +1,9 @@
 package install_test
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"testing"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,4 +19,3 @@ var _ = BeforeSuite(func() {
 	err := testutils.Make("", "build-test-chart BUILD_ID=unit-testing")
 	Expect(err).NotTo(HaveOccurred())
 })
-
