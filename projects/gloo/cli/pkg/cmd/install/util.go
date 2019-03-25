@@ -50,9 +50,7 @@ func init() {
 	// When we install, make sure we know what we're installing, so we can later uninstall correctly.
 	// This validation is tested by projects/gloo/cli/pkg/cmd/install/install_test.go
 	GlooInstallKinds = append(GlooSystemKinds, "Namespace")
-	for _, kind := range GlooRbacKinds {
-		GlooInstallKinds = append(GlooInstallKinds, kind)
-	}
+	GlooInstallKinds = append(GlooInstallKinds, GlooRbacKinds...)
 
 	GlooPreInstallKinds = []string{
 		"Settings",
