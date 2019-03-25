@@ -31,8 +31,8 @@ var (
 
 	// Set up during pre-install (settings only)
 	GlooPreInstallKinds []string
-	GlooInstallKinds   []string
-	ExpectedLabels map[string]string
+	GlooInstallKinds    []string
+	ExpectedLabels      map[string]string
 )
 
 func init() {
@@ -97,14 +97,14 @@ func installGloo(opts *options.Options, valueFileName string) error {
 	}
 
 	installSpec := GlooInstallSpec{
-		HelmArchiveUri: helmChartArchiveUri,
-		ValueFileName: valueFileName,
-		ProductName: "gloo",
-		ExpectedLabels: ExpectedLabels,
-		PreInstallKinds: GlooPreInstallKinds,
-		InstallKinds: GlooInstallKinds,
-		Crds: GlooCrdNames,
-		ExtraValues: nil,
+		HelmArchiveUri:   helmChartArchiveUri,
+		ValueFileName:    valueFileName,
+		ProductName:      "gloo",
+		ExpectedLabels:   ExpectedLabels,
+		PreInstallKinds:  GlooPreInstallKinds,
+		InstallKinds:     GlooInstallKinds,
+		Crds:             GlooCrdNames,
+		ExtraValues:      nil,
 		ExcludeResources: nil,
 	}
 
