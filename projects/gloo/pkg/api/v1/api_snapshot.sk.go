@@ -10,43 +10,31 @@ import (
 )
 
 type ApiSnapshot struct {
-	Upstreams UpstreamsByNamespace
-	Secrets   SecretsByNamespace
-	Proxies   ProxiesByNamespace
 	Artifacts ArtifactsByNamespace
 	Endpoints EndpointsByNamespace
+	Proxies   ProxiesByNamespace
+	Secrets   SecretsByNamespace
+	Upstreams UpstreamsByNamespace
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
 	return ApiSnapshot{
-		Upstreams: s.Upstreams.Clone(),
-		Secrets:   s.Secrets.Clone(),
-		Proxies:   s.Proxies.Clone(),
 		Artifacts: s.Artifacts.Clone(),
 		Endpoints: s.Endpoints.Clone(),
+		Proxies:   s.Proxies.Clone(),
+		Secrets:   s.Secrets.Clone(),
+		Upstreams: s.Upstreams.Clone(),
 	}
 }
 
 func (s ApiSnapshot) Hash() uint64 {
 	return hashutils.HashAll(
-		s.hashUpstreams(),
-		s.hashSecrets(),
-		s.hashProxies(),
 		s.hashArtifacts(),
 		s.hashEndpoints(),
+		s.hashProxies(),
+		s.hashSecrets(),
+		s.hashUpstreams(),
 	)
-}
-
-func (s ApiSnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.List().AsInterfaces()...)
-}
-
-func (s ApiSnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.List().AsInterfaces()...)
-}
-
-func (s ApiSnapshot) hashProxies() uint64 {
-	return hashutils.HashAll(s.Proxies.List().AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashArtifacts() uint64 {
@@ -57,43 +45,40 @@ func (s ApiSnapshot) hashEndpoints() uint64 {
 	return hashutils.HashAll(s.Endpoints.List().AsInterfaces()...)
 }
 
+func (s ApiSnapshot) hashProxies() uint64 {
+	return hashutils.HashAll(s.Proxies.List().AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashSecrets() uint64 {
+	return hashutils.HashAll(s.Secrets.List().AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashUpstreams() uint64 {
+	return hashutils.HashAll(s.Upstreams.List().AsInterfaces()...)
+}
+
 func (s ApiSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
-	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
-	fields = append(fields, zap.Uint64("proxies", s.hashProxies()))
 	fields = append(fields, zap.Uint64("artifacts", s.hashArtifacts()))
 	fields = append(fields, zap.Uint64("endpoints", s.hashEndpoints()))
+	fields = append(fields, zap.Uint64("proxies", s.hashProxies()))
+	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
+	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
 }
 
 type ApiSnapshotStringer struct {
 	Version   uint64
-	Upstreams []string
-	Secrets   []string
-	Proxies   []string
 	Artifacts []string
 	Endpoints []string
+	Proxies   []string
+	Secrets   []string
+	Upstreams []string
 }
 
 func (ss ApiSnapshotStringer) String() string {
 	s := fmt.Sprintf("ApiSnapshot %v\n", ss.Version)
-
-	s += fmt.Sprintf("  Upstreams %v\n", len(ss.Upstreams))
-	for _, name := range ss.Upstreams {
-		s += fmt.Sprintf("    %v\n", name)
-	}
-
-	s += fmt.Sprintf("  Secrets %v\n", len(ss.Secrets))
-	for _, name := range ss.Secrets {
-		s += fmt.Sprintf("    %v\n", name)
-	}
-
-	s += fmt.Sprintf("  Proxies %v\n", len(ss.Proxies))
-	for _, name := range ss.Proxies {
-		s += fmt.Sprintf("    %v\n", name)
-	}
 
 	s += fmt.Sprintf("  Artifacts %v\n", len(ss.Artifacts))
 	for _, name := range ss.Artifacts {
@@ -105,16 +90,31 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  Proxies %v\n", len(ss.Proxies))
+	for _, name := range ss.Proxies {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Secrets %v\n", len(ss.Secrets))
+	for _, name := range ss.Secrets {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Upstreams %v\n", len(ss.Upstreams))
+	for _, name := range ss.Upstreams {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	return s
 }
 
 func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 	return ApiSnapshotStringer{
 		Version:   s.Hash(),
-		Upstreams: s.Upstreams.List().NamespacesDotNames(),
-		Secrets:   s.Secrets.List().NamespacesDotNames(),
-		Proxies:   s.Proxies.List().NamespacesDotNames(),
 		Artifacts: s.Artifacts.List().NamespacesDotNames(),
 		Endpoints: s.Endpoints.List().NamespacesDotNames(),
+		Proxies:   s.Proxies.List().NamespacesDotNames(),
+		Secrets:   s.Secrets.List().NamespacesDotNames(),
+		Upstreams: s.Upstreams.List().NamespacesDotNames(),
 	}
 }

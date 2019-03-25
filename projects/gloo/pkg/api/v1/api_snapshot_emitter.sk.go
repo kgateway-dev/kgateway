@@ -41,67 +41,55 @@ func init() {
 
 type ApiEmitter interface {
 	Register() error
-	Upstream() UpstreamClient
-	Secret() SecretClient
-	Proxy() ProxyClient
 	Artifact() ArtifactClient
 	Endpoint() EndpointClient
+	Proxy() ProxyClient
+	Secret() SecretClient
+	Upstream() UpstreamClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
-func NewApiEmitter(upstreamClient UpstreamClient, secretClient SecretClient, proxyClient ProxyClient, artifactClient ArtifactClient, endpointClient EndpointClient) ApiEmitter {
-	return NewApiEmitterWithEmit(upstreamClient, secretClient, proxyClient, artifactClient, endpointClient, make(chan struct{}))
+func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, secretClient SecretClient, upstreamClient UpstreamClient) ApiEmitter {
+	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, secretClient, upstreamClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(upstreamClient UpstreamClient, secretClient SecretClient, proxyClient ProxyClient, artifactClient ArtifactClient, endpointClient EndpointClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, secretClient SecretClient, upstreamClient UpstreamClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
-		upstream:  upstreamClient,
-		secret:    secretClient,
-		proxy:     proxyClient,
 		artifact:  artifactClient,
 		endpoint:  endpointClient,
+		proxy:     proxyClient,
+		secret:    secretClient,
+		upstream:  upstreamClient,
 		forceEmit: emit,
 	}
 }
 
 type apiEmitter struct {
 	forceEmit <-chan struct{}
-	upstream  UpstreamClient
-	secret    SecretClient
-	proxy     ProxyClient
 	artifact  ArtifactClient
 	endpoint  EndpointClient
+	proxy     ProxyClient
+	secret    SecretClient
+	upstream  UpstreamClient
 }
 
 func (c *apiEmitter) Register() error {
-	if err := c.upstream.Register(); err != nil {
-		return err
-	}
-	if err := c.secret.Register(); err != nil {
-		return err
-	}
-	if err := c.proxy.Register(); err != nil {
-		return err
-	}
 	if err := c.artifact.Register(); err != nil {
 		return err
 	}
 	if err := c.endpoint.Register(); err != nil {
 		return err
 	}
+	if err := c.proxy.Register(); err != nil {
+		return err
+	}
+	if err := c.secret.Register(); err != nil {
+		return err
+	}
+	if err := c.upstream.Register(); err != nil {
+		return err
+	}
 	return nil
-}
-
-func (c *apiEmitter) Upstream() UpstreamClient {
-	return c.upstream
-}
-
-func (c *apiEmitter) Secret() SecretClient {
-	return c.secret
-}
-
-func (c *apiEmitter) Proxy() ProxyClient {
-	return c.proxy
 }
 
 func (c *apiEmitter) Artifact() ArtifactClient {
@@ -110,6 +98,18 @@ func (c *apiEmitter) Artifact() ArtifactClient {
 
 func (c *apiEmitter) Endpoint() EndpointClient {
 	return c.endpoint
+}
+
+func (c *apiEmitter) Proxy() ProxyClient {
+	return c.proxy
+}
+
+func (c *apiEmitter) Secret() SecretClient {
+	return c.secret
+}
+
+func (c *apiEmitter) Upstream() UpstreamClient {
+	return c.upstream
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -128,24 +128,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
-	/* Create channel for Upstream */
-	type upstreamListWithNamespace struct {
-		list      UpstreamList
-		namespace string
-	}
-	upstreamChan := make(chan upstreamListWithNamespace)
-	/* Create channel for Secret */
-	type secretListWithNamespace struct {
-		list      SecretList
-		namespace string
-	}
-	secretChan := make(chan secretListWithNamespace)
-	/* Create channel for Proxy */
-	type proxyListWithNamespace struct {
-		list      ProxyList
-		namespace string
-	}
-	proxyChan := make(chan proxyListWithNamespace)
 	/* Create channel for Artifact */
 	type artifactListWithNamespace struct {
 		list      ArtifactList
@@ -158,41 +140,26 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		namespace string
 	}
 	endpointChan := make(chan endpointListWithNamespace)
+	/* Create channel for Proxy */
+	type proxyListWithNamespace struct {
+		list      ProxyList
+		namespace string
+	}
+	proxyChan := make(chan proxyListWithNamespace)
+	/* Create channel for Secret */
+	type secretListWithNamespace struct {
+		list      SecretList
+		namespace string
+	}
+	secretChan := make(chan secretListWithNamespace)
+	/* Create channel for Upstream */
+	type upstreamListWithNamespace struct {
+		list      UpstreamList
+		namespace string
+	}
+	upstreamChan := make(chan upstreamListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup namespaced watch for Upstream */
-		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
-		}(namespace)
-		/* Setup namespaced watch for Secret */
-		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Secret watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
-		}(namespace)
-		/* Setup namespaced watch for Proxy */
-		proxyNamespacesChan, proxyErrs, err := c.proxy.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Proxy watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, proxyErrs, namespace+"-proxies")
-		}(namespace)
 		/* Setup namespaced watch for Artifact */
 		artifactNamespacesChan, artifactErrs, err := c.artifact.Watch(namespace, opts)
 		if err != nil {
@@ -215,6 +182,39 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, endpointErrs, namespace+"-endpoints")
 		}(namespace)
+		/* Setup namespaced watch for Proxy */
+		proxyNamespacesChan, proxyErrs, err := c.proxy.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting Proxy watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, proxyErrs, namespace+"-proxies")
+		}(namespace)
+		/* Setup namespaced watch for Secret */
+		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting Secret watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
+		}(namespace)
+		/* Setup namespaced watch for Upstream */
+		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -222,24 +222,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				select {
 				case <-ctx.Done():
 					return
-				case upstreamList := <-upstreamNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
-					}
-				case secretList := <-secretNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case secretChan <- secretListWithNamespace{list: secretList, namespace: namespace}:
-					}
-				case proxyList := <-proxyNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case proxyChan <- proxyListWithNamespace{list: proxyList, namespace: namespace}:
-					}
 				case artifactList := <-artifactNamespacesChan:
 					select {
 					case <-ctx.Done():
@@ -251,6 +233,24 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					case <-ctx.Done():
 						return
 					case endpointChan <- endpointListWithNamespace{list: endpointList, namespace: namespace}:
+					}
+				case proxyList := <-proxyNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case proxyChan <- proxyListWithNamespace{list: proxyList, namespace: namespace}:
+					}
+				case secretList := <-secretNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case secretChan <- secretListWithNamespace{list: secretList, namespace: namespace}:
+					}
+				case upstreamList := <-upstreamNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
 					}
 				}
 			}
@@ -287,27 +287,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
-			case upstreamNamespacedList := <-upstreamChan:
-				record()
-
-				namespace := upstreamNamespacedList.namespace
-				upstreamList := upstreamNamespacedList.list
-
-				currentSnapshot.Upstreams[namespace] = upstreamList
-			case secretNamespacedList := <-secretChan:
-				record()
-
-				namespace := secretNamespacedList.namespace
-				secretList := secretNamespacedList.list
-
-				currentSnapshot.Secrets[namespace] = secretList
-			case proxyNamespacedList := <-proxyChan:
-				record()
-
-				namespace := proxyNamespacedList.namespace
-				proxyList := proxyNamespacedList.list
-
-				currentSnapshot.Proxies[namespace] = proxyList
 			case artifactNamespacedList := <-artifactChan:
 				record()
 
@@ -322,6 +301,27 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				endpointList := endpointNamespacedList.list
 
 				currentSnapshot.Endpoints[namespace] = endpointList
+			case proxyNamespacedList := <-proxyChan:
+				record()
+
+				namespace := proxyNamespacedList.namespace
+				proxyList := proxyNamespacedList.list
+
+				currentSnapshot.Proxies[namespace] = proxyList
+			case secretNamespacedList := <-secretChan:
+				record()
+
+				namespace := secretNamespacedList.namespace
+				secretList := secretNamespacedList.list
+
+				currentSnapshot.Secrets[namespace] = secretList
+			case upstreamNamespacedList := <-upstreamChan:
+				record()
+
+				namespace := upstreamNamespacedList.namespace
+				upstreamList := upstreamNamespacedList.list
+
+				currentSnapshot.Upstreams[namespace] = upstreamList
 			}
 		}
 	}()

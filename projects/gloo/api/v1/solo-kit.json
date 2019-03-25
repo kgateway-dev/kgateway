@@ -13,11 +13,11 @@
     ],
     "api.gloo.solo.io": [
       {
-        "name": "Upstream",
+        "name": "Artifact",
         "package": "gloo.solo.io"
       },
       {
-        "name": "Secret",
+        "name": "Endpoint",
         "package": "gloo.solo.io"
       },
       {
@@ -25,11 +25,11 @@
         "package": "gloo.solo.io"
       },
       {
-        "name": "Artifact",
+        "name": "Secret",
         "package": "gloo.solo.io"
       },
       {
-        "name": "Endpoint",
+        "name": "Upstream",
         "package": "gloo.solo.io"
       }
     ],
