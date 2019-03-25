@@ -6,6 +6,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 )
 
+// NOTE: This needs to be run from the repo root to find the test asset created in the BeforeSuite
+
 var _ = Describe("Install", func() {
 
 	/**
@@ -15,17 +17,17 @@ var _ = Describe("Install", func() {
 	*/
 
 	It("shouldn't get errors for gateway dry run", func() {
-		_, err := testutils.GlooctlOut("install gateway --file https://storage.googleapis.com/solo-public-helm/charts/gloo-0.11.1.tgz --dry-run")
+		_, err := testutils.GlooctlOut("install gateway --file _test/gloo-test-unit-testing.tgz --dry-run")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("shouldn't get errors for knative dry run", func() {
-		_, err := testutils.GlooctlOut("install knative --file https://storage.googleapis.com/solo-public-helm/charts/gloo-0.11.1.tgz --dry-run")
+		_, err := testutils.GlooctlOut("install knative --file _test/gloo-test-unit-testing.tgz --dry-run")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("shouldn't get errors for ingress dry run", func() {
-		_, err := testutils.GlooctlOut("install ingress --file https://storage.googleapis.com/solo-public-helm/charts/gloo-0.11.1.tgz --dry-run")
+		_, err := testutils.GlooctlOut("install ingress --file _test/gloo-test-unit-testing.tgz --dry-run")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
