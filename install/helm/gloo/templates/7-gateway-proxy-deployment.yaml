@@ -52,7 +52,7 @@ spec:
         - name: {{ $spec.deployment.image.pullSecret }}{{end}}
       volumes:
       - configMap:
-          name: gateway-envoy-config
+          name: {{ $key }}-envoy-config
         name: envoy-config
 ---
 {{- end }}
