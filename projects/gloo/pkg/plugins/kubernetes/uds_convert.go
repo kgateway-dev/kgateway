@@ -211,9 +211,12 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	// copy labels; user may have written them over. cannot be auto-discovered
 	desiredSpec.Kube.Selector = originalSpec.Kube.Selector
 
-	// do not override ssl config if none specified by discovery
+	// do not override ssl and subset config if none specified by discovery
 	if desired.UpstreamSpec.SslConfig == nil {
 		desired.UpstreamSpec.SslConfig = original.UpstreamSpec.SslConfig
+	}
+	if desired.UpstreamSpec.SubsetConfig == nil {
+		desired.UpstreamSpec.SubsetConfig = original.UpstreamSpec.SubsetConfig
 	}
 
 	if originalSpec.Equal(desiredSpec) {
