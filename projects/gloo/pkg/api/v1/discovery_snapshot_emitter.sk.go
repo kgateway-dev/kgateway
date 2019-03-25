@@ -43,23 +43,17 @@ type DiscoveryEmitter interface {
 	Register() error
 	Upstream() UpstreamClient
 	Secret() SecretClient
-	Proxy() ProxyClient
-	Artifact() ArtifactClient
-	Endpoint() EndpointClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *DiscoverySnapshot, <-chan error, error)
 }
 
-func NewDiscoveryEmitter(upstreamClient UpstreamClient, secretClient SecretClient, proxyClient ProxyClient, artifactClient ArtifactClient, endpointClient EndpointClient) DiscoveryEmitter {
-	return NewDiscoveryEmitterWithEmit(upstreamClient, secretClient, proxyClient, artifactClient, endpointClient, make(chan struct{}))
+func NewDiscoveryEmitter(upstreamClient UpstreamClient, secretClient SecretClient) DiscoveryEmitter {
+	return NewDiscoveryEmitterWithEmit(upstreamClient, secretClient, make(chan struct{}))
 }
 
-func NewDiscoveryEmitterWithEmit(upstreamClient UpstreamClient, secretClient SecretClient, proxyClient ProxyClient, artifactClient ArtifactClient, endpointClient EndpointClient, emit <-chan struct{}) DiscoveryEmitter {
+func NewDiscoveryEmitterWithEmit(upstreamClient UpstreamClient, secretClient SecretClient, emit <-chan struct{}) DiscoveryEmitter {
 	return &discoveryEmitter{
 		upstream:  upstreamClient,
 		secret:    secretClient,
-		proxy:     proxyClient,
-		artifact:  artifactClient,
-		endpoint:  endpointClient,
 		forceEmit: emit,
 	}
 }
@@ -68,9 +62,6 @@ type discoveryEmitter struct {
 	forceEmit <-chan struct{}
 	upstream  UpstreamClient
 	secret    SecretClient
-	proxy     ProxyClient
-	artifact  ArtifactClient
-	endpoint  EndpointClient
 }
 
 func (c *discoveryEmitter) Register() error {
@@ -78,15 +69,6 @@ func (c *discoveryEmitter) Register() error {
 		return err
 	}
 	if err := c.secret.Register(); err != nil {
-		return err
-	}
-	if err := c.proxy.Register(); err != nil {
-		return err
-	}
-	if err := c.artifact.Register(); err != nil {
-		return err
-	}
-	if err := c.endpoint.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -98,18 +80,6 @@ func (c *discoveryEmitter) Upstream() UpstreamClient {
 
 func (c *discoveryEmitter) Secret() SecretClient {
 	return c.secret
-}
-
-func (c *discoveryEmitter) Proxy() ProxyClient {
-	return c.proxy
-}
-
-func (c *discoveryEmitter) Artifact() ArtifactClient {
-	return c.artifact
-}
-
-func (c *discoveryEmitter) Endpoint() EndpointClient {
-	return c.endpoint
 }
 
 func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *DiscoverySnapshot, <-chan error, error) {
@@ -140,24 +110,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 		namespace string
 	}
 	secretChan := make(chan secretListWithNamespace)
-	/* Create channel for Proxy */
-	type proxyListWithNamespace struct {
-		list      ProxyList
-		namespace string
-	}
-	proxyChan := make(chan proxyListWithNamespace)
-	/* Create channel for Artifact */
-	type artifactListWithNamespace struct {
-		list      ArtifactList
-		namespace string
-	}
-	artifactChan := make(chan artifactListWithNamespace)
-	/* Create channel for Endpoint */
-	type endpointListWithNamespace struct {
-		list      EndpointList
-		namespace string
-	}
-	endpointChan := make(chan endpointListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Upstream */
@@ -182,39 +134,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
 		}(namespace)
-		/* Setup namespaced watch for Proxy */
-		proxyNamespacesChan, proxyErrs, err := c.proxy.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Proxy watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, proxyErrs, namespace+"-proxies")
-		}(namespace)
-		/* Setup namespaced watch for Artifact */
-		artifactNamespacesChan, artifactErrs, err := c.artifact.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Artifact watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, artifactErrs, namespace+"-artifacts")
-		}(namespace)
-		/* Setup namespaced watch for Endpoint */
-		endpointNamespacesChan, endpointErrs, err := c.endpoint.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Endpoint watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, endpointErrs, namespace+"-endpoints")
-		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -233,24 +152,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 					case <-ctx.Done():
 						return
 					case secretChan <- secretListWithNamespace{list: secretList, namespace: namespace}:
-					}
-				case proxyList := <-proxyNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case proxyChan <- proxyListWithNamespace{list: proxyList, namespace: namespace}:
-					}
-				case artifactList := <-artifactNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case artifactChan <- artifactListWithNamespace{list: artifactList, namespace: namespace}:
-					}
-				case endpointList := <-endpointNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case endpointChan <- endpointListWithNamespace{list: endpointList, namespace: namespace}:
 					}
 				}
 			}
@@ -301,27 +202,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				secretList := secretNamespacedList.list
 
 				currentSnapshot.Secrets[namespace] = secretList
-			case proxyNamespacedList := <-proxyChan:
-				record()
-
-				namespace := proxyNamespacedList.namespace
-				proxyList := proxyNamespacedList.list
-
-				currentSnapshot.Proxies[namespace] = proxyList
-			case artifactNamespacedList := <-artifactChan:
-				record()
-
-				namespace := artifactNamespacedList.namespace
-				artifactList := artifactNamespacedList.list
-
-				currentSnapshot.Artifacts[namespace] = artifactList
-			case endpointNamespacedList := <-endpointChan:
-				record()
-
-				namespace := endpointNamespacedList.namespace
-				endpointList := endpointNamespacedList.list
-
-				currentSnapshot.Endpoints[namespace] = endpointList
 			}
 		}
 	}()
