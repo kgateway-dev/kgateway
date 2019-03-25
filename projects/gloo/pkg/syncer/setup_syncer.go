@@ -258,8 +258,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	errs := make(chan error)
 
-	eds := discovery.NewEndpointDiscovery(opts.WriteNamespace, endpointClient, discoveryPlugins)
-	edsErrs, err := discovery.RunEds(upstreamClient, eds, opts.WriteNamespace, watchOpts)
+	eds := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
+	edsErrs, err := discovery.RunEds(upstreamClient, eds, opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
 	}

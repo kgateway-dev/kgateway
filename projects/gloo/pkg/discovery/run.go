@@ -12,7 +12,7 @@ import (
 )
 
 // run once, watch upstreams
-func RunEds(upstreamClient v1.UpstreamClient, disc *EndpointDiscovery, watchNamespace string, opts clients.WatchOpts) (chan error, error) {
+func RunEds(upstreamClient v1.UpstreamClient, disc *EndpointDiscovery, watchNamespaces []string, opts clients.WatchOpts) (chan error, error) {
 	errs := make(chan error)
 
 	publsherr := func(err error) {
@@ -20,6 +20,13 @@ func RunEds(upstreamClient v1.UpstreamClient, disc *EndpointDiscovery, watchName
 		case errs <- err:
 		default:
 			contextutils.LoggerFrom(opts.Ctx).Desugar().Warn("received error and cannot aggregate it.", zap.Error(err))
+		}
+	}
+
+	for _, ns := range watchNamespaces {
+		if ns == "" && len(watchNamespaces) > 1 {
+			return nil, errors.Errorf("the \"\" namespace is used to watch all namespaces. Snapshots can either be tracked for " +
+				"specific namespaces or \"\" AllNamespaces, but not both.")
 		}
 	}
 

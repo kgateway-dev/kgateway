@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -32,7 +32,7 @@ type DiscoveryPlugin interface {
 	// EDS API
 	// start the EDS watch which sends a new list of endpoints on any change
 	// will send only endpoints for upstreams configured with TrackUpstreams
-	WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error)
+	WatchEndpoints(watchNamespaces []string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error)
 }
 
 type UpstreamDiscovery struct {
@@ -43,9 +43,21 @@ type UpstreamDiscovery struct {
 }
 
 type EndpointDiscovery struct {
+	watchNamespaces    []string
 	writeNamespace     string
 	endpointReconciler v1.EndpointReconciler
 	discoveryPlugins   []DiscoveryPlugin
+}
+
+func NewEndpointDiscovery(watchNamespaces []string,
+	writeNamespace string,
+	endpointsClient v1.EndpointClient,
+	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
+	return &EndpointDiscovery{
+		watchNamespaces:    watchNamespaces,
+		writeNamespace:     writeNamespace,
+		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
+		discoveryPlugins:   discoveryPlugins}
 }
 
 func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
@@ -59,15 +71,15 @@ func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
 	}
 }
 
-func NewEndpointDiscovery(writeNamespace string,
-	endpointsClient v1.EndpointClient,
-	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
-	return &EndpointDiscovery{
-		writeNamespace:     writeNamespace,
-		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
-		discoveryPlugins:   discoveryPlugins,
-	}
-}
+//func NewEndpointDiscovery(writeNamespace string,
+//	endpointsClient v1.EndpointClient,
+//	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
+//	return &EndpointDiscovery{
+//		writeNamespace:     writeNamespace,
+//		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
+//		discoveryPlugins:   discoveryPlugins,
+//	}
+//}
 
 // launch a goroutine for all the UDS plugins
 func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (chan error, error) {
@@ -146,7 +158,7 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 	endpointsByUds := make(map[DiscoveryPlugin]v1.EndpointList)
 	lock := sync.Mutex{}
 	for _, eds := range d.discoveryPlugins {
-		endpoints, errs, err := eds.WatchEndpoints(d.writeNamespace, upstreamsToTrack, opts)
+		endpoints, errs, err := eds.WatchEndpoints(d.watchNamespaces, upstreamsToTrack, opts)
 		if err != nil {
 			contextutils.LoggerFrom(opts.Ctx).Warnw("initializing EDS plugin failed", "plugin", reflect.TypeOf(eds).String(), "error", err)
 			continue
