@@ -10,6 +10,7 @@ import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 /*
 @solo-kit:resource.short_name=px
@@ -249,6 +250,9 @@ message RouteAction {
         Destination single = 1;
         // Use MultiDestination to load balance requests between multiple upstreams (by weight)
         MultiDestination multi = 2;
+
+        // Use a reference to an upstream group for routing.
+        core.solo.io.ResourceRef upstream_group = 3;
     };
 }
 
@@ -262,7 +266,33 @@ message Destination {
     // destination config. If the destination config is required for the upstream and not provided by the user,
     // Gloo will invalidate the destination and its parent resources.
     DestinationSpec destination_spec = 2;
+
+    // If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't
+    // contain the specified subset, we will fallback to normal upstream routing.
+    Subset subset = 3;
 }
+
+
+/*
+@solo-kit:resource.short_name=ug
+@solo-kit:resource.plural_name=upstreamgroups
+@solo-kit:resource.resource_groups=api.gloo.solo.io 
+*/
+message UpstreamGroup {
+    // message UpstreamGroupSpec {
+        repeated WeightedDestination destinations = 1;
+    // }
+    // UpstreamGroupSpec spec = 1;
+    
+    // Status indicates the validation status of this resource.
+    // Status is read-only by clients, and set by gloo during validation
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+
+    // Metadata contains the object metadata for this resource
+    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+}
+
+
 
 // MultiDestination is a container for a set of weighted destinations. Gloo will load balance traffic for a single
 // route across multiple destinations according to their specified weights.

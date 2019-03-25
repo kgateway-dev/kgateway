@@ -27,6 +27,7 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
 - [Secret](../github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk#secret)
 - [Settings](../github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk#settings)
 - [Upstream](../github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk#upstream)
+- [UpstreamGroup](../github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#upstreamgroup)
 - [VirtualService](../github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk#virtualservice)
 
 <!-- Start of HubSpot Embed Code -->

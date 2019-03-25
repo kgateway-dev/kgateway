@@ -207,6 +207,14 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	upstreamGroupClient, err := v1.NewUpstreamGroupClient(opts.UpstreamGroups)
+	if err != nil {
+		return err
+	}
+	if err := upstreamGroupClient.Register(); err != nil {
+		return err
+	}
+
 	endpointClient, err := v1.NewEndpointClient(endpointsFactory)
 	if err != nil {
 		return err
@@ -222,7 +230,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	cache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, secretClient, upstreamClient)
+	cache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient)
 
 	// Register grpc endpoints to the grpc server
 	xdsHasher := xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
@@ -344,6 +352,17 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 		return bootstrap.Opts{}, err
 	}
 
+	upstreamGroupFactory, err := bootstrap.ConfigFactoryForSettings(
+		settings,
+		memCache,
+		kubeCache,
+		v1.UpstreamGroupCrd,
+		&cfg,
+	)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	artifactFactory, err := bootstrap.ArtifactFactoryForSettings(
 		ctx,
 		settings,
@@ -357,9 +376,10 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 		return bootstrap.Opts{}, err
 	}
 	return bootstrap.Opts{
-		Upstreams: upstreamFactory,
-		Proxies:   proxyFactory,
-		Secrets:   secretFactory,
-		Artifacts: artifactFactory,
+		Upstreams:      upstreamFactory,
+		Proxies:        proxyFactory,
+		UpstreamGroups: upstreamGroupFactory,
+		Secrets:        secretFactory,
+		Artifacts:      artifactFactory,
 	}, nil
 }

@@ -21,6 +21,7 @@ weight: 5
 - [QueryParameterMatcher](#queryparametermatcher)
 - [RouteAction](#routeaction)
 - [Destination](#destination)
+- [UpstreamGroup](#upstreamgroup) **Top-Level Resource**
 - [MultiDestination](#multidestination)
 - [WeightedDestination](#weighteddestination)
 - [RedirectAction](#redirectaction)
@@ -263,6 +264,7 @@ RouteActions are used to route matched requests to upstreams.
 ```yaml
 "single": .gloo.solo.io.Destination
 "multi": .gloo.solo.io.MultiDestination
+"upstreamGroup": .core.solo.io.ResourceRef
 
 ```
 
@@ -270,6 +272,7 @@ RouteActions are used to route matched requests to upstreams.
 | ----- | ---- | ----------- |----------- | 
 | `single` | [.gloo.solo.io.Destination](../proxy.proto.sk#destination) | Use SingleDestination to route to a single upstream |  |
 | `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight) |  |
+| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | Use a reference to an upstream group for routing. |  |
 
 
 
@@ -283,6 +286,7 @@ Destinations define routable destinations for proxied requests
 ```yaml
 "upstream": .core.solo.io.ResourceRef
 "destinationSpec": .gloo.solo.io.DestinationSpec
+"subset": .gloo.solo.io.Subset
 
 ```
 
@@ -290,6 +294,29 @@ Destinations define routable destinations for proxied requests
 | ----- | ---- | ----------- |----------- | 
 | `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to route requests to |  |
 | `destinationSpec` | [.gloo.solo.io.DestinationSpec](../plugins.proto.sk#destinationspec) | Some upstreams utilize plugins which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
+| `subset` | [.gloo.solo.io.Subset](../subset.proto.sk#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |  |
+
+
+
+
+---
+### UpstreamGroup
+
+ 
+
+
+```yaml
+"destinations": []gloo.solo.io.WeightedDestination
+"status": .core.solo.io.Status
+"metadata": .core.solo.io.Metadata
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk#weighteddestination) | message UpstreamGroupSpec { |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 
 
 

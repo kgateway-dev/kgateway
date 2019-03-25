@@ -8,8 +8,11 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyendpoints "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
+
+const EnvoyLb = "envoy.lb"
 
 // Endpoints
 
@@ -34,6 +37,7 @@ func loadAssignmentForCluster(clusterName string, clusterEndpoints []*v1.Endpoin
 	var endpoints []envoyendpoints.LbEndpoint
 	for _, addr := range clusterEndpoints {
 		lbEndpoint := envoyendpoints.LbEndpoint{
+			Metadata: getLbMetadata(addr.Metadata.Labels),
 			HostIdentifier: &envoyendpoints.LbEndpoint_Endpoint{
 				Endpoint: &envoyendpoints.Endpoint{
 					Address: &envoycore.Address{
@@ -71,4 +75,27 @@ func endpointsForUpstream(upstream *v1.Upstream, endpoints []*v1.Endpoint) []*v1
 		}
 	}
 	return clusterEndpoints
+}
+
+func getLbMetadata(labels map[string]string) *envoycore.Metadata {
+	if labels == nil {
+		return nil
+	}
+	meta := &envoycore.Metadata{
+		FilterMetadata: map[string]*types.Struct{},
+	}
+
+	labelsStruct := &types.Struct{
+		Fields: map[string]*types.Value{},
+	}
+
+	for k, v := range labels {
+		labelsStruct.Fields[k] = &types.Value{
+			Kind: &types.Value_StringValue{
+				StringValue: v,
+			},
+		}
+	}
+
+	meta.FilterMetadata[EnvoyLb] = labelsStruct
 }

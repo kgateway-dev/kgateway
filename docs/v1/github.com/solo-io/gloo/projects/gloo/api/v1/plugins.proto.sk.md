@@ -132,6 +132,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 
 ```yaml
 "sslConfig": .gloo.solo.io.UpstreamSslConfig
+"subsetConfig": .gloo.solo.io.SubsetConfig
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
@@ -143,6 +144,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk#upstreamsslconfig) |  |  |
+| `subsetConfig` | [.gloo.solo.io.SubsetConfig](../subset.proto.sk#subsetconfig) | Sub set configuration. For discovery sources that has labels (like kubernetes). this configuration allows you to partition the upstream to a set of subsets. for each unique set of keys and values, a subset will be created. |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  |  |
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#upstreamspec) |  |  |

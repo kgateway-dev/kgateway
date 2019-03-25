@@ -43,6 +43,12 @@ var _ = Describe("ApiEventLoop", func() {
 		proxyClient, err := NewProxyClient(proxyClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
+		upstreamGroupClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		upstreamGroupClient, err := NewUpstreamGroupClient(upstreamGroupClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
 		secretClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
@@ -55,7 +61,7 @@ var _ = Describe("ApiEventLoop", func() {
 		upstreamClient, err := NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewApiEmitter(artifactClient, endpointClient, proxyClient, secretClient, upstreamClient)
+		emitter = NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient)
 	})
 	It("runs sync function on a new snapshot", func() {
 		_, err = emitter.Artifact().Write(NewArtifact(namespace, "jerry"), clients.WriteOpts{})
@@ -63,6 +69,8 @@ var _ = Describe("ApiEventLoop", func() {
 		_, err = emitter.Endpoint().Write(NewEndpoint(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Proxy().Write(NewProxy(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.UpstreamGroup().Write(NewUpstreamGroup(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Secret().Write(NewSecret(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())

@@ -51,8 +51,9 @@ func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream
 
 func initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyapi.Cluster {
 	out := &envoyapi.Cluster{
-		Name:     UpstreamToClusterName(upstream.Metadata.Ref()),
-		Metadata: new(envoycore.Metadata),
+		Name:           UpstreamToClusterName(upstream.Metadata.Ref()),
+		Metadata:       new(envoycore.Metadata),
+		LbSubsetConfig: createLbConfig(upstream),
 	}
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
@@ -63,6 +64,23 @@ func initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyap
 	// this field can be overridden by plugins
 	out.ConnectTimeout = ClusterConnectionTimeout
 	return out
+}
+
+func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
+	if upstream.UpstreamSpec.SubsetConfig == nil {
+		return nil
+	}
+
+	subsetConfig := &envoyapi.Cluster_LbSubsetConfig{
+		FallbackPolicy: envoyapi.Cluster_LbSubsetConfig_ANY_ENDPOINT,
+	}
+	for _, keys := range upstream.UpstreamSpec.SubsetConfig.Selectors {
+		subsetConfig.SubsetSelectors = append(subsetConfig.SubsetSelectors, &envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+			Keys: keys.Keys,
+		})
+	}
+
+	return subsetConfig
 }
 
 // TODO: add more validation here

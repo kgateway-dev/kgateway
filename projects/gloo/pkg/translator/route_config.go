@@ -135,7 +135,7 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 		out.Action = &envoyroute.Route_Route{
 			Route: &envoyroute.RouteAction{},
 		}
-		if err := setRouteAction(action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
+		if err := setRouteAction(params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
 			report(err, "translator error on route")
 		}
 
@@ -189,16 +189,28 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 	}
 }
 
-func setRouteAction(in *v1.RouteAction, out *envoyroute.RouteAction) error {
+func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.RouteAction) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
 		out.ClusterSpecifier = &envoyroute.RouteAction_Cluster{
 			Cluster: UpstreamToClusterName(dest.Single.Upstream),
 		}
+		out.MetadataMatch = getSubsetMatch(dest.Single.Subset)
+		return nil
 	case *v1.RouteAction_Multi:
 		return setWeightedClusters(dest.Multi, out)
+	case *v1.RouteAction_UpstreamGroup:
+		upstreamGroupRef := dest.UpstreamGroup
+		upstreamGroup, err := params.Snapshot.Upstreamgroups.List().Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
+		if err != nil {
+			return err
+		}
+		md := &v1.MultiDestination{
+			Destinations: upstreamGroup.Destinations,
+		}
+		return setWeightedClusters(md, out)
 	}
-	return nil
+	return errors.Errorf("unknown upstream destination type")
 }
 
 func setWeightedClusters(multiDest *v1.MultiDestination, out *envoyroute.RouteAction) error {
@@ -214,15 +226,24 @@ func setWeightedClusters(multiDest *v1.MultiDestination, out *envoyroute.RouteAc
 	for _, weightedDest := range multiDest.Destinations {
 		totalWeight += weightedDest.Weight
 		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, &envoyroute.WeightedCluster_ClusterWeight{
-			Name:   UpstreamToClusterName(weightedDest.Destination.Upstream),
-			Weight: &types.UInt32Value{Value: weightedDest.Weight},
+			Name:          UpstreamToClusterName(weightedDest.Destination.Upstream),
+			Weight:        &types.UInt32Value{Value: weightedDest.Weight},
+			MetadataMatch: getSubsetMatch(weightedDest.Destination.Subset),
 		})
+
 	}
 
 	clusterSpecifier.WeightedClusters.TotalWeight = &types.UInt32Value{Value: totalWeight}
 
 	out.ClusterSpecifier = clusterSpecifier
 	return nil
+}
+
+func getSubsetMatch(subset *v1.Subset) *envoycore.Metadata {
+	if subset == nil {
+		return nil
+	}
+	return getLbMetadata(subset.Values)
 }
 
 func setEnvoyPathMatcher(in *v1.Matcher, out *envoyroute.RouteMatch) {

@@ -35,16 +35,17 @@ var _ = Describe("V1Emitter", func() {
 		return
 	}
 	var (
-		namespace1     string
-		namespace2     string
-		name1, name2   = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
-		cfg            *rest.Config
-		emitter        ApiEmitter
-		artifactClient ArtifactClient
-		endpointClient EndpointClient
-		proxyClient    ProxyClient
-		secretClient   SecretClient
-		upstreamClient UpstreamClient
+		namespace1          string
+		namespace2          string
+		name1, name2        = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
+		cfg                 *rest.Config
+		emitter             ApiEmitter
+		artifactClient      ArtifactClient
+		endpointClient      EndpointClient
+		proxyClient         ProxyClient
+		upstreamGroupClient UpstreamGroupClient
+		secretClient        SecretClient
+		upstreamClient      UpstreamClient
 	)
 
 	BeforeEach(func() {
@@ -90,6 +91,14 @@ var _ = Describe("V1Emitter", func() {
 		}
 		proxyClient, err = NewProxyClient(proxyClientFactory)
 		Expect(err).NotTo(HaveOccurred())
+		// UpstreamGroup Constructor
+		upstreamGroupClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         UpstreamGroupCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
+		}
+		upstreamGroupClient, err = NewUpstreamGroupClient(upstreamGroupClientFactory)
+		Expect(err).NotTo(HaveOccurred())
 		// Secret Constructor
 		kube, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
@@ -110,7 +119,7 @@ var _ = Describe("V1Emitter", func() {
 		}
 		upstreamClient, err = NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewApiEmitter(artifactClient, endpointClient, proxyClient, secretClient, upstreamClient)
+		emitter = NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient)
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace1)
@@ -308,6 +317,66 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotProxies(nil, ProxyList{proxy1a, proxy1b, proxy2a, proxy2b})
+
+		/*
+			UpstreamGroup
+		*/
+
+		assertSnapshotUpstreamgroups := func(expectUpstreamgroups UpstreamGroupList, unexpectUpstreamgroups UpstreamGroupList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectUpstreamgroups {
+						if _, err := snap.Upstreamgroups.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectUpstreamgroups {
+						if _, err := snap.Upstreamgroups.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := upstreamGroupClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := upstreamGroupClient.List(namespace2, clients.ListOpts{})
+					combined := UpstreamgroupsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		upstreamGroup1a, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstreamGroup1b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, nil)
+		upstreamGroup2a, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstreamGroup2b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b}, nil)
+
+		err = upstreamGroupClient.Delete(upstreamGroup2a.Metadata.Namespace, upstreamGroup2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamGroupClient.Delete(upstreamGroup2b.Metadata.Namespace, upstreamGroup2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, UpstreamGroupList{upstreamGroup2a, upstreamGroup2b})
+
+		err = upstreamGroupClient.Delete(upstreamGroup1a.Metadata.Namespace, upstreamGroup1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamGroupClient.Delete(upstreamGroup1b.Metadata.Namespace, upstreamGroup1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(nil, UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b})
 
 		/*
 			Secret
@@ -621,6 +690,66 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotProxies(nil, ProxyList{proxy1a, proxy1b, proxy2a, proxy2b})
+
+		/*
+			UpstreamGroup
+		*/
+
+		assertSnapshotUpstreamgroups := func(expectUpstreamgroups UpstreamGroupList, unexpectUpstreamgroups UpstreamGroupList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectUpstreamgroups {
+						if _, err := snap.Upstreamgroups.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectUpstreamgroups {
+						if _, err := snap.Upstreamgroups.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := upstreamGroupClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := upstreamGroupClient.List(namespace2, clients.ListOpts{})
+					combined := UpstreamgroupsByNamespace{
+						namespace1: nsList1,
+						namespace2: nsList2,
+					}
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		upstreamGroup1a, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstreamGroup1b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, nil)
+		upstreamGroup2a, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		upstreamGroup2b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b}, nil)
+
+		err = upstreamGroupClient.Delete(upstreamGroup2a.Metadata.Namespace, upstreamGroup2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamGroupClient.Delete(upstreamGroup2b.Metadata.Namespace, upstreamGroup2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, UpstreamGroupList{upstreamGroup2a, upstreamGroup2b})
+
+		err = upstreamGroupClient.Delete(upstreamGroup1a.Metadata.Namespace, upstreamGroup1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamGroupClient.Delete(upstreamGroup1b.Metadata.Namespace, upstreamGroup1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotUpstreamgroups(nil, UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b})
 
 		/*
 			Secret

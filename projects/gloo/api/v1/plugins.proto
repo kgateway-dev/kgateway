@@ -8,6 +8,7 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
@@ -71,6 +72,11 @@ message DestinationSpec {
 message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 6;
+    // Sub set configuration. For discovery sources that has labels (like kubernetes). this 
+    // configuration allows you to partition the upstream to a set of subsets.
+    // for each unique set of keys and values, a subset will be created.
+    SubsetConfig subset_config = 7;
+
 
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.

@@ -17,6 +17,7 @@ type Opts struct {
 	WriteNamespace  string
 	WatchNamespaces []string
 	Upstreams       factory.ResourceClientFactory
+	UpstreamGroups  factory.ResourceClientFactory
 	Proxies         factory.ResourceClientFactory
 	Secrets         factory.ResourceClientFactory
 	Artifacts       factory.ResourceClientFactory
