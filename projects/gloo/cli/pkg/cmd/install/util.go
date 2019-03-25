@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -54,7 +55,7 @@ func init() {
 		"virtualservices.gateway.solo.io",
 	}
 
-	KnativeCrdNames = []string {
+	KnativeCrdNames = []string{
 		"virtualservices.networking.istio.io",
 		"clusteringresses.networking.internal.knative.dev",
 		"configurations.serving.knative.dev",
@@ -137,4 +138,3 @@ func InstallGloo(opts *options.Options, spec GlooInstallSpec) error {
 
 	return installer.DoInstall()
 }
-

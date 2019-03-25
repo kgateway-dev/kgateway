@@ -1,23 +1,24 @@
 package install_test
 
 import (
+	"path/filepath"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	install2 "github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"path/filepath"
-	"time"
 )
 
 type MockInstallClient struct {
-	expectedCrds []string
-	applied bool
-	waited bool
-	resources []install2.ResourceType
+	expectedCrds     []string
+	applied          bool
+	waited           bool
+	resources        []install2.ResourceType
 	knativeInstalled bool
-	knativeOurs bool
+	knativeOurs      bool
 }
 
 func (i *MockInstallClient) KubectlApply(manifest []byte) error {
@@ -43,9 +44,9 @@ func (i *MockInstallClient) CheckKnativeInstallation() (bool, bool, error) {
 var _ = Describe("Install", func() {
 
 	var (
-		file string
+		file      string
 		installer install.GlooStagedInstaller
-		opts options.Options
+		opts      options.Options
 		validator MockInstallClient
 	)
 
@@ -102,7 +103,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeTrue())
-			expectKinds(validator.resources, []string { "CustomResourceDefinition" })
+			expectKinds(validator.resources, []string{"CustomResourceDefinition"})
 			expectNames(validator.resources, install.GlooCrdNames)
 		})
 
@@ -147,7 +148,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeTrue())
-			expectKinds(validator.resources, []string { "CustomResourceDefinition" })
+			expectKinds(validator.resources, []string{"CustomResourceDefinition"})
 			expectNames(validator.resources, install.GlooCrdNames)
 		})
 
@@ -195,7 +196,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeTrue())
-			expectKinds(validator.resources, []string { "CustomResourceDefinition" })
+			expectKinds(validator.resources, []string{"CustomResourceDefinition"})
 			expectNames(validator.resources, allCrds)
 		})
 
@@ -231,9 +232,9 @@ var _ = Describe("Install", func() {
 			spec, err := install.GetInstallSpec(&opts, constants.KnativeValuesFileName)
 			Expect(err).NotTo(HaveOccurred())
 			validator = MockInstallClient{
-				expectedCrds: install.GlooCrdNames,
+				expectedCrds:     install.GlooCrdNames,
 				knativeInstalled: true,
-				knativeOurs: true,
+				knativeOurs:      true,
 			}
 			installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
 			Expect(err).NotTo(HaveOccurred())
@@ -244,7 +245,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeTrue())
-			expectKinds(validator.resources, []string { "CustomResourceDefinition" })
+			expectKinds(validator.resources, []string{"CustomResourceDefinition"})
 			expectNames(validator.resources, install.GlooCrdNames)
 		})
 
@@ -280,7 +281,7 @@ var _ = Describe("Install", func() {
 			spec, err := install.GetInstallSpec(&opts, constants.KnativeValuesFileName)
 			Expect(err).NotTo(HaveOccurred())
 			validator = MockInstallClient{
-				expectedCrds: install.GlooCrdNames,
+				expectedCrds:     install.GlooCrdNames,
 				knativeInstalled: true,
 			}
 			installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
@@ -292,7 +293,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeTrue())
-			expectKinds(validator.resources, []string { "CustomResourceDefinition" })
+			expectKinds(validator.resources, []string{"CustomResourceDefinition"})
 			expectNames(validator.resources, install.GlooCrdNames)
 		})
 

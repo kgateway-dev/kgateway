@@ -7,7 +7,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/helm/helm/pkg/hooks"
 	"github.com/solo-io/go-utils/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/helm/pkg/manifest"
 )
@@ -172,7 +172,7 @@ func KnativeResourceFilterFunction(skipKnative bool) ManifestFilterFunc {
 	}
 }
 
-var ExcludeKnative ManifestFilterFunc = KnativeResourceFilterFunction(true)
+var ExcludeKnative = KnativeResourceFilterFunction(true)
 
 var ExcludeNonKnative ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
 	for _, man := range input {

@@ -2,16 +2,21 @@ package install
 
 import (
 	"fmt"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/go-utils/kubeutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/manifest"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/renderutil"
-	"path"
-	"strings"
-	"time"
 )
 
 type KubeInstallClient interface {
@@ -20,18 +25,57 @@ type KubeInstallClient interface {
 	CheckKnativeInstallation() (bool, bool, error) // isInstalled, isOurs, error
 }
 
-type DefaultKubeInstallClient struct {}
+type DefaultKubeInstallClient struct{}
 
 func (i *DefaultKubeInstallClient) KubectlApply(manifest []byte) error {
 	return install.KubectlApply(manifest)
 }
 
 func (i *DefaultKubeInstallClient) WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
-	return install.WaitForCrdsToBeRegistered(crds, timeout, interval)
+	if len(crds) == 0 {
+		return nil
+	}
+
+	// TODO: think about improving
+	// Just pick the last crd in the list an wait for it to be created. It is reasonable to assume that by the time we
+	// get to applying the manifest the other ones will be ready as well.
+	crdName := crds[len(crds)-1]
+
+	elapsed := time.Duration(0)
+	for {
+		select {
+		case <-time.After(interval):
+			if err := install.Kubectl(nil, "get", crdName); err == nil {
+				return nil
+			}
+			elapsed += interval
+			if elapsed > timeout {
+				return errors.Errorf("failed to confirm knative crd registration after %v", timeout)
+			}
+		}
+	}
 }
 
 func (i *DefaultKubeInstallClient) CheckKnativeInstallation() (bool, bool, error) {
-	return install.CheckKnativeInstallation()
+	restCfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return false, false, err
+	}
+	kube, err := kubernetes.NewForConfig(restCfg)
+	if err != nil {
+		return false, false, err
+	}
+	namespaces, err := kube.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		return false, false, err
+	}
+	for _, ns := range namespaces.Items {
+		if ns.Name == constants.KnativeServingNamespace {
+			ours := ns.Labels != nil && ns.Labels["app"] == "gloo"
+			return true, ours, nil
+		}
+	}
+	return false, false, nil
 }
 
 type ManifestInstaller interface {
@@ -63,7 +107,7 @@ func (i *KubeManifestInstaller) InstallCrds(crdNames []string, manifest []byte) 
 	return nil
 }
 
-type DryRunManifestInstaller struct {}
+type DryRunManifestInstaller struct{}
 
 func (i *DryRunManifestInstaller) InstallManifest(manifest []byte) error {
 	manifestString := string(manifest)
@@ -93,12 +137,12 @@ type GlooStagedInstaller interface {
 }
 
 type DefaultGlooStagedInstaller struct {
-	chart *chart.Chart
-	values *chart.Config
-	renderOpts renderutil.Options
+	chart                *chart.Chart
+	values               *chart.Config
+	renderOpts           renderutil.Options
 	knativeInstallStatus KnativeInstallStatus
-	excludeResources install.ResourceMatcherFunc
-	manifestInstaller ManifestInstaller
+	excludeResources     install.ResourceMatcherFunc
+	manifestInstaller    ManifestInstaller
 }
 
 func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client KubeInstallClient) (GlooStagedInstaller, error) {
@@ -130,7 +174,7 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 	}
 	knativeInstallStatus := KnativeInstallStatus{
 		isInstalled: isInstalled,
-		isOurs: isOurs,
+		isOurs:      isOurs,
 	}
 
 	var manifestInstaller ManifestInstaller
@@ -143,12 +187,12 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 	}
 
 	return &DefaultGlooStagedInstaller{
-		chart: chart,
-		values: values,
-		renderOpts: renderOpts,
+		chart:                chart,
+		values:               values,
+		renderOpts:           renderOpts,
 		knativeInstallStatus: knativeInstallStatus,
-		excludeResources: nil,
-		manifestInstaller: manifestInstaller,
+		excludeResources:     nil,
+		manifestInstaller:    manifestInstaller,
 	}, nil
 }
 
@@ -218,4 +262,3 @@ func (i *DefaultGlooStagedInstaller) DoKnativeInstall() error {
 	}
 	return i.manifestInstaller.InstallManifest(manifestBytes)
 }
-
