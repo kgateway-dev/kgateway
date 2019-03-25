@@ -76,13 +76,13 @@ func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expe
 	}
 	validateManifest(manifestString, allowedKinds, expectedLabels)
 	if isDryRun {
-		fmt.Printf("%s", manifest)
+		fmt.Printf("%s", manifestString)
 		// For safety, print a YAML separator so multiple invocations of this function will produce valid output
 		fmt.Println("\n---")
 		return nil
 	}
 
-	if err := kubectlApply(manifest); err != nil {
+	if err := kubectlApply([]byte(manifestString)); err != nil {
 		return errors.Wrapf(err, "running kubectl apply on manifest")
 	}
 	return nil
