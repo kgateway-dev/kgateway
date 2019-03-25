@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Generalizes the install library so glooe can use it and remove redundant code.
+  - type: BREAKING_CHANGE
+    description: Glooctl install library has been refactored.
+    issueLink: https://github.com/solo-io/gloo/pull/597

@@ -28,7 +28,6 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 //
 //@solo-kit:resource.short_name=st
 //@solo-kit:resource.plural_name=settings
-//@solo-kit:resource.resource_groups=setup.gloo.solo.io
 type Settings struct {
 	// namespace to write discovered data
 	DiscoveryNamespace string `protobuf:"bytes,1,opt,name=discovery_namespace,json=discoveryNamespace,proto3" json:"discovery_namespace,omitempty"`

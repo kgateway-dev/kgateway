@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-var _ discovery.DiscoveryPlugin = &plugin{}
+var _ discovery.DiscoveryPlugin = new(plugin)
 
 type upstreamController struct {
 	consul          *api.Client

@@ -43,9 +43,21 @@ type UpstreamDiscovery struct {
 }
 
 type EndpointDiscovery struct {
+	watchNamespaces    []string
 	writeNamespace     string
 	endpointReconciler v1.EndpointReconciler
 	discoveryPlugins   []DiscoveryPlugin
+}
+
+func NewEndpointDiscovery(watchNamespaces []string,
+	writeNamespace string,
+	endpointsClient v1.EndpointClient,
+	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
+	return &EndpointDiscovery{
+		watchNamespaces:    watchNamespaces,
+		writeNamespace:     writeNamespace,
+		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
+		discoveryPlugins:   discoveryPlugins}
 }
 
 func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
@@ -55,16 +67,6 @@ func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
 		watchNamespaces:    watchNamespaces,
 		writeNamespace:     writeNamespace,
 		upstreamReconciler: v1.NewUpstreamReconciler(upstreamClient),
-		discoveryPlugins:   discoveryPlugins,
-	}
-}
-
-func NewEndpointDiscovery(writeNamespace string,
-	endpointsClient v1.EndpointClient,
-	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
-	return &EndpointDiscovery{
-		writeNamespace:     writeNamespace,
-		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
 		discoveryPlugins:   discoveryPlugins,
 	}
 }
@@ -143,7 +145,7 @@ func aggregateUpstreams(endpointsByUds map[DiscoveryPlugin]v1.UpstreamList) v1.U
 // launch a goroutine for all the UDS plugins with a single cancel to close them all
 func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (chan error, error) {
 	aggregatedErrs := make(chan error)
-	endpointsByUds := make(map[DiscoveryPlugin]v1.EndpointList)
+	endpointsByEds := make(map[DiscoveryPlugin]v1.EndpointList)
 	lock := sync.Mutex{}
 	for _, eds := range d.discoveryPlugins {
 		endpoints, errs, err := eds.WatchEndpoints(d.writeNamespace, upstreamsToTrack, opts)
@@ -160,8 +162,8 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 						return
 					}
 					lock.Lock()
-					endpointsByUds[eds] = endpointList
-					desiredEndpoints := aggregateEndpoints(endpointsByUds)
+					endpointsByEds[eds] = endpointList
+					desiredEndpoints := aggregateEndpoints(endpointsByEds)
 					if err := d.endpointReconciler.Reconcile(d.writeNamespace, desiredEndpoints, txnEndpoint, clients.ListOpts{
 						Ctx:      opts.Ctx,
 						Selector: opts.Selector,
