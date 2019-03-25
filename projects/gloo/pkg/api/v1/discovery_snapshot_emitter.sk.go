@@ -41,45 +41,45 @@ func init() {
 
 type DiscoveryEmitter interface {
 	Register() error
-	Secret() SecretClient
 	Upstream() UpstreamClient
+	Secret() SecretClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *DiscoverySnapshot, <-chan error, error)
 }
 
-func NewDiscoveryEmitter(secretClient SecretClient, upstreamClient UpstreamClient) DiscoveryEmitter {
-	return NewDiscoveryEmitterWithEmit(secretClient, upstreamClient, make(chan struct{}))
+func NewDiscoveryEmitter(upstreamClient UpstreamClient, secretClient SecretClient) DiscoveryEmitter {
+	return NewDiscoveryEmitterWithEmit(upstreamClient, secretClient, make(chan struct{}))
 }
 
-func NewDiscoveryEmitterWithEmit(secretClient SecretClient, upstreamClient UpstreamClient, emit <-chan struct{}) DiscoveryEmitter {
+func NewDiscoveryEmitterWithEmit(upstreamClient UpstreamClient, secretClient SecretClient, emit <-chan struct{}) DiscoveryEmitter {
 	return &discoveryEmitter{
-		secret:    secretClient,
 		upstream:  upstreamClient,
+		secret:    secretClient,
 		forceEmit: emit,
 	}
 }
 
 type discoveryEmitter struct {
 	forceEmit <-chan struct{}
-	secret    SecretClient
 	upstream  UpstreamClient
+	secret    SecretClient
 }
 
 func (c *discoveryEmitter) Register() error {
-	if err := c.secret.Register(); err != nil {
+	if err := c.upstream.Register(); err != nil {
 		return err
 	}
-	if err := c.upstream.Register(); err != nil {
+	if err := c.secret.Register(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *discoveryEmitter) Secret() SecretClient {
-	return c.secret
-}
-
 func (c *discoveryEmitter) Upstream() UpstreamClient {
 	return c.upstream
+}
+
+func (c *discoveryEmitter) Secret() SecretClient {
+	return c.secret
 }
 
 func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *DiscoverySnapshot, <-chan error, error) {
@@ -98,31 +98,20 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
-	/* Create channel for Secret */
-	type secretListWithNamespace struct {
-		list      SecretList
-		namespace string
-	}
-	secretChan := make(chan secretListWithNamespace)
 	/* Create channel for Upstream */
 	type upstreamListWithNamespace struct {
 		list      UpstreamList
 		namespace string
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
+	/* Create channel for Secret */
+	type secretListWithNamespace struct {
+		list      SecretList
+		namespace string
+	}
+	secretChan := make(chan secretListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup namespaced watch for Secret */
-		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Secret watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
-		}(namespace)
 		/* Setup namespaced watch for Upstream */
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
@@ -134,6 +123,17 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
 		}(namespace)
+		/* Setup namespaced watch for Secret */
+		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting Secret watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -141,17 +141,17 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				select {
 				case <-ctx.Done():
 					return
-				case secretList := <-secretNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case secretChan <- secretListWithNamespace{list: secretList, namespace: namespace}:
-					}
 				case upstreamList := <-upstreamNamespacesChan:
 					select {
 					case <-ctx.Done():
 						return
 					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
+					}
+				case secretList := <-secretNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case secretChan <- secretListWithNamespace{list: secretList, namespace: namespace}:
 					}
 				}
 			}
@@ -188,13 +188,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
-			case secretNamespacedList := <-secretChan:
-				record()
-
-				namespace := secretNamespacedList.namespace
-				secretList := secretNamespacedList.list
-
-				currentSnapshot.Secrets[namespace] = secretList
 			case upstreamNamespacedList := <-upstreamChan:
 				record()
 
@@ -202,6 +195,13 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				upstreamList := upstreamNamespacedList.list
 
 				currentSnapshot.Upstreams[namespace] = upstreamList
+			case secretNamespacedList := <-secretChan:
+				record()
+
+				namespace := secretNamespacedList.namespace
+				secretList := secretNamespacedList.list
+
+				currentSnapshot.Secrets[namespace] = secretList
 			}
 		}
 	}()

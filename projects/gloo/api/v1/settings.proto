@@ -15,7 +15,6 @@ import "google/protobuf/duration.proto";
 /*
 @solo-kit:resource.short_name=st
 @solo-kit:resource.plural_name=settings
-@solo-kit:resource.resource_groups=setup.gloo.solo.io
 */
 message Settings {
     // namespace to write discovered data
