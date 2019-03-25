@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,6 +28,11 @@ type corsTestData struct {
 	ctx         context.Context
 	per         perCorsTestData
 }
+
+const (
+	requestACHMethods = "Access-Control-Allow-Methods"
+	requestACHOrigin  = "Access-Control-Allow-Origin"
+)
 
 var _ = Describe("CORS", func() {
 
@@ -65,11 +71,13 @@ var _ = Describe("CORS", func() {
 
 		It("should run with cors", func() {
 
-			allowedOrigin := "allowThisOne.solo.io"
+			allowedOrigins := []string{"allowThisOne.solo.io"}
+			// allowedOrigin := "*"
+			allowedMethods := []string{"GET", "POST"}
 			cors := &gloov1.CorsPolicy{
-				AllowOrigin:      []string{allowedOrigin},
+				AllowOrigin:      allowedOrigins,
 				AllowOriginRegex: nil,
-				AllowMethods:     nil,
+				AllowMethods:     allowedMethods,
 				AllowHeaders:     nil,
 				ExposeHeaders:    nil,
 				MaxAge:           "",
@@ -102,9 +110,27 @@ var _ = Describe("CORS", func() {
 				return nil
 			}, "10s", ".1s").Should(BeNil())
 
+			By("Check config")
 			Expect(envoyConfig).To(MatchRegexp(corsFilterString))
 			Expect(envoyConfig).To(MatchRegexp(corsActiveConfigString))
-			Expect(envoyConfig).To(MatchRegexp(allowedOrigin))
+			Expect(envoyConfig).To(MatchRegexp(allowedOrigins[0]))
+
+			By("Request with allowed origin")
+			mockOrigin := allowedOrigins[0]
+			h := td.per.getOptions(mockOrigin, "GET")
+			v, ok := h[requestACHMethods]
+			Expect(ok).To(BeTrue())
+			Expect(strings.Split(v[0], ",")).Should(ConsistOf(allowedMethods))
+			v, ok = h[requestACHOrigin]
+			Expect(ok).To(BeTrue())
+			Expect(len(v)).To(Equal(1))
+			Expect(v[0]).To(Equal(mockOrigin))
+
+			By("Request with disallowed origin")
+			mockOrigin = "http://example.com"
+			h = td.per.getOptions(mockOrigin, "GET")
+			v, ok = h[requestACHMethods]
+			Expect(ok).To(BeFalse())
 
 		})
 		It("should run without cors", func() {
@@ -225,4 +251,31 @@ func (td *corsTestData) setupUpstream() *gloov1.Upstream {
 	_, err := td.testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
 	Expect(err).NotTo(HaveOccurred())
 	return up
+}
+
+// To test this with curl:
+// curl -H "Origin: http://example.com" \
+//   -H "Access-Control-Request-Method: POST" \
+//   -H "Access-Control-Request-Headers: X-Requested-With" \
+//   -X OPTIONS --verbose localhost:11082
+func (ptd *perCorsTestData) getOptions(origin, method string) http.Header {
+	h := http.Header{}
+	Eventually(func() error {
+		req, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://localhost:%v", ptd.envoyPort), nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Origin", origin)
+		req.Header.Set("Access-Control-Request-Method", method)
+		req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		h = resp.Header
+		return nil
+	}, "10s", ".1s").Should(BeNil())
+	return h
 }
