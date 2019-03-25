@@ -1,14 +1,22 @@
 package install_test
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	"path/filepath"
 )
 
 // NOTE: This needs to be run from the repo root to find the test asset created in the BeforeSuite
 
 var _ = Describe("Install", func() {
+
+	var file string
+
+	BeforeEach(func() {
+		file = filepath.Join(RootDir, "_test/gloo-test-unit-testing.tgz")
+	})
 
 	/**
 	NOTE: If these tests start failing, it could mean we've added a new kind of resource that gets created at install time.
@@ -17,17 +25,17 @@ var _ = Describe("Install", func() {
 	*/
 
 	It("shouldn't get errors for gateway dry run", func() {
-		_, err := testutils.GlooctlOut("install gateway --file _test/gloo-test-unit-testing.tgz --dry-run")
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run", file))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("shouldn't get errors for knative dry run", func() {
-		_, err := testutils.GlooctlOut("install knative --file _test/gloo-test-unit-testing.tgz --dry-run")
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install knative --file %s --dry-run", file))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("shouldn't get errors for ingress dry run", func() {
-		_, err := testutils.GlooctlOut("install ingress --file _test/gloo-test-unit-testing.tgz --dry-run")
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install ingress --file %s --dry-run", file))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
