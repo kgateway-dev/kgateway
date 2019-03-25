@@ -71,7 +71,8 @@ func deleteNamespace(cli install.KubeCli, namespace string) error {
 }
 
 func uninstallKnativeIfNecessary(cli install.KubeCli) error {
-	knativeExists, isOurInstall, err := install.CheckKnativeInstallation()
+	installClient := DefaultKubeInstallClient{}
+	knativeExists, isOurInstall, err := installClient.CheckKnativeInstallation()
 	if err != nil {
 		return errors.Wrapf(err, "finding knative installation")
 	}
