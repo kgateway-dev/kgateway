@@ -75,7 +75,7 @@ var nonPreInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool
 
 var excludeByMatcher = func(input []manifest.Manifest, matches ResourceMatcherFunc) (output []manifest.Manifest, allResourceNames []string, err error) {
 	for _, man := range input {
-		content, resourceNames, err := ExcludeManifestContentByMatcher(man.Content, matches)
+		content, resourceNames, err := excludeManifestContentByMatcher(man.Content, matches)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -89,7 +89,7 @@ var excludeByMatcher = func(input []manifest.Manifest, matches ResourceMatcherFu
 	return
 }
 
-var ExcludeManifestContentByMatcher = func(input string, matches ResourceMatcherFunc) (output string, resourceNames []string, err error) {
+var excludeManifestContentByMatcher = func(input string, matches ResourceMatcherFunc) (output string, resourceNames []string, err error) {
 	var nonMatching []string
 	for _, doc := range strings.Split(input, "---") {
 

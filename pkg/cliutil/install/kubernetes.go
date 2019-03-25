@@ -67,7 +67,10 @@ func WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) e
 
 //noinspection GoNameStartsWithPackageName
 func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expectedLabels map[string]string, excludeResources ResourceMatcherFunc) error {
-	manifestString := string(manifest)
+	manifestString, err := filterExcludedResources(string(manifest), excludeResources)
+	if err != nil {
+		return errors.Wrapf(err, "filtering excluded resources from manifest")
+	}
 	if isEmptyManifest(manifestString) {
 		return nil
 	}
@@ -85,8 +88,9 @@ func InstallManifest(manifest []byte, isDryRun bool, allowedKinds []string, expe
 	return nil
 }
 
-func filterExcludedResources(manifest string, excludeResources ResourceMatcherFunc) error {
-
+func filterExcludedResources(manifest string, excludeResources ResourceMatcherFunc) (string, error) {
+	content, _, err := excludeManifestContentByMatcher(manifest, excludeResources)
+	return content, err
 }
 
 func validateManifest(manifestString string, allowedKinds []string, expectedLabels map[string]string) error {
