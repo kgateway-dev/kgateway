@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Use latest envoy with a fix to SIGSEGV that happens under heavy load.
+    issueLink: https://github.com/solo-io/gloo/issues/590
