@@ -26,6 +26,7 @@ type perCorsTestData struct {
 type corsTestData struct {
 	testClients services.TestClients
 	ctx         context.Context
+	cancel      context.CancelFunc
 	per         perCorsTestData
 }
 
@@ -44,9 +45,13 @@ var _ = Describe("CORS", func() {
 	)
 
 	BeforeEach(func() {
-		td.ctx, _ = context.WithCancel(context.Background())
+		td.ctx, td.cancel = context.WithCancel(context.Background())
 		td.testClients = services.RunGateway(td.ctx, true)
 		td.per = perCorsTestData{}
+	})
+
+	AfterEach(func() {
+		td.cancel()
 	})
 
 	Context("with envoy", func() {
