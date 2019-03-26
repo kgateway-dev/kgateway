@@ -215,8 +215,11 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if desired.UpstreamSpec.SslConfig == nil {
 		desired.UpstreamSpec.SslConfig = original.UpstreamSpec.SslConfig
 	}
-	if desired.UpstreamSpec.SubsetConfig == nil {
-		desired.UpstreamSpec.SubsetConfig = original.UpstreamSpec.SubsetConfig
+
+	if desiredSubsetMutator, ok := desired.UpstreamSpec.UpstreamType.(v1.SubsetSpecMutator); ok {
+		if desiredSubsetMutator.GetSubsetSpec() == nil {
+			desiredSubsetMutator.SetSubsetSpec(original.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter).GetSubsetSpec())
+		}
 	}
 
 	if originalSpec.Equal(desiredSpec) {

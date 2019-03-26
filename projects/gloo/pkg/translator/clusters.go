@@ -67,14 +67,19 @@ func initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyap
 }
 
 func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
-	if upstream.UpstreamSpec.SubsetConfig == nil {
+	specGetter, ok := upstream.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter)
+	if !ok {
+		return nil
+	}
+	glooSubsetConfig := specGetter.GetSubsetSpec()
+	if glooSubsetConfig == nil {
 		return nil
 	}
 
 	subsetConfig := &envoyapi.Cluster_LbSubsetConfig{
 		FallbackPolicy: envoyapi.Cluster_LbSubsetConfig_ANY_ENDPOINT,
 	}
-	for _, keys := range upstream.UpstreamSpec.SubsetConfig.Selectors {
+	for _, keys := range glooSubsetConfig.Selectors {
 		subsetConfig.SubsetSelectors = append(subsetConfig.SubsetSelectors, &envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
 			Keys: keys.Keys,
 		})
