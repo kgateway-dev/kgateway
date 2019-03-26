@@ -240,6 +240,7 @@ func setWeightedClusters(multiDest *v1.MultiDestination, out *envoyroute.RouteAc
 }
 
 func getSubsetMatch(subset *v1.Subset) *envoycore.Metadata {
+	// TODO(yuval-k): should we add validation that the route subset indeed exists in the upstream?
 	if subset == nil {
 		return nil
 	}

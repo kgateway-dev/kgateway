@@ -97,5 +97,9 @@ func getLbMetadata(labels map[string]string) *envoycore.Metadata {
 		}
 	}
 
+	// TODO(yuval-k): should we add empty strings for keys that are in the upstream but not
+	// present in the labels?
+
 	meta.FilterMetadata[EnvoyLb] = labelsStruct
+	return meta
 }
