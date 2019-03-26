@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/swag"
 	multierror "github.com/hashicorp/go-multierror"
 
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 
 	"github.com/pkg/errors"

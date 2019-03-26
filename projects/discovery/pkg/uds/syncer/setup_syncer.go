@@ -6,7 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/utils/errutils"
 )
 
