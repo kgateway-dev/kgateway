@@ -1,9 +1,10 @@
 package create
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 

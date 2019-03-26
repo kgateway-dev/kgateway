@@ -11,6 +11,6 @@ func AddFileFlag(set *pflag.FlagSet, strptr *string) {
 }
 
 func AddKubeYamlFlag(set *pflag.FlagSet, kubeyaml *bool) {
-	set.BoolVarP(kubeyaml, "kubeyaml", "k", false, "print kubernetes-formatted yaml " +
+	set.BoolVarP(kubeyaml, "kubeyaml", "k", false, "print kubernetes-formatted yaml "+
 		"rather than creating or updating a resource")
 }
