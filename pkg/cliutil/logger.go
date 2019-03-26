@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"k8s.io/client-go/util/homedir"
 )
@@ -17,7 +18,8 @@ const (
 var (
 	glooPath     string
 	glooLogsPath string
-	Logger       io.Writer
+	logger       io.Writer
+	mutex        sync.Once
 )
 
 func init() {
@@ -30,22 +32,31 @@ func GetLogsPath() string {
 	return glooLogsPath
 }
 
+func GetLogger() io.Writer {
+	Initialize()
+	return logger
+}
+
 func Initialize() error {
-	if Logger == nil {
+	var initError error
+	mutex.Do(func() {
 		if _, err := ioutil.ReadDir(glooPath); err != nil {
 			if !os.IsNotExist(err) {
-				return err
+				initError = err
+				return
 			}
-			err := os.Mkdir(glooPath, 0755)
+			err = os.Mkdir(glooPath, 0755)
 			if err != nil {
-				return err
+				initError = err
+				return
 			}
 		}
 		file, err := os.OpenFile(glooLogsPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return err
+			initError = err
+			return
 		}
-		Logger = file
-	}
-	return nil
+		logger = file
+	})
+	return initError
 }

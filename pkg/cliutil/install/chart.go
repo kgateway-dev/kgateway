@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -94,6 +95,9 @@ func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, 
 //   - renderOptions: options to be used in the render
 //   - filterFunctions: a collection of functions that can be used to filter and transform the contents of the manifest. Will be applied in the given order.
 func RenderChart(helmChart *chart.Chart, overrideValues *chart.Config, renderOptions renderutil.Options, filterFunctions ...ManifestFilterFunc) ([]byte, error) {
+	// Helm uses the standard go log package. Redirect its output to the debug.log file  so that we don't
+	// expose useless warnings to the user.
+	log.SetOutput(cliutil.GetLogger())
 	renderedTemplates, err := renderutil.Render(helmChart, overrideValues, renderOptions)
 	if err != nil {
 		return nil, err

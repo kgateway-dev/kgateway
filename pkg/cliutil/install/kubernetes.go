@@ -28,7 +28,7 @@ func Kubectl(stdin io.Reader, args ...string) error {
 		kubectl.Stdin = stdin
 	}
 	cliutil.Initialize()
-	kubectl.Stdout = cliutil.Logger
-	kubectl.Stderr = cliutil.Logger
+	kubectl.Stdout = cliutil.GetLogger()
+	kubectl.Stderr = cliutil.GetLogger()
 	return kubectl.Run()
 }
