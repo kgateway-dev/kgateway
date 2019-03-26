@@ -58,5 +58,8 @@ func Initialize() error {
 		}
 		logger = file
 	})
+	if initError != nil {
+		logger = os.Stdout
+	}
 	return initError
 }
