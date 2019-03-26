@@ -7,6 +7,7 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/subset.proto";
 
 // Upstream Spec for Kubernetes Upstreams
 // Kubernetes Upstreams represent a set of one or more addressable pods for a Kubernetes Service
@@ -25,6 +26,12 @@ message UpstreamSpec {
     // any are provided here.
     // (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
     map<string, string> selector = 4;
-//     An optional Service Spec describing the service listening at this address
+    // An optional Service Spec describing the service listening at this address
     .plugins.gloo.solo.io.ServiceSpec service_spec = 5;
+
+
+    // Sub set configuration. For discovery sources that has labels (like kubernetes). this 
+    // configuration allows you to partition the upstream to a set of subsets.
+    // for each unique set of keys and values, a subset will be created.
+    .gloo.solo.io.SubsetSpec subset_spec = 6;
 }

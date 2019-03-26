@@ -5,7 +5,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-message SubsetConfig {
+message SubsetSpec {
     repeated Selector selectors =1;
 }
 
