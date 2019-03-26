@@ -177,6 +177,7 @@ func DefaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	return bootstrap.Opts{
 		WriteNamespace:  runOptions.NsToWrite,
 		Upstreams:       f,
+		UpstreamGroups:  f,
 		Proxies:         f,
 		Secrets:         f,
 		Artifacts:       f,
