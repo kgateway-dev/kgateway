@@ -1,5 +1,6 @@
 {{- if .Values.gateway.enabled }}
 {{- range $key, $spec := .Values.gatewayProxies }}
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -27,6 +28,5 @@ spec:
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}
   {{- end }}
----
 {{- end }}
 {{- end }}
