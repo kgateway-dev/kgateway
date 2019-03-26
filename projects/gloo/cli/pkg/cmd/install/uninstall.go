@@ -12,14 +12,10 @@ import (
 )
 
 func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
-	fmt.Printf("Uninstalling Gloo...\n")
-
 	if err := uninstallGloo(opts, cli); err != nil {
-		fmt.Fprintf(os.Stderr, "Gloo failed to uninstall. Detailed logs available at %s.\n", cliutil.GetLogsPath())
+		fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
-
-	fmt.Printf("\nGloo was successfully uninstalled.\n")
 	return nil
 }
 

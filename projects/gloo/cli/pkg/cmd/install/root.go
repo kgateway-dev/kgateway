@@ -1,6 +1,7 @@
 package install
 
 import (
+	"fmt"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -28,7 +29,12 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 		Short: constants.UNINSTALL_COMMAND.Short,
 		Long:  constants.UNINSTALL_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return UninstallGloo(opts, &install.CmdKubectl{})
+			fmt.Printf("Uninstalling Gloo...\n")
+			if err := UninstallGloo(opts, &install.CmdKubectl{}); err != nil {
+				return err
+			}
+			fmt.Printf("\nGloo was successfully uninstalled.\n")
+			return nil
 		},
 	}
 
