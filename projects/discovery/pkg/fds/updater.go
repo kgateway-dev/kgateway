@@ -9,7 +9,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
+	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

@@ -12,7 +12,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 type reportFunc func(error error, format string, args ...interface{})

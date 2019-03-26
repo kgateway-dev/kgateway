@@ -1484,7 +1484,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:895e4708511088712de26601f976255b2930717d1f3fe2ff735e7d39784348c2"
+  digest = "1:69ecb449e12945f8b4c73a578b9199fd1b0d29d761d7f2c26c3ffb2c8917edf7"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1505,8 +1505,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "94b56d174b345de8c59b6312228ccbd9c21b3581"
-  version = "v0.5.1"
+  revision = "606083a7f0dbaf6d60966679b60746c20f486737"
+  version = "v0.6.0"
 
 [[projects]]
   branch = "master"
@@ -1517,7 +1517,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:6c172d601e7943ee80ec60c660069073bf36b79a32ea511574c78c3a9b20af0b"
+  digest = "1:db93442eb490ebfad170e9729e08ba6f3eef703b88cc89396ec9aa7b507cc90b"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1558,7 +1558,6 @@
     "pkg/code-generator/parser",
     "pkg/errors",
     "pkg/utils/cliutils",
-    "pkg/utils/contextutils",
     "pkg/utils/errutils",
     "pkg/utils/fileutils",
     "pkg/utils/hashutils",
@@ -1572,8 +1571,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "e722533e9c1f1a41eee32a256ff5c09a20f2bd03"
-  version = "v0.3.10"
+  revision = "ab66edfc0413abe3bf9d16bf79d0bdbde907c218"
+  version = "v0.4.1"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2564,6 +2563,7 @@
     "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/go-utils/clidoc",
     "github.com/solo-io/go-utils/cliutils",
+    "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/docsutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/githubutils",
@@ -2595,7 +2595,6 @@
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",
     "github.com/solo-io/solo-kit/pkg/utils/cliutils",
-    "github.com/solo-io/solo-kit/pkg/utils/contextutils",
     "github.com/solo-io/solo-kit/pkg/utils/errutils",
     "github.com/solo-io/solo-kit/pkg/utils/hashutils",
     "github.com/solo-io/solo-kit/pkg/utils/kubeutils",

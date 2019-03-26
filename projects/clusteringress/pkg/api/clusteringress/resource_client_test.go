@@ -49,7 +49,10 @@ var _ = Describe("ResourceClient", func() {
 		// register knative crd just in case
 		apiexts, err := clientset.NewForConfig(cfg)
 
-		locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), "")
+		options := clusterlock.Options{
+			IdPrefix: os.ExpandEnv("clusteringress-${BUILD_ID}-"),
+		}
+		locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), options)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(locker.AcquireLock()).NotTo(HaveOccurred())
 
