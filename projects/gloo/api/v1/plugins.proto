@@ -9,6 +9,7 @@ option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/circuite_breakers.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
@@ -73,6 +74,11 @@ message DestinationSpec {
 message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 6;
+
+    // Circuite breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
+    // if those are not set,  [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) 
+    // will be used.
+    CircuitBreakerConfig circuit_breakers = 7;
 
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.

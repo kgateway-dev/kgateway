@@ -22,12 +22,14 @@ type Translator interface {
 type translator struct {
 	plugins            []plugins.Plugin
 	extensionsSettings *v1.Extensions
+	settings           *v1.Settings
 }
 
-func NewTranslator(plugins []plugins.Plugin, extensionsSettings *v1.Extensions) Translator {
+func NewTranslator(plugins []plugins.Plugin, settings *v1.Settings) Translator {
 	return &translator{
 		plugins:            plugins,
-		extensionsSettings: extensionsSettings,
+		extensionsSettings: settings.Extensions,
+		settings:           settings,
 	}
 }
 

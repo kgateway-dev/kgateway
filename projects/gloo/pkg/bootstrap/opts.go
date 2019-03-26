@@ -26,6 +26,7 @@ type Opts struct {
 	DevMode         bool
 	ControlPlane    ControlPlane
 	Extensions      *v1.Extensions
+	Settings        *v1.Settings
 }
 
 type ControlPlane struct {

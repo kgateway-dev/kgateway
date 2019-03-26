@@ -58,6 +58,7 @@ type CertSource interface {
 	GetSslFiles() *v1.SSLFiles
 	GetSds() *v1.SDSConfig
 	GetVerifySubjectAltName() []string
+	GetParameters() *v1.SslParameters
 }
 
 func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSource {
@@ -234,7 +235,10 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 
 	}
 
-	return tlsContext, nil
+	var err error
+	tlsContext.TlsParams, err = convertTlsParams(cs)
+
+	return tlsContext, err
 }
 
 func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, error) {
@@ -252,4 +256,48 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	privateKey := sslSecret.Tls.PrivateKey
 	rootCa := sslSecret.Tls.RootCa
 	return certChain, privateKey, rootCa, nil
+}
+
+func convertTlsParams(cs CertSource) (*envoyauth.TlsParameters, error) {
+	params := cs.GetParameters()
+	if params == nil {
+		return nil, nil
+	}
+
+	maxver, err := convertVersion(params.MaximumProtocolVersion)
+	if err != nil {
+		return nil, err
+	}
+	minver, err := convertVersion(params.MinimumProtocolVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoyauth.TlsParameters{
+		CipherSuites:              params.CipherSuites,
+		EcdhCurves:                params.EcdhCurves,
+		TlsMaximumProtocolVersion: maxver,
+		TlsMinimumProtocolVersion: minver,
+	}, nil
+}
+
+func convertVersion(v v1.SslParameters_ProtocolVersion) (envoyauth.TlsParameters_TlsProtocol, error) {
+	switch v {
+	case v1.SslParameters_TLS_AUTO:
+		return envoyauth.TlsParameters_TLS_AUTO, nil
+	// TLS 1.0
+	case v1.SslParameters_TLSv1_0:
+		return envoyauth.TlsParameters_TLSv1_0, nil
+	// TLS 1.1
+	case v1.SslParameters_TLSv1_1:
+		return envoyauth.TlsParameters_TLSv1_1, nil
+	// TLS 1.2
+	case v1.SslParameters_TLSv1_2:
+		return envoyauth.TlsParameters_TLSv1_2, nil
+	// TLS 1.3
+	case v1.SslParameters_TLSv1_3:
+		return envoyauth.TlsParameters_TLSv1_3, nil
+	}
+
+	return envoyauth.TlsParameters_TLS_AUTO, errors.Errorf("tls version %v not found", v)
 }

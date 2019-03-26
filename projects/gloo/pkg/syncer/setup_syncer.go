@@ -168,6 +168,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.KubeClient = clientset
 	opts.DevMode = true
 	opts.Extensions = settings.Extensions
+	opts.Settings = settings
 
 	return s.runFunc(opts)
 }

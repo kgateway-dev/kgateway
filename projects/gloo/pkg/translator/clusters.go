@@ -2,7 +2,9 @@ package translator
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -30,7 +32,7 @@ func (t *translator) computeClusters(params plugins.Params, resourceErrs reporte
 
 func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream, resourceErrs reporter.ResourceErrors) *envoyapi.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
-	out := initializeCluster(upstream, params.Snapshot.Endpoints.List())
+	out := t.initializeCluster(upstream, params.Snapshot.Endpoints.List())
 
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
@@ -49,10 +51,13 @@ func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream
 	return out
 }
 
-func initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyapi.Cluster {
+func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyapi.Cluster {
 	out := &envoyapi.Cluster{
-		Name:     UpstreamToClusterName(upstream.Metadata.Ref()),
-		Metadata: new(envoycore.Metadata),
+		Name:            UpstreamToClusterName(upstream.Metadata.Ref()),
+		Metadata:        new(envoycore.Metadata),
+		CircuitBreakers: getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, t.settings.CircuitBreakers),
+		// this field can be overridden by plugins
+		ConnectTimeout: ClusterConnectionTimeout,
 	}
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
@@ -60,8 +65,6 @@ func initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyap
 			Type: envoyapi.Cluster_EDS,
 		}
 	}
-	// this field can be overridden by plugins
-	out.ConnectTimeout = ClusterConnectionTimeout
 	return out
 }
 
@@ -75,6 +78,23 @@ func validateCluster(c *envoyapi.Cluster) error {
 	if clusterType == envoyapi.Cluster_STATIC || clusterType == envoyapi.Cluster_STRICT_DNS || clusterType == envoyapi.Cluster_LOGICAL_DNS {
 		if len(c.Hosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
 			return errors.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
+		}
+	}
+	return nil
+}
+
+// Convert the first non nil circuit breaker.
+func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitBreakers {
+	for _, cfg := range cfgs {
+		if cfg != nil {
+			envoyCfg := &envoycluster.CircuitBreakers{}
+			envoyCfg.Thresholds = []*envoycluster.CircuitBreakers_Thresholds{{
+				MaxConnections:     cfg.MaxConnections,
+				MaxPendingRequests: cfg.MaxPendingRequests,
+				MaxRequests:        cfg.MaxRequests,
+				MaxRetries:         cfg.MaxRetries,
+			}}
+			return envoyCfg
 		}
 	}
 	return nil

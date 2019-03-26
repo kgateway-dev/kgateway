@@ -134,6 +134,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 
 ```yaml
 "sslConfig": .gloo.solo.io.UpstreamSslConfig
+"circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
@@ -145,6 +146,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk#upstreamsslconfig) |  |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuite_breakers.proto.sk#circuitbreakerconfig) | Circuite breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  |  |
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#upstreamspec) |  |  |
