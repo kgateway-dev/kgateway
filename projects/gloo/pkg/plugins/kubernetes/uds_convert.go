@@ -215,6 +215,9 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if desired.UpstreamSpec.SslConfig == nil {
 		desired.UpstreamSpec.SslConfig = original.UpstreamSpec.SslConfig
 	}
+	if desired.UpstreamSpec.CircuitBreakers == nil {
+		desired.UpstreamSpec.CircuitBreakers = original.UpstreamSpec.CircuitBreakers
+	}
 
 	if originalSpec.Equal(desiredSpec) {
 		return false, nil
