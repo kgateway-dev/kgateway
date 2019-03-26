@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow fine tuning ssl settings and circuit breakers
+    issueLink: https://github.com/solo-io/gloo/issues/609
