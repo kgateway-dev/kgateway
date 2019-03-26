@@ -1,6 +1,6 @@
 
 ---
-title: "circuite_breakers.proto"
+title: "circuit_breaker.proto"
 weight: 5
 ---
 
@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/circuite_breakers.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/circuite_breakers.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/circuit_breaker.proto)
 
 
 
