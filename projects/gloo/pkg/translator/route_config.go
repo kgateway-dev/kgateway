@@ -245,19 +245,27 @@ func setEnvoyPathMatcher(in *v1.Matcher, out *envoyroute.RouteMatch) {
 func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
 	var out []*envoyroute.HeaderMatcher
 	for _, matcher := range in {
+
 		envoyMatch := &envoyroute.HeaderMatcher{
 			Name: matcher.Name,
-			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_ExactMatch{
-				ExactMatch: matcher.Value,
-			},
 		}
-		if matcher.Regex {
-			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
-				RegexMatch: matcher.Value,
+		if matcher.Value == "" {
+			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_PresentMatch{
+				PresentMatch: true,
 			}
 		} else {
+
 			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
 				ExactMatch: matcher.Value,
+			}
+			if matcher.Regex {
+				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
+					RegexMatch: matcher.Value,
+				}
+			} else {
+				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
+					ExactMatch: matcher.Value,
+				}
 			}
 		}
 		out = append(out, envoyMatch)

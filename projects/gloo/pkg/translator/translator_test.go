@@ -10,6 +10,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
@@ -26,7 +27,12 @@ var _ = Describe("Translator", func() {
 		upstream   *v1.Upstream
 		proxy      *v1.Proxy
 		params     plugins.Params
-		cluster    *envoyapi.Cluster
+		matcher    *v1.Matcher
+
+		cluster             *envoyapi.Cluster
+		listener            *envoyapi.Listener
+		hcm_cfg             *envoyhttp.HttpConnectionManager
+		route_configuration *envoyapi.RouteConfiguration
 	)
 
 	BeforeEach(func() {
@@ -66,10 +72,40 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
-
-		proxy = &v1.Proxy{}
+		matcher = &v1.Matcher{
+			PathSpecifier: &v1.Matcher_Prefix{
+				Prefix: "/",
+			},
+		}
+		proxy = &v1.Proxy{
+			Metadata: upname,
+			Listeners: []*v1.Listener{{
+				Name:        "listener",
+				BindAddress: "127.0.0.1",
+				BindPort:    80,
+				ListenerType: &v1.Listener_HttpListener{
+					HttpListener: &v1.HttpListener{
+						VirtualHosts: []*v1.VirtualHost{{
+							Name:    "virt1",
+							Domains: []string{"*"},
+							Routes: []*v1.Route{{
+								Matcher: matcher,
+								Action: &v1.Route_RouteAction{
+									RouteAction: &v1.RouteAction{
+										Destination: &v1.RouteAction_Single{
+											Single: &v1.Destination{
+												Upstream: upname.Ref(),
+											},
+										},
+									},
+								},
+							}},
+						}},
+					},
+				},
+			}},
+		}
 	})
-
 	translate := func() {
 
 		snap, errs, err := translator.Translate(params, proxy)
@@ -81,90 +117,162 @@ var _ = Describe("Translator", func() {
 		clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
 		cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
 		Expect(cluster).NotTo(BeNil())
+
+		listeners := snap.GetResources(xds.ListenerType)
+
+		listenerResource := listeners.Items["listener"]
+		listener = listenerResource.ResourceProto().(*envoyapi.Listener)
+		Expect(listener).NotTo(BeNil())
+
+		hcm_filter := listener.FilterChains[0].Filters[0]
+		hcm_cfg = &envoyhttp.HttpConnectionManager{}
+		err = ParseConfig(&hcm_filter, hcm_cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		routes := snap.GetResources(xds.RouteType)
+
+		Expect(routes.Items).To(HaveKey("listener-routes"))
+		routeResource := routes.Items["listener-routes"]
+		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+		Expect(route_configuration).NotTo(BeNil())
+
 	}
 
-	It("should NOT translate circuit breakers on upstream", func() {
-		translate()
-		Expect(cluster.CircuitBreakers).To(BeNil())
-	})
+	Context("route header match", func() {
+		It("should translate header matcher with no value to a PresentMatch", func() {
 
-	It("should translate circuit breakers on upstream", func() {
-
-		upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
-			MaxConnections:     &types.UInt32Value{Value: 1},
-			MaxPendingRequests: &types.UInt32Value{Value: 2},
-			MaxRequests:        &types.UInt32Value{Value: 3},
-			MaxRetries:         &types.UInt32Value{Value: 4},
-		}
-
-		expectedCircuitBreakers := &envoycluster.CircuitBreakers{
-			Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
+			matcher.Headers = []*v1.HeaderMatcher{
 				{
-					MaxConnections:     &types.UInt32Value{Value: 1},
-					MaxPendingRequests: &types.UInt32Value{Value: 2},
-					MaxRequests:        &types.UInt32Value{Value: 3},
-					MaxRetries:         &types.UInt32Value{Value: 4},
+					Name: "test",
 				},
-			},
-		}
-		translate()
+			}
+			translate()
+			headermatch := route_configuration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headermatch.Name).To(Equal("test"))
+			presentmatch := headermatch.GetPresentMatch()
+			Expect(presentmatch).To(BeTrue())
+		})
 
-		Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
-	})
+		It("should translate header matcher with value to exact match", func() {
 
-	It("should translate circuit breakers on settings", func() {
-
-		settings.CircuitBreakers = &v1.CircuitBreakerConfig{
-			MaxConnections:     &types.UInt32Value{Value: 1},
-			MaxPendingRequests: &types.UInt32Value{Value: 2},
-			MaxRequests:        &types.UInt32Value{Value: 3},
-			MaxRetries:         &types.UInt32Value{Value: 4},
-		}
-
-		expectedCircuitBreakers := &envoycluster.CircuitBreakers{
-			Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
+			matcher.Headers = []*v1.HeaderMatcher{
 				{
-					MaxConnections:     &types.UInt32Value{Value: 1},
-					MaxPendingRequests: &types.UInt32Value{Value: 2},
-					MaxRequests:        &types.UInt32Value{Value: 3},
-					MaxRetries:         &types.UInt32Value{Value: 4},
+					Name:  "test",
+					Value: "testvalue",
 				},
-			},
-		}
-		translate()
+			}
+			translate()
 
-		Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
-	})
+			headermatch := route_configuration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headermatch.Name).To(Equal("test"))
+			exactmatch := headermatch.GetExactMatch()
+			Expect(exactmatch).To(Equal("testvalue"))
+		})
 
-	It("should override circuit breakers on upstream", func() {
+		It("should translate header matcher with regex becomes regex match", func() {
 
-		settings.CircuitBreakers = &v1.CircuitBreakerConfig{
-			MaxConnections:     &types.UInt32Value{Value: 11},
-			MaxPendingRequests: &types.UInt32Value{Value: 12},
-			MaxRequests:        &types.UInt32Value{Value: 13},
-			MaxRetries:         &types.UInt32Value{Value: 14},
-		}
-
-		upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
-			MaxConnections:     &types.UInt32Value{Value: 1},
-			MaxPendingRequests: &types.UInt32Value{Value: 2},
-			MaxRequests:        &types.UInt32Value{Value: 3},
-			MaxRetries:         &types.UInt32Value{Value: 4},
-		}
-
-		expectedCircuitBreakers := &envoycluster.CircuitBreakers{
-			Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
+			matcher.Headers = []*v1.HeaderMatcher{
 				{
-					MaxConnections:     &types.UInt32Value{Value: 1},
-					MaxPendingRequests: &types.UInt32Value{Value: 2},
-					MaxRequests:        &types.UInt32Value{Value: 3},
-					MaxRetries:         &types.UInt32Value{Value: 4},
+					Name:  "test",
+					Value: "testvalue",
+					Regex: true,
 				},
-			},
-		}
-		translate()
+			}
+			translate()
 
-		Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+			headermatch := route_configuration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headermatch.Name).To(Equal("test"))
+			regex := headermatch.GetRegexMatch()
+			Expect(regex).To(Equal("testvalue"))
+		})
+
 	})
 
+	Context("circuit breakers", func() {
+
+		It("should NOT translate circuit breakers on upstream", func() {
+			translate()
+			Expect(cluster.CircuitBreakers).To(BeNil())
+		})
+
+		It("should translate circuit breakers on upstream", func() {
+
+			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+				MaxConnections:     &types.UInt32Value{Value: 1},
+				MaxPendingRequests: &types.UInt32Value{Value: 2},
+				MaxRequests:        &types.UInt32Value{Value: 3},
+				MaxRetries:         &types.UInt32Value{Value: 4},
+			}
+
+			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
+				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
+					{
+						MaxConnections:     &types.UInt32Value{Value: 1},
+						MaxPendingRequests: &types.UInt32Value{Value: 2},
+						MaxRequests:        &types.UInt32Value{Value: 3},
+						MaxRetries:         &types.UInt32Value{Value: 4},
+					},
+				},
+			}
+			translate()
+
+			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+		})
+
+		It("should translate circuit breakers on settings", func() {
+
+			settings.CircuitBreakers = &v1.CircuitBreakerConfig{
+				MaxConnections:     &types.UInt32Value{Value: 1},
+				MaxPendingRequests: &types.UInt32Value{Value: 2},
+				MaxRequests:        &types.UInt32Value{Value: 3},
+				MaxRetries:         &types.UInt32Value{Value: 4},
+			}
+
+			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
+				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
+					{
+						MaxConnections:     &types.UInt32Value{Value: 1},
+						MaxPendingRequests: &types.UInt32Value{Value: 2},
+						MaxRequests:        &types.UInt32Value{Value: 3},
+						MaxRetries:         &types.UInt32Value{Value: 4},
+					},
+				},
+			}
+			translate()
+
+			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+		})
+
+		It("should override circuit breakers on upstream", func() {
+
+			settings.CircuitBreakers = &v1.CircuitBreakerConfig{
+				MaxConnections:     &types.UInt32Value{Value: 11},
+				MaxPendingRequests: &types.UInt32Value{Value: 12},
+				MaxRequests:        &types.UInt32Value{Value: 13},
+				MaxRetries:         &types.UInt32Value{Value: 14},
+			}
+
+			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+				MaxConnections:     &types.UInt32Value{Value: 1},
+				MaxPendingRequests: &types.UInt32Value{Value: 2},
+				MaxRequests:        &types.UInt32Value{Value: 3},
+				MaxRetries:         &types.UInt32Value{Value: 4},
+			}
+
+			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
+				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
+					{
+						MaxConnections:     &types.UInt32Value{Value: 1},
+						MaxPendingRequests: &types.UInt32Value{Value: 2},
+						MaxRequests:        &types.UInt32Value{Value: 3},
+						MaxRetries:         &types.UInt32Value{Value: 4},
+					},
+				},
+			}
+			translate()
+
+			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+		})
+
+	})
 })
