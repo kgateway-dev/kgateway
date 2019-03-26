@@ -1,5 +1,6 @@
 {{- if .Values.gateway.enabled }}
 {{- range $key, $spec := .Values.gatewayProxies }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -54,6 +55,5 @@ spec:
       - configMap:
           name: {{ $key }}-envoy-config
         name: envoy-config
----
 {{- end }}
 {{- end }}
