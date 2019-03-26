@@ -11,8 +11,6 @@ weight: 5
 #### Types:
 
 
-- [SubsetConfig](#subsetconfig)
-- [Selector](#selector)
 - [Subset](#subset)
   
 
@@ -20,40 +18,6 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/subset.proto)
 
-
-
-
-
----
-### SubsetConfig
-
-
-
-```yaml
-"selectors": []gloo.solo.io.Selector
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `selectors` | [[]gloo.solo.io.Selector](../subset.proto.sk#selector) |  |  |
-
-
-
-
----
-### Selector
-
-
-
-```yaml
-"keys": []string
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `keys` | `[]string` |  |  |
 
 
 
