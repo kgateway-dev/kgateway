@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix incorrect link to Envoy clusters in the glooctl create upstream doc
+    issueLink: https://github.com/solo-io/solo-docs/issues/170
