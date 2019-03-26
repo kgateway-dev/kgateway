@@ -52,7 +52,7 @@ var _ = Describe("ResourceClient", func() {
 		options := clusterlock.Options{
 			IdPrefix: os.ExpandEnv("clusteringress-${BUILD_ID}-"),
 		}
-		locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), "")
+		locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), options)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(locker.AcquireLock()).NotTo(HaveOccurred())
 
