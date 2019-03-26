@@ -1,6 +1,7 @@
 package install_test
 
 import (
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"path/filepath"
 	"time"
 
@@ -80,10 +81,16 @@ var _ = Describe("Install", func() {
 	}
 
 	expectNamespace := func(resources []install2.ResourceType, namespace string) {
+		globalKinds := []string{
+			"Namespace",
+			"ClusterRole",
+			"ClusterRoleBinding",
+		}
 		for _, resource := range resources {
-			if resource.Metadata.Namespace != "" {
-				ExpectWithOffset(1, resource.Metadata.Namespace).To(BeEquivalentTo(namespace))
+			if cliutil.Contains(globalKinds, resource.TypeMeta.Kind) {
+				continue
 			}
+			ExpectWithOffset(1, resource.Metadata.Namespace).To(BeEquivalentTo(namespace))
 		}
 	}
 

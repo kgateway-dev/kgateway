@@ -92,6 +92,9 @@ var excludeByMatcher = func(input []manifest.Manifest, matches ResourceMatcherFu
 var excludeManifestContentByMatcher = func(input string, matches ResourceMatcherFunc) (output string, resourceNames []string, err error) {
 	var nonMatching []string
 	for _, doc := range strings.Split(input, "---") {
+		if strings.TrimSpace(doc) == "" {
+			continue
+		}
 
 		var resource ResourceType
 		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
@@ -196,6 +199,9 @@ func IsEmptyManifest(manifest string) bool {
 func GetResources(manifest string) ([]ResourceType, error) {
 	var resources []ResourceType
 	for _, doc := range strings.Split(manifest, "---") {
+		if strings.TrimSpace(doc) == "" {
+			continue
+		}
 		var resource ResourceType
 		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
 			return nil, errors.Wrapf(err, "parsing resource: %s", doc)
