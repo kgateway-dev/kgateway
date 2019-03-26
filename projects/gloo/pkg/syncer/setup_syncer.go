@@ -167,7 +167,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	// if nil, kube plugin disabled
 	opts.KubeClient = clientset
 	opts.DevMode = true
-	opts.Extensions = settings.Extensions
 	opts.Settings = settings
 
 	return s.runFunc(opts)
@@ -244,7 +243,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
-		SettingExtensions: opts.Extensions,
+		SettingExtensions: opts.Settings.Extensions,
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
 		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
@@ -255,7 +254,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	apiSync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Extensions), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
+	apiSync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Settings), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
 	apiEventLoop := v1.NewApiEventLoop(apiCache, apiSync)
 
 	errs := make(chan error)
