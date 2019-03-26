@@ -1,22 +1,24 @@
 {{- if .Values.gateway.enabled }}
+{{- range $key, $spec := .Values.gatewayProxies }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
     app: gloo
-    gloo: gateway-proxy
-  name: gateway-proxy
-  namespace: {{ .Release.Namespace }}
+    gloo: {{ $key }}
+  name: {{ $key }}
+  namespace: {{ $.Release.Namespace }}
 spec:
-  replicas: {{ .Values.gatewayProxy.deployment.replicas }}
+  replicas: {{ $spec.deployment.replicas }}
   selector:
     matchLabels:
-      gloo: gateway-proxy
+      gloo: {{ $key }}
   template:
     metadata:
       labels:
-        gloo: gateway-proxy
-{{- with .Values.gatewayProxy.deployment.extraAnnotations }}
+        gloo: {{ $key }}
+{{- with $spec.deployment.extraAnnotations }}
       annotations:
 {{toYaml  . | indent 8}}{{- end }}
     spec:
@@ -31,27 +33,27 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ .Values.gatewayProxy.deployment.image.repository }}:{{ .Values.gatewayProxy.deployment.image.tag }}
-        imagePullPolicy: {{ .Values.gatewayProxy.deployment.image.pullPolicy }}
+        image: {{ $spec.deployment.image.repository }}:{{ $spec.deployment.image.tag }}
+        imagePullPolicy: {{ $spec.deployment.image.pullPolicy }}
         name: gateway-proxy
         ports:
-        - containerPort: {{ .Values.gatewayProxy.deployment.httpPort }}
+        - containerPort: {{ $spec.deployment.httpPort }}
           name: http
           protocol: TCP
-        - containerPort: {{ .Values.gatewayProxy.deployment.httpsPort }}
+        - containerPort: {{ $spec.deployment.httpsPort }}
           name: https
           protocol: TCP
-{{- with .Values.gatewayProxy.deployment.extraPorts }}
+{{- with $spec.deployment.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-      {{- if .Values.gatewayProxy.deployment.image.pullSecret }}
+      {{- if $spec.deployment.image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.gatewayProxy.deployment.image.pullSecret }}{{end}}
+        - name: {{ $spec.deployment.image.pullSecret }}{{end}}
       volumes:
       - configMap:
-          name: gateway-envoy-config
+          name: {{ $key }}-envoy-config
         name: envoy-config
-
+{{- end }}
 {{- end }}

@@ -95,7 +95,9 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go gatewaysyncer.RunGateway(opts)
 	}
 
-	glooOpts.Extensions = runOptions.ExtensionConfigs
+	glooOpts.Settings = &gloov1.Settings{
+		Extensions: runOptions.ExtensionConfigs,
+	}
 	glooOpts.ControlPlane.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 	if !runOptions.WhatToRun.DisableFds {

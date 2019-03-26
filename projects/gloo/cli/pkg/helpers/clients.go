@@ -219,7 +219,7 @@ func secretClient() (v1.SecretClient, error) {
 		return v1.NewSecretClient(memoryResourceClient)
 	}
 
-	clientset, err := getKubernetesClient()
+	clientset, err := GetKubernetesClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
@@ -240,7 +240,7 @@ func secretClient() (v1.SecretClient, error) {
 	return secretClient, nil
 }
 
-func getKubernetesClient() (*kubernetes.Clientset, error) {
+func GetKubernetesClient() (*kubernetes.Clientset, error) {
 	config, err := getKubernetesConfig(0)
 	if err != nil {
 		return nil, err

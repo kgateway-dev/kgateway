@@ -9,11 +9,13 @@ option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/circuite_breakers.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc_web/grpc_web.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hcm/hcm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
@@ -31,6 +33,7 @@ import "google/protobuf/duration.proto";
 // to be usable by Gloo.
 message ListenerPlugins {
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
+    hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
 }
 
 // Plugin-specific configuration that lives on virtual hosts
@@ -72,6 +75,10 @@ message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 6;
 
+    // Circuite breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
+    // if those are not set,  [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) 
+    // will be used.
+    CircuitBreakerConfig circuit_breakers = 7;
 
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.

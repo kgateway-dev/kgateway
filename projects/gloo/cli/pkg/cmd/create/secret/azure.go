@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -34,10 +36,9 @@ func azureCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createAzureSecret(opts.Top.Ctx, opts.Metadata, input); err != nil {
+			if err := createAzureSecret(opts.Top.Ctx, opts.Metadata, input, opts.Create.KubeYaml); err != nil {
 				return err
 			}
-			fmt.Printf("Created Azure secret [%v] in namespace [%v]\n", opts.Metadata.Name, opts.Metadata.Namespace)
 			return nil
 		},
 	}
@@ -63,7 +64,7 @@ func AzureSecretArgsInteractive(meta *core.Metadata, input *options.AzureSecret)
 	return nil
 }
 
-func createAzureSecret(ctx context.Context, meta core.Metadata, input options.AzureSecret) error {
+func createAzureSecret(ctx context.Context, meta core.Metadata, input options.AzureSecret, kubeYaml bool) error {
 	if input.ApiKeys.Entries == nil {
 		return errors.Errorf("must provide azure api keys")
 	}
@@ -76,9 +77,16 @@ func createAzureSecret(ctx context.Context, meta core.Metadata, input options.Az
 		},
 	}
 
+	if kubeYaml {
+		return common.PrintKubeSecret(ctx, secret)
+	}
+
 	secretClient := helpers.MustSecretClient()
 	if _, err := secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
 		return err
 	}
+
+	fmt.Printf("Created Azure secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
+
 	return nil
 }

@@ -1,0 +1,20 @@
+syntax = "proto3";
+package gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+
+option (gogoproto.equal_all) = true;
+
+
+
+// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+// See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+// for the meaning of these values.
+message CircuitBreakerConfig {
+    google.protobuf.UInt32Value max_connections = 1;
+    google.protobuf.UInt32Value max_pending_requests = 2;
+    google.protobuf.UInt32Value max_requests = 3;
+    google.protobuf.UInt32Value max_retries = 4;
+}

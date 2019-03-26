@@ -26,7 +26,7 @@ type Opts struct {
 	WatchOpts       clients.WatchOpts
 	DevMode         bool
 	ControlPlane    ControlPlane
-	Extensions      *v1.Extensions
+	Settings        *v1.Settings
 }
 
 type ControlPlane struct {

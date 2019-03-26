@@ -17,6 +17,8 @@ weight: 5
 - [SDSConfig](#sdsconfig)
 - [CallCredentials](#callcredentials)
 - [FileCredentialSource](#filecredentialsource)
+- [SslParameters](#sslparameters)
+- [ProtocolVersion](#protocolversion)
   
 
 
@@ -39,6 +41,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 "sds": .gloo.solo.io.SDSConfig
 "sniDomains": []string
 "verifySubjectAltName": []string
+"parameters": .gloo.solo.io.SslParameters
 
 ```
 
@@ -49,6 +52,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#sdsconfig) | Use secret discovery service. |  |
 | `sniDomains` | `[]string` | optional. the SNI domains that should be considered for TLS connections |  |
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
+| `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk#sslparameters) |  |  |
 
 
 
@@ -87,6 +91,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 "sds": .gloo.solo.io.SDSConfig
 "sni": string
 "verifySubjectAltName": []string
+"parameters": .gloo.solo.io.SslParameters
 
 ```
 
@@ -97,6 +102,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#sdsconfig) | Use secret discovery service. |  |
 | `sni` | `string` | optional. the SNI domains that should be considered for TLS connections |  |
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
+| `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk#sslparameters) |  |  |
 
 
 
@@ -156,6 +162,47 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | ----- | ---- | ----------- |----------- | 
 | `tokenFileName` | `string` | File containing auth token. |  |
 | `header` | `string` | Header to carry the token. |  |
+
+
+
+
+---
+### SslParameters
+
+ 
+General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/auth/cert.proto#envoy-api-enum-auth-tlsparameters-tlsprotocol)
+for more information on the meaning of these values.
+
+```yaml
+"minimumProtocolVersion": .gloo.solo.io.SslParameters.ProtocolVersion
+"maximumProtocolVersion": .gloo.solo.io.SslParameters.ProtocolVersion
+"cipherSuites": []string
+"ecdhCurves": []string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `minimumProtocolVersion` | [.gloo.solo.io.SslParameters.ProtocolVersion](../ssl.proto.sk#protocolversion) |  |  |
+| `maximumProtocolVersion` | [.gloo.solo.io.SslParameters.ProtocolVersion](../ssl.proto.sk#protocolversion) |  |  |
+| `cipherSuites` | `[]string` |  |  |
+| `ecdhCurves` | `[]string` |  |  |
+
+
+
+
+---
+### ProtocolVersion
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `TLS_AUTO` | Envoy will choose the optimal TLS version. |
+| `TLSv1_0` | TLS 1.0 |
+| `TLSv1_1` | TLS 1.1 |
+| `TLSv1_2` | TLS 1.2 |
+| `TLSv1_3` | TLS 1.3 |
 
 
 

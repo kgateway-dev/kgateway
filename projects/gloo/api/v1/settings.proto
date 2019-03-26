@@ -9,13 +9,13 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/circuite_breakers.proto";
 
 import "google/protobuf/duration.proto";
 
 /*
 @solo-kit:resource.short_name=st
 @solo-kit:resource.plural_name=settings
-@solo-kit:resource.resource_groups=setup.gloo.solo.io
 */
 message Settings {
     // namespace to write discovered data
@@ -60,6 +60,9 @@ message Settings {
         string directory = 1;
     } // watch a directory
 
+
+    // Default circuit breakers when not set in a specific upstream.
+    CircuitBreakerConfig circuit_breakers = 3;
 
     // Settings for extensions
     Extensions extensions = 16;

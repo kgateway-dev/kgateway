@@ -207,6 +207,29 @@ var _ = Describe("Ssl", func() {
 				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
 			})
 		})
+
+		// This logic is the same in files and sds so it only needs to be tested once.
+		Context("tls params", func() {
+
+			It("should add TLS Params when provided", func() {
+				upstreamCfg.Parameters = &v1.SslParameters{
+					MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
+					MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+					CipherSuites:           []string{"cipher-test"},
+					EcdhCurves:             []string{"ec-dh-test"},
+				}
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				Expect(err).NotTo(HaveOccurred())
+				expectParams := &envoyauth.TlsParameters{
+					TlsMinimumProtocolVersion: envoyauth.TlsParameters_TLSv1_1,
+					TlsMaximumProtocolVersion: envoyauth.TlsParameters_TLSv1_2,
+					CipherSuites:              []string{"cipher-test"},
+					EcdhCurves:                []string{"ec-dh-test"},
+				}
+				Expect(c.TlsParams).To(Equal(expectParams))
+			})
+		})
+
 	})
 
 	Context("sds", func() {

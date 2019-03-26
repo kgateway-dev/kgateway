@@ -48,6 +48,20 @@ var _ = Describe("Secret", func() {
 			shouldWork("create secret aws --name test --access-key foo --secret-key bar", "gloo-system")
 		})
 
+		It("can print the kube yaml", func() {
+			out, err := testutils.GlooctlOut("create secret aws --kubeyaml --name test --access-key foo --secret-key bar")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(Equal(`data:
+  aws: YWNjZXNzS2V5OiBmb28Kc2VjcmV0S2V5OiBiYXIK
+metadata:
+  annotations:
+    resource_kind: '*v1.Secret'
+  creationTimestamp: null
+  name: test
+  namespace: gloo-system
+`))
+		})
+
 		It("should work as subcommand", func() {
 			shouldWork("create secret aws test --access-key foo --secret-key bar", "gloo-system")
 		})
@@ -82,6 +96,20 @@ var _ = Describe("Secret", func() {
 
 		It("should work", func() {
 			shouldWork("create secret azure --name test --api-keys foo=bar,gloo=baz", "gloo-system")
+		})
+
+		It("can print the kube yaml", func() {
+			out, err := testutils.GlooctlOut("create secret azure --kubeyaml --name test --name test --api-keys foo=bar,gloo=baz")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(Equal(`data:
+  azure: YXBpS2V5czoKICBmb286IGJhcgogIGdsb286IGJhego=
+metadata:
+  annotations:
+    resource_kind: '*v1.Secret'
+  creationTimestamp: null
+  name: test
+  namespace: gloo-system
+`))
 		})
 
 		It("should work as subcommand", func() {
@@ -125,6 +153,32 @@ var _ = Describe("Secret", func() {
 				CertChain:  "baz",
 			}
 			Expect(*secret.GetTls()).To(Equal(tls))
+		})
+		It("can print the kube yaml", func() {
+			rootca := mustWriteTestFile("foo")
+			defer os.Remove(rootca)
+			privatekey := mustWriteTestFile("bar")
+			defer os.Remove(privatekey)
+			certchain := mustWriteTestFile("baz")
+			defer os.Remove(certchain)
+			args := fmt.Sprintf(
+				"create secret tls test --kubeyaml --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
+				rootca,
+				privatekey,
+				certchain)
+
+			out, err := testutils.GlooctlOut(args)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(out).To(Equal(`data:
+  tls: Y2VydENoYWluOiBiYXoKcHJpdmF0ZUtleTogYmFyCnJvb3RDYTogZm9vCg==
+metadata:
+  annotations:
+    resource_kind: '*v1.Secret'
+  creationTimestamp: null
+  name: test
+  namespace: gloo-system
+`))
 		})
 	})
 })

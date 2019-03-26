@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-
-	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -34,10 +34,9 @@ func awsCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, input); err != nil {
+			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, input, opts.Create.KubeYaml); err != nil {
 				return err
 			}
-			fmt.Printf("Created AWS secret [%v] in namespace [%v]\n", opts.Metadata.Name, opts.Metadata.Namespace)
 			return nil
 		},
 	}
@@ -70,7 +69,7 @@ func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) err
 	return nil
 }
 
-func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret) error {
+func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, kubeYaml bool) error {
 	if input.AccessKey == "" || input.SecretKey == "" {
 		fmt.Printf("access key or secret key not provided, reading credentials from ~/.aws/credentials")
 		creds := credentials.NewSharedCredentials("", "")
@@ -91,9 +90,16 @@ func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsS
 		},
 	}
 
+	if kubeYaml {
+		return common.PrintKubeSecret(ctx, secret)
+	}
+
 	secretClient := helpers.MustSecretClient()
 	if _, err := secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
 		return err
 	}
+
+	fmt.Printf("Created AWS secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
+
 	return nil
 }

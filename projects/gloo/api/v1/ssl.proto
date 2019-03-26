@@ -24,6 +24,8 @@ message SslConfig {
     // Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
     // note that a root_ca must be provided if this option is used.
     repeated string verify_subject_alt_name = 5;
+
+    SslParameters parameters = 6;
 }
 
 // SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
@@ -52,6 +54,8 @@ message UpstreamSslConfig {
     // Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
     // note that a root_ca must be provided if this option is used.
     repeated string verify_subject_alt_name = 5;
+
+    SslParameters parameters = 7;
 }
 
 message SDSConfig {
@@ -74,4 +78,31 @@ message CallCredentials {
     }
     // Call credentials are coming from a file,
     FileCredentialSource file_credential_source = 1;
+}
+
+// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/auth/cert.proto#envoy-api-enum-auth-tlsparameters-tlsprotocol)
+// for more information on the meaning of these values.
+message SslParameters {
+    enum ProtocolVersion {
+        // Envoy will choose the optimal TLS version.
+        TLS_AUTO = 0;
+    
+        // TLS 1.0
+        TLSv1_0 = 1;
+    
+        // TLS 1.1
+        TLSv1_1 = 2;
+    
+        // TLS 1.2
+        TLSv1_2 = 3;
+    
+        // TLS 1.3
+        TLSv1_3 = 4;
+      }
+
+      
+    ProtocolVersion minimum_protocol_version = 1;
+    ProtocolVersion maximum_protocol_version = 2;
+    repeated string cipher_suites = 3;
+    repeated string ecdh_curves = 4;
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/go-utils/cliutils"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -126,6 +127,10 @@ func addRoute(opts *options.Options) error {
 	virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, nil)
 	copy(virtualService.VirtualHost.Routes[index+1:], virtualService.VirtualHost.Routes[index:])
 	virtualService.VirtualHost.Routes[index] = v1Route
+
+	if opts.Add.KubeYaml {
+		return common.PrintKubeCrd(virtualService, gatewayv1.VirtualServiceCrd)
+	}
 
 	out, err := helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
 		Ctx:               opts.Top.Ctx,

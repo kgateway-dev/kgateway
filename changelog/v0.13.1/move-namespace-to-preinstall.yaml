@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Namespace needs to be set up during pre-install, so that other namespaced pre-install resources (i.e. Settings) can be created.
+    issueLink: https://github.com/solo-io/gloo/issues/604

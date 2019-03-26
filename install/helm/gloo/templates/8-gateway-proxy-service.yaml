@@ -1,30 +1,32 @@
 {{- if .Values.gateway.enabled }}
+{{- range $key, $spec := .Values.gatewayProxies }}
+---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     app: gloo
-    gloo: gateway-proxy
-  name: gateway-proxy
-  namespace: {{ .Release.Namespace }}
-  {{- with .Values.gatewayProxy.service.extraAnnotations }}
+    gloo: {{ $key }}
+  name: {{ $key }}
+  namespace: {{ $.Release.Namespace }}
+  {{- with $spec.service.extraAnnotations }}
   annotations:
 {{toYaml  . | indent 8}}{{- end }}
 spec:
   ports:
-  - port: {{ .Values.gatewayProxy.service.httpPort }}
-    targetPort: {{ .Values.gatewayProxy.deployment.httpPort }}
+  - port: {{ $spec.service.httpPort }}
+    targetPort: {{ $spec.deployment.httpPort }}
     protocol: TCP
     name: http
-  - port: {{ .Values.gatewayProxy.service.httpsPort }}
-    targetPort: {{ .Values.gatewayProxy.deployment.httpsPort }}
+  - port: {{ $spec.service.httpsPort }}
+    targetPort: {{ $spec.deployment.httpsPort }}
     protocol: TCP
     name: https
   selector:
-    gloo: gateway-proxy
-  type: {{ .Values.gatewayProxy.service.type }}
-  {{- if and (eq .Values.gatewayProxy.service.type "ClusterIP") .Values.gatewayProxy.service.clusterIP }}
-  clusterIP: {{ .Values.gatewayProxy.service.clusterIP }}
+    gloo: {{ $key }}
+  type: {{ $spec.service.type }}
+  {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
+  clusterIP: {{ $spec.service.clusterIP }}
   {{- end }}
-
+{{- end }}
 {{- end }}

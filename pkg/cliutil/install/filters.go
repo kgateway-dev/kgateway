@@ -22,7 +22,7 @@ type ManifestFilterFunc func(input []manifest.Manifest) (output []manifest.Manif
 // We need to define this ourselves, because if we unmarshal into `apiextensions.CustomResourceDefinition`
 // we don't get the ObjectMeta (in the yaml they are nested under `metadata`, but the k8s struct has
 // them as top level fields...)
-type resourceType struct {
+type ResourceType struct {
 	Metadata v1.ObjectMeta
 	v1.TypeMeta
 }
@@ -31,7 +31,7 @@ type resourceType struct {
 var ExcludeEmptyManifests ManifestFilterFunc = func(input []manifest.Manifest) ([]manifest.Manifest, error) {
 	var output []manifest.Manifest
 	for _, manifest := range input {
-		if !isEmptyManifest(manifest.Content) {
+		if !IsEmptyManifest(manifest.Content) {
 			output = append(output, manifest)
 		}
 
@@ -39,9 +39,9 @@ var ExcludeEmptyManifests ManifestFilterFunc = func(input []manifest.Manifest) (
 	return output, nil
 }
 
-type resourceMatcherFunc func(resource resourceType) (bool, error)
+type ResourceMatcherFunc func(resource ResourceType) (bool, error)
 
-var preInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var preInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	helmPreInstallHook, ok := resource.Metadata.Annotations[hooks.HookAnno]
 	if !ok || helmPreInstallHook != hooks.PreInstall {
 		return false, nil
@@ -49,7 +49,7 @@ var preInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, e
 	return true, nil
 }
 
-var crdInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var crdInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	crdKind := resource.TypeMeta.Kind == CrdKindName
 	if crdKind {
 		// Check whether the CRD is a Helm "crd-install" hook.
@@ -63,44 +63,69 @@ var crdInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, e
 	return crdKind, nil
 }
 
-var nonCrdInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var nonCrdInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	isCrdInstall, err := crdInstallMatcher(resource)
 	return !isCrdInstall, err
 }
 
-var nonPreInstallMatcher resourceMatcherFunc = func(resource resourceType) (bool, error) {
+var nonPreInstallMatcher ResourceMatcherFunc = func(resource ResourceType) (bool, error) {
 	isPreInstall, err := preInstallMatcher(resource)
 	return !isPreInstall, err
 }
 
-var excludeByMatcher = func(input []manifest.Manifest, matches resourceMatcherFunc) (output []manifest.Manifest, resourceNames []string, err error) {
-	resourceNames = make([]string, 0)
+var excludeByMatcher = func(input []manifest.Manifest, matches ResourceMatcherFunc) (output []manifest.Manifest, allResourceNames []string, err error) {
 	for _, man := range input {
-		// Split manifest into individual YAML docs
-		nonMatching := make([]string, 0)
-		for _, doc := range strings.Split(man.Content, "---") {
-
-			var resource resourceType
-			if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
-				return nil, nil, errors.Wrapf(err, "parsing resource: %s", doc)
-			}
-
-			isMatch, err := matches(resource)
-			if err != nil {
-				return nil, nil, err
-			}
-			if !isMatch {
-				resourceNames = append(resourceNames, resource.Metadata.Name)
-				nonMatching = append(nonMatching, doc)
-			}
+		content, resourceNames, err := excludeManifestContentByMatcher(man.Content, matches)
+		if err != nil {
+			return nil, nil, err
 		}
-
+		allResourceNames = append(allResourceNames, resourceNames...)
 		output = append(output, manifest.Manifest{
 			Name:    man.Name,
 			Head:    man.Head,
-			Content: strings.Join(nonMatching, YamlDocumentSeparator),
+			Content: content,
 		})
 	}
+	return
+}
+
+var excludeManifestContentByMatcher = func(input string, matches ResourceMatcherFunc) (output string, resourceNames []string, err error) {
+	var nonMatching []string
+	for _, doc := range strings.Split(input, "---") {
+		if strings.TrimSpace(doc) == "" {
+			continue
+		}
+
+		var resource ResourceType
+		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
+			return "", nil, errors.Wrapf(err, "parsing resource: %s", doc)
+		}
+
+		isMatch, err := matches(resource)
+		if err != nil {
+			return "", nil, err
+		}
+		if !isMatch {
+			resourceNames = append(resourceNames, resource.Metadata.Name)
+			nonMatching = append(nonMatching, doc)
+		}
+	}
+	output = strings.Join(nonMatching, YamlDocumentSeparator)
+	return
+}
+
+var ExcludeMatchingResources = func(matcherFunc ResourceMatcherFunc) ManifestFilterFunc {
+	if matcherFunc == nil {
+		return IdentityFilterFunc
+	}
+	return func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
+		manifest, _, err := excludeByMatcher(input, matcherFunc)
+		return manifest, err
+	}
+}
+
+var IdentityFilterFunc ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
+	output = input
 	return
 }
 
@@ -137,22 +162,11 @@ var ExcludeNotes ManifestFilterFunc = func(input []manifest.Manifest) (output []
 	return
 }
 
-// If this is a knative deployment, we have to check whether knative itself is already installed in the cluster.
-// If knative is already installed and we don't own it, don't install/upgrade/uninstall it (It's okay to update the installation if we own it).
-func SkipKnativeInstall() (bool, error) {
-	installed, ours, err := CheckKnativeInstallation()
-	if err != nil {
-		return true, errors.Wrapf(err, "checking for knative installation")
-	}
-	skipKnativeInstall := installed && !ours
-	return skipKnativeInstall, nil
-}
-
-func KnativeResourceFilterFunction(skipKnativeInstall bool) ManifestFilterFunc {
+func KnativeResourceFilterFunction(skipKnative bool) ManifestFilterFunc {
 	return func(input []manifest.Manifest) ([]manifest.Manifest, error) {
 		var output []manifest.Manifest
 		for _, man := range input {
-			if strings.Contains(man.Name, "knative") && skipKnativeInstall {
+			if strings.Contains(man.Name, "knative") && skipKnative {
 				continue
 			}
 			output = append(output, man)
@@ -160,6 +174,8 @@ func KnativeResourceFilterFunction(skipKnativeInstall bool) ManifestFilterFunc {
 		return output, nil
 	}
 }
+
+var ExcludeKnative = KnativeResourceFilterFunction(true)
 
 var ExcludeNonKnative ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
 	for _, man := range input {
@@ -173,41 +189,24 @@ var ExcludeNonKnative ManifestFilterFunc = func(input []manifest.Manifest) (outp
 
 var commentRegex = regexp.MustCompile("#.*")
 
-func isEmptyManifest(manifest string) bool {
+func IsEmptyManifest(manifest string) bool {
 	removeComments := commentRegex.ReplaceAllString(manifest, "")
 	removeNewlines := strings.Replace(removeComments, "\n", "", -1)
 	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
 	return removeDashes == ""
 }
 
-func getKinds(manifest string) ([]string, error) {
-	var kinds []string
+func GetResources(manifest string) ([]ResourceType, error) {
+	var resources []ResourceType
 	for _, doc := range strings.Split(manifest, "---") {
-		var resource resourceType
+		if strings.TrimSpace(doc) == "" {
+			continue
+		}
+		var resource ResourceType
 		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
 			return nil, errors.Wrapf(err, "parsing resource: %s", doc)
 		}
-		kinds = append(kinds, resource.Kind)
+		resources = append(resources, resource)
 	}
-	return kinds, nil
-}
-
-func validateResourceLabels(manifest string, labels map[string]string) error {
-	if labels == nil {
-		return nil
-	}
-	for _, doc := range strings.Split(manifest, "---") {
-		var resource resourceType
-		if err := yaml.Unmarshal([]byte(doc), &resource); err != nil {
-			return errors.Wrapf(err, "parsing resource: %s", doc)
-		}
-		actualLabels := resource.Metadata.Labels
-		for k, v := range labels {
-			val, ok := actualLabels[k]
-			if !ok || v != val {
-				return errors.Errorf("validating labels: expected %s=%s on kind %s", k, v, resource.Kind)
-			}
-		}
-	}
-	return nil
+	return resources, nil
 }

@@ -167,7 +167,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	// if nil, kube plugin disabled
 	opts.KubeClient = clientset
 	opts.DevMode = true
-	opts.Extensions = settings.Extensions
+	opts.Settings = settings
 
 	return s.runFunc(opts)
 }
@@ -230,7 +230,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	cache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient)
+	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient)
+	discoveryCache := v1.NewDiscoveryEmitter(upstreamClient, secretClient)
 
 	// Register grpc endpoints to the grpc server
 	xdsHasher := xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
@@ -250,7 +251,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
-		SettingExtensions: opts.Extensions,
+		SettingExtensions: opts.Settings.Extensions,
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
 		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
@@ -261,23 +262,26 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	sync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Extensions), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
-	eventLoop := v1.NewApiEventLoop(cache, sync)
+	apiSync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Settings), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
+	apiEventLoop := v1.NewApiEventLoop(apiCache, apiSync)
 
 	errs := make(chan error)
 
-	eds := discovery.NewEndpointDiscovery(opts.WriteNamespace, endpointClient, discoveryPlugins)
-	edsErrs, err := discovery.RunEds(upstreamClient, eds, opts.WriteNamespace, watchOpts)
+	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
+	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
+
+	edsEventLoop := v1.NewDiscoveryEventLoop(discoveryCache, edsSync)
+	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
-	eventLoopErrs, err := eventLoop.Run(opts.WatchNamespaces, watchOpts)
+	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
 	}
-	go errutils.AggregateErrs(watchOpts.Ctx, errs, eventLoopErrs, "event_loop.gloo")
+	go errutils.AggregateErrs(watchOpts.Ctx, errs, apiEventLoopErrs, "event_loop.gloo")
 
 	go func() {
 		for {

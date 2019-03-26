@@ -4,6 +4,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -53,6 +54,11 @@ func createVirtualService(opts *options.Options, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	if opts.Create.KubeYaml {
+		return common.PrintKubeCrd(vs, v1.VirtualServiceCrd)
+	}
+
 	virtualServiceClient := helpers.MustVirtualServiceClient()
 	vs, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
 	if err != nil {

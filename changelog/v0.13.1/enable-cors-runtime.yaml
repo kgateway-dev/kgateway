@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Enable CORS in runtime, add e2e.
+    issueLink: https://github.com/solo-io/gloo/issues/589

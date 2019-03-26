@@ -1,6 +1,8 @@
 package install
 
 import (
+	"fmt"
+	"log"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -42,7 +44,7 @@ func GetHelmArchive(chartArchiveUri string) (*chart.Chart, error) {
 
 // Searches for the value file with the given name in the chart and returns its raw content.
 // NOTE: this also sets the namespace.create attribute to 'true'.
-func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
+func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, extraValues map[string]string) (*chart.Config, error) {
 	rawAdditionalValues := "{}"
 	if fileName != "" {
 		var found bool
@@ -72,8 +74,19 @@ func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, 
 		return nil, errors.Wrapf(err, "failed marshaling value file struct")
 	}
 
+	valuesString := string(valueBytes)
+	if extraValues != nil {
+		for k, v := range extraValues {
+			valuesString = fmt.Sprintf("%s: %s\n%s", k, v, valuesString)
+		}
+	}
+
 	// NOTE: config.Values is never used by helm
-	return &chart.Config{Raw: string(valueBytes)}, nil
+	return &chart.Config{Raw: valuesString}, nil
+}
+
+func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
+	return GetValuesFromFileIncludingExtra(helmChart, fileName, nil)
 }
 
 // Renders the content of the given Helm chart archive:
@@ -82,6 +95,9 @@ func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, 
 //   - renderOptions: options to be used in the render
 //   - filterFunctions: a collection of functions that can be used to filter and transform the contents of the manifest. Will be applied in the given order.
 func RenderChart(helmChart *chart.Chart, overrideValues *chart.Config, renderOptions renderutil.Options, filterFunctions ...ManifestFilterFunc) ([]byte, error) {
+	// Helm uses the standard go log package. Redirect its output to the debug.log file  so that we don't
+	// expose useless warnings to the user.
+	log.SetOutput(cliutil.GetLogger())
 	renderedTemplates, err := renderutil.Render(helmChart, overrideValues, renderOptions)
 	if err != nil {
 		return nil, err

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -35,10 +37,9 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, input); err != nil {
+			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, input, opts.Create.KubeYaml); err != nil {
 				return err
 			}
-			fmt.Printf("Created TLS secret [%v] in namespace [%v]\n", opts.Metadata.Name, opts.Metadata.Namespace)
 			return nil
 		},
 	}
@@ -73,7 +74,7 @@ func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) err
 	return nil
 }
 
-func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret) error {
+func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, kubeYaml bool) error {
 	if meta.Name == "" {
 		return errors.Errorf("must provide name")
 	}
@@ -105,9 +106,17 @@ func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsS
 			},
 		},
 	}
+
+	if kubeYaml {
+		return common.PrintKubeSecret(ctx, secret)
+	}
+
 	secretClient := helpers.MustSecretClient()
 	if _, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
 		return err
 	}
+
+	fmt.Printf("Created TLS secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
+
 	return nil
 }

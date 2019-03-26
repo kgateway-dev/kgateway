@@ -66,6 +66,7 @@ type Create struct {
 	VirtualService InputVirtualService
 	InputUpstream  InputUpstream
 	InputSecret    Secret
+	KubeYaml       bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
@@ -77,7 +78,8 @@ type RouteMatchers struct {
 }
 
 type Add struct {
-	Route InputRoute
+	Route    InputRoute
+	KubeYaml bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type InputRoute struct {

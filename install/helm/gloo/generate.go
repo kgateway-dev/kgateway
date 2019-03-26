@@ -96,20 +96,28 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
-	cfg.GatewayProxy.Deployment.Image.Tag = version
+
+	for _, v := range cfg.GatewayProxies {
+		v.Deployment.Image.Tag = version
+	}
 
 	if version == "dev" {
 		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.Gateway.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.GatewayProxy.Deployment.Image.PullPolicy = ifNotPresent
+		for _, v := range cfg.GatewayProxies {
+			v.Deployment.Image.PullPolicy= ifNotPresent
+		}
 	}
 
 	if repositoryPrefix != "" {
 		cfg.Gloo.Deployment.Image.Repository = replacePrefix(cfg.Gloo.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Discovery.Deployment.Image.Repository = replacePrefix(cfg.Discovery.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
-		cfg.GatewayProxy.Deployment.Image.Repository = replacePrefix(cfg.GatewayProxy.Deployment.Image.Repository, repositoryPrefix)
+		for _, v := range cfg.GatewayProxies {
+			v.Deployment.Image.Repository= replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+		}
+
 	}
 
 	return writeYaml(cfg, valuesOutput)
@@ -146,7 +154,9 @@ func generateKnativeValuesYaml(version, repositoryPrefix string) error {
 
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
-		cfg.GatewayProxy.Deployment.Image.Repository = replacePrefix(cfg.GatewayProxy.Deployment.Image.Repository, repositoryPrefix)
+		for _, v := range cfg.GatewayProxies {
+			v.Deployment.Image.Repository= replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+		}
 	}
 
 	return writeYaml(&cfg, knativeValuesOutput)
@@ -183,7 +193,9 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
-		cfg.GatewayProxy.Deployment.Image.Repository = replacePrefix(cfg.GatewayProxy.Deployment.Image.Repository, repositoryPrefix)
+		for _, v := range cfg.GatewayProxies {
+			v.Deployment.Image.Repository= replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+		}
 	}
 
 	return writeYaml(&cfg, ingressValuesOutput)

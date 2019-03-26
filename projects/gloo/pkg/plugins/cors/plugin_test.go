@@ -44,6 +44,7 @@ var _ = Describe("Plugin", func() {
 		gloo1 = &v1.VirtualHost{
 			CorsPolicy: in1,
 		}
+
 		out1 := &envoyroute.CorsPolicy{
 			AllowOrigin:      allowOrigin1,
 			AllowOriginRegex: allowOriginRegex1,
@@ -90,7 +91,7 @@ var _ = Describe("Plugin", func() {
 				CorsPolicy: &v1.CorsPolicy{},
 			}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1empty, out)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
 			envoy1empty := &envoyroute.VirtualHost{
 				Cors: &envoyroute.CorsPolicy{},
 			}
