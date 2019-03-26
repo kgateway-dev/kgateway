@@ -51,14 +51,15 @@ var _ = Describe("Secret", func() {
 		It("can print the kube yaml", func() {
 			out, err := testutils.GlooctlOut("create secret aws --kubeyaml --name test --access-key foo --secret-key bar")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring(`data:
+			Expect(out).To(Equal(`data:
   aws: YWNjZXNzS2V5OiBmb28Kc2VjcmV0S2V5OiBiYXIK
 metadata:
   annotations:
     resource_kind: '*v1.Secret'
   creationTimestamp: null
   name: test
-  namespace: gloo-system`))
+  namespace: gloo-system
+`))
 		})
 
 		It("should work as subcommand", func() {
@@ -100,14 +101,15 @@ metadata:
 		It("can print the kube yaml", func() {
 			out, err := testutils.GlooctlOut("create secret azure --kubeyaml --name test --name test --api-keys foo=bar,gloo=baz")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring(`data:
+			Expect(out).To(Equal(`data:
   azure: YXBpS2V5czoKICBmb286IGJhcgogIGdsb286IGJhego=
 metadata:
   annotations:
     resource_kind: '*v1.Secret'
   creationTimestamp: null
   name: test
-  namespace: gloo-system`))
+  namespace: gloo-system
+`))
 		})
 
 		It("should work as subcommand", func() {
@@ -168,14 +170,15 @@ metadata:
 			out, err := testutils.GlooctlOut(args)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(out).To(ContainSubstring(`data:
+			Expect(out).To(Equal(`data:
   tls: Y2VydENoYWluOiBiYXoKcHJpdmF0ZUtleTogYmFyCnJvb3RDYTogZm9vCg==
 metadata:
   annotations:
     resource_kind: '*v1.Secret'
   creationTimestamp: null
   name: test
-  namespace: gloo-system`))
+  namespace: gloo-system
+`))
 		})
 	})
 })

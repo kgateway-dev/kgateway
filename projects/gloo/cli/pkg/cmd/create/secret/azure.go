@@ -3,7 +3,6 @@ package secret
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 
@@ -40,7 +39,6 @@ func azureCmd(opts *options.Options) *cobra.Command {
 			if err := createAzureSecret(opts.Top.Ctx, opts.Metadata, input, opts.Create.KubeYaml); err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stderr, "Created Azure secret [%v] in namespace [%v]\n", opts.Metadata.Name, opts.Metadata.Namespace)
 			return nil
 		},
 	}
@@ -87,5 +85,8 @@ func createAzureSecret(ctx context.Context, meta core.Metadata, input options.Az
 	if _, err := secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
 		return err
 	}
+
+	fmt.Printf("Created Azure secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
+
 	return nil
 }
