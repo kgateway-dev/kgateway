@@ -2,7 +2,6 @@ package add
 
 import (
 	"fmt"
-	"os"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
@@ -89,7 +88,7 @@ func selectOrCreateVirtualService(opts *options.Options) (*gatewayv1.VirtualServ
 		opts.Metadata.Name = defaults.GlooSystem
 	}
 
-	fmt.Fprintf(os.Stderr, "creating virtualservice %v with default domain *\n", opts.Metadata.Name)
+	fmt.Printf("creating virtualservice %v with default domain *\n", opts.Metadata.Name)
 	return &gatewayv1.VirtualService{
 		Metadata: opts.Metadata,
 		VirtualHost: &v1.VirtualHost{
