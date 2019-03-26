@@ -2,9 +2,10 @@ package install
 
 import (
 	"bytes"
-	"github.com/solo-io/gloo/pkg/cliutil"
 	"io"
 	"os/exec"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
 )
 
 func KubectlApply(manifest []byte) error {
