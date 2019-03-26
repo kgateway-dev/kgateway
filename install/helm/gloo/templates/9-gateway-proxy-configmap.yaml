@@ -1,5 +1,6 @@
 {{- if .Values.gateway.enabled }}
 {{- range $key, $spec := .Values.gatewayProxies }}
+---
 # config_map
 apiVersion: v1
 kind: ConfigMap
@@ -49,6 +50,5 @@ data:
           address: 127.0.0.1
           port_value: 19000
 {{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}}
----
 {{- end }}
 {{- end }}
