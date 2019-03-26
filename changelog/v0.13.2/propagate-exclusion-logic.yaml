@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Propagate resource exclusion logic from the install spec to the installer. Needed for enterprise Gloo.
+    issueLink: https://github.com/solo-io/gloo/issues/611

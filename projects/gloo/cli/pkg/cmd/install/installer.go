@@ -191,7 +191,7 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		values:               values,
 		renderOpts:           renderOpts,
 		knativeInstallStatus: knativeInstallStatus,
-		excludeResources:     nil,
+		excludeResources:     spec.ExcludeResources,
 		manifestInstaller:    manifestInstaller,
 	}, nil
 }
