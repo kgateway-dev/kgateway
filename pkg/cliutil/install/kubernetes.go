@@ -2,8 +2,8 @@ package install
 
 import (
 	"bytes"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"io"
-	"os"
 	"os/exec"
 )
 
@@ -26,7 +26,8 @@ func Kubectl(stdin io.Reader, args ...string) error {
 	if stdin != nil {
 		kubectl.Stdin = stdin
 	}
-	kubectl.Stdout = os.Stdout
-	kubectl.Stderr = os.Stderr
+	cliutil.Initialize()
+	kubectl.Stdout = cliutil.Logger
+	kubectl.Stderr = cliutil.Logger
 	return kubectl.Run()
 }

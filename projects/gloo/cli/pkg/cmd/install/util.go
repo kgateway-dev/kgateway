@@ -2,7 +2,7 @@ package install
 
 import (
 	"fmt"
-
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -76,12 +76,22 @@ type GlooInstallSpec struct {
 
 // Entry point for all three GLoo installation commands
 func installGloo(opts *options.Options, valueFileName string) error {
+	if !opts.Install.DryRun {
+		fmt.Printf("Starting Gloo installation...\n")
+	}
 	spec, err := GetInstallSpec(opts, valueFileName)
 	if err != nil {
 		return err
 	}
 	kubeInstallClient := DefaultGlooKubeInstallClient{}
-	return InstallGloo(opts, *spec, &kubeInstallClient)
+	if err := InstallGloo(opts, *spec, &kubeInstallClient); err != nil {
+		fmt.Printf("\nGloo failed to install! Detailed logs available at %s.\n", cliutil.GetLogsPath())
+		return err
+	}
+	if !opts.Install.DryRun {
+		fmt.Printf("\nGloo was successfully installed!\n")
+	}
+	return nil
 }
 
 func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSpec, error) {

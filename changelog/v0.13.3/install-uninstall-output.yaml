@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: The output for gloo install and uninstall has been cleaned up, and detailed output has moved to HOME/.gloo/debug.log.
+    issueLink: https://github.com/solo-io/gloo/issues/619

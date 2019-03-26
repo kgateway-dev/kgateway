@@ -143,6 +143,7 @@ type DefaultGlooStagedInstaller struct {
 	knativeInstallStatus KnativeInstallStatus
 	excludeResources     install.ResourceMatcherFunc
 	manifestInstaller    ManifestInstaller
+	dryRun               bool
 }
 
 func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client GlooKubeInstallClient) (GlooStagedInstaller, error) {
@@ -193,6 +194,7 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		knativeInstallStatus: knativeInstallStatus,
 		excludeResources:     spec.ExcludeResources,
 		manifestInstaller:    manifestInstaller,
+		dryRun:               opts.Install.DryRun,
 	}, nil
 }
 
@@ -216,6 +218,10 @@ func (i *DefaultGlooStagedInstaller) DoCrdInstall() error {
 		return errors.Wrapf(err, "rendering crd manifests")
 	}
 
+	if !i.dryRun {
+		fmt.Printf("Installing CRDs...\n")
+	}
+
 	return i.manifestInstaller.InstallCrds(crdNames, crdManifestBytes)
 }
 
@@ -229,6 +235,9 @@ func (i *DefaultGlooStagedInstaller) DoPreInstall() error {
 		install.ExcludeMatchingResources(i.excludeResources))
 	if err != nil {
 		return err
+	}
+	if !i.dryRun {
+		fmt.Printf("Preparing namespace and other pre-install tasks...\n")
 	}
 	return i.manifestInstaller.InstallManifest(manifestBytes)
 }
@@ -244,6 +253,9 @@ func (i *DefaultGlooStagedInstaller) DoInstall() error {
 		install.ExcludeMatchingResources(i.excludeResources))
 	if err != nil {
 		return err
+	}
+	if !i.dryRun {
+		fmt.Printf("Installing...\n")
 	}
 	return i.manifestInstaller.InstallManifest(manifestBytes)
 }
