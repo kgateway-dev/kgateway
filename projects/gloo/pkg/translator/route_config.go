@@ -196,6 +196,8 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 			Cluster: UpstreamToClusterName(dest.Single.Upstream),
 		}
 		out.MetadataMatch = getSubsetMatch(dest.Single.Subset)
+		// TODO:
+		// checkThatSubsetMatchesUpstream(params, dest)
 		return nil
 	case *v1.RouteAction_Multi:
 		return setWeightedClusters(dest.Multi, out)
