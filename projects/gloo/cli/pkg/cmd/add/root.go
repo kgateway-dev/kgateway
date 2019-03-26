@@ -15,6 +15,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
+	flagutils.AddKubeYamlFlag(pflags, &opts.Add.KubeYaml)
 	cmd.AddCommand(Route(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd

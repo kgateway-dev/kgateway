@@ -1,6 +1,7 @@
 package create
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"strconv"
 	"strings"
 
@@ -127,6 +128,11 @@ func createUpstream(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
+
+	if opts.Create.KubeYaml {
+		return common.PrintKubeCrd(us, v1.UpstreamCrd)
+	}
+
 	us, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
 	if err != nil {
 		return err
