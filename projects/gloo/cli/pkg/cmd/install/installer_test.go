@@ -1,9 +1,10 @@
 package install_test
 
 import (
-	"github.com/solo-io/gloo/pkg/cliutil"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
