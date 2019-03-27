@@ -49,6 +49,7 @@ func init() {
 		"proxies.gloo.solo.io",
 		"settings.gloo.solo.io",
 		"upstreams.gloo.solo.io",
+		"upstreamgroups.gloo.solo.io",
 		"virtualservices.gateway.solo.io",
 	}
 
