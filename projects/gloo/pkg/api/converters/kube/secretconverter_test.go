@@ -68,6 +68,7 @@ var _ = Describe("Secretconverter", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "s1",
 				Namespace: "ns",
+				Labels:    map[string]string{},
 			},
 		}
 		var t TLSSecretConverter

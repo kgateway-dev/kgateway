@@ -20,7 +20,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	grpc_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {

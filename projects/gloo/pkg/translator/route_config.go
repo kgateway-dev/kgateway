@@ -12,7 +12,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/solo-kit/pkg/utils/contextutils"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 type reportFunc func(error error, format string, args ...interface{})
@@ -269,19 +269,27 @@ func setEnvoyPathMatcher(in *v1.Matcher, out *envoyroute.RouteMatch) {
 func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
 	var out []*envoyroute.HeaderMatcher
 	for _, matcher := range in {
+
 		envoyMatch := &envoyroute.HeaderMatcher{
 			Name: matcher.Name,
-			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_ExactMatch{
-				ExactMatch: matcher.Value,
-			},
 		}
-		if matcher.Regex {
-			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
-				RegexMatch: matcher.Value,
+		if matcher.Value == "" {
+			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_PresentMatch{
+				PresentMatch: true,
 			}
 		} else {
+
 			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
 				ExactMatch: matcher.Value,
+			}
+			if matcher.Regex {
+				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
+					RegexMatch: matcher.Value,
+				}
+			} else {
+				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
+					ExactMatch: matcher.Value,
+				}
 			}
 		}
 		out = append(out, envoyMatch)

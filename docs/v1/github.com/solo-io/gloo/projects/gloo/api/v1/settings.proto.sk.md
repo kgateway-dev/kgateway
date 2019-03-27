@@ -67,7 +67,7 @@ weight: 5
 | `bindAddr` | `string` | where the gloo xds server should bind (should not need configuration by user) |  |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how frequently to resync watches, etc |  |
 | `devMode` | `bool` | enable serving debug data on port 9090 |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuite_breakers.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |

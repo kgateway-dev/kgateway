@@ -158,8 +158,8 @@ var _ = Describe("Upstream", func() {
 			expectKubeUpstream("kube-service", "default", uint32(80), map[string]string{"foo": "bar", "gloo": "baz"})
 		})
 
-		It("can print as kube yaml", func() {
-			out, err := testutils.GlooctlOut("create upstream kube --kubeyaml --name kube-upstream --kube-service kube-service --kube-service-labels foo=bar,gloo=baz")
+		It("can print as kube yaml in dry-run", func() {
+			out, err := testutils.GlooctlOut("create upstream kube --dry-run --name kube-upstream --kube-service kube-service --kube-service-labels foo=bar,gloo=baz")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`apiVersion: gloo.solo.io/v1
 kind: Upstream

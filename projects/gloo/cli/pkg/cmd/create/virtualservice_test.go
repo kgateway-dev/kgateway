@@ -7,8 +7,8 @@ import (
 )
 
 var _ = Describe("Virtualservice", func() {
-	It("can print as kube yaml", func() {
-		out, err := testutils.GlooctlOut("create virtualservice kube --kubeyaml --name vs --domains foo.bar,baz.qux")
+	It("can print as kube yaml in dry run", func() {
+		out, err := testutils.GlooctlOut("create virtualservice kube --dry-run --name vs --domains foo.bar,baz.qux")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out).To(Equal(`apiVersion: gateway.solo.io/v1
 kind: VirtualService

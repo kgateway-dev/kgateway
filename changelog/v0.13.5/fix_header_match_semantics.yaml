@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix semantics of header match
+    issueLink: https://github.com/solo-io/gloo/issues/624

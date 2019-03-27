@@ -35,7 +35,7 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		Aliases: constants.UPSTREAM_COMMAND.Aliases,
 		Short:   "Create an Upstream Interactively",
 		Long: "Upstreams represent destination for routing HTTP requests. Upstreams can be compared to \n" +
-			"[clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster) in Envoy terminology. \n" +
+			"[clusters](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager) in Envoy terminology. \n" +
 			"Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more. \n" +
 			"Each upstream type is handled by a corresponding Gloo plugin. \n",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -130,7 +130,7 @@ func createUpstream(opts *options.Options) error {
 		return err
 	}
 
-	if opts.Create.KubeYaml {
+	if opts.Create.DryRun {
 		return common.PrintKubeCrd(us, v1.UpstreamCrd)
 	}
 

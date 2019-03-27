@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: Update --kubeyaml flag to --dry-run to be consistent with kubernetes conventions.
+    issueLink: https://github.com/solo-io/gloo/issues/626
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.6.1
+    description: Update go-utils to v0.6.1 to fix regression in uploading release assets. 

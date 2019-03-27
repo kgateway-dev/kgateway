@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: Pull in new solo-kit to get a fix for concurrent write on map.
+    issueLink: https://github.com/solo-io/gloo/issues/622
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.4.1
+    description: Update solo-kit to version v0.4.1 and go-util to version v0.6.0. 
