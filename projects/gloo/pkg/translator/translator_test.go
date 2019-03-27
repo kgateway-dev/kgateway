@@ -13,11 +13,14 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -31,6 +34,7 @@ var _ = Describe("Translator", func() {
 		matcher    *v1.Matcher
 		routes     []*v1.Route
 
+		snapshot            envoycache.Snapshot
 		cluster             *envoyapi.Cluster
 		listener            *envoyapi.Listener
 		hcm_cfg             *envoyhttp.HttpConnectionManager
@@ -145,6 +149,8 @@ var _ = Describe("Translator", func() {
 		routeResource := routes.Items["listener-routes"]
 		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(route_configuration).NotTo(BeNil())
+
+		snapshot = snap
 
 	}
 
@@ -365,4 +371,152 @@ var _ = Describe("Translator", func() {
 		})
 
 	})
+
+	Context("subsets", func() {
+		var (
+			cla_configuration *envoyapi.ClusterLoadAssignment
+		)
+		BeforeEach(func() {
+			cla_configuration = nil
+
+			upstream.UpstreamSpec.UpstreamType = &v1.UpstreamSpec_Kube{
+				Kube: &v1kubernetes.UpstreamSpec{
+					SubsetSpec: &v1plugins.SubsetSpec{
+						Selectors: []*v1plugins.Selector{{
+							Keys: []string{
+								"testkey",
+							},
+						}},
+					},
+				},
+			}
+			ref := upstream.Metadata.Ref()
+			params.Snapshot.Endpoints = v1.EndpointsByNamespace{
+				"gloo-system": v1.EndpointList{
+					{
+						Metadata: core.Metadata{
+							Name:      "test",
+							Namespace: "gloo-system",
+							Labels:    map[string]string{"testkey": "testvalue"},
+						},
+						Upstreams: []*core.ResourceRef{
+							&ref,
+						},
+						Address: "1.2.3.4",
+						Port:    1234,
+					},
+				},
+			}
+
+			routes = []*v1.Route{{
+				Matcher: matcher,
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								Upstream: upstream.Metadata.Ref(),
+								Subset: &v1.Subset{
+									Values: map[string]string{
+										"testkey": "testvalue",
+									},
+								},
+							},
+						},
+					},
+				},
+			}}
+
+		})
+
+		translateWithEndpoints := func() {
+			translate()
+
+			endpoints := snapshot.GetResources(xds.EndpointType)
+
+			clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
+			Expect(endpoints.Items).To(HaveKey(clusterName))
+			endpointsResource := endpoints.Items[clusterName]
+			cla_configuration = endpointsResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
+			Expect(cla_configuration).NotTo(BeNil())
+			Expect(cla_configuration.ClusterName).To(Equal(clusterName))
+			Expect(cla_configuration.Endpoints).To(HaveLen(1))
+			Expect(cla_configuration.Endpoints[0].LbEndpoints).To(HaveLen(len(params.Snapshot.Endpoints["gloo-system"])))
+		}
+
+		Context("happy path", func() {
+
+			It("should transfer labels to envoy", func() {
+				translateWithEndpoints()
+
+				endpointMeta := cla_configuration.Endpoints[0].LbEndpoints[0].Metadata
+				fields := endpointMeta.FilterMetadata["envoy.lb"].Fields
+				Expect(fields).To(HaveKeyWithValue("testkey", sv("testvalue")))
+			})
+
+			It("should add subset to cluster", func() {
+				translateWithEndpoints()
+
+				Expect(cluster.LbSubsetConfig).ToNot(BeNil())
+				Expect(cluster.LbSubsetConfig.FallbackPolicy).To(Equal(envoyapi.Cluster_LbSubsetConfig_ANY_ENDPOINT))
+				Expect(cluster.LbSubsetConfig.SubsetSelectors).To(HaveLen(1))
+				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].Keys).To(HaveLen(1))
+				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].Keys[0]).To(Equal("testkey"))
+			})
+			It("should add subset to route", func() {
+				translateWithEndpoints()
+
+				metadatamatch := route_configuration.VirtualHosts[0].Routes[0].GetRoute().GetMetadataMatch()
+				fields := metadatamatch.FilterMetadata["envoy.lb"].Fields
+				Expect(fields).To(HaveKeyWithValue("testkey", sv("testvalue")))
+			})
+		})
+
+		It("should create empty if missing labels on the endpoint are provided in the upstream", func() {
+			params.Snapshot.Endpoints["gloo-system"][0].Metadata.Labels = nil
+			translateWithEndpoints()
+			endpointMeta := cla_configuration.Endpoints[0].LbEndpoints[0].Metadata
+			Expect(endpointMeta).ToNot(BeNil())
+			Expect(endpointMeta.FilterMetadata).To(HaveKey("envoy.lb"))
+			fields := endpointMeta.FilterMetadata["envoy.lb"].Fields
+			Expect(fields).To(HaveKeyWithValue("testkey", sv("")))
+		})
+
+		Context("bad route", func() {
+			BeforeEach(func() {
+				routes = []*v1.Route{{
+					Matcher: matcher,
+					Action: &v1.Route_RouteAction{
+						RouteAction: &v1.RouteAction{
+							Destination: &v1.RouteAction_Single{
+								Single: &v1.Destination{
+									Upstream: upstream.Metadata.Ref(),
+									Subset: &v1.Subset{
+										Values: map[string]string{
+											"nottestkey": "value",
+										},
+									},
+								},
+							},
+						},
+					},
+				}}
+			})
+
+			It("should error a route when subset in route doesnt match subset in upstream", func() {
+				_, errs, err := translator.Translate(params, proxy)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(errs.Validate()).To(HaveOccurred())
+			})
+		})
+
+	})
+
 })
+
+func sv(s string) *types.Value {
+	return &types.Value{
+		Kind: &types.Value_StringValue{
+			StringValue: s,
+		},
+	}
+}

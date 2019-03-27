@@ -10,6 +10,7 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
@@ -197,11 +198,10 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 			Cluster: UpstreamToClusterName(dest.Single.Upstream),
 		}
 		out.MetadataMatch = getSubsetMatch(dest.Single.Subset)
-		// TODO:
-		// checkThatSubsetMatchesUpstream(params, dest)
-		return nil
+
+		return checkThatSubsetMatchesUpstream(params, dest.Single)
 	case *v1.RouteAction_Multi:
-		return setWeightedClusters(dest.Multi, out)
+		return setWeightedClusters(params, dest.Multi, out)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.Upstreamgroups.List().Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
@@ -211,12 +211,12 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.Destinations,
 		}
-		return setWeightedClusters(md, out)
+		return setWeightedClusters(params, md, out)
 	}
 	return errors.Errorf("unknown upstream destination type")
 }
 
-func setWeightedClusters(multiDest *v1.MultiDestination, out *envoyroute.RouteAction) error {
+func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, out *envoyroute.RouteAction) error {
 	if len(multiDest.Destinations) == 0 {
 		return errors.Errorf("must specify at least one weighted destination for multi destination routes")
 	}
@@ -234,6 +234,10 @@ func setWeightedClusters(multiDest *v1.MultiDestination, out *envoyroute.RouteAc
 			MetadataMatch: getSubsetMatch(weightedDest.Destination.Subset),
 		})
 
+		err := checkThatSubsetMatchesUpstream(params, weightedDest.Destination)
+		if err != nil {
+			return err
+		}
 	}
 
 	clusterSpecifier.WeightedClusters.TotalWeight = &types.UInt32Value{Value: totalWeight}
@@ -247,7 +251,67 @@ func getSubsetMatch(subset *v1.Subset) *envoycore.Metadata {
 	if subset == nil {
 		return nil
 	}
-	return getLbMetadata(subset.Values)
+	return getLbMetadata(nil, subset.Values)
+}
+
+func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination) error {
+
+	// make sure we have a subset config on the route
+	if dest.Subset == nil {
+		return nil
+	}
+	if len(dest.Subset.Values) == 0 {
+		return nil
+	}
+	routeSubset := dest.Subset.Values
+
+	ref := dest.Upstream
+	upstream, err := params.Snapshot.Upstreams.List().Find(ref.Namespace, ref.Name)
+	if err != nil {
+		return err
+	}
+
+	subsetConfig := getSubsets(upstream)
+
+	// if a route has a subset config, and an upstream doesnt - its an error
+	if subsetConfig == nil {
+		return errors.Errorf("route has a subset config, but the upstream does not.")
+	}
+
+	// make sure that the subset on the route will match a subset on the upsteam.
+	found := false
+Outerloop:
+	for _, subset := range subsetConfig.Selectors {
+		keys := subset.Keys
+		if len(keys) != len(routeSubset) {
+			continue
+		}
+		for _, k := range keys {
+			if _, ok := routeSubset[k]; !ok {
+				continue Outerloop
+			}
+		}
+		found = true
+		break
+	}
+
+	if !found {
+		return errors.Errorf("route has a subset config, but none of the subsets in the upstream match it.")
+
+	}
+	return nil
+}
+
+func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
+
+	specGetter, ok := upstream.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter)
+	if !ok {
+		return nil
+	}
+	glooSubsetConfig := specGetter.GetSubsetSpec()
+
+	return glooSubsetConfig
+
 }
 
 func setEnvoyPathMatcher(in *v1.Matcher, out *envoyroute.RouteMatch) {
