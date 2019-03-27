@@ -60,7 +60,7 @@ var _ = Describe("Headers", func() {
 
 		It("should add header config to upstream", func() {
 
-			err := MarkHeaders(context.TODO(), in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
 				return headers, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -74,7 +74,7 @@ var _ = Describe("Headers", func() {
 				},
 			}
 			out.RequestHeadersToAdd = append(out.RequestHeadersToAdd, existingheader)
-			err := MarkHeaders(context.TODO(), in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
 				return headers, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -136,7 +136,7 @@ var _ = Describe("Headers", func() {
 		})
 		It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
-			err := MarkHeaders(context.TODO(), in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
 				if spec.Upstream.Name == "yes" {
 					return headers, nil
 				}
@@ -146,5 +146,67 @@ var _ = Describe("Headers", func() {
 			Expect(yescluster.RequestHeadersToAdd).To(ContainElement(header))
 			Expect(nocluster.RequestHeadersToAdd).NotTo(ContainElement(header))
 		})
+
+		Context("upstream group", func() {
+			var (
+				snap *v1.ApiSnapshot
+			)
+			BeforeEach(func() {
+				upGrp := &v1.UpstreamGroup{
+					Metadata: core.Metadata{
+						Name:      "test",
+						Namespace: "test",
+					},
+					Destinations: []*v1.WeightedDestination{{
+						Destination: &v1.Destination{
+							Upstream: core.ResourceRef{
+								Name:      "yes",
+								Namespace: "",
+							},
+						},
+					}, {
+						Destination: &v1.Destination{
+							Upstream: core.ResourceRef{
+								Name:      "no",
+								Namespace: "",
+							},
+						},
+					}},
+				}
+				ref := upGrp.Metadata.Ref()
+				in = &v1.Route{
+					Action: &v1.Route_RouteAction{
+						RouteAction: &v1.RouteAction{
+							Destination: &v1.RouteAction_UpstreamGroup{
+								UpstreamGroup: &ref,
+							},
+						},
+					},
+				}
+				snap = &v1.ApiSnapshot{
+					Upstreamgroups: v1.UpstreamgroupsByNamespace{
+						"test": v1.UpstreamGroupList{
+							upGrp,
+						},
+					},
+				}
+
+			})
+
+			It("should add per filter config only to relevant upstream in mutiple dest", func() {
+
+				err := MarkHeaders(context.TODO(), snap, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+					if spec.Upstream.Name == "yes" {
+						return headers, nil
+					}
+					return nil, nil
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(yescluster.RequestHeadersToAdd).To(ContainElement(header))
+				Expect(nocluster.RequestHeadersToAdd).NotTo(ContainElement(header))
+			})
+
+		})
+
 	})
 })
