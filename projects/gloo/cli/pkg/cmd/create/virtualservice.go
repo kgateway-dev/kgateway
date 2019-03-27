@@ -55,7 +55,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 		return err
 	}
 
-	if opts.Create.KubeYaml {
+	if opts.Create.DryRun {
 		return common.PrintKubeCrd(vs, v1.VirtualServiceCrd)
 	}
 

@@ -48,8 +48,8 @@ var _ = Describe("Secret", func() {
 			shouldWork("create secret aws --name test --access-key foo --secret-key bar", "gloo-system")
 		})
 
-		It("can print the kube yaml", func() {
-			out, err := testutils.GlooctlOut("create secret aws --kubeyaml --name test --access-key foo --secret-key bar")
+		It("can print the kube yaml as dry run", func() {
+			out, err := testutils.GlooctlOut("create secret aws --dry-run --name test --access-key foo --secret-key bar")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`data:
   aws: YWNjZXNzS2V5OiBmb28Kc2VjcmV0S2V5OiBiYXIK
@@ -98,8 +98,8 @@ metadata:
 			shouldWork("create secret azure --name test --api-keys foo=bar,gloo=baz", "gloo-system")
 		})
 
-		It("can print the kube yaml", func() {
-			out, err := testutils.GlooctlOut("create secret azure --kubeyaml --name test --name test --api-keys foo=bar,gloo=baz")
+		It("can print the kube yaml in dry run", func() {
+			out, err := testutils.GlooctlOut("create secret azure --dry-run --name test --name test --api-keys foo=bar,gloo=baz")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`data:
   azure: YXBpS2V5czoKICBmb286IGJhcgogIGdsb286IGJhego=
@@ -162,7 +162,7 @@ metadata:
 			certchain := mustWriteTestFile("baz")
 			defer os.Remove(certchain)
 			args := fmt.Sprintf(
-				"create secret tls test --kubeyaml --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
+				"create secret tls test --dry-run --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
 				rootca,
 				privatekey,
 				certchain)

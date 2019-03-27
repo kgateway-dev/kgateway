@@ -130,7 +130,7 @@ func createUpstream(opts *options.Options) error {
 		return err
 	}
 
-	if opts.Create.KubeYaml {
+	if opts.Create.DryRun {
 		return common.PrintKubeCrd(us, v1.UpstreamCrd)
 	}
 

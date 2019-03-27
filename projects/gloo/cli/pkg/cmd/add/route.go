@@ -128,7 +128,7 @@ func addRoute(opts *options.Options) error {
 	copy(virtualService.VirtualHost.Routes[index+1:], virtualService.VirtualHost.Routes[index:])
 	virtualService.VirtualHost.Routes[index] = v1Route
 
-	if opts.Add.KubeYaml {
+	if opts.Add.DryRun {
 		return common.PrintKubeCrd(virtualService, gatewayv1.VirtualServiceCrd)
 	}
 
