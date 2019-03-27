@@ -1227,7 +1227,6 @@ func (m *Destination) GetSubset() *Subset {
 //
 //@solo-kit:resource.short_name=ug
 //@solo-kit:resource.plural_name=upstreamgroups
-//@solo-kit:resource.resource_groups=api.gloo.solo.io
 type UpstreamGroup struct {
 	// message UpstreamGroupSpec {
 	Destinations []*WeightedDestination `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`

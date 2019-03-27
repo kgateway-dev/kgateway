@@ -25,6 +25,10 @@
         "package": "gloo.solo.io"
       },
       {
+        "name": "UpstreamGroup",
+        "package": "gloo.solo.io"
+      },
+      {
         "name": "Secret",
         "package": "gloo.solo.io"
       },

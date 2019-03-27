@@ -275,7 +275,6 @@ message Destination {
 /*
 @solo-kit:resource.short_name=ug
 @solo-kit:resource.plural_name=upstreamgroups
-@solo-kit:resource.resource_groups=api.gloo.solo.io 
 */
 message UpstreamGroup {
     // message UpstreamGroupSpec {
