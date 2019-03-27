@@ -26,8 +26,8 @@ glooctl create upstream aws [flags]
 ### Options inherited from parent commands
 
 ```
+      --dry-run            print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive        use interactive mode
-  -k, --kubeyaml           print kubernetes-formatted yaml rather than creating or updating a resource
       --name string        name of the resource to read or write
   -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
   -o, --output string      output format: (yaml, json, table)

@@ -78,8 +78,8 @@ type RouteMatchers struct {
 }
 
 type Add struct {
-	Route    InputRoute
-	DryRun   bool // print resource as a kubernetes style yaml and exit without writing to storage
+	Route  InputRoute
+	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type InputRoute struct {
