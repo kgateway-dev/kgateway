@@ -151,7 +151,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func (p *plugin) ProcessRouteAction(params plugins.Params, in *v1.RouteAction, _ map[string]*plugins.RoutePlugin, out *envoyroute.RouteAction) error {
-	upstreams := pluginutils.DestinationUpstreams(in)
+	upstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in)
+	if err != nil {
+		return err
+	}
 	for _, ref := range upstreams {
 		if _, ok := p.hostRewriteUpstreams[ref]; !ok {
 			continue

@@ -14,8 +14,9 @@ import (
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	staticplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -28,6 +29,7 @@ var _ = Describe("Translator", func() {
 		proxy      *v1.Proxy
 		params     plugins.Params
 		matcher    *v1.Matcher
+		routes     []*v1.Route
 
 		cluster             *envoyapi.Cluster
 		listener            *envoyapi.Listener
@@ -38,9 +40,10 @@ var _ = Describe("Translator", func() {
 	BeforeEach(func() {
 		cluster = nil
 		settings = &v1.Settings{}
-		tplugins := []plugins.Plugin{
-			staticplugin.NewPlugin(),
+		opts := bootstrap.Opts{
+			Settings: settings,
 		}
+		tplugins := registry.Plugins(opts)
 		translator = NewTranslator(tplugins, settings)
 
 		upname := core.Metadata{
@@ -62,6 +65,7 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
+
 		params = plugins.Params{
 			Ctx: context.Background(),
 			Snapshot: &v1.ApiSnapshot{
@@ -77,8 +81,25 @@ var _ = Describe("Translator", func() {
 				Prefix: "/",
 			},
 		}
+		routes = []*v1.Route{{
+			Matcher: matcher,
+			Action: &v1.Route_RouteAction{
+				RouteAction: &v1.RouteAction{
+					Destination: &v1.RouteAction_Single{
+						Single: &v1.Destination{
+							Upstream: upname.Ref(),
+						},
+					},
+				},
+			},
+		}}
+	})
+	JustBeforeEach(func() {
 		proxy = &v1.Proxy{
-			Metadata: upname,
+			Metadata: core.Metadata{
+				Name:      "test",
+				Namespace: "gloo-system",
+			},
 			Listeners: []*v1.Listener{{
 				Name:        "listener",
 				BindAddress: "127.0.0.1",
@@ -88,18 +109,7 @@ var _ = Describe("Translator", func() {
 						VirtualHosts: []*v1.VirtualHost{{
 							Name:    "virt1",
 							Domains: []string{"*"},
-							Routes: []*v1.Route{{
-								Matcher: matcher,
-								Action: &v1.Route_RouteAction{
-									RouteAction: &v1.RouteAction{
-										Destination: &v1.RouteAction_Single{
-											Single: &v1.Destination{
-												Upstream: upname.Ref(),
-											},
-										},
-									},
-								},
-							}},
+							Routes:  routes,
 						}},
 					},
 				},
@@ -272,6 +282,86 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+		})
+
+	})
+
+	Context("upstream groups", func() {
+
+		var (
+			upstream2     *v1.Upstream
+			upstreamGroup *v1.UpstreamGroup
+		)
+
+		BeforeEach(func() {
+			upstream2 = &v1.Upstream{
+				Metadata: core.Metadata{
+					Name:      "test2",
+					Namespace: "gloo-system",
+				},
+				UpstreamSpec: &v1.UpstreamSpec{
+					UpstreamType: &v1.UpstreamSpec_Static{
+						Static: &v1static.UpstreamSpec{
+							Hosts: []*v1static.Host{
+								{
+									Addr: "Test2",
+									Port: 124,
+								},
+							},
+						},
+					},
+				},
+			}
+			upstreamGroup = &v1.UpstreamGroup{
+				Metadata: core.Metadata{
+					Name:      "test",
+					Namespace: "gloo-system",
+				},
+				Destinations: []*v1.WeightedDestination{
+					{
+						Weight: 1,
+						Destination: &v1.Destination{
+							Upstream: upstream.Metadata.Ref(),
+						},
+					},
+					{
+						Weight: 1,
+						Destination: &v1.Destination{
+							Upstream: upstream2.Metadata.Ref(),
+						},
+					},
+				},
+			}
+			params.Snapshot.Upstreams["gloo-system"] = append(params.Snapshot.Upstreams["gloo-system"], upstream2)
+			params.Snapshot.Upstreamgroups = v1.UpstreamgroupsByNamespace{
+				"gloo-system": v1.UpstreamGroupList{
+					upstreamGroup,
+				},
+			}
+			ref := upstreamGroup.Metadata.Ref()
+			routes = []*v1.Route{{
+				Matcher: matcher,
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_UpstreamGroup{
+							UpstreamGroup: &ref,
+						},
+					},
+				},
+			}}
+		})
+
+		It("should translate upstream groups", func() {
+			translate()
+
+			route := route_configuration.VirtualHosts[0].Routes[0].GetRoute()
+			Expect(route).ToNot(BeNil())
+			clusters := route.GetWeightedClusters()
+			Expect(clusters).ToNot(BeNil())
+			Expect(clusters.TotalWeight.Value).To(BeEquivalentTo(2))
+			Expect(clusters.Clusters).To(HaveLen(2))
+			Expect(clusters.Clusters[0].Name).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
+			Expect(clusters.Clusters[1].Name).To(Equal(UpstreamToClusterName(upstream2.Metadata.Ref())))
 		})
 
 	})

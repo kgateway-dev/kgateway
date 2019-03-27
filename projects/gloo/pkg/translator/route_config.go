@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 type reportFunc func(error error, format string, args ...interface{})
@@ -128,7 +129,7 @@ func setMatch(in *v1.Route, out *envoyroute.Route) {
 func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.Route, out *envoyroute.Route) {
 	switch action := in.Action.(type) {
 	case *v1.Route_RouteAction:
-		if err := validateRouteDestinations(params.Snapshot.Upstreams.List(), action.RouteAction); err != nil {
+		if err := validateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
 			report(err, "invalid route")
 		}
 
@@ -341,15 +342,33 @@ func validateVirtualHostDomains(virtualHosts []*v1.VirtualHost) error {
 	return domainErrors
 }
 
-func validateRouteDestinations(upstreams []*v1.Upstream, action *v1.RouteAction) error {
+func validateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) error {
+	upstreams := snap.Upstreams.List()
 	// make sure the destination itself has the right structure
 	switch dest := action.Destination.(type) {
 	case *v1.RouteAction_Single:
 		return validateSingleDestination(upstreams, dest.Single)
 	case *v1.RouteAction_Multi:
 		return validateMultiDestination(upstreams, dest.Multi.Destinations)
+	case *v1.RouteAction_UpstreamGroup:
+		return validateUpstreamGroup(snap, dest.UpstreamGroup)
 	}
-	return errors.Errorf("must specify either 'single_destination' or 'multiple_destinations' for action")
+	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations' or 'upstreamGroup' for action")
+}
+
+func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
+
+	upstreamGroup, err := snap.Upstreamgroups.List().Find(ref.Namespace, ref.Name)
+	if err != nil {
+		return errors.Wrap(err, "invalid destination for upstream group")
+	}
+	upstreams := snap.Upstreams.List()
+
+	err = validateMultiDestination(upstreams, upstreamGroup.Destinations)
+	if err != nil {
+		return errors.Wrap(err, "invalid destination in weighted destination in upstream group")
+	}
+	return nil
 }
 
 func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.WeightedDestination) error {

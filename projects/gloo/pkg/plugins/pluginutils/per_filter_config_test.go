@@ -86,7 +86,7 @@ var _ = Describe("PerFilterConfig", func() {
 
 		It("should add per filter config to upstream", func() {
 
-			err := MarkPerFilterConfig(context.TODO(), in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				return msg, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -95,7 +95,7 @@ var _ = Describe("PerFilterConfig", func() {
 
 		It("should add per filter config only to relevant upstream", func() {
 
-			err := MarkPerFilterConfig(context.TODO(), in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				return nil, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -153,9 +153,10 @@ var _ = Describe("PerFilterConfig", func() {
 				},
 			}
 		})
+
 		It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
-			err := MarkPerFilterConfig(context.TODO(), in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				if spec.Upstream.Name == "yes" {
 					return msg, nil
 				}
@@ -167,6 +168,68 @@ var _ = Describe("PerFilterConfig", func() {
 			Expect(nocluster.PerFilterConfig).ToNot(HaveKey(name))
 			Expect(out.PerFilterConfig).ToNot(HaveKey(name))
 
+		})
+		Context("upstream group", func() {
+			var (
+				snap *v1.ApiSnapshot
+			)
+			BeforeEach(func() {
+				upGrp := &v1.UpstreamGroup{
+					Metadata: core.Metadata{
+						Name:      "test",
+						Namespace: "test",
+					},
+					Destinations: []*v1.WeightedDestination{{
+						Destination: &v1.Destination{
+							Upstream: core.ResourceRef{
+								Name:      "yes",
+								Namespace: "",
+							},
+						},
+					}, {
+						Destination: &v1.Destination{
+							Upstream: core.ResourceRef{
+								Name:      "no",
+								Namespace: "",
+							},
+						},
+					}},
+				}
+				ref := upGrp.Metadata.Ref()
+				in = &v1.Route{
+					Action: &v1.Route_RouteAction{
+						RouteAction: &v1.RouteAction{
+							Destination: &v1.RouteAction_UpstreamGroup{
+								UpstreamGroup: &ref,
+							},
+						},
+					},
+				}
+				snap = &v1.ApiSnapshot{
+					Upstreamgroups: v1.UpstreamgroupsByNamespace{
+						"test": v1.UpstreamGroupList{
+							upGrp,
+						},
+					},
+				}
+
+			})
+
+			It("should add per filter config only to relevant upstream in mutiple dest", func() {
+
+				err := MarkPerFilterConfig(context.TODO(), snap, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+					if spec.Upstream.Name == "yes" {
+						return msg, nil
+					}
+					return nil, nil
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(yescluster.PerFilterConfig).To(HaveKeyWithValue(name, BeEquivalentTo(msg)))
+				Expect(nocluster.PerFilterConfig).ToNot(HaveKey(name))
+				Expect(out.PerFilterConfig).ToNot(HaveKey(name))
+
+			})
 		})
 	})
 })
