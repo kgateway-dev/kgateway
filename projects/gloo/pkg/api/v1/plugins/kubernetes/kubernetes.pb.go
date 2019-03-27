@@ -43,7 +43,7 @@ type UpstreamSpec struct {
 	Selector map[string]string `protobuf:"bytes,4,rep,name=selector,proto3" json:"selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// An optional Service Spec describing the service listening at this address
 	ServiceSpec *plugins.ServiceSpec `protobuf:"bytes,5,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
-	// Sub set configuration. For discovery sources that has labels (like kubernetes). this
+	// Subset configuration. For discovery sources that has labels (like kubernetes). this
 	// configuration allows you to partition the upstream to a set of subsets.
 	// for each unique set of keys and values, a subset will be created.
 	SubsetSpec           *plugins.SubsetSpec `protobuf:"bytes,6,opt,name=subset_spec,json=subsetSpec,proto3" json:"subset_spec,omitempty"`

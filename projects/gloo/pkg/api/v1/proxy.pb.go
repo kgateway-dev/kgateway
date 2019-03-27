@@ -1228,7 +1228,7 @@ func (m *Destination) GetSubset() *Subset {
 //@solo-kit:resource.short_name=ug
 //@solo-kit:resource.plural_name=upstreamgroups
 type UpstreamGroup struct {
-	// message UpstreamGroupSpec {
+	// The destinations that are part of this upstream group.
 	Destinations []*WeightedDestination `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation

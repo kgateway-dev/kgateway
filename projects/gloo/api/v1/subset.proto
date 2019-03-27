@@ -6,5 +6,5 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 message Subset {
-   map<string, string> values =1;
+   map<string, string> values = 1;
 }

@@ -277,10 +277,9 @@ message Destination {
 @solo-kit:resource.plural_name=upstreamgroups
 */
 message UpstreamGroup {
-    // message UpstreamGroupSpec {
-        repeated WeightedDestination destinations = 1;
-    // }
-    // UpstreamGroupSpec spec = 1;
+    
+    // The destinations that are part of this upstream group.
+    repeated WeightedDestination destinations = 1;
     
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation

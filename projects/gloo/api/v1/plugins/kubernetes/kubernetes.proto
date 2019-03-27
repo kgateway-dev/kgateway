@@ -30,7 +30,7 @@ message UpstreamSpec {
     .plugins.gloo.solo.io.ServiceSpec service_spec = 5;
 
 
-    // Sub set configuration. For discovery sources that has labels (like kubernetes). this 
+    // Subset configuration. For discovery sources that has labels (like kubernetes). this 
     // configuration allows you to partition the upstream to a set of subsets.
     // for each unique set of keys and values, a subset will be created.
     .plugins.gloo.solo.io.SubsetSpec subset_spec = 6;
