@@ -50,7 +50,7 @@ func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) 
 }
 
 func createVirtualService(opts *options.Options, args []string) error {
-	vs, err := virtualServiceFromOpts(opts.Metadata, opts.Create.VirtualService)
+	vs, err := VirtualServiceFromOpts(opts.Metadata, opts.Create.VirtualService)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 
 var allDomains = []string{"*"}
 
-func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualService) (*v1.VirtualService, error) {
+func VirtualServiceFromOpts(meta core.Metadata, input options.InputVirtualService) (*v1.VirtualService, error) {
 	if len(input.Domains) == 0 {
 		input.Domains = allDomains
 	}

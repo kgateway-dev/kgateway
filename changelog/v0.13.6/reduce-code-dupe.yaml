@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: "Virtualservice factory in `glooctl create virtualservice` is now public so GlooE can reuse it."
+    issueLink: https://github.com/solo-io/gloo/issues/629
