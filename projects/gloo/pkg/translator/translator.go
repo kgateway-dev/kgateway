@@ -52,6 +52,9 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 	resourceErrs := make(reporter.ResourceErrors)
 
+	logger.Debugf("verifing upstream groups: %v", proxy.Metadata.Name)
+	t.verifyUpstreamGroups(params, resourceErrs)
+
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.Metadata.Name)
 	clusters := t.computeClusters(params, resourceErrs)

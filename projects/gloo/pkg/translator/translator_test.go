@@ -370,6 +370,16 @@ var _ = Describe("Translator", func() {
 			Expect(clusters.Clusters[1].Name).To(Equal(UpstreamToClusterName(upstream2.Metadata.Ref())))
 		})
 
+		It("should error on invalid ref in upstream groups", func() {
+			upstreamGroup.Destinations[0].Destination.Upstream.Name = "notexist"
+
+			_, errs, err := translator.Translate(params, proxy)
+			Expect(err).NotTo(HaveOccurred())
+			err = errs.Validate()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("destination # 1: upstream not found: list did not find upstream gloo-system.notexist"))
+		})
+
 	})
 
 	Context("when handling subsets", func() {
