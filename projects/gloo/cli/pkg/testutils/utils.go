@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
@@ -14,10 +16,20 @@ import (
 
 func Glooctl(args string) error {
 	app := cmd.GlooCli("test")
-	app.SetArgs(strings.Split(args, " "))
-	return app.Execute()
+	return ExecuteCli(app, args)
 }
+
+func ExecuteCli(command *cobra.Command, args string) error {
+	command.SetArgs(strings.Split(args, " "))
+	return command.Execute()
+}
+
 func GlooctlOut(args string) (string, error) {
+	app := cmd.GlooCli("test")
+	return ExecuteCliOut(app, args)
+}
+
+func ExecuteCliOut(command *cobra.Command, args string) (string, error) {
 	stdOut := os.Stdout
 	stdErr := os.Stderr
 	r, w, err := os.Pipe()
@@ -27,9 +39,8 @@ func GlooctlOut(args string) (string, error) {
 	os.Stdout = w
 	os.Stderr = w
 
-	app := cmd.GlooCli("test")
-	app.SetArgs(strings.Split(args, " "))
-	err = app.Execute()
+	command.SetArgs(strings.Split(args, " "))
+	err = command.Execute()
 
 	outC := make(chan string)
 

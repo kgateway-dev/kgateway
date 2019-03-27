@@ -2,3 +2,6 @@ changelog:
   - type: NON_USER_FACING
     description: "Virtualservice factory in `glooctl create virtualservice` is now public so GlooE can reuse it."
     issueLink: https://github.com/solo-io/gloo/issues/629
+  - type: NON_USER_FACING
+    description: "`testutils` now ships generic `ExecuteCli` and `ExecuteCliOut` to get rid of duplicated CLI wrappers in GlooE."
+    issueLink: https://github.com/solo-io/solo-projects/issues/560
