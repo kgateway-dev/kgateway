@@ -278,7 +278,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 		return errors.Errorf("route has a subset config, but the upstream does not.")
 	}
 
-	// make sure that the subset on the route will match a subset on the upsteam.
+	// make sure that the subset on the route will match a subset on the upstream.
 	found := false
 Outerloop:
 	for _, subset := range subsetConfig.Selectors {
