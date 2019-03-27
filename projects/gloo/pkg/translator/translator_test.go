@@ -292,7 +292,7 @@ var _ = Describe("Translator", func() {
 
 	})
 
-	Context("upstream groups", func() {
+	Context("when handling upstream groups", func() {
 
 		var (
 			upstream2     *v1.Upstream
@@ -372,7 +372,7 @@ var _ = Describe("Translator", func() {
 
 	})
 
-	Context("subsets", func() {
+	Context("when handling subsets", func() {
 		var (
 			cla_configuration *envoyapi.ClusterLoadAssignment
 		)
@@ -443,7 +443,7 @@ var _ = Describe("Translator", func() {
 			Expect(cla_configuration.Endpoints[0].LbEndpoints).To(HaveLen(len(params.Snapshot.Endpoints["gloo-system"])))
 		}
 
-		Context("happy path", func() {
+		Context("when happy path", func() {
 
 			It("should transfer labels to envoy", func() {
 				translateWithEndpoints()
@@ -471,7 +471,7 @@ var _ = Describe("Translator", func() {
 			})
 		})
 
-		It("should create empty if missing labels on the endpoint are provided in the upstream", func() {
+		It("should create empty value if missing labels on the endpoint are provided in the upstream", func() {
 			params.Snapshot.Endpoints["gloo-system"][0].Metadata.Labels = nil
 			translateWithEndpoints()
 			endpointMeta := cla_configuration.Endpoints[0].LbEndpoints[0].Metadata
