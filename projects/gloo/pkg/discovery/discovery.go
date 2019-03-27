@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"strings"
@@ -36,10 +37,13 @@ type DiscoveryPlugin interface {
 }
 
 type UpstreamDiscovery struct {
-	watchNamespaces    []string
-	writeNamespace     string
-	upstreamReconciler v1.UpstreamReconciler
-	discoveryPlugins   []DiscoveryPlugin
+	watchNamespaces        []string
+	writeNamespace         string
+	upstreamReconciler     v1.UpstreamReconciler
+	discoveryPlugins       []DiscoveryPlugin
+	lock                   sync.Mutex
+	latestDesiredUpstreams v1.UpstreamList
+	extraSelectorLabels    map[string]string
 }
 
 type EndpointDiscovery struct {
@@ -75,7 +79,7 @@ func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
 func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (chan error, error) {
 	aggregatedErrs := make(chan error)
 	upstreamsByUds := make(map[DiscoveryPlugin]v1.UpstreamList)
-	lock := sync.Mutex{}
+	d.extraSelectorLabels = opts.Selector
 	for _, uds := range d.discoveryPlugins {
 		upstreams, errs, err := uds.DiscoverUpstreams(d.watchNamespaces, d.writeNamespace, opts, discOpts)
 		if err != nil {
@@ -87,26 +91,17 @@ func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (cha
 			// TODO (ilackarms): when we have less problems, solve this
 			udsName := strings.Replace(reflect.TypeOf(uds).String(), "*", "", -1)
 			udsName = strings.Replace(udsName, ".", "", -1)
-			selector := map[string]string{
-				"discovered_by": udsName,
-			}
-			for k, v := range opts.Selector {
-				selector[k] = v
-			}
 			for {
 				select {
 				case upstreamList := <-upstreams:
-					lock.Lock()
+					d.lock.Lock()
 					upstreamList = setLabels(udsName, upstreamList)
 					upstreamsByUds[uds] = upstreamList
-					desiredUpstreams := aggregateUpstreams(upstreamsByUds)
-					if err := d.upstreamReconciler.Reconcile(d.writeNamespace, desiredUpstreams, uds.UpdateUpstream, clients.ListOpts{
-						Ctx:      opts.Ctx,
-						Selector: selector,
-					}); err != nil {
-						aggregatedErrs <- errors.Wrapf(err, "reconciling %v desired upstreams", len(desiredUpstreams))
+					d.latestDesiredUpstreams = aggregateUpstreams(upstreamsByUds)
+					d.lock.Unlock()
+					if err := d.Resync(opts.Ctx); err != nil {
+						aggregatedErrs <- errors.Wrapf(err, "error in uds plugin %v", reflect.TypeOf(uds).Name())
 					}
-					lock.Unlock()
 				case err := <-errs:
 					aggregatedErrs <- errors.Wrapf(err, "error in uds plugin %v", reflect.TypeOf(uds).Name())
 				case <-opts.Ctx.Done():
@@ -116,6 +111,29 @@ func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (cha
 		}(uds)
 	}
 	return aggregatedErrs, nil
+}
+
+// ensures that the latest desired upstreams are in sync
+func (d *UpstreamDiscovery) Resync(ctx context.Context) error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	for _, uds := range d.discoveryPlugins {
+		udsName := strings.Replace(reflect.TypeOf(uds).String(), "*", "", -1)
+		udsName = strings.Replace(udsName, ".", "", -1)
+		selector := map[string]string{
+			"discovered_by": udsName,
+		}
+		for k, v := range d.extraSelectorLabels {
+			selector[k] = v
+		}
+		if err := d.upstreamReconciler.Reconcile(d.writeNamespace, d.latestDesiredUpstreams, uds.UpdateUpstream, clients.ListOpts{
+			Ctx:      ctx,
+			Selector: selector,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func setLabels(udsName string, upstreamList v1.UpstreamList) v1.UpstreamList {
