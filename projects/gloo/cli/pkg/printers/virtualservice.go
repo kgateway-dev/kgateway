@@ -80,6 +80,8 @@ func destinationString(route *gloov1.Route) string {
 			return fmt.Sprintf("%v destinations", len(dest.Multi.Destinations))
 		case *gloov1.RouteAction_Single:
 			return dest.Single.Upstream.Name
+		case *gloov1.RouteAction_UpstreamGroup:
+			return fmt.Sprintf("upstream group: %s.%s", dest.UpstreamGroup.Name, dest.UpstreamGroup.Namespace))
 		}
 	case *gloov1.Route_DirectResponseAction:
 		return strconv.Itoa(int(action.DirectResponseAction.Status))
