@@ -16,16 +16,22 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/test/setup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/rest"
+
+	corev1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Kube2e: gateway", func() {
@@ -38,6 +44,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		gatewayClient        v1.GatewayClient
 		virtualServiceClient v1.VirtualServiceClient
+		upstreamClient       gloov1.UpstreamClient
 	)
 
 	BeforeEach(func() {
@@ -62,18 +69,31 @@ var _ = Describe("Kube2e: gateway", func() {
 			SharedCache: cache,
 		}
 
+		upstreamClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         gloov1.UpstreamCrd,
+			Cfg:         cfg,
+			SharedCache: cache,
+		}
+
 		gatewayClient, err = v1.NewGatewayClient(gatewayClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		err = gatewayClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
 		virtualServiceClient, err = v1.NewVirtualServiceClient(virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
+		err = virtualServiceClient.Register()
+		Expect(err).NotTo(HaveOccurred())
 
+		upstreamClient, err = gloov1.NewUpstreamClient(upstreamClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamClient.Register()
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		cancel()
-		err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
 	})
 
 	It("works", func() {
@@ -209,6 +229,74 @@ var _ = Describe("Kube2e: gateway", func() {
 				ConnectionTimeout: 10,
 			}, helper.SimpleHttpResponse, 1, 120*time.Second)
 		})
+	})
+	Context("upstream discovery", func() {
+		var (
+			createdServices []string
+		)
+		BeforeEach(func() {
+			createdServices = nil
+			//create some services
+			for i := 0; i < 20; i++ {
+				service := &corev1.Service{
+					ObjectMeta: meta_v1.ObjectMeta{
+						Name:   fmt.Sprintf("testrunner-%d", i),
+						Labels: map[string]string{"gloo": "testrunner"},
+					},
+					Spec: corev1.ServiceSpec{
+						Selector: map[string]string{"gloo": "testrunner"},
+						Ports: []corev1.ServicePort{{
+							Port: helper.TestRunnerPort,
+						}},
+					},
+				}
+				service, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Create(service)
+				Expect(err).NotTo(HaveOccurred())
+				createdServices = append(createdServices, service.Name)
+			}
+		})
+
+		AfterEach(func() {
+			for _, svcName := range createdServices {
+				kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(svcName, &meta_v1.DeleteOptions{})
+			}
+		})
+
+		It("should preserve discovery", func() {
+			getUpstream := func(svcname string) (*gloov1.Upstream, error) {
+				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
+				return upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
+			}
+
+			for _, svc := range createdServices {
+				Eventually(func() (*gloov1.Upstream, error) { return getUpstream(svc) }, "15s", "0.5s").ShouldNot(BeNil())
+				// now set subset config on an upstream:
+				Eventually(func() error {
+					upstream, _ := getUpstream(svc)
+					upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
+						PluginType: &gloov1plugins.ServiceSpec_Grpc{
+							Grpc: &grpcv1.ServiceSpec{},
+						},
+					}
+					_, err := upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
+					return err
+				}, "1s", "0.1s").ShouldNot(HaveOccurred())
+			}
+
+			// chill for a few letting discovery reconcile
+			time.Sleep(time.Second * 10)
+
+			// validate that all subset settings are still there
+			for _, svc := range createdServices {
+				// now set subset config on an upstream:
+				up, _ := getUpstream(svc)
+				spec := up.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec
+				Expect(spec).ToNot(BeNil())
+				Expect(spec.GetGrpc()).ToNot(BeNil())
+			}
+
+		})
+
 	})
 })
 
