@@ -10,6 +10,10 @@ Delete a Gloo resource
 
 Delete a Gloo resource
 
+```
+glooctl delete [flags]
+```
+
 ### Options
 
 ```

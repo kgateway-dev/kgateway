@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl create upstream
 
-Create an Upstream Interactively
+Create an Upstream
 
 ### Synopsis
 

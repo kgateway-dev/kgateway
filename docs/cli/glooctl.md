@@ -20,7 +20,7 @@ glooctl is the unified CLI for Gloo.
 
 ### SEE ALSO
 
-* [glooctl add](../glooctl_add)	 - adds configuration to a top-level Gloo resource
+* [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource.
 * [glooctl create](../glooctl_create)	 - Create a Gloo resource
 * [glooctl delete](../glooctl_delete)	 - Delete a Gloo resource
 * [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource

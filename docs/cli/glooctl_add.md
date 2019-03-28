@@ -4,11 +4,15 @@ weight: 5
 ---
 ## glooctl add
 
-adds configuration to a top-level Gloo resource
+Adds configuration to a top-level Gloo resource.
 
 ### Synopsis
 
-adds configuration to a top-level Gloo resource
+Adds configuration to a top-level Gloo resource.
+
+```
+glooctl add [flags]
+```
 
 ### Options
 

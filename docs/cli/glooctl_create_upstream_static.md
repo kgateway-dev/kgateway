@@ -35,5 +35,5 @@ glooctl create upstream static [flags]
 
 ### SEE ALSO
 
-* [glooctl create upstream](../glooctl_create_upstream)	 - Create an Upstream Interactively
+* [glooctl create upstream](../glooctl_create_upstream)	 - Create an Upstream
 
