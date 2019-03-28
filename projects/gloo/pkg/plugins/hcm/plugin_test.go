@@ -37,7 +37,7 @@ var _ = Describe("Plugin", func() {
 			DelayedCloseTimeout: pd(time.Hour),
 			ServerName:          "ServerName",
 
-			AccptHttp_10:          true,
+			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: "DefaultHostForHttp_10",
 		}
 		hl := &v1.HttpListener{

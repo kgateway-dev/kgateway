@@ -85,7 +85,7 @@ func copySettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpCon
 	cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
 	cfg.ServerName = hcmSettings.ServerName
 
-	if hcmSettings.AccptHttp_10 {
+	if hcmSettings.AcceptHttp_10 {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: hcmSettings.DefaultHostForHttp_10,
