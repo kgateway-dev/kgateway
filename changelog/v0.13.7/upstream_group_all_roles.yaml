@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Add upstream groups to ingress and knative roles.
+    issueLink: https://github.com/solo-io/gloo/issues/NUMBER
