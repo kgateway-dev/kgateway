@@ -17,7 +17,7 @@ var _ = Describe("Root", func() {
 
 	Context("Empty args and flags", func() {
 		It("should give clear error message", func() {
-			err := testutils.Glooctl("del")
+			err := testutils.Glooctl("delete")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(del.EmptyDeleteError))
 		})
