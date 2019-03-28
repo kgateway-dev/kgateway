@@ -43,6 +43,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "drainTimeout": .google.protobuf.Duration
 "delayedCloseTimeout": .google.protobuf.Duration
 "serverName": string
+"accptHttp10": bool
+"defaultHostForHttp10": string
 
 ```
 
@@ -61,6 +63,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `drainTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `delayedCloseTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `serverName` | `string` |  |  |
+| `accptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions |  |
+| `defaultHostForHttp10` | `string` |  |  |
 
 
 

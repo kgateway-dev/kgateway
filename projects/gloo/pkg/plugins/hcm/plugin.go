@@ -2,6 +2,7 @@ package hcm
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 
@@ -83,4 +84,12 @@ func copySettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpCon
 	cfg.DrainTimeout = hcmSettings.DrainTimeout
 	cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
 	cfg.ServerName = hcmSettings.ServerName
+
+	if hcmSettings.AccptHttp_10 {
+		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
+			AcceptHttp_10:         true,
+			DefaultHostForHttp_10: hcmSettings.DefaultHostForHttp_10,
+		}
+	}
+
 }

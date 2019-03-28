@@ -20,7 +20,7 @@ import (
 )
 
 var _ = Describe("Plugin", func() {
-	It("should not add filter if disabled", func() {
+	It("copy all settings to hcm filter", func() {
 		pd := func(t time.Duration) *time.Duration { return &t }
 		hcms := &hcm.HttpConnectionManagerSettings{
 			UseRemoteAddress:    &types.BoolValue{Value: false},
@@ -36,6 +36,9 @@ var _ = Describe("Plugin", func() {
 			DrainTimeout:        pd(time.Hour),
 			DelayedCloseTimeout: pd(time.Hour),
 			ServerName:          "ServerName",
+
+			AccptHttp_10:          true,
+			DefaultHostForHttp_10: "DefaultHostForHttp_10",
 		}
 		hl := &v1.HttpListener{
 			ListenerPlugins: &v1.ListenerPlugins{
@@ -80,6 +83,8 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.DrainTimeout).To(Equal(hcms.DrainTimeout))
 		Expect(cfg.DelayedCloseTimeout).To(Equal(hcms.DelayedCloseTimeout))
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
+		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
+		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(hcms.DefaultHostForHttp_10))
 	})
 
 })
