@@ -1,4 +1,4 @@
 changelog:
   - type: NEW_FEATURE
-    description: Ability to re-try on a virtual host level
+    description: Ability to re-try on a virtual host level.
     issueLink: https://github.com/solo-io/gloo/issues/641
