@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: "`glooctl` prints more informative error messages in a variety of cases where insufficient args or commands were provided."
+    issueLink: https://github.com/solo-io/solo-projects/issues/404
