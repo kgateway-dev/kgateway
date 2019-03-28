@@ -8,20 +8,17 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 type syncer struct {
 	uds         *discovery.UpstreamDiscovery
 	refreshRate time.Duration
-	discOpts    discovery.Opts
 }
 
-func NewDiscoverySyncer(disc *discovery.UpstreamDiscovery, discOpts discovery.Opts, refreshRate time.Duration) v1.DiscoverySyncer {
+func NewDiscoverySyncer(disc *discovery.UpstreamDiscovery, refreshRate time.Duration) v1.DiscoverySyncer {
 	s := &syncer{
 		uds:         disc,
 		refreshRate: refreshRate,
-		discOpts:    discOpts,
 	}
 	return s
 }
@@ -34,26 +31,6 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 
 	logger.Debugf("%v", snap)
 
-	opts := clients.WatchOpts{
-		Ctx:         ctx,
-		RefreshRate: s.refreshRate,
-	}
-
-	udsErrs, err := s.uds.StartUds(opts, s.discOpts)
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for {
-			select {
-			case err := <-udsErrs:
-				contextutils.LoggerFrom(ctx).Errorf("error in UDS: %v", err)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return nil
+	// kick the uds, ensure that desired upstreams are in sync
+	return s.uds.Resync(ctx)
 }

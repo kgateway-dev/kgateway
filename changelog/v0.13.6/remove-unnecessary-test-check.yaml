@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: The Kube2e tests no longer expect that the CLI *doesn't* remove the install namespace. In the future, this will be deleted by running `glooctl uninstall --delete-namespace`.
