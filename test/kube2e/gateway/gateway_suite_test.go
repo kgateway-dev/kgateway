@@ -58,8 +58,7 @@ var _ = AfterSuite(func() {
 	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
 	// TODO go-utils should expose `glooctl uninstall --delete-namespace`
-	err = testutils.Kubectl("delete", "namespace", testHelper.InstallNamespace)
-	Expect(err).NotTo(HaveOccurred())
+	testutils.Kubectl("delete", "namespace", testHelper.InstallNamespace)
 
 	Eventually(func() error {
 		return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
