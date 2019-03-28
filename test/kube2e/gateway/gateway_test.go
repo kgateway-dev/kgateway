@@ -91,92 +91,21 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		cancel()
-		virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
-	})
-
-	It("works", func() {
-
-		_, err := virtualServiceClient.Write(&v1.VirtualService{
-
-			Metadata: core.Metadata{
-				Name:      "vs",
-				Namespace: testHelper.InstallNamespace,
-			},
-			VirtualHost: &gloov1.VirtualHost{
-				Name:    "default",
-				Domains: []string{"*"},
-				Routes: []*gloov1.Route{{
-					Matcher: &gloov1.Matcher{
-						PathSpecifier: &gloov1.Matcher_Prefix{
-							Prefix: "/",
-						},
-					},
-					Action: &gloov1.Route_RouteAction{
-						RouteAction: &gloov1.RouteAction{
-							Destination: &gloov1.RouteAction_Single{
-								Single: &gloov1.Destination{
-									Upstream: core.ResourceRef{
-										Namespace: testHelper.InstallNamespace,
-										Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, "testrunner", helper.TestRunnerPort)},
-								},
-							},
-						},
-					},
-				}},
-			},
-		}, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
-		// wait for default gateway to be created
-		Eventually(func() (*v1.Gateway, error) {
-			return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-		}, "15s", "0.5s").Should(Not(BeNil()))
-
-		gatewayProxy := "gateway-proxy"
-		gatewayPort := int(80)
-		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-			Protocol:          "http",
-			Path:              "/",
-			Method:            "GET",
-			Host:              gatewayProxy,
-			Service:           gatewayProxy,
-			Port:              gatewayPort,
-			ConnectionTimeout: 10, // this is important, as sometimes curl hangs
-		}, helper.SimpleHttpResponse, 1, 120*time.Second)
-	})
-
-	Context("native ssl ", func() {
-
-		BeforeEach(func() {
-			// get the certificate so it is generated in the background
-			go helpers.Certificate()
-		})
+	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
-			err := kubeClient.CoreV1().Secrets(testHelper.InstallNamespace).Delete("secret", nil)
+			cancel()
+			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("works with ssl", func() {
-			createdSecret, err := kubeClient.CoreV1().Secrets(testHelper.InstallNamespace).Create(helpers.GetKubeSecret("secret", testHelper.InstallNamespace))
-			Expect(err).NotTo(HaveOccurred())
+		It("works", func() {
 
-			_, err = virtualServiceClient.Write(&v1.VirtualService{
+			_, err := virtualServiceClient.Write(&v1.VirtualService{
 
 				Metadata: core.Metadata{
 					Name:      "vs",
 					Namespace: testHelper.InstallNamespace,
-				},
-				SslConfig: &gloov1.SslConfig{
-					SslSecrets: &gloov1.SslConfig_SecretRef{
-						SecretRef: &core.ResourceRef{
-							Name:      createdSecret.ObjectMeta.Name,
-							Namespace: createdSecret.ObjectMeta.Namespace,
-						},
-					},
 				},
 				VirtualHost: &gloov1.VirtualHost{
 					Name:    "default",
@@ -210,24 +139,99 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
 			gatewayProxy := "gateway-proxy"
-			gatewayPort := int(443)
-			caFile := ToFile(helpers.Certificate())
-			//noinspection GoUnhandledErrorResult
-			defer os.Remove(caFile)
-
-			err = setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testrunner:/tmp/ca.crt")
-			Expect(err).NotTo(HaveOccurred())
-
+			gatewayPort := int(80)
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "https",
+				Protocol:          "http",
 				Path:              "/",
 				Method:            "GET",
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				CaFile:            "/tmp/ca.crt",
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 10, // this is important, as sometimes curl hangs
 			}, helper.SimpleHttpResponse, 1, 120*time.Second)
+		})
+
+		Context("native ssl ", func() {
+
+			BeforeEach(func() {
+				// get the certificate so it is generated in the background
+				go helpers.Certificate()
+			})
+
+			AfterEach(func() {
+				err := kubeClient.CoreV1().Secrets(testHelper.InstallNamespace).Delete("secret", nil)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("works with ssl", func() {
+				createdSecret, err := kubeClient.CoreV1().Secrets(testHelper.InstallNamespace).Create(helpers.GetKubeSecret("secret", testHelper.InstallNamespace))
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = virtualServiceClient.Write(&v1.VirtualService{
+
+					Metadata: core.Metadata{
+						Name:      "vs",
+						Namespace: testHelper.InstallNamespace,
+					},
+					SslConfig: &gloov1.SslConfig{
+						SslSecrets: &gloov1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      createdSecret.ObjectMeta.Name,
+								Namespace: createdSecret.ObjectMeta.Namespace,
+							},
+						},
+					},
+					VirtualHost: &gloov1.VirtualHost{
+						Name:    "default",
+						Domains: []string{"*"},
+						Routes: []*gloov1.Route{{
+							Matcher: &gloov1.Matcher{
+								PathSpecifier: &gloov1.Matcher_Prefix{
+									Prefix: "/",
+								},
+							},
+							Action: &gloov1.Route_RouteAction{
+								RouteAction: &gloov1.RouteAction{
+									Destination: &gloov1.RouteAction_Single{
+										Single: &gloov1.Destination{
+											Upstream: core.ResourceRef{
+												Namespace: testHelper.InstallNamespace,
+												Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, "testrunner", helper.TestRunnerPort)},
+										},
+									},
+								},
+							},
+						}},
+					},
+				}, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+				// wait for default gateway to be created
+				Eventually(func() (*v1.Gateway, error) {
+					return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+				}, "15s", "0.5s").Should(Not(BeNil()))
+
+				gatewayProxy := "gateway-proxy"
+				gatewayPort := int(443)
+				caFile := ToFile(helpers.Certificate())
+				//noinspection GoUnhandledErrorResult
+				defer os.Remove(caFile)
+
+				err = setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testrunner:/tmp/ca.crt")
+				Expect(err).NotTo(HaveOccurred())
+
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "https",
+					Path:              "/",
+					Method:            "GET",
+					Host:              gatewayProxy,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					CaFile:            "/tmp/ca.crt",
+					ConnectionTimeout: 10,
+				}, helper.SimpleHttpResponse, 1, 120*time.Second)
+			})
 		})
 	})
 	Context("upstream discovery", func() {
