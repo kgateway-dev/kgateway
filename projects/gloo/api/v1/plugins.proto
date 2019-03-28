@@ -42,6 +42,7 @@ message ListenerPlugins {
 // to be usable by Gloo.
 message VirtualHostPlugins {
     Extensions extensions = 1;
+    retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
 }
 
 // Plugin-specific configuration that lives on routes

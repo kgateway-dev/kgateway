@@ -60,12 +60,14 @@ to be usable by Gloo.
 
 ```yaml
 "extensions": .gloo.solo.io.Extensions
+"retries": .retries.plugins.gloo.solo.io.RetryPolicy
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 
 
 

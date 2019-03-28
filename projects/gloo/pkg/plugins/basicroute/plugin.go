@@ -3,12 +3,17 @@ package basicroute
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	retries "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 type Plugin struct{}
+
+var _ plugins.RoutePlugin = NewPlugin()
+var _ plugins.VirtualHostPlugin = NewPlugin()
 
 // Handles a RoutePlugin APIs which map directly to basic Envoy config
 func NewPlugin() *Plugin {
@@ -17,6 +22,13 @@ func NewPlugin() *Plugin {
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
+}
+
+func (p *Plugin) ProcessVirtualHost(params plugins.Params, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
+	if in.VirtualHostPlugins == nil {
+		return nil
+	}
+	return applyRetriesVhost(in, out)
 }
 
 func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
@@ -83,15 +95,28 @@ func applyRetries(in *v1.Route, out *envoyroute.Route) error {
 			"had nil route", in.Action)
 	}
 
+	routeAction.Route.RetryPolicy = convertPolicy(policy)
+	return nil
+}
+
+func applyRetriesVhost(in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
+	out.RetryPolicy = convertPolicy(in.VirtualHostPlugins.Retries)
+	return nil
+}
+
+func convertPolicy(policy *retries.RetryPolicy) *envoyroute.RetryPolicy {
+	if policy == nil {
+		return nil
+	}
+
 	numRetries := policy.NumRetries
 	if numRetries == 0 {
 		numRetries = 1
 	}
 
-	routeAction.Route.RetryPolicy = &envoyroute.RetryPolicy{
+	return &envoyroute.RetryPolicy{
 		RetryOn:       policy.RetryOn,
 		NumRetries:    &types.UInt32Value{Value: numRetries},
 		PerTryTimeout: policy.PerTryTimeout,
 	}
-	return nil
 }

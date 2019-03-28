@@ -60,32 +60,55 @@ var _ = Describe("timeout", func() {
 })
 
 var _ = Describe("retries", func() {
-	It("works", func() {
+
+	var (
+		plugin              *Plugin
+		retryPolicy         *retries.RetryPolicy
+		expectedRetryPolicy *envoyroute.RetryPolicy
+	)
+	BeforeEach(func() {
 		t := time.Minute
-		p := NewPlugin()
+		retryPolicy = &retries.RetryPolicy{
+			RetryOn:       "if at first you don't succeed",
+			NumRetries:    5,
+			PerTryTimeout: &t,
+		}
+		expectedRetryPolicy = &envoyroute.RetryPolicy{
+			RetryOn: "if at first you don't succeed",
+			NumRetries: &types.UInt32Value{
+				Value: 5,
+			},
+			PerTryTimeout: &t,
+		}
+
+		plugin = NewPlugin()
+	})
+
+	It("works", func() {
 		routeAction := &envoyroute.RouteAction{}
 		out := &envoyroute.Route{
 			Action: &envoyroute.Route_Route{
 				Route: routeAction,
 			},
 		}
-		err := p.ProcessRoute(plugins.Params{}, &v1.Route{
+		err := plugin.ProcessRoute(plugins.Params{}, &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
-				Retries: &retries.RetryPolicy{
-					RetryOn:       "if at first you don't succeed",
-					NumRetries:    5,
-					PerTryTimeout: &t,
-				},
+				Retries: retryPolicy,
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.RetryPolicy).NotTo(BeNil())
-		Expect(*routeAction.RetryPolicy).To(Equal(envoyroute.RetryPolicy{
-			RetryOn: "if at first you don't succeed",
-			NumRetries: &types.UInt32Value{
-				Value: 5,
+		Expect(routeAction.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+	It("works on vhost", func() {
+		out := &envoyroute.VirtualHost{}
+		err := plugin.ProcessVirtualHost(plugins.Params{}, &v1.VirtualHost{
+			VirtualHostPlugins: &v1.VirtualHostPlugins{
+				Retries: retryPolicy,
 			},
-			PerTryTimeout: &t,
-		}))
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.RetryPolicy).NotTo(BeNil())
+		Expect(out.RetryPolicy).To(Equal(expectedRetryPolicy))
 	})
 })
