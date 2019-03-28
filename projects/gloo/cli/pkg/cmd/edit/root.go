@@ -47,5 +47,5 @@ func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.
 }
 
 func addEditFlags(set *pflag.FlagSet, opts *editOptions.EditOptions) {
-	set.StringVarP(&opts.ResourceVersion, "resource-version", "", "", "the resource version of the resouce we are editing. if not empty, resource will only be changed if the resource version matches")
+	set.StringVarP(&opts.ResourceVersion, "resource-version", "", "", "the resource version of the resource we are editing. if not empty, resource will only be changed if the resource version matches")
 }

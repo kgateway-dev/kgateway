@@ -29,16 +29,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const EmptyUpstreamCreateError = "please provide a type of upstream, or use -i to create the upstream interactively"
+
 func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     constants.UPSTREAM_COMMAND.Use,
 		Aliases: constants.UPSTREAM_COMMAND.Aliases,
-		Short:   "Create an Upstream Interactively",
+		Short:   "Create an Upstream",
 		Long: "Upstreams represent destination for routing HTTP requests. Upstreams can be compared to \n" +
 			"[clusters](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager) in Envoy terminology. \n" +
 			"Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more. \n" +
 			"Each upstream type is handled by a corresponding Gloo plugin. \n",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !opts.Top.Interactive {
+				return errors.Errorf(EmptyUpstreamCreateError)
+			}
 			if err := surveyutils.AddUpstreamFlagsInteractive(&opts.Create.InputUpstream); err != nil {
 				return err
 			}

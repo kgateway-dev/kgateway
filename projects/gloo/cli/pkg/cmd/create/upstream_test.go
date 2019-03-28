@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
-
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -23,6 +23,14 @@ var _ = Describe("Upstream", func() {
 		Expect(err).NotTo(HaveOccurred())
 		return up
 	}
+
+	Context("Empty args and flags", func() {
+		It("should give clear error message", func() {
+			err := testutils.Glooctl("create upstream")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(create.EmptyUpstreamCreateError))
+		})
+	})
 
 	Context("static", func() {
 		It("should error when no name provided", func() {
