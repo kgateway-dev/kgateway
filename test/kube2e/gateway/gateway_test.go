@@ -103,7 +103,6 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	})
 
-
 	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
