@@ -245,9 +245,10 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("with subsets and upstream groups", func() {
 
 		var (
-			redpod  *corev1.Pod
-			bluepod *corev1.Pod
-			service *corev1.Service
+			redpod   *corev1.Pod
+			bluepod  *corev1.Pod
+			greenpod *corev1.Pod
+			service  *corev1.Service
 		)
 		BeforeEach(func() {
 			pod := &corev1.Pod{
@@ -268,8 +269,13 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			pod.Labels["text"] = "blue"
 			pod.Spec.Containers[0].Args = []string{"-text=\"blue-pod\""}
-
 			bluepod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
+			Expect(err).NotTo(HaveOccurred())
+
+			// green pod - no label
+			delete(pod.Labels, "text")
+			pod.Spec.Containers[0].Args = []string{"-text=\"green-pod\""}
+			greenpod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
 			Expect(err).NotTo(HaveOccurred())
 
 			service = &corev1.Service{
@@ -295,6 +301,9 @@ var _ = Describe("Kube2e: gateway", func() {
 			if bluepod != nil {
 				kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(bluepod.Name, &meta_v1.DeleteOptions{})
 			}
+			if greenpod != nil {
+				kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(greenpod.Name, &meta_v1.DeleteOptions{})
+			}
 			if service != nil {
 				kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(service.Name, &meta_v1.DeleteOptions{})
 			}
@@ -309,14 +318,20 @@ var _ = Describe("Kube2e: gateway", func() {
 			// wait for upstream to be created
 			Eventually(getUpstream, "15s", "0.5s").ShouldNot(BeNil())
 
-			upstream, _ := getUpstream()
-			upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
-				Selectors: []*gloov1plugins.Selector{{
-					Keys: []string{"text"},
-				}},
-			}
-			_, err := upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
+			var upstreamRef core.ResourceRef
+			// upstream write might error on a conflict so try it a few times
+			// I use eventually so it will wait a bit between retries.
+			Eventually(func() error {
+				upstream, _ := getUpstream()
+				upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
+					Selectors: []*gloov1plugins.Selector{{
+						Keys: []string{"text"},
+					}},
+				}
+				upstreamRef = upstream.Metadata.Ref()
+				_, err := upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
+				return err
+			}, "1s", "0.1s").ShouldNot(HaveOccurred())
 
 			// add subsets to upstream
 			ug := &gloov1.UpstreamGroup{
@@ -328,7 +343,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					{
 						Weight: 1,
 						Destination: &gloov1.Destination{
-							Upstream: upstream.Metadata.Ref(),
+							Upstream: upstreamRef,
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": "red"},
 							},
@@ -337,15 +352,24 @@ var _ = Describe("Kube2e: gateway", func() {
 					{
 						Weight: 1,
 						Destination: &gloov1.Destination{
-							Upstream: upstream.Metadata.Ref(),
+							Upstream: upstreamRef,
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": "blue"},
 							},
 						},
 					},
+					{
+						Weight: 1,
+						Destination: &gloov1.Destination{
+							Upstream: upstreamRef,
+							Subset: &gloov1.Subset{
+								Values: map[string]string{"text": ""},
+							},
+						},
+					},
 				},
 			}
-			_, err = upstreamGroupClient.Write(ug, clients.WriteOpts{})
+			_, err := upstreamGroupClient.Write(ug, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			ugref := ug.Metadata.Ref()
@@ -363,22 +387,43 @@ var _ = Describe("Kube2e: gateway", func() {
 				VirtualHost: &gloov1.VirtualHost{
 					Name:    "default",
 					Domains: []string{"*"},
-					Routes: []*gloov1.Route{{
-						Matcher: &gloov1.Matcher{
-							PathSpecifier: &gloov1.Matcher_Prefix{
-								Prefix: "/",
+					Routes: []*gloov1.Route{
+						{
+							Matcher: &gloov1.Matcher{
+								PathSpecifier: &gloov1.Matcher_Prefix{
+									Prefix: "/red",
+								},
 							},
-						},
-						Action: &gloov1.Route_RouteAction{
-							RouteAction: &gloov1.RouteAction{
-								Destination: &gloov1.RouteAction_UpstreamGroup{
-									UpstreamGroup: &ugref,
+							Action: &gloov1.Route_RouteAction{
+								RouteAction: &gloov1.RouteAction{
+									Destination: &gloov1.RouteAction_Single{
+										Single: &gloov1.Destination{
+											Upstream: upstreamRef,
+											Subset: &gloov1.Subset{
+												Values: map[string]string{"text": "red"},
+											},
+										},
+									},
+								},
+							},
+						}, {
+							Matcher: &gloov1.Matcher{
+								PathSpecifier: &gloov1.Matcher_Prefix{
+									Prefix: "/",
+								},
+							},
+							Action: &gloov1.Route_RouteAction{
+								RouteAction: &gloov1.RouteAction{
+									Destination: &gloov1.RouteAction_UpstreamGroup{
+										UpstreamGroup: &ugref,
+									},
 								},
 							},
 						},
-					}},
+					},
 				},
 			}, clients.WriteOpts{})
+
 			Expect(err).NotTo(HaveOccurred())
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
@@ -413,6 +458,24 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 10,
 			}, "blue-pod", 1, 120*time.Second)
+
+			redOpts := helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/red",
+				Method:            "GET",
+				Host:              gatewayProxy,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 10,
+			}
+
+			// try it 10 times
+			for i := 0; i < 10; i++ {
+				res, err := testHelper.Curl(redOpts)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(res).To(ContainSubstring("red-pod"))
+			}
+
 		})
 	})
 })
