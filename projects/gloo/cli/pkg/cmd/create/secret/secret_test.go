@@ -2,8 +2,9 @@ package secret_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 	"os"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 
