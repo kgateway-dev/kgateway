@@ -532,6 +532,16 @@ var _ = Describe("Kube2e: gateway", func() {
 				ConnectionTimeout: 10,
 			}, "blue-pod", 1, 120*time.Second)
 
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/",
+				Method:            "GET",
+				Host:              gatewayProxy,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 10,
+			}, "green-pod", 1, 120*time.Second)
+
 			redOpts := helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/red",
