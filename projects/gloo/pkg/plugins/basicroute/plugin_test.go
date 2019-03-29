@@ -97,7 +97,6 @@ var _ = Describe("retries", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.RetryPolicy).NotTo(BeNil())
 		Expect(routeAction.RetryPolicy).To(Equal(expectedRetryPolicy))
 	})
 	It("works on vhost", func() {
@@ -108,7 +107,6 @@ var _ = Describe("retries", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.RetryPolicy).NotTo(BeNil())
 		Expect(out.RetryPolicy).To(Equal(expectedRetryPolicy))
 	})
 })
