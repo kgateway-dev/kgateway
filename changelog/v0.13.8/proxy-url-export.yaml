@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Export proxy url function for other projects.
+    issueLink: https://github.com/solo-io/supergloo/issues/316
+    resolvesIssue: false
