@@ -51,7 +51,7 @@ func GetResource(uri string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-func GetIngressHost(opts *options.Options) (string, error) {
+func GetIngressHost(opts *options.Proxy, namespace string) (string, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "getting kube rest config")
@@ -60,33 +60,33 @@ func GetIngressHost(opts *options.Options) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "starting kube client")
 	}
-	svc, err := kube.CoreV1().Services(opts.Metadata.Namespace).Get(opts.Proxy.Name, metav1.GetOptions{})
+	svc, err := kube.CoreV1().Services(namespace).Get(opts.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
 			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'",
-			opts.Proxy.Name, opts.Metadata.Namespace)
+			opts.Name, namespace)
 	}
 	var svcPort *v1.ServicePort
 	switch len(svc.Spec.Ports) {
 	case 0:
-		return "", errors.Errorf("service %v is missing ports", opts.Proxy.Name)
+		return "", errors.Errorf("service %v is missing ports", opts.Name)
 	case 1:
 		svcPort = &svc.Spec.Ports[0]
 	default:
 		for _, p := range svc.Spec.Ports {
-			if p.Name == opts.Proxy.Port {
+			if p.Name == opts.Port {
 				svcPort = &p
 				break
 			}
 		}
 		if svcPort == nil {
-			return "", errors.Errorf("named port %v not found on service %v", opts.Proxy.Port, opts.Proxy.Name)
+			return "", errors.Errorf("named port %v not found on service %v", opts.Port, opts.Name)
 		}
 	}
 
 	var host, port string
 	// gateway-proxy is an externally load-balanced service
-	if len(svc.Status.LoadBalancer.Ingress) == 0 || opts.Proxy.LocalCluster {
+	if len(svc.Status.LoadBalancer.Ingress) == 0 || opts.LocalCluster {
 		// assume nodeport on kubernetes
 		// TODO: support more types of NodePort services
 		host, err = getNodeIp(svc, kube)
