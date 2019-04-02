@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Include subresource status in glooctl get virtualservice output.
+    issueLink: https://github.com/solo-io/gloo/issues/297

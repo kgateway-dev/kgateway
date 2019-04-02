@@ -22,7 +22,7 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 		displayName := v.GetDisplayName()
 		domains := domains(v)
 		ssl := sslConfig(v)
-		status := v.Status.State.String()
+		status := getVirtualServiceStatus(v)
 		routes := routeList(v)
 		plugins := vhPlugins(v)
 
@@ -43,10 +43,10 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 }
 
 func getVirtualServiceStatus(vs *v1.VirtualService) string {
-	resourceStatus := vs.Status.State.String()
+	resourceStatus := vs.Status.State
 	// If the virtual service has not yet been accepted, don't clutter the status with the other errors.
 	if resourceStatus != core.Status_Accepted {
-		return resourceStatus
+		return resourceStatus.String()
 	}
 	// Subresource statuses are reported as a map[string]string
 	// At the moment, virtual services only have one subresource, the associated gateway.
@@ -55,14 +55,14 @@ func getVirtualServiceStatus(vs *v1.VirtualService) string {
 	// Therefore, only report non-accepted states, include the subresource name.
 	subResourceErrorMessages := []string{}
 	for k, v := range vs.Status.SubresourceStatuses {
-		if v != core.Status_Accepted {
+		if v.State != core.Status_Accepted {
 			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
 		}
 	}
 	if len(subResourceErrorMessages) > 0 {
 		return strings.Join(subResourceErrorMessages, "\n")
 	}
-	return resourceStatus
+	return resourceStatus.String()
 
 }
 
