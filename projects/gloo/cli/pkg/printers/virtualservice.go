@@ -50,7 +50,7 @@ func getVirtualServiceStatus(vs *v1.VirtualService) string {
 		return resourceStatus.String()
 	}
 
-	// Subresource statuses are reported as a map[string]string
+	// Subresource statuses are reported as a map[string]*Status
 	// At the moment, virtual services only have one subresource, the associated gateway.
 	// In the future, we may add more.
 	// Either way, we only care if a subresource is in a non-accepted state.
@@ -82,7 +82,7 @@ func cleanVirtualServiceSubResourceError(eMsg string) string {
 	parts := strings.Split(eMsg, gloov1.UpstreamListErrorTag)
 	if len(parts) > 1 {
 		parts[0] = ""
-		return fmt.Sprintf("Error with Route: %v %v", gloov1.UpstreamListErrorTag, strings.Join(parts, ""))
+		return fmt.Sprintf("Error with Route: %v%v", gloov1.UpstreamListErrorTag, strings.Join(parts, ""))
 	}
 	return eMsg
 }
