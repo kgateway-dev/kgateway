@@ -9,6 +9,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // PrintTable prints virtual services using tables to io.Writer
@@ -39,6 +40,30 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
+}
+
+func getVirtualServiceStatus(vs *v1.VirtualService) string {
+	resourceStatus := vs.Status.State.String()
+	// If the virtual service has not yet been accepted, don't clutter the status with the other errors.
+	if resourceStatus != core.Status_Accepted {
+		return resourceStatus
+	}
+	// Subresource statuses are reported as a map[string]string
+	// At the moment, virtual services only have one subresource, the associated gateway.
+	// In the future, we may add more.
+	// Either way, we only care if a subresource is in a non-accepted state.
+	// Therefore, only report non-accepted states, include the subresource name.
+	subResourceErrorMessages := []string{}
+	for k, v := range vs.Status.SubresourceStatuses {
+		if v != core.Status_Accepted {
+			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
+		}
+	}
+	if len(subResourceErrorMessages) > 0 {
+		return strings.Join(subResourceErrorMessages, "\n")
+	}
+	return resourceStatus
+
 }
 
 func routeList(v *v1.VirtualService) []string {
