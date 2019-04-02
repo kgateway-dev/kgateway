@@ -43,11 +43,13 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 }
 
 func getVirtualServiceStatus(vs *v1.VirtualService) string {
-	resourceStatus := vs.Status.State
+
 	// If the virtual service has not yet been accepted, don't clutter the status with the other errors.
+	resourceStatus := vs.Status.State
 	if resourceStatus != core.Status_Accepted {
 		return resourceStatus.String()
 	}
+
 	// Subresource statuses are reported as a map[string]string
 	// At the moment, virtual services only have one subresource, the associated gateway.
 	// In the future, we may add more.
@@ -59,11 +61,30 @@ func getVirtualServiceStatus(vs *v1.VirtualService) string {
 			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
 		}
 	}
-	if len(subResourceErrorMessages) > 0 {
+
+	switch len(subResourceErrorMessages) {
+	case 0:
+		// there are no errors with the subresources, pass Accepted status
+		return resourceStatus.String()
+	case 1:
+		// there is one error, try to pass a friendly error message
+		return cleanVirtualServiceSubResourceError(subResourceErrorMessages[0])
+	default:
+		// there are multiple errors, don't be fancy, just return list
 		return strings.Join(subResourceErrorMessages, "\n")
 	}
-	return resourceStatus.String()
+}
 
+// If we can identify the type of error on a virtual service subresource,
+// return a cleaner message. If not, default to the full error message.
+func cleanVirtualServiceSubResourceError(eMsg string) string {
+	// If we add additional error scrubbers, we should use regexs
+	parts := strings.Split(eMsg, gloov1.UpstreamListErrorTag)
+	if len(parts) > 1 {
+		parts[0] = ""
+		return fmt.Sprintf("Error with Route: %v %v", gloov1.UpstreamListErrorTag, strings.Join(parts, ""))
+	}
+	return eMsg
 }
 
 func routeList(v *v1.VirtualService) []string {
