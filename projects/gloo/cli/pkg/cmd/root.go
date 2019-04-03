@@ -65,6 +65,7 @@ func GlooCli(version string) *cobra.Command {
 			edit.RootCmd(opts),
 			upgrade.RootCmd(opts),
 			gateway.RootCmd(opts),
+			completionCmd(),
 		)
 	}
 
