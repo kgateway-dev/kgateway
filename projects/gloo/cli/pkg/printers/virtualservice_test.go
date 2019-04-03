@@ -2,11 +2,9 @@ package printers
 
 import (
 	"fmt"
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -16,22 +14,34 @@ var _ = Describe("getVirtualServiceStatus", func() {
 		thing1 = "thing1"
 		thing2 = "thing2"
 	)
+	It("handles non-Accepted resource state", func() {
+		// range through all possible resource states
+		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
+			resourceStatusState := core.Status_State(resourceStatusInt)
+			// check all values other than accepted
+			if resourceStatusString != core.Status_Accepted.String() {
+				By(fmt.Sprintf("resource: %v, subresource: %v", resourceStatusString, "not present"))
+				vs := &v1.VirtualService{
+					Status: core.Status{
+						State: resourceStatusState,
+					},
+				}
+				Expect(getVirtualServiceStatus(vs)).To(Equal(resourceStatusString))
 
-	It("handles Pending state", func() {
-		vs := &v1.VirtualService{
-			Status: core.Status{
-				State: core.Status_Pending,
-			},
+				// range through all possible sub resource states
+				for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
+					subResourceStatusState := core.Status_State(subResourceStatusInt)
+					vs.Status.SubresourceStatuses = map[string]*core.Status{
+						thing1: {
+							State:  subResourceStatusState,
+							Reason: "any reason",
+						},
+					}
+					By(fmt.Sprintf("resource: %v, subresource: %v", resourceStatusString, subResourceStatusString))
+					Expect(getVirtualServiceStatus(vs)).To(Equal(resourceStatusString))
+				}
+			}
 		}
-		Expect(getVirtualServiceStatus(vs)).To(Equal(core.Status_Pending.String()))
-	})
-	It("handles Rejected state", func() {
-		vs := &v1.VirtualService{
-			Status: core.Status{
-				State: core.Status_Rejected,
-			},
-		}
-		Expect(getVirtualServiceStatus(vs)).To(Equal(core.Status_Rejected.String()))
 	})
 	It("handles simple Accepted state", func() {
 		vs := &v1.VirtualService{
@@ -44,7 +54,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 	It("handles Accepted state - sub resources accepted", func() {
 		By("one accepted")
 		subStatuses := map[string]*core.Status{
-			thing1: &core.Status{
+			thing1: {
 				State: core.Status_Accepted,
 			},
 		}
@@ -58,10 +68,10 @@ var _ = Describe("getVirtualServiceStatus", func() {
 
 		By("two accepted")
 		subStatuses = map[string]*core.Status{
-			thing1: &core.Status{
+			thing1: {
 				State: core.Status_Accepted,
 			},
-			thing2: &core.Status{
+			thing2: {
 				State: core.Status_Accepted,
 			},
 		}
@@ -72,7 +82,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 		reasonUntracked := "some reason that does not match a known criteria"
 		By("one rejected")
 		subStatuses := map[string]*core.Status{
-			thing1: &core.Status{
+			thing1: {
 				State:  core.Status_Rejected,
 				Reason: reasonUntracked,
 			},
@@ -84,36 +94,24 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		out := getVirtualServiceStatus(vs)
-		Expect(out).To(MatchRegexp(thing1))
-		Expect(out).To(MatchRegexp(core.Status_Rejected.String()))
-		Expect(out).To(MatchRegexp(reasonUntracked))
-		Expect(out).To(MatchRegexp(regexStringFromList([]string{
-			thing1,
-			core.Status_Rejected.String(),
-			reasonUntracked})))
+		Expect(out).To(Equal(fmt.Sprintf("%v %v: %v", thing1, core.Status_Rejected, reasonUntracked)))
 
 		By("two rejected")
 		subStatuses = map[string]*core.Status{
-			thing1: &core.Status{
+			thing1: {
 				State:  core.Status_Rejected,
 				Reason: reasonUntracked,
 			},
-			thing2: &core.Status{
+			thing2: {
 				State:  core.Status_Rejected,
 				Reason: reasonUntracked,
 			},
 		}
 		vs.Status.SubresourceStatuses = subStatuses
 		out = getVirtualServiceStatus(vs)
-		Expect(joinParagraph(out)).To(MatchRegexp(regexStringFromList([]string{
-			thing1,
-			core.Status_Rejected.String(),
-			reasonUntracked})))
-		// Make separate calls because order does not matter
-		Expect(joinParagraph(out)).To(MatchRegexp(regexStringFromList([]string{
-			thing2,
-			core.Status_Rejected.String(),
-			reasonUntracked})))
+		// Use regex because order does not matter
+		Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
+		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUntracked)))
 	})
 
 	It("handles Accepted state - sub resources errored in known way", func() {
@@ -121,7 +119,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 		reasonUpstreamList := fmt.Sprintf("%v: %v", gloov1.UpstreamListErrorTag, erroredResourceIdentifier)
 		By("one rejected")
 		subStatuses := map[string]*core.Status{
-			thing1: &core.Status{
+			thing1: {
 				State:  core.Status_Rejected,
 				Reason: reasonUpstreamList,
 			},
@@ -133,15 +131,15 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		out := getVirtualServiceStatus(vs)
-		Expect(out).To(MatchRegexp(reasonUpstreamList))
+		Expect(out).To(Equal(knownErrorFormatRoute(reasonUpstreamList)))
 
 		By("one accepted, one rejected")
 		subStatuses = map[string]*core.Status{
-			thing1: &core.Status{
+			thing1: {
 				State:  core.Status_Rejected,
 				Reason: reasonUpstreamList,
 			},
-			thing2: &core.Status{
+			thing2: {
 				State: core.Status_Accepted,
 			},
 		}
@@ -151,34 +149,28 @@ var _ = Describe("getVirtualServiceStatus", func() {
 
 		By("two rejected")
 		subStatuses = map[string]*core.Status{
-			thing1: &core.Status{
+			thing1: {
 				State:  core.Status_Rejected,
 				Reason: reasonUpstreamList,
 			},
-			thing2: &core.Status{
+			thing2: {
 				State:  core.Status_Rejected,
 				Reason: reasonUpstreamList,
 			},
 		}
 		vs.Status.SubresourceStatuses = subStatuses
 		out = getVirtualServiceStatus(vs)
-		Expect(joinParagraph(out)).To(MatchRegexp(regexStringFromList([]string{
-			thing1,
-			core.Status_Rejected.String(),
-			reasonUpstreamList})))
-		// Make separate calls because order does not matter
-		Expect(joinParagraph(out)).To(MatchRegexp(regexStringFromList([]string{
-			thing2,
-			core.Status_Rejected.String(),
-			reasonUpstreamList})))
+		// Use regex because order does not matter
+		Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))
+		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUpstreamList)))
 	})
 })
 
 // Helpers
 
-func joinParagraph(para string) string {
-	return strings.Replace(para, "\n", " ", -1)
+func genericErrorFormat(resourceName, statusString, reason string) string {
+	return fmt.Sprintf("%v %v: %v", resourceName, statusString, reason)
 }
-func regexStringFromList(list []string) string {
-	return strings.Join(list, ".*")
+func knownErrorFormatRoute(reason string) string {
+	return fmt.Sprintf("Error with Route: %v", reason)
 }

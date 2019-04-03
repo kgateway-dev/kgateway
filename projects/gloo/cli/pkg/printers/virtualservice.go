@@ -79,10 +79,13 @@ func getVirtualServiceStatus(vs *v1.VirtualService) string {
 // return a cleaner message. If not, default to the full error message.
 func cleanVirtualServiceSubResourceError(eMsg string) string {
 	// If we add additional error scrubbers, we should use regexs
+	// For now, a simple way to test for the known error is to split the full error message by it
+	// If the split produced a list with two elements, then the error message is recognized
 	parts := strings.Split(eMsg, gloov1.UpstreamListErrorTag)
-	if len(parts) > 1 {
-		parts[0] = ""
-		return fmt.Sprintf("Error with Route: %v%v", gloov1.UpstreamListErrorTag, strings.Join(parts, ""))
+	if len(parts) == 2 {
+		// if here, eMsg ~= "<preamble><well_known_error_string><error_details>"
+		errorDetails := parts[1]
+		return fmt.Sprintf("Error with Route: %v%v", gloov1.UpstreamListErrorTag, errorDetails)
 	}
 	return eMsg
 }
