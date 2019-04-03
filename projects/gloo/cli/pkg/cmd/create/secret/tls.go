@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -54,14 +53,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 }
 
 func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) error {
-	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
-		return err
-	}
-
-	if err := cliutil.GetStringInput("name of secret", &meta.Name); err != nil {
-		return err
-	}
-	if err := cliutil.GetStringInput("filename of rootca for secret", &input.RootCaFilename); err != nil {
+	if err := cliutil.GetStringInput("filename of rootca for secret (optional)", &input.RootCaFilename); err != nil {
 		return err
 	}
 	if err := cliutil.GetStringInput("filename of privatekey for secret", &input.PrivateKeyFilename); err != nil {
