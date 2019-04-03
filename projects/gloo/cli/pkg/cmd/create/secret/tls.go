@@ -83,9 +83,13 @@ func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsS
 	}
 
 	// read the values
-	rootCa, err := ioutil.ReadFile(input.RootCaFilename)
-	if err != nil {
-		return errors.Wrapf(err, "reading rootca file: %v", input.RootCaFilename)
+	var rootCa []byte
+	if input.RootCaFilename != "" {
+		var err error
+		rootCa, err = ioutil.ReadFile(input.RootCaFilename)
+		if err != nil {
+			return errors.Wrapf(err, "reading rootca file: %v", input.RootCaFilename)
+		}
 	}
 	privateKey, err := ioutil.ReadFile(input.PrivateKeyFilename)
 	if err != nil {
