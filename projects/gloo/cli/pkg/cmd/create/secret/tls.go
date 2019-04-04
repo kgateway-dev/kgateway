@@ -49,6 +49,12 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
+const (
+	tlsPromptRootCa     = "filename of rootca for secret (optional)"
+	tlsPromptPrivateKey = "filename of privatekey for secret"
+	tlsPromptCertChain  = "filename of certchain for secret"
+)
+
 func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) error {
 	if err := cliutil.GetStringInput("filename of rootca for secret (optional)", &input.RootCaFilename); err != nil {
 		return err

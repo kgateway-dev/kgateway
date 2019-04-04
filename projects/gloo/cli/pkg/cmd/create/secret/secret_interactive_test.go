@@ -95,11 +95,11 @@ var _ = Describe("Secret Interactive Mode", func() {
 				c.SendLine(secretNamespace)
 				c.ExpectString(surveyutils.PromptInteractiveResourceName)
 				c.SendLine(secretName)
-				c.ExpectString("filename of rootca for secret")
+				c.ExpectString(tlsPromptRootCa)
 				c.SendLine(rootCa)
-				c.ExpectString("filename of privatekey for secret")
+				c.ExpectString(tlsPromptPrivateKey)
 				c.SendLine(privateKey)
-				c.ExpectString("filename of certchain for secret")
+				c.ExpectString(tlsPromptCertChain)
 				c.SendLine(certChainFilename)
 				c.ExpectEOF()
 			}, func() {
@@ -113,6 +113,7 @@ var _ = Describe("Secret Interactive Mode", func() {
 				}
 				opts, err := runCreateSecretCommand("tls", tlsSecretOpts)
 				Expect(err).NotTo(HaveOccurred())
+				expectMeta(opts.Metadata)
 				Expect(opts.Create.InputSecret.TlsSecret.RootCaFilename).To(Equal(rootCa))
 				Expect(opts.Create.InputSecret.TlsSecret.PrivateKeyFilename).To(Equal(privateKey))
 				Expect(opts.Create.InputSecret.TlsSecret.CertChainFilename).To(Equal(certChainFilename))
