@@ -51,13 +51,16 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
+const (
+	awsPromptAccessKey = "Enter AWS Access Key ID (leave empty to read credentials from ~/.aws/credentials): "
+	awsPromptSecretKey = "Enter AWS Secret Key (leave empty to read credentials from ~/.aws/credentials): "
+)
+
 func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) error {
-	if err := cliutil.GetStringInput("Enter AWS Access Key ID (leave empty to read credentials from "+
-		"~/.aws/credentials): ", &input.AccessKey); err != nil {
+	if err := cliutil.GetStringInput(awsPromptAccessKey, &input.AccessKey); err != nil {
 		return err
 	}
-	if err := cliutil.GetStringInput("Enter AWS Secret Key (leave empty to read credentials from "+
-		"~/.aws/credentials): ", &input.SecretKey); err != nil {
+	if err := cliutil.GetStringInput(awsPromptSecretKey, &input.SecretKey); err != nil {
 		return err
 	}
 

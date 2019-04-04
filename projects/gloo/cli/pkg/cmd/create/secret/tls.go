@@ -3,8 +3,6 @@ package secret
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -15,12 +13,11 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 func tlsCmd(opts *options.Options) *cobra.Command {
-	input := opts.Create.InputSecret.TlsSecret
+	input := &opts.Create.InputSecret.TlsSecret
 	cmd := &cobra.Command{
 		Use:   "tls",
 		Short: `Create a secret with the given name`,
@@ -31,12 +28,12 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := TlsSecretArgsInteractive(&opts.Metadata, &input); err != nil {
+				if err := TlsSecretArgsInteractive(&opts.Metadata, input); err != nil {
 					return err
 				}
 			}
 			// create the secret
-			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, input, opts.Create.DryRun); err != nil {
+			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun); err != nil {
 				return err
 			}
 			return nil
@@ -67,30 +64,10 @@ func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) err
 }
 
 func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun bool) error {
-	if meta.Name == "" {
-		return errors.Errorf("must provide name")
-	}
-	if meta.Namespace == "" {
-		return errors.Errorf("must provide namespace")
-	}
 
 	// read the values
-	var rootCa []byte
-	if input.RootCaFilename != "" {
-		var err error
-		rootCa, err = ioutil.ReadFile(input.RootCaFilename)
-		if err != nil {
-			return errors.Wrapf(err, "reading rootca file: %v", input.RootCaFilename)
-		}
-	}
-	privateKey, err := ioutil.ReadFile(input.PrivateKeyFilename)
-	if err != nil {
-		return errors.Wrapf(err, "reading privatekey file: %v", input.PrivateKeyFilename)
-	}
-	certChain, err := ioutil.ReadFile(input.CertChainFilename)
-	if err != nil {
-		return errors.Wrapf(err, "reading certchain file: %v", input.CertChainFilename)
-	}
+
+	rootCa, privateKey, certChain, err := input.ReadFiles()
 
 	secret := &gloov1.Secret{
 		Metadata: meta,

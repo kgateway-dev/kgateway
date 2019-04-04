@@ -29,40 +29,32 @@ var _ = Describe("Secret Interactive Mode", func() {
 
 	Context("AWS", func() {
 		It("should work", func() {
+			var (
+				accessKey = "foo"
+				secretKey = "foo"
+			)
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(surveyutils.PromptInteractiveNamespace)
 				c.SendLine(secretNamespace)
 				c.ExpectString(surveyutils.PromptInteractiveResourceName)
 				c.SendLine(secretName)
-				c.ExpectString("Enter AWS Access Key ID (leave empty to read credentials from ~/.aws/credentials):")
-				c.SendLine("foo")
-				c.ExpectString("Enter AWS Secret Key (leave empty to read credentials from ~/.aws/credentials):")
-				c.SendLine("bar")
+				c.ExpectString(awsPromptAccessKey)
+				c.SendLine(accessKey)
+				c.ExpectString(awsPromptSecretKey)
+				c.SendLine(secretKey)
 				c.ExpectEOF()
 			}, func() {
-				opts := &options.Options{
-					Top: options.Top{
-						Ctx:         context.Background(),
-						Interactive: true,
-					},
-					Metadata: core.Metadata{},
-					Create: options.Create{
-						InputSecret: options.Secret{
-							AwsSecret: options.AwsSecret{
-								AccessKey: flagDefaultAwsAccessKey,
-								SecretKey: flagDefaultAwsSecretKey,
-							},
-						},
-						DryRun: true,
+				awsSecretOpts := options.Secret{
+					AwsSecret: options.AwsSecret{
+						AccessKey: flagDefaultAwsAccessKey,
+						SecretKey: flagDefaultAwsSecretKey,
 					},
 				}
-				cmd := CreateCmd(opts)
-				cmd.SetArgs([]string{"aws"})
-				err := cmd.Execute()
+				opts, err := runCreateSecretCommand("aws", awsSecretOpts)
 				Expect(err).NotTo(HaveOccurred())
 				expectMeta(opts.Metadata)
-				Expect(opts.Create.InputSecret.AwsSecret.AccessKey).To(Equal("foo"))
-				Expect(opts.Create.InputSecret.AwsSecret.SecretKey).To(Equal("bar"))
+				Expect(opts.Create.InputSecret.AwsSecret.AccessKey).To(Equal(accessKey))
+				Expect(opts.Create.InputSecret.AwsSecret.SecretKey).To(Equal(secretKey))
 			})
 		})
 	})
@@ -99,6 +91,10 @@ var _ = Describe("Secret Interactive Mode", func() {
 				certChainFilename = "baz"
 			)
 			testutil.ExpectInteractive(func(c *testutil.Console) {
+				c.ExpectString(surveyutils.PromptInteractiveNamespace)
+				c.SendLine(secretNamespace)
+				c.ExpectString(surveyutils.PromptInteractiveResourceName)
+				c.SendLine(secretName)
 				c.ExpectString("filename of rootca for secret")
 				c.SendLine(rootCa)
 				c.ExpectString("filename of privatekey for secret")
@@ -107,14 +103,43 @@ var _ = Describe("Secret Interactive Mode", func() {
 				c.SendLine(certChainFilename)
 				c.ExpectEOF()
 			}, func() {
-				var meta core.Metadata
-				var tlsSecret options.TlsSecret
-				err := TlsSecretArgsInteractive(&meta, &tlsSecret)
+				tlsSecretOpts := options.Secret{
+					TlsSecret: options.TlsSecret{
+						RootCaFilename:     "",
+						PrivateKeyFilename: "",
+						CertChainFilename:  "",
+						Mock:               true,
+					},
+				}
+				opts, err := runCreateSecretCommand("tls", tlsSecretOpts)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(tlsSecret.RootCaFilename).To(Equal(rootCa))
-				Expect(tlsSecret.PrivateKeyFilename).To(Equal(privateKey))
-				Expect(tlsSecret.CertChainFilename).To(Equal(certChainFilename))
+				Expect(opts.Create.InputSecret.TlsSecret.RootCaFilename).To(Equal(rootCa))
+				Expect(opts.Create.InputSecret.TlsSecret.PrivateKeyFilename).To(Equal(privateKey))
+				Expect(opts.Create.InputSecret.TlsSecret.CertChainFilename).To(Equal(certChainFilename))
 			})
 		})
 	})
 })
+
+func getMinCreateSecretOptions(secretOpts options.Secret) *options.Options {
+	return &options.Options{
+		Top: options.Top{
+			Ctx: context.Background(),
+			// These are all interactive tests
+			Interactive: true,
+		},
+		Metadata: core.Metadata{},
+		Create: options.Create{
+			InputSecret: secretOpts,
+			// Do not create the resources during the tests
+			DryRun: true,
+		},
+	}
+}
+
+func runCreateSecretCommand(secretType string, secretOpts options.Secret) (*options.Options, error) {
+	opts := getMinCreateSecretOptions(secretOpts)
+	cmd := CreateCmd(opts)
+	cmd.SetArgs([]string{secretType})
+	return opts, cmd.Execute()
+}
