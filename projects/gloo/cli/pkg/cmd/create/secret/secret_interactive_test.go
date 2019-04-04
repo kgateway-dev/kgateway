@@ -1,12 +1,13 @@
-package secret_test
+package secret
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -29,9 +30,9 @@ var _ = Describe("Secret Interactive Mode", func() {
 	Context("AWS", func() {
 		It("should work", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
-				c.ExpectString("Please choose a namespace")
+				c.ExpectString(surveyutils.PromptInteractiveNamespace)
 				c.SendLine(secretNamespace)
-				c.ExpectString("name of secret")
+				c.ExpectString(surveyutils.PromptInteractiveResourceName)
 				c.SendLine(secretName)
 				c.ExpectString("Enter AWS Access Key ID (leave empty to read credentials from ~/.aws/credentials):")
 				c.SendLine("foo")
@@ -39,13 +40,29 @@ var _ = Describe("Secret Interactive Mode", func() {
 				c.SendLine("bar")
 				c.ExpectEOF()
 			}, func() {
-				var meta core.Metadata
-				var awsSecret options.AwsSecret
-				err := secret.AwsSecretArgsInteractive(&meta, &awsSecret)
+				opts := &options.Options{
+					Top: options.Top{
+						Ctx:         context.Background(),
+						Interactive: true,
+					},
+					Metadata: core.Metadata{},
+					Create: options.Create{
+						InputSecret: options.Secret{
+							AwsSecret: options.AwsSecret{
+								AccessKey: flagDefaultAwsAccessKey,
+								SecretKey: flagDefaultAwsSecretKey,
+							},
+						},
+						DryRun: true,
+					},
+				}
+				cmd := CreateCmd(opts)
+				cmd.SetArgs([]string{"aws"})
+				err := cmd.Execute()
 				Expect(err).NotTo(HaveOccurred())
-				expectMeta(meta)
-				Expect(awsSecret.AccessKey).To(Equal("foo"))
-				Expect(awsSecret.SecretKey).To(Equal("bar"))
+				expectMeta(opts.Metadata)
+				Expect(opts.Create.InputSecret.AwsSecret.AccessKey).To(Equal("foo"))
+				Expect(opts.Create.InputSecret.AwsSecret.SecretKey).To(Equal("bar"))
 			})
 		})
 	})
@@ -66,7 +83,7 @@ var _ = Describe("Secret Interactive Mode", func() {
 			}, func() {
 				var meta core.Metadata
 				var azureSecret options.AzureSecret
-				err := secret.AzureSecretArgsInteractive(&meta, &azureSecret)
+				err := AzureSecretArgsInteractive(&meta, &azureSecret)
 				Expect(err).NotTo(HaveOccurred())
 				expectMeta(meta)
 				Expect(azureSecret.ApiKeys.MustMap()).To(BeEquivalentTo(map[string]string{"foo": "bar", "gloo": "baz"}))
@@ -76,27 +93,27 @@ var _ = Describe("Secret Interactive Mode", func() {
 
 	Context("Tls", func() {
 		It("should work", func() {
+			var (
+				rootCa            = "foo"
+				privateKey        = "bar"
+				certChainFilename = "baz"
+			)
 			testutil.ExpectInteractive(func(c *testutil.Console) {
-				c.ExpectString("Please choose a namespace")
-				c.SendLine("gloo-system")
-				c.ExpectString("name of secret")
-				c.SendLine("test-secret")
 				c.ExpectString("filename of rootca for secret")
-				c.SendLine("foo")
+				c.SendLine(rootCa)
 				c.ExpectString("filename of privatekey for secret")
-				c.SendLine("bar")
+				c.SendLine(privateKey)
 				c.ExpectString("filename of certchain for secret")
-				c.SendLine("baz")
+				c.SendLine(certChainFilename)
 				c.ExpectEOF()
 			}, func() {
 				var meta core.Metadata
 				var tlsSecret options.TlsSecret
-				err := secret.TlsSecretArgsInteractive(&meta, &tlsSecret)
+				err := TlsSecretArgsInteractive(&meta, &tlsSecret)
 				Expect(err).NotTo(HaveOccurred())
-				expectMeta(meta)
-				Expect(tlsSecret.RootCaFilename).To(Equal("foo"))
-				Expect(tlsSecret.PrivateKeyFilename).To(Equal("bar"))
-				Expect(tlsSecret.CertChainFilename).To(Equal("baz"))
+				Expect(tlsSecret.RootCaFilename).To(Equal(rootCa))
+				Expect(tlsSecret.PrivateKeyFilename).To(Equal(privateKey))
+				Expect(tlsSecret.CertChainFilename).To(Equal(certChainFilename))
 			})
 		})
 	})

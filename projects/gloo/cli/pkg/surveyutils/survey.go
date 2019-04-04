@@ -2,6 +2,7 @@ package surveyutils
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -79,10 +80,30 @@ func EnsureResourceByName(message string, static bool, source string, target *re
 	return nil
 }
 
+var PromptInteractiveNamespace = "Please choose a namespace"
+
 func InteractiveNamespace(namespace *string) error {
-	nsList := helpers.MustGetNamespaces()
-	if err := cliutil.ChooseFromList("Please choose a namespace", namespace, nsList); err != nil {
-		return err
+	nsList, err := helpers.GetNamespaces()
+	if err != nil {
+		// user may not have permission to list namespaces, let them type the name by hand
+		return cliutil.GetStringInput(PromptInteractiveNamespace, namespace)
 	}
-	return nil
+	return cliutil.ChooseFromList(PromptInteractiveNamespace, namespace, nsList)
+}
+
+// EnsureInteractiveNamespace checks the provided namespace and only prompts for input if the namespace is empty or the flag's default value
+func EnsureInteractiveNamespace(namespace *string) error {
+	if *namespace == "" {
+		return InteractiveNamespace(namespace)
+	}
+	if *namespace == flagutils.DefaultNamespace {
+		var useDefault bool
+		if err := cliutil.ChooseBool(fmt.Sprintf("Use default namespace (%v)?", flagutils.DefaultNamespace), &useDefault); err != nil {
+			return err
+		}
+		if useDefault {
+			return nil
+		}
+	}
+	return InteractiveNamespace(namespace)
 }

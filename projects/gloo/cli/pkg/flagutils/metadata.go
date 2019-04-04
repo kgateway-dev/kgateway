@@ -15,6 +15,9 @@ func addNameFlag(set *pflag.FlagSet, strptr *string) {
 	set.StringVar(strptr, "name", "", "name of the resource to read or write")
 }
 
+// DefaultNamespace wraps defaults.GlooSystem to separate global Gloo defaults from glooctl flags
+var DefaultNamespace = defaults.GlooSystem
+
 func AddNamespaceFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVarP(strptr, "namespace", "n", defaults.GlooSystem, "namespace for reading or writing resources")
+	set.StringVarP(strptr, "namespace", "n", DefaultNamespace, "namespace for reading or writing resources")
 }

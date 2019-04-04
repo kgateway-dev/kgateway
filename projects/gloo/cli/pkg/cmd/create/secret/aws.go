@@ -3,22 +3,25 @@ package secret
 import (
 	"context"
 	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
 )
 
+var (
+	flagDefaultAwsAccessKey = ""
+	flagDefaultAwsSecretKey = ""
+)
+
 func awsCmd(opts *options.Options) *cobra.Command {
-	input := opts.Create.InputSecret.AwsSecret
+	input := &opts.Create.InputSecret.AwsSecret
 	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: `Create an AWS secret with the given name`,
@@ -29,12 +32,12 @@ func awsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := AwsSecretArgsInteractive(&opts.Metadata, &input); err != nil {
+				if err := AwsSecretArgsInteractive(&opts.Metadata, input); err != nil {
 					return err
 				}
 			}
 			// create the secret
-			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, input, opts.Create.DryRun); err != nil {
+			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun); err != nil {
 				return err
 			}
 			return nil
@@ -42,21 +45,13 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&input.AccessKey, "access-key", "", "aws access key")
-	flags.StringVar(&input.SecretKey, "secret-key", "", "aws secret key")
+	flags.StringVar(&input.AccessKey, "access-key", flagDefaultAwsAccessKey, "aws access key")
+	flags.StringVar(&input.SecretKey, "secret-key", flagDefaultAwsSecretKey, "aws secret key")
 
 	return cmd
 }
 
 func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) error {
-	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
-		return err
-	}
-
-	if err := cliutil.GetStringInput("name of secret", &meta.Name); err != nil {
-		return err
-	}
-
 	if err := cliutil.GetStringInput("Enter AWS Access Key ID (leave empty to read credentials from "+
 		"~/.aws/credentials): ", &input.AccessKey); err != nil {
 		return err
