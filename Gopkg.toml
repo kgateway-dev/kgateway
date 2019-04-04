@@ -77,3 +77,4 @@
 [[override]]
   name = "github.com/lyft/protoc-gen-validate"
   version = "0.0.6"
+  source = "github.com/envoyproxy/protoc-gen-validate"
