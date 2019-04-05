@@ -128,10 +128,10 @@ var _ = Describe("Root", func() {
 
 		It("should enabled ssl on upstream", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
+				c.ExpectString("Use default namespace (gloo-system)?")
+				c.SendLine("yes")
 				c.ExpectString("name of the resource:")
 				c.SendLine("up")
-				c.ExpectString("name of the resource:")
-				c.SendLine("gloo-system")
 				c.ExpectString("name of the ssl secret for this upstream:")
 				c.SendLine("sslname")
 				c.ExpectString("namespace of the ssl secret for this upstream:")
