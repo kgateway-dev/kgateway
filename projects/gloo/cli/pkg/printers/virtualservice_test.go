@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"strings"
 )
 
 var _ = Describe("getVirtualServiceStatus", func() {
@@ -94,7 +95,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		out := getVirtualServiceStatus(vs)
-		Expect(out).To(Equal(fmt.Sprintf("%v %v: %v", thing1, core.Status_Rejected, reasonUntracked)))
+		Expect(out).To(Equal(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 
 		By("two rejected")
 		subStatuses = map[string]*core.Status{
@@ -116,7 +117,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 
 	It("handles Accepted state - sub resources errored in known way", func() {
 		erroredResourceIdentifier := "some_errored_resource_id"
-		reasonUpstreamList := fmt.Sprintf("%v: %v", gloov1.UpstreamListErrorTag, erroredResourceIdentifier)
+		reasonUpstreamList := fmt.Sprintf("%v: %v", strings.TrimSpace(gloov1.UpstreamListErrorTag), erroredResourceIdentifier)
 		By("one rejected")
 		subStatuses := map[string]*core.Status{
 			thing1: {
@@ -131,7 +132,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		out := getVirtualServiceStatus(vs)
-		Expect(out).To(Equal(knownErrorFormatRoute(reasonUpstreamList)))
+		Expect(out).To(Equal(subResourceErrorFormat(erroredResourceIdentifier)))
 
 		By("one accepted, one rejected")
 		subStatuses = map[string]*core.Status{
@@ -165,12 +166,3 @@ var _ = Describe("getVirtualServiceStatus", func() {
 		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUpstreamList)))
 	})
 })
-
-// Helpers
-
-func genericErrorFormat(resourceName, statusString, reason string) string {
-	return fmt.Sprintf("%v %v: %v", resourceName, statusString, reason)
-}
-func knownErrorFormatRoute(reason string) string {
-	return fmt.Sprintf("Error with Route: %v", reason)
-}

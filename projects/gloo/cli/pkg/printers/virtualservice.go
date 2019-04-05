@@ -85,7 +85,7 @@ func cleanVirtualServiceSubResourceError(eMsg string) string {
 	if len(parts) == 2 {
 		// if here, eMsg ~= "<preamble><well_known_error_string><error_details>"
 		errorDetails := parts[1]
-		return fmt.Sprintf("Error with Route: %v%v", gloov1.UpstreamListErrorTag, errorDetails)
+		return subResourceErrorFormat(errorDetails)
 	}
 	return eMsg
 }
@@ -161,4 +161,14 @@ func sslConfig(v *v1.VirtualService) string {
 			return "unknown"
 		}
 	}
+}
+
+func genericErrorFormat(resourceName, statusString, reason string) string {
+	return fmt.Sprintf("%v %v: %v",
+		strings.TrimSpace(resourceName),
+		strings.TrimSpace(statusString),
+		strings.TrimSpace(reason))
+}
+func subResourceErrorFormat(errorDetails string) string {
+	return fmt.Sprintf("Error with Route: %v: %v", strings.TrimSpace(gloov1.UpstreamListErrorTag), strings.TrimPrefix(errorDetails, ": "))
 }
