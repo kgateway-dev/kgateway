@@ -214,7 +214,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 		// sort refs for idempotency
 		sort.Slice(refs, func(i, j int) bool { return refs[i].Key() < refs[j].Key() })
 
-		hash, _ := hashstructure.Hash([]interface{}{addr}, nil)
+		hash, _ := hashstructure.Hash(addr, nil)
 		dnsname := strings.Map(func(r rune) rune {
 			if '0' <= r && r <= '9' {
 				return r
@@ -279,7 +279,7 @@ func getPodForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (*
 			continue
 		}
 		if pod.Spec.HostNetwork {
-			// we cant tell pods apart if they are all on the host netwrok.
+			// we cant tell pods apart if they are all on the host network.
 			continue
 		}
 		return pod, nil
