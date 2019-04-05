@@ -2,6 +2,7 @@ package secret
 
 import (
 	"context"
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
@@ -61,24 +62,45 @@ var _ = Describe("Secret Interactive Mode", func() {
 
 	Context("Azure", func() {
 		// TODO: https://github.com/solo-io/gloo/issues/387, see comment below
-		PIt("should work", func() {
+		// This test passes, but the key=value input is very fragile
+		It("should work", func() {
+			var (
+				key1 = "Key1"
+				val1 = "Val1"
+				key2 = "Key2"
+				val2 = "Val2"
+			)
 			testutil.ExpectInteractive(func(c *testutil.Console) {
-				c.ExpectString("Please choose a namespace")
-				c.SendLine("gloo-system")
-				c.ExpectString("name of secret")
-				c.SendLine("test-secret")
-				c.ExpectString("Enter API key entry (key=value)")
-				c.SendLine("foo=bar") // need to find a solution to the idiosyncrasy of slice input
-				c.SendLine("gloo=baz")
+				c.ExpectString(surveyutils.PromptInteractiveNamespace)
+				c.SendLine(secretNamespace)
+				c.ExpectString(surveyutils.PromptInteractiveResourceName)
+				c.SendLine(secretName)
+
+				c.ExpectString(azurePromptApiKeys)
+				c.SendLine(fmt.Sprintf("%v=%v", key1, val1))
+
+				c.ExpectString(azurePromptApiKeys)
+				c.SendLine(fmt.Sprintf("%v=%v", key2, val2))
+
+				c.ExpectString(azurePromptApiKeys)
+				c.SendLine(`doesNotComeThrough=needsInvestigation`) // need to find a solution to the idiosyncrasy of slice input
+
+				c.ExpectString(azurePromptApiKeys)
 				c.SendLine("")
 				c.ExpectEOF()
 			}, func() {
-				var meta core.Metadata
-				var azureSecret options.AzureSecret
-				err := AzureSecretArgsInteractive(&meta, &azureSecret)
+				azureSecretOpts := options.Secret{
+					AzureSecret: options.AzureSecret{
+						ApiKeys: options.InputMapStringString{},
+					},
+				}
+				opts, err := runCreateSecretCommand("azure", azureSecretOpts)
 				Expect(err).NotTo(HaveOccurred())
-				expectMeta(meta)
-				Expect(azureSecret.ApiKeys.MustMap()).To(BeEquivalentTo(map[string]string{"foo": "bar", "gloo": "baz"}))
+				expectMeta(opts.Metadata)
+				// This test passes, however, if the pseudoterminal used in testing behaved in the same way as the real
+				// terminals used in testing it would fail.
+				// In a real terminal, the "doesNotComeThrough": "needsInvestigation" key-value pair would be included.
+				Expect(opts.Create.InputSecret.AzureSecret.ApiKeys.MustMap()).To(BeEquivalentTo(map[string]string{key1: val1, key2: val2}))
 			})
 		})
 	})

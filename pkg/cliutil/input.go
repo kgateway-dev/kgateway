@@ -2,10 +2,9 @@ package cliutil
 
 import (
 	"fmt"
+	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
 	"strings"
-
-	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
 func GetYesInput(msg string) (bool, error) {
@@ -70,19 +69,17 @@ func GetBoolInputDefault(msg string, value *bool, defaultValue bool) error {
 }
 
 func GetStringSliceInput(msg string, value *[]string) error {
-	prompt := &survey.Input{Message: msg}
-	var lastChoice string
 	for {
-		if err := AskOne(prompt, &lastChoice, nil); err != nil {
+		var entry string
+		if err := GetStringInput(msg, &entry); err != nil {
 			return err
 		}
 
-		if lastChoice == "" {
-			break
+		if entry == "" {
+			return nil
 		}
-		*value = append(*value, lastChoice)
+		*value = append(*value, entry)
 	}
-	return nil
 }
 
 func ChooseFromList(message string, choice *string, options []string) error {
