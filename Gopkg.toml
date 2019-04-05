@@ -3,8 +3,9 @@
   unused-packages = true
 
 [[constraint]]
-  version = "0.6.9"
+  version = "0.6.11"
   name = "github.com/envoyproxy/go-control-plane"
+  source = "github.com/yuval-k/go-control-plane"
 
 [[constraint]]
   version = "1.1.1"

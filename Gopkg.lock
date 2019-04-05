@@ -319,7 +319,7 @@
   revision = "6480d4af844c189cf5dd913db24ddd339d3a4f85"
 
 [[projects]]
-  digest = "1:337b6710f93230615f6008cae18120743c963b887a57a4ad52d68fb71bb51a62"
+  digest = "1:cd6daa6250a3b713f625f8eea5a296e683ba76a0c0cd9ae60858fa84ad09a1d3"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -338,7 +338,6 @@
     "envoy/config/grpc_credential/v2alpha",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
-    "envoy/config/ratelimit/v2",
     "envoy/config/trace/v2",
     "envoy/service/discovery/v2",
     "envoy/type",
@@ -346,8 +345,9 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "0ad6fa1cf0b9b6ca8f3617a7188a568e81f40b87"
-  version = "v0.6.9"
+  revision = "5ac1f5e0a972ec8168f315554c53a054a5286b23"
+  source = "github.com/yuval-k/go-control-plane"
+  version = "v0.6.11"
 
 [[projects]]
   digest = "1:f1f2bd73c025d24c3b93abf6364bccb802cf2fdedaa44360804c67800e8fab8d"
@@ -1121,6 +1121,7 @@
   packages = ["validate"]
   pruneopts = "UT"
   revision = "930a67cf7ba41b9d9436ad7a1be70a5d5ff6e1fc"
+  source = "github.com/envoyproxy/protoc-gen-validate"
   version = "v0.0.6"
 
 [[projects]]
