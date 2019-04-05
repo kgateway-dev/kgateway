@@ -1,8 +1,9 @@
 package options
 
 import (
-	"github.com/solo-io/solo-kit/pkg/errors"
 	"io/ioutil"
+
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 type Secret struct {
