@@ -1,6 +1,7 @@
 package options
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -32,9 +33,17 @@ type TlsSecret struct {
 
 // ReadFiles provides a way to sidestep file io during testing
 func (t *TlsSecret) ReadFiles() (string, string, string, error) {
+	// short circuit if testing
 	if t.Mock {
 		return t.RootCaFilename, t.PrivateKeyFilename, t.CertChainFilename, nil
 	}
+
+	// ensure that the key pair is valid
+	if err := t.validateKeyPair(); err != nil {
+		return "", "", "", errors.Wrapf(err, "invalid key pair (cert chain file: %v, private key file: %v)", t.CertChainFilename, t.PrivateKeyFilename)
+	}
+
+	// read files
 	var rootCa []byte
 	if t.RootCaFilename != "" {
 		var err error
@@ -51,5 +60,13 @@ func (t *TlsSecret) ReadFiles() (string, string, string, error) {
 	if err != nil {
 		return "", "", "", errors.Wrapf(err, "reading cert chain file: %v", t.CertChainFilename)
 	}
+
 	return string(rootCa), string(privateKey), string(certChain), nil
+}
+
+func (t *TlsSecret) validateKeyPair() error {
+	if _, err := tls.LoadX509KeyPair(t.CertChainFilename, t.PrivateKeyFilename); err != nil {
+		return err
+	}
+	return nil
 }
