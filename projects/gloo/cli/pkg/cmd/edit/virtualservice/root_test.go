@@ -114,10 +114,10 @@ var _ = Describe("Root", func() {
 
 		It("should enabled ssl on virtual service", func() {
 			testutil.ExpectInteractive(func(c *testutil.Console) {
+				c.ExpectString("Use default namespace (gloo-system)?")
+				c.SendLine("yes")
 				c.ExpectString("name of the resource:")
 				c.SendLine("vs")
-				c.ExpectString("name of the resource:")
-				c.SendLine("gloo-system")
 				c.ExpectString("name of the ssl secret for this virtual service:")
 				c.SendLine("sslname")
 				c.ExpectString("namespace of the ssl secret for this virtual service:")
