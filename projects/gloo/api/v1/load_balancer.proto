@@ -20,7 +20,7 @@ message LoadBalancerConfig {
 
     // This allows batch updates of endspoints helth/weight/metadata that happen during a time window.
     // this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
-    // Set to 0 to disable and have changes applied immediatly.
+    // Set to 0 to disable and have changes applied immediately.
     google.protobuf.Duration update_merge_window = 2 [ (gogoproto.stdduration) = true ];
 
     message RoundRobin {}

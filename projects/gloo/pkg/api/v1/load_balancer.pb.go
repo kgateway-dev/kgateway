@@ -35,7 +35,7 @@ type LoadBalancerConfig struct {
 	HealthyPanicThreshold *types.DoubleValue `protobuf:"bytes,1,opt,name=healthy_panic_threshold,json=healthyPanicThreshold,proto3" json:"healthy_panic_threshold,omitempty"`
 	// This allows batch updates of endspoints helth/weight/metadata that happen during a time window.
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
-	// Set to 0 to disable and have changes applied immediatly.
+	// Set to 0 to disable and have changes applied immediately.
 	UpdateMergeWindow *time.Duration `protobuf:"bytes,2,opt,name=update_merge_window,json=updateMergeWindow,proto3,stdduration" json:"update_merge_window,omitempty"`
 	// Types that are valid to be assigned to Type:
 	//	*LoadBalancerConfig_RoundRobin_
