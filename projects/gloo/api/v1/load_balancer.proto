@@ -1,0 +1,33 @@
+syntax = "proto3";
+package gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+option (gogoproto.equal_all) = true;
+
+
+
+// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+// See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+// for the meaning of these values.
+message LoadBalancerConfig {
+    // percent betwee 0-100.
+    google.protobuf.DoubleValue healthy_panic_threshold = 1;
+    google.protobuf.Duration update_merge_window = 2 [ (gogoproto.stdduration) = true ];
+
+    message RoundRobin {}
+    message LeastRequest {
+        uint32 choice_count = 1;
+    }
+    message Random {}
+
+    oneof type {
+        RoundRobin round_robin = 3;
+        LeastRequest least_request = 4;
+        Random random = 5;
+    }
+
+}

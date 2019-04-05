@@ -218,6 +218,9 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if desired.UpstreamSpec.CircuitBreakers == nil {
 		desired.UpstreamSpec.CircuitBreakers = original.UpstreamSpec.CircuitBreakers
 	}
+	if desired.UpstreamSpec.LoadBalancerConfig == nil {
+		desired.UpstreamSpec.LoadBalancerConfig = original.UpstreamSpec.LoadBalancerConfig
+	}
 
 	if desiredSubsetMutator, ok := desired.UpstreamSpec.UpstreamType.(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {

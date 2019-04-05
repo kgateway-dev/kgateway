@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -27,6 +28,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 	reg := &registry{}
 	// plugins should be added here
 	reg.plugins = append(reg.plugins,
+		loadbalancer.NewPlugin(),
 		upstreamssl.NewPlugin(),
 		azure.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter),

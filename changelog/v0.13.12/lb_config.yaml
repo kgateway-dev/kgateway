@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow configuring upstream load balancer settings.
+    issueLink: https://github.com/solo-io/gloo/issues/652
