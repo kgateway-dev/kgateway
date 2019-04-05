@@ -57,17 +57,6 @@ var _ = Describe("Plugin", func() {
 		Expect(out.CommonLbConfig.UpdateMergeWindow.Nanos).To(BeEquivalentTo(0))
 	})
 
-	It("should set UpdateMergeWindow", func() {
-		t := time.Second
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
-			UpdateMergeWindow: &t,
-		}
-		err := plugin.ProcessUpstream(params, upstream, out)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(out.CommonLbConfig.UpdateMergeWindow.Seconds).To(BeEquivalentTo(1))
-		Expect(out.CommonLbConfig.UpdateMergeWindow.Nanos).To(BeEquivalentTo(0))
-	})
-
 	It("should set lb policy random", func() {
 		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_Random_{
