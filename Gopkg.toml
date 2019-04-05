@@ -73,3 +73,8 @@
 [[override]]
   name = "k8s.io/helm"
   version = "v2.12.3"
+
+[[override]]
+  name = "github.com/lyft/protoc-gen-validate"
+  version = "0.0.6"
+  source = "github.com/envoyproxy/protoc-gen-validate"
