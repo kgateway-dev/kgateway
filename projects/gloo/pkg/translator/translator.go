@@ -1,7 +1,7 @@
 package translator
 
 import (
-	"fmt"
+	fmt "fmt"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/mitchellh/hashstructure"
@@ -170,17 +170,30 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versionining algorithm
-	version, err := hashstructure.Hash([][]envoycache.Resource{
-		endpointsProto,
-		clustersProto,
-		routesProto,
-		listenersProto,
-	}, nil)
+	endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
 	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for envoy snapshot components"))
+		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
 	}
 
-	return xds.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
+	clustersVersion, err := hashstructure.Hash(clustersProto, nil)
+	if err != nil {
+		panic(errors.Wrap(err, "constructing version hash for clusters envoy snapshot components"))
+	}
+
+	routesVersion, err := hashstructure.Hash(routesProto, nil)
+	if err != nil {
+		panic(errors.Wrap(err, "constructing version hash for routes envoy snapshot components"))
+	}
+
+	listenersVersion, err := hashstructure.Hash(listenersProto, nil)
+	if err != nil {
+		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
+	}
+
+	return xds.NewSnapshotFromResources(envoycache.NewResources(fmt.Sprintf("%v", endpointsVersion), endpointsProto),
+		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
+		envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto),
+		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
 func deduplicateClusters(clusters []*envoyapi.Cluster) []*envoyapi.Cluster {

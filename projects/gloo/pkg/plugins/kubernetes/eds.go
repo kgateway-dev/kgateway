@@ -18,6 +18,7 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	kubelettypes "k8s.io/kubernetes/pkg/kubelet/types"
 )
 
 var _ discovery.DiscoveryPlugin = new(plugin)
@@ -255,9 +256,18 @@ func getPodLabelsForIp(ip string, pods []*kubev1.Pod) (map[string]string, error)
 
 func getPodForIp(ip string, pods []*kubev1.Pod) (*kubev1.Pod, error) {
 	for _, pod := range pods {
-		if pod.Status.PodIP == ip && pod.Status.Phase == kubev1.PodRunning {
-			return pod, nil
+		if pod.Status.PodIP != ip {
+			continue
 		}
+		if pod.Status.Phase != kubev1.PodRunning {
+			continue
+		}
+		if pod.Annotations != nil {
+			if pod.Annotations[kubelettypes.ConfigSourceAnnotationKey] == kubelettypes.FileSource {
+				continue
+			}
+		}
+		return pod, nil
 	}
 	return nil, errors.Errorf("running pod not found with ip %v", ip)
 }
