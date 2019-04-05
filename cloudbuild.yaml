@@ -203,4 +203,4 @@ secrets:
 timeout: 3600s
 tags: ['gloo']
 options:
-  machineType: 'N1_HIGHCPU_8'
+  machineType: 'N1_HIGHCPU_32'
