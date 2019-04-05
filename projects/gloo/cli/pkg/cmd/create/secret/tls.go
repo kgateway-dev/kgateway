@@ -75,6 +75,9 @@ func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsS
 	// read the values
 
 	rootCa, privateKey, certChain, err := input.ReadFiles()
+	if err != nil {
+		return err
+	}
 
 	secret := &gloov1.Secret{
 		Metadata: meta,
