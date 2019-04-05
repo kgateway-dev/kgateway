@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Ignore pods in the host network to prevent duplicate pods detected. Use targetRef when we can. Use per-resource envoy version for XDS snapshot.
