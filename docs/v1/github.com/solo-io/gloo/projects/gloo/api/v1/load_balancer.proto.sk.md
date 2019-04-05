@@ -29,9 +29,8 @@ weight: 5
 ### LoadBalancerConfig
 
  
-SslConfig contains the options necessary to configure a virtual host or listener to use TLS
-See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
-for the meaning of these values.
+LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream 
+endpoints.
 
 ```yaml
 "healthyPanicThreshold": .google.protobuf.DoubleValue
@@ -44,11 +43,11 @@ for the meaning of these values.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `healthyPanicThreshold` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | percent betwee 0-100. |  |
-| `updateMergeWindow` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk#roundrobin) |  |  |
-| `leastRequest` | [.gloo.solo.io.LoadBalancerConfig.LeastRequest](../load_balancer.proto.sk#leastrequest) |  |  |
-| `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk#random) |  |  |
+| `healthyPanicThreshold` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts reaches this percentage, envoy disregards health information. see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold). |  |
+| `updateMergeWindow` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | This allows batch updates of endspoints helth/weight/metadata that happen during a time window. this help lower cpu usage when endpoint change rate is high. defaults to 1 second. Set to 0 to disable and have changes applied immediatly. |  |
+| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk#roundrobin) | Use round robin for load balancing. |  |
+| `leastRequest` | [.gloo.solo.io.LoadBalancerConfig.LeastRequest](../load_balancer.proto.sk#leastrequest) | Use least request for load balancing. |  |
+| `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk#random) | Use random for load balancing. |  |
 
 
 
@@ -80,7 +79,7 @@ for the meaning of these values.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `choiceCount` | `int` |  |  |
+| `choiceCount` | `int` | How many choices to take into account. defaults to 2. |  |
 
 
 

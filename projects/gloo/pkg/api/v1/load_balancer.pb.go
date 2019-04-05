@@ -26,13 +26,17 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
-// See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
-// for the meaning of these values.
+// LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream
+// endpoints.
 type LoadBalancerConfig struct {
-	// percent betwee 0-100.
+	// Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts
+	// reaches this percentage, envoy disregards health information.
+	// see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold).
 	HealthyPanicThreshold *types.DoubleValue `protobuf:"bytes,1,opt,name=healthy_panic_threshold,json=healthyPanicThreshold,proto3" json:"healthy_panic_threshold,omitempty"`
-	UpdateMergeWindow     *time.Duration     `protobuf:"bytes,2,opt,name=update_merge_window,json=updateMergeWindow,proto3,stdduration" json:"update_merge_window,omitempty"`
+	// This allows batch updates of endspoints helth/weight/metadata that happen during a time window.
+	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
+	// Set to 0 to disable and have changes applied immediatly.
+	UpdateMergeWindow *time.Duration `protobuf:"bytes,2,opt,name=update_merge_window,json=updateMergeWindow,proto3,stdduration" json:"update_merge_window,omitempty"`
 	// Types that are valid to be assigned to Type:
 	//	*LoadBalancerConfig_RoundRobin_
 	//	*LoadBalancerConfig_LeastRequest_
@@ -252,6 +256,7 @@ func (m *LoadBalancerConfig_RoundRobin) XXX_DiscardUnknown() {
 var xxx_messageInfo_LoadBalancerConfig_RoundRobin proto.InternalMessageInfo
 
 type LoadBalancerConfig_LeastRequest struct {
+	// How many choices to take into account. defaults to 2.
 	ChoiceCount          uint32   `protobuf:"varint,1,opt,name=choice_count,json=choiceCount,proto3" json:"choice_count,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

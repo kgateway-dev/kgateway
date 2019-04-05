@@ -10,23 +10,32 @@ option (gogoproto.equal_all) = true;
 
 
 
-// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
-// See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
-// for the meaning of these values.
+// LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream 
+// endpoints.
 message LoadBalancerConfig {
-    // percent betwee 0-100.
+    // Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts
+    // reaches this percentage, envoy disregards health information.
+    // see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold).
     google.protobuf.DoubleValue healthy_panic_threshold = 1;
+
+    // This allows batch updates of endspoints helth/weight/metadata that happen during a time window.
+    // this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
+    // Set to 0 to disable and have changes applied immediatly.
     google.protobuf.Duration update_merge_window = 2 [ (gogoproto.stdduration) = true ];
 
     message RoundRobin {}
     message LeastRequest {
+        // How many choices to take into account. defaults to 2.
         uint32 choice_count = 1;
     }
     message Random {}
 
     oneof type {
+        // Use round robin for load balancing.
         RoundRobin round_robin = 3;
+        // Use least request for load balancing.
         LeastRequest least_request = 4;
+        // Use random for load balancing.
         Random random = 5;
     }
 
