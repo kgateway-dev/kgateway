@@ -18,7 +18,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	kubelettypes "k8s.io/kubernetes/pkg/kubelet/types"
 )
 
 var _ discovery.DiscoveryPlugin = new(plugin)
@@ -282,11 +281,6 @@ func getPodForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (*
 		if pod.Spec.HostNetwork {
 			// we cant tell pods apart if they are all on the host netwrok.
 			continue
-		}
-		if pod.Annotations != nil {
-			if pod.Annotations[kubelettypes.ConfigSourceAnnotationKey] == kubelettypes.FileSource {
-				continue
-			}
 		}
 		return pod, nil
 	}
