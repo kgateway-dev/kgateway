@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	. "github.com/onsi/gomega"
 	"os"
 	"regexp"
 	"runtime/debug"
 	"testing"
+
+	. "github.com/onsi/gomega"
 
 	. "github.com/onsi/ginkgo"
 
