@@ -28,5 +28,8 @@ spec:
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}
   {{- end }}
+  {{- if and (eq $spec.service.type "LoadBalancer") $spec.service.loadBalancerIP }}
+  loadBalancerIP: {{ $spec.service.loadBalancerIP }}
+  {{- end }}
 {{- end }}
 {{- end }}
