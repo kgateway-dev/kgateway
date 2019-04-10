@@ -1518,7 +1518,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:61793bf35b1192dbfdf70acee4b2225f5b6a8c5175078d853e79e4d3b259bdd6"
+  digest = "1:3364587e9f9b73175bc29ec8ba579559039b886edd3aa3f318d9b8d01ed0ba2c"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1571,8 +1571,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "f97984e35525891fe25ddb5a328177325230bc02"
-  version = "v0.5.1"
+  revision = "584c3d544e0d77f4f33438eaf6428f4318b9d233"
+  version = "v0.5.2"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2598,7 +2598,6 @@
     "github.com/solo-io/solo-kit/pkg/utils/hashutils",
     "github.com/solo-io/solo-kit/pkg/utils/kubeutils",
     "github.com/solo-io/solo-kit/pkg/utils/log",
-    "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/pkg/utils/stats",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
