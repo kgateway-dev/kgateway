@@ -15,10 +15,31 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 )
+
+var (
+	envoySnapshotOut   = stats.Int64("api.gloo.solo.io/translator/resources", "The number of resources in the snapshot in", "1")
+	resourceNameKey, _ = tag.NewKey("resource")
+
+	apisnapshotInView = &view.View{
+		Name:        "api.gloo.solo.io/translator/endpoints",
+		Measure:     envoySnapshotOut,
+		Description: "The number of resources in the snapshot for envoy",
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{proxyNameKey, resourceNameKey},
+	}
+)
+
+func measureResource(ctx context.Context, resource string, len int) {
+	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
+		stats.Record(ctxWithTags, envoySnapshotOut.M(int64(len)))
+	}
+}
 
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) error {
 
@@ -70,11 +91,21 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			return err
 		}
 
+		clustersLen := len(xdsSnapshot.GetResources(xds.ClusterType).Items)
+		listenersLen := len(xdsSnapshot.GetResources(xds.ListenerType).Items)
+		routesLen := len(xdsSnapshot.GetResources(xds.RouteType).Items)
+		endpointsLen := len(xdsSnapshot.GetResources(xds.EndpointType).Items)
+
+		measureResource(proxyCtx, "clusters", clustersLen)
+		measureResource(proxyCtx, "listeners", listenersLen)
+		measureResource(proxyCtx, "routes", routesLen)
+		measureResource(proxyCtx, "endpoints", endpointsLen)
+
 		logger.Infow("Setting xDS Snapshot", "key", key,
-			"clusters", len(xdsSnapshot.GetResources(xds.ClusterType).Items),
-			"listeners", len(xdsSnapshot.GetResources(xds.ListenerType).Items),
-			"routes", len(xdsSnapshot.GetResources(xds.RouteType).Items),
-			"endpoints", len(xdsSnapshot.GetResources(xds.EndpointType).Items))
+			"clusters", clustersLen,
+			"listeners", listenersLen,
+			"routes", routesLen,
+			"endpoints", endpointsLen)
 
 		logger.Debugf("Full snapshot for proxy %v: %v", proxy.Metadata.Name, xdsSnapshot)
 	}
