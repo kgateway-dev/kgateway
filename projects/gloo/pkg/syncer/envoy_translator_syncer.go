@@ -26,14 +26,18 @@ var (
 	envoySnapshotOut   = stats.Int64("api.gloo.solo.io/translator/resources", "The number of resources in the snapshot in", "1")
 	resourceNameKey, _ = tag.NewKey("resource")
 
-	apisnapshotInView = &view.View{
-		Name:        "api.gloo.solo.io/translator/endpoints",
+	envoySnapshotOutView = &view.View{
+		Name:        "api.gloo.solo.io/translator/resources",
 		Measure:     envoySnapshotOut,
 		Description: "The number of resources in the snapshot for envoy",
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{proxyNameKey, resourceNameKey},
 	}
 )
+
+func init() {
+	view.Register(envoySnapshotOutView)
+}
 
 func measureResource(ctx context.Context, resource string, len int) {
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
