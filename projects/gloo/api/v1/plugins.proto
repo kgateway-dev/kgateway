@@ -11,6 +11,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
@@ -82,6 +83,7 @@ message UpstreamSpec {
     // will be used.
     CircuitBreakerConfig circuit_breakers = 7;
     LoadBalancerConfig load_balancer_config = 8;
+    ConnectionConfig connection_config = 9;
 
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.

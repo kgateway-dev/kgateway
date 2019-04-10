@@ -221,6 +221,9 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if desired.UpstreamSpec.LoadBalancerConfig == nil {
 		desired.UpstreamSpec.LoadBalancerConfig = original.UpstreamSpec.LoadBalancerConfig
 	}
+	if desired.UpstreamSpec.ConnectionConfig == nil {
+		desired.UpstreamSpec.ConnectionConfig = original.UpstreamSpec.ConnectionConfig
+	}
 
 	if desiredSubsetMutator, ok := desired.UpstreamSpec.UpstreamType.(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {
