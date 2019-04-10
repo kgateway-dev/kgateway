@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,14 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewSecret(namespace, name string) *Secret {
-	return &Secret{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	secret := &Secret{}
+	secret.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return secret
 }
 
 func (r *Secret) SetMetadata(meta core.Metadata) {
@@ -44,8 +42,8 @@ type SecretsByNamespace map[string]SecretList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list SecretList) Find(namespace, name string) (*Secret, error) {
 	for _, secret := range list {
-		if secret.Metadata.Name == name {
-			if namespace == "" || secret.Metadata.Namespace == namespace {
+		if secret.GetMetadata().Name == name {
+			if namespace == "" || secret.GetMetadata().Namespace == namespace {
 				return secret, nil
 			}
 		}
@@ -64,7 +62,7 @@ func (list SecretList) AsResources() resources.ResourceList {
 func (list SecretList) Names() []string {
 	var names []string
 	for _, secret := range list {
-		names = append(names, secret.Metadata.Name)
+		names = append(names, secret.GetMetadata().Name)
 	}
 	return names
 }
@@ -72,14 +70,14 @@ func (list SecretList) Names() []string {
 func (list SecretList) NamespacesDotNames() []string {
 	var names []string
 	for _, secret := range list {
-		names = append(names, secret.Metadata.Namespace+"."+secret.Metadata.Name)
+		names = append(names, secret.GetMetadata().Namespace+"."+secret.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list SecretList) Sort() SecretList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -87,7 +85,7 @@ func (list SecretList) Sort() SecretList {
 func (list SecretList) Clone() SecretList {
 	var secretList SecretList
 	for _, secret := range list {
-		secretList = append(secretList, proto.Clone(secret).(*Secret))
+		secretList = append(secretList, resources.Clone(secret).(*Secret))
 	}
 	return secretList
 }
@@ -108,7 +106,7 @@ func (list SecretList) AsInterfaces() []interface{} {
 
 func (byNamespace SecretsByNamespace) Add(secret ...*Secret) {
 	for _, item := range secret {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

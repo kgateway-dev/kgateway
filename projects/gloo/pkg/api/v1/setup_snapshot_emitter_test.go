@@ -57,6 +57,7 @@ var _ = Describe("V1Emitter", func() {
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
+
 		settingsClient, err = NewSettingsClient(settingsClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewSetupEmitter(settingsClient)
@@ -88,12 +89,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSettings {
-						if _, err := snap.Settings.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Settings.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSettings {
-						if _, err := snap.Settings.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Settings.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -124,16 +125,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotSettings(SettingsList{settings1a, settings1b, settings2a, settings2b}, nil)
 
-		err = settingsClient.Delete(settings2a.Metadata.Namespace, settings2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings2a.GetMetadata().Namespace, settings2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = settingsClient.Delete(settings2b.Metadata.Namespace, settings2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings2b.GetMetadata().Namespace, settings2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSettings(SettingsList{settings1a, settings1b}, SettingsList{settings2a, settings2b})
 
-		err = settingsClient.Delete(settings1a.Metadata.Namespace, settings1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings1a.GetMetadata().Namespace, settings1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = settingsClient.Delete(settings1b.Metadata.Namespace, settings1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings1b.GetMetadata().Namespace, settings1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSettings(nil, SettingsList{settings1a, settings1b, settings2a, settings2b})
@@ -161,12 +162,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSettings {
-						if _, err := snap.Settings.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Settings.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSettings {
-						if _, err := snap.Settings.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Settings.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -197,16 +198,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotSettings(SettingsList{settings1a, settings1b, settings2a, settings2b}, nil)
 
-		err = settingsClient.Delete(settings2a.Metadata.Namespace, settings2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings2a.GetMetadata().Namespace, settings2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = settingsClient.Delete(settings2b.Metadata.Namespace, settings2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings2b.GetMetadata().Namespace, settings2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSettings(SettingsList{settings1a, settings1b}, SettingsList{settings2a, settings2b})
 
-		err = settingsClient.Delete(settings1a.Metadata.Namespace, settings1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings1a.GetMetadata().Namespace, settings1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = settingsClient.Delete(settings1b.Metadata.Namespace, settings1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = settingsClient.Delete(settings1b.GetMetadata().Namespace, settings1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSettings(nil, SettingsList{settings1a, settings1b, settings2a, settings2b})

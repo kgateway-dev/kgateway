@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,14 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewIngress(namespace, name string) *Ingress {
-	return &Ingress{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	ingress := &Ingress{}
+	ingress.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return ingress
 }
 
 func (r *Ingress) SetMetadata(meta core.Metadata) {
@@ -44,8 +42,8 @@ type IngressesByNamespace map[string]IngressList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list IngressList) Find(namespace, name string) (*Ingress, error) {
 	for _, ingress := range list {
-		if ingress.Metadata.Name == name {
-			if namespace == "" || ingress.Metadata.Namespace == namespace {
+		if ingress.GetMetadata().Name == name {
+			if namespace == "" || ingress.GetMetadata().Namespace == namespace {
 				return ingress, nil
 			}
 		}
@@ -64,7 +62,7 @@ func (list IngressList) AsResources() resources.ResourceList {
 func (list IngressList) Names() []string {
 	var names []string
 	for _, ingress := range list {
-		names = append(names, ingress.Metadata.Name)
+		names = append(names, ingress.GetMetadata().Name)
 	}
 	return names
 }
@@ -72,14 +70,14 @@ func (list IngressList) Names() []string {
 func (list IngressList) NamespacesDotNames() []string {
 	var names []string
 	for _, ingress := range list {
-		names = append(names, ingress.Metadata.Namespace+"."+ingress.Metadata.Name)
+		names = append(names, ingress.GetMetadata().Namespace+"."+ingress.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list IngressList) Sort() IngressList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -87,7 +85,7 @@ func (list IngressList) Sort() IngressList {
 func (list IngressList) Clone() IngressList {
 	var ingressList IngressList
 	for _, ingress := range list {
-		ingressList = append(ingressList, proto.Clone(ingress).(*Ingress))
+		ingressList = append(ingressList, resources.Clone(ingress).(*Ingress))
 	}
 	return ingressList
 }
@@ -108,7 +106,7 @@ func (list IngressList) AsInterfaces() []interface{} {
 
 func (byNamespace IngressesByNamespace) Add(ingress ...*Ingress) {
 	for _, item := range ingress {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

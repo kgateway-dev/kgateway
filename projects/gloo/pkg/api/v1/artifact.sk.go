@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,14 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewArtifact(namespace, name string) *Artifact {
-	return &Artifact{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	artifact := &Artifact{}
+	artifact.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return artifact
 }
 
 func (r *Artifact) SetMetadata(meta core.Metadata) {
@@ -44,8 +42,8 @@ type ArtifactsByNamespace map[string]ArtifactList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ArtifactList) Find(namespace, name string) (*Artifact, error) {
 	for _, artifact := range list {
-		if artifact.Metadata.Name == name {
-			if namespace == "" || artifact.Metadata.Namespace == namespace {
+		if artifact.GetMetadata().Name == name {
+			if namespace == "" || artifact.GetMetadata().Namespace == namespace {
 				return artifact, nil
 			}
 		}
@@ -64,7 +62,7 @@ func (list ArtifactList) AsResources() resources.ResourceList {
 func (list ArtifactList) Names() []string {
 	var names []string
 	for _, artifact := range list {
-		names = append(names, artifact.Metadata.Name)
+		names = append(names, artifact.GetMetadata().Name)
 	}
 	return names
 }
@@ -72,14 +70,14 @@ func (list ArtifactList) Names() []string {
 func (list ArtifactList) NamespacesDotNames() []string {
 	var names []string
 	for _, artifact := range list {
-		names = append(names, artifact.Metadata.Namespace+"."+artifact.Metadata.Name)
+		names = append(names, artifact.GetMetadata().Namespace+"."+artifact.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list ArtifactList) Sort() ArtifactList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -87,7 +85,7 @@ func (list ArtifactList) Sort() ArtifactList {
 func (list ArtifactList) Clone() ArtifactList {
 	var artifactList ArtifactList
 	for _, artifact := range list {
-		artifactList = append(artifactList, proto.Clone(artifact).(*Artifact))
+		artifactList = append(artifactList, resources.Clone(artifact).(*Artifact))
 	}
 	return artifactList
 }
@@ -108,7 +106,7 @@ func (list ArtifactList) AsInterfaces() []interface{} {
 
 func (byNamespace ArtifactsByNamespace) Add(artifact ...*Artifact) {
 	for _, item := range artifact {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,22 +14,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewSettings(namespace, name string) *Settings {
-	return &Settings{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *Settings) SetStatus(status core.Status) {
-	r.Status = status
+	settings := &Settings{}
+	settings.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return settings
 }
 
 func (r *Settings) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Settings) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *Settings) Hash() uint64 {
@@ -57,8 +55,8 @@ type SettingsByNamespace map[string]SettingsList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list SettingsList) Find(namespace, name string) (*Settings, error) {
 	for _, settings := range list {
-		if settings.Metadata.Name == name {
-			if namespace == "" || settings.Metadata.Namespace == namespace {
+		if settings.GetMetadata().Name == name {
+			if namespace == "" || settings.GetMetadata().Namespace == namespace {
 				return settings, nil
 			}
 		}
@@ -85,7 +83,7 @@ func (list SettingsList) AsInputResources() resources.InputResourceList {
 func (list SettingsList) Names() []string {
 	var names []string
 	for _, settings := range list {
-		names = append(names, settings.Metadata.Name)
+		names = append(names, settings.GetMetadata().Name)
 	}
 	return names
 }
@@ -93,14 +91,14 @@ func (list SettingsList) Names() []string {
 func (list SettingsList) NamespacesDotNames() []string {
 	var names []string
 	for _, settings := range list {
-		names = append(names, settings.Metadata.Namespace+"."+settings.Metadata.Name)
+		names = append(names, settings.GetMetadata().Namespace+"."+settings.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list SettingsList) Sort() SettingsList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -108,7 +106,7 @@ func (list SettingsList) Sort() SettingsList {
 func (list SettingsList) Clone() SettingsList {
 	var settingsList SettingsList
 	for _, settings := range list {
-		settingsList = append(settingsList, proto.Clone(settings).(*Settings))
+		settingsList = append(settingsList, resources.Clone(settings).(*Settings))
 	}
 	return settingsList
 }
@@ -129,7 +127,7 @@ func (list SettingsList) AsInterfaces() []interface{} {
 
 func (byNamespace SettingsByNamespace) Add(settings ...*Settings) {
 	for _, item := range settings {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

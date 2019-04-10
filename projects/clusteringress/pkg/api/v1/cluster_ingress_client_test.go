@@ -51,6 +51,7 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 
 	name := name1
 	input := NewClusterIngress("", name)
+
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -60,8 +61,8 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 
 	Expect(r1).To(BeAssignableToTypeOf(&ClusterIngress{}))
 	Expect(r1.GetMetadata().Name).To(Equal(name))
-	Expect(r1.Metadata.ResourceVersion).NotTo(Equal(input.Metadata.ResourceVersion))
-	Expect(r1.Metadata.Ref()).To(Equal(input.Metadata.Ref()))
+	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
+	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	Expect(r1.Status).To(Equal(input.Status))
 	Expect(r1.ClusterIngressSpec).To(Equal(input.ClusterIngressSpec))
 	Expect(r1.ClusterIngressStatus).To(Equal(input.ClusterIngressStatus))
@@ -71,7 +72,9 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 	})
 	Expect(err).To(HaveOccurred())
 
-	input.Metadata.ResourceVersion = r1.GetMetadata().ResourceVersion
+	resources.UpdateMetadata(input, func(meta *core.Metadata) {
+		meta.ResourceVersion = r1.GetMetadata().ResourceVersion
+	})
 	r1, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
 	})
@@ -83,9 +86,9 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 	name = name2
 	input = &ClusterIngress{}
 
-	input.Metadata = core.Metadata{
+	input.SetMetadata(core.Metadata{
 		Name: name,
-	}
+	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -133,9 +136,9 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 		name = name3
 		input = &ClusterIngress{}
 		Expect(err).NotTo(HaveOccurred())
-		input.Metadata = core.Metadata{
+		input.SetMetadata(core.Metadata{
 			Name: name,
-		}
+		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())

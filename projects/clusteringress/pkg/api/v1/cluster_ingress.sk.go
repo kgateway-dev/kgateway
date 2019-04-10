@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,22 +14,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewClusterIngress(namespace, name string) *ClusterIngress {
-	return &ClusterIngress{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *ClusterIngress) SetStatus(status core.Status) {
-	r.Status = status
+	clusteringress := &ClusterIngress{}
+	clusteringress.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return clusteringress
 }
 
 func (r *ClusterIngress) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *ClusterIngress) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *ClusterIngress) Hash() uint64 {
@@ -48,8 +46,8 @@ type ClusteringressesByNamespace map[string]ClusterIngressList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ClusterIngressList) Find(namespace, name string) (*ClusterIngress, error) {
 	for _, clusterIngress := range list {
-		if clusterIngress.Metadata.Name == name {
-			if namespace == "" || clusterIngress.Metadata.Namespace == namespace {
+		if clusterIngress.GetMetadata().Name == name {
+			if namespace == "" || clusterIngress.GetMetadata().Namespace == namespace {
 				return clusterIngress, nil
 			}
 		}
@@ -76,7 +74,7 @@ func (list ClusterIngressList) AsInputResources() resources.InputResourceList {
 func (list ClusterIngressList) Names() []string {
 	var names []string
 	for _, clusterIngress := range list {
-		names = append(names, clusterIngress.Metadata.Name)
+		names = append(names, clusterIngress.GetMetadata().Name)
 	}
 	return names
 }
@@ -84,14 +82,14 @@ func (list ClusterIngressList) Names() []string {
 func (list ClusterIngressList) NamespacesDotNames() []string {
 	var names []string
 	for _, clusterIngress := range list {
-		names = append(names, clusterIngress.Metadata.Namespace+"."+clusterIngress.Metadata.Name)
+		names = append(names, clusterIngress.GetMetadata().Namespace+"."+clusterIngress.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list ClusterIngressList) Sort() ClusterIngressList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -99,7 +97,7 @@ func (list ClusterIngressList) Sort() ClusterIngressList {
 func (list ClusterIngressList) Clone() ClusterIngressList {
 	var clusterIngressList ClusterIngressList
 	for _, clusterIngress := range list {
-		clusterIngressList = append(clusterIngressList, proto.Clone(clusterIngress).(*ClusterIngress))
+		clusterIngressList = append(clusterIngressList, resources.Clone(clusterIngress).(*ClusterIngress))
 	}
 	return clusterIngressList
 }
@@ -120,7 +118,7 @@ func (list ClusterIngressList) AsInterfaces() []interface{} {
 
 func (byNamespace ClusteringressesByNamespace) Add(clusterIngress ...*ClusterIngress) {
 	for _, item := range clusterIngress {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

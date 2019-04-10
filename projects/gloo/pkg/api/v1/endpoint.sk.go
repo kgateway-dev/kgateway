@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,14 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewEndpoint(namespace, name string) *Endpoint {
-	return &Endpoint{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	endpoint := &Endpoint{}
+	endpoint.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return endpoint
 }
 
 func (r *Endpoint) SetMetadata(meta core.Metadata) {
@@ -46,8 +44,8 @@ type EndpointsByNamespace map[string]EndpointList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list EndpointList) Find(namespace, name string) (*Endpoint, error) {
 	for _, endpoint := range list {
-		if endpoint.Metadata.Name == name {
-			if namespace == "" || endpoint.Metadata.Namespace == namespace {
+		if endpoint.GetMetadata().Name == name {
+			if namespace == "" || endpoint.GetMetadata().Namespace == namespace {
 				return endpoint, nil
 			}
 		}
@@ -66,7 +64,7 @@ func (list EndpointList) AsResources() resources.ResourceList {
 func (list EndpointList) Names() []string {
 	var names []string
 	for _, endpoint := range list {
-		names = append(names, endpoint.Metadata.Name)
+		names = append(names, endpoint.GetMetadata().Name)
 	}
 	return names
 }
@@ -74,14 +72,14 @@ func (list EndpointList) Names() []string {
 func (list EndpointList) NamespacesDotNames() []string {
 	var names []string
 	for _, endpoint := range list {
-		names = append(names, endpoint.Metadata.Namespace+"."+endpoint.Metadata.Name)
+		names = append(names, endpoint.GetMetadata().Namespace+"."+endpoint.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list EndpointList) Sort() EndpointList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -89,7 +87,7 @@ func (list EndpointList) Sort() EndpointList {
 func (list EndpointList) Clone() EndpointList {
 	var endpointList EndpointList
 	for _, endpoint := range list {
-		endpointList = append(endpointList, proto.Clone(endpoint).(*Endpoint))
+		endpointList = append(endpointList, resources.Clone(endpoint).(*Endpoint))
 	}
 	return endpointList
 }
@@ -110,7 +108,7 @@ func (list EndpointList) AsInterfaces() []interface{} {
 
 func (byNamespace EndpointsByNamespace) Add(endpoint ...*Endpoint) {
 	for _, item := range endpoint {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 
