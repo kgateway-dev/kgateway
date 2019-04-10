@@ -8,7 +8,6 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
@@ -153,7 +152,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	}
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.Resource)
+	clone := resources.Clone(resource)
 	clone.SetMetadata(meta)
 	ingressObj, err := ToKube(resource)
 	if err != nil {

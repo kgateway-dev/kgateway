@@ -1485,7 +1485,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:5dc73738b0939b312ba1beb2a797a34be5390045f49e34e3671420cf56c0e043"
+  digest = "1:cb82fcb9c8d2633a3f3471ea47bfcdb95b7a601e0b117db8a89e6c0d7294f90d"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1506,8 +1506,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "345282db284ff4ad930528c4c6f9a7b253464a43"
-  version = "v0.6.1"
+  revision = "2499c403a5f9cd2c5facb7df8d69118f675f2a21"
+  version = "v0.7.2"
 
 [[projects]]
   branch = "master"
@@ -1518,7 +1518,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:db93442eb490ebfad170e9729e08ba6f3eef703b88cc89396ec9aa7b507cc90b"
+  digest = "1:61793bf35b1192dbfdf70acee4b2225f5b6a8c5175078d853e79e4d3b259bdd6"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1558,7 +1558,6 @@
     "pkg/code-generator/model",
     "pkg/code-generator/parser",
     "pkg/errors",
-    "pkg/utils/cliutils",
     "pkg/utils/errutils",
     "pkg/utils/fileutils",
     "pkg/utils/hashutils",
@@ -1572,8 +1571,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "ab66edfc0413abe3bf9d16bf79d0bdbde907c218"
-  version = "v0.4.1"
+  revision = "f97984e35525891fe25ddb5a328177325230bc02"
+  version = "v0.5.1"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2595,7 +2594,6 @@
     "github.com/solo-io/solo-kit/pkg/code-generator/cmd",
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",
-    "github.com/solo-io/solo-kit/pkg/utils/cliutils",
     "github.com/solo-io/solo-kit/pkg/utils/errutils",
     "github.com/solo-io/solo-kit/pkg/utils/hashutils",
     "github.com/solo-io/solo-kit/pkg/utils/kubeutils",

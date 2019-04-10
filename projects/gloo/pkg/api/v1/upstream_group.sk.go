@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,22 +14,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewUpstreamGroup(namespace, name string) *UpstreamGroup {
-	return &UpstreamGroup{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *UpstreamGroup) SetStatus(status core.Status) {
-	r.Status = status
+	upstreamgroup := &UpstreamGroup{}
+	upstreamgroup.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return upstreamgroup
 }
 
 func (r *UpstreamGroup) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *UpstreamGroup) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *UpstreamGroup) Hash() uint64 {
@@ -48,8 +46,8 @@ type UpstreamgroupsByNamespace map[string]UpstreamGroupList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list UpstreamGroupList) Find(namespace, name string) (*UpstreamGroup, error) {
 	for _, upstreamGroup := range list {
-		if upstreamGroup.Metadata.Name == name {
-			if namespace == "" || upstreamGroup.Metadata.Namespace == namespace {
+		if upstreamGroup.GetMetadata().Name == name {
+			if namespace == "" || upstreamGroup.GetMetadata().Namespace == namespace {
 				return upstreamGroup, nil
 			}
 		}
@@ -76,7 +74,7 @@ func (list UpstreamGroupList) AsInputResources() resources.InputResourceList {
 func (list UpstreamGroupList) Names() []string {
 	var names []string
 	for _, upstreamGroup := range list {
-		names = append(names, upstreamGroup.Metadata.Name)
+		names = append(names, upstreamGroup.GetMetadata().Name)
 	}
 	return names
 }
@@ -84,14 +82,14 @@ func (list UpstreamGroupList) Names() []string {
 func (list UpstreamGroupList) NamespacesDotNames() []string {
 	var names []string
 	for _, upstreamGroup := range list {
-		names = append(names, upstreamGroup.Metadata.Namespace+"."+upstreamGroup.Metadata.Name)
+		names = append(names, upstreamGroup.GetMetadata().Namespace+"."+upstreamGroup.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list UpstreamGroupList) Sort() UpstreamGroupList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -99,7 +97,7 @@ func (list UpstreamGroupList) Sort() UpstreamGroupList {
 func (list UpstreamGroupList) Clone() UpstreamGroupList {
 	var upstreamGroupList UpstreamGroupList
 	for _, upstreamGroup := range list {
-		upstreamGroupList = append(upstreamGroupList, proto.Clone(upstreamGroup).(*UpstreamGroup))
+		upstreamGroupList = append(upstreamGroupList, resources.Clone(upstreamGroup).(*UpstreamGroup))
 	}
 	return upstreamGroupList
 }
@@ -120,7 +118,7 @@ func (list UpstreamGroupList) AsInterfaces() []interface{} {
 
 func (byNamespace UpstreamgroupsByNamespace) Add(upstreamGroup ...*UpstreamGroup) {
 	for _, item := range upstreamGroup {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

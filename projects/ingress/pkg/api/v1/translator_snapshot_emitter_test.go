@@ -17,6 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -26,8 +27,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -57,17 +56,11 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = setup.SetupKubeForTest(namespace2)
 		Expect(err).NotTo(HaveOccurred())
-		var kube kubernetes.Interface
 		// Secret Constructor
-		kube, err = kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-
-		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
-		Expect(err).NotTo(HaveOccurred())
-		secretClientFactory := &factory.KubeSecretClientFactory{
-			Clientset: kube,
-			Cache:     kcache,
+		secretClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
 		}
+
 		secretClient, err = gloo_solo_io.NewSecretClient(secretClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// Upstream Constructor
@@ -76,18 +69,14 @@ var _ = Describe("V1Emitter", func() {
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
+
 		upstreamClient, err = gloo_solo_io.NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// Ingress Constructor
-		kube, err = kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-
-		kcache, err := cache.NewKubeCoreCache(context.TODO(), kube)
-		Expect(err).NotTo(HaveOccurred())
-		ingressClientFactory := &factory.KubeConfigMapClientFactory{
-			Clientset: kube,
-			Cache:     kcache,
+		ingressClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
 		}
+
 		ingressClient, err = NewIngressClient(ingressClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
@@ -119,12 +108,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSecrets {
-						if _, err := snap.Secrets.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Secrets.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSecrets {
-						if _, err := snap.Secrets.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Secrets.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -155,16 +144,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotSecrets(gloo_solo_io.SecretList{secret1a, secret1b, secret2a, secret2b}, nil)
 
-		err = secretClient.Delete(secret2a.Metadata.Namespace, secret2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret2a.GetMetadata().Namespace, secret2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = secretClient.Delete(secret2b.Metadata.Namespace, secret2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret2b.GetMetadata().Namespace, secret2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(gloo_solo_io.SecretList{secret1a, secret1b}, gloo_solo_io.SecretList{secret2a, secret2b})
 
-		err = secretClient.Delete(secret1a.Metadata.Namespace, secret1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret1a.GetMetadata().Namespace, secret1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = secretClient.Delete(secret1b.Metadata.Namespace, secret1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret1b.GetMetadata().Namespace, secret1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(nil, gloo_solo_io.SecretList{secret1a, secret1b, secret2a, secret2b})
@@ -179,12 +168,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Upstreams.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Upstreams.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -215,16 +204,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotUpstreams(gloo_solo_io.UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)
 
-		err = upstreamClient.Delete(upstream2a.Metadata.Namespace, upstream2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream2a.GetMetadata().Namespace, upstream2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream2b.Metadata.Namespace, upstream2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream2b.GetMetadata().Namespace, upstream2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(gloo_solo_io.UpstreamList{upstream1a, upstream1b}, gloo_solo_io.UpstreamList{upstream2a, upstream2b})
 
-		err = upstreamClient.Delete(upstream1a.Metadata.Namespace, upstream1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream1a.GetMetadata().Namespace, upstream1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream1b.Metadata.Namespace, upstream1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream1b.GetMetadata().Namespace, upstream1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(nil, gloo_solo_io.UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
@@ -239,12 +228,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectIngresses {
-						if _, err := snap.Ingresses.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Ingresses.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectIngresses {
-						if _, err := snap.Ingresses.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Ingresses.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -275,16 +264,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b, ingress2a, ingress2b}, nil)
 
-		err = ingressClient.Delete(ingress2a.Metadata.Namespace, ingress2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress2a.GetMetadata().Namespace, ingress2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = ingressClient.Delete(ingress2b.Metadata.Namespace, ingress2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress2b.GetMetadata().Namespace, ingress2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b}, IngressList{ingress2a, ingress2b})
 
-		err = ingressClient.Delete(ingress1a.Metadata.Namespace, ingress1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress1a.GetMetadata().Namespace, ingress1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = ingressClient.Delete(ingress1b.Metadata.Namespace, ingress1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress1b.GetMetadata().Namespace, ingress1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(nil, IngressList{ingress1a, ingress1b, ingress2a, ingress2b})
@@ -312,12 +301,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSecrets {
-						if _, err := snap.Secrets.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Secrets.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSecrets {
-						if _, err := snap.Secrets.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Secrets.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -348,16 +337,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotSecrets(gloo_solo_io.SecretList{secret1a, secret1b, secret2a, secret2b}, nil)
 
-		err = secretClient.Delete(secret2a.Metadata.Namespace, secret2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret2a.GetMetadata().Namespace, secret2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = secretClient.Delete(secret2b.Metadata.Namespace, secret2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret2b.GetMetadata().Namespace, secret2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(gloo_solo_io.SecretList{secret1a, secret1b}, gloo_solo_io.SecretList{secret2a, secret2b})
 
-		err = secretClient.Delete(secret1a.Metadata.Namespace, secret1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret1a.GetMetadata().Namespace, secret1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = secretClient.Delete(secret1b.Metadata.Namespace, secret1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = secretClient.Delete(secret1b.GetMetadata().Namespace, secret1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotSecrets(nil, gloo_solo_io.SecretList{secret1a, secret1b, secret2a, secret2b})
@@ -372,12 +361,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Upstreams.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Upstreams.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -408,16 +397,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotUpstreams(gloo_solo_io.UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b}, nil)
 
-		err = upstreamClient.Delete(upstream2a.Metadata.Namespace, upstream2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream2a.GetMetadata().Namespace, upstream2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream2b.Metadata.Namespace, upstream2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream2b.GetMetadata().Namespace, upstream2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(gloo_solo_io.UpstreamList{upstream1a, upstream1b}, gloo_solo_io.UpstreamList{upstream2a, upstream2b})
 
-		err = upstreamClient.Delete(upstream1a.Metadata.Namespace, upstream1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream1a.GetMetadata().Namespace, upstream1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Delete(upstream1b.Metadata.Namespace, upstream1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = upstreamClient.Delete(upstream1b.GetMetadata().Namespace, upstream1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(nil, gloo_solo_io.UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
@@ -432,12 +421,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectIngresses {
-						if _, err := snap.Ingresses.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Ingresses.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectIngresses {
-						if _, err := snap.Ingresses.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Ingresses.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -468,16 +457,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b, ingress2a, ingress2b}, nil)
 
-		err = ingressClient.Delete(ingress2a.Metadata.Namespace, ingress2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress2a.GetMetadata().Namespace, ingress2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = ingressClient.Delete(ingress2b.Metadata.Namespace, ingress2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress2b.GetMetadata().Namespace, ingress2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(IngressList{ingress1a, ingress1b}, IngressList{ingress2a, ingress2b})
 
-		err = ingressClient.Delete(ingress1a.Metadata.Namespace, ingress1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress1a.GetMetadata().Namespace, ingress1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = ingressClient.Delete(ingress1b.Metadata.Namespace, ingress1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = ingressClient.Delete(ingress1b.GetMetadata().Namespace, ingress1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotIngresses(nil, IngressList{ingress1a, ingress1b, ingress2a, ingress2b})

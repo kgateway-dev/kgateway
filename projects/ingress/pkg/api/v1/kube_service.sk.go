@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,14 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewKubeService(namespace, name string) *KubeService {
-	return &KubeService{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
+	kubeservice := &KubeService{}
+	kubeservice.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return kubeservice
 }
 
 func (r *KubeService) SetMetadata(meta core.Metadata) {
@@ -45,8 +43,8 @@ type ServicesByNamespace map[string]KubeServiceList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list KubeServiceList) Find(namespace, name string) (*KubeService, error) {
 	for _, kubeService := range list {
-		if kubeService.Metadata.Name == name {
-			if namespace == "" || kubeService.Metadata.Namespace == namespace {
+		if kubeService.GetMetadata().Name == name {
+			if namespace == "" || kubeService.GetMetadata().Namespace == namespace {
 				return kubeService, nil
 			}
 		}
@@ -65,7 +63,7 @@ func (list KubeServiceList) AsResources() resources.ResourceList {
 func (list KubeServiceList) Names() []string {
 	var names []string
 	for _, kubeService := range list {
-		names = append(names, kubeService.Metadata.Name)
+		names = append(names, kubeService.GetMetadata().Name)
 	}
 	return names
 }
@@ -73,14 +71,14 @@ func (list KubeServiceList) Names() []string {
 func (list KubeServiceList) NamespacesDotNames() []string {
 	var names []string
 	for _, kubeService := range list {
-		names = append(names, kubeService.Metadata.Namespace+"."+kubeService.Metadata.Name)
+		names = append(names, kubeService.GetMetadata().Namespace+"."+kubeService.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list KubeServiceList) Sort() KubeServiceList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -88,7 +86,7 @@ func (list KubeServiceList) Sort() KubeServiceList {
 func (list KubeServiceList) Clone() KubeServiceList {
 	var kubeServiceList KubeServiceList
 	for _, kubeService := range list {
-		kubeServiceList = append(kubeServiceList, proto.Clone(kubeService).(*KubeService))
+		kubeServiceList = append(kubeServiceList, resources.Clone(kubeService).(*KubeService))
 	}
 	return kubeServiceList
 }
@@ -109,7 +107,7 @@ func (list KubeServiceList) AsInterfaces() []interface{} {
 
 func (byNamespace ServicesByNamespace) Add(kubeService ...*KubeService) {
 	for _, item := range kubeService {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

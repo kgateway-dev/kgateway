@@ -58,6 +58,7 @@ var _ = Describe("V1Emitter", func() {
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
+
 		gatewayClient, err = NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// VirtualService Constructor
@@ -66,6 +67,7 @@ var _ = Describe("V1Emitter", func() {
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
+
 		virtualServiceClient, err = NewVirtualServiceClient(virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewApiEmitter(gatewayClient, virtualServiceClient)
@@ -97,12 +99,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectGateways {
-						if _, err := snap.Gateways.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Gateways.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectGateways {
-						if _, err := snap.Gateways.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Gateways.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -133,16 +135,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
 
-		err = gatewayClient.Delete(gateway2a.Metadata.Namespace, gateway2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway2b.Metadata.Namespace, gateway2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
 
-		err = gatewayClient.Delete(gateway1a.Metadata.Namespace, gateway1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway1b.Metadata.Namespace, gateway1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
@@ -157,12 +159,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.VirtualServices.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.VirtualServices.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -193,16 +195,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotVirtualServices(VirtualServiceList{virtualService1a, virtualService1b, virtualService2a, virtualService2b}, nil)
 
-		err = virtualServiceClient.Delete(virtualService2a.Metadata.Namespace, virtualService2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService2a.GetMetadata().Namespace, virtualService2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = virtualServiceClient.Delete(virtualService2b.Metadata.Namespace, virtualService2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService2b.GetMetadata().Namespace, virtualService2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(VirtualServiceList{virtualService1a, virtualService1b}, VirtualServiceList{virtualService2a, virtualService2b})
 
-		err = virtualServiceClient.Delete(virtualService1a.Metadata.Namespace, virtualService1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService1a.GetMetadata().Namespace, virtualService1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = virtualServiceClient.Delete(virtualService1b.Metadata.Namespace, virtualService1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService1b.GetMetadata().Namespace, virtualService1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(nil, VirtualServiceList{virtualService1a, virtualService1b, virtualService2a, virtualService2b})
@@ -230,12 +232,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectGateways {
-						if _, err := snap.Gateways.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.Gateways.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectGateways {
-						if _, err := snap.Gateways.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.Gateways.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -266,16 +268,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
 
-		err = gatewayClient.Delete(gateway2a.Metadata.Namespace, gateway2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway2b.Metadata.Namespace, gateway2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
 
-		err = gatewayClient.Delete(gateway1a.Metadata.Namespace, gateway1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway1b.Metadata.Namespace, gateway1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
@@ -290,12 +292,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(expected.Metadata.Ref().Strings()); err != nil {
+						if _, err := snap.VirtualServices.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(unexpected.Metadata.Ref().Strings()); err == nil {
+						if _, err := snap.VirtualServices.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -326,16 +328,16 @@ var _ = Describe("V1Emitter", func() {
 
 		assertSnapshotVirtualServices(VirtualServiceList{virtualService1a, virtualService1b, virtualService2a, virtualService2b}, nil)
 
-		err = virtualServiceClient.Delete(virtualService2a.Metadata.Namespace, virtualService2a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService2a.GetMetadata().Namespace, virtualService2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = virtualServiceClient.Delete(virtualService2b.Metadata.Namespace, virtualService2b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService2b.GetMetadata().Namespace, virtualService2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(VirtualServiceList{virtualService1a, virtualService1b}, VirtualServiceList{virtualService2a, virtualService2b})
 
-		err = virtualServiceClient.Delete(virtualService1a.Metadata.Namespace, virtualService1a.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService1a.GetMetadata().Namespace, virtualService1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		err = virtualServiceClient.Delete(virtualService1b.Metadata.Namespace, virtualService1b.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+		err = virtualServiceClient.Delete(virtualService1b.GetMetadata().Namespace, virtualService1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(nil, VirtualServiceList{virtualService1a, virtualService1b, virtualService2a, virtualService2b})

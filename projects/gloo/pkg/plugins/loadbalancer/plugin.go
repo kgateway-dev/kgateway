@@ -45,9 +45,9 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	if cfg.Type != nil {
 		switch lbtype := cfg.Type.(type) {
-		case (*v1.LoadBalancerConfig_RoundRobin_):
+		case *v1.LoadBalancerConfig_RoundRobin_:
 			out.LbPolicy = envoyapi.Cluster_ROUND_ROBIN
-		case (*v1.LoadBalancerConfig_LeastRequest_):
+		case *v1.LoadBalancerConfig_LeastRequest_:
 			out.LbPolicy = envoyapi.Cluster_LEAST_REQUEST
 			if lbtype.LeastRequest.ChoiceCount != 0 {
 				out.LbConfig = &envoyapi.Cluster_LeastRequestLbConfig_{
@@ -58,7 +58,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 					},
 				}
 			}
-		case (*v1.LoadBalancerConfig_Random_):
+		case *v1.LoadBalancerConfig_Random_:
 			out.LbPolicy = envoyapi.Cluster_RANDOM
 		}
 	}

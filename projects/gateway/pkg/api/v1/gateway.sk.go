@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,22 +14,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewGateway(namespace, name string) *Gateway {
-	return &Gateway{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *Gateway) SetStatus(status core.Status) {
-	r.Status = status
+	gateway := &Gateway{}
+	gateway.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return gateway
 }
 
 func (r *Gateway) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Gateway) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *Gateway) Hash() uint64 {
@@ -52,8 +50,8 @@ type GatewaysByNamespace map[string]GatewayList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list GatewayList) Find(namespace, name string) (*Gateway, error) {
 	for _, gateway := range list {
-		if gateway.Metadata.Name == name {
-			if namespace == "" || gateway.Metadata.Namespace == namespace {
+		if gateway.GetMetadata().Name == name {
+			if namespace == "" || gateway.GetMetadata().Namespace == namespace {
 				return gateway, nil
 			}
 		}
@@ -80,7 +78,7 @@ func (list GatewayList) AsInputResources() resources.InputResourceList {
 func (list GatewayList) Names() []string {
 	var names []string
 	for _, gateway := range list {
-		names = append(names, gateway.Metadata.Name)
+		names = append(names, gateway.GetMetadata().Name)
 	}
 	return names
 }
@@ -88,14 +86,14 @@ func (list GatewayList) Names() []string {
 func (list GatewayList) NamespacesDotNames() []string {
 	var names []string
 	for _, gateway := range list {
-		names = append(names, gateway.Metadata.Namespace+"."+gateway.Metadata.Name)
+		names = append(names, gateway.GetMetadata().Namespace+"."+gateway.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list GatewayList) Sort() GatewayList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -103,7 +101,7 @@ func (list GatewayList) Sort() GatewayList {
 func (list GatewayList) Clone() GatewayList {
 	var gatewayList GatewayList
 	for _, gateway := range list {
-		gatewayList = append(gatewayList, proto.Clone(gateway).(*Gateway))
+		gatewayList = append(gatewayList, resources.Clone(gateway).(*Gateway))
 	}
 	return gatewayList
 }
@@ -124,7 +122,7 @@ func (list GatewayList) AsInterfaces() []interface{} {
 
 func (byNamespace GatewaysByNamespace) Add(gateway ...*Gateway) {
 	for _, item := range gateway {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

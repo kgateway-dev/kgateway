@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,22 +14,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewUpstream(namespace, name string) *Upstream {
-	return &Upstream{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *Upstream) SetStatus(status core.Status) {
-	r.Status = status
+	upstream := &Upstream{}
+	upstream.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return upstream
 }
 
 func (r *Upstream) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Upstream) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *Upstream) Hash() uint64 {
@@ -49,8 +47,8 @@ type UpstreamsByNamespace map[string]UpstreamList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list UpstreamList) Find(namespace, name string) (*Upstream, error) {
 	for _, upstream := range list {
-		if upstream.Metadata.Name == name {
-			if namespace == "" || upstream.Metadata.Namespace == namespace {
+		if upstream.GetMetadata().Name == name {
+			if namespace == "" || upstream.GetMetadata().Namespace == namespace {
 				return upstream, nil
 			}
 		}
@@ -77,7 +75,7 @@ func (list UpstreamList) AsInputResources() resources.InputResourceList {
 func (list UpstreamList) Names() []string {
 	var names []string
 	for _, upstream := range list {
-		names = append(names, upstream.Metadata.Name)
+		names = append(names, upstream.GetMetadata().Name)
 	}
 	return names
 }
@@ -85,14 +83,14 @@ func (list UpstreamList) Names() []string {
 func (list UpstreamList) NamespacesDotNames() []string {
 	var names []string
 	for _, upstream := range list {
-		names = append(names, upstream.Metadata.Namespace+"."+upstream.Metadata.Name)
+		names = append(names, upstream.GetMetadata().Namespace+"."+upstream.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list UpstreamList) Sort() UpstreamList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -100,7 +98,7 @@ func (list UpstreamList) Sort() UpstreamList {
 func (list UpstreamList) Clone() UpstreamList {
 	var upstreamList UpstreamList
 	for _, upstream := range list {
-		upstreamList = append(upstreamList, proto.Clone(upstream).(*Upstream))
+		upstreamList = append(upstreamList, resources.Clone(upstream).(*Upstream))
 	}
 	return upstreamList
 }
@@ -121,7 +119,7 @@ func (list UpstreamList) AsInterfaces() []interface{} {
 
 func (byNamespace UpstreamsByNamespace) Add(upstream ...*Upstream) {
 	for _, item := range upstream {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 

@@ -5,7 +5,6 @@ package v1
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -15,22 +14,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TODO: modify as needed to populate additional fields
 func NewProxy(namespace, name string) *Proxy {
-	return &Proxy{
-		Metadata: core.Metadata{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *Proxy) SetStatus(status core.Status) {
-	r.Status = status
+	proxy := &Proxy{}
+	proxy.SetMetadata(core.Metadata{
+		Name:      name,
+		Namespace: namespace,
+	})
+	return proxy
 }
 
 func (r *Proxy) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
+}
+
+func (r *Proxy) SetStatus(status core.Status) {
+	r.Status = status
 }
 
 func (r *Proxy) Hash() uint64 {
@@ -48,8 +46,8 @@ type ProxiesByNamespace map[string]ProxyList
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ProxyList) Find(namespace, name string) (*Proxy, error) {
 	for _, proxy := range list {
-		if proxy.Metadata.Name == name {
-			if namespace == "" || proxy.Metadata.Namespace == namespace {
+		if proxy.GetMetadata().Name == name {
+			if namespace == "" || proxy.GetMetadata().Namespace == namespace {
 				return proxy, nil
 			}
 		}
@@ -76,7 +74,7 @@ func (list ProxyList) AsInputResources() resources.InputResourceList {
 func (list ProxyList) Names() []string {
 	var names []string
 	for _, proxy := range list {
-		names = append(names, proxy.Metadata.Name)
+		names = append(names, proxy.GetMetadata().Name)
 	}
 	return names
 }
@@ -84,14 +82,14 @@ func (list ProxyList) Names() []string {
 func (list ProxyList) NamespacesDotNames() []string {
 	var names []string
 	for _, proxy := range list {
-		names = append(names, proxy.Metadata.Namespace+"."+proxy.Metadata.Name)
+		names = append(names, proxy.GetMetadata().Namespace+"."+proxy.GetMetadata().Name)
 	}
 	return names
 }
 
 func (list ProxyList) Sort() ProxyList {
 	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Metadata.Less(list[j].Metadata)
+		return list[i].GetMetadata().Less(list[j].GetMetadata())
 	})
 	return list
 }
@@ -99,7 +97,7 @@ func (list ProxyList) Sort() ProxyList {
 func (list ProxyList) Clone() ProxyList {
 	var proxyList ProxyList
 	for _, proxy := range list {
-		proxyList = append(proxyList, proto.Clone(proxy).(*Proxy))
+		proxyList = append(proxyList, resources.Clone(proxy).(*Proxy))
 	}
 	return proxyList
 }
@@ -120,7 +118,7 @@ func (list ProxyList) AsInterfaces() []interface{} {
 
 func (byNamespace ProxiesByNamespace) Add(proxy ...*Proxy) {
 	for _, item := range proxy {
-		byNamespace[item.Metadata.Namespace] = append(byNamespace[item.Metadata.Namespace], item)
+		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
 	}
 }
 
