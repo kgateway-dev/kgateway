@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -140,7 +139,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
 
 	// mutate and return clone
-	clone := proto.Clone(resource).(resources.Resource)
+	clone := resources.Clone(resource)
 	clone.SetMetadata(meta)
 	svcObj, err := ToKube(resource)
 	if err != nil {
