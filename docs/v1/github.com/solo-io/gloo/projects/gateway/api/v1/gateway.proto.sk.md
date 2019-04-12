@@ -37,6 +37,7 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 "plugins": .gloo.solo.io.ListenerPlugins
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
+"useProxyProto": .google.protobuf.BoolValue
 
 ```
 
@@ -49,6 +50,7 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 | `plugins` | [.gloo.solo.io.ListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk#listenerplugins) | top level plugin configuration for all routes on the gateway |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |
 
 
 

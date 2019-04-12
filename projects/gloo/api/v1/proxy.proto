@@ -2,6 +2,8 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
+import "google/protobuf/wrappers.proto";
+
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
@@ -69,6 +71,9 @@ message Listener {
     // must match a domain in virtual host
     // TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored
     repeated SslConfig ssl_configuations = 5;
+
+    // Enable ProxyProtocol support for this listener
+    google.protobuf.BoolValue use_proxy_proto = 6;
 }
 
 // Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtualservices).

@@ -1,6 +1,7 @@
 package defaults
 
 import (
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -13,8 +14,9 @@ func DefaultGateway(writeNamespace string) *v1.Gateway {
 			Name:      "gateway",
 			Namespace: writeNamespace,
 		},
-		BindAddress: "::",
-		BindPort:    defaults.HttpPort,
+		BindAddress:   "::",
+		BindPort:      defaults.HttpPort,
+		UseProxyProto: &types.BoolValue{Value: false},
 		// all virtualservices
 	}
 }

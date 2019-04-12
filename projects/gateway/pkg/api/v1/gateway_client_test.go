@@ -78,6 +78,7 @@ func GatewayClientTest(namespace string, client GatewayClient, name1, name2, nam
 	Expect(r1.BindPort).To(Equal(input.BindPort))
 	Expect(r1.Plugins).To(Equal(input.Plugins))
 	Expect(r1.Status).To(Equal(input.Status))
+	Expect(r1.UseProxyProto).To(Equal(input.UseProxyProto))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,

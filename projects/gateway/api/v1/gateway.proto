@@ -2,6 +2,8 @@ syntax = "proto3";
 package gateway.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 
+import "google/protobuf/wrappers.proto";
+
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
@@ -44,4 +46,7 @@ message Gateway {
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+
+    // Enable ProxyProtocol support for this listener
+    google.protobuf.BoolValue use_proxy_proto = 8;
 }

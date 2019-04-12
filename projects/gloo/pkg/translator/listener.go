@@ -7,6 +7,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	types "github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -103,7 +104,8 @@ func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listene
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfiguations) == 0 {
 		return []envoylistener.FilterChain{{
-			Filters: listenerFilters,
+			Filters:       listenerFilters,
+			UseProxyProto: listener.UseProxyProto,
 		}}
 	}
 
@@ -117,7 +119,7 @@ func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listene
 			report(err, "invalid secrets for listener %v", listener.Name)
 			continue
 		}
-		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listenerFilters)
+		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listener.UseProxyProto, listenerFilters)
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
@@ -136,14 +138,15 @@ func validateListenerPorts(proxy *v1.Proxy, report reportFunc) {
 	}
 }
 
-func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
+func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
 
 	return envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters:    listenerFilters,
-		TlsContext: downstreamConfig,
+		Filters:       listenerFilters,
+		TlsContext:    downstreamConfig,
+		UseProxyProto: useProxyProto,
 	}
 }
 
