@@ -55,6 +55,7 @@ func init() {
 
 	KnativeCrdNames = []string{
 		"virtualservices.networking.istio.io",
+		"certificates.networking.internal.knative.dev",
 		"clusteringresses.networking.internal.knative.dev",
 		"configurations.serving.knative.dev",
 		"images.caching.internal.knative.dev",
@@ -62,6 +63,7 @@ func init() {
 		"revisions.serving.knative.dev",
 		"routes.serving.knative.dev",
 		"services.serving.knative.dev",
+		"serverlessservices.networking.internal.knative.dev",
 	}
 
 	ExpectedLabels = map[string]string{
