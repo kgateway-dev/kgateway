@@ -26,13 +26,17 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
+// Fine tune the settings for connections to an upstream
 type ConnectionConfig struct {
-	MaxRequestsPerConnection uint32                         `protobuf:"varint,1,opt,name=max_requests_per_connection,json=maxRequestsPerConnection,proto3" json:"max_requests_per_connection,omitempty"`
-	ConnectTimeout           *time.Duration                 `protobuf:"bytes,2,opt,name=connect_timeout,json=connectTimeout,proto3,stdduration" json:"connect_timeout,omitempty"`
-	TcpKeepalive             *ConnectionConfig_TcpKeepAlive `protobuf:"bytes,3,opt,name=tcp_keepalive,json=tcpKeepalive,proto3" json:"tcp_keepalive,omitempty"`
-	XXX_NoUnkeyedLiteral     struct{}                       `json:"-"`
-	XXX_unrecognized         []byte                         `json:"-"`
-	XXX_sizecache            int32                          `json:"-"`
+	// Maximum requests for a single upstream connection (unspecified or zero = no limit)
+	MaxRequestsPerConnection uint32 `protobuf:"varint,1,opt,name=max_requests_per_connection,json=maxRequestsPerConnection,proto3" json:"max_requests_per_connection,omitempty"`
+	// The timeout for new network connections to hosts in the cluster
+	ConnectTimeout *time.Duration `protobuf:"bytes,2,opt,name=connect_timeout,json=connectTimeout,proto3,stdduration" json:"connect_timeout,omitempty"`
+	// Configure OS-level tcp keepalive checks
+	TcpKeepalive         *ConnectionConfig_TcpKeepAlive `protobuf:"bytes,3,opt,name=tcp_keepalive,json=tcpKeepalive,proto3" json:"tcp_keepalive,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
+	XXX_unrecognized     []byte                         `json:"-"`
+	XXX_sizecache        int32                          `json:"-"`
 }
 
 func (m *ConnectionConfig) Reset()         { *m = ConnectionConfig{} }
@@ -80,11 +84,14 @@ func (m *ConnectionConfig) GetTcpKeepalive() *ConnectionConfig_TcpKeepAlive {
 	return nil
 }
 
+// If set then set SO_KEEPALIVE on the socket to enable TCP Keepalives.
+// see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/address.proto#envoy-api-msg-core-tcpkeepalive
 type ConnectionConfig_TcpKeepAlive struct {
+	// Maximum number of keepalive probes to send without response before deciding the connection is dead.
 	KeepaliveProbes uint32 `protobuf:"varint,1,opt,name=keepalive_probes,json=keepaliveProbes,proto3" json:"keepalive_probes,omitempty"`
-	// Rounded up to the second.
+	// The number of seconds a connection needs to be idle before keep-alive probes start being sent. This is rounded up to the second.
 	KeepaliveTime *time.Duration `protobuf:"bytes,2,opt,name=keepalive_time,json=keepaliveTime,proto3,stdduration" json:"keepalive_time,omitempty"`
-	// Rounded up to the second.
+	// The number of seconds between keep-alive probes. This is rounded up to the second.
 	KeepaliveInterval    *time.Duration `protobuf:"bytes,3,opt,name=keepalive_interval,json=keepaliveInterval,proto3,stdduration" json:"keepalive_interval,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
