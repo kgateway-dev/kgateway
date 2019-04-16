@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Pull in new envoy-gloo with fix for remove content-type on transformation fix.
+    issueLink: https://github.com/solo-io/gloo/issues/682
