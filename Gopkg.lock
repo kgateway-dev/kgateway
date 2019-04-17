@@ -1485,7 +1485,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:cb82fcb9c8d2633a3f3471ea47bfcdb95b7a601e0b117db8a89e6c0d7294f90d"
+  digest = "1:1c01d1194380b6678f9abaae705f63ff526635946e97bb51cdf1405211950913"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1506,8 +1506,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "2499c403a5f9cd2c5facb7df8d69118f675f2a21"
-  version = "v0.7.2"
+  revision = "7e607750705f74a1a62b284f2e1d053a80967038"
+  version = "v0.7.8"
 
 [[projects]]
   branch = "master"
@@ -1518,7 +1518,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:3364587e9f9b73175bc29ec8ba579559039b886edd3aa3f318d9b8d01ed0ba2c"
+  digest = "1:7cdb902526b2e485c25309c27357b66fbf76d1d1bcd3489cc26a57dff43a4abf"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1571,8 +1571,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "584c3d544e0d77f4f33438eaf6428f4318b9d233"
-  version = "v0.5.2"
+  revision = "c9138bf5671c8e487ce1b510339db5f6d7514598"
+  version = "v0.6.0"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
