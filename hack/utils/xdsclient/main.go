@@ -124,6 +124,7 @@ func listendpoints(ctx context.Context, conn *grpc.ClientConn) []v2.ClusterLoadA
 		log.Fatalf("endpoints err: %v", err)
 	}
 	var class []v2.ClusterLoadAssignment
+	pp.Printf("version info: %v\n", dresp.VersionInfo)
 
 	for _, anyCla := range dresp.Resources {
 

@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"go.opencensus.io/trace"
@@ -62,9 +63,7 @@ func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.En
 	}
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
-		out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
-			Type: envoyapi.Cluster_EDS,
-		}
+		xds.SetEdsOnCluster(out)
 	}
 	return out
 }

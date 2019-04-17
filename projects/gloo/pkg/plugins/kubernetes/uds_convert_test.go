@@ -1,12 +1,14 @@
-package kubernetes_test
+package kubernetes
 
 import (
+	"context"
 	"strings"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	kubev1 "k8s.io/api/core/v1"
 
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("UdsConvert", func() {
@@ -53,5 +55,60 @@ var _ = Describe("UdsConvert", func() {
 			map[string]string{"app": "foo", "env": "prod"},
 		}
 		Expect(result).To(Equal(expected))
+	})
+
+	Context("h2 upstream", func() {
+		It("should not normally create upstream with grpc service spec", func() {
+			svc := &kubev1.Service{
+				Spec: kubev1.ServiceSpec{},
+			}
+			svc.Name = "test"
+			svc.Namespace = "test"
+
+			port := kubev1.ServicePort{
+				Port: 123,
+			}
+			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
+			spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
+			Expect(spec.GetGrpc()).To(BeNil())
+		})
+
+		It("should create upstream with grpc service spec when anotation exists", func() {
+			svc := &kubev1.Service{
+				Spec: kubev1.ServiceSpec{},
+			}
+			svc.Annotations = make(map[string]string)
+			svc.Annotations[GlooH2Annotation] = "true"
+			svc.Name = "test"
+			svc.Namespace = "test"
+
+			port := kubev1.ServicePort{
+				Port: 123,
+			}
+			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
+			spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
+			Expect(spec.GetGrpc()).NotTo(BeNil())
+		})
+
+		DescribeTable("should create upstream with grpc service spec when port name starts with known prefix", func(portname string) {
+			svc := &kubev1.Service{
+				Spec: kubev1.ServiceSpec{},
+			}
+			svc.Name = "test"
+			svc.Namespace = "test"
+
+			port := kubev1.ServicePort{
+				Port: 123,
+				Name: portname,
+			}
+			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
+			spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
+			Expect(spec.GetGrpc()).NotTo(BeNil())
+		},
+			Entry("exactly grpc", "grpc"),
+			Entry("prefix grpc", "grpc-test"),
+			Entry("exactly h2", "h2"),
+			Entry("prefix h2", "h2-test"),
+		)
 	})
 })

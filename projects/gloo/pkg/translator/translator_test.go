@@ -159,12 +159,14 @@ var _ = Describe("Translator", func() {
 		It("changes in service spec should create a different snapshot", func() {
 			translate()
 			oldVersion := snapshot.GetResources(xds.ClusterType).Version
+
 			svcspec := &v1plugins.ServiceSpec{
 				PluginType: &v1plugins.ServiceSpec_Grpc{
 					Grpc: &v1grpc.ServiceSpec{},
 				},
 			}
 			upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).SetServiceSpec(svcspec)
+			translate()
 			newVersion := snapshot.GetResources(xds.ClusterType).Version
 			Expect(oldVersion).ToNot(Equal(newVersion))
 		})

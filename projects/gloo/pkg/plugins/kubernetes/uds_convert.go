@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	grpcplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -16,6 +18,8 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
+
+const GlooH2Annotation = "gloo.solo.io/h2_service"
 
 var ignoredLabels = []string{
 	"pod-template-hash",        // it is common and provides nothing useful for discovery
@@ -116,6 +120,7 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 		UpstreamSpec: &v1.UpstreamSpec{
 			UpstreamType: &v1.UpstreamSpec_Kube{
 				Kube: &kubeplugin.UpstreamSpec{
+					ServiceSpec:      getServiceSpec(svc, port),
 					ServiceName:      meta.Name,
 					ServiceNamespace: meta.Namespace,
 					ServicePort:      uint32(port.Port),
@@ -125,6 +130,25 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 		},
 		DiscoveryMetadata: &v1.DiscoveryMetadata{},
 	}
+}
+
+func getServiceSpec(svc *kubev1.Service, port kubev1.ServicePort) *plugins.ServiceSpec {
+	grpcSpec := &plugins.ServiceSpec{
+		PluginType: &plugins.ServiceSpec_Grpc{
+			Grpc: &grpcplugin.ServiceSpec{},
+		},
+	}
+	if strings.HasPrefix(port.Name, "grpc") || strings.HasPrefix(port.Name, "h2") {
+		return grpcSpec
+	}
+
+	if svc.Annotations != nil {
+		if svc.Annotations[GlooH2Annotation] == "true" {
+			return grpcSpec
+		}
+	}
+
+	return nil
 }
 
 func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
