@@ -14,6 +14,7 @@ import (
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
 	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -154,6 +155,20 @@ var _ = Describe("Translator", func() {
 
 	}
 
+	Context("service spec", func() {
+		It("changes in service spec should create a different snapshot", func() {
+			translate()
+			oldVersion := snapshot.GetResources(xds.ClusterType).Version
+			svcspec := &v1plugins.ServiceSpec{
+				PluginType: &v1plugins.ServiceSpec_Grpc{
+					Grpc: &v1grpc.ServiceSpec{},
+				},
+			}
+			upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).SetServiceSpec(svcspec)
+			newVersion := snapshot.GetResources(xds.ClusterType).Version
+			Expect(oldVersion).ToNot(Equal(newVersion))
+		})
+	})
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
