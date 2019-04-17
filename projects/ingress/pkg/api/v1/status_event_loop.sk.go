@@ -11,6 +11,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/errutils"
 )
@@ -31,16 +32,12 @@ func (s StatusSyncers) Sync(ctx context.Context, snapshot *StatusSnapshot) error
 	return multiErr.ErrorOrNil()
 }
 
-type StatusEventLoop interface {
-	Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error)
-}
-
 type statusEventLoop struct {
 	emitter StatusEmitter
 	syncer  StatusSyncer
 }
 
-func NewStatusEventLoop(emitter StatusEmitter, syncer StatusSyncer) StatusEventLoop {
+func NewStatusEventLoop(emitter StatusEmitter, syncer StatusSyncer) eventloop.EventLoop {
 	return &statusEventLoop{
 		emitter: emitter,
 		syncer:  syncer,

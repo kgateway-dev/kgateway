@@ -11,6 +11,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/errutils"
 )
@@ -31,16 +32,12 @@ func (s TranslatorSyncers) Sync(ctx context.Context, snapshot *TranslatorSnapsho
 	return multiErr.ErrorOrNil()
 }
 
-type TranslatorEventLoop interface {
-	Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error)
-}
-
 type translatorEventLoop struct {
 	emitter TranslatorEmitter
 	syncer  TranslatorSyncer
 }
 
-func NewTranslatorEventLoop(emitter TranslatorEmitter, syncer TranslatorSyncer) TranslatorEventLoop {
+func NewTranslatorEventLoop(emitter TranslatorEmitter, syncer TranslatorSyncer) eventloop.EventLoop {
 	return &translatorEventLoop{
 		emitter: emitter,
 		syncer:  syncer,

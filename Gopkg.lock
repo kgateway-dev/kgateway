@@ -1518,7 +1518,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:7cdb902526b2e485c25309c27357b66fbf76d1d1bcd3489cc26a57dff43a4abf"
+  digest = "1:bc11d96518edb7652819e0f49848375d30d66280cf53b5c4e0a572d9f07a30d6"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1541,6 +1541,7 @@
     "pkg/api/v1/control-plane/log",
     "pkg/api/v1/control-plane/server",
     "pkg/api/v1/control-plane/util",
+    "pkg/api/v1/eventloop",
     "pkg/api/v1/propagator",
     "pkg/api/v1/reconcile",
     "pkg/api/v1/reporter",
@@ -2586,6 +2587,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util",
+    "github.com/solo-io/solo-kit/pkg/api/v1/eventloop",
     "github.com/solo-io/solo-kit/pkg/api/v1/propagator",
     "github.com/solo-io/solo-kit/pkg/api/v1/reconcile",
     "github.com/solo-io/solo-kit/pkg/api/v1/reporter",
