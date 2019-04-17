@@ -3,6 +3,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
+    app: gloo
     istio-injection: enabled
     serving.knative.dev/release: devel
   name: knative-serving
