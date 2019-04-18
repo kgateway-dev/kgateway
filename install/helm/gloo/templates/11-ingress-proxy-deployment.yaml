@@ -38,8 +38,8 @@ spec:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 1000
+          runAsUser: 10101
+          runAsGroup: 10101
         ports:
         - containerPort: {{ .Values.ingressProxy.deployment.httpPort }}
           name: http
