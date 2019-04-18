@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Allow gateway-proxy to transparently work in conjunction with linkerd-proxy
+    issueLink: https://github.com/solo-io/gloo/issues/691
