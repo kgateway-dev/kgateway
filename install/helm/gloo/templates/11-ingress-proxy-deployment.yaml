@@ -34,6 +34,12 @@ spec:
         image: "{{ .Values.ingressProxy.deployment.image.repository }}:{{ .Values.ingressProxy.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.ingressProxy.deployment.image.pullPolicy }}
         name: ingress-proxy
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
         ports:
         - containerPort: {{ .Values.ingressProxy.deployment.httpPort }}
           name: http

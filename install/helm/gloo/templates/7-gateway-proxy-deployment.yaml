@@ -36,6 +36,12 @@ spec:
         image: {{ $spec.deployment.image.repository }}:{{ $spec.deployment.image.tag }}
         imagePullPolicy: {{ $spec.deployment.image.pullPolicy }}
         name: gateway-proxy
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
         ports:
         - containerPort: {{ $spec.deployment.httpPort }}
           name: http

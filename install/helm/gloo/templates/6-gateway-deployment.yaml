@@ -27,6 +27,12 @@ spec:
       - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.gateway.deployment.image.pullPolicy }}
         name: gateway
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
         env:
           - name: POD_NAMESPACE
             valueFrom:

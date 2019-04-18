@@ -32,6 +32,12 @@ spec:
         image: {{ .Values.settings.integrations.knative.proxy.image.repository }}:{{ .Values.settings.integrations.knative.proxy.image.tag }}
         imagePullPolicy: {{ .Values.settings.integrations.knative.proxy.image.pullPolicy }}
         name: clusteringress-proxy
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
         ports:
         - containerPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
           name: http

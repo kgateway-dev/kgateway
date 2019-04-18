@@ -26,6 +26,12 @@ spec:
       - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.gloo.deployment.image.pullPolicy }}
         name: gloo
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc
