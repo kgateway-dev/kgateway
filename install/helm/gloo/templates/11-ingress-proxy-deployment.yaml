@@ -40,6 +40,11 @@ spec:
           runAsNonRoot: true
           runAsUser: 10101
           runAsGroup: 10101
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_BIND_SERVICE
         ports:
         - containerPort: {{ .Values.ingressProxy.deployment.httpPort }}
           name: http
