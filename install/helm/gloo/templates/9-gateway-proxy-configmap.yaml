@@ -4,7 +4,7 @@
 # config_map
 apiVersion: v1
 kind: ConfigMap
-metadata:ls 
+metadata:
   name: {{ $key }}-envoy-config
   namespace: {{ $.Release.Namespace }}
   labels:
