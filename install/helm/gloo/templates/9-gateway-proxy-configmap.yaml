@@ -4,7 +4,7 @@
 # config_map
 apiVersion: v1
 kind: ConfigMap
-metadata:
+metadata:ls 
   name: {{ $key }}-envoy-config
   namespace: {{ $.Release.Namespace }}
   labels:
@@ -21,16 +21,16 @@ data:
         role: "{{ "{{" }}.PodNamespace{{ "}}" }}~gateway-proxy"
     static_resources:
       clusters:
-      - name: xds_cluster
+      - name: gloo.{{ $.Release.Namespace }}.svc.cluster.local:{{ $.Values.gloo.deployment.xdsPort }}
         connect_timeout: 5.000s
         load_assignment:
-          cluster_name: xds_cluster
+          cluster_name: gloo.{{ $.Release.Namespace }}.svc.cluster.local:{{ $.Values.gloo.deployment.xdsPort }}
           endpoints:
           - lb_endpoints:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo
+                    address: gloo.{{ $.Release.Namespace }}.svc.cluster.local
                     port_value: {{ $.Values.gloo.deployment.xdsPort }}
         http2_protocol_options: {}
         type: STRICT_DNS
@@ -38,7 +38,7 @@ data:
       ads_config:
         api_type: GRPC
         grpc_services:
-        - envoy_grpc: {cluster_name: xds_cluster}
+        - envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.cluster.local:{{ $.Values.gloo.deployment.xdsPort }}}
       cds_config:
         ads: {}
       lds_config:
