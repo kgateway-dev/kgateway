@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"io/ioutil"
 	"log"
 	"os"
 	"syscall"
@@ -8,17 +10,40 @@ import (
 	"github.com/solo-io/envoy-operator/pkg/downward"
 )
 
-func main() {
+func getConfig() (string, error) {
 	inputfile := inputCfg()
-	outfile := outputCfg()
 
+	inreader, err := os.Open(inputfile)
+	if err != nil {
+		return "", err
+	}
+	defer inreader.Close()
+
+	var buffer bytes.Buffer
 	transformer := downward.NewTransformer()
-	err := transformer.TransformFiles(inputfile, outfile)
+	err = transformer.Transform(inreader, &buffer)
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
+}
+
+func writeConfig(cfg string) {
+	ioutil.WriteFile(outputCfg(), []byte(cfg), 0444)
+}
+
+func main() {
+	outCfg, err := getConfig()
 	if err != nil {
 		log.Fatalf("initializer failed: %v", err)
 	}
+
+	// best effort - write to a file for debug purposes.
+	// this might fail if root fs is ready only
+	writeConfig(outCfg)
+
 	env := os.Environ()
-	args := []string{envoy(), "-c", outfile}
+	args := []string{envoy(), "--config-yaml", outCfg}
 	if len(os.Args) > 1 {
 		args = append(args, os.Args[1:]...)
 	}

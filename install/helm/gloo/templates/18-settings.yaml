@@ -22,7 +22,9 @@ spec:
 
 {{- with .Values.settings.watchNamespaces }}
   watchNamespaces:
+  {{- range . }}
   - {{ . }}
+  {{- end }}
 {{- end }}
 
 {{- end }}

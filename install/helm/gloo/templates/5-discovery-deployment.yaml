@@ -26,6 +26,14 @@ spec:
       - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.discovery.deployment.image.pullPolicy }}
         name: discovery
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10101
+          capabilities:
+            drop:
+            - ALL
         env:
           - name: POD_NAMESPACE
             valueFrom:

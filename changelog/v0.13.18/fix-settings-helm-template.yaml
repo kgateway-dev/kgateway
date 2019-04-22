@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix bug that caused gloo to always watch all namespace regardless of the value set on thr settings CRD.
+    issueLink: https://github.com/solo-io/gloo/issues/694
