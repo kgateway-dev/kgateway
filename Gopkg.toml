@@ -29,7 +29,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  version = "0.7.8"
+  version = "0.7.11"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
