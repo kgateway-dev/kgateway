@@ -109,7 +109,7 @@ func main() {
 
 	// Update package manager install formulas
 	status, err := pkgmgmtutils.UpdateFormulas(repoOwner, repoName, buildDir,
-		`gloo-(darwin|linux|windows).*\.sha256`, fOpts)
+		`glooctl-(darwin|linux|windows).*\.sha256`, fOpts)
 	if err != nil {
 		logger.Fatalf("Error trying to update package manager formulas. Error was: %s", err.Error())
 	}
