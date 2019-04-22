@@ -1,3 +1,4 @@
 changelog:
-  - type: NON_USER_FACING
-    description: Don't write envoy config to disk so we can work with read only root fs. Add SecurityContext to manifests.
+  - type: NEW_FEATURE
+    description: Don't write envoy config to disk so we can work with read only root fs. Add a strict SecurityContext to manifests.
+    issueLink: https://github.com/solo-io/gloo/pull/693
