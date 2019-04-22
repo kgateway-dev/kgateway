@@ -20,9 +20,11 @@ spec:
 {{- toYaml .Values.settings.extensions | nindent 4 }}
 {{- end }}
 
+{{- with .Values.settings.watchNamespaces }}
   watchNamespaces:
-  {{- range .Values.settings.watchNamespaces }}
+  {{- range . }}
   - {{ . }}
   {{- end }}
+{{- end }}
 
 {{- end }}
