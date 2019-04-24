@@ -1532,10 +1532,11 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:b64249760bfbcb2474eb31f6fcb8b35fdf2b886e22b12bf615f0e97d7361501e"
+  digest = "1:ec5d2ebd961e522488ad30b32a8eaf722a6f20980ebafc66171da9aaed501f23"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
+    "clicore/constants",
     "clidoc",
     "cliutils",
     "contextutils",
@@ -1554,8 +1555,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "a27432d89f419897df796a17456410e49a9727c3"
-  version = "v0.7.11"
+  revision = "0615c838ea7df7a3f83f6a8551e186ad60966547"
+  version = "v0.7.16"
 
 [[projects]]
   branch = "master"
@@ -1566,10 +1567,11 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:bc11d96518edb7652819e0f49848375d30d66280cf53b5c4e0a572d9f07a30d6"
+  digest = "1:bc01339b781ae3da379e2c6ee124badbe079d057b2af30c7575e00904c915eb1"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
+    "pkg/api/v1/clients/common",
     "pkg/api/v1/clients/configmap",
     "pkg/api/v1/clients/consul",
     "pkg/api/v1/clients/factory",
@@ -1620,8 +1622,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "c9138bf5671c8e487ce1b510339db5f6d7514598"
-  version = "v0.6.0"
+  revision = "6686c4f5f21002d80a7d98b137fe94e470ca5f58"
+  version = "v0.7.0"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"

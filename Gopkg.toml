@@ -25,11 +25,11 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.6.0"
+  version = "0.7.0"
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  version = "0.7.11"
+  version = "0.7.15"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
