@@ -104,6 +104,7 @@ func configForMultiDestination(destinations []*v1.WeightedDestination, upstreams
 			if _, ok := processedClusters[cluster.Name]; ok {
 				continue
 			}
+			processedClusters[cluster.Name] = true
 			headers := out.GetRequestHeadersToAdd()
 			headers = append(headers, header)
 			cluster.RequestHeadersToAdd = headers
