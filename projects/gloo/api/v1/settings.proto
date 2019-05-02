@@ -51,6 +51,9 @@ message Settings {
     // enable serving debug data on port 9090
     bool dev_mode = 13;
 
+    // enable automatic linkerd upstream header addition for easier routing to linkerd services
+    bool linkerd = 17;
+
     // ilackarms(todo: make sure these are configurable)
     message KubernetesCrds{} // watch kubernetes Crds
     message KubernetesSecrets{} // watch kube secrets

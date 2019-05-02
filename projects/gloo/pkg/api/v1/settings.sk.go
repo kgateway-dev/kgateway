@@ -41,6 +41,7 @@ func (r *Settings) Hash() uint64 {
 		r.BindAddr,
 		r.RefreshRate,
 		r.DevMode,
+		r.Linkerd,
 		r.CircuitBreakers,
 		r.Extensions,
 		r.ConfigSource,

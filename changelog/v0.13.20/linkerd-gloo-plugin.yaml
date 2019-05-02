@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Enable linkerd header addition on gloo upstreams.
+    issueLink: https://github.com/solo-io/supergloo/issues/422

@@ -77,6 +77,7 @@ func SettingsClientTest(namespace string, client SettingsClient, name1, name2, n
 	Expect(r1.BindAddr).To(Equal(input.BindAddr))
 	Expect(r1.RefreshRate).To(Equal(input.RefreshRate))
 	Expect(r1.DevMode).To(Equal(input.DevMode))
+	Expect(r1.Linkerd).To(Equal(input.Linkerd))
 	Expect(r1.CircuitBreakers).To(Equal(input.CircuitBreakers))
 	Expect(r1.Extensions).To(Equal(input.Extensions))
 	Expect(r1.Status).To(Equal(input.Status))
