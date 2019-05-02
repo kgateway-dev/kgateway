@@ -129,7 +129,7 @@ func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoycore.HeaderValue
 		us.ServiceName, us.ServiceNamespace, us.ServicePort)
 	header := &envoycore.HeaderValueOption{
 		Append: &types.BoolValue{
-			Value: true,
+			Value: false,
 		},
 		Header: &envoycore.HeaderValue{
 			Value: LinkerdHeader,
