@@ -9,7 +9,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -19,9 +19,9 @@ import (
 
 var _ = Describe("linkerd plugin", func() {
 	var (
-		params       plugins.Params
-		plugin       *Plugin
-		out *envoyroute.Route
+		params plugins.Params
+		plugin *Plugin
+		out    *envoyroute.Route
 	)
 	BeforeEach(func() {
 		out = new(envoyroute.Route)
@@ -144,17 +144,17 @@ var _ = Describe("linkerd plugin", func() {
 		})
 		It("properly adds the header to existing weighted clusters with kube upstreams", func() {
 			upstreamRefs := []core.ResourceRef{
-				{Name: "one", Namespace: "one",},
-				{Name: "two", Namespace: "one",},
-				{Name: "three", Namespace: "one",},
+				{Name: "one", Namespace: "one"},
+				{Name: "two", Namespace: "one"},
+				{Name: "three", Namespace: "one"},
 			}
 			var port uint32 = 9000
 			kubeSpecs := []*kubernetes.UpstreamSpec{
-				{ServicePort: port, ServiceName: "one", ServiceNamespace: "one",},
-				{ServicePort: port, ServiceName: "two", ServiceNamespace: "one",},
-				{ServicePort: port, ServiceName: "three", ServiceNamespace: "one",},
+				{ServicePort: port, ServiceName: "one", ServiceNamespace: "one"},
+				{ServicePort: port, ServiceName: "two", ServiceNamespace: "one"},
+				{ServicePort: port, ServiceName: "three", ServiceNamespace: "one"},
 			}
-			clusters , destinations := clustersAndDestinationsForUpstreams(upstreamRefs)
+			clusters, destinations := clustersAndDestinationsForUpstreams(upstreamRefs)
 			out.Action = &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{
 					ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
@@ -180,17 +180,17 @@ var _ = Describe("linkerd plugin", func() {
 		})
 		It("skips non-kubernetes upstreams", func() {
 			upstreamRefs := []core.ResourceRef{
-				{Name: "one", Namespace: "one",},
-				{Name: "two", Namespace: "one",},
-				{Name: "three", Namespace: "one",},
+				{Name: "one", Namespace: "one"},
+				{Name: "two", Namespace: "one"},
+				{Name: "three", Namespace: "one"},
 			}
 			var port uint32 = 9000
 			kubeSpecs := []*kubernetes.UpstreamSpec{
-				{ServicePort: port, ServiceName: "one", ServiceNamespace: "one",},
-				{ServicePort: port, ServiceName: "two", ServiceNamespace: "one",},
+				{ServicePort: port, ServiceName: "one", ServiceNamespace: "one"},
+				{ServicePort: port, ServiceName: "two", ServiceNamespace: "one"},
 				nil,
 			}
-			clusters , destinations := clustersAndDestinationsForUpstreams(upstreamRefs)
+			clusters, destinations := clustersAndDestinationsForUpstreams(upstreamRefs)
 			out.Action = &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{
 					ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
@@ -231,17 +231,17 @@ var _ = Describe("linkerd plugin", func() {
 		})
 		It("works for a single", func() {
 			upstreamRefs := []core.ResourceRef{
-				{Name: "one", Namespace: "one",},
-				{Name: "two", Namespace: "one",},
-				{Name: "three", Namespace: "one",},
+				{Name: "one", Namespace: "one"},
+				{Name: "two", Namespace: "one"},
+				{Name: "three", Namespace: "one"},
 			}
 			var port uint32 = 9000
 			kubeSpecs := []*kubernetes.UpstreamSpec{
-				{ServicePort: port, ServiceName: "one", ServiceNamespace: "one",},
-				{ServicePort: port, ServiceName: "two", ServiceNamespace: "one",},
+				{ServicePort: port, ServiceName: "one", ServiceNamespace: "one"},
+				{ServicePort: port, ServiceName: "two", ServiceNamespace: "one"},
 				nil,
 			}
-			clusters , _ := clustersAndDestinationsForUpstreams(upstreamRefs)
+			clusters, _ := clustersAndDestinationsForUpstreams(upstreamRefs)
 			out.Action = &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{
 					ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{

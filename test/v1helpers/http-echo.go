@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/go-utils/logger"
+	"github.com/solo-io/go-utils/log"
 
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -17,7 +17,6 @@ import (
 )
 
 const (
-
 	defaultHttpEchoImage = "kennship/http-echo:latest"
 	HttpEchoName         = "http-echo"
 	HttpEchoPort         = 3000
@@ -135,7 +134,7 @@ func (t *TestContainer) Deploy(timeout time.Duration) error {
 	if err := testutils.WaitPodsRunning(ctx, time.Second, t.namespace, "gloo="+t.echoName); err != nil {
 		return err
 	}
-	logger.Printf("deployed %s", t.echoName)
+	log.Printf("deployed %s", t.echoName)
 	return nil
 }
 

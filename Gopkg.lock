@@ -1532,7 +1532,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:6196ed509c54e2d70d8ba8c5d2a9c0b4a9b14f66b3d1f1faba7f1b9a3f41ffd1"
+  digest = "1:d2e282d951ee0f58ad9d1697d46894cf5a829ee760b3977a7a0daac63b2e04e2"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1542,12 +1542,16 @@
     "contextutils",
     "docsutils",
     "errors",
+    "errutils",
     "githubutils",
+    "hashutils",
     "kubeinstallutils",
     "kubeutils",
-    "logger",
+    "log",
     "pkgmgmtutils",
     "protoutils",
+    "stats",
+    "stringutils",
     "testutils",
     "testutils/clusterlock",
     "testutils/exec",
@@ -1555,19 +1559,11 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "c61e6bec813258be77277bacc1ee7738674bc1f6"
-  version = "v0.7.21"
+  revision = "9237c218b10ba99ea3e86ecd7c863d9e2c4c7274"
+  version = "v0.8.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:898faa8b0ea3e2a812fb293db0d9d3359c15669559f7128f15d11e597012fdee"
-  name = "github.com/solo-io/kubecontroller"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
-
-[[projects]]
-  digest = "1:fac76b988a58a42c43d476fb96956943a227b12a78f4e368740c4f6416ef4a76"
+  digest = "1:2f4eaa90f2b7fa5f527d9904e337de308c1969d61ed5c9e07fc2e97c187e8699"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1610,21 +1606,16 @@
     "pkg/code-generator/model",
     "pkg/code-generator/parser",
     "pkg/errors",
-    "pkg/utils/errutils",
     "pkg/utils/fileutils",
-    "pkg/utils/hashutils",
     "pkg/utils/kubeutils",
-    "pkg/utils/log",
     "pkg/utils/protoutils",
-    "pkg/utils/stats",
-    "pkg/utils/stringutils",
     "test/helpers",
     "test/setup",
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "9b2f5ee87f4de276e3bf138faeb21f21d48698a1"
-  version = "v0.7.3"
+  revision = "384dbdaa27e3754a07a4cc65f9331e2f5a0d7d20"
+  version = "v0.8.0"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2718,21 +2709,24 @@
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/docsutils",
     "github.com/solo-io/go-utils/errors",
+    "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/githubutils",
+    "github.com/solo-io/go-utils/hashutils",
     "github.com/solo-io/go-utils/kubeutils",
-    "github.com/solo-io/go-utils/logger",
+    "github.com/solo-io/go-utils/log",
     "github.com/solo-io/go-utils/pkgmgmtutils",
     "github.com/solo-io/go-utils/protoutils",
+    "github.com/solo-io/go-utils/stats",
     "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/testutils/clusterlock",
     "github.com/solo-io/go-utils/testutils/exec",
     "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
-    "github.com/solo-io/kubecontroller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
+    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
@@ -2748,11 +2742,7 @@
     "github.com/solo-io/solo-kit/pkg/code-generator/cmd",
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",
-    "github.com/solo-io/solo-kit/pkg/utils/errutils",
-    "github.com/solo-io/solo-kit/pkg/utils/hashutils",
     "github.com/solo-io/solo-kit/pkg/utils/kubeutils",
-    "github.com/solo-io/solo-kit/pkg/utils/log",
-    "github.com/solo-io/solo-kit/pkg/utils/stats",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",

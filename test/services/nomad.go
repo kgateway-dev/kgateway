@@ -21,7 +21,7 @@ package services
 //	"github.com/onsi/ginkgo"
 //	"github.com/pkg/errors"
 //	"github.com/solo-io/gloo/pkg/backoff"
-//	"github.com/solo-io/solo-kit/pkg/utils/log"
+//	"github.com/solo-io/go-utils/log"
 //	"github.com/solo-io/gloo/test/helpers"
 //)
 //

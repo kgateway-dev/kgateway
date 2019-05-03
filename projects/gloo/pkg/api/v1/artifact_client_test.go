@@ -165,18 +165,17 @@ func ArtifactClientTest(namespace string, client ArtifactClient, name1, name2, n
 		Fail("expected a message in channel")
 	}
 
-drain:
-	for {
-		select {
-		case list = <-w:
-		case err := <-errs:
-			Expect(err).NotTo(HaveOccurred())
-		case <-time.After(time.Millisecond * 500):
-			break drain
+	go func() {
+		defer GinkgoRecover()
+		for {
+			select {
+			case err := <-errs:
+				Expect(err).NotTo(HaveOccurred())
+			case <-time.After(time.Second / 4):
+				return
+			}
 		}
-	}
+	}()
 
-	Expect(list).To(ContainElement(r1))
-	Expect(list).To(ContainElement(r2))
-	Expect(list).To(ContainElement(r3))
+	Eventually(w, time.Second*5, time.Second/10).Should(Receive(And(ContainElement(r1), ContainElement(r3), ContainElement(r3))))
 }

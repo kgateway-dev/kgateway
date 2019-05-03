@@ -15,7 +15,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
-	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/solo-io/go-utils/log"
 )
 
 const defaultConsulDockerImage = "consul@sha256:6ffe55dcc1000126a6e874b298fe1f1b87f556fb344781af60681932e408ec6a"

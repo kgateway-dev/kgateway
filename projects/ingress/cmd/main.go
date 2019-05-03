@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/solo-io/gloo/projects/ingress/pkg/setup"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
+	"github.com/solo-io/go-utils/log"
 )
 
 func main() {

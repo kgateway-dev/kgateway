@@ -62,6 +62,8 @@ update-deps:
 	mkdir -p $$GOPATH/src/github.com/lyft
 	cd $$GOPATH/src/github.com/lyft && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git checkout v0.0.6
 	go get -u github.com/paulvollmer/2gobytes
+	go get -v -u github.com/golang/mock/gomock
+	go install github.com/golang/mock/mockgen
 
 .PHONY: pin-repos
 pin-repos:
@@ -93,9 +95,10 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
+# TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=projects test
 $(OUTPUT_DIR)/.generated-code:
-	go generate ./...
+	SKIP_MOCK_GEN=1 go generate ./...
 	(rm docs/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go)
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)

@@ -10,8 +10,8 @@ import (
 	gloosetup "github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	ingresssetup "github.com/solo-io/gloo/projects/ingress/pkg/setup"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
-	"github.com/solo-io/solo-kit/pkg/utils/stats"
+	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/go-utils/stats"
 )
 
 func main() {

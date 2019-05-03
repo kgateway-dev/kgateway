@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/setup"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
-	"github.com/solo-io/solo-kit/pkg/utils/stats"
+	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/go-utils/stats"
 )
 
 const (

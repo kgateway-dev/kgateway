@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/go-utils/githubutils"
-	"github.com/solo-io/go-utils/logger"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/pkgmgmtutils"
 	"github.com/solo-io/go-utils/versionutils"
 )

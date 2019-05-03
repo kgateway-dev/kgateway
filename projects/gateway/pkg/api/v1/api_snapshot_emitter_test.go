@@ -12,12 +12,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	kuberc "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/utils/log"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	// Needed to run tests in GKE
@@ -37,6 +37,7 @@ var _ = Describe("V1Emitter", func() {
 		namespace2           string
 		name1, name2         = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
 		cfg                  *rest.Config
+		kube                 kubernetes.Interface
 		emitter              ApiEmitter
 		gatewayClient        GatewayClient
 		virtualServiceClient VirtualServiceClient
@@ -45,12 +46,10 @@ var _ = Describe("V1Emitter", func() {
 	BeforeEach(func() {
 		namespace1 = helpers.RandString(8)
 		namespace2 = helpers.RandString(8)
-		var err error
+		kube = helpers.MustKubeClient()
+		err := kubeutils.CreateNamespacesInParallel(kube, namespace1, namespace2)
+		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-		err = setup.SetupKubeForTest(namespace1)
-		Expect(err).NotTo(HaveOccurred())
-		err = setup.SetupKubeForTest(namespace2)
 		Expect(err).NotTo(HaveOccurred())
 		// Gateway Constructor
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
@@ -73,8 +72,8 @@ var _ = Describe("V1Emitter", func() {
 		emitter = NewApiEmitter(gatewayClient, virtualServiceClient)
 	})
 	AfterEach(func() {
-		setup.TeardownKube(namespace1)
-		setup.TeardownKube(namespace2)
+		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()

@@ -347,7 +347,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				httpEcho, err := v1helpers.NewEchoHttp(testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = httpEcho.Deploy(2*time.Minute)
+				err = httpEcho.Deploy(2 * time.Minute)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {

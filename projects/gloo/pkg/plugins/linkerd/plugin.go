@@ -17,7 +17,7 @@ const (
 	HeaderKey = "l5d-dst-override"
 )
 
-type Plugin struct{
+type Plugin struct {
 	enabled bool
 }
 

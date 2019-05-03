@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/utils/errutils"
+	"github.com/solo-io/go-utils/errutils"
 )
 
 func RunFDS(opts bootstrap.Opts) error {
