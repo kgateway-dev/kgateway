@@ -359,6 +359,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					OverwriteExisting: true,
 				})
 				Expect(err).NotTo(HaveOccurred())
+				err = virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("appends linkerd headers when linkerd is enabled", func() {
