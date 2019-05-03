@@ -67,8 +67,11 @@ func startInformerFactory(ctx context.Context, client kubernetes.Interface) *Kub
 		endpointInformer.Informer(), podsInformer.Informer(), servicesInformer.Informer())
 
 	stop := ctx.Done()
-	go kubeInformerFactory.Start(stop)
-	go kubeController.Run(2, stop)
+	err := kubeController.Run(2, stop)
+	if err != nil {
+		k.initError = errors.Wrapf(err, "could not start shared informer factory")
+		return k
+	}
 
 	ok := cache.WaitForCacheSync(stop,
 		endpointInformer.Informer().HasSynced,
