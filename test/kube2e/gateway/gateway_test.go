@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
-	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/testutils/helper"
 
 	"k8s.io/client-go/kubernetes"
@@ -282,7 +281,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		It("should preserve discovery", func() {
-			createServicesForPod(v1helpers.TestrunnerName, v1helpers.TestRunnerPort)
+			createServicesForPod("testrunner", helper.TestRunnerPort)
 			getUpstream := func(svcname string) (*gloov1.Upstream, error) {
 				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
 				return upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
@@ -344,7 +343,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 
-				httpEcho, err := v1helpers.NewEchoHttp(testHelper.InstallNamespace)
+				httpEcho, err := helper.NewEchoHttp(testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = httpEcho.Deploy(2 * time.Minute)
@@ -365,7 +364,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("appends linkerd headers when linkerd is enabled", func() {
 				upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, v1helpers.HttpEchoName, v1helpers.HttpEchoPort)
+				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
 				us, err := upstreams.Find(testHelper.InstallNamespace, upstreamName)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -402,7 +401,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				gatewayProxy := "gateway-proxy"
 				gatewayPort := int(80)
 				responseString := fmt.Sprintf(`"%s":"%s.%s.svc.cluster.local:%v"`,
-					linkerd.HeaderKey, v1helpers.HttpEchoName, testHelper.InstallNamespace, v1helpers.HttpEchoPort)
+					linkerd.HeaderKey, helper.HttpEchoName, testHelper.InstallNamespace, helper.HttpEchoPort)
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
 					Path:              "/",
