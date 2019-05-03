@@ -14,10 +14,12 @@ import (
 )
 
 const (
-	LinkerdHeader = "l5d-dst-override"
+	HeaderKey = "l5d-dst-override"
 )
 
-type Plugin struct{}
+type Plugin struct{
+	enabled bool
+}
 
 var _ plugins.Plugin = &Plugin{}
 
@@ -26,6 +28,9 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
+	if settings := params.Settings; settings != nil {
+		p.enabled = params.Settings.Linkerd
+	}
 	return nil
 }
 
@@ -132,7 +137,7 @@ func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoycore.HeaderValue
 			Value: false,
 		},
 		Header: &envoycore.HeaderValue{
-			Value: LinkerdHeader,
+			Value: HeaderKey,
 			Key:   destination,
 		},
 	}

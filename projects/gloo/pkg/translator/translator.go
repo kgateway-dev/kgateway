@@ -1,7 +1,7 @@
 package translator
 
 import (
-	fmt "fmt"
+	"fmt"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/mitchellh/hashstructure"
@@ -44,6 +44,7 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 		if err := p.Init(plugins.InitParams{
 			Ctx:                params.Ctx,
 			ExtensionsSettings: t.extensionsSettings,
+			Settings:           t.settings,
 		}); err != nil {
 			return nil, nil, errors.Wrapf(err, "plugin init failed")
 		}
