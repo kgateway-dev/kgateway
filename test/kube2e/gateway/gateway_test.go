@@ -317,7 +317,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		})
 
-		FContext("linkerd enabled updates routes with appended headers", func() {
+		Context("linkerd enabled updates routes with appended headers", func() {
 			var (
 				settingsClient gloov1.SettingsClient
 			)
