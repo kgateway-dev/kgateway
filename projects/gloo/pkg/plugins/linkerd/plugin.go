@@ -35,6 +35,9 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
+	if !p.enabled {
+		return nil
+	}
 	routeAction := in.GetRouteAction()
 	if routeAction == nil {
 		return nil
