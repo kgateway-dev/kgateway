@@ -43,8 +43,8 @@ var _ = Describe("linkerd plugin", func() {
 			host := fmt.Sprintf("%s.%s.svc.cluster.local:%v", name, ns, port)
 			Expect(createHeaderForUpstream(kus)).To(BeEquivalentTo(&envoycore.HeaderValueOption{
 				Header: &envoycore.HeaderValue{
-					Value: HeaderKey,
-					Key:   host,
+					Value: host,
+					Key:   HeaderKey,
 				},
 				Append: &types.BoolValue{
 					Value: false,

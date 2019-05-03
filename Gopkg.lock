@@ -1532,7 +1532,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:ec5d2ebd961e522488ad30b32a8eaf722a6f20980ebafc66171da9aaed501f23"
+  digest = "1:6196ed509c54e2d70d8ba8c5d2a9c0b4a9b14f66b3d1f1faba7f1b9a3f41ffd1"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1555,8 +1555,8 @@
     "versionutils",
   ]
   pruneopts = "UT"
-  revision = "0615c838ea7df7a3f83f6a8551e186ad60966547"
-  version = "v0.7.16"
+  revision = "c61e6bec813258be77277bacc1ee7738674bc1f6"
+  version = "v0.7.21"
 
 [[projects]]
   branch = "master"
@@ -1567,7 +1567,7 @@
   revision = "241bc627d5400a0794853220df4fdefeeb2af0e0"
 
 [[projects]]
-  digest = "1:bc01339b781ae3da379e2c6ee124badbe079d057b2af30c7575e00904c915eb1"
+  digest = "1:fac76b988a58a42c43d476fb96956943a227b12a78f4e368740c4f6416ef4a76"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "pkg/api/v1/clients",
@@ -1587,6 +1587,7 @@
     "pkg/api/v1/clients/kubesecret",
     "pkg/api/v1/clients/memory",
     "pkg/api/v1/clients/vault",
+    "pkg/api/v1/clients/wrapper",
     "pkg/api/v1/control-plane/cache",
     "pkg/api/v1/control-plane/log",
     "pkg/api/v1/control-plane/server",
@@ -1622,8 +1623,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "6686c4f5f21002d80a7d98b137fe94e470ca5f58"
-  version = "v0.7.0"
+  revision = "9b2f5ee87f4de276e3bf138faeb21f21d48698a1"
+  version = "v0.7.3"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"

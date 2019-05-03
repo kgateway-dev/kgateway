@@ -137,8 +137,8 @@ func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoycore.HeaderValue
 			Value: false,
 		},
 		Header: &envoycore.HeaderValue{
-			Value: HeaderKey,
-			Key:   destination,
+			Value: destination,
+			Key:   HeaderKey,
 		},
 	}
 	return header

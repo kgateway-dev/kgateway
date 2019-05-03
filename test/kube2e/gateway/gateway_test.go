@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
+	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/testutils/helper"
 
 	"k8s.io/client-go/kubernetes"
@@ -39,6 +41,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		ctx        context.Context
 		cancel     context.CancelFunc
 		cfg        *rest.Config
+		cache      kube.SharedCache
 		kubeClient kubernetes.Interface
 
 		gatewayClient        v1.GatewayClient
@@ -57,7 +60,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeClient, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		cache := kube.NewKubeCache(ctx)
+		cache = kube.NewKubeCache(ctx)
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         v1.GatewayCrd,
 			Cfg:         cfg,
@@ -250,19 +253,20 @@ var _ = Describe("Kube2e: gateway", func() {
 		var (
 			createdServices []string
 		)
-		BeforeEach(func() {
+
+		var createServicesForPod = func(displayName string, port int32) {
 			createdServices = nil
-			//create some services
+			// create some services
 			for i := 0; i < 20; i++ {
 				service := &corev1.Service{
 					ObjectMeta: meta_v1.ObjectMeta{
-						Name:   fmt.Sprintf("testrunner-%d", i),
-						Labels: map[string]string{"gloo": "testrunner"},
+						Name:   fmt.Sprintf("%s-%d", displayName, i),
+						Labels: map[string]string{"gloo": displayName},
 					},
 					Spec: corev1.ServiceSpec{
-						Selector: map[string]string{"gloo": "testrunner"},
+						Selector: map[string]string{"gloo": displayName},
 						Ports: []corev1.ServicePort{{
-							Port: helper.TestRunnerPort,
+							Port: port,
 						}},
 					},
 				}
@@ -270,8 +274,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 				createdServices = append(createdServices, service.Name)
 			}
-		})
-
+		}
 		AfterEach(func() {
 			for _, svcName := range createdServices {
 				kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(svcName, &meta_v1.DeleteOptions{})
@@ -279,6 +282,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		It("should preserve discovery", func() {
+			createServicesForPod(v1helpers.TestrunnerName, v1helpers.TestRunnerPort)
 			getUpstream := func(svcname string) (*gloov1.Upstream, error) {
 				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
 				return upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
@@ -311,6 +315,104 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
 
+		})
+
+		FContext("linkerd enabled updates routes with appended headers", func() {
+			var (
+				settingsClient gloov1.SettingsClient
+			)
+			BeforeEach(func() {
+				var err error
+				settingsClientFactory := &factory.KubeResourceClientFactory{
+					Crd:         gloov1.SettingsCrd,
+					Cfg:         cfg,
+					SharedCache: cache,
+				}
+
+				settingsClient, err = gloov1.NewSettingsClient(settingsClientFactory)
+				Expect(err).NotTo(HaveOccurred())
+				err = settingsClient.Register()
+				Expect(err).NotTo(HaveOccurred())
+
+				settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(settingsList).To(HaveLen(1))
+				settings := settingsList[0]
+				settings.Linkerd = true
+				_, err = settingsClient.Write(settings, clients.WriteOpts{
+					OverwriteExisting: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				httpEcho, err := v1helpers.NewEchoHttp(testHelper.InstallNamespace)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = httpEcho.Deploy(2*time.Minute)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			AfterEach(func() {
+				settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(settingsList).To(HaveLen(1))
+				settings := settingsList[0]
+				settings.Linkerd = false
+				_, err = settingsClient.Write(settings, clients.WriteOpts{
+					OverwriteExisting: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("appends linkerd headers when linkerd is enabled", func() {
+				upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, v1helpers.HttpEchoName, v1helpers.HttpEchoPort)
+				us, err := upstreams.Find(testHelper.InstallNamespace, upstreamName)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = virtualServiceClient.Write(&v1.VirtualService{
+
+					Metadata: core.Metadata{
+						Name:      "vs",
+						Namespace: testHelper.InstallNamespace,
+					},
+					VirtualHost: &gloov1.VirtualHost{
+						Name:    "default",
+						Domains: []string{"*"},
+						Routes: []*gloov1.Route{
+							{
+								Matcher: &gloov1.Matcher{
+									PathSpecifier: &gloov1.Matcher_Prefix{
+										Prefix: "/",
+									},
+								},
+								Action: &gloov1.Route_RouteAction{
+									RouteAction: &gloov1.RouteAction{
+										Destination: &gloov1.RouteAction_Single{
+											Single: &gloov1.Destination{
+												Upstream: us.Metadata.Ref(),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				gatewayProxy := "gateway-proxy"
+				gatewayPort := int(80)
+				responseString := fmt.Sprintf(`"%s":"%s.%s.svc.cluster.local:%v"`,
+					linkerd.HeaderKey, v1helpers.HttpEchoName, testHelper.InstallNamespace, v1helpers.HttpEchoPort)
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              gatewayProxy,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 10,
+				}, responseString, 1, 120*time.Second)
+			})
 		})
 
 	})
