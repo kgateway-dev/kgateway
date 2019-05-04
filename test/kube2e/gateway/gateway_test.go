@@ -165,7 +165,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, helper.SimpleHttpResponse, 1, 120*time.Second)
 		})
 
-		FContext("native ssl ", func() {
+		Context("native ssl ", func() {
 
 			BeforeEach(func() {
 				// get the certificate so it is generated in the background
