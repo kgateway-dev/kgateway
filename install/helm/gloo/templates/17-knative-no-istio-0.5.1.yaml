@@ -196,6 +196,22 @@ rules:
       - watch
 
 ---
+# This ClusterRole enables the aggregated ClusterRole used by the
+# knative/serving controller to interact with Build resources.
+# Source: https://raw.githubusercontent.com/knative/serving/v0.5.2/third_party/config/build/clusterrole.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: knative-serving-build
+  labels:
+    serving.knative.dev/release: devel
+    serving.knative.dev/controller: "true"
+rules:
+  - apiGroups: ["build.knative.dev"]
+    resources: ["builds"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
