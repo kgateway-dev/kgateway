@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Adds the missing CLlsterRole for knative-build access of the knative-serving controller.
+    issueLink: https://github.com/solo-io/gloo/issues/704
+    resolvesIssue: true
