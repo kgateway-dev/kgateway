@@ -54,17 +54,17 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, )", snap.Hash(),
-		len(snap.Proxies.List()), len(snap.Upstreams.List()), len(snap.Endpoints.List()), len(snap.Secrets.List()), len(snap.Artifacts.List()))
+		len(snap.Proxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts))
 	defer logger.Infof("end sync %v", snap.Hash())
 
 	logger.Debugf("%v", snap)
 	allResourceErrs := make(reporter.ResourceErrors)
-	allResourceErrs.Accept(snap.Upstreams.List().AsInputResources()...)
-	allResourceErrs.Accept(snap.Proxies.List().AsInputResources()...)
+	allResourceErrs.Accept(snap.Upstreams.AsInputResources()...)
+	allResourceErrs.Accept(snap.Proxies.AsInputResources()...)
 
-	s.xdsHasher.SetKeysFromProxies(snap.Proxies.List())
+	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
 
-	for _, proxy := range snap.Proxies.List() {
+	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(proxyNameKey, proxy.Metadata.Ref().Key())); err == nil {
 			proxyCtx = ctxWithTags
@@ -145,7 +145,7 @@ func validateSnapshot(snap *v1.ApiSnapshot, snapshot envoycache.Snapshot, errs r
 	clusters := snapshot.GetResources(xds.ClusterType)
 	endpoints := snapshot.GetResources(xds.EndpointType)
 
-	for _, up := range snap.Upstreams.List().AsInputResources() {
+	for _, up := range snap.Upstreams.AsInputResources() {
 		if errs[up] != nil {
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 			// remove cluster and endpoints
@@ -166,7 +166,7 @@ func validateSnapshot(snap *v1.ApiSnapshot, snapshot envoycache.Snapshot, errs r
 	}
 
 	// snapshot is consistent, so check if we have errors not related to the upstreams
-	for _, up := range snap.Upstreams.List().AsInputResources() {
+	for _, up := range snap.Upstreams.AsInputResources() {
 		if errs[up] != nil {
 			delete(errs, up)
 		}

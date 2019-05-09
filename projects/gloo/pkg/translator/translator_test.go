@@ -11,7 +11,7 @@ import (
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("Translator", func() {
@@ -74,10 +74,8 @@ var _ = Describe("Translator", func() {
 		params = plugins.Params{
 			Ctx: context.Background(),
 			Snapshot: &v1.ApiSnapshot{
-				Upstreams: v1.UpstreamsByNamespace{
-					"gloo-system": v1.UpstreamList{
-						upstream,
-					},
+				Upstreams: v1.UpstreamList{
+					upstream,
 				},
 			},
 		}
@@ -355,11 +353,9 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			params.Snapshot.Upstreams["gloo-system"] = append(params.Snapshot.Upstreams["gloo-system"], upstream2)
-			params.Snapshot.Upstreamgroups = v1.UpstreamgroupsByNamespace{
-				"gloo-system": v1.UpstreamGroupList{
-					upstreamGroup,
-				},
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstream2)
+			params.Snapshot.Upstreamgroups = v1.UpstreamGroupList{
+				upstreamGroup,
 			}
 			ref := upstreamGroup.Metadata.Ref()
 			routes = []*v1.Route{{
@@ -418,20 +414,18 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			ref := upstream.Metadata.Ref()
-			params.Snapshot.Endpoints = v1.EndpointsByNamespace{
-				"gloo-system": v1.EndpointList{
-					{
-						Metadata: core.Metadata{
-							Name:      "test",
-							Namespace: "gloo-system",
-							Labels:    map[string]string{"testkey": "testvalue"},
-						},
-						Upstreams: []*core.ResourceRef{
-							&ref,
-						},
-						Address: "1.2.3.4",
-						Port:    1234,
+			params.Snapshot.Endpoints = v1.EndpointList{
+				{
+					Metadata: core.Metadata{
+						Name:      "test",
+						Namespace: "gloo-system",
+						Labels:    map[string]string{"testkey": "testvalue"},
 					},
+					Upstreams: []*core.ResourceRef{
+						&ref,
+					},
+					Address: "1.2.3.4",
+					Port:    1234,
 				},
 			}
 
@@ -467,7 +461,7 @@ var _ = Describe("Translator", func() {
 			Expect(cla_configuration).NotTo(BeNil())
 			Expect(cla_configuration.ClusterName).To(Equal(clusterName))
 			Expect(cla_configuration.Endpoints).To(HaveLen(1))
-			Expect(cla_configuration.Endpoints[0].LbEndpoints).To(HaveLen(len(params.Snapshot.Endpoints["gloo-system"])))
+			Expect(cla_configuration.Endpoints[0].LbEndpoints).To(HaveLen(len(params.Snapshot.Endpoints)))
 		}
 
 		Context("when happy path", func() {
@@ -499,7 +493,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should create empty value if missing labels on the endpoint are provided in the upstream", func() {
-			params.Snapshot.Endpoints["gloo-system"][0].Metadata.Labels = nil
+			params.Snapshot.Endpoints[0].Metadata.Labels = nil
 			translateWithEndpoints()
 			endpointMeta := cla_configuration.Endpoints[0].LbEndpoints[0].Metadata
 			Expect(endpointMeta).ToNot(BeNil())

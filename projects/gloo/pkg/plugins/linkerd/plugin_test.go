@@ -253,9 +253,7 @@ var _ = Describe("linkerd plugin", func() {
 			}
 			upstreams := createUpstreamList(upstreamRefs, kubeSpecs)
 			params.Snapshot = &v1.ApiSnapshot{
-				Upstreams: v1.UpstreamsByNamespace{
-					"": upstreams,
-				},
+				Upstreams: upstreams,
 			}
 			in := &v1.Route{
 				Action: &v1.Route_RouteAction{

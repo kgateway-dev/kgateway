@@ -46,7 +46,7 @@ func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route
 	switch dest := inAction.Destination.(type) {
 	case *v1.RouteAction_UpstreamGroup:
 
-		upstreamGroup, err := snap.Upstreamgroups.List().Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
+		upstreamGroup, err := snap.Upstreamgroups.Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
 		if err != nil {
 			return err
 		}

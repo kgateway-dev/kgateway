@@ -25,8 +25,8 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 		}
 		clusterIngresses = append(clusterIngresses, kubeIngress)
 	}
-	upstreams := snap.Upstreams.List()
-	secrets := snap.Secrets.List()
+	upstreams := snap.Upstreams
+	secrets := snap.Secrets
 
 	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(clusterIngresses, upstreams, secrets)
 	if err != nil {

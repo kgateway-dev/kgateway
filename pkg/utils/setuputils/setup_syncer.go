@@ -31,7 +31,7 @@ func NewSetupSyncer(settingsRef core.ResourceRef, setupFunc SetupFunc) *SetupSyn
 }
 
 func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
-	settings, err := snap.Settings.List().Find(s.settingsRef.Strings())
+	settings, err := snap.Settings.Find(s.settingsRef.Strings())
 	if err != nil {
 		return errors.Wrapf(err, "finding bootstrap configuration")
 	}

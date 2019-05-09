@@ -43,8 +43,8 @@ func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 		return nil
 	}
 
-	upstreams := params.Snapshot.Upstreams.List()
-	upstreamGroups := params.Snapshot.Upstreamgroups.List()
+	upstreams := params.Snapshot.Upstreams
+	upstreamGroups := params.Snapshot.Upstreamgroups
 
 	switch destType := routeAction.GetDestination().(type) {
 	case *v1.RouteAction_Single:

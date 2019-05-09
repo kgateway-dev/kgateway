@@ -34,7 +34,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v ingresses)", snap.Hash(),
-		len(snap.Ingresses.List()))
+		len(snap.Ingresses))
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 

@@ -26,20 +26,18 @@ var _ = Describe("Plugin", func() {
 		tlsConf = &v1.TlsSecret{}
 		params = plugins.Params{
 			Snapshot: &v1.ApiSnapshot{
-				Secrets: v1.SecretsByNamespace{
-					"namespace": v1.SecretList{{
-						Metadata: core.Metadata{
-							Name:      "name",
-							Namespace: "namespace",
-						},
-						Kind: &v1.Secret_Tls{
-							Tls: tlsConf,
-						},
-					}},
-				},
+				Secrets: v1.SecretList{{
+					Metadata: core.Metadata{
+						Name:      "name",
+						Namespace: "namespace",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: tlsConf,
+					},
+				}},
 			},
 		}
-		ref := params.Snapshot.Secrets["namespace"][0].Metadata.Ref()
+		ref := params.Snapshot.Secrets[0].Metadata.Ref()
 
 		upstream = &v1.Upstream{
 			UpstreamSpec: &v1.UpstreamSpec{

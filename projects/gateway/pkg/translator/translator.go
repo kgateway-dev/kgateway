@@ -20,16 +20,16 @@ const GatewayProxyName = "gateway-proxy"
 func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gloov1.Proxy, reporter.ResourceErrors) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	filteredGateways := filterGatewaysForNamespace(snap.Gateways.List(), namespace)
+	filteredGateways := filterGatewaysForNamespace(snap.Gateways, namespace)
 
 	resourceErrs := make(reporter.ResourceErrors)
 	resourceErrs.Accept(filteredGateways.AsInputResources()...)
-	resourceErrs.Accept(snap.VirtualServices.List().AsInputResources()...)
+	resourceErrs.Accept(snap.VirtualServices.AsInputResources()...)
 	if len(filteredGateways) == 0 {
 		logger.Debugf("%v had no gateways", snap.Hash())
 		return nil, resourceErrs
 	}
-	if len(snap.VirtualServices.List()) == 0 {
+	if len(snap.VirtualServices) == 0 {
 		logger.Debugf("%v had no virtual services", snap.Hash())
 		return nil, resourceErrs
 	}
@@ -37,7 +37,7 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 	var listeners []*gloov1.Listener
 	for _, gateway := range filteredGateways {
 
-		virtualServices := getVirtualServiceForGateway(gateway, snap.VirtualServices.List(), resourceErrs)
+		virtualServices := getVirtualServiceForGateway(gateway, snap.VirtualServices, resourceErrs)
 		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, virtualServices, resourceErrs)
 		mergedVirtualServices = filterVirtualSeviceForGateway(gateway, mergedVirtualServices)
 		listener := desiredListener(gateway, mergedVirtualServices)

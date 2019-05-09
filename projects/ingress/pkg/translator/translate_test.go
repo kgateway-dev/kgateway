@@ -182,9 +182,9 @@ var _ = Describe("Translate", func() {
 			},
 		}
 		snap := &v1.TranslatorSnapshot{
-			Ingresses: map[string]v1.IngressList{"hi": {ingressRes, ingressResTls, ingressResTls2}},
-			Secrets:   map[string]gloov1.SecretList{"hi": {secret}},
-			Upstreams: map[string]gloov1.UpstreamList{"hi": {us, usSubset}},
+			Ingresses: v1.IngressList{ingressRes, ingressResTls, ingressResTls2},
+			Secrets:   gloov1.SecretList{secret},
+			Upstreams: gloov1.UpstreamList{us, usSubset},
 		}
 		proxy, errs := translateProxy(namespace, snap)
 		Expect(errs).NotTo(HaveOccurred())

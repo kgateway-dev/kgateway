@@ -24,7 +24,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 
-	cfg, err := utils.NewSslConfigTranslator(params.Snapshot.Secrets.List()).ResolveUpstreamSslConfig(sslConfig)
+	cfg, err := utils.NewSslConfigTranslator(params.Snapshot.Secrets).ResolveUpstreamSslConfig(sslConfig)
 	if err != nil {
 		return err
 	}

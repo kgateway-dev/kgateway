@@ -14,7 +14,7 @@ func DestinationUpstreams(snap *v1.ApiSnapshot, in *v1.RouteAction) ([]core.Reso
 		return destinationsToRefs(dest.Multi.Destinations), nil
 	case *v1.RouteAction_UpstreamGroup:
 
-		upstreamGroup, err := snap.Upstreamgroups.List().Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
+		upstreamGroup, err := snap.Upstreamgroups.Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
 		if err != nil {
 			return nil, err
 		}

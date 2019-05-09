@@ -60,7 +60,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				params.Snapshot = &v1.ApiSnapshot{
-					Secrets: map[string]v1.SecretList{"": v1.SecretList{{
+					Secrets: v1.SecretList{{
 						Metadata: core.Metadata{
 							Name: "azure-secret1",
 							// TODO(yuval-k): namespace
@@ -71,7 +71,7 @@ var _ = Describe("Plugin", func() {
 								ApiKeys: map[string]string{"_master": "key1", "foo": "key1", "bar": "key2"},
 							},
 						},
-					}}},
+					}},
 				}
 
 				err = p.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)

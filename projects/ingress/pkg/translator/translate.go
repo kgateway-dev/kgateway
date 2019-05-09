@@ -14,15 +14,15 @@ import (
 
 func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
 	var ingresses []*v1beta1.Ingress
-	for _, ig := range snap.Ingresses.List() {
+	for _, ig := range snap.Ingresses {
 		kubeIngress, err := ingress.ToKube(ig)
 		if err != nil {
 			return nil, err
 		}
 		ingresses = append(ingresses, kubeIngress)
 	}
-	upstreams := snap.Upstreams.List()
-	secrets := snap.Secrets.List()
+	upstreams := snap.Upstreams
+	secrets := snap.Secrets
 
 	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, secrets)
 	if err != nil {

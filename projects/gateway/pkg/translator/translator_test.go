@@ -24,47 +24,41 @@ var _ = Describe("Translator", func() {
 	)
 	BeforeEach(func() {
 		snap = &v1.ApiSnapshot{
-			Gateways: v1.GatewaysByNamespace{
-				ns: v1.GatewayList{
-					{
-						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						BindPort: 2,
-					},
+			Gateways: v1.GatewayList{
+				{
+					Metadata: core.Metadata{Namespace: ns, Name: "name"},
+					BindPort: 2,
 				},
-				ns2: v1.GatewayList{
-					{
-						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
-						BindPort: 2,
-					},
+				{
+					Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
+					BindPort: 2,
 				},
 			},
-			VirtualServices: v1.VirtualServicesByNamespace{
-				ns: v1.VirtualServiceList{
-					{
-						Metadata: core.Metadata{Namespace: ns, Name: "name1"},
-						VirtualHost: &gloov1.VirtualHost{
-							Domains: []string{"d1.com"},
-							Routes: []*gloov1.Route{
-								{
-									Matcher: &gloov1.Matcher{
-										PathSpecifier: &gloov1.Matcher_Prefix{
-											Prefix: "/1",
-										},
+			VirtualServices: v1.VirtualServiceList{
+				{
+					Metadata: core.Metadata{Namespace: ns, Name: "name1"},
+					VirtualHost: &gloov1.VirtualHost{
+						Domains: []string{"d1.com"},
+						Routes: []*gloov1.Route{
+							{
+								Matcher: &gloov1.Matcher{
+									PathSpecifier: &gloov1.Matcher_Prefix{
+										Prefix: "/1",
 									},
 								},
 							},
 						},
 					},
-					{
-						Metadata: core.Metadata{Namespace: ns, Name: "name2"},
-						VirtualHost: &gloov1.VirtualHost{
-							Domains: []string{"d2.com"},
-							Routes: []*gloov1.Route{
-								{
-									Matcher: &gloov1.Matcher{
-										PathSpecifier: &gloov1.Matcher_Prefix{
-											Prefix: "/2",
-										},
+				},
+				{
+					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+					VirtualHost: &gloov1.VirtualHost{
+						Domains: []string{"d2.com"},
+						Routes: []*gloov1.Route{
+							{
+								Matcher: &gloov1.Matcher{
+									PathSpecifier: &gloov1.Matcher_Prefix{
+										Prefix: "/2",
 									},
 								},
 							},
@@ -102,7 +96,7 @@ var _ = Describe("Translator", func() {
 	})
 
 	It("should translate a gateway to only have its vservices", func() {
-		snap.Gateways[ns][0].VirtualServices = []core.ResourceRef{snap.VirtualServices[ns][0].Metadata.Ref()}
+		snap.Gateways[0].VirtualServices = []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()}
 
 		proxy, errs := Translate(context.Background(), ns, snap)
 
@@ -114,7 +108,7 @@ var _ = Describe("Translator", func() {
 	})
 
 	It("should translate two gateways with to one proxy with the same name", func() {
-		snap.Gateways[ns] = append(snap.Gateways[ns], &v1.Gateway{Metadata: core.Metadata{Namespace: ns, Name: "name2"}})
+		snap.Gateways = append(snap.Gateways, &v1.Gateway{Metadata: core.Metadata{Namespace: ns, Name: "name2"}})
 
 		proxy, errs := Translate(context.Background(), ns, snap)
 
@@ -125,7 +119,7 @@ var _ = Describe("Translator", func() {
 	})
 
 	It("should not have vhosts with ssl", func() {
-		snap.VirtualServices[ns][0].SslConfig = new(gloov1.SslConfig)
+		snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
 		proxy, errs := Translate(context.Background(), ns, snap)
 
@@ -138,8 +132,8 @@ var _ = Describe("Translator", func() {
 	})
 
 	It("should not have vhosts without ssl", func() {
-		snap.Gateways[ns][0].Ssl = true
-		snap.VirtualServices[ns][0].SslConfig = new(gloov1.SslConfig)
+		snap.Gateways[0].Ssl = true
+		snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
 		proxy, errs := Translate(context.Background(), ns, snap)
 
@@ -156,7 +150,7 @@ var _ = Describe("Translator", func() {
 			Metadata: core.Metadata{Namespace: ns, Name: "name2"},
 			BindPort: 2,
 		}
-		snap.Gateways[ns] = append(snap.Gateways[ns], &dupeGateway)
+		snap.Gateways = append(snap.Gateways, &dupeGateway)
 
 		_, errs := Translate(context.Background(), ns, snap)
 		err := errs.Validate()
@@ -166,7 +160,7 @@ var _ = Describe("Translator", func() {
 
 	Context("merge", func() {
 		BeforeEach(func() {
-			snap.VirtualServices[ns][1].VirtualHost.Domains = snap.VirtualServices[ns][0].VirtualHost.Domains
+			snap.VirtualServices[1].VirtualHost.Domains = snap.VirtualServices[0].VirtualHost.Domains
 		})
 
 		It("should translate 2 virtual services with the same domains to 1 virtual service", func() {
@@ -182,8 +176,8 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should translate 2 virtual services with the empty domains", func() {
-			snap.VirtualServices[ns][1].VirtualHost.Domains = nil
-			snap.VirtualServices[ns][0].VirtualHost.Domains = nil
+			snap.VirtualServices[1].VirtualHost.Domains = nil
+			snap.VirtualServices[0].VirtualHost.Domains = nil
 
 			proxy, errs := Translate(context.Background(), ns, snap)
 
@@ -196,7 +190,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should not error with one contains plugins", func() {
-			snap.VirtualServices[ns][0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+			snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 
 			_, errs := Translate(context.Background(), ns, snap)
 
@@ -204,8 +198,8 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should error with both having plugins", func() {
-			snap.VirtualServices[ns][0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
-			snap.VirtualServices[ns][1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+			snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+			snap.VirtualServices[1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 
 			_, errs := Translate(context.Background(), ns, snap)
 
@@ -213,7 +207,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should not error with one contains ssl config", func() {
-			snap.VirtualServices[ns][0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
 			proxy, errs := Translate(context.Background(), ns, snap)
 
@@ -223,8 +217,8 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should not error with one contains ssl config", func() {
-			snap.Gateways[ns][0].Ssl = true
-			snap.VirtualServices[ns][0].SslConfig = new(gloov1.SslConfig)
+			snap.Gateways[0].Ssl = true
+			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
 			proxy, errs := Translate(context.Background(), ns, snap)
 
@@ -235,9 +229,9 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should error with both having ssl config", func() {
-			snap.Gateways[ns][0].Ssl = true
-			snap.VirtualServices[ns][0].SslConfig = new(gloov1.SslConfig)
-			snap.VirtualServices[ns][1].SslConfig = new(gloov1.SslConfig)
+			snap.Gateways[0].Ssl = true
+			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[1].SslConfig = new(gloov1.SslConfig)
 
 			_, errs := Translate(context.Background(), ns, snap)
 

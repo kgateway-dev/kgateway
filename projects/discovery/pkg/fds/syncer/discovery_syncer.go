@@ -22,10 +22,10 @@ func NewDiscoverySyncer(fd *fds.FunctionDiscovery) v1.DiscoverySyncer {
 func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "syncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams.List()))
+	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snap.Hash())
 
 	logger.Debugf("%v", snap)
 
-	return s.fd.Update(snap.Upstreams.List(), snap.Secrets.List())
+	return s.fd.Update(snap.Upstreams, snap.Secrets)
 }

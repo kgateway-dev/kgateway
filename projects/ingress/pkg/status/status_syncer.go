@@ -33,17 +33,17 @@ func (s *statusSyncer) Sync(ctx context.Context, snap *v1.StatusSnapshot) error 
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v ingresses, %v services)", snap.Hash(),
-		len(snap.Ingresses.List()), len(snap.Services.List()))
+		len(snap.Ingresses), len(snap.Services))
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
-	services := snap.Services.List()
+	services := snap.Services
 
 	lbStatus, err := getLbStatus(services)
 	if err != nil {
 		return err
 	}
 
-	for _, ing := range snap.Ingresses.List() {
+	for _, ing := range snap.Ingresses {
 		kubeIngress, err := ingress.ToKube(ing)
 		if err != nil {
 			return errors.Wrapf(err, "internal error: converting proto ingress to kube ingress")

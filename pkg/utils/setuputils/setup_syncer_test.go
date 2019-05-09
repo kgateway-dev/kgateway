@@ -30,9 +30,7 @@ var _ = Describe("SetupSyncer", func() {
 				return nil
 			})
 		err := setupSyncer.Sync(context.TODO(), &v1.SetupSnapshot{
-			Settings: v1.SettingsByNamespace{
-				expectedSettings.Metadata.Namespace: v1.SettingsList{expectedSettings},
-			},
+			Settings: v1.SettingsList{expectedSettings},
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(actualSettings).To(Equal(expectedSettings))

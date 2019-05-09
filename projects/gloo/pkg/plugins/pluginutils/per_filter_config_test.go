@@ -206,11 +206,9 @@ var _ = Describe("PerFilterConfig", func() {
 					},
 				}
 				snap = &v1.ApiSnapshot{
-					Upstreamgroups: v1.UpstreamgroupsByNamespace{
-						"test": v1.UpstreamGroupList{
+					Upstreamgroups: v1.UpstreamGroupList{
 							upGrp,
 						},
-					},
 				}
 
 			})

@@ -8,8 +8,8 @@ import (
 
 func (t *translator) verifyUpstreamGroups(params plugins.Params, resourceErrs reporter.ResourceErrors) {
 
-	upstreams := params.Snapshot.Upstreams.List()
-	upstreamGroups := params.Snapshot.Upstreamgroups.List()
+	upstreams := params.Snapshot.Upstreams
+	upstreamGroups := params.Snapshot.Upstreamgroups
 
 	for _, ug := range upstreamGroups {
 		for i, dest := range ug.Destinations {

@@ -92,7 +92,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		params.Snapshot = &v1.ApiSnapshot{
-			Secrets: map[string]v1.SecretList{"": v1.SecretList{{
+			Secrets: v1.SecretList{{
 				Metadata: core.Metadata{
 					Name: "secretref",
 					// TODO(yuval-k): namespace
@@ -104,7 +104,7 @@ var _ = Describe("Plugin", func() {
 						SecretKey: secretKeyValue,
 					},
 				},
-			}}},
+			}},
 		}
 	})
 	Context("upstreams", func() {
@@ -132,22 +132,22 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should error upstream with no access_key", func() {
-			params.Snapshot.Secrets[""][0].Kind.(*v1.Secret_Aws).Aws.AccessKey = ""
+			params.Snapshot.Secrets[0].Kind.(*v1.Secret_Aws).Aws.AccessKey = ""
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).To(HaveOccurred())
 		})
 		It("should error upstream with no secret_key", func() {
-			params.Snapshot.Secrets[""][0].Kind.(*v1.Secret_Aws).Aws.SecretKey = ""
+			params.Snapshot.Secrets[0].Kind.(*v1.Secret_Aws).Aws.SecretKey = ""
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).To(HaveOccurred())
 		})
 		It("should error upstream with invalid access_key", func() {
-			params.Snapshot.Secrets[""][0].Kind.(*v1.Secret_Aws).Aws.AccessKey = "\xffbinary!"
+			params.Snapshot.Secrets[0].Kind.(*v1.Secret_Aws).Aws.AccessKey = "\xffbinary!"
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).To(HaveOccurred())
 		})
 		It("should error upstream with invalid secret_key", func() {
-			params.Snapshot.Secrets[""][0].Kind.(*v1.Secret_Aws).Aws.SecretKey = "\xffbinary!"
+			params.Snapshot.Secrets[0].Kind.(*v1.Secret_Aws).Aws.SecretKey = "\xffbinary!"
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).To(HaveOccurred())
 		})

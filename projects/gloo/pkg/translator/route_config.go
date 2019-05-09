@@ -28,7 +28,7 @@ func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, 
 	virtualHosts := t.computeVirtualHosts(params, listener, report)
 
 	// validate ssl config if the listener specifies any
-	if err := validateListenerSslConfig(listener, params.Snapshot.Secrets.List()); err != nil {
+	if err := validateListenerSslConfig(listener, params.Snapshot.Secrets); err != nil {
 		report(err, "invalid listener %v", listener.Name)
 	}
 
@@ -204,7 +204,7 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 		return setWeightedClusters(params, dest.Multi, out)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
-		upstreamGroup, err := params.Snapshot.Upstreamgroups.List().Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
+		upstreamGroup, err := params.Snapshot.Upstreamgroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
 		if err != nil {
 			return err
 		}
@@ -266,7 +266,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 	routeSubset := dest.Subset.Values
 
 	ref := dest.Upstream
-	upstream, err := params.Snapshot.Upstreams.List().Find(ref.Namespace, ref.Name)
+	upstream, err := params.Snapshot.Upstreams.Find(ref.Namespace, ref.Name)
 	if err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func validateVirtualHostDomains(virtualHosts []*v1.VirtualHost) error {
 }
 
 func validateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) error {
-	upstreams := snap.Upstreams.List()
+	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
 	switch dest := action.Destination.(type) {
 	case *v1.RouteAction_Single:
@@ -422,11 +422,11 @@ func validateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) err
 
 func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
 
-	upstreamGroup, err := snap.Upstreamgroups.List().Find(ref.Namespace, ref.Name)
+	upstreamGroup, err := snap.Upstreamgroups.Find(ref.Namespace, ref.Name)
 	if err != nil {
 		return errors.Wrap(err, "invalid destination for upstream group")
 	}
-	upstreams := snap.Upstreams.List()
+	upstreams := snap.Upstreams
 
 	err = validateMultiDestination(upstreams, upstreamGroup.Destinations)
 	if err != nil {

@@ -184,10 +184,8 @@ var _ = Describe("Headers", func() {
 					},
 				}
 				snap = &v1.ApiSnapshot{
-					Upstreamgroups: v1.UpstreamgroupsByNamespace{
-						"test": v1.UpstreamGroupList{
-							upGrp,
-						},
+					Upstreamgroups: v1.UpstreamGroupList{
+						upGrp,
 					},
 				}
 
