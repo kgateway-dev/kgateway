@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Add Tcp keep alive to the static config to assist in detecting half open connections.
+    issueLink: https://github.com/solo-io/gloo/pull/708
