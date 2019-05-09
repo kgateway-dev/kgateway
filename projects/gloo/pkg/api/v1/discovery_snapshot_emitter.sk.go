@@ -173,6 +173,8 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		upstreamsByNamespace := make(map[string]UpstreamList)
+		secretsByNamespace := make(map[string]SecretList)
 
 		for {
 			record := func() { stats.Record(ctx, mDiscoverySnapshotIn.M(1)) }
@@ -192,16 +194,26 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				record()
 
 				namespace := upstreamNamespacedList.namespace
-				upstreamList := upstreamNamespacedList.list
 
-				currentSnapshot.Upstreams[namespace] = upstreamList
+				// merge lists by namespace
+				upstreamsByNamespace[namespace] = upstreamNamespacedList.list
+				var upstreamList UpstreamList
+				for _, upstreams := range upstreamsByNamespace {
+					upstreamList = append(upstreamList, upstreams...)
+				}
+				currentSnapshot.Upstreams = upstreamList.Sort()
 			case secretNamespacedList := <-secretChan:
 				record()
 
 				namespace := secretNamespacedList.namespace
-				secretList := secretNamespacedList.list
 
-				currentSnapshot.Secrets[namespace] = secretList
+				// merge lists by namespace
+				secretsByNamespace[namespace] = secretNamespacedList.list
+				var secretList SecretList
+				for _, secrets := range secretsByNamespace {
+					secretList = append(secretList, secrets...)
+				}
+				currentSnapshot.Secrets = secretList.Sort()
 			}
 		}
 	}()

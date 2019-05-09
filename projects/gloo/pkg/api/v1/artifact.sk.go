@@ -37,7 +37,6 @@ func (r *Artifact) Hash() uint64 {
 }
 
 type ArtifactList []*Artifact
-type ArtifactsByNamespace map[string]ArtifactList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ArtifactList) Find(namespace, name string) (*Artifact, error) {
@@ -96,38 +95,18 @@ func (list ArtifactList) Each(f func(element *Artifact)) {
 	}
 }
 
+func (list ArtifactList) EachResource(f func(element resources.Resource)) {
+	for _, artifact := range list {
+		f(artifact)
+	}
+}
+
 func (list ArtifactList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Artifact) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace ArtifactsByNamespace) Add(artifact ...*Artifact) {
-	for _, item := range artifact {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace ArtifactsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace ArtifactsByNamespace) List() ArtifactList {
-	var list ArtifactList
-	for _, artifactList := range byNamespace {
-		list = append(list, artifactList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace ArtifactsByNamespace) Clone() ArtifactsByNamespace {
-	cloned := make(ArtifactsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Artifact{}

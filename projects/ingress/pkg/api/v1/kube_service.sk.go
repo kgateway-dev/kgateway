@@ -38,7 +38,6 @@ func (r *KubeService) Hash() uint64 {
 }
 
 type KubeServiceList []*KubeService
-type ServicesByNamespace map[string]KubeServiceList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list KubeServiceList) Find(namespace, name string) (*KubeService, error) {
@@ -97,38 +96,18 @@ func (list KubeServiceList) Each(f func(element *KubeService)) {
 	}
 }
 
+func (list KubeServiceList) EachResource(f func(element resources.Resource)) {
+	for _, kubeService := range list {
+		f(kubeService)
+	}
+}
+
 func (list KubeServiceList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *KubeService) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace ServicesByNamespace) Add(kubeService ...*KubeService) {
-	for _, item := range kubeService {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace ServicesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace ServicesByNamespace) List() KubeServiceList {
-	var list KubeServiceList
-	for _, kubeServiceList := range byNamespace {
-		list = append(list, kubeServiceList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace ServicesByNamespace) Clone() ServicesByNamespace {
-	cloned := make(ServicesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &KubeService{}

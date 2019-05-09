@@ -41,7 +41,6 @@ func (r *Proxy) Hash() uint64 {
 }
 
 type ProxyList []*Proxy
-type ProxiesByNamespace map[string]ProxyList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ProxyList) Find(namespace, name string) (*Proxy, error) {
@@ -108,38 +107,18 @@ func (list ProxyList) Each(f func(element *Proxy)) {
 	}
 }
 
+func (list ProxyList) EachResource(f func(element resources.Resource)) {
+	for _, proxy := range list {
+		f(proxy)
+	}
+}
+
 func (list ProxyList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Proxy) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace ProxiesByNamespace) Add(proxy ...*Proxy) {
-	for _, item := range proxy {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace ProxiesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace ProxiesByNamespace) List() ProxyList {
-	var list ProxyList
-	for _, proxyList := range byNamespace {
-		list = append(list, proxyList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace ProxiesByNamespace) Clone() ProxiesByNamespace {
-	cloned := make(ProxiesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Proxy{}

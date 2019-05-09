@@ -46,7 +46,6 @@ func (r *Gateway) Hash() uint64 {
 }
 
 type GatewayList []*Gateway
-type GatewaysByNamespace map[string]GatewayList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list GatewayList) Find(namespace, name string) (*Gateway, error) {
@@ -113,38 +112,18 @@ func (list GatewayList) Each(f func(element *Gateway)) {
 	}
 }
 
+func (list GatewayList) EachResource(f func(element resources.Resource)) {
+	for _, gateway := range list {
+		f(gateway)
+	}
+}
+
 func (list GatewayList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Gateway) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace GatewaysByNamespace) Add(gateway ...*Gateway) {
-	for _, item := range gateway {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace GatewaysByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace GatewaysByNamespace) List() GatewayList {
-	var list GatewayList
-	for _, gatewayList := range byNamespace {
-		list = append(list, gatewayList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace GatewaysByNamespace) Clone() GatewaysByNamespace {
-	cloned := make(GatewaysByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Gateway{}

@@ -10,12 +10,12 @@ import (
 )
 
 type ApiSnapshot struct {
-	Artifacts      ArtifactsByNamespace
-	Endpoints      EndpointsByNamespace
-	Proxies        ProxiesByNamespace
-	Upstreamgroups UpstreamgroupsByNamespace
-	Secrets        SecretsByNamespace
-	Upstreams      UpstreamsByNamespace
+	Artifacts      ArtifactList
+	Endpoints      EndpointList
+	Proxies        ProxyList
+	Upstreamgroups UpstreamGroupList
+	Secrets        SecretList
+	Upstreams      UpstreamList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
@@ -41,27 +41,27 @@ func (s ApiSnapshot) Hash() uint64 {
 }
 
 func (s ApiSnapshot) hashArtifacts() uint64 {
-	return hashutils.HashAll(s.Artifacts.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Artifacts.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashEndpoints() uint64 {
-	return hashutils.HashAll(s.Endpoints.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Endpoints.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashProxies() uint64 {
-	return hashutils.HashAll(s.Proxies.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Proxies.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashUpstreamgroups() uint64 {
-	return hashutils.HashAll(s.Upstreamgroups.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Upstreamgroups.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Upstreams.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
@@ -125,11 +125,11 @@ func (ss ApiSnapshotStringer) String() string {
 func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 	return ApiSnapshotStringer{
 		Version:        s.Hash(),
-		Artifacts:      s.Artifacts.List().NamespacesDotNames(),
-		Endpoints:      s.Endpoints.List().NamespacesDotNames(),
-		Proxies:        s.Proxies.List().NamespacesDotNames(),
-		Upstreamgroups: s.Upstreamgroups.List().NamespacesDotNames(),
-		Secrets:        s.Secrets.List().NamespacesDotNames(),
-		Upstreams:      s.Upstreams.List().NamespacesDotNames(),
+		Artifacts:      s.Artifacts.NamespacesDotNames(),
+		Endpoints:      s.Endpoints.NamespacesDotNames(),
+		Proxies:        s.Proxies.NamespacesDotNames(),
+		Upstreamgroups: s.Upstreamgroups.NamespacesDotNames(),
+		Secrets:        s.Secrets.NamespacesDotNames(),
+		Upstreams:      s.Upstreams.NamespacesDotNames(),
 	}
 }

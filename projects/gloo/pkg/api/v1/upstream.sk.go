@@ -42,7 +42,6 @@ func (r *Upstream) Hash() uint64 {
 }
 
 type UpstreamList []*Upstream
-type UpstreamsByNamespace map[string]UpstreamList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list UpstreamList) Find(namespace, name string) (*Upstream, error) {
@@ -109,38 +108,18 @@ func (list UpstreamList) Each(f func(element *Upstream)) {
 	}
 }
 
+func (list UpstreamList) EachResource(f func(element resources.Resource)) {
+	for _, upstream := range list {
+		f(upstream)
+	}
+}
+
 func (list UpstreamList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Upstream) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace UpstreamsByNamespace) Add(upstream ...*Upstream) {
-	for _, item := range upstream {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace UpstreamsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace UpstreamsByNamespace) List() UpstreamList {
-	var list UpstreamList
-	for _, upstreamList := range byNamespace {
-		list = append(list, upstreamList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace UpstreamsByNamespace) Clone() UpstreamsByNamespace {
-	cloned := make(UpstreamsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Upstream{}

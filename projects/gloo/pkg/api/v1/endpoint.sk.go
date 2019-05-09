@@ -39,7 +39,6 @@ func (r *Endpoint) Hash() uint64 {
 }
 
 type EndpointList []*Endpoint
-type EndpointsByNamespace map[string]EndpointList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list EndpointList) Find(namespace, name string) (*Endpoint, error) {
@@ -98,38 +97,18 @@ func (list EndpointList) Each(f func(element *Endpoint)) {
 	}
 }
 
+func (list EndpointList) EachResource(f func(element resources.Resource)) {
+	for _, endpoint := range list {
+		f(endpoint)
+	}
+}
+
 func (list EndpointList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Endpoint) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace EndpointsByNamespace) Add(endpoint ...*Endpoint) {
-	for _, item := range endpoint {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace EndpointsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace EndpointsByNamespace) List() EndpointList {
-	var list EndpointList
-	for _, endpointList := range byNamespace {
-		list = append(list, endpointList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace EndpointsByNamespace) Clone() EndpointsByNamespace {
-	cloned := make(EndpointsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Endpoint{}

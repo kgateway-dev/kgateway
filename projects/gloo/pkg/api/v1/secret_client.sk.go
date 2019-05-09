@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type SecretWatcher interface {
+	// watch namespace-scoped Secrets
+	Watch(namespace string, opts clients.WatchOpts) (<-chan SecretList, <-chan error, error)
+}
+
 type SecretClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type SecretClient interface {
 	Write(resource *Secret, opts clients.WriteOpts) (*Secret, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (SecretList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan SecretList, <-chan error, error)
+	SecretWatcher
 }
 
 type secretClient struct {

@@ -133,12 +133,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectArtifacts {
-						if _, err := snap.Artifacts.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Artifacts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectArtifacts {
-						if _, err := snap.Artifacts.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Artifacts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -148,10 +148,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := artifactClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := artifactClient.List(namespace2, clients.ListOpts{})
-					combined := ArtifactsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -193,12 +190,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectEndpoints {
-						if _, err := snap.Endpoints.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Endpoints.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectEndpoints {
-						if _, err := snap.Endpoints.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Endpoints.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -208,10 +205,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := endpointClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := endpointClient.List(namespace2, clients.ListOpts{})
-					combined := EndpointsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -253,12 +247,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectProxies {
-						if _, err := snap.Proxies.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Proxies.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectProxies {
-						if _, err := snap.Proxies.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Proxies.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -268,10 +262,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := proxyClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := proxyClient.List(namespace2, clients.ListOpts{})
-					combined := ProxiesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -313,12 +304,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Upstreamgroups.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Upstreamgroups.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -328,10 +319,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := upstreamGroupClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := upstreamGroupClient.List(namespace2, clients.ListOpts{})
-					combined := UpstreamgroupsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -373,12 +361,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSecrets {
-						if _, err := snap.Secrets.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Secrets.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSecrets {
-						if _, err := snap.Secrets.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Secrets.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -388,10 +376,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := secretClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := secretClient.List(namespace2, clients.ListOpts{})
-					combined := SecretsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -433,12 +418,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Upstreams.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Upstreams.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -448,10 +433,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
-					combined := UpstreamsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -506,12 +488,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectArtifacts {
-						if _, err := snap.Artifacts.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Artifacts.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectArtifacts {
-						if _, err := snap.Artifacts.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Artifacts.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -521,10 +503,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := artifactClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := artifactClient.List(namespace2, clients.ListOpts{})
-					combined := ArtifactsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -566,12 +545,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectEndpoints {
-						if _, err := snap.Endpoints.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Endpoints.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectEndpoints {
-						if _, err := snap.Endpoints.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Endpoints.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -581,10 +560,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := endpointClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := endpointClient.List(namespace2, clients.ListOpts{})
-					combined := EndpointsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -626,12 +602,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectProxies {
-						if _, err := snap.Proxies.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Proxies.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectProxies {
-						if _, err := snap.Proxies.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Proxies.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -641,10 +617,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := proxyClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := proxyClient.List(namespace2, clients.ListOpts{})
-					combined := ProxiesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -686,12 +659,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Upstreamgroups.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Upstreamgroups.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -701,10 +674,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := upstreamGroupClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := upstreamGroupClient.List(namespace2, clients.ListOpts{})
-					combined := UpstreamgroupsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -746,12 +716,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSecrets {
-						if _, err := snap.Secrets.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Secrets.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSecrets {
-						if _, err := snap.Secrets.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Secrets.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -761,10 +731,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := secretClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := secretClient.List(namespace2, clients.ListOpts{})
-					combined := SecretsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -806,12 +773,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Upstreams.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Upstreams.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -821,10 +788,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
-					combined := UpstreamsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}

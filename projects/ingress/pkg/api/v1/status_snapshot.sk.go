@@ -10,8 +10,8 @@ import (
 )
 
 type StatusSnapshot struct {
-	Services  ServicesByNamespace
-	Ingresses IngressesByNamespace
+	Services  KubeServiceList
+	Ingresses IngressList
 }
 
 func (s StatusSnapshot) Clone() StatusSnapshot {
@@ -29,11 +29,11 @@ func (s StatusSnapshot) Hash() uint64 {
 }
 
 func (s StatusSnapshot) hashServices() uint64 {
-	return hashutils.HashAll(s.Services.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Services.AsInterfaces()...)
 }
 
 func (s StatusSnapshot) hashIngresses() uint64 {
-	return hashutils.HashAll(s.Ingresses.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Ingresses.AsInterfaces()...)
 }
 
 func (s StatusSnapshot) HashFields() []zap.Field {
@@ -69,7 +69,7 @@ func (ss StatusSnapshotStringer) String() string {
 func (s StatusSnapshot) Stringer() StatusSnapshotStringer {
 	return StatusSnapshotStringer{
 		Version:   s.Hash(),
-		Services:  s.Services.List().NamespacesDotNames(),
-		Ingresses: s.Ingresses.List().NamespacesDotNames(),
+		Services:  s.Services.NamespacesDotNames(),
+		Ingresses: s.Ingresses.NamespacesDotNames(),
 	}
 }

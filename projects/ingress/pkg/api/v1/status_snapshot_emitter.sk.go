@@ -173,6 +173,8 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		servicesByNamespace := make(map[string]KubeServiceList)
+		ingressesByNamespace := make(map[string]IngressList)
 
 		for {
 			record := func() { stats.Record(ctx, mStatusSnapshotIn.M(1)) }
@@ -192,16 +194,26 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 				record()
 
 				namespace := kubeServiceNamespacedList.namespace
-				kubeServiceList := kubeServiceNamespacedList.list
 
-				currentSnapshot.Services[namespace] = kubeServiceList
+				// merge lists by namespace
+				servicesByNamespace[namespace] = kubeServiceNamespacedList.list
+				var kubeServiceList KubeServiceList
+				for _, services := range servicesByNamespace {
+					kubeServiceList = append(kubeServiceList, services...)
+				}
+				currentSnapshot.Services = kubeServiceList.Sort()
 			case ingressNamespacedList := <-ingressChan:
 				record()
 
 				namespace := ingressNamespacedList.namespace
-				ingressList := ingressNamespacedList.list
 
-				currentSnapshot.Ingresses[namespace] = ingressList
+				// merge lists by namespace
+				ingressesByNamespace[namespace] = ingressNamespacedList.list
+				var ingressList IngressList
+				for _, ingresses := range ingressesByNamespace {
+					ingressList = append(ingressList, ingresses...)
+				}
+				currentSnapshot.Ingresses = ingressList.Sort()
 			}
 		}
 	}()

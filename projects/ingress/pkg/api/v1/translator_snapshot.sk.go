@@ -12,9 +12,9 @@ import (
 )
 
 type TranslatorSnapshot struct {
-	Secrets   gloo_solo_io.SecretsByNamespace
-	Upstreams gloo_solo_io.UpstreamsByNamespace
-	Ingresses IngressesByNamespace
+	Secrets   gloo_solo_io.SecretList
+	Upstreams gloo_solo_io.UpstreamList
+	Ingresses IngressList
 }
 
 func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
@@ -34,15 +34,15 @@ func (s TranslatorSnapshot) Hash() uint64 {
 }
 
 func (s TranslatorSnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Upstreams.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) hashIngresses() uint64 {
-	return hashutils.HashAll(s.Ingresses.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Ingresses.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) HashFields() []zap.Field {
@@ -85,8 +85,8 @@ func (ss TranslatorSnapshotStringer) String() string {
 func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
 	return TranslatorSnapshotStringer{
 		Version:   s.Hash(),
-		Secrets:   s.Secrets.List().NamespacesDotNames(),
-		Upstreams: s.Upstreams.List().NamespacesDotNames(),
-		Ingresses: s.Ingresses.List().NamespacesDotNames(),
+		Secrets:   s.Secrets.NamespacesDotNames(),
+		Upstreams: s.Upstreams.NamespacesDotNames(),
+		Ingresses: s.Ingresses.NamespacesDotNames(),
 	}
 }

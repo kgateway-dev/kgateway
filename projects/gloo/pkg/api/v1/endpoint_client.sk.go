@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type EndpointWatcher interface {
+	// watch namespace-scoped Endpoints
+	Watch(namespace string, opts clients.WatchOpts) (<-chan EndpointList, <-chan error, error)
+}
+
 type EndpointClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type EndpointClient interface {
 	Write(resource *Endpoint, opts clients.WriteOpts) (*Endpoint, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (EndpointList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan EndpointList, <-chan error, error)
+	EndpointWatcher
 }
 
 type endpointClient struct {

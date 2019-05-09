@@ -41,7 +41,6 @@ func (r *ClusterIngress) Hash() uint64 {
 }
 
 type ClusterIngressList []*ClusterIngress
-type ClusteringressesByNamespace map[string]ClusterIngressList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ClusterIngressList) Find(namespace, name string) (*ClusterIngress, error) {
@@ -108,38 +107,18 @@ func (list ClusterIngressList) Each(f func(element *ClusterIngress)) {
 	}
 }
 
+func (list ClusterIngressList) EachResource(f func(element resources.Resource)) {
+	for _, clusterIngress := range list {
+		f(clusterIngress)
+	}
+}
+
 func (list ClusterIngressList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *ClusterIngress) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace ClusteringressesByNamespace) Add(clusterIngress ...*ClusterIngress) {
-	for _, item := range clusterIngress {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace ClusteringressesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace ClusteringressesByNamespace) List() ClusterIngressList {
-	var list ClusterIngressList
-	for _, clusterIngressList := range byNamespace {
-		list = append(list, clusterIngressList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace ClusteringressesByNamespace) Clone() ClusteringressesByNamespace {
-	cloned := make(ClusteringressesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &ClusterIngress{}

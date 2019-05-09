@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type UpstreamWatcher interface {
+	// watch namespace-scoped Upstreams
+	Watch(namespace string, opts clients.WatchOpts) (<-chan UpstreamList, <-chan error, error)
+}
+
 type UpstreamClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type UpstreamClient interface {
 	Write(resource *Upstream, opts clients.WriteOpts) (*Upstream, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (UpstreamList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan UpstreamList, <-chan error, error)
+	UpstreamWatcher
 }
 
 type upstreamClient struct {

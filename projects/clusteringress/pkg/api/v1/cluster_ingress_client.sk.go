@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type ClusterIngressWatcher interface {
+	// watch cluster-scoped Clusteringresses
+	Watch(opts clients.WatchOpts) (<-chan ClusterIngressList, <-chan error, error)
+}
+
 type ClusterIngressClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type ClusterIngressClient interface {
 	Write(resource *ClusterIngress, opts clients.WriteOpts) (*ClusterIngress, error)
 	Delete(name string, opts clients.DeleteOpts) error
 	List(opts clients.ListOpts) (ClusterIngressList, error)
-	Watch(opts clients.WatchOpts) (<-chan ClusterIngressList, <-chan error, error)
+	ClusterIngressWatcher
 }
 
 type clusterIngressClient struct {

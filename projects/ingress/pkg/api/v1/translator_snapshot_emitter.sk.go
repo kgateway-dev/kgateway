@@ -208,6 +208,9 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		secretsByNamespace := make(map[string]gloo_solo_io.SecretList)
+		upstreamsByNamespace := make(map[string]gloo_solo_io.UpstreamList)
+		ingressesByNamespace := make(map[string]IngressList)
 
 		for {
 			record := func() { stats.Record(ctx, mTranslatorSnapshotIn.M(1)) }
@@ -227,23 +230,38 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				record()
 
 				namespace := secretNamespacedList.namespace
-				secretList := secretNamespacedList.list
 
-				currentSnapshot.Secrets[namespace] = secretList
+				// merge lists by namespace
+				secretsByNamespace[namespace] = secretNamespacedList.list
+				var secretList gloo_solo_io.SecretList
+				for _, secrets := range secretsByNamespace {
+					secretList = append(secretList, secrets...)
+				}
+				currentSnapshot.Secrets = secretList.Sort()
 			case upstreamNamespacedList := <-upstreamChan:
 				record()
 
 				namespace := upstreamNamespacedList.namespace
-				upstreamList := upstreamNamespacedList.list
 
-				currentSnapshot.Upstreams[namespace] = upstreamList
+				// merge lists by namespace
+				upstreamsByNamespace[namespace] = upstreamNamespacedList.list
+				var upstreamList gloo_solo_io.UpstreamList
+				for _, upstreams := range upstreamsByNamespace {
+					upstreamList = append(upstreamList, upstreams...)
+				}
+				currentSnapshot.Upstreams = upstreamList.Sort()
 			case ingressNamespacedList := <-ingressChan:
 				record()
 
 				namespace := ingressNamespacedList.namespace
-				ingressList := ingressNamespacedList.list
 
-				currentSnapshot.Ingresses[namespace] = ingressList
+				// merge lists by namespace
+				ingressesByNamespace[namespace] = ingressNamespacedList.list
+				var ingressList IngressList
+				for _, ingresses := range ingressesByNamespace {
+					ingressList = append(ingressList, ingresses...)
+				}
+				currentSnapshot.Ingresses = ingressList.Sort()
 			}
 		}
 	}()

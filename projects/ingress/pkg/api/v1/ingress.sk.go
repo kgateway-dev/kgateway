@@ -37,7 +37,6 @@ func (r *Ingress) Hash() uint64 {
 }
 
 type IngressList []*Ingress
-type IngressesByNamespace map[string]IngressList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list IngressList) Find(namespace, name string) (*Ingress, error) {
@@ -96,38 +95,18 @@ func (list IngressList) Each(f func(element *Ingress)) {
 	}
 }
 
+func (list IngressList) EachResource(f func(element resources.Resource)) {
+	for _, ingress := range list {
+		f(ingress)
+	}
+}
+
 func (list IngressList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Ingress) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace IngressesByNamespace) Add(ingress ...*Ingress) {
-	for _, item := range ingress {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace IngressesByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace IngressesByNamespace) List() IngressList {
-	var list IngressList
-	for _, ingressList := range byNamespace {
-		list = append(list, ingressList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace IngressesByNamespace) Clone() IngressesByNamespace {
-	cloned := make(IngressesByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Ingress{}

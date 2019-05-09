@@ -90,12 +90,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectServices {
-						if _, err := snap.Services.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Services.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectServices {
-						if _, err := snap.Services.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Services.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -105,10 +105,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := kubeServiceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := kubeServiceClient.List(namespace2, clients.ListOpts{})
-					combined := ServicesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -150,12 +147,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectIngresses {
-						if _, err := snap.Ingresses.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Ingresses.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectIngresses {
-						if _, err := snap.Ingresses.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Ingresses.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -165,10 +162,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := ingressClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := ingressClient.List(namespace2, clients.ListOpts{})
-					combined := IngressesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -223,12 +217,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectServices {
-						if _, err := snap.Services.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Services.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectServices {
-						if _, err := snap.Services.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Services.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -238,10 +232,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := kubeServiceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := kubeServiceClient.List(namespace2, clients.ListOpts{})
-					combined := ServicesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -283,12 +274,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectIngresses {
-						if _, err := snap.Ingresses.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Ingresses.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectIngresses {
-						if _, err := snap.Ingresses.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Ingresses.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -298,10 +289,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := ingressClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := ingressClient.List(namespace2, clients.ListOpts{})
-					combined := IngressesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}

@@ -88,12 +88,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSettings {
-						if _, err := snap.Settings.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Settings.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSettings {
-						if _, err := snap.Settings.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Settings.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -103,10 +103,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := settingsClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := settingsClient.List(namespace2, clients.ListOpts{})
-					combined := SettingsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -161,12 +158,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSettings {
-						if _, err := snap.Settings.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Settings.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSettings {
-						if _, err := snap.Settings.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Settings.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -176,10 +173,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := settingsClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := settingsClient.List(namespace2, clients.ListOpts{})
-					combined := SettingsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}

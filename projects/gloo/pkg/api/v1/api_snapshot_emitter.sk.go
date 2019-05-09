@@ -305,6 +305,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		artifactsByNamespace := make(map[string]ArtifactList)
+		endpointsByNamespace := make(map[string]EndpointList)
+		proxiesByNamespace := make(map[string]ProxyList)
+		upstreamgroupsByNamespace := make(map[string]UpstreamGroupList)
+		secretsByNamespace := make(map[string]SecretList)
+		upstreamsByNamespace := make(map[string]UpstreamList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -324,44 +330,74 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				record()
 
 				namespace := artifactNamespacedList.namespace
-				artifactList := artifactNamespacedList.list
 
-				currentSnapshot.Artifacts[namespace] = artifactList
+				// merge lists by namespace
+				artifactsByNamespace[namespace] = artifactNamespacedList.list
+				var artifactList ArtifactList
+				for _, artifacts := range artifactsByNamespace {
+					artifactList = append(artifactList, artifacts...)
+				}
+				currentSnapshot.Artifacts = artifactList.Sort()
 			case endpointNamespacedList := <-endpointChan:
 				record()
 
 				namespace := endpointNamespacedList.namespace
-				endpointList := endpointNamespacedList.list
 
-				currentSnapshot.Endpoints[namespace] = endpointList
+				// merge lists by namespace
+				endpointsByNamespace[namespace] = endpointNamespacedList.list
+				var endpointList EndpointList
+				for _, endpoints := range endpointsByNamespace {
+					endpointList = append(endpointList, endpoints...)
+				}
+				currentSnapshot.Endpoints = endpointList.Sort()
 			case proxyNamespacedList := <-proxyChan:
 				record()
 
 				namespace := proxyNamespacedList.namespace
-				proxyList := proxyNamespacedList.list
 
-				currentSnapshot.Proxies[namespace] = proxyList
+				// merge lists by namespace
+				proxiesByNamespace[namespace] = proxyNamespacedList.list
+				var proxyList ProxyList
+				for _, proxies := range proxiesByNamespace {
+					proxyList = append(proxyList, proxies...)
+				}
+				currentSnapshot.Proxies = proxyList.Sort()
 			case upstreamGroupNamespacedList := <-upstreamGroupChan:
 				record()
 
 				namespace := upstreamGroupNamespacedList.namespace
-				upstreamGroupList := upstreamGroupNamespacedList.list
 
-				currentSnapshot.Upstreamgroups[namespace] = upstreamGroupList
+				// merge lists by namespace
+				upstreamgroupsByNamespace[namespace] = upstreamGroupNamespacedList.list
+				var upstreamGroupList UpstreamGroupList
+				for _, upstreamgroups := range upstreamgroupsByNamespace {
+					upstreamGroupList = append(upstreamGroupList, upstreamgroups...)
+				}
+				currentSnapshot.Upstreamgroups = upstreamGroupList.Sort()
 			case secretNamespacedList := <-secretChan:
 				record()
 
 				namespace := secretNamespacedList.namespace
-				secretList := secretNamespacedList.list
 
-				currentSnapshot.Secrets[namespace] = secretList
+				// merge lists by namespace
+				secretsByNamespace[namespace] = secretNamespacedList.list
+				var secretList SecretList
+				for _, secrets := range secretsByNamespace {
+					secretList = append(secretList, secrets...)
+				}
+				currentSnapshot.Secrets = secretList.Sort()
 			case upstreamNamespacedList := <-upstreamChan:
 				record()
 
 				namespace := upstreamNamespacedList.namespace
-				upstreamList := upstreamNamespacedList.list
 
-				currentSnapshot.Upstreams[namespace] = upstreamList
+				// merge lists by namespace
+				upstreamsByNamespace[namespace] = upstreamNamespacedList.list
+				var upstreamList UpstreamList
+				for _, upstreams := range upstreamsByNamespace {
+					upstreamList = append(upstreamList, upstreams...)
+				}
+				currentSnapshot.Upstreams = upstreamList.Sort()
 			}
 		}
 	}()

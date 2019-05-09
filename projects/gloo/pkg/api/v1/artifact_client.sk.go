@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type ArtifactWatcher interface {
+	// watch namespace-scoped Artifacts
+	Watch(namespace string, opts clients.WatchOpts) (<-chan ArtifactList, <-chan error, error)
+}
+
 type ArtifactClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type ArtifactClient interface {
 	Write(resource *Artifact, opts clients.WriteOpts) (*Artifact, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (ArtifactList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan ArtifactList, <-chan error, error)
+	ArtifactWatcher
 }
 
 type artifactClient struct {

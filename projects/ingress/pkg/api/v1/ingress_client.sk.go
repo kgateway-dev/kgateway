@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type IngressWatcher interface {
+	// watch namespace-scoped Ingresses
+	Watch(namespace string, opts clients.WatchOpts) (<-chan IngressList, <-chan error, error)
+}
+
 type IngressClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type IngressClient interface {
 	Write(resource *Ingress, opts clients.WriteOpts) (*Ingress, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (IngressList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan IngressList, <-chan error, error)
+	IngressWatcher
 }
 
 type ingressClient struct {

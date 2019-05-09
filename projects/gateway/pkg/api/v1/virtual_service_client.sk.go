@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type VirtualServiceWatcher interface {
+	// watch namespace-scoped VirtualServices
+	Watch(namespace string, opts clients.WatchOpts) (<-chan VirtualServiceList, <-chan error, error)
+}
+
 type VirtualServiceClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type VirtualServiceClient interface {
 	Write(resource *VirtualService, opts clients.WriteOpts) (*VirtualService, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (VirtualServiceList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan VirtualServiceList, <-chan error, error)
+	VirtualServiceWatcher
 }
 
 type virtualServiceClient struct {

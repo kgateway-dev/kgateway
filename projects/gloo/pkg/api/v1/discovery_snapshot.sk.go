@@ -10,8 +10,8 @@ import (
 )
 
 type DiscoverySnapshot struct {
-	Upstreams UpstreamsByNamespace
-	Secrets   SecretsByNamespace
+	Upstreams UpstreamList
+	Secrets   SecretList
 }
 
 func (s DiscoverySnapshot) Clone() DiscoverySnapshot {
@@ -29,11 +29,11 @@ func (s DiscoverySnapshot) Hash() uint64 {
 }
 
 func (s DiscoverySnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Upstreams.AsInterfaces()...)
 }
 
 func (s DiscoverySnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
 }
 
 func (s DiscoverySnapshot) HashFields() []zap.Field {
@@ -69,7 +69,7 @@ func (ss DiscoverySnapshotStringer) String() string {
 func (s DiscoverySnapshot) Stringer() DiscoverySnapshotStringer {
 	return DiscoverySnapshotStringer{
 		Version:   s.Hash(),
-		Upstreams: s.Upstreams.List().NamespacesDotNames(),
-		Secrets:   s.Secrets.List().NamespacesDotNames(),
+		Upstreams: s.Upstreams.NamespacesDotNames(),
+		Secrets:   s.Secrets.NamespacesDotNames(),
 	}
 }

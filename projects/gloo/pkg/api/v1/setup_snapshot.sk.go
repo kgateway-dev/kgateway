@@ -10,7 +10,7 @@ import (
 )
 
 type SetupSnapshot struct {
-	Settings SettingsByNamespace
+	Settings SettingsList
 }
 
 func (s SetupSnapshot) Clone() SetupSnapshot {
@@ -26,7 +26,7 @@ func (s SetupSnapshot) Hash() uint64 {
 }
 
 func (s SetupSnapshot) hashSettings() uint64 {
-	return hashutils.HashAll(s.Settings.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Settings.AsInterfaces()...)
 }
 
 func (s SetupSnapshot) HashFields() []zap.Field {
@@ -55,6 +55,6 @@ func (ss SetupSnapshotStringer) String() string {
 func (s SetupSnapshot) Stringer() SetupSnapshotStringer {
 	return SetupSnapshotStringer{
 		Version:  s.Hash(),
-		Settings: s.Settings.List().NamespacesDotNames(),
+		Settings: s.Settings.NamespacesDotNames(),
 	}
 }

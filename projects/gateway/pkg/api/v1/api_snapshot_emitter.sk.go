@@ -173,6 +173,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		gatewaysByNamespace := make(map[string]GatewayList)
+		virtualServicesByNamespace := make(map[string]VirtualServiceList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -192,16 +194,26 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				record()
 
 				namespace := gatewayNamespacedList.namespace
-				gatewayList := gatewayNamespacedList.list
 
-				currentSnapshot.Gateways[namespace] = gatewayList
+				// merge lists by namespace
+				gatewaysByNamespace[namespace] = gatewayNamespacedList.list
+				var gatewayList GatewayList
+				for _, gateways := range gatewaysByNamespace {
+					gatewayList = append(gatewayList, gateways...)
+				}
+				currentSnapshot.Gateways = gatewayList.Sort()
 			case virtualServiceNamespacedList := <-virtualServiceChan:
 				record()
 
 				namespace := virtualServiceNamespacedList.namespace
-				virtualServiceList := virtualServiceNamespacedList.list
 
-				currentSnapshot.VirtualServices[namespace] = virtualServiceList
+				// merge lists by namespace
+				virtualServicesByNamespace[namespace] = virtualServiceNamespacedList.list
+				var virtualServiceList VirtualServiceList
+				for _, virtualServices := range virtualServicesByNamespace {
+					virtualServiceList = append(virtualServiceList, virtualServices...)
+				}
+				currentSnapshot.VirtualServices = virtualServiceList.Sort()
 			}
 		}
 	}()

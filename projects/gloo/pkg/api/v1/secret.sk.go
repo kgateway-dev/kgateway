@@ -37,7 +37,6 @@ func (r *Secret) Hash() uint64 {
 }
 
 type SecretList []*Secret
-type SecretsByNamespace map[string]SecretList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list SecretList) Find(namespace, name string) (*Secret, error) {
@@ -96,38 +95,18 @@ func (list SecretList) Each(f func(element *Secret)) {
 	}
 }
 
+func (list SecretList) EachResource(f func(element resources.Resource)) {
+	for _, secret := range list {
+		f(secret)
+	}
+}
+
 func (list SecretList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Secret) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace SecretsByNamespace) Add(secret ...*Secret) {
-	for _, item := range secret {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace SecretsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace SecretsByNamespace) List() SecretList {
-	var list SecretList
-	for _, secretList := range byNamespace {
-		list = append(list, secretList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace SecretsByNamespace) Clone() SecretsByNamespace {
-	cloned := make(SecretsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Secret{}

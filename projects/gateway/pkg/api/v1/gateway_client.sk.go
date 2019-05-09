@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type GatewayWatcher interface {
+	// watch namespace-scoped Gateways
+	Watch(namespace string, opts clients.WatchOpts) (<-chan GatewayList, <-chan error, error)
+}
+
 type GatewayClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type GatewayClient interface {
 	Write(resource *Gateway, opts clients.WriteOpts) (*Gateway, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (GatewayList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan GatewayList, <-chan error, error)
+	GatewayWatcher
 }
 
 type gatewayClient struct {

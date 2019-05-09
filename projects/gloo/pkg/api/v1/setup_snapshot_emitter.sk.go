@@ -140,6 +140,7 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
+		settingsByNamespace := make(map[string]SettingsList)
 
 		for {
 			record := func() { stats.Record(ctx, mSetupSnapshotIn.M(1)) }
@@ -159,9 +160,14 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 				record()
 
 				namespace := settingsNamespacedList.namespace
-				settingsList := settingsNamespacedList.list
 
-				currentSnapshot.Settings[namespace] = settingsList
+				// merge lists by namespace
+				settingsByNamespace[namespace] = settingsNamespacedList.list
+				var settingsList SettingsList
+				for _, settings := range settingsByNamespace {
+					settingsList = append(settingsList, settings...)
+				}
+				currentSnapshot.Settings = settingsList.Sort()
 			}
 		}
 	}()

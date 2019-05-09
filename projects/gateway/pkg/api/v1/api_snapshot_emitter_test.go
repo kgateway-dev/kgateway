@@ -98,12 +98,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectGateways {
-						if _, err := snap.Gateways.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Gateways.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectGateways {
-						if _, err := snap.Gateways.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Gateways.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -113,10 +113,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := gatewayClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := gatewayClient.List(namespace2, clients.ListOpts{})
-					combined := GatewaysByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -158,12 +155,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.VirtualServices.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.VirtualServices.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -173,10 +170,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := virtualServiceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := virtualServiceClient.List(namespace2, clients.ListOpts{})
-					combined := VirtualServicesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -231,12 +225,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectGateways {
-						if _, err := snap.Gateways.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Gateways.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectGateways {
-						if _, err := snap.Gateways.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Gateways.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -246,10 +240,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := gatewayClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := gatewayClient.List(namespace2, clients.ListOpts{})
-					combined := GatewaysByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -291,12 +282,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.VirtualServices.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectVirtualServices {
-						if _, err := snap.VirtualServices.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.VirtualServices.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -306,10 +297,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := virtualServiceClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := virtualServiceClient.List(namespace2, clients.ListOpts{})
-					combined := VirtualServicesByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}

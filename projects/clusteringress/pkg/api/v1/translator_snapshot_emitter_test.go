@@ -111,12 +111,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSecrets {
-						if _, err := snap.Secrets.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Secrets.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSecrets {
-						if _, err := snap.Secrets.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Secrets.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -126,10 +126,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := secretClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := secretClient.List(namespace2, clients.ListOpts{})
-					combined := gloo_solo_io.SecretsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -171,12 +168,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Upstreams.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Upstreams.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -186,10 +183,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
-					combined := gloo_solo_io.UpstreamsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -244,10 +238,7 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					nsList, _ := clusterIngressClient.List(clients.ListOpts{})
-					combined := ClusteringressesByNamespace{
-						"": nsList,
-					}
+					combined, _ := clusterIngressClient.List(clients.ListOpts{})
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -294,12 +285,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectSecrets {
-						if _, err := snap.Secrets.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Secrets.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectSecrets {
-						if _, err := snap.Secrets.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Secrets.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -309,10 +300,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := secretClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := secretClient.List(namespace2, clients.ListOpts{})
-					combined := gloo_solo_io.SecretsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -354,12 +342,12 @@ var _ = Describe("V1Emitter", func() {
 				select {
 				case snap = <-snapshots:
 					for _, expected := range expectUpstreams {
-						if _, err := snap.Upstreams.List().Find(expected.GetMetadata().Ref().Strings()); err != nil {
+						if _, err := snap.Upstreams.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
 					for _, unexpected := range unexpectUpstreams {
-						if _, err := snap.Upstreams.List().Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+						if _, err := snap.Upstreams.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -369,10 +357,7 @@ var _ = Describe("V1Emitter", func() {
 				case <-time.After(time.Second * 10):
 					nsList1, _ := upstreamClient.List(namespace1, clients.ListOpts{})
 					nsList2, _ := upstreamClient.List(namespace2, clients.ListOpts{})
-					combined := gloo_solo_io.UpstreamsByNamespace{
-						namespace1: nsList1,
-						namespace2: nsList2,
-					}
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
@@ -427,10 +412,7 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					nsList, _ := clusterIngressClient.List(clients.ListOpts{})
-					combined := ClusteringressesByNamespace{
-						"": nsList,
-					}
+					combined, _ := clusterIngressClient.List(clients.ListOpts{})
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}

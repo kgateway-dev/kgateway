@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type SettingsWatcher interface {
+	// watch namespace-scoped Settings
+	Watch(namespace string, opts clients.WatchOpts) (<-chan SettingsList, <-chan error, error)
+}
+
 type SettingsClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type SettingsClient interface {
 	Write(resource *Settings, opts clients.WriteOpts) (*Settings, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (SettingsList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan SettingsList, <-chan error, error)
+	SettingsWatcher
 }
 
 type settingsClient struct {

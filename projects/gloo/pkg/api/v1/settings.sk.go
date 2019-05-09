@@ -51,7 +51,6 @@ func (r *Settings) Hash() uint64 {
 }
 
 type SettingsList []*Settings
-type SettingsByNamespace map[string]SettingsList
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list SettingsList) Find(namespace, name string) (*Settings, error) {
@@ -118,38 +117,18 @@ func (list SettingsList) Each(f func(element *Settings)) {
 	}
 }
 
+func (list SettingsList) EachResource(f func(element resources.Resource)) {
+	for _, settings := range list {
+		f(settings)
+	}
+}
+
 func (list SettingsList) AsInterfaces() []interface{} {
 	var asInterfaces []interface{}
 	list.Each(func(element *Settings) {
 		asInterfaces = append(asInterfaces, element)
 	})
 	return asInterfaces
-}
-
-func (byNamespace SettingsByNamespace) Add(settings ...*Settings) {
-	for _, item := range settings {
-		byNamespace[item.GetMetadata().Namespace] = append(byNamespace[item.GetMetadata().Namespace], item)
-	}
-}
-
-func (byNamespace SettingsByNamespace) Clear(namespace string) {
-	delete(byNamespace, namespace)
-}
-
-func (byNamespace SettingsByNamespace) List() SettingsList {
-	var list SettingsList
-	for _, settingsList := range byNamespace {
-		list = append(list, settingsList...)
-	}
-	return list.Sort()
-}
-
-func (byNamespace SettingsByNamespace) Clone() SettingsByNamespace {
-	cloned := make(SettingsByNamespace)
-	for ns, list := range byNamespace {
-		cloned[ns] = list.Clone()
-	}
-	return cloned
 }
 
 var _ resources.Resource = &Settings{}

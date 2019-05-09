@@ -10,8 +10,8 @@ import (
 )
 
 type ApiSnapshot struct {
-	Gateways        GatewaysByNamespace
-	VirtualServices VirtualServicesByNamespace
+	Gateways        GatewayList
+	VirtualServices VirtualServiceList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
@@ -29,11 +29,11 @@ func (s ApiSnapshot) Hash() uint64 {
 }
 
 func (s ApiSnapshot) hashGateways() uint64 {
-	return hashutils.HashAll(s.Gateways.List().AsInterfaces()...)
+	return hashutils.HashAll(s.Gateways.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashVirtualServices() uint64 {
-	return hashutils.HashAll(s.VirtualServices.List().AsInterfaces()...)
+	return hashutils.HashAll(s.VirtualServices.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
@@ -69,7 +69,7 @@ func (ss ApiSnapshotStringer) String() string {
 func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 	return ApiSnapshotStringer{
 		Version:         s.Hash(),
-		Gateways:        s.Gateways.List().NamespacesDotNames(),
-		VirtualServices: s.VirtualServices.List().NamespacesDotNames(),
+		Gateways:        s.Gateways.NamespacesDotNames(),
+		VirtualServices: s.VirtualServices.NamespacesDotNames(),
 	}
 }

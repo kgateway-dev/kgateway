@@ -9,6 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+type ProxyWatcher interface {
+	// watch namespace-scoped Proxies
+	Watch(namespace string, opts clients.WatchOpts) (<-chan ProxyList, <-chan error, error)
+}
+
 type ProxyClient interface {
 	BaseClient() clients.ResourceClient
 	Register() error
@@ -16,7 +21,7 @@ type ProxyClient interface {
 	Write(resource *Proxy, opts clients.WriteOpts) (*Proxy, error)
 	Delete(namespace, name string, opts clients.DeleteOpts) error
 	List(namespace string, opts clients.ListOpts) (ProxyList, error)
-	Watch(namespace string, opts clients.WatchOpts) (<-chan ProxyList, <-chan error, error)
+	ProxyWatcher
 }
 
 type proxyClient struct {
