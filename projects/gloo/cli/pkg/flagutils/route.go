@@ -24,6 +24,11 @@ func AddRouteFlags(set *pflag.FlagSet, route *options.InputRoute) {
 	set.StringVarP(&route.Destination.Upstream.Namespace, "dest-namespace", "s", defaults.GlooSystem,
 		"namespace of the destination upstream for this route")
 
+	set.StringVarP(&route.UpstreamGroup.Name, "upstream-group-name", "", "",
+		"name of the upstream group destination for this route")
+	set.StringVarP(&route.UpstreamGroup.Namespace, "upstream-group-namespace", "", defaults.GlooSystem,
+		"namespace of the upstream group destination for this route")
+
 	set.StringVarP(&route.Destination.DestinationSpec.Aws.LogicalName, "aws-function-name", "a", "",
 		"logical name of the AWS lambda to invoke with this route. use if destination is an AWS upstream")
 	set.BoolVarP(&route.Destination.DestinationSpec.Aws.ResponseTransformation, "aws-unescape", "", false,

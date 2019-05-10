@@ -88,7 +88,8 @@ type InputRoute struct {
 	Destination Destination
 	// TODO: multi destination
 	//Destinations []Destination
-	Plugins RoutePlugins
+	UpstreamGroup core.ResourceRef
+	Plugins       RoutePlugins
 }
 
 type Destination struct {

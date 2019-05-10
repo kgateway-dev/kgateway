@@ -191,6 +191,14 @@ func actionFromInput(input options.InputRoute) (*v1.Route_RouteAction, error) {
 	a := &v1.Route_RouteAction{
 		RouteAction: &v1.RouteAction{},
 	}
+
+	if input.UpstreamGroup.Name != "" && input.UpstreamGroup.Namespace != "" {
+		a.RouteAction.Destination = &v1.RouteAction_UpstreamGroup{
+			UpstreamGroup: &input.UpstreamGroup,
+		}
+		return a, nil
+	}
+
 	// TODO: multi destination
 	dest := input.Destination
 	if dest.Upstream.Name == "" {
