@@ -106,6 +106,39 @@ func UpstreamClient() (v1.UpstreamClient, error) {
 	return upstreamClient, nil
 }
 
+func MustUpstreamGroupClient() v1.UpstreamGroupClient {
+	client, err := UpstreamGroupClient()
+	if err != nil {
+		log.Fatalf("failed to create upstream group client: %v", err)
+	}
+	return client
+}
+
+func UpstreamGroupClient() (v1.UpstreamGroupClient, error) {
+	memoryResourceClient := getMemoryClients()
+	if memoryResourceClient != nil {
+		return v1.NewUpstreamGroupClient(memoryResourceClient)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache(context.TODO())
+	upstreamGroupClient, err := v1.NewUpstreamGroupClient(&factory.KubeResourceClientFactory{
+		Crd:         v1.UpstreamGroupCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating upstream groups client")
+	}
+	if err := upstreamGroupClient.Register(); err != nil {
+		return nil, err
+	}
+	return upstreamGroupClient, nil
+}
+
 func MustProxyClient() v1.ProxyClient {
 	client, err := ProxyClient()
 	if err != nil {

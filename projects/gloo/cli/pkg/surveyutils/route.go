@@ -79,10 +79,12 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 	return nil
 }
 
-func getDestinationInteractive(dest *options.Destination) error {
+func getDestinationInteractive(route *options.InputRoute) error {
+	dest := route.Destination
 	// collect secrets list
 	usClient := helpers.MustUpstreamClient()
 	ussByKey := make(map[string]*v1.Upstream)
+	ugsByKey := make(map[string]*v1.UpstreamGroup)
 	var usKeys []string
 	for _, ns := range helpers.MustGetNamespaces() {
 		usList, err := usClient.List(ns, clients.ListOpts{})
@@ -99,14 +101,37 @@ func getDestinationInteractive(dest *options.Destination) error {
 		return errors.Errorf("no upstreams found. create an upstream first or enable " +
 			"discovery.")
 	}
+
+	ugClient, err := helpers.UpstreamGroupClient()
+	if err == nil {
+		for _, ns := range helpers.MustGetNamespaces() {
+			ugList, err := ugClient.List(ns, clients.ListOpts{})
+			if err != nil {
+				return err
+			}
+			for _, ug := range ugList {
+				ref := ug.Metadata.Ref()
+				key := "upstream-group: " + ref.Key()
+				ugsByKey[key] = ug
+				usKeys = append(usKeys, key)
+			}
+		}
+	}
+
 	var usKey string
 	if err := cliutil.ChooseFromList(
-		"Choose the upstream to route to: ",
+		"Choose the upstream or upstream group to route to: ",
 		&usKey,
 		usKeys,
 	); err != nil {
 		return err
 	}
+
+	if ug, ok := ugsByKey[usKey]; ok {
+		route.UpstreamGroup = ug.Metadata.Ref()
+		return nil
+	}
+
 	us, ok := ussByKey[usKey]
 	if !ok {
 		return errors.Errorf("internal error: upstream map not populated")
@@ -250,7 +275,7 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	if err := getMatcherInteractive(&opts.Add.Route.Matcher); err != nil {
 		return err
 	}
-	if err := getDestinationInteractive(&opts.Add.Route.Destination); err != nil {
+	if err := getDestinationInteractive(&opts.Add.Route); err != nil {
 		return err
 	}
 	if err := getPluginsInteractive(&opts.Add.Route.Plugins); err != nil {
