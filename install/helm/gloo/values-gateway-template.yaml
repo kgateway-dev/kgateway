@@ -23,6 +23,7 @@ gloo:
       pullPolicy: Always
     xdsPort: 9977
     replicas: 1
+    stats: true
 
 discovery:
   deployment:
@@ -30,6 +31,7 @@ discovery:
       repository: quay.io/solo-io/discovery
       pullPolicy: Always
     replicas: 1
+    stats: true
 
 gateway:
   enabled: true
@@ -38,6 +40,7 @@ gateway:
       repository: quay.io/solo-io/gateway
       pullPolicy: Always
     replicas: 1
+    stats: true
 
 gatewayProxies:
   gateway-proxy:
@@ -45,6 +48,7 @@ gatewayProxies:
       image:
         repository: quay.io/solo-io/gloo-envoy-wrapper
         pullPolicy: Always
+      stats: true
       httpPort: 8080
       httpsPort: 8443
       replicas: 1
