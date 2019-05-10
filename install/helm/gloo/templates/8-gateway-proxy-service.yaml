@@ -9,9 +9,13 @@ metadata:
     gloo: {{ $key }}
   name: {{ $key }}
   namespace: {{ $.Release.Namespace }}
-  {{- with $spec.service.extraAnnotations }}
+{{- if $spec.service.extraAnnotations }}
+{{ $annotationExist = true}}
   annotations:
-{{toYaml  . | indent 8}}{{- end }}
+  {{- range $key, $value := $spec.service.extraAnnotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
 spec:
   ports:
   - port: {{ $spec.service.httpPort }}

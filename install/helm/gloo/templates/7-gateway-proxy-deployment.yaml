@@ -18,9 +18,22 @@ spec:
     metadata:
       labels:
         gloo: {{ $key }}
-{{- with $spec.deployment.extraAnnotations }}
+{{ $annotationExist := false}}
+{{- if $spec.deployment.extraAnnotations }}
+{{ $annotationExist = true}}
       annotations:
-{{toYaml  . | indent 8}}{{- end }}
+      {{- range $key, $value := $spec.deployment.extraAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+{{- end }}
+{{- if $spec.deployment.stats }}
+{{- if not $annotationExist }}
+      annotations:
+{{- end}}
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.io/scrape: "true"
+{{- end}}
     spec:
       containers:
       - args: ["--disable-hot-restart"]

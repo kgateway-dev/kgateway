@@ -16,9 +16,12 @@ spec:
     metadata:
       labels:
         gloo: ingress-proxy
-{{- with .Values.ingressProxy.deployment.extraAnnotations }}
+{{- if .Values.ingressProxy.deployment.extraAnnotations }}
       annotations:
-{{toYaml  . | indent 8}}{{- end }}
+      {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+{{- end }}
     spec:
       containers:
       - args: ["--disable-hot-restart"]
