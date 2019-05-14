@@ -630,6 +630,14 @@
   version = "v0.2.0"
 
 [[projects]]
+  digest = "1:f91df401afec7f89e6b8932337a63fc4807e61bdfee71b924acffe1d4b1bce97"
+  name = "github.com/goph/emperror"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ae59d9fdc3f0c4814bc5fac2d4a68441dcff5a17"
+  version = "v0.17.1"
+
+[[projects]]
   branch = "master"
   digest = "1:d47549022c929925679aec031329f59f250d704f69ee44a194998cdb8d873393"
   name = "github.com/gophercloud/gophercloud"
@@ -1532,7 +1540,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:8bb87946a1dddf387f31edc1f2c7231e4bb3969ceccf7d6a22ca66e5a0ce080e"
+  digest = "1:7878e5e26dfab1d6683d6da956c1f16226c9d3ed4ba8d6590c1dffe045383eb0"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1545,18 +1553,23 @@
     "errutils",
     "githubutils",
     "hashutils",
+    "installutils/helmchart",
+    "installutils/kuberesource",
     "kubeinstallutils",
     "kubeutils",
     "log",
+    "manifesttestutils",
     "pkgmgmtutils",
     "protoutils",
     "stats",
     "stringutils",
+    "tarutils",
     "testutils",
     "testutils/clusterlock",
     "testutils/exec",
     "testutils/helper",
     "versionutils",
+    "vfsutils",
   ]
   pruneopts = "UT"
   revision = "ca41a2fda35b9d676ac551dae6e5dfb60b7c1a5e"
@@ -2714,6 +2727,7 @@
     "github.com/solo-io/go-utils/hashutils",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/log",
+    "github.com/solo-io/go-utils/manifesttestutils",
     "github.com/solo-io/go-utils/pkgmgmtutils",
     "github.com/solo-io/go-utils/protoutils",
     "github.com/solo-io/go-utils/stats",
@@ -2761,6 +2775,7 @@
     "gopkg.in/AlecAivazis/survey.v1/terminal",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
+    "k8s.io/api/rbac/v1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",

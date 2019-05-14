@@ -307,7 +307,7 @@ ifeq ($(RELEASE),"true")
 	helm repo index $(HELM_SYNC_DIR)
 endif
 
-HELMFLAGS := --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
+HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
 
 install/gloo-gateway.yaml: prepare-helm
 	helm template install/helm/gloo $(HELMFLAGS) > $@
