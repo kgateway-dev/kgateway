@@ -10,7 +10,6 @@ metadata:
   name: {{ $key }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
-{{ $annotationExist = true}}
   annotations:
   {{- range $key, $value := $spec.service.extraAnnotations }}
     {{ $key }}: {{ $value | quote }}
