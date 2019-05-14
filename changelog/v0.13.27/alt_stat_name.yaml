@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: "Set 'alt_stat_name: xds_cluster' in the bootstrap config so that the cluster doesn't have dots in the stats"
+    issueLink: https://github.com/solo-io/gloo/pull/713
