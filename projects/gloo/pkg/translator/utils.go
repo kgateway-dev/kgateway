@@ -1,6 +1,8 @@
 package translator
 
 import (
+	fmt "fmt"
+
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
@@ -9,7 +11,8 @@ import (
 )
 
 func UpstreamToClusterName(upstream core.ResourceRef) string {
-	return upstream.Key()
+	// Don't use dots in the name as it messes up promethues stats
+	return fmt.Sprintf("%s_%s", upstream.Name, upstream.Namespace)
 }
 
 func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filter, error) {
