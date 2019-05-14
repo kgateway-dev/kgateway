@@ -11,7 +11,7 @@ import (
 )
 
 func UpstreamToClusterName(upstream core.ResourceRef) string {
-	// Don't use dots in the name as it messes up promethues stats
+	// Don't use dots in the name as it messes up prometheus stats
 	return fmt.Sprintf("%s_%s", upstream.Name, upstream.Namespace)
 }
 
