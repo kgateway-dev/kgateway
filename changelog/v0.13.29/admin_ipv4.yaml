@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Only use ipv4 for admin, to avoid failures when ipv6 not present.
+    issueLink: https://github.com/solo-io/gloo/pull/716
