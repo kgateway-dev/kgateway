@@ -87,11 +87,6 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-            - endpoint:
-                address:
-                  socket_address:
-                    address: "::1"
-                    port_value: 19000
 {{- end}}
 
     dynamic_resources:
