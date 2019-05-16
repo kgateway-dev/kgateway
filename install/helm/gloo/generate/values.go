@@ -18,7 +18,8 @@ type Namespace struct {
 }
 
 type Rbac struct {
-	Create bool `json:"create"`
+	Create     bool `json:"create"`
+	namespaced bool `json:"Namespaced"`
 }
 
 type Crds struct {
@@ -105,12 +106,12 @@ type GatewayProxyDeployment struct {
 	*DeploymentSpec
 }
 type GatewayProxyService struct {
-	Type             string            `json:"type,omitempty"`
-	HttpPort         string            `json:"httpPort,omitempty"`
-	HttpsPort        string            `json:"httpsPort,omitempty"`
-	ClusterIP        string            `json:"clusterIP,omitempty"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
-	ExternalTrafficPolicy string       `json:"externalTrafficPolicy,omitempty"`
+	Type                  string            `json:"type,omitempty"`
+	HttpPort              string            `json:"httpPort,omitempty"`
+	HttpsPort             string            `json:"httpsPort,omitempty"`
+	ClusterIP             string            `json:"clusterIP,omitempty"`
+	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
+	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {
