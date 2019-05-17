@@ -1,10 +1,12 @@
 {{- if .Values.rbac.create }}
-
 {{- if .Values.gateway.enabled }}
 kind: {{ include "gloo.role" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-role-binding-gateway{{ include "gloo.rolebindingsuffix" . }}
+{{- if .Values.rbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
   labels:
     app: gloo
     gloo: rbac
@@ -16,6 +18,21 @@ roleRef:
   kind: {{ include "gloo.role" . }}
   name: gloo-role-gateway
   apiGroup: rbac.authorization.k8s.io
-
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-role-binding-gateway-crds{{ include "gloo.rolebindingsuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: gloo-role-gateway-crds
+  apiGroup: rbac.authorization.k8s.io
 {{- end -}}
 {{- end -}}

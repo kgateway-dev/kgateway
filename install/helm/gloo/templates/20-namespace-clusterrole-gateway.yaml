@@ -4,23 +4,36 @@
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-role-gateway
-    labels:
-        app: gloo
-        gloo: rbac
+  name: gloo-role-gateway
+{{- if .Values.rbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+  labels:
+      app: gloo
+      gloo: rbac
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
   verbs: ["*"]
-- apiGroups: ["apiextensions.k8s.io"]
-  resources: ["customresourcedefinitions"]
-  verbs: ["get", "create"]
 - apiGroups: ["gloo.solo.io"]
   resources: ["settings", "upstreams","upstreamgroups", "proxies","virtualservices"]
   verbs: ["*"]
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices", "gateways"]
   verbs: ["*"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: gloo-role-gateway-crds
+    labels:
+        app: gloo
+        gloo: rbac
+rules:
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "create"]
+
 {{- end -}}
 
 {{- end -}}
