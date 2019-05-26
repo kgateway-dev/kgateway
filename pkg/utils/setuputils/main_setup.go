@@ -39,7 +39,7 @@ func Main(opts SetupOpts) error {
 
 	ctx := contextutils.WithLogger(context.Background(), loggingPrefix)
 
-	settingsClient, err := KubeOrFileSettingsClient(ctx, setupDir)
+	settingsClient, err := KubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
 		return err
 	}
@@ -72,13 +72,15 @@ func Main(opts SetupOpts) error {
 
 // TODO (ilackarms): instead of using an heuristic here, read from a CLI flagg
 // first attempt to use kube crd, otherwise fall back to file
-func KubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.SettingsClient, error) {
+func KubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err == nil {
 		return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
-			Crd:         v1.SettingsCrd,
-			Cfg:         cfg,
-			SharedCache: kube.NewKubeCache(ctx),
+			Crd:                v1.SettingsCrd,
+			Cfg:                cfg,
+			SharedCache:        kube.NewKubeCache(ctx),
+			SkipCrdCreation:    true,
+			NamespaceWhitelist: []string{setupNamespace},
 		})
 	}
 	return v1.NewSettingsClient(&factory.FileResourceClientFactory{
