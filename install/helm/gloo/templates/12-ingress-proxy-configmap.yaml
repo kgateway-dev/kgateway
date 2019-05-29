@@ -31,6 +31,8 @@ data:
                     address: gloo
                     port_value: {{ .Values.gloo.deployment.xdsPort }}
         http2_protocol_options: {}
+        upstream_connection_options:
+          tcp_keepalive: {}
         type: STRICT_DNS
     dynamic_resources:
       ads_config:
