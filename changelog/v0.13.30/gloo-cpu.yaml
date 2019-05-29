@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Reduce gloo cpu request to allow gloo to run on single cpu nodes.
+    issueLink: https://github.com/solo-io/gloo/pull/725
