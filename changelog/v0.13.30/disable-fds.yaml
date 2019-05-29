@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow disabling function discovery. This can now be done with `--set discovery.disable_fds=true` when installing with helm.
+    issueLink: https://github.com/solo-io/gloo/pull/729

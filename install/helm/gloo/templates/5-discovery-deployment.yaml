@@ -43,4 +43,8 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
+        {{- if .Values.discovery.disable_fds }}
+          - name: DISABLE_FDS
+            value: "true"
+        {{- end}}
 

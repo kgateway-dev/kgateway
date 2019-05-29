@@ -73,6 +73,7 @@ type GlooDeployment struct {
 
 type Discovery struct {
 	Deployment *DiscoveryDeployment `json:"deployment,omitempty"`
+	DisableFDS bool `json:"disable_fds,omitempty"`
 }
 
 type DiscoveryDeployment struct {
