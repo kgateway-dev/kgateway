@@ -28,7 +28,7 @@ spec:
         name: gloo
         resources:
           requests:
-            cpu: 1
+            cpu: 500m
             memory: 256Mi
         securityContext:
           readOnlyRootFilesystem: true
