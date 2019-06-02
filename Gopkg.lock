@@ -1540,7 +1540,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:7878e5e26dfab1d6683d6da956c1f16226c9d3ed4ba8d6590c1dffe045383eb0"
+  digest = "1:33aec427a8169c1f16f09a02d8a86639bdf62ae39af1417ffe4d72e3c9b13bcd"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1572,8 +1572,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "ca41a2fda35b9d676ac551dae6e5dfb60b7c1a5e"
-  version = "v0.8.4"
+  revision = "c3a45bb546f7b699ceaa6814d195e490cb8e6e96"
+  version = "v0.8.18"
 
 [[projects]]
   digest = "1:bb488600a6b498095a87e4df2267b0566c377faa1a138023c162a9775bab3d7c"
@@ -1904,6 +1904,17 @@
   packages = ["rate"]
   pruneopts = "UT"
   revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
+
+[[projects]]
+  branch = "master"
+  digest = "1:c44a77760372a998be8d4656e8d3c865f68735ec4cad1743a245903a58f64249"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "3ee3066db522c6628d440a3a91c4abdd7f5ef22f"
 
 [[projects]]
   digest = "1:d2a8db567a76203e3b41c1f632d86485ffd57f8e650a0d1b19d240671c2fddd7"
@@ -2775,7 +2786,6 @@
     "gopkg.in/AlecAivazis/survey.v1/terminal",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
-    "k8s.io/api/rbac/v1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
