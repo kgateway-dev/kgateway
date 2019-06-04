@@ -36,9 +36,8 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 	validateGateways(filteredGateways, resourceErrs)
 	var listeners []*gloov1.Listener
 	for _, gateway := range filteredGateways {
-
 		virtualServices := getVirtualServiceForGateway(gateway, snap.VirtualServices, resourceErrs)
-		filtered := filterVirtualSeviceForGateway(gateway, virtualServices)
+		filtered := filterVirtualServiceForGateway(gateway, virtualServices)
 		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, filtered, resourceErrs)
 		listener := desiredListener(gateway, mergedVirtualServices)
 		listeners = append(listeners, listener)
@@ -221,7 +220,7 @@ func getVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.Virtual
 	return virtualServicesForGateway
 }
 
-func filterVirtualSeviceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
+func filterVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
 	var virtualServicesForGateway v1.VirtualServiceList
 	for _, virtualService := range virtualServices {
 		if gateway.Ssl == hasSsl(virtualService) {

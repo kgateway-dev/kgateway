@@ -213,7 +213,7 @@ var _ = Describe("Translator", func() {
 
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-			Expect(listener.VirtualHosts).To(HaveLen(0))
+			Expect(listener.VirtualHosts).To(HaveLen(1))
 		})
 
 		It("should not error with one contains ssl config", func() {
@@ -225,7 +225,7 @@ var _ = Describe("Translator", func() {
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 			Expect(listener.VirtualHosts).To(HaveLen(1))
-			Expect(listener.VirtualHosts[0].Routes).To(HaveLen(2))
+			Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
 		})
 
 		It("should error with both having ssl config", func() {
