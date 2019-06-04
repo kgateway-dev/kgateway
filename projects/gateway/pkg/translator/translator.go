@@ -38,8 +38,8 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 	for _, gateway := range filteredGateways {
 
 		virtualServices := getVirtualServiceForGateway(gateway, snap.VirtualServices, resourceErrs)
-		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, virtualServices, resourceErrs)
-		mergedVirtualServices = filterVirtualSeviceForGateway(gateway, mergedVirtualServices)
+		filtered := filterVirtualSeviceForGateway(gateway, virtualServices)
+		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, filtered, resourceErrs)
 		listener := desiredListener(gateway, mergedVirtualServices)
 		listeners = append(listeners, listener)
 	}
