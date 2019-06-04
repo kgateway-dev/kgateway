@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Allow two virtual services on the same host, differing by ssl/non-ssl
+    issueLink: https://github.com/solo-io/gloo/issues/731
