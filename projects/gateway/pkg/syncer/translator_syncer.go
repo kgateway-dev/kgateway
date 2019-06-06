@@ -76,14 +76,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	}
 
 	// start propagating for new set of resources
-	if err := s.propagateProxyStatus(ctx, snap, proxy, resourceErrs); err != nil {
+	if err := s.propagateProxyStatus(ctx, proxy, resourceErrs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, snap *v1.ApiSnapshot, proxy *gloov1.Proxy, resourceErrs reporter.ResourceErrors) error {
+func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloov1.Proxy, resourceErrs reporter.ResourceErrors) error {
 	if proxy == nil {
 		return nil
 	}

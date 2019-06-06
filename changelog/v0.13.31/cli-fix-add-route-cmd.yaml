@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix interactive CLI command to add routes to Virtual Services.
+    issueLink: https://github.com/solo-io/gloo/pull/737

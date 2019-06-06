@@ -80,7 +80,7 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 }
 
 func getDestinationInteractive(route *options.InputRoute) error {
-	dest := route.Destination
+	dest := &route.Destination
 	// collect secrets list
 	usClient := helpers.MustUpstreamClient()
 	ussByKey := make(map[string]*v1.Upstream)
