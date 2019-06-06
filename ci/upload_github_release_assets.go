@@ -99,7 +99,7 @@ func main() {
 			PRRepoOwner:     "homebrew",
 			PRRepoName:      "homebrew-core",
 			PRBranch:        "master",
-			PRDescription:   "",
+			PRDescription:   "Created by Solo-io Bot",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",
 			VersionRegex:    `:tag\s*=>\s*"v([0-9.]+)",`,
