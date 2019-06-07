@@ -77,7 +77,7 @@ var _ = Describe("Route", func() {
 		})
 	})
 
-	FIt("should populate the correct flags", func() {
+	It("should populate the correct flags", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString("Choose a Virtual Service to add the route to")
 			c.PressDown()
