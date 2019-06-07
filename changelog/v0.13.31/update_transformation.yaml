@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Update transformation config to allow for clearing the route cache.
+
