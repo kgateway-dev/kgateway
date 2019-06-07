@@ -82,7 +82,7 @@ Note to developers: new Route Plugins must be added to this struct
 to be usable by Gloo.
 
 ```yaml
-"transformations": .transformation.plugins.gloo.solo.io.RouteTransformations
+"transformations": .envoy.api.v2.filter.http.RouteTransformations
 "faults": .fault.plugins.gloo.solo.io.RouteFaults
 "prefixRewrite": .transformation.plugins.gloo.solo.io.PrefixRewrite
 "timeout": .google.protobuf.Duration
@@ -93,7 +93,7 @@ to be usable by Gloo.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `transformations` | [.transformation.plugins.gloo.solo.io.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) |  |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) |  |  |
 | `faults` | [.fault.plugins.gloo.solo.io.RouteFaults](../plugins/faultinjection/fault.proto.sk#routefaults) |  |  |
 | `prefixRewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#prefixrewrite) |  |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |

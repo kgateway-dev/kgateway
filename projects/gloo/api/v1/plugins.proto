@@ -52,7 +52,7 @@ message VirtualHostPlugins {
 // Note to developers: new Route Plugins must be added to this struct
 // to be usable by Gloo.
 message RoutePlugins {
-    transformation.plugins.gloo.solo.io.RouteTransformations transformations = 1;
+    envoy.api.v2.filter.http.RouteTransformations transformations = 1;
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
     transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
