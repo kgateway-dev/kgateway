@@ -59,8 +59,8 @@ update-deps:
 	go get -u golang.org/x/tools/cmd/goimports
 	go get -u github.com/gogo/protobuf/gogoproto
 	go get -u github.com/gogo/protobuf/protoc-gen-gogo
-	mkdir -p $$GOPATH/src/github.com/lyft
-	cd $$GOPATH/src/github.com/lyft && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git checkout v0.0.6
+	mkdir -p $$GOPATH/src/github.com/envoyproxy
+	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git checkout v0.0.14
 	go get -u github.com/paulvollmer/2gobytes
 	go get -v -u github.com/golang/mock/gomock
 	go install github.com/golang/mock/mockgen
