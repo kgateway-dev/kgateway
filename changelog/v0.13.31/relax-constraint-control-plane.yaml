@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Allow relaxing control plane constraint (fix the validate.proto was needed)
