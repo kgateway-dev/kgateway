@@ -121,7 +121,7 @@ var _ = Describe("PerFilterConfig", func() {
 									Destination: &v1.Destination{
 										DestinationType: &v1.Destination_Upstream{
 											Upstream: &core.ResourceRef{
-												Name:      "test",
+												Name:      "yes",
 												Namespace: "",
 											},
 										},
