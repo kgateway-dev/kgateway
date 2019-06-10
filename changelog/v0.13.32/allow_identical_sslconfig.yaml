@@ -1,4 +1,4 @@
 changelog:
   - type: NEW_FEATURE
     description: Allow two virtual services on the same host with identical SslConfigs to be merged
-    issueLink: 
+    issueLink: https://github.com/solo-io/gloo/issues/731
