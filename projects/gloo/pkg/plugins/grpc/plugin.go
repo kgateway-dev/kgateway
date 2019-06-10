@@ -130,7 +130,7 @@ func convertProto(encodedBytes []byte) (*descriptor.FileDescriptorSet, error) {
 func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's grpc destination
-		if spec.DestinationSpec == nil {
+		if spec.DestinationSpec == nil || spec.GetUpstream() == nil {
 			return nil, nil
 		}
 		grpcDestinationSpecWrapper, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Grpc)
@@ -152,7 +152,7 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 		fullServiceName := genFullServiceName(grpcDestinationSpec.Package, grpcDestinationSpec.Service)
 		methodName := grpcDestinationSpec.Function
 
-		upstream := p.recordedUpstreams[spec.Upstream]
+		upstream := p.recordedUpstreams[*spec.GetUpstream()]
 		if upstream == nil {
 			return nil, errors.New("upstream was not recorded for grpc route")
 		}

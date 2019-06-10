@@ -80,19 +80,19 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
-		// check if it's aws destination
-		if spec.DestinationSpec == nil {
+		// check if it's aws upstream destination
+		if spec.DestinationSpec == nil || spec.GetUpstream() == nil {
 			return nil, nil
 		}
 		azureDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Azure)
 		if !ok {
 			return nil, nil
 		}
-		// get upstream
-		upstreamSpec, ok := p.recordedUpstreams[spec.Upstream]
+
+		upstreamSpec, ok := p.recordedUpstreams[*spec.GetUpstream()]
 		if !ok {
 			// TODO(yuval-k): panic in debug
-			return nil, errors.Errorf("%v is not an Azure upstream", spec.Upstream)
+			return nil, errors.Errorf("%v is not an Azure upstream", *spec.GetUpstream())
 		}
 
 		// get function

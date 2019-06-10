@@ -17,7 +17,14 @@ func (t *translator) verifyUpstreamGroups(params plugins.Params, resourceErrs re
 				resourceErrs.AddError(ug, errors.Errorf("destination # %d: destination is nil", i+1))
 				continue
 			}
-			upRef := dest.Destination.Upstream
+
+			upRef := dest.Destination.GetUpstream()
+
+			if upRef == nil {
+				resourceErrs.AddError(ug, errors.Errorf("destination # %d: service destinations are currently not supported", i+1))
+				continue
+			}
+
 			_, err := upstreams.Find(upRef.Namespace, upRef.Name)
 			if err != nil {
 				resourceErrs.AddError(ug, errors.Wrapf(err, "destination # %d: upstream not found", i+1))

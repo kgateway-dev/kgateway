@@ -3,6 +3,8 @@ package translator_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -90,7 +92,9 @@ var _ = Describe("Translator", func() {
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
-							Upstream: upname.Ref(),
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: utils.ResourceRefPtr(upname.Ref()),
+							},
 						},
 					},
 				},
@@ -342,13 +346,17 @@ var _ = Describe("Translator", func() {
 					{
 						Weight: 1,
 						Destination: &v1.Destination{
-							Upstream: upstream.Metadata.Ref(),
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+							},
 						},
 					},
 					{
 						Weight: 1,
 						Destination: &v1.Destination{
-							Upstream: upstream2.Metadata.Ref(),
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: utils.ResourceRefPtr(upstream2.Metadata.Ref()),
+							},
 						},
 					},
 				},
@@ -384,7 +392,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should error on invalid ref in upstream groups", func() {
-			upstreamGroup.Destinations[0].Destination.Upstream.Name = "notexist"
+			upstreamGroup.Destinations[0].Destination.GetUpstream().Name = "notexist"
 
 			_, errs, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
@@ -435,7 +443,9 @@ var _ = Describe("Translator", func() {
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
-								Upstream: upstream.Metadata.Ref(),
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+								},
 								Subset: &v1.Subset{
 									Values: map[string]string{
 										"testkey": "testvalue",
@@ -510,7 +520,9 @@ var _ = Describe("Translator", func() {
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_Single{
 								Single: &v1.Destination{
-									Upstream: upstream.Metadata.Ref(),
+									DestinationType: &v1.Destination_Upstream{
+										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+									},
 									Subset: &v1.Subset{
 										Values: map[string]string{
 											"nottestkey": "value",

@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/go-utils/testutils/helper"
 
@@ -134,9 +136,12 @@ var _ = Describe("Kube2e: gateway", func() {
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
-										Upstream: core.ResourceRef{
-											Namespace: testHelper.InstallNamespace,
-											Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, "testrunner", helper.TestRunnerPort)},
+										DestinationType: &gloov1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Namespace: testHelper.InstallNamespace,
+												Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, "testrunner", helper.TestRunnerPort),
+											},
+										},
 									},
 								},
 							},
@@ -208,9 +213,12 @@ var _ = Describe("Kube2e: gateway", func() {
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
-											Upstream: core.ResourceRef{
-												Namespace: testHelper.InstallNamespace,
-												Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, "testrunner", helper.TestRunnerPort)},
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: &core.ResourceRef{
+													Namespace: testHelper.InstallNamespace,
+													Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, "testrunner", helper.TestRunnerPort),
+												},
+											},
 										},
 									},
 								},
@@ -320,7 +328,9 @@ var _ = Describe("Kube2e: gateway", func() {
 									RouteAction: &gloov1.RouteAction{
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
-												Upstream: us.Metadata.Ref(),
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: utils.ResourceRefPtr(us.Metadata.Ref()),
+												},
 											},
 										},
 									},
@@ -517,7 +527,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					{
 						Weight: 1,
 						Destination: &gloov1.Destination{
-							Upstream: upstreamRef,
+							DestinationType: &gloov1.Destination_Upstream{
+								Upstream: &upstreamRef,
+							},
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": "red"},
 							},
@@ -526,7 +538,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					{
 						Weight: 1,
 						Destination: &gloov1.Destination{
-							Upstream: upstreamRef,
+							DestinationType: &gloov1.Destination_Upstream{
+								Upstream: &upstreamRef,
+							},
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": "blue"},
 							},
@@ -535,7 +549,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					{
 						Weight: 1,
 						Destination: &gloov1.Destination{
-							Upstream: upstreamRef,
+							DestinationType: &gloov1.Destination_Upstream{
+								Upstream: &upstreamRef,
+							},
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": ""},
 							},
@@ -572,7 +588,9 @@ var _ = Describe("Kube2e: gateway", func() {
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
-											Upstream: upstreamRef,
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: &upstreamRef,
+											},
 											Subset: &gloov1.Subset{
 												Values: map[string]string{"text": "red"},
 											},

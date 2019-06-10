@@ -124,7 +124,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
 	err := pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, filterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's aws destination
-		if spec.DestinationSpec == nil {
+		if spec.DestinationSpec == nil || spec.GetUpstream() == nil {
 			return nil, nil
 		}
 		awsDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Aws)
@@ -132,9 +132,9 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 			return nil, nil
 		}
 		// get upstream
-		lambdaSpec, ok := p.recordedUpstreams[spec.Upstream]
+		lambdaSpec, ok := p.recordedUpstreams[*spec.GetUpstream()]
 		if !ok {
-			err := errors.Errorf("%v is not an AWS upstream", spec.Upstream)
+			err := errors.Errorf("%v is not an AWS upstream", *spec.GetUpstream())
 			contextutils.LoggerFrom(p.ctx).Error(err)
 			return nil, err
 		}

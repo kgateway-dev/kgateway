@@ -25,7 +25,7 @@ var _ = Describe("PerFilterConfig", func() {
 	BeforeEach(func() {
 		msg = &types.Struct{
 			Fields: map[string]*types.Value{
-				"test": &types.Value{Kind: &types.Value_BoolValue{
+				"test": {Kind: &types.Value_BoolValue{
 					BoolValue: true,
 				}},
 			},
@@ -65,10 +65,13 @@ var _ = Describe("PerFilterConfig", func() {
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
-								Upstream: core.ResourceRef{
-									Name:      "test",
-									Namespace: "",
-								}},
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Name:      "test",
+										Namespace: "",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -116,16 +119,20 @@ var _ = Describe("PerFilterConfig", func() {
 							Multi: &v1.MultiDestination{
 								Destinations: []*v1.WeightedDestination{{
 									Destination: &v1.Destination{
-										Upstream: core.ResourceRef{
-											Name:      "yes",
-											Namespace: "",
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "test",
+												Namespace: "",
+											},
 										},
 									},
 								}, {
 									Destination: &v1.Destination{
-										Upstream: core.ResourceRef{
-											Name:      "no",
-											Namespace: "",
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "no",
+												Namespace: "",
+											},
 										},
 									},
 								}},
@@ -157,7 +164,7 @@ var _ = Describe("PerFilterConfig", func() {
 		It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
 			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
-				if spec.Upstream.Name == "yes" {
+				if spec.GetUpstream().Name == "yes" {
 					return msg, nil
 				}
 				return nil, nil
@@ -181,19 +188,23 @@ var _ = Describe("PerFilterConfig", func() {
 					},
 					Destinations: []*v1.WeightedDestination{{
 						Destination: &v1.Destination{
-							Upstream: core.ResourceRef{
-								Name:      "yes",
-								Namespace: "",
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      "yes",
+									Namespace: "",
+								},
 							},
 						},
 					}, {
 						Destination: &v1.Destination{
-							Upstream: core.ResourceRef{
-								Name:      "no",
-								Namespace: "",
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      "no",
+									Namespace: "",
+								},
 							},
-						},
-					}},
+						}},
+					},
 				}
 				ref := upGrp.Metadata.Ref()
 				in = &v1.Route{
@@ -216,7 +227,7 @@ var _ = Describe("PerFilterConfig", func() {
 			It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
 				err := MarkPerFilterConfig(context.TODO(), snap, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
-					if spec.Upstream.Name == "yes" {
+					if spec.GetUpstream().Name == "yes" {
 						return msg, nil
 					}
 					return nil, nil
