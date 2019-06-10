@@ -150,8 +150,8 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 			routes = append(routes, vs.VirtualHost.Routes...)
 			if sslConfig == nil {
 				sslConfig = vs.SslConfig
-			} else if vs.SslConfig != nil {
-				resourceErrs.AddError(gateway, fmt.Errorf("more than one ssl config is present in virtual service of these domains: %s", k))
+			} else if !vs.SslConfig.Equal(sslConfig) {
+				resourceErrs.AddError(gateway, fmt.Errorf("more than one distinct ssl config is present in virtual service of these domains: %s", k))
 			}
 
 			havePlugins := vs.VirtualHost != nil &&
