@@ -267,18 +267,12 @@ message Destination {
     oneof destination_type {
 
         // Route requests to a Gloo upstream
-        UpstreamDestination upstream = 10;
+        core.solo.io.ResourceRef upstream = 10;
 
+        // TODO: currently not implemented
         // Route requests to a kubernetes service
         ServiceDestination service = 11;
     }
-}
-
-// Specifies a Gloo upstream to route traffic to.
-message UpstreamDestination {
-
-    // The target upstream
-    core.solo.io.ResourceRef ref = 10 [(gogoproto.nullable) = false];
 
     // Some upstreams utilize plugins which require or permit additional configuration on routes targeting them.
     // gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the
@@ -295,7 +289,7 @@ message UpstreamDestination {
 message ServiceDestination {
 
     // The target service
-    core.solo.io.ResourceRef ref = 1 [(gogoproto.nullable) = false];
+    core.solo.io.ResourceRef metadata = 1 [(gogoproto.nullable) = false];
 
     // The port attribute of the service
     uint32 port = 2;
@@ -317,9 +311,6 @@ message UpstreamGroup {
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
 }
-
-
-
 
 // MultiDestination is a container for a set of weighted destinations. Gloo will load balance traffic for a single
 // route across multiple destinations according to their specified weights.
@@ -400,37 +391,36 @@ message DirectResponseAction {
     string body = 2;
 }
 
-
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 message CorsPolicy {
-  // Specifies the origins that will be allowed to make CORS requests.
-  //
-  // An origin is allowed if either allow_origin or allow_origin_regex match.
-  repeated string allow_origin = 1;
+    // Specifies the origins that will be allowed to make CORS requests.
+    //
+    // An origin is allowed if either allow_origin or allow_origin_regex match.
+    repeated string allow_origin = 1;
 
-  // Specifies regex patterns that match origins that will be allowed to make
-  // CORS requests.
-  //
-  // An origin is allowed if either allow_origin or allow_origin_regex match.
-  repeated string allow_origin_regex = 2;
+    // Specifies regex patterns that match origins that will be allowed to make
+    // CORS requests.
+    //
+    // An origin is allowed if either allow_origin or allow_origin_regex match.
+    repeated string allow_origin_regex = 2;
 
-  // Specifies the content for the *access-control-allow-methods* header.
-  repeated string allow_methods = 3;
+    // Specifies the content for the *access-control-allow-methods* header.
+    repeated string allow_methods = 3;
 
-  // Specifies the content for the *access-control-allow-headers* header.
-  repeated string allow_headers = 4;
+    // Specifies the content for the *access-control-allow-headers* header.
+    repeated string allow_headers = 4;
 
-  // Specifies the content for the *access-control-expose-headers* header.
-  repeated string expose_headers = 5;
+    // Specifies the content for the *access-control-expose-headers* header.
+    repeated string expose_headers = 5;
 
-  // Specifies the content for the *access-control-max-age* header.
-  string max_age = 6;
+    // Specifies the content for the *access-control-max-age* header.
+    string max_age = 6;
 
-  // Specifies whether the resource allows credentials.
-  bool allow_credentials = 7;
+    // Specifies whether the resource allows credentials.
+    bool allow_credentials = 7;
 
-  // Envoy supports toggling CORS during runtime. Implement as need arises.
-  // Allows a preview of CORS settings. If set, evaluates and reports CORS but
-  // does not enforce it.
-  // bool preview = 8;
+    // Envoy supports toggling CORS during runtime. Implement as need arises.
+    // Allows a preview of CORS settings. If set, evaluates and reports CORS but
+    // does not enforce it.
+    // bool preview = 8;
 }
