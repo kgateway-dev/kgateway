@@ -132,11 +132,13 @@ func (t *translator) computeListenerResources(params plugins.Params, proxy *v1.P
 
 	rdsName := routeConfigName(listener)
 
+	// Calculate routes before listeners, so that HttpFilters is called after ProcessVirtualHost\ProcessRoute
+	routeConfig := t.computeRouteConfig(params, proxy, listener, rdsName, report)
+
 	envoyListener := t.computeListener(params, proxy, listener, report)
 	if envoyListener == nil {
 		return nil
 	}
-	routeConfig := t.computeRouteConfig(params, proxy, listener, rdsName, report)
 
 	return &listenerResources{
 		listener:    envoyListener,

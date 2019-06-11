@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Have route plugins called before http filter, so that info from the route can be used by the filters.
