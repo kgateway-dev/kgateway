@@ -53,7 +53,12 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 	resourceErrs := make(reporter.ResourceErrors)
 
-	logger.Debugf("verifing upstream groups: %v", proxy.Metadata.Name)
+	// TODO(marco): error on service destinations until they are implemented
+	if containsServiceDestinations(proxy) {
+		resourceErrs.AddError(proxy, errors.Errorf("proxy contains a service destination. Service destinations are currently not supported"))
+	}
+
+	logger.Debugf("verifying upstream groups: %v", proxy.Metadata.Name)
 	t.verifyUpstreamGroups(params, resourceErrs)
 
 	// endpoints and listeners are shared between listeners
@@ -170,7 +175,7 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		listenersProto = append(listenersProto, xds.NewEnvoyResource(listener))
 	}
 	// construct version
-	// TODO: investigate whether we need a more sophisticated versionining algorithm
+	// TODO: investigate whether we need a more sophisticated versioning algorithm
 	endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
 	if err != nil {
 		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
@@ -197,26 +202,32 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
-func deduplicateClusters(clusters []*envoyapi.Cluster) []*envoyapi.Cluster {
-	mapped := make(map[string]bool)
-	var deduped []*envoyapi.Cluster
-	for _, c := range clusters {
-		if _, added := mapped[c.Name]; added {
+func containsServiceDestinations(proxy *v1.Proxy) bool {
+	for _, listener := range proxy.Listeners {
+		httpList := listener.GetHttpListener()
+		if httpList == nil {
 			continue
 		}
-		deduped = append(deduped, c)
-	}
-	return deduped
-}
-
-func deduplicateEndpoints(endpoints []*envoyapi.ClusterLoadAssignment) []*envoyapi.ClusterLoadAssignment {
-	mapped := make(map[string]bool)
-	var deduped []*envoyapi.ClusterLoadAssignment
-	for _, ep := range endpoints {
-		if _, added := mapped[ep.String()]; added {
-			continue
+		for _, vh := range httpList.VirtualHosts {
+			for _, route := range vh.Routes {
+				routeAction := route.GetRouteAction()
+				if routeAction == nil {
+					continue
+				}
+				switch dest := routeAction.Destination.(type) {
+				case *v1.RouteAction_Single:
+					if dest.Single.GetService() != nil {
+						return true
+					}
+				case *v1.RouteAction_Multi:
+					for _, d := range dest.Multi.Destinations {
+						if d.Destination.GetService() != nil {
+							return true
+						}
+					}
+				}
+			}
 		}
-		deduped = append(deduped, ep)
 	}
-	return deduped
+	return false
 }
