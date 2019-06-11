@@ -311,14 +311,14 @@ Destinations define routable destinations for proxied requests.
 Identifies a port on a kubernetes service to route traffic to.
 
 ```yaml
-"metadata": .core.solo.io.ResourceRef
+"ref": .core.solo.io.ResourceRef
 "port": int
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `metadata` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The target service |  |
+| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The target service |  |
 | `port` | `int` | The port attribute of the service |  |
 
 

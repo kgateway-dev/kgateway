@@ -289,7 +289,7 @@ message Destination {
 message ServiceDestination {
 
     // The target service
-    core.solo.io.ResourceRef metadata = 1 [(gogoproto.nullable) = false];
+    core.solo.io.ResourceRef ref = 1 [(gogoproto.nullable) = false];
 
     // The port attribute of the service
     uint32 port = 2;
