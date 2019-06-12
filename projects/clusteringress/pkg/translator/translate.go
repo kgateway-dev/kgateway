@@ -4,6 +4,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
@@ -231,7 +233,9 @@ func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstrea
 		return &gloov1.RouteAction{
 			Destination: &gloov1.RouteAction_Single{
 				Single: &gloov1.Destination{
-					Upstream: upstream.Metadata.Ref(),
+					DestinationType: &gloov1.Destination_Upstream{
+						Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+					},
 				},
 			},
 		}, nil
@@ -245,7 +249,9 @@ func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstrea
 		}
 		destinations = append(destinations, &gloov1.WeightedDestination{
 			Destination: &gloov1.Destination{
-				Upstream: upstream.Metadata.Ref(),
+				DestinationType: &gloov1.Destination_Upstream{
+					Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+				},
 			},
 			Weight: uint32(split.Percent),
 		})

@@ -72,7 +72,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envo
 func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's rest destination
-		if spec.DestinationSpec == nil {
+		if spec.DestinationSpec == nil || spec.GetUpstream() == nil {
 			return nil, nil
 		}
 		restDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Rest)
@@ -80,9 +80,9 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 			return nil, nil
 		}
 		// get upstream
-		restServiceSpec, ok := p.recordedUpstreams[spec.Upstream]
+		restServiceSpec, ok := p.recordedUpstreams[*spec.GetUpstream()]
 		if !ok {
-			return nil, errors.Errorf("%v does not have a rest service spec", spec.Upstream)
+			return nil, errors.Errorf("%v does not have a rest service spec", *spec.GetUpstream())
 		}
 		funcname := restDestinationSpec.Rest.FunctionName
 		transformationorig := restServiceSpec.Rest.Transformations[funcname]

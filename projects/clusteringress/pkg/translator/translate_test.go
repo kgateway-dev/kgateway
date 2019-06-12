@@ -224,9 +224,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      string("wow-upstream-subset"),
-																Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      string("wow-upstream-subset"),
+																	Namespace: string("example"),
+																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
@@ -284,9 +286,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      string("wow-upstream-subset"),
-																Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      string("wow-upstream-subset"),
+																	Namespace: string("example"),
+																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
@@ -344,9 +348,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      string("wow-upstream-subset"),
-																Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      string("wow-upstream-subset"),
+																	Namespace: string("example"),
+																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
@@ -404,9 +410,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      string("wow-upstream-subset"),
-																Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      string("wow-upstream-subset"),
+																	Namespace: string("example"),
+																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
@@ -456,9 +464,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      string("wow-upstream-subset"),
-																Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      string("wow-upstream-subset"),
+																	Namespace: string("example"),
+																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
@@ -508,9 +518,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      string("wow-upstream-subset"),
-																Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      string("wow-upstream-subset"),
+																	Namespace: string("example"),
+																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
@@ -580,9 +592,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      string("wow-upstream-subset"),
-																Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      string("wow-upstream-subset"),
+																	Namespace: string("example"),
+																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},

@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -231,7 +233,9 @@ func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
-								Upstream: upstream,
+								DestinationType: &gloov1.Destination_Upstream{
+									Upstream: utils.ResourceRefPtr(upstream),
+								},
 							},
 						},
 					},

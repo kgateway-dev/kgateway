@@ -82,15 +82,18 @@ var _ = Describe("linkerd plugin", func() {
 				Name: translator.UpstreamToClusterName(v),
 			}
 		}
-		destinatiions := make([]*v1.WeightedDestination, len(upstreamRefs))
+		destinations := make([]*v1.WeightedDestination, len(upstreamRefs))
 		for i, v := range upstreamRefs {
-			destinatiions[i] = &v1.WeightedDestination{
+			usRef := v
+			destinations[i] = &v1.WeightedDestination{
 				Destination: &v1.Destination{
-					Upstream: v,
+					DestinationType: &v1.Destination_Upstream{
+						Upstream: &usRef,
+					},
 				},
 			}
 		}
-		return clusters, destinatiions
+		return clusters, destinations
 	}
 
 	var createUpstreamList = func(refs []core.ResourceRef, specs []*kubernetes.UpstreamSpec) v1.UpstreamList {
@@ -134,7 +137,9 @@ var _ = Describe("linkerd plugin", func() {
 			}
 			destinations := &v1.WeightedDestination{
 				Destination: &v1.Destination{
-					Upstream: usRf,
+					DestinationType: &v1.Destination_Upstream{
+						Upstream: &usRf,
+					},
 				},
 			}
 			upstreams := createUpstream(usRf, nil)
@@ -260,7 +265,9 @@ var _ = Describe("linkerd plugin", func() {
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
-								Upstream: upstreamRefs[0],
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &upstreamRefs[0],
+								},
 							},
 						},
 					},

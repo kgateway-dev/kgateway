@@ -376,7 +376,9 @@ func getTrivialProxyForUpstream(ns string, bindport uint32, upstream core.Resour
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
-											Upstream: upstream,
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: &upstream,
+											},
 										},
 									},
 								},

@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -178,7 +180,9 @@ var _ = Describe("AWS Lambda", func() {
 									RouteAction: &gloov1.RouteAction{
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
-												Upstream: upstream.Metadata.Ref(),
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+												},
 												DestinationSpec: &gloov1.DestinationSpec{
 													DestinationType: &gloov1.DestinationSpec_Aws{
 														Aws: &aws_plugin.DestinationSpec{
@@ -234,7 +238,9 @@ var _ = Describe("AWS Lambda", func() {
 									RouteAction: &gloov1.RouteAction{
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
-												Upstream: upstream.Metadata.Ref(),
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+												},
 												DestinationSpec: &gloov1.DestinationSpec{
 													DestinationType: &gloov1.DestinationSpec_Aws{
 														Aws: &aws_plugin.DestinationSpec{
@@ -285,7 +291,9 @@ var _ = Describe("AWS Lambda", func() {
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
-									Upstream: upstream.Metadata.Ref(),
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+									},
 									DestinationSpec: &gloov1.DestinationSpec{
 										DestinationType: &gloov1.DestinationSpec_Aws{
 											Aws: &aws_plugin.DestinationSpec{

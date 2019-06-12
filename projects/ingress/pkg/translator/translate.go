@@ -3,6 +3,8 @@ package translator
 import (
 	"sort"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
@@ -171,7 +173,9 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
-									Upstream: upstream.Metadata.Ref(),
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+									},
 								},
 							},
 						},

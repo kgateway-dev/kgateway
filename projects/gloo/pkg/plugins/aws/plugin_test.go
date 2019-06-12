@@ -63,9 +63,11 @@ var _ = Describe("Plugin", func() {
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
-							Upstream: core.ResourceRef{
-								Namespace: "",
-								Name:      upstreamName,
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Namespace: "",
+									Name:      upstreamName,
+								},
 							},
 							DestinationSpec: &v1.DestinationSpec{
 								DestinationType: &v1.DestinationSpec_Aws{

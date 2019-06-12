@@ -48,7 +48,14 @@ func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 
 	switch destType := routeAction.GetDestination().(type) {
 	case *v1.RouteAction_Single:
-		us, err := upstreams.Find(destType.Single.Upstream.Namespace, destType.Single.Upstream.Name)
+
+		// TODO(marco): implement, skip if destination is a service for now
+		upstreamRef := destType.Single.GetUpstream()
+		if upstreamRef == nil {
+			return nil
+		}
+
+		us, err := upstreams.Find(upstreamRef.Namespace, upstreamRef.Name)
 		if err != nil {
 			return nil
 		}
@@ -97,7 +104,14 @@ func configForMultiDestination(destinations []*v1.WeightedDestination, upstreams
 	processedClusters := make(map[string]bool)
 
 	for _, dest := range destinations {
-		us, err := upstreams.Find(dest.Destination.Upstream.Namespace, dest.Destination.Upstream.Name)
+
+		// TODO(marco): implement, skip if destination is a service for now
+		upstreamRef := dest.Destination.GetUpstream()
+		if upstreamRef == nil {
+			return nil
+		}
+
+		us, err := upstreams.Find(upstreamRef.Namespace, upstreamRef.Name)
 		if err != nil {
 			continue
 		}

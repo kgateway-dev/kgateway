@@ -7,7 +7,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
@@ -194,8 +194,12 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.RouteAction) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
+
+		// At this point we are certain that dest is an upstream destination
+		usRef := *dest.Single.GetUpstream()
+
 		out.ClusterSpecifier = &envoyroute.RouteAction_Cluster{
-			Cluster: UpstreamToClusterName(dest.Single.Upstream),
+			Cluster: UpstreamToClusterName(usRef),
 		}
 		out.MetadataMatch = getSubsetMatch(dest.Single.Subset)
 
@@ -227,9 +231,13 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 
 	var totalWeight uint32
 	for _, weightedDest := range multiDest.Destinations {
+
+		// At this point we are certain that dest is an upstream destination
+		usRef := *weightedDest.Destination.GetUpstream()
+
 		totalWeight += weightedDest.Weight
 		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, &envoyroute.WeightedCluster_ClusterWeight{
-			Name:          UpstreamToClusterName(weightedDest.Destination.Upstream),
+			Name:          UpstreamToClusterName(usRef),
 			Weight:        &types.UInt32Value{Value: weightedDest.Weight},
 			MetadataMatch: getSubsetMatch(weightedDest.Destination.Subset),
 		})
@@ -265,7 +273,8 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 	}
 	routeSubset := dest.Subset.Values
 
-	ref := dest.Upstream
+	// At this point we are certain that dest is an upstream destination
+	ref := dest.GetUpstream()
 	upstream, err := params.Snapshot.Upstreams.Find(ref.Namespace, ref.Name)
 	if err != nil {
 		return err
@@ -445,7 +454,14 @@ func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.Weigh
 }
 
 func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destination) error {
-	_, err := upstreams.Find(destination.Upstream.Strings())
+
+	// TODO(marco): implement routes to services, error for the time being
+	upstreamRef := destination.GetUpstream()
+	if upstreamRef == nil {
+		return errors.Errorf("service destinations are currently not supported")
+	}
+
+	_, err := upstreams.Find(upstreamRef.Strings())
 	return err
 }
 
