@@ -20,10 +20,7 @@ import (
 const ServiceUpstreamNamePrefix = "svc:"
 
 func isRealUpstream(upstreamName string) bool {
-	if strings.HasPrefix(upstreamName, ServiceUpstreamNamePrefix) {
-		return false
-	}
-	return true
+	return !strings.HasPrefix(upstreamName, ServiceUpstreamNamePrefix)
 }
 
 func buildFakeUpstreamName(serviceName string, port int32) string {
