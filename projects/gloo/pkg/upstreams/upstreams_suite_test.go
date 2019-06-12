@@ -21,9 +21,8 @@ func TestClients(t *testing.T) {
 	RunSpecs(t, "Hybrid Upstreams Client Suite")
 }
 
-var getService = func(name, namespace, version string, ports []int32) *skkube.Service {
-	svc := skkube.NewService("svc-ns-1", "svc-1")
-	svc.ObjectMeta.ResourceVersion = version
+var getService = func(name, namespace string, ports []int32) *skkube.Service {
+	svc := skkube.NewService(namespace, name)
 	svc.Spec = corev1.ServiceSpec{}
 	for i, port := range ports {
 		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{

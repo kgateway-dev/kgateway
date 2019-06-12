@@ -1,67 +1,35 @@
 package upstreams
 
 import (
-	"sync"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/hashutils"
-	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
-// An upstream collection that provides utility functions to add upstreams and converted services
-type HybridUpstreamSnapshot interface {
-	SetUpstreams(upstreams v1.UpstreamList)
-	SetServices(services skkube.ServiceList)
-	ToList() v1.UpstreamList
-	Clone() HybridUpstreamSnapshot
-	Hash() uint64
-}
-
-type upstreamSnapshot struct {
-	sync.RWMutex
+// Groups real and service-derived upstreams
+type hybridUpstreamSnapshot struct {
 	realUpstreams, serviceUpstreams v1.UpstreamList
 }
 
-func NewHybridUpstreamSnapshot() HybridUpstreamSnapshot {
-	return &upstreamSnapshot{}
+func (s *hybridUpstreamSnapshot) SetRealUpstreams(upstreams v1.UpstreamList) {
+	s.realUpstreams = upstreams
 }
 
-// Merges the given upstreams into the underlying upstream collection
-func (u *upstreamSnapshot) SetUpstreams(upstreams v1.UpstreamList) {
-	u.Lock()
-	defer u.Unlock()
-	u.realUpstreams = upstreams
+func (s *hybridUpstreamSnapshot) SetServiceUpstreams(upstreams v1.UpstreamList) {
+	s.serviceUpstreams = upstreams
 }
 
-// Converts the given kubernetes services to upstreams and merges them into the underlying upstream collection
-func (u *upstreamSnapshot) SetServices(services skkube.ServiceList) {
-	u.Lock()
-	defer u.Unlock()
-	u.serviceUpstreams = servicesToUpstreams(services)
+func (s *hybridUpstreamSnapshot) ToList() v1.UpstreamList {
+	return append(s.realUpstreams, s.serviceUpstreams...)
 }
 
-// List the content of the underlying upstream collection
-func (u *upstreamSnapshot) ToList() v1.UpstreamList {
-	u.RLock()
-	defer u.RUnlock()
-	return append(u.realUpstreams, u.serviceUpstreams...)
+func (s *hybridUpstreamSnapshot) Clone() hybridUpstreamSnapshot {
+	return hybridUpstreamSnapshot{
+		realUpstreams:    s.realUpstreams.Clone(),
+		serviceUpstreams: s.serviceUpstreams.Clone()}
 }
 
-func (u *upstreamSnapshot) Clone() HybridUpstreamSnapshot {
-	u.RLock()
-	defer u.RUnlock()
-
-	return &upstreamSnapshot{
-		realUpstreams:    u.realUpstreams.Clone(),
-		serviceUpstreams: u.serviceUpstreams.Clone()}
-}
-
-func (u *upstreamSnapshot) Hash() uint64 {
-	u.RLock()
-	defer u.RUnlock()
-
+func (s *hybridUpstreamSnapshot) Hash() uint64 {
 	// Sort merged slice for consistent hashing
-	usList := append(u.realUpstreams, u.serviceUpstreams...).Sort()
-
+	usList := append(s.realUpstreams, s.serviceUpstreams...).Sort()
 	return hashutils.HashAll(usList.AsInterfaces()...)
 }
