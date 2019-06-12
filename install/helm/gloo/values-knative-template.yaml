@@ -22,3 +22,5 @@ ingress:
       pullPolicy: Always
     replicas: 1
 
+k8s:
+  cluster-name: cluster.local
