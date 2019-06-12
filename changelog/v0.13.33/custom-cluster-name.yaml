@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix hardcoded Kubernetes cluster name in a Helm Chart
+    issueLink: https://github.com/solo-io/gloo/issues/754
