@@ -11,6 +11,7 @@ type Config struct {
 	GatewayProxies map[string]GatewayProxy `json:"gatewayProxies,omitempty"`
 	Ingress        *Ingress                `json:"ingress,omitempty"`
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
+	K8s            *K8s                    `json:"k8s,omitempty"`
 }
 
 type Namespace struct {
