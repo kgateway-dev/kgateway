@@ -2,6 +2,7 @@ package upstreams_test
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -160,12 +161,25 @@ var _ = Describe("HybridUpstreams", func() {
 })
 
 type watchConsumer struct {
+	sync.Mutex
 	upstreamLists []v1.UpstreamList
 	errors        []error
 }
 
 func newWatchConsumer() *watchConsumer {
 	return &watchConsumer{}
+}
+
+func (c *watchConsumer) addUpstreams(upstreams v1.UpstreamList) {
+	c.Lock()
+	defer c.Unlock()
+	c.upstreamLists = append(c.upstreamLists, upstreams)
+}
+
+func (c *watchConsumer) addError(err error) {
+	c.Lock()
+	defer c.Unlock()
+	c.errors = append(c.errors, err)
 }
 
 func (c *watchConsumer) collect(ctx context.Context, usChan <-chan v1.UpstreamList, errorChan <-chan error) *watchConsumer {
@@ -176,11 +190,11 @@ func (c *watchConsumer) collect(ctx context.Context, usChan <-chan v1.UpstreamLi
 				return
 			case usList, ok := <-usChan:
 				if ok {
-					c.upstreamLists = append(c.upstreamLists, usList)
+					c.addUpstreams(usList)
 				}
 			case err, ok := <-errorChan:
 				if ok {
-					c.errors = append(c.errors, err)
+					c.addError(err)
 				}
 			}
 		}

@@ -14,7 +14,7 @@ type readOnlyUpstreamBaseClient struct {
 	rc clients.ResourceClient
 }
 
-func newReadOnlyBaseClient(rc clients.ResourceClient) *readOnlyUpstreamBaseClient {
+func newHybridBaseClient(rc clients.ResourceClient) *readOnlyUpstreamBaseClient {
 	return &readOnlyUpstreamBaseClient{
 		rc: rc,
 	}
