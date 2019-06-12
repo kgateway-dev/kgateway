@@ -2,9 +2,10 @@ package upstreams
 
 import (
 	"fmt"
-	"github.com/solo-io/go-utils/errors"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/go-utils/errors"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

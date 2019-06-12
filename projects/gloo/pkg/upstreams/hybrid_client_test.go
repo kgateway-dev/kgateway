@@ -2,6 +2,8 @@ package upstreams_test
 
 import (
 	"context"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -10,7 +12,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-	"time"
 )
 
 var _ = Describe("HybridUpstreams", func() {

@@ -2,10 +2,11 @@ package upstreams_test
 
 import (
 	"fmt"
+	"testing"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
