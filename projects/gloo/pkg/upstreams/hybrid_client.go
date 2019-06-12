@@ -31,7 +31,7 @@ type hybridUpstreamClient struct {
 
 func (c *hybridUpstreamClient) BaseClient() clients.ResourceClient {
 	// We need this modified base client to build reporters, which require generic clients.ResourceClient
-	return NewReadOnlyBaseClient(c.upstreamClient.BaseClient())
+	return newReadOnlyBaseClient(c.upstreamClient.BaseClient())
 }
 
 func (c *hybridUpstreamClient) Register() error {

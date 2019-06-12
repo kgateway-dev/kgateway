@@ -14,7 +14,7 @@ type readOnlyUpstreamBaseClient struct {
 	rc clients.ResourceClient
 }
 
-func NewReadOnlyBaseClient(rc clients.ResourceClient) *readOnlyUpstreamBaseClient {
+func newReadOnlyBaseClient(rc clients.ResourceClient) *readOnlyUpstreamBaseClient {
 	return &readOnlyUpstreamBaseClient{
 		rc: rc,
 	}
@@ -44,7 +44,7 @@ func (c *readOnlyUpstreamBaseClient) Write(resource resources.Resource, opts cli
 	if isRealUpstream(resource.GetMetadata().Name) {
 		return c.rc.Write(resource, opts)
 	}
-	return resource, nil
+	return resources.Clone(resource), nil
 }
 
 func (c *readOnlyUpstreamBaseClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

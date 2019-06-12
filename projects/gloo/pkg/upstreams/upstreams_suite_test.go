@@ -13,11 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var T *testing.T
-
 func TestClients(t *testing.T) {
 	RegisterFailHandler(Fail)
-	T = t
 	RunSpecs(t, "Hybrid Upstreams Client Suite")
 }
 
