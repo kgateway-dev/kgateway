@@ -1,5 +1,5 @@
 k8s:
-  cluster-name: cluster.local
+  clusterName: cluster.local
 
 ingress:
   enabled: true

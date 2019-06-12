@@ -23,4 +23,4 @@ ingress:
     replicas: 1
 
 k8s:
-  cluster-name: cluster.local
+  clusterName: cluster.local

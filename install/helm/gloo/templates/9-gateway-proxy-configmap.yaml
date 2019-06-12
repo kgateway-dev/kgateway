@@ -56,17 +56,17 @@ data:
 
 
       clusters:
-      - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.cluster-name}}:{{ $.Values.gloo.deployment.xdsPort }}
+      - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
         connect_timeout: 5.000s
         load_assignment:
-          cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.cluster-name}}:{{ $.Values.gloo.deployment.xdsPort }}
+          cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
           endpoints:
           - lb_endpoints:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.cluster-name}}
+                    address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
                     port_value: {{ $.Values.gloo.deployment.xdsPort }}
         http2_protocol_options: {}
         upstream_connection_options:
@@ -93,7 +93,7 @@ data:
       ads_config:
         api_type: GRPC
         grpc_services:
-        - envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.cluster-name}}:{{ $.Values.gloo.deployment.xdsPort }}}
+        - envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}}
       cds_config:
         ads: {}
       lds_config:

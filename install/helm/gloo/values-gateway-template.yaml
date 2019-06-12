@@ -5,7 +5,7 @@ rbac:
 crds:
   create: true
 k8s:
-  cluster-name: cluster.local
+  clusterName: cluster.local
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
