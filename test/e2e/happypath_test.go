@@ -60,7 +60,7 @@ var _ = Describe("Happypath", func() {
 	})
 
 	TestUpstremReachable := func() {
-		v1helpers.TestUpstremReachable(envoyPort, tu, nil)
+		v1helpers.TestUpstreamReachable(envoyPort, tu, nil)
 	}
 
 	Describe("in memory", func() {

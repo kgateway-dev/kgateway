@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+
 	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 
 	"context"
@@ -183,6 +185,7 @@ func DefaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		Proxies:         f,
 		Secrets:         f,
 		Artifacts:       f,
+		Services:        newServiceClient(f),
 		WatchNamespaces: runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
@@ -196,4 +199,12 @@ func DefaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		KubeClient: runOptions.KubeClient,
 		DevMode:    true,
 	}
+}
+
+func newServiceClient(f factory.ResourceClientFactory) skkube.ServiceClient {
+	client, err := skkube.NewServiceClient(f)
+	if err != nil {
+		panic(err)
+	}
+	return client
 }

@@ -71,7 +71,8 @@ var _ = Describe("Gateway", func() {
 						Disable: true,
 					},
 				}
-				gatewaycli.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				_, err := gatewaycli.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
 			}
 
 			// write a virtual service so we have a proxy
@@ -129,8 +130,8 @@ var _ = Describe("Gateway", func() {
 				envoyPort     uint32
 			)
 
-			TestUpstremReachable := func() {
-				v1helpers.TestUpstremReachable(envoyPort, tu, nil)
+			TestUpstreamReachable := func() {
+				v1helpers.TestUpstreamReachable(envoyPort, tu, nil)
 			}
 
 			BeforeEach(func() {
@@ -152,7 +153,7 @@ var _ = Describe("Gateway", func() {
 
 			AfterEach(func() {
 				if envoyInstance != nil {
-					envoyInstance.Clean()
+					_ = envoyInstance.Clean()
 				}
 			})
 
@@ -163,8 +164,9 @@ var _ = Describe("Gateway", func() {
 				_, err := vscli.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				TestUpstremReachable()
+				TestUpstreamReachable()
 			})
+
 			Context("ssl", func() {
 				BeforeEach(func() {
 					envoyPort = uint32(defaults.HttpsPort)
@@ -172,7 +174,7 @@ var _ = Describe("Gateway", func() {
 
 				TestUpstremSslReachable := func() {
 					cert := gloohelpers.Certificate()
-					v1helpers.TestUpstremReachable(envoyPort, tu, &cert)
+					v1helpers.TestUpstreamReachable(envoyPort, tu, &cert)
 				}
 
 				It("should work with ssl", func() {

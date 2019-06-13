@@ -129,7 +129,7 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 	return uint32(port), bodychan
 }
 
-func TestUpstremReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
+func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 
 	body := []byte("solo.io test")
 
