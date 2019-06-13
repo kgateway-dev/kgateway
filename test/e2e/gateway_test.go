@@ -159,9 +159,8 @@ var _ = Describe("Gateway", func() {
 
 			It("should work with no ssl", func() {
 				up := tu.Upstream
-				vscli := testClients.VirtualServiceClient
 				vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
-				_, err := vscli.Write(vs, clients.WriteOpts{})
+				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
 				TestUpstreamReachable()

@@ -84,6 +84,7 @@ check-spelling:
 .PHONY: clean
 clean:
 	rm -rf _output
+	rm -rf _test
 	rm -fr site
 	git clean -xdf install
 

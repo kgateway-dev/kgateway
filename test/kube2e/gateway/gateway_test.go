@@ -356,6 +356,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 		})
 	})
+
 	Context("upstream discovery", func() {
 		var (
 			createdServices []string
@@ -384,7 +385,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 		AfterEach(func() {
 			for _, svcName := range createdServices {
-				kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(svcName, &meta_v1.DeleteOptions{})
+				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(svcName, &meta_v1.DeleteOptions{})
 			}
 		})
 
@@ -421,9 +422,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(spec).ToNot(BeNil())
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
-
 		})
-
 	})
 
 	Context("with subsets and upstream groups", func() {
@@ -480,17 +479,18 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		AfterEach(func() {
 			if redpod != nil {
-				kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(redpod.Name, &meta_v1.DeleteOptions{})
+				_ = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(redpod.Name, &meta_v1.DeleteOptions{})
 			}
 			if bluepod != nil {
-				kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(bluepod.Name, &meta_v1.DeleteOptions{})
+				_ = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(bluepod.Name, &meta_v1.DeleteOptions{})
 			}
 			if greenpod != nil {
-				kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(greenpod.Name, &meta_v1.DeleteOptions{})
+				_ = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(greenpod.Name, &meta_v1.DeleteOptions{})
 			}
 			if service != nil {
-				kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(service.Name, &meta_v1.DeleteOptions{})
+				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(service.Name, &meta_v1.DeleteOptions{})
 			}
+			_ = virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
 		})
 
 		It("routes to subsets and upstream groups", func() {
@@ -566,7 +566,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// create a pod
 			// create an upstream group
-			// add subset to the uptream
+			// add subset to the upstream
 			// create another pod
 			_, err = virtualServiceClient.Write(&v1.VirtualService{
 

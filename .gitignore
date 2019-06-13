@@ -8,4 +8,4 @@ site
 themes
 install/gloo.yaml
 
-cloudbuild-local.yaml
+cloudbuild-local*.yaml
