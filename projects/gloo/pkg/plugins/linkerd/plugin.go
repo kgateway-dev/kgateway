@@ -3,6 +3,8 @@ package linkerd
 import (
 	"fmt"
 
+	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -49,10 +51,9 @@ func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 	switch destType := routeAction.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 
-		// TODO(marco): implement, skip if destination is a service for now
-		upstreamRef := destType.Single.GetUpstream()
-		if upstreamRef == nil {
-			return nil
+		upstreamRef, err := usconversions.DestinationToUpstreamRef(destType.Single)
+		if err != nil {
+			return err
 		}
 
 		us, err := upstreams.Find(upstreamRef.Namespace, upstreamRef.Name)
@@ -105,10 +106,9 @@ func configForMultiDestination(destinations []*v1.WeightedDestination, upstreams
 
 	for _, dest := range destinations {
 
-		// TODO(marco): implement, skip if destination is a service for now
-		upstreamRef := dest.Destination.GetUpstream()
-		if upstreamRef == nil {
-			return nil
+		upstreamRef, err := usconversions.DestinationToUpstreamRef(dest.Destination)
+		if err != nil {
+			return err
 		}
 
 		us, err := upstreams.Find(upstreamRef.Namespace, upstreamRef.Name)

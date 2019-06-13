@@ -5,6 +5,9 @@ import (
 	"crypto/sha1"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/go-utils/contextutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -130,7 +133,7 @@ func convertProto(encodedBytes []byte) (*descriptor.FileDescriptorSet, error) {
 func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's grpc destination
-		if spec.DestinationSpec == nil || spec.GetUpstream() == nil {
+		if spec.DestinationSpec == nil {
 			return nil, nil
 		}
 		grpcDestinationSpecWrapper, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Grpc)
@@ -152,7 +155,13 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 		fullServiceName := genFullServiceName(grpcDestinationSpec.Package, grpcDestinationSpec.Service)
 		methodName := grpcDestinationSpec.Function
 
-		upstream := p.recordedUpstreams[*spec.GetUpstream()]
+		upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
+		if err != nil {
+			contextutils.LoggerFrom(p.ctx).Error(err)
+			return nil, err
+		}
+
+		upstream := p.recordedUpstreams[*upstreamRef]
 		if upstream == nil {
 			return nil, errors.New("upstream was not recorded for grpc route")
 		}

@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"unicode/utf8"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -124,17 +126,23 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
 	err := pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, filterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's aws destination
-		if spec.DestinationSpec == nil || spec.GetUpstream() == nil {
+		if spec.DestinationSpec == nil {
 			return nil, nil
 		}
 		awsDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Aws)
 		if !ok {
 			return nil, nil
 		}
+
 		// get upstream
-		lambdaSpec, ok := p.recordedUpstreams[*spec.GetUpstream()]
+		upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
+		if err != nil {
+			contextutils.LoggerFrom(p.ctx).Error(err)
+			return nil, err
+		}
+		lambdaSpec, ok := p.recordedUpstreams[*upstreamRef]
 		if !ok {
-			err := errors.Errorf("%v is not an AWS upstream", *spec.GetUpstream())
+			err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
 			contextutils.LoggerFrom(p.ctx).Error(err)
 			return nil, err
 		}

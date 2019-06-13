@@ -53,13 +53,10 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 	resourceErrs := make(reporter.ResourceErrors)
 
-	// TODO(marco): error on service destinations until they are implemented
-	if containsServiceDestinations(proxy) {
-		resourceErrs.AddError(proxy, errors.Errorf("proxy contains a service destination. Service destinations are currently not supported"))
-	}
-
 	logger.Debugf("verifying upstream groups: %v", proxy.Metadata.Name)
 	t.verifyUpstreamGroups(params, resourceErrs)
+
+	destinations := getDestinations(params, proxy)
 
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.Metadata.Name)
@@ -232,4 +229,55 @@ func containsServiceDestinations(proxy *v1.Proxy) bool {
 		}
 	}
 	return false
+}
+
+func getDestinations(params plugins.Params, proxy *v1.Proxy) []*v1.Destination {
+	var dests []*v1.Destination
+	forEachDestination(params, proxy, func(dest *v1.Destination) {
+		dests = append(dests, dest)
+	})
+	return dests
+}
+func forEachDestination(params plugins.Params, proxy *v1.Proxy, visitDestination func(*v1.Destination)) {
+
+	// get all destinations to build upstream
+	for _, l := range proxy.GetListeners() {
+		if http := l.GetHttpListener(); http != nil {
+			for _, vh := range http.GetVirtualHosts() {
+				for _, r := range vh.GetRoutes() {
+					if ra := r.GetRouteAction(); ra != nil {
+						switch dest := ra.GetDestination().(type) {
+						case *v1.RouteAction_Single:
+							visitDestination(dest.Single)
+						case *v1.RouteAction_Multi:
+							for _, singleDest := range dest.Multi.Destinations {
+								visitDestination(singleDest.Destination)
+							}
+						case *v1.RouteAction_UpstreamGroup:
+							ug, err := params.Snapshot.Upstreamgroups.Find(dest.UpstreamGroup.GetNamespace(), dest.UpstreamGroup.GetName())
+							// err will be caught later, where it will error the specific listener. so ignore it for now
+							if err == nil {
+								for _, singleDest := range ug.Destinations {
+									visitDestination(singleDest.Destination)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func convertDestinations(params plugins.Params, proxy *v1.Proxy) {
+	// get all destinations to build upstream
+	forEachDestination(params, proxy, convertDestinationToUpsteam)
+}
+
+func convertDestinationToUpsteam(d *v1.Destination) {
+	if ref := d.GetServiceRef(); ref != nil {
+		sref := ref.GetService()
+		d.Upstream = utilskube.SvcRefToUpstreamRef(sref.GetNamespace(), sref.GetName(), int32(ref.GetPort()))
+		d.ServiceRef = nil
+	}
 }

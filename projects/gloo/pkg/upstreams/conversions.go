@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/solo-io/go-utils/errors"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -21,6 +23,26 @@ const ServiceUpstreamNamePrefix = "svc:"
 
 func isRealUpstream(upstreamName string) bool {
 	return !strings.HasPrefix(upstreamName, ServiceUpstreamNamePrefix)
+}
+
+func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
+	var ref *core.ResourceRef
+	switch d := dest.DestinationType.(type) {
+	case *v1.Destination_Upstream:
+		ref = d.Upstream
+	case *v1.Destination_Service:
+		ref = serviceDestinationToUpstreamRef(d.Service)
+	default:
+		return nil, errors.Errorf("no destination type specified")
+	}
+	return ref, nil
+}
+
+func serviceDestinationToUpstreamRef(svcDest *v1.ServiceDestination) *core.ResourceRef {
+	return &core.ResourceRef{
+		Namespace: svcDest.Ref.Namespace,
+		Name:      buildFakeUpstreamName(svcDest.Ref.Name, int32(svcDest.Port)),
+	}
 }
 
 func buildFakeUpstreamName(serviceName string, port int32) string {
