@@ -44,15 +44,11 @@ func (c *hybridUpstreamClient) Read(namespace, name string, opts clients.ReadOpt
 		return c.upstreamClient.Read(namespace, name, opts)
 	}
 
-	serviceName, _, err := reconstructServiceName(name)
-	if err != nil {
-		return nil, err
-	}
-	service, err := c.serviceClient.Read(namespace, serviceName, opts)
+	services, err := c.serviceClient.List(namespace, clients.ListOpts{})
 	if err != nil {
 		return nil, UnableToRetrieveErr(err, namespace, name)
 	}
-	for _, us := range servicesToUpstreams(skkube.ServiceList{service}) {
+	for _, us := range servicesToUpstreams(services) {
 		if us.Metadata.Name == name {
 			return us, nil
 		}
