@@ -1574,9 +1574,15 @@
   version = "v0.8.18"
 
 [[projects]]
-  digest = "1:6ca3f356815437ca58e6401b22c0657791a677620512d3588325d089f69fd18d"
+  digest = "1:57beeeddb6c4fad09aa3870390f9ee78aa2e2ede46e12654bc65cee16c382f91"
   name = "github.com/solo-io/solo-kit"
   packages = [
+    "api/external/kubernetes/configmap",
+    "api/external/kubernetes/deployment",
+    "api/external/kubernetes/namespace",
+    "api/external/kubernetes/pod",
+    "api/external/kubernetes/service",
+    "pkg/api/external/kubernetes/service",
     "pkg/api/v1/clients",
     "pkg/api/v1/clients/common",
     "pkg/api/v1/clients/configmap",
@@ -1604,6 +1610,7 @@
     "pkg/api/v1/reconcile",
     "pkg/api/v1/reporter",
     "pkg/api/v1/resources",
+    "pkg/api/v1/resources/common/kubernetes",
     "pkg/api/v1/resources/core",
     "pkg/code-generator",
     "pkg/code-generator/cmd",
@@ -2745,6 +2752,7 @@
     "github.com/solo-io/go-utils/testutils/exec",
     "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
+    "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube",
@@ -2761,6 +2769,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/reconcile",
     "github.com/solo-io/solo-kit/pkg/api/v1/reporter",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources",
+    "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources/core",
     "github.com/solo-io/solo-kit/pkg/code-generator/cmd",
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
