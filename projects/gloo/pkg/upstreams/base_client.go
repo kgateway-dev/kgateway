@@ -36,7 +36,8 @@ func (c *readOnlyUpstreamBaseClient) Read(namespace, name string, opts clients.R
 	if isRealUpstream(name) {
 		return c.rc.Read(namespace, name, opts)
 	}
-	return nil, errors.Errorf("this client cannot read the given resource %s.%s", namespace, name)
+	return nil, errors.Errorf("unable to read upstream %s.%s. Read calls are not supported "+
+		"for service-derived upstreams %s.%s", namespace, name)
 }
 
 // TODO(marco): this will not write reports but still log an info message. Find a way of avoiding it.
