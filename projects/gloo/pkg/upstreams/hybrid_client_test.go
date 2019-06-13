@@ -106,10 +106,11 @@ var _ = Describe("HybridUpstreams", func() {
 
 			writeResources()
 
-			Expect(consumer.upstreamLists).To(HaveLen(3))
-			Expect(consumer.upstreamLists[0]).To(HaveLen(2))
-			Expect(consumer.upstreamLists[1]).To(HaveLen(3))
-			Expect(consumer.upstreamLists[2]).To(HaveLen(4))
+			Expect(consumer.getErrors()).To(HaveLen(0))
+			Expect(consumer.getUpstreams()).To(HaveLen(3))
+			Expect(consumer.getUpstreams()[0]).To(HaveLen(2))
+			Expect(consumer.getUpstreams()[1]).To(HaveLen(3))
+			Expect(consumer.getUpstreams()[2]).To(HaveLen(4))
 		})
 	})
 
@@ -180,6 +181,18 @@ func (c *watchConsumer) addError(err error) {
 	c.Lock()
 	defer c.Unlock()
 	c.errors = append(c.errors, err)
+}
+
+func (c *watchConsumer) getUpstreams() []v1.UpstreamList {
+	c.Lock()
+	defer c.Unlock()
+	return c.upstreamLists
+}
+
+func (c *watchConsumer) getErrors() []error {
+	c.Lock()
+	defer c.Unlock()
+	return c.errors
 }
 
 func (c *watchConsumer) collect(ctx context.Context, usChan <-chan v1.UpstreamList, errorChan <-chan error) *watchConsumer {
