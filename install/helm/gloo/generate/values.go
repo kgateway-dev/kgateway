@@ -146,3 +146,7 @@ type IngressProxyDeployment struct {
 type IngressProxyConfigMap struct {
 	Data map[string]string `json:"data,omitempty"`
 }
+
+type K8s struct {
+    ClusterName string `json:"clusterName"`
+}
