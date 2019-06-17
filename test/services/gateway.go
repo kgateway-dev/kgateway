@@ -43,6 +43,7 @@ type TestClients struct {
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
 	SecretClient         gloov1.SecretClient
+	ServiceClient        skkube.ServiceClient
 	GlooPort             int
 }
 
@@ -81,6 +82,7 @@ type RunOptions struct {
 	KubeClient       kubernetes.Interface
 }
 
+//noinspection GoUnhandledErrorResult
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	if runOptions.GlooPort == 0 {
 		runOptions.GlooPort = AllocateGlooPort()
@@ -109,28 +111,29 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go uds_syncer.RunUDS(glooOpts)
 	}
 
-	testclients := GetTestClients(runOptions.Cache)
-	testclients.GlooPort = int(runOptions.GlooPort)
-	return testclients
+	testClients := GetTestClients(runOptions.Cache)
+	testClients.GlooPort = int(runOptions.GlooPort)
+	return testClients
 }
 
 func GetTestClients(cache memory.InMemoryResourceCache) TestClients {
 
 	// construct our own resources:
-	factory := &factory.MemoryResourceClientFactory{
+	memFactory := &factory.MemoryResourceClientFactory{
 		Cache: cache,
 	}
 
-	gatewayClient, err := gatewayv1.NewGatewayClient(factory)
+	gatewayClient, err := gatewayv1.NewGatewayClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(factory)
+	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	upstreamClient, err := gloov1.NewUpstreamClient(factory)
+	upstreamClient, err := gloov1.NewUpstreamClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	secretClient, err := gloov1.NewSecretClient(factory)
+	secretClient, err := gloov1.NewSecretClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	proxyClient, err := gloov1.NewProxyClient(factory)
+	proxyClient, err := gloov1.NewProxyClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
+	serviceClient := newServiceClient(memFactory)
 
 	return TestClients{
 		GatewayClient:        gatewayClient,
@@ -138,6 +141,7 @@ func GetTestClients(cache memory.InMemoryResourceCache) TestClients {
 		UpstreamClient:       upstreamClient,
 		SecretClient:         secretClient,
 		ProxyClient:          proxyClient,
+		ServiceClient:        serviceClient,
 	}
 }
 

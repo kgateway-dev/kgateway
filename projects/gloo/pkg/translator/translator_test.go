@@ -2,6 +2,12 @@ package translator_test
 
 import (
 	"context"
+	"fmt"
+	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	k8scorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/solo-io/gloo/pkg/utils"
 
@@ -136,7 +142,6 @@ var _ = Describe("Translator", func() {
 		Expect(cluster).NotTo(BeNil())
 
 		listeners := snap.GetResources(xds.ListenerType)
-
 		listenerResource := listeners.Items["listener"]
 		listener = listenerResource.ResourceProto().(*envoyapi.Listener)
 		Expect(listener).NotTo(BeNil())
@@ -147,14 +152,12 @@ var _ = Describe("Translator", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
-
 		Expect(routes.Items).To(HaveKey("listener-routes"))
 		routeResource := routes.Items["listener-routes"]
 		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(route_configuration).NotTo(BeNil())
 
 		snapshot = snap
-
 	}
 
 	Context("service spec", func() {
@@ -400,7 +403,6 @@ var _ = Describe("Translator", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("destination # 1: upstream not found: list did not find upstream gloo-system.notexist"))
 		})
-
 	})
 
 	Context("when handling subsets", func() {
@@ -544,6 +546,109 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("when translating a route that points directly to a service", func() {
+
+		var fakeUsList v1.UpstreamList
+
+		BeforeEach(func() {
+
+			// The kube service that we want to route to
+			svc := skkube.NewService("ns-1", "svc-1")
+			svc.Spec = k8scorev1.ServiceSpec{
+				Ports: []k8scorev1.ServicePort{
+					{
+						Name:       "port-1",
+						Port:       8080,
+						TargetPort: intstr.FromInt(80),
+					},
+					{
+						Name:       "port-2",
+						Port:       8081,
+						TargetPort: intstr.FromInt(8081),
+					},
+				},
+			}
+			// These are the "fake" upstreams that represent the above service in the snapshot
+			fakeUsList = upstreams.ServicesToUpstreams(skkube.ServiceList{svc})
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, fakeUsList...)
+
+			// We need to manually add some fake endpoints for the above kubernetes services to the snapshot
+			// Normally these would have been discovered by EDS
+			params.Snapshot.Endpoints = v1.EndpointList{
+				{
+					Metadata: core.Metadata{
+						Namespace: "gloo-system",
+						Name:      fmt.Sprintf("ep-%v-%v", "192.168.0.1", svc.Spec.Ports[0].Port),
+					},
+					Port:      uint32(svc.Spec.Ports[0].Port),
+					Address:   "192.168.0.1",
+					Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(fakeUsList[0].Metadata.Ref())},
+				},
+				{
+					Metadata: core.Metadata{
+						Namespace: "gloo-system",
+						Name:      fmt.Sprintf("ep-%v-%v", "192.168.0.2", svc.Spec.Ports[1].Port),
+					},
+					Port:      uint32(svc.Spec.Ports[1].Port),
+					Address:   "192.168.0.2",
+					Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(fakeUsList[1].Metadata.Ref())},
+				},
+			}
+
+			// Configure Proxy to route to the service
+			serviceDestination := v1.Destination{
+				DestinationType: &v1.Destination_Service{
+					Service: &v1.ServiceDestination{
+						Ref: core.ResourceRef{
+							Namespace: svc.Namespace,
+							Name:      svc.Name,
+						},
+						Port: uint32(svc.Spec.Ports[0].Port),
+					},
+				},
+			}
+			routes = []*v1.Route{{
+				Matcher: matcher,
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &serviceDestination,
+						},
+					},
+				},
+			}}
+		})
+
+		It("generates the expected envoy route configuration", func() {
+			translate()
+
+			// Clusters have been created for the two "fake" upstreams
+			clusters := snapshot.GetResources(xds.ClusterType)
+			clusterResource := clusters.Items[UpstreamToClusterName(fakeUsList[0].Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			Expect(cluster).NotTo(BeNil())
+			clusterResource = clusters.Items[UpstreamToClusterName(fakeUsList[1].Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			Expect(cluster).NotTo(BeNil())
+
+			// A route to the kube service has been configured
+			routes := snapshot.GetResources(xds.RouteType)
+			Expect(routes.Items).To(HaveKey("listener-routes"))
+			routeResource := routes.Items["listener-routes"]
+			route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+			Expect(route_configuration).NotTo(BeNil())
+			Expect(route_configuration.VirtualHosts).To(HaveLen(1))
+			Expect(route_configuration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(route_configuration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(route_configuration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := route_configuration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
+			Expect(ok).To(BeTrue())
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
+			Expect(ok).To(BeTrue())
+			Expect(clusterAction.Cluster).To(Equal(UpstreamToClusterName(fakeUsList[0].Metadata.Ref())))
+		})
+
+	})
 })
 
 func sv(s string) *types.Value {

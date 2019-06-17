@@ -37,7 +37,7 @@ var _ = Describe("Conversions", func() {
 				},
 			},
 		}
-		usList := servicesToUpstreams(skkube.ServiceList{svc})
+		usList := ServicesToUpstreams(skkube.ServiceList{svc})
 		usList.Sort()
 		Expect(usList).To(HaveLen(2))
 		Expect(usList[0].Metadata.Name).To(Equal("svc:ns-1-svc-1-8080"))

@@ -37,7 +37,9 @@ func NextBindPort() uint32 {
 
 func (ei *EnvoyInstance) buildBootstrap() string {
 	var b bytes.Buffer
-	parsedTemplate.Execute(&b, ei)
+	if err := parsedTemplate.Execute(&b, ei); err != nil {
+		panic(err)
+	}
 	return b.String()
 }
 
@@ -205,16 +207,13 @@ type EnvoyInstance struct {
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 	gloo := "127.0.0.1"
-	var err error
 
 	if ef.useDocker {
+		var err error
 		gloo, err = localAddr()
 		if err != nil {
 			return nil, err
 		}
-	}
-	if err != nil {
-		return nil, err
 	}
 
 	ei := &EnvoyInstance{

@@ -39,7 +39,7 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 func serviceDestinationToUpstreamRef(svcDest *v1.ServiceDestination) *core.ResourceRef {
 	return &core.ResourceRef{
 		Namespace: svcDest.Ref.Namespace,
-		Name:      buildFakeUpstreamName(svcDest.Ref.Namespace, svcDest.Ref.Name, int32(svcDest.Port)),
+		Name:      buildFakeUpstreamName(svcDest.Ref.Name, svcDest.Ref.Namespace, int32(svcDest.Port)),
 	}
 }
 
@@ -48,7 +48,7 @@ func buildFakeUpstreamName(serviceName, serviceNamespace string, port int32) str
 	return ServiceUpstreamNamePrefix + regularServiceName
 }
 
-func servicesToUpstreams(services skkube.ServiceList) v1.UpstreamList {
+func ServicesToUpstreams(services skkube.ServiceList) v1.UpstreamList {
 	var result v1.UpstreamList
 	for _, svc := range services {
 		for _, port := range svc.Spec.Ports {
