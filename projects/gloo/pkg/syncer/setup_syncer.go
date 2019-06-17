@@ -268,7 +268,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	errs := make(chan error)
 
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient)
-	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient())
+	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
 	apiSync := NewTranslatorSyncer(translator.NewTranslator(allPlugins, opts.Settings), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
 	apiEventLoop := v1.NewApiEventLoop(apiCache, apiSync)
 	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
