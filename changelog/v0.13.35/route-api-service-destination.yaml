@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Updated `Route` API to allow Kubernetes services as direct routing destinations. This means that, in addition to
+        `Upstream`s, `Route`s on `VirtualService` and `Proxy` resources can now directly point to a Kubernetes service.
+    issueLink: https://github.com/solo-io/gloo/issues/746
+    resolvesIssue: true

@@ -217,7 +217,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			FIt("works with ssl", func() {
+			It("works with ssl", func() {
 				createdSecret, err := kubeClient.CoreV1().Secrets(testHelper.InstallNamespace).Create(helpers.GetKubeSecret("secret", testHelper.InstallNamespace))
 				Expect(err).NotTo(HaveOccurred())
 
