@@ -129,7 +129,6 @@ func runTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 }
 
 func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
-
 	body := []byte("solo.io test")
 
 	EventuallyWithOffset(1, func() error {
@@ -156,7 +155,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 			}
 		}
 
-		res, err := client.Post(fmt.Sprintf(scheme+"://%s:%d/1", "localhost", envoyPort), "application/octet-stream", &buf)
+		res, err := client.Post(fmt.Sprintf("%s://%s:%d/1", scheme, "localhost", envoyPort), "application/octet-stream", &buf)
 		if err != nil {
 			return err
 		}

@@ -4,6 +4,9 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
@@ -92,10 +95,11 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		runOptions.Cache = memory.NewInMemoryResourceCache()
 	}
 
-	glooOpts := DefaultGlooOpts(ctx, runOptions)
+	glooOpts := defaultGlooOpts(ctx, runOptions)
+
 	glooOpts.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
 	if !runOptions.WhatToRun.DisableGateway {
-		opts := DefaultTestConstructOpts(ctx, runOptions)
+		opts := defaultTestConstructOpts(ctx, runOptions)
 		go gatewaysyncer.RunGateway(opts)
 	}
 
@@ -111,12 +115,12 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go uds_syncer.RunUDS(glooOpts)
 	}
 
-	testClients := GetTestClients(runOptions.Cache)
+	testClients := getTestClients(runOptions.Cache, glooOpts.Services)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	return testClients
 }
 
-func GetTestClients(cache memory.InMemoryResourceCache) TestClients {
+func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.ServiceClient) TestClients {
 
 	// construct our own resources:
 	memFactory := &factory.MemoryResourceClientFactory{
@@ -133,7 +137,6 @@ func GetTestClients(cache memory.InMemoryResourceCache) TestClients {
 	Expect(err).NotTo(HaveOccurred())
 	proxyClient, err := gloov1.NewProxyClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	serviceClient := newServiceClient(memFactory)
 
 	return TestClients{
 		GatewayClient:        gatewayClient,
@@ -145,7 +148,7 @@ func GetTestClients(cache memory.InMemoryResourceCache) TestClients {
 	}
 }
 
-func DefaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) gatewaysyncer.Opts {
+func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) gatewaysyncer.Opts {
 	ctx = contextutils.WithLogger(ctx, "gateway")
 	ctx = contextutils.SilenceLogger(ctx)
 	f := &factory.MemoryResourceClientFactory{
@@ -166,7 +169,7 @@ func DefaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) gatew
 	}
 }
 
-func DefaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts {
+func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts {
 	ctx = contextutils.WithLogger(ctx, "gloo")
 	logger := contextutils.LoggerFrom(ctx)
 	grpcServer := grpc.NewServer(grpc.StreamInterceptor(
@@ -182,6 +185,7 @@ func DefaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
+
 	return bootstrap.Opts{
 		WriteNamespace:  runOptions.NsToWrite,
 		Upstreams:       f,
@@ -189,7 +193,7 @@ func DefaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		Proxies:         f,
 		Secrets:         f,
 		Artifacts:       f,
-		Services:        newServiceClient(f),
+		Services:        newServiceClient(ctx, f, runOptions),
 		WatchNamespaces: runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
@@ -205,8 +209,20 @@ func DefaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	}
 }
 
-func newServiceClient(f factory.ResourceClientFactory) skkube.ServiceClient {
-	client, err := skkube.NewServiceClient(f)
+func newServiceClient(ctx context.Context, memFactory *factory.MemoryResourceClientFactory, runOpts *RunOptions) skkube.ServiceClient {
+
+	// If the KubeClient option is set, the kubernetes discovery plugin will be activated and we must provide a
+	// kubernetes service client in order for service-derived upstreams to be included in the snapshot
+	if kube := runOpts.KubeClient; kube != nil {
+		kubeCache, err := cache.NewKubeCoreCache(ctx, kube)
+		if err != nil {
+			panic(err)
+		}
+		return service.NewServiceClient(kube, kubeCache)
+	}
+
+	// Else return in-memory client
+	client, err := skkube.NewServiceClient(memFactory)
 	if err != nil {
 		panic(err)
 	}
