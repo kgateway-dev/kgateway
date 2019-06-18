@@ -544,7 +544,6 @@ var _ = Describe("Translator", func() {
 				Expect(errs.Validate()).To(HaveOccurred())
 			})
 		})
-
 	})
 
 	Context("when translating a route that points directly to a service", func() {
