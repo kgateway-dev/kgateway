@@ -31,7 +31,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = Describe("Happypath", func() {
+var _ = FDescribe("Happy path", func() {
 
 	var (
 		ctx           context.Context
@@ -44,17 +44,20 @@ var _ = Describe("Happypath", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
+
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = services.NextBindPort()
+		envoyPort = uint32(defaults.HttpPort)
 	})
 
 	AfterEach(func() {
 		if envoyInstance != nil {
-			envoyInstance.Clean()
+			_ = envoyInstance.Clean()
 		}
 		cancel()
 	})
@@ -79,7 +82,7 @@ var _ = Describe("Happypath", func() {
 				},
 			}
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			err := envoyInstance.Run(testClients.GlooPort)
+			err := envoyInstance.RunWithRole(ns+"~gateway-proxy", testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			up = tu.Upstream
@@ -90,7 +93,7 @@ var _ = Describe("Happypath", func() {
 		It("should not crash", func() {
 
 			proxycli := testClients.ProxyClient
-			proxy := getTrivialProxyForUpstream("default", envoyPort, up.Metadata.Ref())
+			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 			_, err := proxycli.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -146,7 +149,7 @@ var _ = Describe("Happypath", func() {
 
 			It("should work with ssl", func() {
 				proxycli := testClients.ProxyClient
-				proxy := getTrivialProxyForUpstream("default", envoyPort, upSsl.Metadata.Ref())
+				proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, upSsl.Metadata.Ref())
 				_, err := proxycli.Write(proxy, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -158,7 +161,7 @@ var _ = Describe("Happypath", func() {
 			It("should error the proxy with two listeners with the same bind address", func() {
 
 				proxycli := testClients.ProxyClient
-				proxy := getTrivialProxyForUpstream("default", envoyPort, up.Metadata.Ref())
+				proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 				// add two identical listeners two see errors come up
 				proxy.Listeners = append(proxy.Listeners, proxy.Listeners[0])
 				_, err := proxycli.Write(proxy, clients.WriteOpts{})
@@ -180,6 +183,7 @@ var _ = Describe("Happypath", func() {
 			})
 		})
 	})
+
 	Describe("kubernetes happy path", func() {
 		BeforeEach(func() {
 			if os.Getenv("RUN_KUBE_TESTS") != "1" {
@@ -249,7 +253,7 @@ var _ = Describe("Happypath", func() {
 
 		AfterEach(func() {
 			if namespace != "" {
-				setup.TeardownKube(namespace)
+				_ = setup.TeardownKube(namespace)
 			}
 		})
 
@@ -288,7 +292,7 @@ var _ = Describe("Happypath", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~proxy"
+				role := namespace + "~gateway-proxy"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -325,7 +329,7 @@ var _ = Describe("Happypath", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~proxy"
+				role := namespace + "~gateway-proxy"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -347,19 +351,18 @@ var _ = Describe("Happypath", func() {
 				TestUpstremReachable()
 			})
 		})
-
 	})
 })
 
 func getTrivialProxyForUpstream(ns string, bindport uint32, upstream core.ResourceRef) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "proxy",
+			Name:      "gateway-proxy",
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "127.0.0.1",
+			BindAddress: "::",
 			BindPort:    bindport,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
