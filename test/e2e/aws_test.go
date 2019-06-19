@@ -130,6 +130,7 @@ var _ = Describe("AWS Lambda", func() {
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(envoyPort, "SOLO.IO")
 	}
+
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		t := services.RunGateway(ctx, false)
@@ -145,7 +146,7 @@ var _ = Describe("AWS Lambda", func() {
 
 	AfterEach(func() {
 		if envoyInstance != nil {
-			envoyInstance.Clean()
+			_ = envoyInstance.Clean()
 		}
 		cancel()
 	})
@@ -154,8 +155,8 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxycli := testClients.ProxyClient
-		envoyPort := services.NextBindPort()
+		envoyPort := defaults.HttpPort
+
 		proxy := &gloov1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "proxy",
@@ -163,7 +164,7 @@ var _ = Describe("AWS Lambda", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: "127.0.0.1",
+				BindAddress: "::",
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
@@ -202,7 +203,7 @@ var _ = Describe("AWS Lambda", func() {
 		}
 
 		var opts clients.WriteOpts
-		_, err = proxycli.Write(proxy, opts)
+		_, err = testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
 
 		validateLambdaUppercase(envoyPort)
@@ -212,8 +213,7 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxycli := testClients.ProxyClient
-		envoyPort := services.NextBindPort()
+		envoyPort := defaults.HttpPort
 		proxy := &gloov1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "proxy",
@@ -221,7 +221,7 @@ var _ = Describe("AWS Lambda", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: "127.0.0.1",
+				BindAddress: "::",
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
@@ -261,7 +261,7 @@ var _ = Describe("AWS Lambda", func() {
 		}
 
 		var opts clients.WriteOpts
-		_, err = proxycli.Write(proxy, opts)
+		_, err = testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
 
 		validateLambda(envoyPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
@@ -271,7 +271,7 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy", testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		envoyPort := uint32(defaults.HttpPort)
+		envoyPort := defaults.HttpPort
 
 		vs := &gw1.VirtualService{
 			Metadata: core.Metadata{
