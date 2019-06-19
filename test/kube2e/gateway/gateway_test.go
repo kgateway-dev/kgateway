@@ -7,6 +7,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
+	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/go-utils/errors"
 
@@ -57,6 +61,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		upstreamGroupClient  gloov1.UpstreamGroupClient
 		upstreamClient       gloov1.UpstreamClient
 		proxyClient          gloov1.ProxyClient
+		serviceClient        skkube.ServiceClient
 	)
 
 	BeforeEach(func() {
@@ -120,6 +125,10 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = proxyClient.Register()
 		Expect(err).NotTo(HaveOccurred())
+
+		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
+		Expect(err).NotTo(HaveOccurred())
+		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 	})
 
 	Context("tests with virtual service", func() {
@@ -301,7 +310,10 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		Context("linkerd enabled updates routes with appended headers", func() {
-			var settingsClient gloov1.SettingsClient
+			var (
+				settingsClient gloov1.SettingsClient
+				httpEcho       helper.TestRunner
+			)
 
 			BeforeEach(func() {
 				var err error
@@ -326,7 +338,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 
-				httpEcho, err := helper.NewEchoHttp(testHelper.InstallNamespace)
+				httpEcho, err = helper.NewEchoHttp(testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred())
 
 				err = httpEcho.Deploy(2 * time.Minute)
@@ -343,9 +355,16 @@ var _ = Describe("Kube2e: gateway", func() {
 					OverwriteExisting: true,
 				})
 				Expect(err).NotTo(HaveOccurred())
+
+				err = httpEcho.Terminate()
+				Expect(err).NotTo(HaveOccurred())
+
+				// TODO: Terminate() should do this as part of its cleanup
+				err = serviceClient.Delete(testHelper.InstallNamespace, helper.HttpEchoName, clients.DeleteOpts{})
+				Expect(err).NotTo(HaveOccurred())
 			})
 
-			XIt("appends linkerd headers when linkerd is enabled", func() {
+			It("appends linkerd headers when linkerd is enabled", func() {
 				upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
 				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
