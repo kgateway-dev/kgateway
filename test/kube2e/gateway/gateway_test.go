@@ -345,7 +345,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("appends linkerd headers when linkerd is enabled", func() {
+			XIt("appends linkerd headers when linkerd is enabled", func() {
 				upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
 				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
@@ -401,6 +401,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				createdServices = append(createdServices, service.Name)
 			}
 		}
+
 		AfterEach(func() {
 			for _, svcName := range createdServices {
 				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(svcName, &meta_v1.DeleteOptions{})
