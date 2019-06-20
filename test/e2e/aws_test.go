@@ -27,7 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-var _ = Describe("AWS Lambda", func() {
+var _ = FDescribe("AWS Lambda", func() {
 	const region = "us-east-1"
 
 	var (
@@ -39,10 +39,10 @@ var _ = Describe("AWS Lambda", func() {
 		upstream      *gloov1.Upstream
 	)
 
-	addCreds := func() {
+	addCredentials := func() {
 
-		localawscreds := credentials.NewSharedCredentials("", "")
-		v, err := localawscreds.Get()
+		localAwsCredentials := credentials.NewSharedCredentials("", "")
+		v, err := localAwsCredentials.Get()
 		if err != nil {
 			Skip("no AWS creds available")
 		}
@@ -133,15 +133,17 @@ var _ = Describe("AWS Lambda", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		t := services.RunGateway(ctx, false)
-		testClients = t
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
+
+		testClients = services.RunGateway(ctx, false)
+
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
-		addCreds()
+		addCredentials()
 		addUpstream()
-
 	})
 
 	AfterEach(func() {
@@ -155,8 +157,6 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		envoyPort := defaults.HttpPort
-
 		proxy := &gloov1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "proxy",
@@ -165,7 +165,7 @@ var _ = Describe("AWS Lambda", func() {
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
 				BindAddress: "::",
-				BindPort:    envoyPort,
+				BindPort:    defaults.HttpPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
 						VirtualHosts: []*gloov1.VirtualHost{{
@@ -206,14 +206,13 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
 
-		validateLambdaUppercase(envoyPort)
+		validateLambdaUppercase(defaults.HttpPort)
 	})
 
 	It("be able lambda with response transform", func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		envoyPort := defaults.HttpPort
 		proxy := &gloov1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "proxy",
@@ -222,7 +221,7 @@ var _ = Describe("AWS Lambda", func() {
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
 				BindAddress: "::",
-				BindPort:    envoyPort,
+				BindPort:    defaults.HttpPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
 						VirtualHosts: []*gloov1.VirtualHost{{
@@ -264,14 +263,12 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
 
-		validateLambda(envoyPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
+		validateLambda(defaults.HttpPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
 	})
 
 	It("be able to call lambda via gateway", func() {
 		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy", testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
-
-		envoyPort := defaults.HttpPort
 
 		vs := &gw1.VirtualService{
 			Metadata: core.Metadata{
@@ -328,6 +325,6 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.GatewayClient.Write(gateway, opts)
 		Expect(err).NotTo(HaveOccurred())
 		*/
-		validateLambdaUppercase(envoyPort)
+		validateLambdaUppercase(defaults.HttpPort)
 	})
 })

@@ -169,11 +169,10 @@ var _ = Describe("Gateway", func() {
 			var (
 				envoyInstance *services.EnvoyInstance
 				tu            *v1helpers.TestUpstream
-				envoyPort     uint32
 			)
 
 			TestUpstreamReachable := func() {
-				v1helpers.TestUpstreamReachable(envoyPort, tu, nil)
+				v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, nil)
 			}
 
 			BeforeEach(func() {
@@ -186,8 +185,6 @@ var _ = Describe("Gateway", func() {
 
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
-
-				envoyPort = uint32(defaults.HttpPort)
 
 				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy", testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
@@ -209,13 +206,10 @@ var _ = Describe("Gateway", func() {
 			})
 
 			Context("ssl", func() {
-				BeforeEach(func() {
-					envoyPort = uint32(defaults.HttpsPort)
-				})
 
 				TestUpstremSslReachable := func() {
 					cert := gloohelpers.Certificate()
-					v1helpers.TestUpstreamReachable(envoyPort, tu, &cert)
+					v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, &cert)
 				}
 
 				It("should work with ssl", func() {

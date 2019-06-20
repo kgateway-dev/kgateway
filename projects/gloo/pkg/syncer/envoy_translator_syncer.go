@@ -90,7 +90,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		}
 		key := xds.SnapshotKey(proxy)
 		if err := s.xdsCache.SetSnapshot(key, xdsSnapshot); err != nil {
-			err := errors.Wrapf(err, "failed while updating xds snapshot cache")
+			err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}

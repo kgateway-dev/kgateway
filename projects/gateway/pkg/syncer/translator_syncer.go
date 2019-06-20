@@ -131,11 +131,15 @@ func watchProxyStatus(ctx context.Context, proxyClient gloov1.ProxyClient, proxy
 			select {
 			case <-ctx.Done():
 				return
-			case err := <-errs:
-				if err != nil {
-					contextutils.LoggerFrom(ctx).Error(err)
+			case err, ok := <-errs:
+				if !ok {
+					return
 				}
-			case list := <-proxies:
+				contextutils.LoggerFrom(ctx).Error(err)
+			case list, ok := <-proxies:
+				if !ok {
+					return
+				}
 				proxy, err := list.Find(proxy.Metadata.Namespace, proxy.Metadata.Name)
 				if err != nil {
 					contextutils.LoggerFrom(ctx).Error(err)
