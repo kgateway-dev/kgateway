@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Gateway", func() {
+var _ = FDescribe("Gateway", func() {
 
 	var (
 		ctx            context.Context
@@ -207,9 +207,9 @@ var _ = Describe("Gateway", func() {
 
 			Context("ssl", func() {
 
-				TestUpstremSslReachable := func() {
+				TestUpstreamSslReachable := func() {
 					cert := gloohelpers.Certificate()
-					v1helpers.TestUpstreamReachable(defaults.HttpPort, tu, &cert)
+					v1helpers.TestUpstreamReachable(defaults.HttpsPort, tu, &cert)
 				}
 
 				It("should work with ssl", func() {
@@ -244,7 +244,7 @@ var _ = Describe("Gateway", func() {
 					_, err = vscli.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					TestUpstremSslReachable()
+					TestUpstreamSslReachable()
 				})
 			})
 		})
