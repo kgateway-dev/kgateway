@@ -262,7 +262,7 @@ func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualSe
 				ListenerPlugins: gateway.Plugins,
 			},
 		},
-		SslConfiguations: sslConfigs,
-		UseProxyProto:    gateway.UseProxyProto,
+		SslConfigurations: sslConfigs,
+		UseProxyProto:     gateway.UseProxyProto,
 	}
 }

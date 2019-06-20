@@ -70,8 +70,7 @@ message Listener {
     // Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
     // must match a domain in virtual host
     // TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored
-    // TODO(marco): fix typo
-    repeated SslConfig ssl_configuations = 5;
+    repeated SslConfig ssl_configurations = 5;
 
     // Enable ProxyProtocol support for this listener
     google.protobuf.BoolValue use_proxy_proto = 6;

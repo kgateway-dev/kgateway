@@ -49,7 +49,7 @@ func (t *translator) computeVirtualHosts(params plugins.Params, listener *v1.Lis
 	if err := validateVirtualHostDomains(virtualHosts); err != nil {
 		report(err, "invalid listener %v", listener.Name)
 	}
-	requireTls := len(listener.SslConfiguations) > 0
+	requireTls := len(listener.SslConfigurations) > 0
 	var envoyVirtualHosts []envoyroute.VirtualHost
 	for _, virtualHost := range virtualHosts {
 		envoyVirtualHosts = append(envoyVirtualHosts, t.computeVirtualHost(params, virtualHost, requireTls, report))
@@ -470,7 +470,7 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 
 func validateListenerSslConfig(listener *v1.Listener, secrets []*v1.Secret) error {
 	sslCfgTranslator := utils.NewSslConfigTranslator(secrets)
-	for _, ssl := range listener.SslConfiguations {
+	for _, ssl := range listener.SslConfigurations {
 		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(ssl); err != nil {
 			return err
 		}

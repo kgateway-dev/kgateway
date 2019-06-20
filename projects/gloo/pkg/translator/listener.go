@@ -102,7 +102,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, report reportFunc) []envoylistener.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
-	if len(listener.SslConfiguations) == 0 {
+	if len(listener.SslConfigurations) == 0 {
 		return []envoylistener.FilterChain{{
 			Filters:       listenerFilters,
 			UseProxyProto: listener.UseProxyProto,
@@ -112,7 +112,7 @@ func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listene
 	var secureFilterChains []envoylistener.FilterChain
 
 	sslCfgTranslator := utils.NewSslConfigTranslator(snap.Secrets)
-	for _, sslConfig := range listener.SslConfiguations {
+	for _, sslConfig := range listener.SslConfigurations {
 		// get secrets
 		downstreamConfig, err := sslCfgTranslator.ResolveDownstreamSslConfig(sslConfig)
 		if err != nil {

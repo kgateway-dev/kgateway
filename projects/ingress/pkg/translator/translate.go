@@ -64,7 +64,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 					VirtualHosts: virtualHostsHttps,
 				},
 			},
-			SslConfiguations: sslConfigs,
+			SslConfigurations: sslConfigs,
 		})
 	}
 	return &gloov1.Proxy{
