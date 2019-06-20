@@ -434,8 +434,8 @@ func _DestinationSpec_OneofSizer(msg proto.Message) (n int) {
 // Each upstream type is handled by a corresponding Gloo plugin.
 type UpstreamSpec struct {
 	SslConfig *UpstreamSslConfig `protobuf:"bytes,6,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
-	// Circuite breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
-	// if those are not set,  [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+	// Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
+	// if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
 	// will be used.
 	CircuitBreakers    *CircuitBreakerConfig `protobuf:"bytes,7,opt,name=circuit_breakers,json=circuitBreakers,proto3" json:"circuit_breakers,omitempty"`
 	LoadBalancerConfig *LoadBalancerConfig   `protobuf:"bytes,8,opt,name=load_balancer_config,json=loadBalancerConfig,proto3" json:"load_balancer_config,omitempty"`

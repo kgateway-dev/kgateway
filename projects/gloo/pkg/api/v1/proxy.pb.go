@@ -157,9 +157,10 @@ type Listener struct {
 	//	*Listener_HttpListener
 	ListenerType isListener_ListenerType `protobuf_oneof:"ListenerType"`
 	// SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port
-	// Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config
+	// Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
 	// must match a domain in virtual host
 	// TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored
+	// TODO(marco): fix typo
 	SslConfiguations []*SslConfig `protobuf:"bytes,5,rep,name=ssl_configuations,json=sslConfiguations,proto3" json:"ssl_configuations,omitempty"`
 	// Enable ProxyProtocol support for this listener
 	UseProxyProto        *types.BoolValue `protobuf:"bytes,6,opt,name=use_proxy_proto,json=useProxyProto,proto3" json:"use_proxy_proto,omitempty"`
@@ -307,8 +308,8 @@ func _Listener_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
-// Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtualservices).
-// HttpListeners also contain plugin configuration that applies globally across all virtaul hosts on the listener.
+// Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
+// HttpListeners also contain plugin configuration that applies globally across all virtual hosts on the listener.
 // Some plugins can be configured to work both on the listener and virtual host level (such as the rate limit plugin)
 type HttpListener struct {
 	// the set of virtual hosts that will be accessible by clients connecting to this listener.
@@ -319,10 +320,6 @@ type HttpListener struct {
 	// Listener config is applied to all HTTP traffic that
 	// connects to this listener. Some configuration here can be overridden in
 	// Virtual Host Plugin configuration or Route Plugin configuration
-	//
-	// Plugins should be specified here in the form of
-	//   `"plugin_name": {..//plugin_config...}`
-	// to allow specifying multiple plugins.
 	ListenerPlugins      *ListenerPlugins `protobuf:"bytes,2,opt,name=listener_plugins,json=listenerPlugins,proto3" json:"listener_plugins,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
@@ -386,14 +383,8 @@ type VirtualHost struct {
 	// this virtual host. If the request matches more than one route in the list, the first route matched will be selected.
 	// If the list of routes is empty, the virtual host will be ignored by Gloo.
 	Routes []*Route `protobuf:"bytes,3,rep,name=routes,proto3" json:"routes,omitempty"`
-	// Plugins contains top-level plugin configuration to be applied to a listener
-	// Listener config is applied to all HTTP traffic that
-	// connects to this listener. Some configuration here can be overridden in
-	// Virtual Host Plugin configuration or Route Plugin configuration
-	//
-	// Plugins should be specified here in the form of
-	//   `"plugin_name": {..//plugin_config...}`
-	// to allow specifying multiple plugins.
+	// Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host.
+	// Some configuration here can be overridden by Route Plugins.
 	VirtualHostPlugins *VirtualHostPlugins `protobuf:"bytes,4,opt,name=virtual_host_plugins,json=virtualHostPlugins,proto3" json:"virtual_host_plugins,omitempty"`
 	// CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 	CorsPolicy           *CorsPolicy `protobuf:"bytes,5,opt,name=cors_policy,json=corsPolicy,proto3" json:"cors_policy,omitempty"`
@@ -462,7 +453,7 @@ func (m *VirtualHost) GetCorsPolicy() *CorsPolicy {
 }
 
 //*
-// Routes declare the entrypoints on virtual hosts and the action to take for matched requests.
+// Routes declare the entry points on virtual hosts and the action to take for matched requests.
 type Route struct {
 	// The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.)
 	Matcher *Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
@@ -474,12 +465,7 @@ type Route struct {
 	//	*Route_DirectResponseAction
 	Action isRoute_Action `protobuf_oneof:"action"`
 	// Route Plugins extend the behavior of routes.
-	// Route plugins include configuration such as retries,
-	// rate limiting, and request/resonse transformation.
-	//
-	// Plugins should be specified here in the form of
-	//   `"plugin_name": {..//plugin_config...}`
-	// to allow specifying multiple plugins.
+	// Route plugins include configuration such as retries,rate limiting, and request/response transformation.
 	RoutePlugins         *RoutePlugins `protobuf:"bytes,5,opt,name=route_plugins,json=routePlugins,proto3" json:"route_plugins,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
@@ -1543,7 +1529,7 @@ func (m *WeightedDestination) GetWeight() uint32 {
 }
 
 // TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
-// Notice: RedirectAction is copioed directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+// Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 type RedirectAction struct {
 	// The host portion of the URL will be swapped with this value.
 	HostRedirect string `protobuf:"bytes,1,opt,name=host_redirect,json=hostRedirect,proto3" json:"host_redirect,omitempty"`

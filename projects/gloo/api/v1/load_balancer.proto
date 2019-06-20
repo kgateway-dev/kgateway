@@ -18,7 +18,7 @@ message LoadBalancerConfig {
     // see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold).
     google.protobuf.DoubleValue healthy_panic_threshold = 1;
 
-    // This allows batch updates of endspoints helth/weight/metadata that happen during a time window.
+    // This allows batch updates of endpoints health/weight/metadata that happen during a time window.
     // this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
     // Set to 0 to disable and have changes applied immediately.
     google.protobuf.Duration update_merge_window = 2 [ (gogoproto.stdduration) = true ];

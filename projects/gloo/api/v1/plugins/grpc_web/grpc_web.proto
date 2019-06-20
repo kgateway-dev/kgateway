@@ -10,6 +10,6 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/para
 
 // GrpcWeb support is enabled be default. Use this extension to disable it.
 message GrpcWeb {
-  // Disable grpc web supoort.
+  // Disable grpc web support.
   bool disable = 1;
 }

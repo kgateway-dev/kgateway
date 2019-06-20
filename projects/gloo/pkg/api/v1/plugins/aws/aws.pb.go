@@ -53,7 +53,7 @@ func (DestinationSpec_InvocationStyle) EnumDescriptor() ([]byte, []int) {
 // AWS Upstreams represent a collection of Lambda Functions for a particular AWS Account (IAM Role or User account)
 // in a particular region
 type UpstreamSpec struct {
-	// The AWS Region where the desired Lambda Functions exxist
+	// The AWS Region where the desired Lambda Functions exist
 	Region string `protobuf:"bytes,1,opt,name=region,proto3" json:"region,omitempty"`
 	// A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret
 	// AWS Secrets can be created with `glooctl secret create aws ...`
