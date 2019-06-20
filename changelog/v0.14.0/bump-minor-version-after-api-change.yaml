@@ -1,0 +1,3 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: Bumping minor version after the breaking API change from release 0.13.34 (which erroneously did not bump it).
