@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	k8scorev1 "k8s.io/api/core/v1"
@@ -664,9 +663,9 @@ var _ = Describe("Translator", func() {
 			Expect(route_configuration.VirtualHosts[0].Domains).To(HaveLen(1))
 			Expect(route_configuration.VirtualHosts[0].Domains[0]).To(Equal("*"))
 			Expect(route_configuration.VirtualHosts[0].Routes).To(HaveLen(1))
-			routeAction, ok := route_configuration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
+			routeAction, ok := route_configuration.VirtualHosts[0].Routes[0].Action.(*envoyroute.Route_Route)
 			Expect(ok).To(BeTrue())
-			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyroute.RouteAction_Cluster)
 			Expect(ok).To(BeTrue())
 			Expect(clusterAction.Cluster).To(Equal(UpstreamToClusterName(fakeUsList[0].Metadata.Ref())))
 		})

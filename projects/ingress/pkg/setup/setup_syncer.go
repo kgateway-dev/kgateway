@@ -143,30 +143,30 @@ func RunIngress(opts Opts) error {
 			return errors.Wrapf(err, "getting kube client")
 		}
 
-		baseIngressClient := ingress.NewResourceClient(kube, &v1.Ingress{})
-		ingressClient := v1.NewIngressClientWithBase(baseIngressClient)
-
-		translatorEmitter := v1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
-		translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs)
-		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
-		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
+		ingressClient := v1.NewIngressClientWithBase(ingress.NewResourceClient(kube, &v1.Ingress{}))
+		translatorEventLoopErrs, err := v1.NewTranslatorEventLoop(
+			v1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient),
+			translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs),
+		).Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {
 			return err
 		}
 		go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, translatorEventLoopErrs, "ingress_translator_event_loop")
 
-		baseKubeServiceClient := service.NewResourceClient(kube, &v1.KubeService{})
-		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
 		// note (ilackarms): we must set the selector correctly here or the status syncer will not work
 		// the selector should return exactly 1 service which is our <install-namespace>.ingress-proxy service
 		// TODO (ilackarms): make the service labels configurable
-		kubeServiceClient = service.NewClientWithSelector(kubeServiceClient, map[string]string{
-			"gloo": "ingress-proxy",
-		})
-		statusEmitter := v1.NewStatusEmitter(kubeServiceClient, ingressClient)
-		statusSync := status.NewSyncer(ingressClient)
-		statusEventLoop := v1.NewStatusEventLoop(statusEmitter, statusSync)
-		statusEventLoopErrs, err := statusEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
+
+		statusEventLoopErrs, err := v1.NewStatusEventLoop(
+			v1.NewStatusEmitter(
+				service.NewClientWithSelector(
+					v1.NewKubeServiceClientWithBase(service.NewResourceClient(kube, &v1.KubeService{})),
+					map[string]string{"gloo": "ingress-proxy"},
+				),
+				ingressClient,
+			),
+			status.NewSyncer(ingressClient),
+		).Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {
 			return err
 		}
