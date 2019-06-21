@@ -60,9 +60,18 @@ func (t *translator) computeVirtualHosts(params plugins.Params, listener *v1.Lis
 }
 
 func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.VirtualHost, requireTls bool, report reportFunc) envoyroute.VirtualHost {
+
+	// Make copy to avoid modifying the snapshot
+	virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
+	virtualHost.Name = utils.SanitizeForEnvoy(params.Ctx, virtualHost.Name, "virtual host")
+
 	var envoyRoutes []envoyroute.Route
 	for _, route := range virtualHost.Routes {
-		envoyRoute := t.envoyRoute(params, report, route)
+		routeParams := plugins.RouteParams{
+			Params:      params,
+			VirtualHost: virtualHost,
+		}
+		envoyRoute := t.envoyRoute(routeParams, report, route)
 		envoyRoutes = append(envoyRoutes, envoyRoute)
 	}
 	domains := virtualHost.Domains
@@ -75,12 +84,8 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 		envoyRequireTls = envoyroute.VirtualHost_ALL
 	}
 
-	// Make copy to avoid modifying the snapshot
-	vhClone := proto.Clone(virtualHost).(*v1.VirtualHost)
-	vhClone.Name = utils.SanitizeForEnvoy(params.Ctx, vhClone.Name, "virtual host")
-
 	out := envoyroute.VirtualHost{
-		Name:       vhClone.Name,
+		Name:       virtualHost.Name,
 		Domains:    domains,
 		Routes:     envoyRoutes,
 		RequireTls: envoyRequireTls,
@@ -92,14 +97,14 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 		if !ok {
 			continue
 		}
-		if err := virtualHostPlugin.ProcessVirtualHost(params, vhClone, &out); err != nil {
-			report(err, "invalid virtual host [%s]", vhClone.Name)
+		if err := virtualHostPlugin.ProcessVirtualHost(params, virtualHost, &out); err != nil {
+			report(err, "invalid virtual host [%s]", virtualHost.Name)
 		}
 	}
 	return out
 }
 
-func (t *translator) envoyRoute(params plugins.Params, report reportFunc, in *v1.Route) envoyroute.Route {
+func (t *translator) envoyRoute(params plugins.RouteParams, report reportFunc, in *v1.Route) envoyroute.Route {
 	out := &envoyroute.Route{}
 
 	setMatch(in, out)
@@ -129,7 +134,7 @@ func setMatch(in *v1.Route, out *envoyroute.Route) {
 	out.Match = match
 }
 
-func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.Route, out *envoyroute.Route) {
+func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in *v1.Route, out *envoyroute.Route) {
 	switch action := in.Action.(type) {
 	case *v1.Route_RouteAction:
 		if err := validateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
@@ -139,7 +144,7 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 		out.Action = &envoyroute.Route_Route{
 			Route: &envoyroute.RouteAction{},
 		}
-		if err := setRouteAction(params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
+		if err := setRouteAction(params.Params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
 			report(err, "translator error on route")
 		}
 

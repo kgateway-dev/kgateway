@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
-
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -38,13 +38,14 @@ import (
 
 var _ = Describe("Translator", func() {
 	var (
-		settings   *v1.Settings
-		translator Translator
-		upstream   *v1.Upstream
-		proxy      *v1.Proxy
-		params     plugins.Params
-		matcher    *v1.Matcher
-		routes     []*v1.Route
+		settings          *v1.Settings
+		translator        Translator
+		upstream          *v1.Upstream
+		proxy             *v1.Proxy
+		params            plugins.Params
+		registeredPlugins []plugins.Plugin
+		matcher           *v1.Matcher
+		routes            []*v1.Route
 
 		snapshot            envoycache.Snapshot
 		cluster             *envoyapi.Cluster
@@ -59,8 +60,7 @@ var _ = Describe("Translator", func() {
 		opts := bootstrap.Opts{
 			Settings: settings,
 		}
-		tplugins := registry.Plugins(opts)
-		translator = NewTranslator(tplugins, settings)
+		registeredPlugins = registry.Plugins(opts)
 
 		upname := core.Metadata{
 			Name:      "test",
@@ -111,6 +111,7 @@ var _ = Describe("Translator", func() {
 		}}
 	})
 	JustBeforeEach(func() {
+		translator = NewTranslator(registeredPlugins, settings)
 		proxy = &v1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "test",
@@ -670,6 +671,33 @@ var _ = Describe("Translator", func() {
 			Expect(clusterAction.Cluster).To(Equal(UpstreamToClusterName(fakeUsList[0].Metadata.Ref())))
 		})
 	})
+
+	Context("Route plugin", func() {
+		var (
+			routePlugin *routePluginMock
+		)
+		BeforeEach(func() {
+			routePlugin = &routePluginMock{}
+			registeredPlugins = append(registeredPlugins, routePlugin)
+		})
+
+		It("should have the virtual host when processing route", func() {
+			hasVhost := false
+			routePlugin.ProcessRouteFunc = func(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+				if params.VirtualHost != nil {
+					if params.VirtualHost.GetName() == "virt1" {
+						hasVhost = true
+					}
+				}
+				return nil
+			}
+
+			translate()
+			Expect(hasVhost).To(BeTrue())
+		})
+
+	})
+
 })
 
 func sv(s string) *types.Value {
@@ -678,4 +706,16 @@ func sv(s string) *types.Value {
 			StringValue: s,
 		},
 	}
+}
+
+type routePluginMock struct {
+	ProcessRouteFunc func(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error
+}
+
+func (p *routePluginMock) Init(params plugins.InitParams) error {
+	return nil
+}
+
+func (p *routePluginMock) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+	return p.ProcessRouteFunc(params, in, out)
 }

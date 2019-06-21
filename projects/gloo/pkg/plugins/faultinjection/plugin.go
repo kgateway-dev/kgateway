@@ -36,7 +36,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}, nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	markFilterConfigFunc := func(spec *v1.Destination) (proto.Message, error) {
 		if in.RoutePlugins == nil {
 			return nil, nil

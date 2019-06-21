@@ -130,7 +130,7 @@ func convertProto(encodedBytes []byte) (*descriptor.FileDescriptorSet, error) {
 	return &fileDescriptor, nil
 }
 
-func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's grpc destination
 		if spec.DestinationSpec == nil {

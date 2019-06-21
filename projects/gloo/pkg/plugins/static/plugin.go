@@ -142,7 +142,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 }
 
-func (p *plugin) ProcessRouteAction(params plugins.Params, in *v1.RouteAction, _ map[string]*plugins.RoutePlugin, out *envoyroute.RouteAction) error {
+func (p *plugin) ProcessRouteAction(params plugins.RouteParams, in *v1.RouteAction, _ map[string]*plugins.RoutePlugin, out *envoyroute.RouteAction) error {
 	upstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in)
 	if err != nil {
 		return err
