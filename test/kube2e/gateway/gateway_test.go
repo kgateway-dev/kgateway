@@ -676,7 +676,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 10,
 				WithoutStats:      true,
-			}, "red-pod", 1, 60*time.Second)
+			}, "red-pod", 1, 120*time.Second)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
@@ -687,7 +687,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 10,
 				WithoutStats:      true,
-			}, "blue-pod", 1, 60*time.Second)
+			}, "blue-pod", 1, 120*time.Second)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
@@ -698,7 +698,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 10,
 				WithoutStats:      true,
-			}, "green-pod", 1, 60*time.Second)
+			}, "green-pod", 1, 120*time.Second)
 
 			redOpts := helper.CurlOpts{
 				Protocol:          "http",
