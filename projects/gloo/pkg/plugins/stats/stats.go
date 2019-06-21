@@ -5,19 +5,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
-)
-
-// Virtual cluster names cannot contain dots. Any occurrences will be replaced with underscores.
-const (
-	illegalChar     = "."
-	replacementChar = "_"
 )
 
 var (
@@ -93,12 +88,7 @@ func (c converter) validateName(name string) (string, error) {
 	if name == "" {
 		return "", missingNameErr
 	}
-
-	if strings.Contains(name, illegalChar) {
-		contextutils.LoggerFrom(c.ctx).Warnf("illegal character '%s' in name will be replaced by '%s'", illegalChar, replacementChar)
-		name = strings.ReplaceAll(name, illegalChar, replacementChar)
-	}
-	return name, nil
+	return utils.SanitizeForEnvoy(c.ctx, name, "virtual cluster"), nil
 }
 
 func (c converter) validateHttpMethod(methodName string) (envoycore.RequestMethod, error) {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gogo/protobuf/proto"
+
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -161,6 +163,25 @@ var _ = Describe("Translator", func() {
 		snapshot = snap
 	}
 
+	It("sanitizes an invalid virtual host name", func() {
+		proxyClone := proto.Clone(proxy).(*v1.Proxy)
+		proxyClone.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Name = "invalid.name"
+
+		snap, errs, err := translator.Translate(params, proxyClone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(errs.Validate()).NotTo(HaveOccurred())
+		Expect(snap).NotTo(BeNil())
+
+		routes := snap.GetResources(xds.RouteType)
+		Expect(routes.Items).To(HaveKey("listener-routes"))
+		routeResource := routes.Items["listener-routes"]
+		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+		Expect(route_configuration).NotTo(BeNil())
+		Expect(route_configuration.GetVirtualHosts()).To(HaveLen(1))
+		Expect(route_configuration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
+	})
+
 	Context("service spec", func() {
 		It("changes in service spec should create a different snapshot", func() {
 			translate()
@@ -177,6 +198,7 @@ var _ = Describe("Translator", func() {
 			Expect(oldVersion).ToNot(Equal(newVersion))
 		})
 	})
+
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
@@ -647,7 +669,6 @@ var _ = Describe("Translator", func() {
 			Expect(ok).To(BeTrue())
 			Expect(clusterAction.Cluster).To(Equal(UpstreamToClusterName(fakeUsList[0].Metadata.Ref())))
 		})
-
 	})
 })
 

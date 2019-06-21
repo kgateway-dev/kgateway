@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"github.com/gogo/protobuf/proto"
 	"strings"
 
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -73,17 +74,15 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 		envoyRequireTls = envoyroute.VirtualHost_ALL
 	}
 
+	// Make copy to avoid modifying the snapshot
+	vhClone := proto.Clone(virtualHost).(*v1.VirtualHost)
+	vhClone.Name = utils.SanitizeForEnvoy(params.Ctx, vhClone.Name, "virtual host")
+
 	out := envoyroute.VirtualHost{
-		Name:       virtualHost.Name,
+		Name:       vhClone.Name,
 		Domains:    domains,
 		Routes:     envoyRoutes,
 		RequireTls: envoyRequireTls,
-		// TODO (ilackarms): plugins for these
-		// VirtualClusters: nil,
-		// RateLimits: nil,
-		// RequestHeadersToAdd: nil,
-		// ResponseHeadersToRemove: nil,
-		// Auth: nil,
 	}
 
 	// run the plugins
@@ -92,8 +91,8 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 		if !ok {
 			continue
 		}
-		if err := virtualHostPlugin.ProcessVirtualHost(params, virtualHost, &out); err != nil {
-			report(err, "invalid virtual host [%s]", virtualHost.Name)
+		if err := virtualHostPlugin.ProcessVirtualHost(params, vhClone, &out); err != nil {
+			report(err, "invalid virtual host [%s]", vhClone.Name)
 		}
 	}
 	return out
