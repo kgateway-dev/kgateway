@@ -64,10 +64,10 @@ func (m *Stats) GetVirtualClusters() []*VirtualCluster {
 }
 
 // Virtual clusters allow you to expose statistics for virtual host traffic that matches certain criteria.
-// This is useful because what the application considers to be a an endpoint does often not map directly to
-// the routing configuration. Using virtual clusters you can define logical endpoints and have Envoy emit
-// dedicated statistics for any matching request. Virtual cluster statistics are emitted on the downstream side
-// and thus include network level failures.
+// This is useful because what the application considers to be an endpoint does often not map directly to
+// the routing configuration, so Envoy does not emit per endpoint statistics. Using virtual clusters you can define
+// logical endpoints and have Envoy emit dedicated statistics for any matching request. Virtual cluster statistics
+// are emitted on the downstream side and thus include network level failures.
 //
 // Please note that virtual clusters add overhead to the processing of each requests and should not be overused.
 type VirtualCluster struct {
