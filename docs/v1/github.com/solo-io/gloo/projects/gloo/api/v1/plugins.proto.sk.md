@@ -61,6 +61,7 @@ to be usable by Gloo.
 ```yaml
 "extensions": .gloo.solo.io.Extensions
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
+"stats": .stats.plugins.gloo.solo.io.Stats
 
 ```
 
@@ -68,6 +69,7 @@ to be usable by Gloo.
 | ----- | ---- | ----------- |----------- | 
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
+| `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
 
 
 

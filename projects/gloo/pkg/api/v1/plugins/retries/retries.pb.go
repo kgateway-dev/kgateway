@@ -26,7 +26,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// Retry Policy applied to a route
+// Retry Policy applied at the Route and/or Virtual Hosts levels.
 type RetryPolicy struct {
 	// Specifies the conditions under which retry takes place. These are the same
 	// conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on)

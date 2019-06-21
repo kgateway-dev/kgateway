@@ -23,6 +23,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/stats/stats.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
@@ -45,6 +46,7 @@ message ListenerPlugins {
 message VirtualHostPlugins {
     Extensions extensions = 1;
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
+    stats.plugins.gloo.solo.io.Stats stats = 10;
 }
 
 // Plugin-specific configuration that lives on routes
