@@ -93,7 +93,7 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 			continue
 		}
 		if err := virtualHostPlugin.ProcessVirtualHost(params, virtualHost, &out); err != nil {
-			report(err, "invalid virtual host")
+			report(err, "invalid virtual host [%s]", virtualHost.Name)
 		}
 	}
 	return out
