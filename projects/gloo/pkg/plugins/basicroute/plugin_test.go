@@ -26,7 +26,7 @@ var _ = Describe("prefix rewrite", func() {
 				Route: routeAction,
 			},
 		}
-		err := p.ProcessRoute(plugins.Params{}, &v1.Route{
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				PrefixRewrite: &transformation.PrefixRewrite{
 					PrefixRewrite: "/foo",
@@ -48,7 +48,7 @@ var _ = Describe("timeout", func() {
 				Route: routeAction,
 			},
 		}
-		err := p.ProcessRoute(plugins.Params{}, &v1.Route{
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Timeout: &t,
 			},
@@ -91,7 +91,7 @@ var _ = Describe("retries", func() {
 				Route: routeAction,
 			},
 		}
-		err := plugin.ProcessRoute(plugins.Params{}, &v1.Route{
+		err := plugin.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Retries: retryPolicy,
 			},
