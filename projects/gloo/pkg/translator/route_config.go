@@ -1,8 +1,9 @@
 package translator
 
 import (
-	"github.com/gogo/protobuf/proto"
 	"strings"
+
+	"github.com/gogo/protobuf/proto"
 
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 

@@ -3,9 +3,13 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -91,14 +95,44 @@ var _ = Describe("Happy path", func() {
 		})
 
 		It("should not crash", func() {
-
-			proxycli := testClients.ProxyClient
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
-			_, err := proxycli.Write(proxy, clients.WriteOpts{})
+			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			TestUpstreamReachable()
+		})
 
+		It("correctly configures envoy to emit virtual cluster statistics", func() {
+			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+			// Set a virtual cluster matching everything
+			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].VirtualHostPlugins = &gloov1.VirtualHostPlugins{
+				Stats: &stats.Stats{
+					VirtualClusters: []*stats.VirtualCluster{{
+						Name:    "test-vc",
+						Pattern: ".*",
+					}},
+				},
+			}
+
+			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// This will hit the virtual host with the above virtual cluster config
+			TestUpstreamReachable()
+
+			response, err := http.Get(fmt.Sprintf("http://localhost:%d/stats", envoyInstance.AdminPort))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			//noinspection GoUnhandledErrorResult
+			defer response.Body.Close()
+
+			body, err := ioutil.ReadAll(response.Body)
+			Expect(err).NotTo(HaveOccurred())
+			statsString := string(body)
+
+			// Verify that stats for the above virtual cluster are present
+			Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
 		})
 
 		Context("ssl", func() {
