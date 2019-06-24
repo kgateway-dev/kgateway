@@ -117,7 +117,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	// Aggregate watches
 	upstreamsOut := make(chan v1.UpstreamList)
 	go func() {
-		previous := hybridUpstreamSnapshot{}
+		previous := &hybridUpstreamSnapshot{}
 		current := previous.Clone()
 		syncFunc := func() {
 			if current.Hash() == previous.Hash() {
