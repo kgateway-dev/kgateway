@@ -3,27 +3,18 @@ package aws
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"sort"
-	"time"
-	"unicode/utf8"
-
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	glooaws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	awsUtils "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 	"github.com/solo-io/go-utils/contextutils"
-)
-
-const (
-	// expected map identifiers for secrets
-	awsAccessKey = "access_key"
-	awsSecretKey = "secret_key"
+	"net/url"
+	"sort"
+	"time"
 )
 
 type AWSLambdaFunctionDiscoveryFactory struct {
@@ -120,26 +111,7 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 		return nil, errors.New("not a lambda upstream spec")
 	}
 	lambdaSpec := awsspec.Aws
-	awsSecrets, err := secrets.Find(lambdaSpec.SecretRef.Namespace, lambdaSpec.SecretRef.Name)
-	if err != nil {
-		return nil, errors.Wrapf(err, "secrets not found for secret ref %v", lambdaSpec.SecretRef)
-	}
-
-	awsSecret, ok := awsSecrets.Kind.(*v1.Secret_Aws)
-	if !ok {
-		return nil, errors.Errorf("provided secret is not an aws secret")
-	}
-	accessKey := awsSecret.Aws.AccessKey
-	if accessKey != "" && !utf8.Valid([]byte(accessKey)) {
-		return nil, errors.Errorf("%s not a valid string", awsAccessKey)
-	}
-	secretKey := awsSecret.Aws.SecretKey
-	if secretKey != "" && !utf8.Valid([]byte(secretKey)) {
-		return nil, errors.Errorf("%s not a valid string", awsSecretKey)
-	}
-
-	sess, err := session.NewSession(aws.NewConfig().
-		WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, "")))
+	sess, err := awsUtils.GetAwsSession(lambdaSpec.SecretRef, secrets, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
 	}
