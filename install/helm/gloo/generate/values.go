@@ -42,9 +42,11 @@ type DeploymentSpec struct {
 type Integrations struct {
 	Knative *Knative `json:"knative"`
 }
+
 type Knative struct {
-	Enabled *bool         `json:"enabled"`
-	Proxy   *KnativeProxy `json:"proxy,omitempty"`
+	Enabled        *bool         `json:"enabled"`
+	InstallKnative *bool         `json:"installKnative"`
+	Proxy          *KnativeProxy `json:"proxy,omitempty"`
 }
 
 type KnativeProxy struct {
@@ -74,7 +76,7 @@ type GlooDeployment struct {
 
 type Discovery struct {
 	Deployment *DiscoveryDeployment `json:"deployment,omitempty"`
-	DisableFDS bool `json:"disable_fds,omitempty"`
+	DisableFDS bool                 `json:"disable_fds,omitempty"`
 }
 
 type DiscoveryDeployment struct {
@@ -107,12 +109,12 @@ type GatewayProxyDeployment struct {
 	*DeploymentSpec
 }
 type GatewayProxyService struct {
-	Type             string            `json:"type,omitempty"`
-	HttpPort         string            `json:"httpPort,omitempty"`
-	HttpsPort        string            `json:"httpsPort,omitempty"`
-	ClusterIP        string            `json:"clusterIP,omitempty"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
-	ExternalTrafficPolicy string       `json:"externalTrafficPolicy,omitempty"`
+	Type                  string            `json:"type,omitempty"`
+	HttpPort              string            `json:"httpPort,omitempty"`
+	HttpsPort             string            `json:"httpsPort,omitempty"`
+	ClusterIP             string            `json:"clusterIP,omitempty"`
+	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
+	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {

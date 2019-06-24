@@ -1,4 +1,4 @@
-{{- if .Values.settings.integrations.knative.enabled }}
+{{- if and .Values.settings.integrations.knative.enabled .Values.settings.integrations.knative.installKnative  }}
 
 ---
 # ↓ required as knative dependency on istio crds is hard-coded right now ↓
