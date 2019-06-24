@@ -146,21 +146,22 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-
-	return nil
+	// TODO
+	//return nil
 }
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-
+	// TODO
 }
 
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	return false, nil
+	// TODO
+	//return false, nil
 }
 
 // EDS API
 // start the EDS watch which sends a new list of endpoints on any change
 // will send only endpoints for upstreams configured with TrackUpstreams
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
-
+	// TODO
 }
