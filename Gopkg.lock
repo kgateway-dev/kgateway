@@ -153,7 +153,7 @@
   version = "v2.2.0"
 
 [[projects]]
-  digest = "1:546cda9f6b7b826b6a2d558e8de49909154481874d481e65fa74fe1352bccfae"
+  digest = "1:1273bcc48fea1f2b6588e4b42921a644bbe8820d2109dd41a53e996f9fb44143"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -165,6 +165,7 @@
     "aws/credentials",
     "aws/credentials/ec2rolecreds",
     "aws/credentials/endpointcreds",
+    "aws/credentials/processcreds",
     "aws/credentials/stscreds",
     "aws/csm",
     "aws/defaults",
@@ -173,11 +174,13 @@
     "aws/request",
     "aws/session",
     "aws/signer/v4",
+    "internal/ini",
     "internal/sdkio",
     "internal/sdkrand",
     "internal/sdkuri",
     "internal/shareddefaults",
     "private/protocol",
+    "private/protocol/ec2query",
     "private/protocol/json/jsonutil",
     "private/protocol/jsonrpc",
     "private/protocol/query",
@@ -185,12 +188,13 @@
     "private/protocol/rest",
     "private/protocol/restjson",
     "private/protocol/xml/xmlutil",
+    "service/ec2",
     "service/lambda",
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "8b15f938ed215522a37275106e847f6f0be85fe8"
-  version = "v1.15.23"
+  revision = "dcb92372bfaa5a5e0df8b4f981ee04574970f9c6"
+  version = "v1.20.6"
 
 [[projects]]
   branch = "master"
@@ -402,14 +406,6 @@
   pruneopts = "UT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
-
-[[projects]]
-  digest = "1:5abd6a22805b1919f6a6bca0ae58b13cef1f3412812f38569978f43ef02743d4"
-  name = "github.com/go-ini/ini"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "5cf292cae48347c2490ac1a58fe36735fb78df7e"
-  version = "v1.38.2"
 
 [[projects]]
   digest = "1:50d6bc4aa3e70803230bb98a4b0e0f1331fefc2eb324e087adf7e986b8da082e"
@@ -1051,11 +1047,11 @@
   revision = "95c5cbbeaee7fe3c2b5ecf0a163144140dfb4d61"
 
 [[projects]]
-  digest = "1:e22af8c7518e1eab6f2eab2b7d7558927f816262586cd6ed9f349c97a6c285c4"
+  digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0b12d6b5"
+  revision = "c2b33e84"
 
 [[projects]]
   digest = "1:eaefc85d32c03e5f0c2b88ea2f79fce3d993e2c78316d21319575dd4ea9153ca"
@@ -1204,17 +1200,6 @@
   pruneopts = "UT"
   revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
   version = "v0.0.3"
-
-[[projects]]
-  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
-  name = "github.com/mattn/go-zglob"
-  packages = [
-    ".",
-    "fastwalk",
-  ]
-  pruneopts = "UT"
-  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
-  version = "v0.0.1"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -2681,8 +2666,10 @@
     "github.com/Netflix/go-expect",
     "github.com/avast/retry-go",
     "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/ec2",
     "github.com/aws/aws-sdk-go/service/lambda",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth",
@@ -2729,7 +2716,6 @@
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
-    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
