@@ -210,17 +210,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7310ec5042e3a0dd73ed9f23f812e73ce0ae88d08039e4473472ebba20bf2996"
-  name = "github.com/bxcodec/faker"
-  packages = [
-    ".",
-    "support/slice",
-  ]
-  pruneopts = "UT"
-  revision = "bf89c38ff1742f295e15df0bd5e8b3e81da95855"
-
-[[projects]]
-  branch = "master"
   digest = "1:95e08278c876d185ba67533f045e9e63b3c9d02cbd60beb0f4dbaa2344a13ac2"
   name = "github.com/chai2010/gettext-go"
   packages = [
@@ -1574,10 +1563,11 @@
   version = "v0.8.18"
 
 [[projects]]
-  digest = "1:57beeeddb6c4fad09aa3870390f9ee78aa2e2ede46e12654bc65cee16c382f91"
+  digest = "1:a65e88e09f33c5480f1e7f72d330da2a06ca53c47a6e0e37d1922cd4b764eb3f"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
+    "api/external/kubernetes/customresourcedefinition",
     "api/external/kubernetes/deployment",
     "api/external/kubernetes/namespace",
     "api/external/kubernetes/pod",
@@ -1632,8 +1622,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "1edf3f38af4cf7569fc66e53d115032d3385706d"
-  version = "v0.9.9"
+  revision = "d0edbeb14aaaaa8066db72d95911782a9c51b3ba"
+  version = "v0.9.13"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
