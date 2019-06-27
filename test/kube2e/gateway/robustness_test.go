@@ -221,7 +221,7 @@ var _ = Describe("Gloo robustness tests", func() {
 			Host:              gatewayProxy,
 			Service:           gatewayProxy,
 			Port:              gatewayPort,
-			ConnectionTimeout: 2,
+			ConnectionTimeout: 1,
 			WithoutStats:      true,
 		}, expectedResponse(appName), 1, 20*time.Second, 1*time.Second)
 	})

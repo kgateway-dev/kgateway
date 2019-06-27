@@ -164,9 +164,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10, // this is important, as sometimes curl hangs
+				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, helper.SimpleHttpResponse, 1, 60*time.Second)
+			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 		})
 
 		Context("routing directly to kubernetes services", func() {
@@ -237,9 +237,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					Host:              gatewayProxy,
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
-					ConnectionTimeout: 10, // this is important, as sometimes curl hangs
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, helper.SimpleHttpResponse, 1, 60*time.Second)
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -303,9 +303,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
 					CaFile:            "/tmp/ca.crt",
-					ConnectionTimeout: 10,
+					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, helper.SimpleHttpResponse, 1, 60*time.Second)
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -389,9 +389,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					Host:              gatewayProxy,
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
-					ConnectionTimeout: 10,
+					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, responseString, 1, 60*time.Second)
+				}, responseString, 1, 60*time.Second, 1*time.Second)
 			})
 		})
 	})
@@ -674,9 +674,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
-			}, "red-pod", 1, 120*time.Second)
+			}, "red-pod", 1, 120*time.Second, 1*time.Second)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
@@ -685,9 +685,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
-			}, "blue-pod", 1, 120*time.Second)
+			}, "blue-pod", 1, 120*time.Second, 1*time.Second)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
@@ -696,9 +696,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
-			}, "green-pod", 1, 120*time.Second)
+			}, "green-pod", 1, 120*time.Second, 1*time.Second)
 
 			redOpts := helper.CurlOpts{
 				Protocol:          "http",
@@ -707,7 +707,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
 			}
 
