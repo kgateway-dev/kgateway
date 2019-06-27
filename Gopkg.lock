@@ -1118,7 +1118,7 @@
   revision = "a93024b82d98ce079cc2794d85fe4157fe9881a3"
 
 [[projects]]
-  digest = "1:4787d9471a8cd46a1a6e8217efed32a943358c7a6c7f8bba3823b6a96f48c40d"
+  digest = "1:0fa4d8abbb2aa01c432499043d323d2c11902b3a93f46f2b12e5cfe1f1b72018"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1130,16 +1130,11 @@
     "pkg/apis/serving/v1alpha1",
     "pkg/apis/serving/v1beta1",
     "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
-    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
-    "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
-    "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/serving/v1beta1",
-    "pkg/client/clientset/versioned/typed/serving/v1beta1/fake",
     "pkg/client/informers/externalversions",
     "pkg/client/informers/externalversions/autoscaling",
     "pkg/client/informers/externalversions/autoscaling/v1alpha1",
@@ -2730,7 +2725,7 @@
     "github.com/keybase/go-ps",
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
-    "github.com/knative/serving/pkg/client/clientset/versioned/fake",
+    "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
     "github.com/mitchellh/hashstructure",
@@ -2813,6 +2808,7 @@
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/informers",
