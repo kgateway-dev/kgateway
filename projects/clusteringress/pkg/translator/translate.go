@@ -220,7 +220,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 	return virtualHostsHttp, virtualHostsHttps, nil
 }
 
-func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstreams gloov1.UpstreamList) (*gloov1.RouteAction, error) {
+func routeActionFromSplits(splits []v1alpha1.IngressBackendSplit, upstreams gloov1.UpstreamList) (*gloov1.RouteAction, error) {
 	switch len(splits) {
 	case 0:
 		return nil, errors.Errorf("invalid cluster ingress: must provide at least 1 split")
@@ -265,7 +265,7 @@ func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstrea
 	}, nil
 }
 
-func upstreamForSplit(upstreams gloov1.UpstreamList, backend v1alpha1.ClusterIngressBackendSplit) (*gloov1.Upstream, error) {
+func upstreamForSplit(upstreams gloov1.UpstreamList, backend v1alpha1.IngressBackendSplit) (*gloov1.Upstream, error) {
 	// find the upstream with the smallest matching selector
 	// longer selectors represent subsets of pods for a service
 	var matchingUpstream *gloov1.Upstream
