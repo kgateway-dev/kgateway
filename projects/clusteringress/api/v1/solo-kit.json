@@ -1,6 +1,10 @@
 {
   "name": "clusteringress.gloo.solo.io",
   "version": "v1",
+  "go_package": "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1",
+  "imports": [
+    "github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
+  ],
   "resource_groups": {
     "translator.clusteringress.gloo.solo.io": [
       {
@@ -13,7 +17,7 @@
       },
       {
         "name": "ClusterIngress",
-        "package": "clusteringress.gloo.solo.io"
+        "package": "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
       }
     ]
   }

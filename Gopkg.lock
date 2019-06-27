@@ -1118,7 +1118,7 @@
   revision = "a93024b82d98ce079cc2794d85fe4157fe9881a3"
 
 [[projects]]
-  digest = "1:6cd96d69244f313b06d0102c42da783363b65bb43e0d374a6df7cdbc894430d6"
+  digest = "1:0fa4d8abbb2aa01c432499043d323d2c11902b3a93f46f2b12e5cfe1f1b72018"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1135,6 +1135,19 @@
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1beta1",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/autoscaling",
+    "pkg/client/informers/externalversions/autoscaling/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/networking",
+    "pkg/client/informers/externalversions/networking/v1alpha1",
+    "pkg/client/informers/externalversions/serving",
+    "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/informers/externalversions/serving/v1beta1",
+    "pkg/client/listers/autoscaling/v1alpha1",
+    "pkg/client/listers/networking/v1alpha1",
+    "pkg/client/listers/serving/v1alpha1",
+    "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "UT"
   revision = "cb5c1810f2690efa0c434bc81aab3a1d45df497f"
@@ -2712,7 +2725,8 @@
     "github.com/keybase/go-ps",
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
-    "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
+    "github.com/knative/serving/pkg/client/informers/externalversions",
+    "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
@@ -2788,8 +2802,6 @@
     "gopkg.in/AlecAivazis/survey.v1/terminal",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",

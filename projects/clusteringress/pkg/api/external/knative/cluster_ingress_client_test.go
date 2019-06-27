@@ -2,7 +2,7 @@
 
 // +build solokit
 
-package v1
+package v1alpha1
 
 import (
 	"time"
@@ -18,8 +18,16 @@ import (
 )
 
 var _ = Describe("ClusterIngressClient", func() {
+	var (
+		namespace string
+	)
 	for _, test := range []typed.ResourceClientTester{
-		&typed.KubeRcTester{Crd: ClusterIngressCrd},
+		&typed.ConsulRcTester{},
+		&typed.FileRcTester{},
+		&typed.MemoryRcTester{},
+		&typed.VaultRcTester{},
+		&typed.KubeSecretRcTester{},
+		&typed.KubeConfigMapRcTester{},
 	} {
 		Context("resource client backed by "+test.Description(), func() {
 			var (
@@ -29,28 +37,27 @@ var _ = Describe("ClusterIngressClient", func() {
 			)
 
 			BeforeEach(func() {
-				factory := test.Setup("")
-				client, err = NewClusterResourceClient(factory)
+				namespace = helpers.RandString(6)
+				factory := test.Setup(namespace)
+				client, err = NewClusterIngressClient(factory)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				client.Delete(name1, clients.DeleteOpts{})
-				client.Delete(name2, clients.DeleteOpts{})
-				client.Delete(name3, clients.DeleteOpts{})
+				test.Teardown(namespace)
 			})
 			It("CRUDs ClusterIngresss "+test.Description(), func() {
-				ClusterIngressClientTest(client, name1, name2, name3)
+				ClusterIngressClientTest(namespace, client, name1, name2, name3)
 			})
 		})
 	}
 })
 
-func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 string) {
+func ClusterIngressClientTest(namespace string, client ClusterIngressClient, name1, name2, name3 string) {
 	err := client.Register()
 	Expect(err).NotTo(HaveOccurred())
 
 	name := name1
-	input := NewClusterIngress("", name)
+	input := NewClusterIngress(namespace, name)
 
 	r1, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -61,11 +68,9 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 
 	Expect(r1).To(BeAssignableToTypeOf(&ClusterIngress{}))
 	Expect(r1.GetMetadata().Name).To(Equal(name))
+	Expect(r1.GetMetadata().Namespace).To(Equal(namespace))
 	Expect(r1.GetMetadata().ResourceVersion).NotTo(Equal(input.GetMetadata().ResourceVersion))
 	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
-	Expect(r1.Status).To(Equal(input.Status))
-	Expect(r1.ClusterIngressSpec).To(Equal(input.ClusterIngressSpec))
-	Expect(r1.ClusterIngressStatus).To(Equal(input.ClusterIngressStatus))
 
 	_, err = client.Write(input, clients.WriteOpts{
 		OverwriteExisting: true,
@@ -79,44 +84,48 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 		OverwriteExisting: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	read, err := client.Read(name, clients.ReadOpts{})
+	read, err := client.Read(namespace, name, clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(read).To(Equal(r1))
+	_, err = client.Read("doesntexist", name, clients.ReadOpts{})
+	Expect(err).To(HaveOccurred())
+	Expect(errors.IsNotExist(err)).To(BeTrue())
 
 	name = name2
 	input = &ClusterIngress{}
 
 	input.SetMetadata(core.Metadata{
-		Name: name,
+		Name:      name,
+		Namespace: namespace,
 	})
 
 	r2, err := client.Write(input, clients.WriteOpts{})
 	Expect(err).NotTo(HaveOccurred())
-	list, err := client.List(clients.ListOpts{})
+	list, err := client.List(namespace, clients.ListOpts{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(list).To(ContainElement(r1))
 	Expect(list).To(ContainElement(r2))
-	err = client.Delete("adsfw", clients.DeleteOpts{})
+	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{})
 	Expect(err).To(HaveOccurred())
 	Expect(errors.IsNotExist(err)).To(BeTrue())
-	err = client.Delete("adsfw", clients.DeleteOpts{
+	err = client.Delete(namespace, "adsfw", clients.DeleteOpts{
 		IgnoreNotExist: true,
 	})
 	Expect(err).NotTo(HaveOccurred())
-	err = client.Delete(r2.GetMetadata().Name, clients.DeleteOpts{})
+	err = client.Delete(namespace, r2.GetMetadata().Name, clients.DeleteOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() ClusterIngressList {
-		list, err = client.List(clients.ListOpts{})
+		list, err = client.List(namespace, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).Should(ContainElement(r1))
 	Eventually(func() ClusterIngressList {
-		list, err = client.List(clients.ListOpts{})
+		list, err = client.List(namespace, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return list
 	}, time.Second*10).ShouldNot(ContainElement(r2))
-	w, errs, err := client.Watch(clients.WatchOpts{
+	w, errs, err := client.Watch(namespace, clients.WatchOpts{
 		RefreshRate: time.Hour,
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -137,7 +146,8 @@ func ClusterIngressClientTest(client ClusterIngressClient, name1, name2, name3 s
 		input = &ClusterIngress{}
 		Expect(err).NotTo(HaveOccurred())
 		input.SetMetadata(core.Metadata{
-			Name: name,
+			Name:      name,
+			Namespace: namespace,
 		})
 
 		r3, err = client.Write(input, clients.WriteOpts{})

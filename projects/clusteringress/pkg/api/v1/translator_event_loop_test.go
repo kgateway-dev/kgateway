@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -42,7 +43,7 @@ var _ = Describe("TranslatorEventLoop", func() {
 		clusterIngressClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		clusterIngressClient, err := NewClusterIngressClient(clusterIngressClientFactory)
+		clusterIngressClient, err := github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngressClient(clusterIngressClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewTranslatorEmitter(secretClient, upstreamClient, clusterIngressClient)
@@ -52,7 +53,7 @@ var _ = Describe("TranslatorEventLoop", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.Upstream().Write(gloo_solo_io.NewUpstream(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.ClusterIngress().Write(NewClusterIngress(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.ClusterIngress().Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockTranslatorSyncer{}
 		el := NewTranslatorEventLoop(emitter, sync)

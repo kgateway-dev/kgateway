@@ -4,9 +4,10 @@ package v1
 
 import (
 	"context"
-	fmt "fmt"
+	"fmt"
 	"time"
 
+	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"go.opencensus.io/stats"
@@ -87,7 +88,7 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					case *gloo_solo_io.Upstream:
 						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
-					case *ClusterIngress:
+					case *github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngress:
 						currentSnapshot.Clusteringresses = append(currentSnapshot.Clusteringresses, typed)
 					default:
 						select {

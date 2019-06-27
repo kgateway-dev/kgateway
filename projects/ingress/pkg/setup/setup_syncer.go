@@ -4,12 +4,14 @@ import (
 	"context"
 	"os"
 
+	knativeclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
+	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/gogo/protobuf/types"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
 	clusteringressv1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	clusteringresstranslator "github.com/solo-io/gloo/projects/clusteringress/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -30,6 +32,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+const defaultClusteringressProxyAddress = "clusteringress." + gloodefaults.GlooSystem + ".svc.cluster.local"
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
@@ -86,12 +90,18 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	disableKubeIngress := os.Getenv("DISABLE_KUBE_INGRESS") == "true" || os.Getenv("DISABLE_KUBE_INGRESS") == "1"
 	enableKnative := os.Getenv("ENABLE_KNATIVE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
 
+	clusteringressProxyAddress := defaultClusteringressProxyAddress
+	if settings.KnativeOptions != nil && settings.KnativeOptions.ClusteringressProxyAddress != "" {
+		clusteringressProxyAddress = settings.KnativeOptions.ClusteringressProxyAddress
+	}
+
 	opts := Opts{
-		WriteNamespace:  writeNamespace,
-		WatchNamespaces: watchNamespaces,
-		Proxies:         proxyFactory,
-		Upstreams:       upstreamFactory,
-		Secrets:         secretFactory,
+		ClusteringressProxyAddress: clusteringressProxyAddress,
+		WriteNamespace:             writeNamespace,
+		WatchNamespaces:            watchNamespaces,
+		Proxies:                    proxyFactory,
+		Upstreams:                  upstreamFactory,
+		Secrets:                    secretFactory,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
@@ -182,10 +192,14 @@ func RunIngress(opts Opts) error {
 			return errors.Wrapf(err, "creating knative clientset")
 		}
 
-		baseClient := clusteringress.NewResourceClient(knative, &clusteringressv1.ClusterIngress{})
-		ingressClient := clusteringressv1.NewClusterIngressClientWithBase(baseClient)
+		knativeCache, err := knativeclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
+		if err != nil {
+			return errors.Wrapf(err, "creating knative cache")
+		}
+		baseClient := knativeclient.NewResourceClient(knative, knativeCache)
+		ingressClient := v1alpha1.NewClusterIngressClientWithBase(baseClient)
 		clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
-		clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(opts.ProxyAddress, opts.WriteNamespace, proxyClient, ingressClient, writeErrs)
+		clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(opts.ClusteringressProxyAddress, opts.WriteNamespace, proxyClient, knative, writeErrs)
 		clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)
 		clusterIngTranslatorEventLoopErrs, err := clusterIngTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {

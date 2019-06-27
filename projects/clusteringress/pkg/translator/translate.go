@@ -4,29 +4,20 @@ import (
 	"sort"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-
-	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
+	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
+	"github.com/solo-io/gloo/pkg/utils"
+	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
-	var clusterIngresses []*v1alpha1.ClusterIngress
-	for _, ig := range snap.Clusteringresses {
-		kubeIngress, err := clusteringress.ToKube(ig)
-		if err != nil {
-			return nil, err
-		}
-		clusterIngresses = append(clusterIngresses, kubeIngress)
-	}
+	clusterIngresses := snap.Clusteringresses
 	upstreams := snap.Upstreams
 	secrets := snap.Secrets
 
@@ -85,7 +76,7 @@ type secureVirtualHost struct {
 	secret core.ResourceRef
 }
 
-func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.UpstreamList, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
+func virtualHosts(ingresses v1alpha1.ClusterIngressList, upstreams gloov1.UpstreamList, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
 	routesByHostHttp := make(map[string][]*gloov1.Route)
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)
@@ -220,7 +211,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 	return virtualHostsHttp, virtualHostsHttps, nil
 }
 
-func routeActionFromSplits(splits []v1alpha1.IngressBackendSplit, upstreams gloov1.UpstreamList) (*gloov1.RouteAction, error) {
+func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit, upstreams gloov1.UpstreamList) (*gloov1.RouteAction, error) {
 	switch len(splits) {
 	case 0:
 		return nil, errors.Errorf("invalid cluster ingress: must provide at least 1 split")
@@ -265,7 +256,7 @@ func routeActionFromSplits(splits []v1alpha1.IngressBackendSplit, upstreams gloo
 	}, nil
 }
 
-func upstreamForSplit(upstreams gloov1.UpstreamList, backend v1alpha1.IngressBackendSplit) (*gloov1.Upstream, error) {
+func upstreamForSplit(upstreams gloov1.UpstreamList, backend knativev1alpha1.IngressBackendSplit) (*gloov1.Upstream, error) {
 	// find the upstream with the smallest matching selector
 	// longer selectors represent subsets of pods for a service
 	var matchingUpstream *gloov1.Upstream

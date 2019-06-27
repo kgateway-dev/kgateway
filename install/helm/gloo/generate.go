@@ -106,7 +106,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.Gateway.Deployment.Image.PullPolicy = ifNotPresent
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.PullPolicy= ifNotPresent
+			v.Deployment.Image.PullPolicy = ifNotPresent
 		}
 	}
 
@@ -115,7 +115,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Discovery.Deployment.Image.Repository = replacePrefix(cfg.Discovery.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository= replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
 		}
 
 	}
@@ -155,7 +155,7 @@ func generateKnativeValuesYaml(version, repositoryPrefix string) error {
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository= replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
 		}
 	}
 
@@ -194,7 +194,7 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository= replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
 		}
 	}
 

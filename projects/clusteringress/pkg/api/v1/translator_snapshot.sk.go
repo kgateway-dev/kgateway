@@ -5,6 +5,7 @@ package v1
 import (
 	"fmt"
 
+	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -14,7 +15,7 @@ import (
 type TranslatorSnapshot struct {
 	Secrets          gloo_solo_io.SecretList
 	Upstreams        gloo_solo_io.UpstreamList
-	Clusteringresses ClusterIngressList
+	Clusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList
 }
 
 func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
@@ -87,6 +88,6 @@ func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
 		Version:          s.Hash(),
 		Secrets:          s.Secrets.NamespacesDotNames(),
 		Upstreams:        s.Upstreams.NamespacesDotNames(),
-		Clusteringresses: s.Clusteringresses.Names(),
+		Clusteringresses: s.Clusteringresses.NamespacesDotNames(),
 	}
 }

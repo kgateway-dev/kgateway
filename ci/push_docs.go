@@ -6,11 +6,11 @@ import (
 
 func main() {
 	spec := docsutils.DocsPRSpec{
-		Owner: "solo-io",
-		Repo: "gloo",
-		Product: "gloo",
+		Owner:           "solo-io",
+		Repo:            "gloo",
+		Product:         "gloo",
 		ChangelogPrefix: "gloo",
-		ApiPaths: []string {
+		ApiPaths: []string{
 			"docs/v1/github.com/solo-io/gloo",
 			"docs/v1/github.com/solo-io/solo-kit",
 			"docs/v1/gogoproto",

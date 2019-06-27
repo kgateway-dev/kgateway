@@ -2,11 +2,14 @@ package translator
 
 import (
 	"context"
-	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
-	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
+	"time"
+
+	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
+
+	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"time"
 
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -16,22 +19,22 @@ import (
 )
 
 type translatorSyncer struct {
-	proxyAddress  string
-	writeNamespace       string
-	writeErrs            chan error
-	proxyClient          gloov1.ProxyClient
-	clusterIngressClient v1.ClusterIngressClient
-	proxyReconciler      gloov1.ProxyReconciler
+	proxyAddress    string
+	writeNamespace  string
+	writeErrs       chan error
+	proxyClient     gloov1.ProxyClient
+	proxyReconciler gloov1.ProxyReconciler
+	knativeClient   knativeclientset.Interface
 }
 
-func NewSyncer(writeNamespace, proxyAddress string, proxyClient gloov1.ProxyClient, ingressClient v1.ClusterIngressClient, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, knativeClient knativeclientset.Interface, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		proxyAddress:  proxyAddress,
-		writeNamespace:       writeNamespace,
-		writeErrs:            writeErrs,
-		proxyClient:          proxyClient,
-		clusterIngressClient: ingressClient,
-		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
+		proxyAddress:    proxyAddress,
+		writeNamespace:  writeNamespace,
+		writeErrs:       writeErrs,
+		proxyClient:     proxyClient,
+		knativeClient:   knativeClient,
+		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
 	}
 }
 
@@ -82,7 +85,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 }
 
 // propagate to all clusteringresses the status of the proxy
-func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloov1.Proxy, clusterIngresses v1.ClusterIngressList) error {
+func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloov1.Proxy, clusterIngresses v1alpha1.ClusterIngressList) error {
 	if proxy == nil {
 		return nil
 	}
@@ -114,34 +117,24 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 	}
 }
 
-func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, clusterIngresses v1.ClusterIngressList) error {
-	var updatedClusterIngresses v1.ClusterIngressList
-	for _, intermediaryCi := range clusterIngresses {
-		// convert the proto representation to the kube type
-		ci, err := clusteringress.ToKube(intermediaryCi)
-		if err != nil {
-			return err
-		}
+func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, clusterIngresses v1alpha1.ClusterIngressList) error {
+	var updatedClusterIngresses []*knativev1alpha1.ClusterIngress
+	for _, wrappedCi := range clusterIngresses {
+		ci := knativev1alpha1.ClusterIngress(wrappedCi.ClusterIngress)
 		if ci.Status.IsReady() {
 			continue
 		}
 		ci.Status.InitializeConditions()
 		ci.Status.MarkNetworkConfigured()
-		ci.Status.MarkLoadBalancerReady([]v1alpha1.LoadBalancerIngressStatus{
+		ci.Status.MarkLoadBalancerReady([]knativev1alpha1.LoadBalancerIngressStatus{
 			{DomainInternal: s.proxyAddress},
 		})
 		ci.Status.ObservedGeneration = ci.Generation
-
-		// convert it back and store it
-		intermediaryCi, err = clusteringress.FromKube(ci)
-		if err != nil {
-			return err
-		}
-		updatedClusterIngresses = append(updatedClusterIngresses, intermediaryCi)
+		updatedClusterIngresses = append(updatedClusterIngresses, &ci)
 	}
 	for _, ci := range updatedClusterIngresses {
-		if _, err := s.clusterIngressClient.Write(ci, clients.WriteOpts{OverwriteExisting: true, Ctx: ctx}); err != nil {
-			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status", ci.Metadata.Name)
+		if _, err := s.knativeClient.NetworkingV1alpha1().ClusterIngresses().UpdateStatus(ci); err != nil {
+			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status", ci.Name)
 		}
 	}
 	return nil

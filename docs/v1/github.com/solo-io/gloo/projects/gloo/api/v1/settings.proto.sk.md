@@ -17,6 +17,7 @@ weight: 5
 - [VaultSecrets](#vaultsecrets)
 - [KubernetesConfigmaps](#kubernetesconfigmaps)
 - [Directory](#directory)
+- [KnativeOptions](#knativeoptions)
   
 
 
@@ -48,6 +49,7 @@ weight: 5
 "devMode": bool
 "linkerd": bool
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
+"knativeOptions": .gloo.solo.io.Settings.KnativeOptions
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
@@ -70,6 +72,7 @@ weight: 5
 | `devMode` | `bool` | enable serving debug data on port 9090 |  |
 | `linkerd` | `bool` | enable automatic linkerd upstream header addition for easier routing to linkerd services |  |
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. |  |
+| `knativeOptions` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | configuration options for the Clusteringress Controller (for Knative) |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
@@ -151,6 +154,23 @@ ilackarms(todo: make sure these are configurable)
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `directory` | `string` |  |  |
+
+
+
+
+---
+### KnativeOptions
+
+
+
+```yaml
+"clusteringressProxyAddress": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `clusteringressProxyAddress` | `string` | address of the clusteringress proxy if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local |  |
 
 
 

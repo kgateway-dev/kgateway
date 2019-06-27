@@ -74,7 +74,7 @@ message Settings {
     }
 
     // configuration options for the Clusteringress Controller (for Knative)
-    KnativeOptions knative_options = 17;
+    KnativeOptions knative_options = 18;
 
     // Settings for extensions
     Extensions extensions = 16;

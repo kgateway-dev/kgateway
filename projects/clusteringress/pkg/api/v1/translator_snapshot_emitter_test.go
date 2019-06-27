@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -44,7 +45,7 @@ var _ = Describe("V1Emitter", func() {
 		emitter              TranslatorEmitter
 		secretClient         gloo_solo_io.SecretClient
 		upstreamClient       gloo_solo_io.UpstreamClient
-		clusterIngressClient ClusterIngressClient
+		clusterIngressClient github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressClient
 	)
 
 	BeforeEach(func() {
@@ -72,21 +73,17 @@ var _ = Describe("V1Emitter", func() {
 		upstreamClient, err = gloo_solo_io.NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		// ClusterIngress Constructor
-		clusterIngressClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         ClusterIngressCrd,
-			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(context.TODO()),
+		clusterIngressClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		clusterIngressClient, err = NewClusterIngressClient(clusterIngressClientFactory)
+		clusterIngressClient, err = github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngressClient(clusterIngressClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewTranslatorEmitter(secretClient, upstreamClient, clusterIngressClient)
 	})
 	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
 		Expect(err).NotTo(HaveOccurred())
-		clusterIngressClient.Delete(name1, clients.DeleteOpts{})
-		clusterIngressClient.Delete(name2, clients.DeleteOpts{})
 	})
 	It("tracks snapshots on changes to any resource", func() {
 		ctx := context.Background()
@@ -219,17 +216,17 @@ var _ = Describe("V1Emitter", func() {
 			ClusterIngress
 		*/
 
-		assertSnapshotClusteringresses := func(expectClusteringresses ClusterIngressList, unexpectClusteringresses ClusterIngressList) {
+		assertSnapshotclusteringresses := func(expectclusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList, unexpectclusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList) {
 		drain:
 			for {
 				select {
 				case snap = <-snapshots:
-					for _, expected := range expectClusteringresses {
+					for _, expected := range expectclusteringresses {
 						if _, err := snap.Clusteringresses.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
-					for _, unexpected := range unexpectClusteringresses {
+					for _, unexpected := range unexpectclusteringresses {
 						if _, err := snap.Clusteringresses.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
@@ -238,29 +235,39 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					combined, _ := clusterIngressClient.List(clients.ListOpts{})
+					nsList1, _ := clusterIngressClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := clusterIngressClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
 		}
-		clusterIngress1a, err := clusterIngressClient.Write(NewClusterIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		clusterIngress1a, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		clusterIngress1b, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a}, nil)
-		clusterIngress2a, err := clusterIngressClient.Write(NewClusterIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		assertSnapshotclusteringresses(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b}, nil)
+		clusterIngress2a, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		clusterIngress2b, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a, clusterIngress2a}, nil)
+		assertSnapshotclusteringresses(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b, clusterIngress2a, clusterIngress2b}, nil)
 
-		err = clusterIngressClient.Delete(clusterIngress2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		err = clusterIngressClient.Delete(clusterIngress2a.GetMetadata().Namespace, clusterIngress2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = clusterIngressClient.Delete(clusterIngress2b.GetMetadata().Namespace, clusterIngress2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a}, ClusterIngressList{clusterIngress2a})
+		assertSnapshotclusteringresses(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b}, github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress2a, clusterIngress2b})
 
-		err = clusterIngressClient.Delete(clusterIngress1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		err = clusterIngressClient.Delete(clusterIngress1a.GetMetadata().Namespace, clusterIngress1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = clusterIngressClient.Delete(clusterIngress1b.GetMetadata().Namespace, clusterIngress1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(nil, ClusterIngressList{clusterIngress1a, clusterIngress2a})
+		assertSnapshotclusteringresses(nil, github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b, clusterIngress2a, clusterIngress2b})
 	})
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
@@ -393,17 +400,17 @@ var _ = Describe("V1Emitter", func() {
 			ClusterIngress
 		*/
 
-		assertSnapshotClusteringresses := func(expectClusteringresses ClusterIngressList, unexpectClusteringresses ClusterIngressList) {
+		assertSnapshotclusteringresses := func(expectclusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList, unexpectclusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList) {
 		drain:
 			for {
 				select {
 				case snap = <-snapshots:
-					for _, expected := range expectClusteringresses {
+					for _, expected := range expectclusteringresses {
 						if _, err := snap.Clusteringresses.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
-					for _, unexpected := range unexpectClusteringresses {
+					for _, unexpected := range unexpectclusteringresses {
 						if _, err := snap.Clusteringresses.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
@@ -412,28 +419,38 @@ var _ = Describe("V1Emitter", func() {
 				case err := <-errs:
 					Expect(err).NotTo(HaveOccurred())
 				case <-time.After(time.Second * 10):
-					combined, _ := clusterIngressClient.List(clients.ListOpts{})
+					nsList1, _ := clusterIngressClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := clusterIngressClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
 					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
 				}
 			}
 		}
-		clusterIngress1a, err := clusterIngressClient.Write(NewClusterIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		clusterIngress1a, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		clusterIngress1b, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a}, nil)
-		clusterIngress2a, err := clusterIngressClient.Write(NewClusterIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		assertSnapshotclusteringresses(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b}, nil)
+		clusterIngress2a, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		clusterIngress2b, err := clusterIngressClient.Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a, clusterIngress2a}, nil)
+		assertSnapshotclusteringresses(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b, clusterIngress2a, clusterIngress2b}, nil)
 
-		err = clusterIngressClient.Delete(clusterIngress2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		err = clusterIngressClient.Delete(clusterIngress2a.GetMetadata().Namespace, clusterIngress2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = clusterIngressClient.Delete(clusterIngress2b.GetMetadata().Namespace, clusterIngress2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(ClusterIngressList{clusterIngress1a}, ClusterIngressList{clusterIngress2a})
+		assertSnapshotclusteringresses(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b}, github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress2a, clusterIngress2b})
 
-		err = clusterIngressClient.Delete(clusterIngress1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		err = clusterIngressClient.Delete(clusterIngress1a.GetMetadata().Namespace, clusterIngress1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = clusterIngressClient.Delete(clusterIngress1b.GetMetadata().Namespace, clusterIngress1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotClusteringresses(nil, ClusterIngressList{clusterIngress1a, clusterIngress2a})
+		assertSnapshotclusteringresses(nil, github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList{clusterIngress1a, clusterIngress1b, clusterIngress2a, clusterIngress2b})
 	})
 })
