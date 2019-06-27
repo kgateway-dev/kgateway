@@ -18,8 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
-
+	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
@@ -141,7 +140,11 @@ func (s *EnvoySnapshot) Clone() cache.Snapshot {
 func cloneItems(items map[string]cache.Resource) map[string]cache.Resource {
 	clonedItems := make(map[string]cache.Resource, len(items))
 	for k, v := range items {
-		clonedItems[k] = NewEnvoyResource(proto.Clone(v.ResourceProto()))
+		resProto := v.ResourceProto()
+		// NOTE(marco): we have to use `github.com/golang/protobuf/proto.Clone()` to clone here,
+		// `github.com/golang/protobuf/proto.Clone()` will panic!
+		resClone := proto.Clone(resProto)
+		clonedItems[k] = NewEnvoyResource(resClone)
 	}
 	return clonedItems
 }
