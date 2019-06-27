@@ -4,37 +4,35 @@ import (
 	"context"
 	"time"
 
-	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
-	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
-
 	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
-	"github.com/solo-io/go-utils/errors"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
+	knativeclient "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 type translatorSyncer struct {
-	proxyAddress    string
-	writeNamespace  string
-	writeErrs       chan error
-	proxyClient     gloov1.ProxyClient
-	proxyReconciler gloov1.ProxyReconciler
-	knativeClient   knativeclientset.Interface
+	proxyAddress         string
+	writeNamespace       string
+	writeErrs            chan error
+	proxyClient          gloov1.ProxyClient
+	proxyReconciler      gloov1.ProxyReconciler
+	clusterIngressClient knativeclient.ClusterIngressInterface
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, knativeClient knativeclientset.Interface, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, clusterIngressClient knativeclient.ClusterIngressInterface, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		proxyAddress:    proxyAddress,
-		writeNamespace:  writeNamespace,
-		writeErrs:       writeErrs,
-		proxyClient:     proxyClient,
-		knativeClient:   knativeClient,
-		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		proxyAddress:         proxyAddress,
+		writeNamespace:       writeNamespace,
+		writeErrs:            writeErrs,
+		proxyClient:          proxyClient,
+		clusterIngressClient: clusterIngressClient,
+		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
 	}
 }
 
@@ -133,7 +131,7 @@ func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, cluste
 		updatedClusterIngresses = append(updatedClusterIngresses, &ci)
 	}
 	for _, ci := range updatedClusterIngresses {
-		if _, err := s.knativeClient.NetworkingV1alpha1().ClusterIngresses().UpdateStatus(ci); err != nil {
+		if _, err := s.clusterIngressClient.UpdateStatus(ci); err != nil {
 			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status", ci.Name)
 		}
 	}
