@@ -315,14 +315,22 @@ func endpointsFor(kubeClient kubernetes.Interface, svc *corev1.Service) []string
 }
 
 func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deployment, replicas int32) {
-	// Get deployment
-	deployment, err := kubeClient.AppsV1().Deployments(deployment.Namespace).Get(deployment.Name, metav1.GetOptions{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	// Do this in an Eventually block, as the update sometimes fails due to concurrent modification
+	EventuallyWithOffset(1, func() error {
+		// Get deployment
+		deployment, err := kubeClient.AppsV1().Deployments(deployment.Namespace).Get(deployment.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 
-	// Scale it
-	deployment.Spec.Replicas = pointerToInt32(replicas)
-	deployment, err = kubeClient.AppsV1().Deployments(deployment.Namespace).Update(deployment)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		// Scale it
+		deployment.Spec.Replicas = pointerToInt32(replicas)
+		deployment, err = kubeClient.AppsV1().Deployments(deployment.Namespace).Update(deployment)
+		if err != nil {
+			return err
+		}
+		return nil
+	}, 60*time.Second, 2*time.Second).Should(BeNil())
 
 	// Wait for expected running pod number
 	EventuallyWithOffset(1, func() error {
