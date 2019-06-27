@@ -3,10 +3,12 @@ package translator
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
+	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
+
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	ingresstype "github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
@@ -31,16 +33,16 @@ var _ = Describe("Translate", func() {
 				Namespace: namespace,
 			},
 			Spec: v1alpha1.IngressSpec{
-				Rules: []v1alpha1.ClusterIngressRule{
+				Rules: []v1alpha1.IngressRule{
 					{
 						Hosts: []string{"petes.com", "zah.net"},
-						HTTP: &v1alpha1.HTTPClusterIngressRuleValue{
-							Paths: []v1alpha1.HTTPClusterIngressPath{
+						HTTP: &v1alpha1.HTTPIngressRuleValue{
+							Paths: []v1alpha1.HTTPIngressPath{
 								{
 									Path: "/",
-									Splits: []v1alpha1.ClusterIngressBackendSplit{
+									Splits: []v1alpha1.IngressBackendSplit{
 										{
-											ClusterIngressBackend: v1alpha1.ClusterIngressBackend{
+											IngressBackend: v1alpha1.IngressBackend{
 												ServiceName: serviceName,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
@@ -61,13 +63,13 @@ var _ = Describe("Translate", func() {
 					},
 					{
 						Hosts: []string{"pog.com", "champ.net", "zah.net"},
-						HTTP: &v1alpha1.HTTPClusterIngressRuleValue{
-							Paths: []v1alpha1.HTTPClusterIngressPath{
+						HTTP: &v1alpha1.HTTPIngressRuleValue{
+							Paths: []v1alpha1.HTTPIngressPath{
 								{
 									Path: "/hay",
-									Splits: []v1alpha1.ClusterIngressBackendSplit{
+									Splits: []v1alpha1.IngressBackendSplit{
 										{
-											ClusterIngressBackend: v1alpha1.ClusterIngressBackend{
+											IngressBackend: v1alpha1.IngressBackend{
 												ServiceName: serviceName,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
@@ -95,22 +97,22 @@ var _ = Describe("Translate", func() {
 				Namespace: namespace,
 			},
 			Spec: v1alpha1.IngressSpec{
-				TLS: []v1alpha1.ClusterIngressTLS{
+				TLS: []v1alpha1.IngressTLS{
 					{
 						Hosts:      []string{"petes.com"},
 						SecretName: secretName,
 					},
 				},
-				Rules: []v1alpha1.ClusterIngressRule{
+				Rules: []v1alpha1.IngressRule{
 					{
 						Hosts: []string{"petes.com", "zah.net"},
-						HTTP: &v1alpha1.HTTPClusterIngressRuleValue{
-							Paths: []v1alpha1.HTTPClusterIngressPath{
+						HTTP: &v1alpha1.HTTPIngressRuleValue{
+							Paths: []v1alpha1.HTTPIngressPath{
 								{
 									Path: "/",
-									Splits: []v1alpha1.ClusterIngressBackendSplit{
+									Splits: []v1alpha1.IngressBackendSplit{
 										{
-											ClusterIngressBackend: v1alpha1.ClusterIngressBackend{
+											IngressBackend: v1alpha1.IngressBackend{
 												ServiceName: serviceName,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
@@ -132,10 +134,8 @@ var _ = Describe("Translate", func() {
 				},
 			},
 		}
-		ingressRes, err := ingresstype.FromKube(ingress)
-		Expect(err).NotTo(HaveOccurred())
-		ingressResTls, err := ingresstype.FromKube(ingressTls)
-		Expect(err).NotTo(HaveOccurred())
+		ingressRes := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingress)}
+		ingressResTls := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingressTls)}
 		secret := &gloov1.Secret{
 			Metadata: core.Metadata{Name: secretName, Namespace: namespace},
 			Kind: &gloov1.Secret_Tls{
@@ -183,7 +183,7 @@ var _ = Describe("Translate", func() {
 			},
 		}
 		snap := &v1.TranslatorSnapshot{
-			Clusteringresses: v1.ClusterIngressList{ingressRes, ingressResTls},
+			Clusteringresses: v1alpha12.ClusterIngressList{ingressRes, ingressResTls},
 			Secrets:          gloov1.SecretList{secret},
 			Upstreams:        gloov1.UpstreamList{us, usSubset},
 		}
@@ -195,7 +195,6 @@ var _ = Describe("Translate", func() {
 		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(80)))
 
 		//utter.Dump(proxy)
-		Expect(err).NotTo(HaveOccurred())
 		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
 				&gloov1.Listener{
