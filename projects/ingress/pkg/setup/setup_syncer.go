@@ -138,19 +138,20 @@ func RunIngress(opts Opts) error {
 	if err := proxyClient.Register(); err != nil {
 		return err
 	}
-	upstreamClient, err := gloov1.NewUpstreamClient(opts.Upstreams)
-	if err != nil {
-		return err
-	}
-	if err := upstreamClient.Register(); err != nil {
-		return err
-	}
 	writeErrs := make(chan error)
 
 	if !opts.DisableKubeIngress {
 		kube, err := kubernetes.NewForConfig(cfg)
 		if err != nil {
 			return errors.Wrapf(err, "getting kube client")
+		}
+
+		upstreamClient, err := gloov1.NewUpstreamClient(opts.Upstreams)
+		if err != nil {
+			return err
+		}
+		if err := upstreamClient.Register(); err != nil {
+			return err
 		}
 
 		baseIngressClient := ingress.NewResourceClient(kube, &v1.Ingress{})
@@ -198,7 +199,7 @@ func RunIngress(opts Opts) error {
 		}
 		baseClient := knativeclient.NewResourceClient(knative, knativeCache)
 		ingressClient := v1alpha1.NewClusterIngressClientWithBase(baseClient)
-		clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
+		clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, ingressClient)
 		clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 			opts.ClusteringressProxyAddress,
 			opts.WriteNamespace,

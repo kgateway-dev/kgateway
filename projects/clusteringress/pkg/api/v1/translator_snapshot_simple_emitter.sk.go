@@ -86,8 +86,6 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 					switch typed := res.(type) {
 					case *gloo_solo_io.Secret:
 						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
-					case *gloo_solo_io.Upstream:
-						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
 					case *github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngress:
 						currentSnapshot.Clusteringresses = append(currentSnapshot.Clusteringresses, typed)
 					default:

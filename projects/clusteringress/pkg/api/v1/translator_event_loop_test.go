@@ -34,24 +34,16 @@ var _ = Describe("TranslatorEventLoop", func() {
 		secretClient, err := gloo_solo_io.NewSecretClient(secretClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		upstreamClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-		upstreamClient, err := gloo_solo_io.NewUpstreamClient(upstreamClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-
 		clusterIngressClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		clusterIngressClient, err := github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngressClient(clusterIngressClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewTranslatorEmitter(secretClient, upstreamClient, clusterIngressClient)
+		emitter = NewTranslatorEmitter(secretClient, clusterIngressClient)
 	})
 	It("runs sync function on a new snapshot", func() {
 		_, err = emitter.Secret().Write(gloo_solo_io.NewSecret(namespace, "jerry"), clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.Upstream().Write(gloo_solo_io.NewUpstream(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.ClusterIngress().Write(github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngress(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())

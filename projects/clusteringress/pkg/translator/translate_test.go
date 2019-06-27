@@ -12,7 +12,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -25,6 +24,7 @@ var _ = Describe("Translate", func() {
 	It("creates the appropriate proxy object for the provided ingress objects", func() {
 		namespace := "example"
 		serviceName := "peteszah-service"
+		serviceNamespace := "peteszah-service-namespace"
 		servicePort := int32(80)
 		secretName := "areallygreatsecret"
 		ingress := &v1alpha1.ClusterIngress{
@@ -43,7 +43,8 @@ var _ = Describe("Translate", func() {
 									Splits: []v1alpha1.IngressBackendSplit{
 										{
 											IngressBackend: v1alpha1.IngressBackend{
-												ServiceName: serviceName,
+												ServiceName:      serviceName,
+												ServiceNamespace: serviceNamespace,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
 													IntVal: servicePort,
@@ -70,7 +71,8 @@ var _ = Describe("Translate", func() {
 									Splits: []v1alpha1.IngressBackendSplit{
 										{
 											IngressBackend: v1alpha1.IngressBackend{
-												ServiceName: serviceName,
+												ServiceName:      serviceName,
+												ServiceNamespace: serviceNamespace,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
 													IntVal: servicePort,
@@ -113,7 +115,8 @@ var _ = Describe("Translate", func() {
 									Splits: []v1alpha1.IngressBackendSplit{
 										{
 											IngressBackend: v1alpha1.IngressBackend{
-												ServiceName: serviceName,
+												ServiceName:      serviceName,
+												ServiceNamespace: serviceNamespace,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
 													IntVal: servicePort,
@@ -146,46 +149,9 @@ var _ = Describe("Translate", func() {
 				},
 			},
 		}
-		us := &gloov1.Upstream{
-			Metadata: core.Metadata{
-				Namespace: namespace,
-				Name:      "wow-upstream",
-			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceNamespace: namespace,
-						ServiceName:      serviceName,
-						ServicePort:      uint32(servicePort),
-						Selector: map[string]string{
-							"a": "b",
-						},
-					},
-				},
-			},
-		}
-		usSubset := &gloov1.Upstream{
-			Metadata: core.Metadata{
-				Namespace: namespace,
-				Name:      "wow-upstream-subset",
-			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceName: serviceName,
-						ServicePort: uint32(servicePort),
-						Selector: map[string]string{
-							"a": "b",
-							"c": "d",
-						},
-					},
-				},
-			},
-		}
 		snap := &v1.TranslatorSnapshot{
 			Clusteringresses: v1alpha12.ClusterIngressList{ingressRes, ingressResTls},
 			Secrets:          gloov1.SecretList{secret},
-			Upstreams:        gloov1.UpstreamList{us, usSubset},
 		}
 		proxy, errs := translateProxy(namespace, snap)
 		Expect(errs).NotTo(HaveOccurred())
@@ -223,10 +189,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -285,10 +251,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -347,10 +313,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -409,10 +375,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -463,10 +429,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -517,10 +483,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -591,10 +557,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),

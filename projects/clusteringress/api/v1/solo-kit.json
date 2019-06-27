@@ -12,10 +12,6 @@
         "package": "gloo.solo.io"
       },
       {
-        "name": "Upstream",
-        "package": "gloo.solo.io"
-      },
-      {
         "name": "ClusterIngress",
         "package": "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
       }
