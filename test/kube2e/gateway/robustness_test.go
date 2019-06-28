@@ -29,7 +29,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = Describe("Rssobustness tests", func() {
+var _ = Describe("Robustness tests", func() {
 
 	const (
 		gatewayProxy = "gateway-proxy"
@@ -267,7 +267,7 @@ var _ = Describe("Rssobustness tests", func() {
 			Port:              gatewayPort,
 			ConnectionTimeout: 1,
 			WithoutStats:      true,
-		}, expectedResponse(appName), 1, 20*time.Second, 1*time.Second)
+		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 	})
 })
 

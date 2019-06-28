@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/labels"
 	"os"
 	"time"
+
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
