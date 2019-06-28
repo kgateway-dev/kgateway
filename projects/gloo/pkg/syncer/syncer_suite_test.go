@@ -9,5 +9,5 @@ import (
 
 func TestSyncer(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Syncer Suite")
+	RunSpecs(t, "Gloo Translator Syncer Suite")
 }

@@ -171,6 +171,9 @@ func validateSnapshot(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snaps
 		}
 	}
 
+	// TODO(marco): the function accepts and return a Snapshot interface, but then swaps in its own implementation.
+	//  This breaks the abstraction and mocking the snapshot becomes impossible. We should have a generic way of
+	//  creating snapshots.
 	xdsSnapshot = xds.NewSnapshotFromResources(
 		endpoints,
 		clusters,

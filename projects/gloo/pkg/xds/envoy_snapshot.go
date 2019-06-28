@@ -46,7 +46,7 @@ func NewSnapshot(version string,
 	endpoints []cache.Resource,
 	clusters []cache.Resource,
 	routes []cache.Resource,
-	listeners []cache.Resource) *EnvoySnapshot {
+	listeners []cache.Resource) cache.Snapshot {
 	return &EnvoySnapshot{
 		Endpoints: cache.NewResources(version, endpoints),
 		Clusters:  cache.NewResources(version, clusters),
@@ -57,7 +57,7 @@ func NewSnapshot(version string,
 func NewSnapshotFromResources(endpoints cache.Resources,
 	clusters cache.Resources,
 	routes cache.Resources,
-	listeners cache.Resources) *EnvoySnapshot {
+	listeners cache.Resources) cache.Snapshot {
 	return &EnvoySnapshot{
 		Endpoints: endpoints,
 		Clusters:  clusters,
