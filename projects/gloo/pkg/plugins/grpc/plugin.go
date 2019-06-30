@@ -57,8 +57,6 @@ type plugin struct {
 const (
 	filterName  = "envoy.grpc_json_transcoder"
 	pluginStage = plugins.PreOutAuth
-
-	ServiceTypeGRPC = "gRPC"
 )
 
 func (p *plugin) Init(params plugins.InitParams) error {

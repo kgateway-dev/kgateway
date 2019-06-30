@@ -19,7 +19,7 @@ message UpstreamSpec {
     string service_name = 1;
     // The namespace where the Service lives
     string service_namespace = 2;
-    // The access port port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding
+    // The access port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding
     // port on the pod for routing.
     uint32 service_port = 3;
     // Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if

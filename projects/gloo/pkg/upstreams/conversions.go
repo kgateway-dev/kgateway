@@ -69,9 +69,9 @@ func serviceToUpstream(svc *kubev1.Service, port kubev1.ServicePort) *gloov1.Ups
 	return &gloov1.Upstream{
 		Metadata: coreMeta,
 		UpstreamSpec: &v1.UpstreamSpec{
+			UseHttp2: kubeplugin.UseHttp2(svc, port),
 			UpstreamType: &v1.UpstreamSpec_Kube{
 				Kube: &kubepluginapi.UpstreamSpec{
-					ServiceSpec:      kubeplugin.GetServiceSpec(svc, port),
 					ServiceName:      svc.Name,
 					ServiceNamespace: svc.Namespace,
 					ServicePort:      uint32(port.Port),

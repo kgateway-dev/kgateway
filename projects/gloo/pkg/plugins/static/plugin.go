@@ -128,12 +128,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		p.hostRewriteUpstreams[in.Metadata.Ref()] = true
 	}
 
-	if spec.UseHttp2 {
-		if out.Http2ProtocolOptions == nil {
-			out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
-		}
-	}
-
 	return nil
 }
 

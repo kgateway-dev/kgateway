@@ -87,6 +87,11 @@ message UpstreamSpec {
     LoadBalancerConfig load_balancer_config = 8;
     ConnectionConfig connection_config = 9;
 
+    // Use http2 when communicating with this upstream
+    // this field is evaluated `true` for upstreams
+    // with a grpc service spec
+    bool use_http2 = 10;
+
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.
     oneof upstream_type {
