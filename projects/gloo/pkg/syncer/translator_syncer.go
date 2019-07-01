@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+
 	"go.uber.org/multierr"
 
 	"go.opencensus.io/tag"
