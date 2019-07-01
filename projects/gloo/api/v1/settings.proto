@@ -70,7 +70,7 @@ message Settings {
     message KnativeOptions {
         // address of the clusteringress proxy
         // if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local
-        string clusteringress_proxy_address = 1;
+        string cluster_ingress_proxy_address = 1;
     }
 
     // configuration options for the Clusteringress Controller (for Knative)

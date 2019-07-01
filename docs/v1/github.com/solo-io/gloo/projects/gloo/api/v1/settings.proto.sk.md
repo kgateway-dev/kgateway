@@ -164,13 +164,13 @@ ilackarms(todo: make sure these are configurable)
 
 
 ```yaml
-"clusteringressProxyAddress": string
+"clusterIngressProxyAddress": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `clusteringressProxyAddress` | `string` | address of the clusteringress proxy if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local |  |
+| `clusterIngressProxyAddress` | `string` | address of the clusteringress proxy if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local |  |
 
 
 
