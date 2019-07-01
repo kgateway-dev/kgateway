@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"reflect"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -163,9 +165,20 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	// TODO
 }
 
+// we do not need to update any fields, just check that the input is valid
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	// TODO
-	//return false, nil
+	originalSpec, ok := original.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	if !ok {
+		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+	}
+	desiredSpec, ok := desired.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	if !ok {
+		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+	}
+	if !originalSpec.Equal(desiredSpec) {
+		return false, errors.New("expected no difference between *v1.UpstreamSpec_AwsEc2 upstreams")
+	}
+	return false, nil
 }
 
 // EDS API
