@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: An error in the main syncer no longer prevents syncer extensions from running. Similarly, a bad extension syncer will no longer block other extension syncers from running. 
+    issueLink: https://github.com/solo-io/gloo/issues/783
