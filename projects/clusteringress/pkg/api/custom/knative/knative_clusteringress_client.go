@@ -77,12 +77,12 @@ func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts
 func (rc *ResourceClient) List(_ string, opts clients.ListOpts) (resources.ResourceList, error) {
 	opts = opts.WithDefaults()
 
-	ClusterIngressObjList, err := rc.cache.ClusterIngressLister().List(labels.SelectorFromSet(opts.Selector))
+	clusterIngressObjList, err := rc.cache.ClusterIngressLister().List(labels.SelectorFromSet(opts.Selector))
 	if err != nil {
-		return nil, errors.Wrapf(err, "listing ClusterIngresss level")
+		return nil, errors.Wrapf(err, "listing ClusterIngresses")
 	}
 	var resourceList resources.ResourceList
-	for _, ClusterIngressObj := range ClusterIngressObjList {
+	for _, ClusterIngressObj := range clusterIngressObjList {
 		resource := FromKube(ClusterIngressObj)
 
 		if resource == nil {
