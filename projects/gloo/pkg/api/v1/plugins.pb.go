@@ -450,6 +450,8 @@ type UpstreamSpec struct {
 	LoadBalancerConfig *LoadBalancerConfig   `protobuf:"bytes,8,opt,name=load_balancer_config,json=loadBalancerConfig,proto3" json:"load_balancer_config,omitempty"`
 	ConnectionConfig   *ConnectionConfig     `protobuf:"bytes,9,opt,name=connection_config,json=connectionConfig,proto3" json:"connection_config,omitempty"`
 	// Use http2 when communicating with this upstream
+	// this field is evaluated `true` for upstreams
+	// with a grpc service spec
 	UseHttp2 bool `protobuf:"varint,10,opt,name=use_http2,json=useHttp2,proto3" json:"use_http2,omitempty"`
 	// Note to developers: new Upstream Plugins must be added to this oneof field
 	// to be usable by Gloo.

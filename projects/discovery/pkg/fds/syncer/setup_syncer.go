@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
@@ -12,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
 )
 
 func RunFDS(opts bootstrap.Opts) error {
@@ -33,7 +35,12 @@ func RunFDS(opts bootstrap.Opts) error {
 		return err
 	}
 
-	cache := v1.NewDiscoveryEmitter(upstreamClient, secretClient)
+	kubeCache, err := kubecache.NewKubeCoreCache(opts.WatchOpts.Ctx, opts.KubeClient)
+	if err != nil {
+		return err
+	}
+	nsClient := namespace.NewNamespaceClient(opts.KubeClient, kubeCache)
+	cache := v1.NewDiscoveryEmitter(upstreamClient, nsClient, secretClient)
 
 	var resolvers fds.Resolvers
 	for _, plug := range registry.Plugins(opts) {

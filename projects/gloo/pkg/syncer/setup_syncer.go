@@ -279,8 +279,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
-	discoveryCache := v1.NewDiscoveryEmitter(hybridUsClient, secretClient)
-	edsEventLoop := v1.NewDiscoveryEventLoop(discoveryCache, edsSync)
+	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
+	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
 	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err

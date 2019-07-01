@@ -7,36 +7,34 @@ import (
 	"fmt"
 	"time"
 
-	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-
 	"go.opencensus.io/stats"
 
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-type DiscoverySimpleEmitter interface {
-	Snapshots(ctx context.Context) (<-chan *DiscoverySnapshot, <-chan error, error)
+type EdsSimpleEmitter interface {
+	Snapshots(ctx context.Context) (<-chan *EdsSnapshot, <-chan error, error)
 }
 
-func NewDiscoverySimpleEmitter(aggregatedWatch clients.ResourceWatch) DiscoverySimpleEmitter {
-	return NewDiscoverySimpleEmitterWithEmit(aggregatedWatch, make(chan struct{}))
+func NewEdsSimpleEmitter(aggregatedWatch clients.ResourceWatch) EdsSimpleEmitter {
+	return NewEdsSimpleEmitterWithEmit(aggregatedWatch, make(chan struct{}))
 }
 
-func NewDiscoverySimpleEmitterWithEmit(aggregatedWatch clients.ResourceWatch, emit <-chan struct{}) DiscoverySimpleEmitter {
-	return &discoverySimpleEmitter{
+func NewEdsSimpleEmitterWithEmit(aggregatedWatch clients.ResourceWatch, emit <-chan struct{}) EdsSimpleEmitter {
+	return &edsSimpleEmitter{
 		aggregatedWatch: aggregatedWatch,
 		forceEmit:       emit,
 	}
 }
 
-type discoverySimpleEmitter struct {
+type edsSimpleEmitter struct {
 	forceEmit       <-chan struct{}
 	aggregatedWatch clients.ResourceWatch
 }
 
-func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *DiscoverySnapshot, <-chan error, error) {
-	snapshots := make(chan *DiscoverySnapshot)
+func (c *edsSimpleEmitter) Snapshots(ctx context.Context) (<-chan *EdsSnapshot, <-chan error, error) {
+	snapshots := make(chan *EdsSnapshot)
 	errs := make(chan error)
 
 	untyped, watchErrs, err := c.aggregatedWatch(ctx)
@@ -44,10 +42,10 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 		return nil, nil, err
 	}
 
-	go errutils.AggregateErrs(ctx, errs, watchErrs, "discovery-emitter")
+	go errutils.AggregateErrs(ctx, errs, watchErrs, "eds-emitter")
 
 	go func() {
-		originalSnapshot := DiscoverySnapshot{}
+		originalSnapshot := EdsSnapshot{}
 		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
 		sync := func() {
@@ -55,7 +53,7 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 				return
 			}
 
-			stats.Record(ctx, mDiscoverySnapshotOut.M(1))
+			stats.Record(ctx, mEdsSnapshotOut.M(1))
 			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
@@ -67,7 +65,7 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 		}()
 
 		for {
-			record := func() { stats.Record(ctx, mDiscoverySnapshotIn.M(1)) }
+			record := func() { stats.Record(ctx, mEdsSnapshotIn.M(1)) }
 
 			select {
 			case <-timer.C:
@@ -80,18 +78,14 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 			case untypedList := <-untyped:
 				record()
 
-				currentSnapshot = DiscoverySnapshot{}
+				currentSnapshot = EdsSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
 					case *Upstream:
 						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
-					case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespace:
-						currentSnapshot.Kubenamespaces = append(currentSnapshot.Kubenamespaces, typed)
-					case *Secret:
-						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					default:
 						select {
-						case errs <- fmt.Errorf("DiscoverySnapshotEmitter "+
+						case errs <- fmt.Errorf("EdsSnapshotEmitter "+
 							"cannot process resource %v of type %T", res.GetMetadata().Ref(), res):
 						case <-ctx.Done():
 							return
