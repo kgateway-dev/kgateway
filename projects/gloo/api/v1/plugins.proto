@@ -14,6 +14,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/ec2/aws_ec2.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc_web/grpc_web.proto";
@@ -95,5 +96,6 @@ message UpstreamSpec {
         aws.plugins.gloo.solo.io.UpstreamSpec aws = 2;
         azure.plugins.gloo.solo.io.UpstreamSpec azure = 3;
         consul.plugins.gloo.solo.io.UpstreamSpec consul = 5;
+        aws_ec2.plugins.gloo.solo.io.UpstreamSpec aws_ec2 = 10;
     }
 }

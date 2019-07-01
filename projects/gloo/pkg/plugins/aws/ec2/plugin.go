@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
