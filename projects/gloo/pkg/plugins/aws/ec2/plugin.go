@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -147,8 +148,15 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	// TODO
-	//return nil
+	// not ours
+	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	if !ok {
+		return nil
+	}
+
+	// configure the cluster to use EDS:ADS and call it a day
+	xds.SetEdsOnCluster(out)
+	return nil
 }
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
