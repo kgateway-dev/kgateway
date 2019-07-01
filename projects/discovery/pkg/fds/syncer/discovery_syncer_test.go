@@ -15,13 +15,13 @@ var enabledLabels = map[string]string{FdsLabelKey: enbledLabelValue}
 var _ = Describe("filterUpstreamsForDiscovery", func() {
 	disabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
 		ObjectMeta: v12.ObjectMeta{
-			Name:   "disabled-ns",
+			Name:   "explicitly-disabled-ns",
 			Labels: disabledLabels,
 		},
 	}}
 	enabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
 		ObjectMeta: v12.ObjectMeta{
-			Name: "enabled-ns",
+			Name: "implicitly-enabled-ns",
 		},
 	}}
 	enabledKubeSystemNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
@@ -35,32 +35,79 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 			Name: "kube-public",
 		},
 	}}
-	nsList := kubernetes.KubeNamespaceList{disabledNs, enabledNs, enabledKubeSystemNs}
+	explicitlyEnabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
+		ObjectMeta: v12.ObjectMeta{
+			Name:   "explicitly-enabled",
+			Labels: enabledLabels,
+		},
+	}}
+	nsList := kubernetes.KubeNamespaceList{disabledNs, enabledNs, enabledKubeSystemNs, explicitlyEnabledNs}
 
 	disabledUs1 := makeUpstream("a", disabledNs.Name, nil)
 	disabledUs2 := makeUpstream("b", enabledNs.Name, disabledLabels)
 	disabledUs3 := makeUpstream("c", disabledKubePublicNs.Name, nil)
 	enabledUs1 := makeUpstream("d", enabledNs.Name, nil)
 	enabledUs2 := makeUpstream("e", enabledKubeSystemNs.Name, nil)
+	explicitlyEnabledUs1 := makeUpstream("f", explicitlyEnabledNs.Name, nil)
+	explicitlyEnabledUs2 := makeUpstream("g", enabledNs.Name, enabledLabels)
 
-	usList := v1.UpstreamList{disabledUs1, disabledUs2, disabledUs3, enabledUs1, enabledUs2}
+	usList := v1.UpstreamList{disabledUs1, disabledUs2, disabledUs3, enabledUs1, enabledUs2, explicitlyEnabledUs1, explicitlyEnabledUs2}
 
-	filtered := filterUpstreamsForDiscovery(usList, nsList)
+	var filtered v1.UpstreamList
 
-	It("excludes upstreams whose namespace has the disabled label", func() {
-		Expect(filtered).NotTo(ContainElement(disabledUs1))
+	Context("blacklist mode", func() {
+		BeforeEach(func() {
+			filtered = filterUpstreamsForDiscovery(v1.Settings_DiscoveryOptions_BLACKLIST, usList, nsList)
+		})
+
+		It("excludes upstreams whose namespace has the disabled label", func() {
+			Expect(filtered).NotTo(ContainElement(disabledUs1))
+		})
+		It("excludes upstreams who have the disabled label", func() {
+			Expect(filtered).NotTo(ContainElement(disabledUs2))
+		})
+		It("excludes upstreams whose namespace is kube-system", func() {
+			Expect(filtered).NotTo(ContainElement(disabledUs3))
+		})
+		It("includes upstreams in namespaces without disabled label", func() {
+			Expect(filtered).To(ContainElement(enabledUs1))
+			Expect(filtered).To(ContainElement(explicitlyEnabledUs2))
+		})
+		It("includes upstreams in namespaces with enabled label", func() {
+			Expect(filtered).To(ContainElement(explicitlyEnabledUs1))
+		})
+		It("includes upstreams in enabled kube-system when enabled", func() {
+			Expect(filtered).To(ContainElement(enabledUs2))
+		})
 	})
-	It("excludes upstreams who have the disabled label", func() {
-		Expect(filtered).NotTo(ContainElement(disabledUs2))
-	})
-	It("excludes upstreams whose namespace is kube-system", func() {
-		Expect(filtered).NotTo(ContainElement(disabledUs3))
-	})
-	It("includes upstreams in enabled namespaces", func() {
-		Expect(filtered).To(ContainElement(enabledUs1))
-	})
-	It("includes upstreams in enabled kube-system when enabled", func() {
-		Expect(filtered).To(ContainElement(enabledUs2))
+
+	Context("whitelist mode", func() {
+		BeforeEach(func() {
+			filtered = filterUpstreamsForDiscovery(v1.Settings_DiscoveryOptions_WHITELIST, usList, nsList)
+		})
+
+		It("excludes upstreams whose namespace has the disabled label", func() {
+			Expect(filtered).NotTo(ContainElement(disabledUs1))
+		})
+		It("excludes upstreams who have the disabled label", func() {
+			Expect(filtered).NotTo(ContainElement(disabledUs2))
+		})
+		It("excludes upstreams whose namespace is kube-system", func() {
+			Expect(filtered).NotTo(ContainElement(disabledUs3))
+		})
+		It("excludes upstreams in namespaces without disabled label", func() {
+			Expect(filtered).NotTo(ContainElement(enabledUs1))
+		})
+		It("includes explicitly enabled upstreams", func() {
+			Expect(filtered).To(ContainElement(enabledUs2))
+		})
+		It("includes upstreams from explicitly enabled namespaces", func() {
+			Expect(filtered).To(ContainElement(enabledUs2))
+		})
+		It("includes upstreams in namespaces with enabled label", func() {
+			Expect(filtered).To(ContainElement(explicitlyEnabledUs1))
+			Expect(filtered).To(ContainElement(explicitlyEnabledUs2))
+		})
 	})
 })
 
