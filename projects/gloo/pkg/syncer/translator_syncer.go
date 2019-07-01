@@ -3,7 +3,7 @@ package syncer
 import (
 	"context"
 
-	"go.uber.org/multierr"
+	"github.com/hashicorp/go-multierror"
 
 	"go.opencensus.io/tag"
 
@@ -56,16 +56,16 @@ func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.S
 }
 
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
-	var errs []error
+	var multiErr *multierror.Error
 	err := s.syncEnvoy(ctx, snap)
 	if err != nil {
-		errs = append(errs, err)
+		multiErr = multierror.Append(multiErr, err)
 	}
 	for _, extension := range s.extensions {
 		err := extension.Sync(ctx, snap, s.xdsCache)
 		if err != nil {
-			errs = append(errs, err)
+			multiErr = multierror.Append(multiErr, err)
 		}
 	}
-	return multierr.Combine(errs...)
+	return multiErr.ErrorOrNil()
 }
