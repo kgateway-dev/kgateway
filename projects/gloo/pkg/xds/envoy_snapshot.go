@@ -46,7 +46,7 @@ func NewSnapshot(version string,
 	endpoints []cache.Resource,
 	clusters []cache.Resource,
 	routes []cache.Resource,
-	listeners []cache.Resource) cache.Snapshot {
+	listeners []cache.Resource) *EnvoySnapshot {
 	return &EnvoySnapshot{
 		Endpoints: cache.NewResources(version, endpoints),
 		Clusters:  cache.NewResources(version, clusters),
@@ -142,7 +142,7 @@ func cloneItems(items map[string]cache.Resource) map[string]cache.Resource {
 	for k, v := range items {
 		resProto := v.ResourceProto()
 		// NOTE(marco): we have to use `github.com/golang/protobuf/proto.Clone()` to clone here,
-		// `github.com/golang/protobuf/proto.Clone()` will panic!
+		// `github.com/gogo/protobuf/proto.Clone()` will panic!
 		resClone := proto.Clone(resProto)
 		clonedItems[k] = NewEnvoyResource(resClone)
 	}
