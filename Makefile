@@ -329,6 +329,10 @@ ifeq ($(RELEASE),"true")
 	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
 endif
 
+.PHONY: fetch-helm
+fetch-helm:
+	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
+
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
