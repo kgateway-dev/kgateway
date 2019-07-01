@@ -20,7 +20,7 @@ import (
 )
 
 var _ = Describe("TranslatorSyncer", func() {
-	It("propagates proxy status to the clusteringresses it was created from", func() {
+	It("propagates successful proxy status to the clusteringresses it was created from", func() {
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
 		proxyClient, _ := v1.NewProxyClient(&factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})

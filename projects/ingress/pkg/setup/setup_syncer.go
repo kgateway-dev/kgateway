@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const defaultClusteringressProxyAddress = "clusteringress." + gloodefaults.GlooSystem + ".svc.cluster.local"
+const defaultClusterIngressProxyAddress = "clusteringress-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
@@ -90,13 +90,13 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	disableKubeIngress := os.Getenv("DISABLE_KUBE_INGRESS") == "true" || os.Getenv("DISABLE_KUBE_INGRESS") == "1"
 	enableKnative := os.Getenv("ENABLE_KNATIVE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
 
-	clusteringressProxyAddress := defaultClusteringressProxyAddress
-	if settings.KnativeOptions != nil && settings.KnativeOptions.ClusteringressProxyAddress != "" {
-		clusteringressProxyAddress = settings.KnativeOptions.ClusteringressProxyAddress
+	clusterIngressProxyAddress := defaultClusterIngressProxyAddress
+	if settings.Knative != nil && settings.Knative.ClusterIngressProxyAddress != "" {
+		clusterIngressProxyAddress = settings.Knative.ClusterIngressProxyAddress
 	}
 
 	opts := Opts{
-		ClusteringressProxyAddress: clusteringressProxyAddress,
+		ClusterIngressProxyAddress: clusterIngressProxyAddress,
 		WriteNamespace:             writeNamespace,
 		WatchNamespaces:            watchNamespaces,
 		Proxies:                    proxyFactory,
@@ -201,7 +201,7 @@ func RunIngress(opts Opts) error {
 		ingressClient := v1alpha1.NewClusterIngressClientWithBase(baseClient)
 		clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, ingressClient)
 		clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
-			opts.ClusteringressProxyAddress,
+			opts.ClusterIngressProxyAddress,
 			opts.WriteNamespace,
 			proxyClient,
 			knative.NetworkingV1alpha1().ClusterIngresses(),

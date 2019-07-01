@@ -6,7 +6,7 @@ import (
 )
 
 type Opts struct {
-	ClusteringressProxyAddress string
+	ClusterIngressProxyAddress string
 	WriteNamespace             string
 	WatchNamespaces            []string
 	Proxies                    factory.ResourceClientFactory
