@@ -10,6 +10,14 @@
   version = "v0.33.1"
 
 [[projects]]
+  digest = "1:a0f79124a2fba5112d3d1466b917daf508e548c6c2da106399df92a79e06628b"
+  name = "contrib.go.opencensus.io/exporter/prometheus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f4a2c1e53ec45636355d35fb9022b64e4bdd4a91"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:6da51e5ec493ad2b44cb04129e2d0a068c8fb9bd6cb5739d199573558696bb94"
   name = "github.com/Azure/go-ansiterm"
@@ -207,17 +215,6 @@
   pruneopts = "UT"
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
   version = "v1.3.1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:7310ec5042e3a0dd73ed9f23f812e73ce0ae88d08039e4473472ebba20bf2996"
-  name = "github.com/bxcodec/faker"
-  packages = [
-    ".",
-    "support/slice",
-  ]
-  pruneopts = "UT"
-  revision = "bf89c38ff1742f295e15df0bd5e8b3e81da95855"
 
 [[projects]]
   branch = "master"
@@ -1546,7 +1543,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:33aec427a8169c1f16f09a02d8a86639bdf62ae39af1417ffe4d72e3c9b13bcd"
+  digest = "1:eb5311f37ccffb6a78e22f096b32c5dda2411fcbcd0fddae02ab004a51d7eae3"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1578,19 +1575,19 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "c3a45bb546f7b699ceaa6814d195e490cb8e6e96"
-  version = "v0.8.18"
+  revision = "a6132166b2352c8b446e43f6bf10dc0061ce1def"
+  version = "v0.8.23"
 
 [[projects]]
-  digest = "1:709383192f13c121e673a723ede3b492c7e2dc56f833946b6dadbd64e484b79f"
+  digest = "1:a65e88e09f33c5480f1e7f72d330da2a06ca53c47a6e0e37d1922cd4b764eb3f"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
+    "api/external/kubernetes/customresourcedefinition",
     "api/external/kubernetes/deployment",
     "api/external/kubernetes/namespace",
     "api/external/kubernetes/pod",
     "api/external/kubernetes/service",
-    "pkg/api/external/kubernetes/namespace",
     "pkg/api/external/kubernetes/service",
     "pkg/api/v1/clients",
     "pkg/api/v1/clients/common",
@@ -1641,8 +1638,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "1edf3f38af4cf7569fc66e53d115032d3385706d"
-  version = "v0.9.9"
+  revision = "d0edbeb14aaaaa8066db72d95911782a9c51b3ba"
+  version = "v0.9.13"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -1732,14 +1729,17 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:520b3fe2981935aec909ea78b4db76912e47235d9aea024212ffd11ae3b88dbb"
+  digest = "1:b7c2ac33d95453f9285cb06d1dd07e666341f597e8090c0c925af4e9f8a3a150"
   name = "go.opencensus.io"
   packages = [
     ".",
-    "exporter/prometheus",
     "internal",
     "internal/tagencoding",
+    "metric/metricdata",
+    "metric/metricexport",
+    "metric/metricproducer",
     "plugin/ocgrpc",
+    "resource",
     "stats",
     "stats/internal",
     "stats/view",
@@ -1752,8 +1752,8 @@
     "zpages/internal",
   ]
   pruneopts = "UT"
-  revision = "b11f239c032624b045c4c2bfd3d1287b4012ce89"
-  version = "v0.16.0"
+  revision = "9c377598961b706d1542bd2d84d538b5094d596e"
+  version = "v0.22.0"
 
 [[projects]]
   digest = "1:3c1a69cdae3501bf75e76d0d86dc6f2b0a7421bc205c0cb7b96b19eed464a34d"
@@ -2708,7 +2708,9 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
+    "github.com/golang/protobuf/ptypes/any",
     "github.com/google/go-github/github",
     "github.com/gorilla/mux",
     "github.com/grpc-ecosystem/go-grpc-middleware",
@@ -2763,8 +2765,6 @@
     "github.com/solo-io/go-utils/testutils/exec",
     "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
-    "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
-    "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
@@ -2804,6 +2804,7 @@
     "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/AlecAivazis/survey.v1/terminal",
+    "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apimachinery/pkg/api/errors",

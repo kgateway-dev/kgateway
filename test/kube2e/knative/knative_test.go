@@ -37,8 +37,8 @@ var _ = Describe("Kube2e: Knative-Ingress", func() {
 			Host:              "helloworld-go.default.example.com",
 			Service:           clusterIngressProxy,
 			Port:              clusterIngressPort,
-			ConnectionTimeout: 10,
-		}, "Hello Go Sample v1!", 1, time.Minute*2)
+			ConnectionTimeout: 1,
+		}, "Hello Go Sample v1!", 1, time.Minute*2, 1*time.Second)
 	})
 })
 

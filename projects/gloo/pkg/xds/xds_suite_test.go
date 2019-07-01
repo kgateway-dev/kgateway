@@ -1,4 +1,4 @@
-package syncer_test
+package xds_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSyncer(t *testing.T) {
+func TestXds(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Gloo Translator Syncer Suite")
+	RunSpecs(t, "Xds Suite")
 }

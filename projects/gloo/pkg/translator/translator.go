@@ -63,9 +63,8 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 	endpoints := computeClusterEndpoints(params.Ctx, params.Snapshot.Upstreams, params.Snapshot.Endpoints)
 
-	// find all the eds clusters without endpoints (can happen with kube service that have no enpoints), and create a zero sized load assignment
+	// Find all the EDS clusters without endpoints (can happen with kube service that have no endpoints), and create a zero sized load assignment
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
-
 ClusterLoop:
 	for _, c := range clusters {
 		if c.GetType() != envoyapi.Cluster_EDS {
@@ -150,7 +149,9 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 	endpoints []*envoyapi.ClusterLoadAssignment,
 	routeConfigs []*envoyapi.RouteConfiguration,
 	listeners []*envoyapi.Listener) envoycache.Snapshot {
+
 	var endpointsProto, clustersProto, routesProto, listenersProto []envoycache.Resource
+
 	for _, ep := range endpoints {
 		endpointsProto = append(endpointsProto, xds.NewEnvoyResource(ep))
 	}
@@ -193,7 +194,8 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
 	}
 
-	return xds.NewSnapshotFromResources(envoycache.NewResources(fmt.Sprintf("%v", endpointsVersion), endpointsProto),
+	return xds.NewSnapshotFromResources(
+		envoycache.NewResources(fmt.Sprintf("%v", endpointsVersion), endpointsProto),
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
 		envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
