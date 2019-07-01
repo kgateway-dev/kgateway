@@ -2787,7 +2787,6 @@
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
     "go.opencensus.io/trace",
-    "go.uber.org/multierr",
     "go.uber.org/zap",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
