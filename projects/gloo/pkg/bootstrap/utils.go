@@ -9,12 +9,13 @@ import (
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	kubemeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -25,6 +26,7 @@ func ConfigFactoryForSettings(settings *v1.Settings,
 	cache kube.SharedCache,
 	resourceCrd crd.Crd,
 	cfg **rest.Config) (factory.ResourceClientFactory, error) {
+
 	if settings.ConfigSource == nil {
 		if sharedCache == nil {
 			return nil, errors.Errorf("internal error: shared cache cannot be nil")
@@ -55,6 +57,36 @@ func ConfigFactoryForSettings(settings *v1.Settings,
 		}, nil
 	}
 	return nil, errors.Errorf("invalid config source type")
+}
+
+func ServiceClientForSettings(ctx context.Context,
+	settings *v1.Settings,
+	sharedCache memory.InMemoryResourceCache,
+	cfg **rest.Config,
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache) (skkube.ServiceClient, error) {
+
+	// We are running in kubernetes
+	switch settings.ConfigSource.(type) {
+	case *v1.Settings_KubernetesConfigSource:
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache); err != nil {
+			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
+		}
+		return service.NewServiceClient(*clientset, *kubeCoreCache), nil
+	}
+
+	// In all other cases, run in memory
+	if sharedCache == nil {
+		return nil, errors.Errorf("internal error: shared cache cannot be nil")
+	}
+	memoryRcFactory := &factory.MemoryResourceClientFactory{Cache: sharedCache}
+	inMemoryClient, err := memoryRcFactory.NewResourceClient(factory.NewResourceClientParams{
+		ResourceType: &skkube.Service{},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return skkube.NewServiceClientWithBase(inMemoryClient), nil
 }
 
 // sharedCach OR resourceCrd+cfg must be non-nil
@@ -126,22 +158,6 @@ func ArtifactFactoryForSettings(ctx context.Context,
 		}, nil
 	}
 	return nil, errors.Errorf("invalid config source type")
-}
-
-func ListAllNamespaces(cfg *rest.Config) ([]string, error) {
-	kube, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating kube rest client")
-	}
-	kubeNamespaces, err := kube.CoreV1().Namespaces().List(kubemeta.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "listing kube namespaces")
-	}
-	var namespaces []string
-	for _, ns := range kubeNamespaces.Items {
-		namespaces = append(namespaces, ns.Name)
-	}
-	return namespaces, nil
 }
 
 func initializeForKube(ctx context.Context,

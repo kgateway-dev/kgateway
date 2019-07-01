@@ -2,6 +2,7 @@ settings:
   integrations:
     knative:
       enabled: true
+      installKnative: true
       proxy:
         image:
           repository: quay.io/solo-io/gloo-envoy-wrapper

@@ -1,0 +1,4 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: Fixing misspelled `ssl_configuations` field in `Listener` protobuf message.
+  issueLink: https://github.com/solo-io/gloo/issues/762

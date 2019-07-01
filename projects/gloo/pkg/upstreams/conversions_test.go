@@ -11,20 +11,8 @@ import (
 var _ = Describe("Conversions", func() {
 
 	It("correctly builds service-derived upstream name", func() {
-		name := buildFakeUpstreamName("my-service", 8080)
-		Expect(name).To(Equal(ServiceUpstreamNamePrefix + "my-service-8080"))
-	})
-
-	It("correctly reconstructs a service name", func() {
-		svcName, port, err := reconstructServiceName(ServiceUpstreamNamePrefix + "my-service-8080")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(svcName).To(Equal("my-service"))
-		Expect(port).To(BeEquivalentTo(8080))
-	})
-
-	It("fails reconstructing a malformed service name", func() {
-		_, _, err := reconstructServiceName(ServiceUpstreamNamePrefix + "my-service")
-		Expect(err).To(HaveOccurred())
+		name := buildFakeUpstreamName("my-service", "ns", 8080)
+		Expect(name).To(Equal(ServiceUpstreamNamePrefix + "ns-my-service-8080"))
 	})
 
 	It("correctly detects service-derived upstreams", func() {
@@ -49,17 +37,17 @@ var _ = Describe("Conversions", func() {
 				},
 			},
 		}
-		usList := servicesToUpstreams(skkube.ServiceList{svc})
+		usList := ServicesToUpstreams(skkube.ServiceList{svc})
 		usList.Sort()
 		Expect(usList).To(HaveLen(2))
-		Expect(usList[0].Metadata.Name).To(Equal("svc:svc-1-8080"))
+		Expect(usList[0].Metadata.Name).To(Equal("svc:ns-1-svc-1-8080"))
 		Expect(usList[0].Metadata.Namespace).To(Equal("ns-1"))
 		Expect(usList[0].UpstreamSpec.GetKube()).NotTo(BeNil())
 		Expect(usList[0].UpstreamSpec.GetKube().ServiceName).To(Equal("svc-1"))
 		Expect(usList[0].UpstreamSpec.GetKube().ServiceNamespace).To(Equal("ns-1"))
 		Expect(usList[0].UpstreamSpec.GetKube().ServicePort).To(BeEquivalentTo(8080))
 
-		Expect(usList[1].Metadata.Name).To(Equal("svc:svc-1-8081"))
+		Expect(usList[1].Metadata.Name).To(Equal("svc:ns-1-svc-1-8081"))
 		Expect(usList[1].Metadata.Namespace).To(Equal("ns-1"))
 		Expect(usList[1].UpstreamSpec.GetKube()).NotTo(BeNil())
 		Expect(usList[1].UpstreamSpec.GetKube().ServiceName).To(Equal("svc-1"))

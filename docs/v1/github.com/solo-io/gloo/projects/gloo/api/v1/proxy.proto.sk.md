@@ -85,7 +85,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 "bindAddress": string
 "bindPort": int
 "httpListener": .gloo.solo.io.HttpListener
-"sslConfiguations": []gloo.solo.io.SslConfig
+"sslConfigurations": []gloo.solo.io.SslConfig
 "useProxyProto": .google.protobuf.BoolValue
 
 ```
@@ -96,7 +96,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported |  |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy |  |
 | `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing |  |
-| `sslConfiguations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
+| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |
 
 
@@ -106,8 +106,8 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 ### HttpListener
 
  
-Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtualservices).
-HttpListeners also contain plugin configuration that applies globally across all virtaul hosts on the listener.
+Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
+HttpListeners also contain plugin configuration that applies globally across all virtual hosts on the listener.
 Some plugins can be configured to work both on the listener and virtual host level (such as the rate limit plugin)
 
 ```yaml
@@ -119,7 +119,7 @@ Some plugins can be configured to work both on the listener and virtual host lev
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid |  |
-| `listenerPlugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#listenerplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
+| `listenerPlugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#listenerplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration |  |
 
 
 
@@ -147,7 +147,7 @@ If a request is not matched to any virtual host or a route therein, the target p
 | `name` | `string` | the logical name of the virtual host. names must be unique for each virtual host within a listener |  |
 | `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all virtual hosts or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto) |  |
 | `routes` | [[]gloo.solo.io.Route](../proxy.proto.sk#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
-| `virtualHostPlugins` | [.gloo.solo.io.VirtualHostPlugins](../plugins.proto.sk#virtualhostplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
+| `virtualHostPlugins` | [.gloo.solo.io.VirtualHostPlugins](../plugins.proto.sk#virtualhostplugins) | Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Plugins. |  |
 | `corsPolicy` | [.gloo.solo.io.CorsPolicy](../proxy.proto.sk#corspolicy) | CorsPolicy defines Cross-Origin Resource Sharing for a virtual service. |  |
 
 
@@ -158,7 +158,7 @@ If a request is not matched to any virtual host or a route therein, the target p
 
  
 *
-Routes declare the entrypoints on virtual hosts and the action to take for matched requests.
+Routes declare the entry points on virtual hosts and the action to take for matched requests.
 
 ```yaml
 "matcher": .gloo.solo.io.Matcher
@@ -175,7 +175,7 @@ Routes declare the entrypoints on virtual hosts and the action to take for match
 | `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. |  |
 | `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client |  |
 | `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. |  |
-| `routePlugins` | [.gloo.solo.io.RoutePlugins](../plugins.proto.sk#routeplugins) | Route Plugins extend the behavior of routes. Route plugins include configuration such as retries, rate limiting, and request/resonse transformation. Plugins should be specified here in the form of `"plugin_name": {..//plugin_config...}` to allow specifying multiple plugins. |  |
+| `routePlugins` | [.gloo.solo.io.RoutePlugins](../plugins.proto.sk#routeplugins) | Route Plugins extend the behavior of routes. Route plugins include configuration such as retries,rate limiting, and request/response transformation. |  |
 
 
 
@@ -200,7 +200,7 @@ Parameters for matching routes to requests received by a Gloo-managed proxy
 | ----- | ---- | ----------- |----------- | 
 | `prefix` | `string` | If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header. |  |
 | `exact` | `string` | If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed. |  |
-| `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a subsequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex */b[io]t* matches the path */bit* * The regex */b[io]t* matches the path */bot* * The regex */b[io]t* does not match the path */bite* * The regex */b[io]t* does not match the path */bit/bot* |  |
+| `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex */b[io]t* matches the path */bit* * The regex */b[io]t* matches the path */bot* * The regex */b[io]t* does not match the path */bite* * The regex */b[io]t* does not match the path */bit/bot* |  |
 | `headers` | [[]gloo.solo.io.HeaderMatcher](../proxy.proto.sk#headermatcher) | Specifies a set of headers that the route should match on. The router will check the request’s headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |  |
 | `queryParameters` | [[]gloo.solo.io.QueryParameterMatcher](../proxy.proto.sk#queryparametermatcher) | Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur. |  |
 | `methods` | `[]string` | HTTP Method/Verb(s) to match on. If none specified, the matcher will ignore the HTTP Method |  |
@@ -390,7 +390,7 @@ WeightedDestination attaches a weight to a single destination.
 
  
 TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
-Notice: RedirectAction is copioed directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 
 ```yaml
 "hostRedirect": string

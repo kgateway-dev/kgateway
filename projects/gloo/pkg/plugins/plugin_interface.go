@@ -26,6 +26,11 @@ type Params struct {
 	Snapshot *v1.ApiSnapshot
 }
 
+type RouteParams struct {
+	Params
+	VirtualHost *v1.VirtualHost
+}
+
 /*
 	Upstream Plugins
 */
@@ -41,12 +46,12 @@ type UpstreamPlugin interface {
 
 type RoutePlugin interface {
 	Plugin
-	ProcessRoute(params Params, in *v1.Route, out *envoyroute.Route) error
+	ProcessRoute(params RouteParams, in *v1.Route, out *envoyroute.Route) error
 }
 
 type RouteActionPlugin interface {
 	Plugin
-	ProcessRouteAction(params Params, inAction *v1.RouteAction, inPlugins map[string]*RoutePlugin, out *envoyroute.RouteAction) error
+	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, inPlugins map[string]*RoutePlugin, out *envoyroute.RouteAction) error
 }
 
 /*

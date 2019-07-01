@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: |
+      Add [Virtual Clusters](https://www.envoyproxy.io/docs/envoy/v1.5.0/api-v2/rds.proto#envoy-api-msg-virtualcluster) to the Gloo API.
+    issueLink: https://github.com/solo-io/gloo/issues/764

@@ -24,6 +24,8 @@ func (t *translator) computeClusters(params plugins.Params, resourceErrs reporte
 	var (
 		clusters []*envoyapi.Cluster
 	)
+
+	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range params.Snapshot.Upstreams {
 		cluster := t.computeCluster(params, upstream, resourceErrs)
 		clusters = append(clusters, cluster)

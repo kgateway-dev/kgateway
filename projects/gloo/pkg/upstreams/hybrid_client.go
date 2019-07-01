@@ -44,15 +44,11 @@ func (c *hybridUpstreamClient) Read(namespace, name string, opts clients.ReadOpt
 		return c.upstreamClient.Read(namespace, name, opts)
 	}
 
-	serviceName, _, err := reconstructServiceName(name)
-	if err != nil {
-		return nil, err
-	}
-	service, err := c.serviceClient.Read(namespace, serviceName, opts)
+	services, err := c.serviceClient.List(namespace, clients.ListOpts{})
 	if err != nil {
 		return nil, UnableToRetrieveErr(err, namespace, name)
 	}
-	for _, us := range servicesToUpstreams(skkube.ServiceList{service}) {
+	for _, us := range ServicesToUpstreams(services) {
 		if us.Metadata.Name == name {
 			return us, nil
 		}
@@ -83,7 +79,7 @@ func (c *hybridUpstreamClient) List(namespace string, opts clients.ListOpts) (v1
 	if err != nil {
 		return nil, err
 	}
-	return append(realUpstreams, servicesToUpstreams(services)...), nil
+	return append(realUpstreams, ServicesToUpstreams(services)...), nil
 }
 
 func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
@@ -121,7 +117,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	// Aggregate watches
 	upstreamsOut := make(chan v1.UpstreamList)
 	go func() {
-		previous := hybridUpstreamSnapshot{}
+		previous := &hybridUpstreamSnapshot{}
 		current := previous.Clone()
 		syncFunc := func() {
 			if current.Hash() == previous.Hash() {
@@ -146,7 +142,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 				}
 			case serviceList, ok := <-svcChan:
 				if ok {
-					convertedUpstreams := servicesToUpstreams(serviceList)
+					convertedUpstreams := ServicesToUpstreams(serviceList)
 					current.SetServiceUpstreams(convertedUpstreams)
 					syncFunc()
 				}

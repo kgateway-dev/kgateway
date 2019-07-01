@@ -53,11 +53,6 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 	resourceErrs := make(reporter.ResourceErrors)
 
-	// TODO(marco): error on service destinations until they are implemented
-	if containsServiceDestinations(proxy) {
-		resourceErrs.AddError(proxy, errors.Errorf("proxy contains a service destination. Service destinations are currently not supported"))
-	}
-
 	logger.Debugf("verifying upstream groups: %v", proxy.Metadata.Name)
 	t.verifyUpstreamGroups(params, resourceErrs)
 
@@ -202,34 +197,4 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
 		envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
-}
-
-func containsServiceDestinations(proxy *v1.Proxy) bool {
-	for _, listener := range proxy.Listeners {
-		httpList := listener.GetHttpListener()
-		if httpList == nil {
-			continue
-		}
-		for _, vh := range httpList.VirtualHosts {
-			for _, route := range vh.Routes {
-				routeAction := route.GetRouteAction()
-				if routeAction == nil {
-					continue
-				}
-				switch dest := routeAction.Destination.(type) {
-				case *v1.RouteAction_Single:
-					if dest.Single.GetService() != nil {
-						return true
-					}
-				case *v1.RouteAction_Multi:
-					for _, d := range dest.Multi.Destinations {
-						if d.Destination.GetService() != nil {
-							return true
-						}
-					}
-				}
-			}
-		}
-	}
-	return false
 }

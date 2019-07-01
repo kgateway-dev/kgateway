@@ -47,7 +47,9 @@ func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.S
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
-		go s.ServeXdsSnapshots()
+		go func() {
+			_ = s.ServeXdsSnapshots()
+		}()
 	}
 	return s
 }

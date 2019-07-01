@@ -33,7 +33,7 @@ type LoadBalancerConfig struct {
 	// reaches this percentage, envoy disregards health information.
 	// see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold).
 	HealthyPanicThreshold *types.DoubleValue `protobuf:"bytes,1,opt,name=healthy_panic_threshold,json=healthyPanicThreshold,proto3" json:"healthy_panic_threshold,omitempty"`
-	// This allows batch updates of endspoints helth/weight/metadata that happen during a time window.
+	// This allows batch updates of endpoints health/weight/metadata that happen during a time window.
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
 	// Set to 0 to disable and have changes applied immediately.
 	UpdateMergeWindow *time.Duration `protobuf:"bytes,2,opt,name=update_merge_window,json=updateMergeWindow,proto3,stdduration" json:"update_merge_window,omitempty"`

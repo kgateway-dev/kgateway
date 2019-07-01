@@ -67,17 +67,17 @@ message Listener {
     }
 
     // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port
-    // Multiple SslConfigs are supported for the pupose of SNI. Be aware that the SNI domain provided in the SSL Config
+    // Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
     // must match a domain in virtual host
     // TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored
-    repeated SslConfig ssl_configuations = 5;
+    repeated SslConfig ssl_configurations = 5;
 
     // Enable ProxyProtocol support for this listener
     google.protobuf.BoolValue use_proxy_proto = 6;
 }
 
-// Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtualservices).
-// HttpListeners also contain plugin configuration that applies globally across all virtaul hosts on the listener.
+// Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
+// HttpListeners also contain plugin configuration that applies globally across all virtual hosts on the listener.
 // Some plugins can be configured to work both on the listener and virtual host level (such as the rate limit plugin)
 message HttpListener {
     // the set of virtual hosts that will be accessible by clients connecting to this listener.
@@ -89,10 +89,6 @@ message HttpListener {
     // Listener config is applied to all HTTP traffic that
     // connects to this listener. Some configuration here can be overridden in
     // Virtual Host Plugin configuration or Route Plugin configuration
-    //
-    // Plugins should be specified here in the form of
-    //   `"plugin_name": {..//plugin_config...}`
-    // to allow specifying multiple plugins.
     ListenerPlugins listener_plugins = 2;
 }
 
@@ -119,14 +115,8 @@ message VirtualHost {
     // If the list of routes is empty, the virtual host will be ignored by Gloo.
     repeated Route routes = 3;
 
-    // Plugins contains top-level plugin configuration to be applied to a listener
-    // Listener config is applied to all HTTP traffic that
-    // connects to this listener. Some configuration here can be overridden in
-    // Virtual Host Plugin configuration or Route Plugin configuration
-    //
-    // Plugins should be specified here in the form of
-    //   `"plugin_name": {..//plugin_config...}`
-    // to allow specifying multiple plugins.
+    // Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host.
+    // Some configuration here can be overridden by Route Plugins.
     VirtualHostPlugins virtual_host_plugins = 4;
 
     // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
@@ -134,7 +124,7 @@ message VirtualHost {
 }
 
 /**
- * Routes declare the entrypoints on virtual hosts and the action to take for matched requests.
+ * Routes declare the entry points on virtual hosts and the action to take for matched requests.
  */
 message Route {
     // The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.)
@@ -154,12 +144,7 @@ message Route {
     }
 
     // Route Plugins extend the behavior of routes.
-    // Route plugins include configuration such as retries,
-    // rate limiting, and request/resonse transformation.
-    //
-    // Plugins should be specified here in the form of
-    //   `"plugin_name": {..//plugin_config...}`
-    // to allow specifying multiple plugins.
+    // Route plugins include configuration such as retries,rate limiting, and request/response transformation.
     RoutePlugins route_plugins = 5;
 }
 
@@ -177,7 +162,7 @@ message Matcher {
         // If specified, the route is a regular expression rule meaning that the
         // regex must match the *:path* header once the query string is removed. The entire path
         // (without the query string) must match the regex. The rule will not match if only a
-        // subsequence of the *:path* header matches the regex. The regex grammar is defined `here
+        // sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here
         // <http://en.cppreference.com/w/cpp/regex/ecmascript>`_.
         //
         // Examples:
@@ -330,7 +315,7 @@ message WeightedDestination {
 }
 
 // TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
-// Notice: RedirectAction is copioed directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+// Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 message RedirectAction {
     // The host portion of the URL will be swapped with this value.
     string host_redirect = 1;

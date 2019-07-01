@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/go-openapi/loads"
-	"github.com/go-openapi/spec"
+	openapi "github.com/go-openapi/spec"
 	"github.com/go-openapi/swag"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
@@ -74,43 +74,43 @@ func getswagspec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
 	return rest.SwaggerInfo
 }
 
-func (d *SwaggerFunctionDiscovery) IsFunctional() bool {
-	return getswagspec(d.upstream) != nil
+func (f *SwaggerFunctionDiscovery) IsFunctional() bool {
+	return getswagspec(f.upstream) != nil
 }
 
-func (d *SwaggerFunctionDiscovery) DetectType(ctx context.Context, baseurl *url.URL) (*plugins.ServiceSpec, error) {
+func (f *SwaggerFunctionDiscovery) DetectType(ctx context.Context, baseurl *url.URL) (*plugins.ServiceSpec, error) {
 	var spec *plugins.ServiceSpec
 
-	err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{MaxDuration: &d.detectionTimeout}).Backoff(ctx, func(ctx context.Context) error {
+	err := contextutils.NewExponentioalBackoff(contextutils.ExponentioalBackoff{MaxDuration: &f.detectionTimeout}).Backoff(ctx, func(ctx context.Context) error {
 		var err error
-		spec, err = d.detectUpstreamTypeOnce(ctx, baseurl)
+		spec, err = f.detectUpstreamTypeOnce(ctx, baseurl)
 		return err
 	})
 
 	return spec, err
 }
 
-func (d *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, baseurl *url.URL) (*plugins.ServiceSpec, error) {
+func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, baseUrl *url.URL) (*plugins.ServiceSpec, error) {
 	// run detection and get functions
 	var errs error
-	log := contextutils.LoggerFrom(ctx)
+	logger := contextutils.LoggerFrom(ctx)
 
-	log.Debugf("attempting to detect swagger base url %v", baseurl)
+	logger.Debugf("attempting to detect swagger base url %v", baseUrl)
 
-	switch baseurl.Scheme {
+	switch baseUrl.Scheme {
 	case "http":
 		fallthrough
 	case "https":
 		// nothing to do as this baseurl already has an http address.
 	case "tcp":
 		// if it is a tcp address, assume it is plain http
-		baseurl.Scheme = "http"
+		baseUrl.Scheme = "http"
 	default:
-		return nil, fmt.Errorf("unsupported baseurl for swagger discovery %v", baseurl)
+		return nil, fmt.Errorf("unsupported baseurl for swagger discovery %v", baseUrl)
 	}
 
-	for _, uri := range d.swaggerUrisToTry {
-		url := baseurl.ResolveReference(&url.URL{Path: uri}).String()
+	for _, uri := range f.swaggerUrisToTry {
+		url := baseUrl.ResolveReference(&url.URL{Path: uri}).String()
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid url for request")
@@ -137,7 +137,7 @@ func (d *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 				continue
 			}
 			// definitely found swagger
-			log.Infof("swagger upstream detected: %v", url)
+			logger.Infof("swagger upstream detected: %v", url)
 			svcInfo := &plugins.ServiceSpec{
 				PluginType: &plugins.ServiceSpec_Rest{
 					Rest: &rest_plugins.ServiceSpec{
@@ -154,10 +154,10 @@ func (d *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 		errs = multierror.Append(errs, errors.Errorf("path: %v response code: %v headers: %v", uri, res.Status, res.Header))
 
 	}
-	log.Debugf("failed to detect swagger for %s: %v", baseurl.String(), errs.Error())
+	logger.Debugf("failed to detect swagger for %s: %v", baseUrl.String(), errs.Error())
 	// not a swagger upstream
 	return nil, errors.Wrapf(errs, "service at %s does not implement swagger at a known endpoint, "+
-		"or was unreachable", baseurl.String())
+		"or was unreachable", baseUrl.String())
 
 }
 
@@ -214,7 +214,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromInline(ctx context.Context
 	return f.detectFunctionsFromSpec(ctx, spec, in, updatecb)
 }
 
-func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, swaggerSpec *spec.Swagger, in *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
+func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, swaggerSpec *openapi.Swagger, in *v1.Upstream, updatecb func(fds.UpstreamMutator) error) error {
 	var consumesJson bool
 	if len(swaggerSpec.Consumes) == 0 {
 		consumesJson = true
@@ -265,7 +265,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, 
 	})
 }
 
-func RetrieveSwaggerDocFromUrl(ctx context.Context, url string) (*spec.Swagger, error) {
+func RetrieveSwaggerDocFromUrl(ctx context.Context, url string) (*openapi.Swagger, error) {
 	docBytes, err := LoadFromFileOrHTTP(ctx, url)
 	if err != nil {
 		return nil, errors.Wrap(err, "loading swagger doc from url")
@@ -304,10 +304,10 @@ func loadHTTPBytes(ctx context.Context) func(path string) ([]byte, error) {
 	}
 }
 
-func parseSwaggerDoc(docBytes []byte) (*spec.Swagger, error) {
+func parseSwaggerDoc(docBytes []byte) (*openapi.Swagger, error) {
 	doc, err := loads.Analyzed(docBytes, "")
 	if err != nil {
-		log.Warnf("parsing doc as json failed, falling back to yaml")
+		log.Debugf("parsing doc as json failed, falling back to yaml")
 		jsn, err := swag.YAMLToJSON(docBytes)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to convert yaml to json (after falling back to yaml parsing)")

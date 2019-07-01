@@ -2,6 +2,14 @@ package translator_test
 
 import (
 	"context"
+	"fmt"
+
+	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/gogo/protobuf/proto"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	k8scorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/solo-io/gloo/pkg/utils"
 
@@ -29,13 +37,14 @@ import (
 
 var _ = Describe("Translator", func() {
 	var (
-		settings   *v1.Settings
-		translator Translator
-		upstream   *v1.Upstream
-		proxy      *v1.Proxy
-		params     plugins.Params
-		matcher    *v1.Matcher
-		routes     []*v1.Route
+		settings          *v1.Settings
+		translator        Translator
+		upstream          *v1.Upstream
+		proxy             *v1.Proxy
+		params            plugins.Params
+		registeredPlugins []plugins.Plugin
+		matcher           *v1.Matcher
+		routes            []*v1.Route
 
 		snapshot            envoycache.Snapshot
 		cluster             *envoyapi.Cluster
@@ -50,8 +59,7 @@ var _ = Describe("Translator", func() {
 		opts := bootstrap.Opts{
 			Settings: settings,
 		}
-		tplugins := registry.Plugins(opts)
-		translator = NewTranslator(tplugins, settings)
+		registeredPlugins = registry.Plugins(opts)
 
 		upname := core.Metadata{
 			Name:      "test",
@@ -102,6 +110,7 @@ var _ = Describe("Translator", func() {
 		}}
 	})
 	JustBeforeEach(func() {
+		translator = NewTranslator(registeredPlugins, settings)
 		proxy = &v1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "test",
@@ -136,7 +145,6 @@ var _ = Describe("Translator", func() {
 		Expect(cluster).NotTo(BeNil())
 
 		listeners := snap.GetResources(xds.ListenerType)
-
 		listenerResource := listeners.Items["listener"]
 		listener = listenerResource.ResourceProto().(*envoyapi.Listener)
 		Expect(listener).NotTo(BeNil())
@@ -147,15 +155,32 @@ var _ = Describe("Translator", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
-
 		Expect(routes.Items).To(HaveKey("listener-routes"))
 		routeResource := routes.Items["listener-routes"]
 		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(route_configuration).NotTo(BeNil())
 
 		snapshot = snap
-
 	}
+
+	It("sanitizes an invalid virtual host name", func() {
+		proxyClone := proto.Clone(proxy).(*v1.Proxy)
+		proxyClone.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Name = "invalid.name"
+
+		snap, errs, err := translator.Translate(params, proxyClone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(errs.Validate()).NotTo(HaveOccurred())
+		Expect(snap).NotTo(BeNil())
+
+		routes := snap.GetResources(xds.RouteType)
+		Expect(routes.Items).To(HaveKey("listener-routes"))
+		routeResource := routes.Items["listener-routes"]
+		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+		Expect(route_configuration).NotTo(BeNil())
+		Expect(route_configuration.GetVirtualHosts()).To(HaveLen(1))
+		Expect(route_configuration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
+	})
 
 	Context("service spec", func() {
 		It("changes in service spec should create a different snapshot", func() {
@@ -173,6 +198,7 @@ var _ = Describe("Translator", func() {
 			Expect(oldVersion).ToNot(Equal(newVersion))
 		})
 	})
+
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
@@ -400,7 +426,6 @@ var _ = Describe("Translator", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("destination # 1: upstream not found: list did not find upstream gloo-system.notexist"))
 		})
-
 	})
 
 	Context("when handling subsets", func() {
@@ -541,6 +566,134 @@ var _ = Describe("Translator", func() {
 				Expect(errs.Validate()).To(HaveOccurred())
 			})
 		})
+	})
+
+	Context("when translating a route that points directly to a service", func() {
+
+		var fakeUsList v1.UpstreamList
+
+		BeforeEach(func() {
+
+			// The kube service that we want to route to
+			svc := skkube.NewService("ns-1", "svc-1")
+			svc.Spec = k8scorev1.ServiceSpec{
+				Ports: []k8scorev1.ServicePort{
+					{
+						Name:       "port-1",
+						Port:       8080,
+						TargetPort: intstr.FromInt(80),
+					},
+					{
+						Name:       "port-2",
+						Port:       8081,
+						TargetPort: intstr.FromInt(8081),
+					},
+				},
+			}
+			// These are the "fake" upstreams that represent the above service in the snapshot
+			fakeUsList = upstreams.ServicesToUpstreams(skkube.ServiceList{svc})
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, fakeUsList...)
+
+			// We need to manually add some fake endpoints for the above kubernetes services to the snapshot
+			// Normally these would have been discovered by EDS
+			params.Snapshot.Endpoints = v1.EndpointList{
+				{
+					Metadata: core.Metadata{
+						Namespace: "gloo-system",
+						Name:      fmt.Sprintf("ep-%v-%v", "192.168.0.1", svc.Spec.Ports[0].Port),
+					},
+					Port:      uint32(svc.Spec.Ports[0].Port),
+					Address:   "192.168.0.1",
+					Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(fakeUsList[0].Metadata.Ref())},
+				},
+				{
+					Metadata: core.Metadata{
+						Namespace: "gloo-system",
+						Name:      fmt.Sprintf("ep-%v-%v", "192.168.0.2", svc.Spec.Ports[1].Port),
+					},
+					Port:      uint32(svc.Spec.Ports[1].Port),
+					Address:   "192.168.0.2",
+					Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(fakeUsList[1].Metadata.Ref())},
+				},
+			}
+
+			// Configure Proxy to route to the service
+			serviceDestination := v1.Destination{
+				DestinationType: &v1.Destination_Service{
+					Service: &v1.ServiceDestination{
+						Ref: core.ResourceRef{
+							Namespace: svc.Namespace,
+							Name:      svc.Name,
+						},
+						Port: uint32(svc.Spec.Ports[0].Port),
+					},
+				},
+			}
+			routes = []*v1.Route{{
+				Matcher: matcher,
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &serviceDestination,
+						},
+					},
+				},
+			}}
+		})
+
+		It("generates the expected envoy route configuration", func() {
+			translate()
+
+			// Clusters have been created for the two "fake" upstreams
+			clusters := snapshot.GetResources(xds.ClusterType)
+			clusterResource := clusters.Items[UpstreamToClusterName(fakeUsList[0].Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			Expect(cluster).NotTo(BeNil())
+			clusterResource = clusters.Items[UpstreamToClusterName(fakeUsList[1].Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			Expect(cluster).NotTo(BeNil())
+
+			// A route to the kube service has been configured
+			routes := snapshot.GetResources(xds.RouteType)
+			Expect(routes.Items).To(HaveKey("listener-routes"))
+			routeResource := routes.Items["listener-routes"]
+			route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+			Expect(route_configuration).NotTo(BeNil())
+			Expect(route_configuration.VirtualHosts).To(HaveLen(1))
+			Expect(route_configuration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(route_configuration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(route_configuration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := route_configuration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
+			Expect(ok).To(BeTrue())
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
+			Expect(ok).To(BeTrue())
+			Expect(clusterAction.Cluster).To(Equal(UpstreamToClusterName(fakeUsList[0].Metadata.Ref())))
+		})
+	})
+
+	Context("Route plugin", func() {
+		var (
+			routePlugin *routePluginMock
+		)
+		BeforeEach(func() {
+			routePlugin = &routePluginMock{}
+			registeredPlugins = append(registeredPlugins, routePlugin)
+		})
+
+		It("should have the virtual host when processing route", func() {
+			hasVhost := false
+			routePlugin.ProcessRouteFunc = func(params plugins.RouteParams, in *v1.Route, out *envoyrouteapi.Route) error {
+				if params.VirtualHost != nil {
+					if params.VirtualHost.GetName() == "virt1" {
+						hasVhost = true
+					}
+				}
+				return nil
+			}
+
+			translate()
+			Expect(hasVhost).To(BeTrue())
+		})
 
 	})
 
@@ -552,4 +705,16 @@ func sv(s string) *types.Value {
 			StringValue: s,
 		},
 	}
+}
+
+type routePluginMock struct {
+	ProcessRouteFunc func(params plugins.RouteParams, in *v1.Route, out *envoyrouteapi.Route) error
+}
+
+func (p *routePluginMock) Init(params plugins.InitParams) error {
+	return nil
+}
+
+func (p *routePluginMock) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyrouteapi.Route) error {
+	return p.ProcessRouteFunc(params, in, out)
 }

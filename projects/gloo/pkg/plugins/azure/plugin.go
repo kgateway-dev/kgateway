@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/go-utils/contextutils"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -78,10 +81,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 }
 
-func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's aws upstream destination
-		if spec.DestinationSpec == nil || spec.GetUpstream() == nil {
+		if spec.DestinationSpec == nil {
 			return nil, nil
 		}
 		azureDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Azure)
@@ -89,10 +92,15 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 			return nil, nil
 		}
 
-		upstreamSpec, ok := p.recordedUpstreams[*spec.GetUpstream()]
+		upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
+		if err != nil {
+			contextutils.LoggerFrom(p.ctx).Error(err)
+			return nil, err
+		}
+		upstreamSpec, ok := p.recordedUpstreams[*upstreamRef]
 		if !ok {
 			// TODO(yuval-k): panic in debug
-			return nil, errors.Errorf("%v is not an Azure upstream", *spec.GetUpstream())
+			return nil, errors.Errorf("%v is not an Azure upstream", *upstreamRef)
 		}
 
 		// get function

@@ -22,14 +22,14 @@ func (s *hybridUpstreamSnapshot) ToList() v1.UpstreamList {
 	return append(s.realUpstreams, s.serviceUpstreams...)
 }
 
-func (s *hybridUpstreamSnapshot) Clone() hybridUpstreamSnapshot {
-	return hybridUpstreamSnapshot{
+func (s *hybridUpstreamSnapshot) Clone() *hybridUpstreamSnapshot {
+	return &hybridUpstreamSnapshot{
 		realUpstreams:    s.realUpstreams.Clone(),
 		serviceUpstreams: s.serviceUpstreams.Clone()}
 }
 
 func (s *hybridUpstreamSnapshot) Hash() uint64 {
 	// Sort merged slice for consistent hashing
-	usList := append(s.realUpstreams, s.serviceUpstreams...).Sort()
+	usList := append(s.realUpstreams.Clone(), s.serviceUpstreams.Clone()...).Sort()
 	return hashutils.HashAll(usList.AsInterfaces()...)
 }

@@ -3,13 +3,16 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -23,6 +26,7 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
+	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -31,7 +35,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = Describe("Happypath", func() {
+var _ = Describe("Happy path", func() {
 
 	var (
 		ctx           context.Context
@@ -44,23 +48,26 @@ var _ = Describe("Happypath", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
+
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = services.NextBindPort()
+		envoyPort = uint32(defaults.HttpPort)
 	})
 
 	AfterEach(func() {
 		if envoyInstance != nil {
-			envoyInstance.Clean()
+			_ = envoyInstance.Clean()
 		}
 		cancel()
 	})
 
-	TestUpstremReachable := func() {
-		v1helpers.TestUpstremReachable(envoyPort, tu, nil)
+	TestUpstreamReachable := func() {
+		v1helpers.TestUpstreamReachable(envoyPort, tu, nil)
 	}
 
 	Describe("in memory", func() {
@@ -79,7 +86,7 @@ var _ = Describe("Happypath", func() {
 				},
 			}
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			err := envoyInstance.Run(testClients.GlooPort)
+			err := envoyInstance.RunWithRole(ns+"~gateway-proxy", testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			up = tu.Upstream
@@ -88,14 +95,44 @@ var _ = Describe("Happypath", func() {
 		})
 
 		It("should not crash", func() {
-
-			proxycli := testClients.ProxyClient
-			proxy := getTrivialProxyForUpstream("default", envoyPort, up.Metadata.Ref())
-			_, err := proxycli.Write(proxy, clients.WriteOpts{})
+			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			TestUpstremReachable()
+			TestUpstreamReachable()
+		})
 
+		It("correctly configures envoy to emit virtual cluster statistics", func() {
+			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+			// Set a virtual cluster matching everything
+			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].VirtualHostPlugins = &gloov1.VirtualHostPlugins{
+				Stats: &stats.Stats{
+					VirtualClusters: []*stats.VirtualCluster{{
+						Name:    "test-vc",
+						Pattern: ".*",
+					}},
+				},
+			}
+
+			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// This will hit the virtual host with the above virtual cluster config
+			TestUpstreamReachable()
+
+			response, err := http.Get(fmt.Sprintf("http://localhost:%d/stats", envoyInstance.AdminPort))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			//noinspection GoUnhandledErrorResult
+			defer response.Body.Close()
+
+			body, err := ioutil.ReadAll(response.Body)
+			Expect(err).NotTo(HaveOccurred())
+			statsString := string(body)
+
+			// Verify that stats for the above virtual cluster are present
+			Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
 		})
 
 		Context("ssl", func() {
@@ -146,11 +183,11 @@ var _ = Describe("Happypath", func() {
 
 			It("should work with ssl", func() {
 				proxycli := testClients.ProxyClient
-				proxy := getTrivialProxyForUpstream("default", envoyPort, upSsl.Metadata.Ref())
+				proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, upSsl.Metadata.Ref())
 				_, err := proxycli.Write(proxy, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				TestUpstremReachable()
+				TestUpstreamReachable()
 			})
 		})
 
@@ -158,7 +195,7 @@ var _ = Describe("Happypath", func() {
 			It("should error the proxy with two listeners with the same bind address", func() {
 
 				proxycli := testClients.ProxyClient
-				proxy := getTrivialProxyForUpstream("default", envoyPort, up.Metadata.Ref())
+				proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 				// add two identical listeners two see errors come up
 				proxy.Listeners = append(proxy.Listeners, proxy.Listeners[0])
 				_, err := proxycli.Write(proxy, clients.WriteOpts{})
@@ -180,6 +217,7 @@ var _ = Describe("Happypath", func() {
 			})
 		})
 	})
+
 	Describe("kubernetes happy path", func() {
 		BeforeEach(func() {
 			if os.Getenv("RUN_KUBE_TESTS") != "1" {
@@ -206,6 +244,12 @@ var _ = Describe("Happypath", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		AfterEach(func() {
+			if namespace != "" {
+				_ = setup.TeardownKube(namespace)
+			}
+		})
+
 		prepNamespace := func() {
 			if namespace == "" {
 				namespace = "gloo-e2e-" + helpers.RandString(8)
@@ -229,6 +273,7 @@ var _ = Describe("Happypath", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
+
 			_, err = kubeClient.CoreV1().Endpoints(namespace).Create(&kubev1.Endpoints{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace,
@@ -247,12 +292,6 @@ var _ = Describe("Happypath", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		AfterEach(func() {
-			if namespace != "" {
-				setup.TeardownKube(namespace)
-			}
-		})
-
 		getUpstream := func() (*gloov1.Upstream, error) {
 			l, err := testClients.UpstreamClient.List(writeNamespace, clients.ListOpts{})
 			if err != nil {
@@ -265,6 +304,7 @@ var _ = Describe("Happypath", func() {
 			}
 			return nil, fmt.Errorf("not found")
 		}
+
 		getStatus := func() (core.Status_State, error) {
 			u, err := getUpstream()
 			if err != nil {
@@ -288,7 +328,7 @@ var _ = Describe("Happypath", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~proxy"
+				role := namespace + "~gateway-proxy"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -305,9 +345,19 @@ var _ = Describe("Happypath", func() {
 				_, err = proxycli.Write(proxy, opts)
 				Expect(err).NotTo(HaveOccurred())
 
-				TestUpstremReachable()
+				TestUpstreamReachable()
 			})
 
+			It("correctly routes requests to a service destination", func() {
+				svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta).Ref()
+				svcPort := svc.Spec.Ports[0].Port
+				proxy := getTrivialProxyForService(namespace, envoyPort, svcRef, uint32(svcPort))
+
+				_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				TestUpstreamReachable()
+			})
 		})
 
 		Context("all namespaces", func() {
@@ -325,7 +375,7 @@ var _ = Describe("Happypath", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~proxy"
+				role := namespace + "~gateway-proxy"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -344,23 +394,45 @@ var _ = Describe("Happypath", func() {
 				_, err = proxycli.Write(proxy, opts)
 				Expect(err).NotTo(HaveOccurred())
 
-				TestUpstremReachable()
+				TestUpstreamReachable()
 			})
 		})
-
 	})
 })
 
-func getTrivialProxyForUpstream(ns string, bindport uint32, upstream core.ResourceRef) *gloov1.Proxy {
+func getTrivialProxyForUpstream(ns string, bindPort uint32, upstream core.ResourceRef) *gloov1.Proxy {
+	proxy := getTrivialProxy(ns, bindPort)
+	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
+		VirtualHosts[0].Routes[0].Action.(*gloov1.Route_RouteAction).RouteAction.
+		Destination.(*gloov1.RouteAction_Single).Single.DestinationType =
+		&gloov1.Destination_Upstream{Upstream: &upstream}
+	return proxy
+}
+
+func getTrivialProxyForService(ns string, bindPort uint32, service core.ResourceRef, svcPort uint32) *gloov1.Proxy {
+	proxy := getTrivialProxy(ns, bindPort)
+	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
+		VirtualHosts[0].Routes[0].Action.(*gloov1.Route_RouteAction).RouteAction.
+		Destination.(*gloov1.RouteAction_Single).Single.DestinationType =
+		&gloov1.Destination_Service{
+			Service: &gloov1.ServiceDestination{
+				Ref:  service,
+				Port: svcPort,
+			},
+		}
+	return proxy
+}
+
+func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "proxy",
+			Name:      "gateway-proxy",
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "127.0.0.1",
-			BindPort:    bindport,
+			BindAddress: "::",
+			BindPort:    bindPort,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
 					VirtualHosts: []*gloov1.VirtualHost{{
@@ -375,11 +447,7 @@ func getTrivialProxyForUpstream(ns string, bindport uint32, upstream core.Resour
 							Action: &gloov1.Route_RouteAction{
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: &upstream,
-											},
-										},
+										Single: &gloov1.Destination{},
 									},
 								},
 							},
@@ -389,7 +457,6 @@ func getTrivialProxyForUpstream(ns string, bindport uint32, upstream core.Resour
 			},
 		}},
 	}
-
 }
 
 func getIpThatsNotLocalhost() string {

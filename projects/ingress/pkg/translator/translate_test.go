@@ -255,7 +255,7 @@ var _ = Describe("Translate", func() {
 							XXX_sizecache:        0,
 						},
 					},
-					SslConfiguations:     []*gloov1.SslConfig{},
+					SslConfigurations:    []*gloov1.SslConfig{},
 					XXX_NoUnkeyedLiteral: struct{}{},
 					XXX_unrecognized:     []uint8{},
 					XXX_sizecache:        0,
@@ -362,7 +362,7 @@ var _ = Describe("Translate", func() {
 							XXX_sizecache:        0,
 						},
 					},
-					SslConfiguations: []*gloov1.SslConfig{
+					SslConfigurations: []*gloov1.SslConfig{
 						{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{

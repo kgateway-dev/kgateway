@@ -92,7 +92,7 @@ var _ = Describe("Translator", func() {
 		proxy, _ := Translate(context.Background(), ns, snap)
 
 		Expect(proxy.Listeners).To(HaveLen(1))
-		Expect(proxy.Listeners[0].SslConfiguations).To(BeEmpty())
+		Expect(proxy.Listeners[0].SslConfigurations).To(BeEmpty())
 	})
 
 	It("should translate a gateway to only have its vservices", func() {

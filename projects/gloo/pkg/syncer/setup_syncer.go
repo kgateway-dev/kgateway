@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -50,6 +52,7 @@ func NewSetupFunc() setuputils.SetupFunc {
 }
 
 // used outside of this repo
+//noinspection GoUnusedExportedFunction
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunGlooWithExtensions(opts, extensions)
@@ -199,6 +202,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, opts.Services)
+	if err != nil {
+		return err
+	}
+
 	proxyClient, err := v1.NewProxyClient(opts.Proxies)
 	if err != nil {
 		return err
@@ -230,18 +238,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient)
-	discoveryCache := v1.NewDiscoveryEmitter(upstreamClient, secretClient)
-
 	// Register grpc endpoints to the grpc server
 	xdsHasher := xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
-	rpt := reporter.NewReporter("gloo", upstreamClient.BaseClient(), proxyClient.BaseClient())
-
-	plugins := registry.Plugins(opts, extensions.PluginExtensions...)
+	allPlugins := registry.Plugins(opts, extensions.PluginExtensions...)
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range plugins {
+	for _, plug := range allPlugins {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			discoveryPlugins = append(discoveryPlugins, disc)
@@ -262,26 +265,27 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	apiSync := NewTranslatorSyncer(translator.NewTranslator(plugins, opts.Settings), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
-	apiEventLoop := v1.NewApiEventLoop(apiCache, apiSync)
-
 	errs := make(chan error)
+
+	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient)
+	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
+	apiSync := NewTranslatorSyncer(translator.NewTranslator(allPlugins, opts.Settings), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
+	apiEventLoop := v1.NewApiEventLoop(apiCache, apiSync)
+	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
+	if err != nil {
+		return err
+	}
+	go errutils.AggregateErrs(watchOpts.Ctx, errs, apiEventLoopErrs, "event_loop.gloo")
 
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
-
+	discoveryCache := v1.NewDiscoveryEmitter(hybridUsClient, secretClient)
 	edsEventLoop := v1.NewDiscoveryEventLoop(discoveryCache, edsSync)
 	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
-
-	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
-	if err != nil {
-		return err
-	}
-	go errutils.AggregateErrs(watchOpts.Ctx, errs, apiEventLoopErrs, "event_loop.gloo")
 
 	go func() {
 		for {
@@ -327,6 +331,18 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 		kubeCache,
 		v1.UpstreamCrd,
 		&cfg,
+	)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
+	serviceClient, err := bootstrap.ServiceClientForSettings(
+		ctx,
+		settings,
+		memCache,
+		&cfg,
+		clientset,
+		&kubeCoreCache,
 	)
 	if err != nil {
 		return bootstrap.Opts{}, err
@@ -381,6 +397,7 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 	}
 	return bootstrap.Opts{
 		Upstreams:      upstreamFactory,
+		Services:       serviceClient,
 		Proxies:        proxyFactory,
 		UpstreamGroups: upstreamGroupFactory,
 		Secrets:        secretFactory,

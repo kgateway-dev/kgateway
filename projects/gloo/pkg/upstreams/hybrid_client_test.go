@@ -26,7 +26,7 @@ var _ = Describe("HybridUpstreams", func() {
 		watchNamespace = "watched-ns"
 		err            error
 
-		existingFakeUpstreamName = upstreams.ServiceUpstreamNamePrefix + "svc-1-8081"
+		existingFakeUpstreamName = upstreams.ServiceUpstreamNamePrefix + watchNamespace + "-svc-1-8081"
 
 		// Results in 5 upstreams being created, 2 real, 3 service-derived (one of which is in a different namespace)
 		writeResources = func() {

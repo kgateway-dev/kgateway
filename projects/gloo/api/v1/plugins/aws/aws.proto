@@ -12,7 +12,7 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 // AWS Upstreams represent a collection of Lambda Functions for a particular AWS Account (IAM Role or User account)
 // in a particular region
 message UpstreamSpec {
-    // The AWS Region where the desired Lambda Functions exxist
+    // The AWS Region where the desired Lambda Functions exist
     string region = 1;
 
     // A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret

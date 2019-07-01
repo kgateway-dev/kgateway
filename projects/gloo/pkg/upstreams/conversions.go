@@ -1,9 +1,9 @@
 package upstreams
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/go-utils/errors"
 
@@ -23,23 +23,32 @@ func isRealUpstream(upstreamName string) bool {
 	return !strings.HasPrefix(upstreamName, ServiceUpstreamNamePrefix)
 }
 
-func buildFakeUpstreamName(serviceName string, port int32) string {
-	return fmt.Sprintf("%s%s-%d", ServiceUpstreamNamePrefix, serviceName, port)
-}
-
-func reconstructServiceName(fakeUpstreamName string) (string, int32, error) {
-	noPrefix := strings.TrimPrefix(fakeUpstreamName, ServiceUpstreamNamePrefix)
-	namePortSeparatorIndex := strings.LastIndex(noPrefix, "-")
-	serviceName := noPrefix[:namePortSeparatorIndex]
-	portStr := noPrefix[namePortSeparatorIndex+1:]
-	portInt64, err := strconv.ParseUint(portStr, 10, 32)
-	if err != nil {
-		return "", 0, errors.Wrapf(err, "service-derived upstream has malformed name: %s", fakeUpstreamName)
+func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
+	var ref *core.ResourceRef
+	switch d := dest.DestinationType.(type) {
+	case *v1.Destination_Upstream:
+		ref = d.Upstream
+	case *v1.Destination_Service:
+		ref = serviceDestinationToUpstreamRef(d.Service)
+	default:
+		return nil, errors.Errorf("no destination type specified")
 	}
-	return serviceName, int32(portInt64), nil
+	return ref, nil
 }
 
-func servicesToUpstreams(services skkube.ServiceList) v1.UpstreamList {
+func serviceDestinationToUpstreamRef(svcDest *v1.ServiceDestination) *core.ResourceRef {
+	return &core.ResourceRef{
+		Namespace: svcDest.Ref.Namespace,
+		Name:      buildFakeUpstreamName(svcDest.Ref.Name, svcDest.Ref.Namespace, int32(svcDest.Port)),
+	}
+}
+
+func buildFakeUpstreamName(serviceName, serviceNamespace string, port int32) string {
+	regularServiceName := kubeplugin.UpstreamName(serviceNamespace, serviceName, port, nil)
+	return ServiceUpstreamNamePrefix + regularServiceName
+}
+
+func ServicesToUpstreams(services skkube.ServiceList) v1.UpstreamList {
 	var result v1.UpstreamList
 	for _, svc := range services {
 		for _, port := range svc.Spec.Ports {
@@ -53,7 +62,7 @@ func servicesToUpstreams(services skkube.ServiceList) v1.UpstreamList {
 func serviceToUpstream(svc *kubev1.Service, port kubev1.ServicePort) *gloov1.Upstream {
 	coreMeta := kubeutils.FromKubeMeta(svc.ObjectMeta)
 
-	coreMeta.Name = buildFakeUpstreamName(svc.Name, port.Port)
+	coreMeta.Name = buildFakeUpstreamName(svc.Name, svc.Namespace, port.Port)
 	coreMeta.Namespace = svc.Namespace
 	coreMeta.ResourceVersion = ""
 

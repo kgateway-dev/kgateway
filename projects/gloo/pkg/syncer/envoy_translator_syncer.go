@@ -36,7 +36,7 @@ var (
 )
 
 func init() {
-	view.Register(envoySnapshotOutView)
+	_ = view.Register(envoySnapshotOutView)
 }
 
 func measureResource(ctx context.Context, resource string, len int) {
@@ -46,7 +46,6 @@ func measureResource(ctx context.Context, resource string, len int) {
 }
 
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) error {
-
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -60,6 +59,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	logger.Debugf("%v", snap)
 	allResourceErrs := make(reporter.ResourceErrors)
 	allResourceErrs.Accept(snap.Upstreams.AsInputResources()...)
+	allResourceErrs.Accept(snap.Upstreamgroups.AsInputResources()...)
 	allResourceErrs.Accept(snap.Proxies.AsInputResources()...)
 
 	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
@@ -85,12 +85,12 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		allResourceErrs.Merge(resourceErrs)
 
 		if xdsSnapshot, err = validateSnapshot(snap, xdsSnapshot, resourceErrs, logger); err != nil {
-			logger.Warnf("proxy %v was rejected due to invalid config: %v\nxDS cache will not be updated.", err)
+			logger.Warnf("proxy %v was rejected due to invalid config: %v\nxDS cache will not be updated.", proxy.Metadata.Ref().Key(), err)
 			continue
 		}
 		key := xds.SnapshotKey(proxy)
 		if err := s.xdsCache.SetSnapshot(key, xdsSnapshot); err != nil {
-			err := errors.Wrapf(err, "failed while updating xds snapshot cache")
+			err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
@@ -124,10 +124,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 func (s *translatorSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
 	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, log.Sprintf("%v", s.xdsCache))
+		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.xdsCache))
 	})
 	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, log.Sprintf("%v", s.latestSnap))
+		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.latestSnap))
 	})
 	return http.ListenAndServe(":10010", r)
 }

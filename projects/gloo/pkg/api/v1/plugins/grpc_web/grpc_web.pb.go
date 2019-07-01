@@ -26,7 +26,7 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // GrpcWeb support is enabled be default. Use this extension to disable it.
 type GrpcWeb struct {
-	// Disable grpc web supoort.
+	// Disable grpc web support.
 	Disable              bool     `protobuf:"varint,1,opt,name=disable,proto3" json:"disable,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

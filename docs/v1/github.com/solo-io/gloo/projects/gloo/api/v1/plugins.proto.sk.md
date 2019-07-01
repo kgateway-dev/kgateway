@@ -61,6 +61,7 @@ to be usable by Gloo.
 ```yaml
 "extensions": .gloo.solo.io.Extensions
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
+"stats": .stats.plugins.gloo.solo.io.Stats
 
 ```
 
@@ -68,6 +69,7 @@ to be usable by Gloo.
 | ----- | ---- | ----------- |----------- | 
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
+| `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
 
 
 
@@ -150,7 +152,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk#upstreamsslconfig) |  |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Circuite breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |  |
 | `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk#loadbalancerconfig) |  |  |
 | `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk#connectionconfig) |  |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  |  |

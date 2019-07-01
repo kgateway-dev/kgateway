@@ -564,7 +564,7 @@ var _ = Describe("Translate", func() {
 							},
 						},
 					},
-					SslConfiguations: []*gloov1.SslConfig(nil),
+					SslConfigurations: []*gloov1.SslConfig(nil),
 				},
 				&gloov1.Listener{
 					Name:        string("https"),
@@ -638,7 +638,7 @@ var _ = Describe("Translate", func() {
 							},
 						},
 					},
-					SslConfiguations: []*gloov1.SslConfig{
+					SslConfigurations: []*gloov1.SslConfig{
 						&gloov1.SslConfig{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
