@@ -326,7 +326,7 @@ render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-in
 .PHONY: save-helm
 save-helm:
 ifeq ($(RELEASE),"true")
-	gsutil -m rsync -r './_output/helm' gs://sm-marketplace-helm/
+	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
 endif
 
 #----------------------------------------------------------------------------------
