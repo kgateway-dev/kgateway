@@ -113,7 +113,7 @@ steps:
   - 'HELM_HOME=/root/.helm'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', '-failFast', '-race']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'setup-helm', 'check-code-and-docs-gen']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen']
   id: 'test'
 
 # Build and tag docker images
