@@ -1,8 +1,9 @@
 package syncer
 
 import (
-	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"time"
+
+	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/aws"
