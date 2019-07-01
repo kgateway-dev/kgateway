@@ -16,7 +16,7 @@ spec:
   refreshRate: 60s
 {{- if .Values.settings.integrations.knative.enabled }}
   knativeOptions:
-    clusteringressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
+    clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
 {{- end }}
 
 {{- if .Values.settings.extensions }}
