@@ -42,7 +42,7 @@ steps:
   args: ['check-format']
   waitFor: ['dep']
   id: 'check-format'
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.8'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   entrypoint: 'bash'
   args: ['ci/check-code-and-docs-gen.sh']
   env:
@@ -85,7 +85,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['dep']
   id: 'make-helm-dir'
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.8'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['fetch-helm']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -123,7 +123,7 @@ steps:
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
   waitFor: ['test']
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.8'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['docker']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -136,7 +136,7 @@ steps:
   id: 'compile'
 
 # Run regression tests
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.8'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['build-test-assets']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -168,7 +168,7 @@ steps:
 
 # 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
 # 2) Publish helm chart
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.8'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['docker-push', 'manifest', 'upload-github-release-assets', 'push-docs']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
@@ -180,7 +180,7 @@ steps:
   id: 'release'
   waitFor: ['test', 'regression-tests']
 # Sync helm chart data back to google storage bucket
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.8'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['save-helm']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
