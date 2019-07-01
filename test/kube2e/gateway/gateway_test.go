@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -22,7 +24,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
@@ -38,7 +40,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -56,8 +58,8 @@ var _ = Describe("Kube2e: gateway", func() {
 		cache      kube.SharedCache
 		kubeClient kubernetes.Interface
 
-		gatewayClient        v1.GatewayClient
-		virtualServiceClient v1.VirtualServiceClient
+		gatewayClient        gatewayv1.GatewayClient
+		virtualServiceClient gatewayv1.VirtualServiceClient
 		upstreamGroupClient  gloov1.UpstreamGroupClient
 		upstreamClient       gloov1.UpstreamClient
 		proxyClient          gloov1.ProxyClient
@@ -76,12 +78,12 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		cache = kube.NewKubeCache(ctx)
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         v1.GatewayCrd,
+			Crd:         gatewayv1.GatewayCrd,
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
 		virtualServiceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         v1.VirtualServiceCrd,
+			Crd:         gatewayv1.VirtualServiceCrd,
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
@@ -101,12 +103,12 @@ var _ = Describe("Kube2e: gateway", func() {
 			SharedCache: cache,
 		}
 
-		gatewayClient, err = v1.NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err = gatewayv1.NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		virtualServiceClient, err = v1.NewVirtualServiceClient(virtualServiceClientFactory)
+		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = virtualServiceClient.Register()
 		Expect(err).NotTo(HaveOccurred())
@@ -153,7 +155,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*v1.Gateway, error) {
+			Eventually(func() (*gatewayv1.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -164,9 +166,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10, // this is important, as sometimes curl hangs
+				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
-			}, helper.SimpleHttpResponse, 1, 60*time.Second)
+			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 		})
 
 		Context("routing directly to kubernetes services", func() {
@@ -193,7 +195,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 
 				// wait for default gateway to be created
-				Eventually(func() *v1.Gateway {
+				Eventually(func() *gatewayv1.Gateway {
 					gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 					return gw
 				}, "15s", "0.5s").Should(Not(BeNil()))
@@ -237,9 +239,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					Host:              gatewayProxy,
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
-					ConnectionTimeout: 10, // this is important, as sometimes curl hangs
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
-				}, helper.SimpleHttpResponse, 1, 60*time.Second)
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -282,7 +284,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 				// wait for default gateway to be created
-				Eventually(func() (*v1.Gateway, error) {
+				Eventually(func() (*gatewayv1.Gateway, error) {
 					return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 				}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -303,9 +305,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
 					CaFile:            "/tmp/ca.crt",
-					ConnectionTimeout: 10,
+					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, helper.SimpleHttpResponse, 1, 60*time.Second)
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 		})
 
@@ -389,9 +391,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					Host:              gatewayProxy,
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
-					ConnectionTimeout: 10,
+					ConnectionTimeout: 1,
 					WithoutStats:      true,
-				}, responseString, 1, 60*time.Second)
+				}, responseString, 1, 60*time.Second, 1*time.Second)
 			})
 		})
 	})
@@ -404,7 +406,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// create some services
 			for i := 0; i < 20; i++ {
 				service := &corev1.Service{
-					ObjectMeta: meta_v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:   fmt.Sprintf("%s-%d", displayName, i),
 						Labels: map[string]string{"gloo": displayName},
 					},
@@ -423,7 +425,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		AfterEach(func() {
 			for _, svcName := range createdServices {
-				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(svcName, &meta_v1.DeleteOptions{})
+				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(svcName, &metav1.DeleteOptions{})
 			}
 		})
 
@@ -466,18 +468,21 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("with subsets and upstream groups", func() {
 
 		var (
-			redpod   *corev1.Pod
-			bluepod  *corev1.Pod
-			greenpod *corev1.Pod
+			redPod   *corev1.Pod
+			bluePod  *corev1.Pod
+			greenPod *corev1.Pod
 			service  *corev1.Service
+			vs       *gatewayv1.VirtualService
+			ug       *gloov1.UpstreamGroup
 		)
 		BeforeEach(func() {
 			pod := &corev1.Pod{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "pod",
 					Labels:       map[string]string{"app": "redblue", "text": "red"},
 				},
 				Spec: corev1.PodSpec{
+					TerminationGracePeriodSeconds: pointerToInt64(0),
 					Containers: []corev1.Container{{
 						Name:  "echo",
 						Image: "hashicorp/http-echo@sha256:ba27d460cd1f22a1a4331bdf74f4fccbc025552357e8a3249c40ae216275de96",
@@ -485,22 +490,22 @@ var _ = Describe("Kube2e: gateway", func() {
 					}},
 				}}
 			var err error
-			redpod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
+			redPod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
 			Expect(err).NotTo(HaveOccurred())
 
 			pod.Labels["text"] = "blue"
 			pod.Spec.Containers[0].Args = []string{"-text=\"blue-pod\""}
-			bluepod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
+			bluePod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
 			Expect(err).NotTo(HaveOccurred())
 
 			// green pod - no label
 			delete(pod.Labels, "text")
 			pod.Spec.Containers[0].Args = []string{"-text=\"green-pod\""}
-			greenpod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
+			greenPod, err = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Create(pod)
 			Expect(err).NotTo(HaveOccurred())
 
 			service = &corev1.Service{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "redblue",
 					Labels:       map[string]string{"app": "redblue"},
 				},
@@ -516,23 +521,54 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		AfterEach(func() {
-			if redpod != nil {
-				_ = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(redpod.Name, &meta_v1.DeleteOptions{})
+			if redPod != nil {
+				err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(redPod.Name, &metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				Expect(err).NotTo(HaveOccurred())
 			}
-			if bluepod != nil {
-				_ = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(bluepod.Name, &meta_v1.DeleteOptions{})
+			if bluePod != nil {
+				err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(bluePod.Name, &metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				Expect(err).NotTo(HaveOccurred())
 			}
-			if greenpod != nil {
-				_ = kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(greenpod.Name, &meta_v1.DeleteOptions{})
+			if greenPod != nil {
+				err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Delete(greenPod.Name, &metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				Expect(err).NotTo(HaveOccurred())
 			}
 			if service != nil {
-				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(service.Name, &meta_v1.DeleteOptions{})
+				err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(service.Name, &metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				Expect(err).NotTo(HaveOccurred())
 			}
-			_ = virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
+
+			err := virtualServiceClient.Delete(testHelper.InstallNamespace, vs.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			err = upstreamGroupClient.Delete(testHelper.InstallNamespace, ug.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() error {
+				coloredPods, err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).List(
+					metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": "redblue"}).String()})
+				if err != nil {
+					return err
+				}
+				vsList, err := virtualServiceClient.List(vs.Metadata.Namespace, clients.ListOpts{Ctx: ctx})
+				if err != nil {
+					return err
+				}
+				// After we remove the virtual service, the proxy should be removed as well by the gateway controller
+				proxyList, err := proxyClient.List(testHelper.InstallNamespace, clients.ListOpts{Ctx: ctx})
+				if err != nil {
+					return err
+				}
+
+				if len(coloredPods.Items)+len(vsList)+len(proxyList) == 0 {
+					return nil
+				}
+				return errors.Errorf("expected all test resources to have been deleted but found: "+
+					"%d pods, %d virtual services, %d proxies", len(coloredPods.Items), len(vsList), len(proxyList))
+			}, time.Minute, time.Second).Should(BeNil())
 		})
 
 		It("routes to subsets and upstream groups", func() {
-
 			getUpstream := func() (*gloov1.Upstream, error) {
 				name := testHelper.InstallNamespace + "-" + service.Name + "-5678"
 				return upstreamClient.Read(testHelper.InstallNamespace, name, clients.ReadOpts{})
@@ -556,7 +592,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, "1s", "0.1s").ShouldNot(HaveOccurred())
 
 			// add subsets to upstream
-			ug := &gloov1.UpstreamGroup{
+			ug = &gloov1.UpstreamGroup{
 				Metadata: core.Metadata{
 					Name:      "test",
 					Namespace: testHelper.InstallNamespace,
@@ -606,8 +642,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// create an upstream group
 			// add subset to the upstream
 			// create another pod
-			_, err = virtualServiceClient.Write(&v1.VirtualService{
-
+			vs, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
 				Metadata: core.Metadata{
 					Name:      "vs",
 					Namespace: testHelper.InstallNamespace,
@@ -658,7 +693,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*v1.Gateway, error) {
+			Eventually(func() (*gatewayv1.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -674,9 +709,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
-			}, "red-pod", 1, 120*time.Second)
+			}, "red-pod", 1, 120*time.Second, 1*time.Second)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
@@ -685,9 +720,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
-			}, "blue-pod", 1, 120*time.Second)
+			}, "blue-pod", 1, 120*time.Second, 1*time.Second)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
@@ -696,9 +731,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
-			}, "green-pod", 1, 120*time.Second)
+			}, "green-pod", 1, 120*time.Second, 1*time.Second)
 
 			redOpts := helper.CurlOpts{
 				Protocol:          "http",
@@ -707,7 +742,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
-				ConnectionTimeout: 10,
+				ConnectionTimeout: 1,
 				WithoutStats:      true,
 			}
 
@@ -731,8 +766,8 @@ func ToFile(content string) string {
 	return f.Name()
 }
 
-func getVirtualService(dest *gloov1.Destination, sslConfig *gloov1.SslConfig) *v1.VirtualService {
-	return &v1.VirtualService{
+func getVirtualService(dest *gloov1.Destination, sslConfig *gloov1.SslConfig) *gatewayv1.VirtualService {
+	return &gatewayv1.VirtualService{
 		Metadata: core.Metadata{
 			Name:      "vs",
 			Namespace: testHelper.InstallNamespace,

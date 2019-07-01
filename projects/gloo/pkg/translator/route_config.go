@@ -155,19 +155,21 @@ func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in
 				continue
 			}
 			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
-				report(err, "plugin error on route")
+				report(err, "plugin error on ProcessRoute")
 			}
 		}
-		// run the plugins for RoutePlugin
+
+		// run the plugins for RouteActionPlugin
 		for _, plug := range t.plugins {
 			routePlugin, ok := plug.(plugins.RouteActionPlugin)
 			if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
 				continue
 			}
 			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), nil, out.GetRoute()); err != nil {
-				report(err, "plugin error on process route action")
+				report(err, "plugin error on ProcessRouteAction")
 			}
 		}
+
 	case *v1.Route_DirectResponseAction:
 		out.Action = &envoyroute.Route_DirectResponse{
 			DirectResponse: &envoyroute.DirectResponseAction{
@@ -175,6 +177,7 @@ func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in
 				Body:   DataSourceFromString(action.DirectResponseAction.Body),
 			},
 		}
+
 	case *v1.Route_RedirectAction:
 		out.Action = &envoyroute.Route_Redirect{
 			Redirect: &envoyroute.RedirectAction{
