@@ -50,10 +50,20 @@ func getInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Insta
 	var instances []*ec2.Instance
 	for _, reservation := range desc.Reservations {
 		for _, instance := range reservation.Instances {
-			instances = append(instances, instance)
+			if validInstance(instance) {
+				instances = append(instances, instance)
+			}
 		}
 	}
 	return instances
+}
+
+// this filter function defines what gloo considers a valid EC2 instance
+func validInstance(instance *ec2.Instance) bool {
+	if instance.PublicIpAddress == nil {
+		return false
+	}
+	return true
 }
 
 func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {

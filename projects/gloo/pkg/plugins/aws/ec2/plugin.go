@@ -1,7 +1,12 @@
 package ec2
 
 import (
+	"context"
 	"reflect"
+
+	"go.uber.org/zap"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -35,14 +40,18 @@ func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	contextutils.LoggerFrom(context.TODO()).Infow("start initializing ec2")
 	var err error
 	p.secretClient, err = v1.NewSecretClient(p.secretFactory)
 	if err != nil {
+		contextutils.LoggerFrom(context.TODO()).Errorw("new client ec2", zap.Error(err))
 		return err
 	}
 	if err := p.secretClient.Register(); err != nil {
+		contextutils.LoggerFrom(context.TODO()).Errorw("registering ec2", zap.Error(err))
 		return err
 	}
+	contextutils.LoggerFrom(context.TODO()).Infow("finish initializing ec2")
 	return nil
 }
 

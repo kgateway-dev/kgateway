@@ -2,14 +2,17 @@ package ec2
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
+	"strings"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -17,7 +20,7 @@ import (
 // EDS API
 // start the EDS watch which sends a new list of endpoints on any change
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreams v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
-	// TODO
+	contextutils.LoggerFrom(opts.Ctx).Infow("calling WatchEndpoints on EC2")
 	return newEndpointsWatcher(opts.Ctx, writeNamespace, upstreams, p.secretClient, opts.RefreshRate).poll()
 }
 
@@ -70,6 +73,10 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	errs := make(chan error)
 	updateResourceList := func() {
 		tmpTODOAllNamespaces := ""
+		if c.secretClient == nil {
+			contextutils.LoggerFrom(c.watchContext).Infow("waiting for ec2 plugin to init")
+			return
+		}
 		secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{})
 		if err != nil {
 			errs <- err
@@ -153,5 +160,30 @@ func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, 
 const ec2EndpointNamePrefix = "ec2"
 
 func generateName(upstreamRef *core.ResourceRef, publicIpAddress string) string {
-	return kubeutils.SanitizeName(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String(), publicIpAddress))
+	return SanitizeName(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String(), publicIpAddress))
+}
+
+// use function from go-utils when update merges
+// DEPRECATED
+func SanitizeName(name string) string {
+	name = strings.Replace(name, "*", "-", -1)
+	name = strings.Replace(name, "/", "-", -1)
+	name = strings.Replace(name, ".", "-", -1)
+	name = strings.Replace(name, "[", "", -1)
+	name = strings.Replace(name, "]", "", -1)
+	name = strings.Replace(name, ":", "-", -1)
+	name = strings.Replace(name, " ", "-", -1)
+	name = strings.Replace(name, "\n", "", -1)
+	// This is the new content
+	// begin diff
+	name = strings.Replace(name, "\"", "", -1)
+	// end diff
+	if len(name) > 63 {
+		hash := md5.Sum([]byte(name))
+		name = fmt.Sprintf("%s-%x", name[:31], hash)
+		name = name[:63]
+	}
+	name = strings.Replace(name, ".", "-", -1)
+	name = strings.ToLower(name)
+	return name
 }
