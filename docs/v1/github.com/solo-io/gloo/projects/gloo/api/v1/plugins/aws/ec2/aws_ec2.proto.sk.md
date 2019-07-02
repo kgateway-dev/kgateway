@@ -12,7 +12,8 @@ weight: 5
 
 
 - [UpstreamSpec](#upstreamspec)
-- [Ec2InstanceSpec](#ec2instancespec)
+- [Filter](#filter)
+- [KvPair](#kvpair)
   
 
 
@@ -34,7 +35,7 @@ in a particular region
 ```yaml
 "region": string
 "secretRef": .core.solo.io.ResourceRef
-"ec2Instances": []aws_ec2.plugins.gloo.solo.io.Ec2InstanceSpec
+"filters": []aws_ec2.plugins.gloo.solo.io.Filter
 
 ```
 
@@ -42,29 +43,45 @@ in a particular region
 | ----- | ---- | ----------- |----------- | 
 | `region` | `string` | The AWS Region where the desired EC2 instances exist |  |
 | `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ``` |  |
-| `ec2Instances` | [[]aws_ec2.plugins.gloo.solo.io.Ec2InstanceSpec](../aws_ec2.proto.sk#ec2instancespec) | The list of EC2 instances contained within this region. This list will be automatically populated by Gloo if discovery is enabled for AWS EC2 |  |
+| `filters` | [[]aws_ec2.plugins.gloo.solo.io.Filter](../aws_ec2.proto.sk#filter) |  |  |
 
 
 
 
 ---
-### Ec2InstanceSpec
+### Filter
 
- 
-Each EC2 Instance Spec contains data necessary for Gloo to route to EC2 instances:
-- name of the function
-- qualifier for the function
+
 
 ```yaml
-"publicDns": string
-"port": int
+"key": string
+"kvPair": .aws_ec2.plugins.gloo.solo.io.Filter.KvPair
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `publicDns` | `string` | the logical name gloo should associate with this function. if left empty, it will default to lambda_function_name+qualifier |  |
-| `port` | `int` | the port to which gloo should route |  |
+| `key` | `string` | if set, only instances that have a tag with this key will be matched |  |
+| `kvPair` | [.aws_ec2.plugins.gloo.solo.io.Filter.KvPair](../aws_ec2.proto.sk#kvpair) | if set, only instances that have a tag with this key and value |  |
+
+
+
+
+---
+### KvPair
+
+
+
+```yaml
+"key": string
+"value": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `key` | `string` |  |  |
+| `value` | `string` |  |  |
 
 
 

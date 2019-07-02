@@ -37,13 +37,11 @@ type UpstreamSpec struct {
 	//  access_key: <aws access key>
 	//  secret_key: <aws secret key>
 	//  ```
-	SecretRef core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref"`
-	// The list of EC2 instances contained within this region.
-	// This list will be automatically populated by Gloo if discovery is enabled for AWS EC2
-	Ec2Instances         []*Ec2InstanceSpec `protobuf:"bytes,3,rep,name=ec2_instances,json=ec2Instances,proto3" json:"ec2_instances,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
-	XXX_unrecognized     []byte             `json:"-"`
-	XXX_sizecache        int32              `json:"-"`
+	SecretRef            core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref"`
+	Filters              []*Filter        `protobuf:"bytes,3,rep,name=filters,proto3" json:"filters,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *UpstreamSpec) Reset()         { *m = UpstreamSpec{} }
@@ -84,68 +82,203 @@ func (m *UpstreamSpec) GetSecretRef() core.ResourceRef {
 	return core.ResourceRef{}
 }
 
-func (m *UpstreamSpec) GetEc2Instances() []*Ec2InstanceSpec {
+func (m *UpstreamSpec) GetFilters() []*Filter {
 	if m != nil {
-		return m.Ec2Instances
+		return m.Filters
 	}
 	return nil
 }
 
-// Each EC2 Instance Spec contains data necessary for Gloo to route to EC2 instances:
-// - name of the function
-// - qualifier for the function
-type Ec2InstanceSpec struct {
-	// the logical name gloo should associate with this function. if left empty, it will default to
-	// lambda_function_name+qualifier
-	PublicDns string `protobuf:"bytes,1,opt,name=public_dns,json=publicDns,proto3" json:"public_dns,omitempty"`
-	// the port to which gloo should route
-	Port                 uint32   `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+type Filter struct {
+	// Types that are valid to be assigned to Spec:
+	//	*Filter_Key
+	//	*Filter_KvPair_
+	Spec                 isFilter_Spec `protobuf_oneof:"spec"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
+}
+
+func (m *Filter) Reset()         { *m = Filter{} }
+func (m *Filter) String() string { return proto.CompactTextString(m) }
+func (*Filter) ProtoMessage()    {}
+func (*Filter) Descriptor() ([]byte, []int) {
+	return fileDescriptor_fc1fd6f1173c4563, []int{1}
+}
+func (m *Filter) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Filter.Unmarshal(m, b)
+}
+func (m *Filter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Filter.Marshal(b, m, deterministic)
+}
+func (m *Filter) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Filter.Merge(m, src)
+}
+func (m *Filter) XXX_Size() int {
+	return xxx_messageInfo_Filter.Size(m)
+}
+func (m *Filter) XXX_DiscardUnknown() {
+	xxx_messageInfo_Filter.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Filter proto.InternalMessageInfo
+
+type isFilter_Spec interface {
+	isFilter_Spec()
+	Equal(interface{}) bool
+}
+
+type Filter_Key struct {
+	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof"`
+}
+type Filter_KvPair_ struct {
+	KvPair *Filter_KvPair `protobuf:"bytes,2,opt,name=kv_pair,json=kvPair,proto3,oneof"`
+}
+
+func (*Filter_Key) isFilter_Spec()     {}
+func (*Filter_KvPair_) isFilter_Spec() {}
+
+func (m *Filter) GetSpec() isFilter_Spec {
+	if m != nil {
+		return m.Spec
+	}
+	return nil
+}
+
+func (m *Filter) GetKey() string {
+	if x, ok := m.GetSpec().(*Filter_Key); ok {
+		return x.Key
+	}
+	return ""
+}
+
+func (m *Filter) GetKvPair() *Filter_KvPair {
+	if x, ok := m.GetSpec().(*Filter_KvPair_); ok {
+		return x.KvPair
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Filter) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Filter_OneofMarshaler, _Filter_OneofUnmarshaler, _Filter_OneofSizer, []interface{}{
+		(*Filter_Key)(nil),
+		(*Filter_KvPair_)(nil),
+	}
+}
+
+func _Filter_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*Filter)
+	// spec
+	switch x := m.Spec.(type) {
+	case *Filter_Key:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.Key)
+	case *Filter_KvPair_:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.KvPair); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Filter.Spec has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _Filter_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*Filter)
+	switch tag {
+	case 1: // spec.key
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Spec = &Filter_Key{x}
+		return true, err
+	case 2: // spec.kv_pair
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Filter_KvPair)
+		err := b.DecodeMessage(msg)
+		m.Spec = &Filter_KvPair_{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _Filter_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Filter)
+	// spec
+	switch x := m.Spec.(type) {
+	case *Filter_Key:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.Key)))
+		n += len(x.Key)
+	case *Filter_KvPair_:
+		s := proto.Size(x.KvPair)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+type Filter_KvPair struct {
+	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Ec2InstanceSpec) Reset()         { *m = Ec2InstanceSpec{} }
-func (m *Ec2InstanceSpec) String() string { return proto.CompactTextString(m) }
-func (*Ec2InstanceSpec) ProtoMessage()    {}
-func (*Ec2InstanceSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_fc1fd6f1173c4563, []int{1}
+func (m *Filter_KvPair) Reset()         { *m = Filter_KvPair{} }
+func (m *Filter_KvPair) String() string { return proto.CompactTextString(m) }
+func (*Filter_KvPair) ProtoMessage()    {}
+func (*Filter_KvPair) Descriptor() ([]byte, []int) {
+	return fileDescriptor_fc1fd6f1173c4563, []int{1, 0}
 }
-func (m *Ec2InstanceSpec) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Ec2InstanceSpec.Unmarshal(m, b)
+func (m *Filter_KvPair) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Filter_KvPair.Unmarshal(m, b)
 }
-func (m *Ec2InstanceSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Ec2InstanceSpec.Marshal(b, m, deterministic)
+func (m *Filter_KvPair) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Filter_KvPair.Marshal(b, m, deterministic)
 }
-func (m *Ec2InstanceSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Ec2InstanceSpec.Merge(m, src)
+func (m *Filter_KvPair) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Filter_KvPair.Merge(m, src)
 }
-func (m *Ec2InstanceSpec) XXX_Size() int {
-	return xxx_messageInfo_Ec2InstanceSpec.Size(m)
+func (m *Filter_KvPair) XXX_Size() int {
+	return xxx_messageInfo_Filter_KvPair.Size(m)
 }
-func (m *Ec2InstanceSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_Ec2InstanceSpec.DiscardUnknown(m)
+func (m *Filter_KvPair) XXX_DiscardUnknown() {
+	xxx_messageInfo_Filter_KvPair.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Ec2InstanceSpec proto.InternalMessageInfo
+var xxx_messageInfo_Filter_KvPair proto.InternalMessageInfo
 
-func (m *Ec2InstanceSpec) GetPublicDns() string {
+func (m *Filter_KvPair) GetKey() string {
 	if m != nil {
-		return m.PublicDns
+		return m.Key
 	}
 	return ""
 }
 
-func (m *Ec2InstanceSpec) GetPort() uint32 {
+func (m *Filter_KvPair) GetValue() string {
 	if m != nil {
-		return m.Port
+		return m.Value
 	}
-	return 0
+	return ""
 }
 
 func init() {
 	proto.RegisterType((*UpstreamSpec)(nil), "aws_ec2.plugins.gloo.solo.io.UpstreamSpec")
-	proto.RegisterType((*Ec2InstanceSpec)(nil), "aws_ec2.plugins.gloo.solo.io.Ec2InstanceSpec")
+	proto.RegisterType((*Filter)(nil), "aws_ec2.plugins.gloo.solo.io.Filter")
+	proto.RegisterType((*Filter_KvPair)(nil), "aws_ec2.plugins.gloo.solo.io.Filter.KvPair")
 }
 
 func init() {
@@ -153,28 +286,30 @@ func init() {
 }
 
 var fileDescriptor_fc1fd6f1173c4563 = []byte{
-	// 324 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x51, 0x3d, 0x4e, 0x33, 0x31,
-	0x10, 0xfd, 0xf6, 0x4b, 0x14, 0x29, 0x4e, 0x22, 0x24, 0x0b, 0xa1, 0x10, 0xf1, 0x13, 0xa5, 0x4a,
-	0x41, 0x6c, 0x61, 0x7a, 0x8a, 0x28, 0x14, 0xa4, 0x34, 0xa2, 0xa1, 0x59, 0x6d, 0xcc, 0xac, 0x31,
-	0xd9, 0xec, 0x58, 0xb6, 0x17, 0xae, 0xc4, 0x19, 0x38, 0x01, 0xa7, 0xa0, 0xe0, 0x24, 0x68, 0x7f,
-	0x02, 0x12, 0x8a, 0x10, 0xd5, 0xcc, 0x1b, 0xbf, 0xe7, 0x79, 0x33, 0x43, 0x96, 0xda, 0x84, 0x87,
-	0x62, 0xc5, 0x14, 0x6e, 0xb8, 0xc7, 0x0c, 0x67, 0x06, 0xb9, 0xce, 0x10, 0xb9, 0x75, 0xf8, 0x08,
-	0x2a, 0xf8, 0x1a, 0x25, 0xd6, 0xf0, 0xa7, 0x73, 0x6e, 0xb3, 0x42, 0x9b, 0xdc, 0xf3, 0xe4, 0xd9,
-	0x73, 0x50, 0xa2, 0x8c, 0x31, 0x28, 0xc1, 0xac, 0xc3, 0x80, 0xf4, 0xe8, 0x0b, 0xd6, 0x34, 0x56,
-	0x4a, 0x59, 0xf9, 0x2b, 0x33, 0x38, 0xda, 0xd7, 0xa8, 0xb1, 0x22, 0xf2, 0x32, 0xab, 0x35, 0xa3,
-	0xb3, 0x1d, 0xfd, 0xab, 0xb8, 0x36, 0x61, 0xdb, 0xd5, 0x41, 0x5a, 0xb3, 0x27, 0xaf, 0x11, 0xe9,
-	0xdf, 0x5a, 0x1f, 0x1c, 0x24, 0x9b, 0x1b, 0x0b, 0x8a, 0x1e, 0x90, 0x8e, 0x03, 0x6d, 0x30, 0x1f,
-	0x46, 0xe3, 0x68, 0xda, 0x95, 0x0d, 0xa2, 0x97, 0x84, 0x78, 0x50, 0x0e, 0x42, 0xec, 0x20, 0x1d,
-	0xfe, 0x1f, 0x47, 0xd3, 0x9e, 0x38, 0x64, 0x0a, 0x1d, 0x6c, 0xfd, 0x30, 0x09, 0x1e, 0x0b, 0xa7,
-	0x40, 0x42, 0x3a, 0x6f, 0xbf, 0xbd, 0x9f, 0xfe, 0x93, 0xdd, 0x5a, 0x22, 0x21, 0xa5, 0x92, 0x0c,
-	0x40, 0x89, 0xd8, 0xe4, 0x3e, 0x24, 0xb9, 0x02, 0x3f, 0x6c, 0x8d, 0x5b, 0xd3, 0x9e, 0x98, 0xb1,
-	0xdf, 0x46, 0x64, 0x57, 0x4a, 0x5c, 0x37, 0x8a, 0xd2, 0x9d, 0xec, 0xc3, 0x77, 0xc1, 0x4f, 0x16,
-	0x64, 0xef, 0x07, 0x81, 0x1e, 0x13, 0x62, 0x8b, 0x55, 0x66, 0x54, 0x7c, 0x9f, 0xfb, 0x66, 0x84,
-	0x6e, 0x5d, 0x59, 0xe4, 0x9e, 0x52, 0xd2, 0xb6, 0xe8, 0x42, 0xe5, 0x7f, 0x20, 0xab, 0x7c, 0xbe,
-	0x7c, 0xf9, 0x38, 0x89, 0xee, 0x16, 0x7f, 0x3b, 0x9b, 0x5d, 0xeb, 0x5d, 0xa7, 0x2b, 0xdf, 0x40,
-	0x89, 0x55, 0xa7, 0xda, 0xea, 0xc5, 0x67, 0x00, 0x00, 0x00, 0xff, 0xff, 0xcf, 0x85, 0xa3, 0xb4,
-	0x05, 0x02, 0x00, 0x00,
+	// 353 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xc1, 0x4a, 0xeb, 0x40,
+	0x14, 0x6d, 0x5e, 0xfb, 0x52, 0x3a, 0x7d, 0x8b, 0xc7, 0x50, 0xa4, 0x16, 0xd1, 0x52, 0x5c, 0x14,
+	0xd4, 0x19, 0x8d, 0xfb, 0x2e, 0x8a, 0x94, 0x52, 0x37, 0x32, 0xe2, 0xc6, 0x4d, 0x49, 0x87, 0x9b,
+	0x38, 0x26, 0xed, 0x1d, 0x66, 0x92, 0x88, 0x3f, 0xe3, 0x52, 0xfc, 0x14, 0xbf, 0xc2, 0x85, 0x5f,
+	0x22, 0xc9, 0xb4, 0xe2, 0xa2, 0x48, 0x57, 0xf7, 0x9e, 0x9b, 0x73, 0xee, 0x39, 0xe1, 0x0e, 0x99,
+	0xc5, 0x2a, 0x7b, 0xc8, 0x17, 0x4c, 0xe2, 0x92, 0x5b, 0x4c, 0xf1, 0x4c, 0x21, 0x8f, 0x53, 0x44,
+	0xae, 0x0d, 0x3e, 0x82, 0xcc, 0xac, 0x43, 0xa1, 0x56, 0xbc, 0xb8, 0xe0, 0x3a, 0xcd, 0x63, 0xb5,
+	0xb2, 0x3c, 0x7c, 0xb2, 0x1c, 0x64, 0x50, 0xd6, 0x39, 0xc8, 0x80, 0x69, 0x83, 0x19, 0xd2, 0x83,
+	0x6f, 0xe8, 0x68, 0xac, 0x94, 0xb2, 0x72, 0x2b, 0x53, 0xd8, 0xeb, 0xc4, 0x18, 0x63, 0x45, 0xe4,
+	0x65, 0xe7, 0x34, 0xbd, 0xd3, 0x2d, 0xfe, 0x55, 0x4d, 0x54, 0xb6, 0x71, 0x35, 0x10, 0x39, 0xf6,
+	0xe0, 0xd5, 0x23, 0xff, 0xee, 0xb4, 0xcd, 0x0c, 0x84, 0xcb, 0x5b, 0x0d, 0x92, 0xee, 0x11, 0xdf,
+	0x40, 0xac, 0x70, 0xd5, 0xf5, 0xfa, 0xde, 0xb0, 0x25, 0xd6, 0x88, 0x8e, 0x08, 0xb1, 0x20, 0x0d,
+	0x64, 0x73, 0x03, 0x51, 0xf7, 0x4f, 0xdf, 0x1b, 0xb6, 0x83, 0x7d, 0x26, 0xd1, 0xc0, 0x26, 0x0f,
+	0x13, 0x60, 0x31, 0x37, 0x12, 0x04, 0x44, 0xe3, 0xc6, 0xfb, 0xc7, 0x51, 0x4d, 0xb4, 0x9c, 0x44,
+	0x40, 0x44, 0x47, 0xa4, 0x19, 0xa9, 0x34, 0x03, 0x63, 0xbb, 0xf5, 0x7e, 0x7d, 0xd8, 0x0e, 0x8e,
+	0xd9, 0x6f, 0x3f, 0xc7, 0x26, 0x15, 0x59, 0x6c, 0x44, 0x83, 0x17, 0x8f, 0xf8, 0x6e, 0x46, 0x29,
+	0xa9, 0x27, 0xf0, 0xec, 0xf2, 0x4d, 0x6b, 0xa2, 0x04, 0x74, 0x42, 0x9a, 0x49, 0x31, 0xd7, 0xa1,
+	0x32, 0xeb, 0x6c, 0x27, 0xbb, 0xac, 0x67, 0xd7, 0xc5, 0x4d, 0xa8, 0xcc, 0xb4, 0x26, 0xfc, 0xa4,
+	0xea, 0x7a, 0xe7, 0xc4, 0x77, 0x33, 0xfa, 0xff, 0x87, 0x8b, 0xf3, 0xe8, 0x90, 0xbf, 0x45, 0x98,
+	0xe6, 0x50, 0x39, 0xb4, 0x84, 0x03, 0x63, 0x9f, 0x34, 0xac, 0x06, 0x39, 0x9e, 0xbd, 0x7d, 0x1e,
+	0x7a, 0xf7, 0x57, 0xbb, 0x5d, 0x5f, 0x27, 0xf1, 0xb6, 0x17, 0x50, 0x7e, 0x03, 0x19, 0x2c, 0xfc,
+	0xea, 0x38, 0x97, 0x5f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xf0, 0x01, 0xc3, 0x1f, 0x4c, 0x02, 0x00,
+	0x00,
 }
 
 func (this *UpstreamSpec) Equal(that interface{}) bool {
@@ -202,11 +337,11 @@ func (this *UpstreamSpec) Equal(that interface{}) bool {
 	if !this.SecretRef.Equal(&that1.SecretRef) {
 		return false
 	}
-	if len(this.Ec2Instances) != len(that1.Ec2Instances) {
+	if len(this.Filters) != len(that1.Filters) {
 		return false
 	}
-	for i := range this.Ec2Instances {
-		if !this.Ec2Instances[i].Equal(that1.Ec2Instances[i]) {
+	for i := range this.Filters {
+		if !this.Filters[i].Equal(that1.Filters[i]) {
 			return false
 		}
 	}
@@ -215,14 +350,14 @@ func (this *UpstreamSpec) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *Ec2InstanceSpec) Equal(that interface{}) bool {
+func (this *Filter) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*Ec2InstanceSpec)
+	that1, ok := that.(*Filter)
 	if !ok {
-		that2, ok := that.(Ec2InstanceSpec)
+		that2, ok := that.(Filter)
 		if ok {
 			that1 = &that2
 		} else {
@@ -234,10 +369,91 @@ func (this *Ec2InstanceSpec) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.PublicDns != that1.PublicDns {
+	if that1.Spec == nil {
+		if this.Spec != nil {
+			return false
+		}
+	} else if this.Spec == nil {
+		return false
+	} else if !this.Spec.Equal(that1.Spec) {
 		return false
 	}
-	if this.Port != that1.Port {
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *Filter_Key) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Filter_Key)
+	if !ok {
+		that2, ok := that.(Filter_Key)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	return true
+}
+func (this *Filter_KvPair_) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Filter_KvPair_)
+	if !ok {
+		that2, ok := that.(Filter_KvPair_)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.KvPair.Equal(that1.KvPair) {
+		return false
+	}
+	return true
+}
+func (this *Filter_KvPair) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Filter_KvPair)
+	if !ok {
+		that2, ok := that.(Filter_KvPair)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	if this.Value != that1.Value {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
