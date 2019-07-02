@@ -3,6 +3,7 @@ package translator
 import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 )
 
@@ -17,9 +18,14 @@ func (t *translator) verifyUpstreamGroups(params plugins.Params, resourceErrs re
 				resourceErrs.AddError(ug, errors.Errorf("destination # %d: destination is nil", i+1))
 				continue
 			}
-			upRef := dest.Destination.Upstream
-			_, err := upstreams.Find(upRef.Namespace, upRef.Name)
+
+			upRef, err := usconversions.DestinationToUpstreamRef(dest.Destination)
 			if err != nil {
+				resourceErrs.AddError(ug, err)
+				continue
+			}
+
+			if _, err := upstreams.Find(upRef.Namespace, upRef.Name); err != nil {
 				resourceErrs.AddError(ug, errors.Wrapf(err, "destination # %d: upstream not found", i+1))
 				continue
 			}

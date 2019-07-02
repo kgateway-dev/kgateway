@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
@@ -191,7 +193,9 @@ func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, e
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
-											Upstream: up.Metadata.Ref(),
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: utils.ResourceRefPtr(up.Metadata.Ref()),
+											},
 										},
 									},
 								},

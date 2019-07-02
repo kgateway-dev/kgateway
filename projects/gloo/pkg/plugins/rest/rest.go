@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+
 	"github.com/gogo/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -69,7 +71,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envo
 	return nil
 }
 
-func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's rest destination
 		if spec.DestinationSpec == nil {
@@ -79,10 +81,16 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 		if !ok {
 			return nil, nil
 		}
+
 		// get upstream
-		restServiceSpec, ok := p.recordedUpstreams[spec.Upstream]
+		upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
+		if err != nil {
+			contextutils.LoggerFrom(p.ctx).Error(err)
+			return nil, err
+		}
+		restServiceSpec, ok := p.recordedUpstreams[*upstreamRef]
 		if !ok {
-			return nil, errors.Errorf("%v does not have a rest service spec", spec.Upstream)
+			return nil, errors.Errorf("%v does not have a rest service spec", *upstreamRef)
 		}
 		funcname := restDestinationSpec.Rest.FunctionName
 		transformationorig := restServiceSpec.Rest.Transformations[funcname]
@@ -94,7 +102,6 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 		transformation := *transformationorig
 
 		// add extensions from the destination spec
-		var err error
 		transformation.Extractors, err = p.createRequestExtractors(restDestinationSpec.Rest.Parameters)
 		if err != nil {
 			return nil, err

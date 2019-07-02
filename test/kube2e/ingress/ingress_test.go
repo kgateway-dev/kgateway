@@ -26,7 +26,7 @@ var _ = Describe("Kube2e: Ingress", func() {
 		kubeIngressClient := kube.ExtensionsV1beta1().Ingresses(testHelper.InstallNamespace)
 
 		backend := &v1beta1.IngressBackend{
-			ServiceName: "testrunner",
+			ServiceName: helper.TestrunnerName,
 			ServicePort: intstr.IntOrString{
 				IntVal: helper.TestRunnerPort,
 			},
@@ -73,7 +73,7 @@ var _ = Describe("Kube2e: Ingress", func() {
 			Host:              ingressProxy,
 			Service:           ingressProxy,
 			Port:              ingressPort,
-			ConnectionTimeout: 10,
-		}, helper.SimpleHttpResponse, 1, time.Minute*2)
+			ConnectionTimeout: 1,
+		}, helper.SimpleHttpResponse, 1, time.Minute*2, 1*time.Second)
 	})
 })

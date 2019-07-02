@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"unicode/utf8"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -23,7 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-//go:generate protoc -I$GOPATH/src/github.com/lyft/protoc-gen-validate -I. -I$GOPATH/src/github.com/gogo/protobuf/protobuf --gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:${GOPATH}/src/ filter.proto
+//go:generate protoc -I$GOPATH/src/github.com/envoyproxy/protoc-gen-validate -I. -I$GOPATH/src/github.com/gogo/protobuf/protobuf --gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:${GOPATH}/src/ filter.proto
 
 const (
 	// filter info
@@ -121,7 +123,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 }
 
-func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	err := pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, filterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's aws destination
 		if spec.DestinationSpec == nil {
@@ -131,10 +133,16 @@ func (p *plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyrou
 		if !ok {
 			return nil, nil
 		}
+
 		// get upstream
-		lambdaSpec, ok := p.recordedUpstreams[spec.Upstream]
+		upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
+		if err != nil {
+			contextutils.LoggerFrom(p.ctx).Error(err)
+			return nil, err
+		}
+		lambdaSpec, ok := p.recordedUpstreams[*upstreamRef]
 		if !ok {
-			err := errors.Errorf("%v is not an AWS upstream", spec.Upstream)
+			err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
 			contextutils.LoggerFrom(p.ctx).Error(err)
 			return nil, err
 		}

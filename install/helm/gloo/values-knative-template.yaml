@@ -2,6 +2,7 @@ settings:
   integrations:
     knative:
       enabled: true
+      installKnative: true
       proxy:
         image:
           repository: quay.io/solo-io/gloo-envoy-wrapper
@@ -22,3 +23,5 @@ ingress:
       pullPolicy: Always
     replicas: 1
 
+k8s:
+  clusterName: cluster.local

@@ -53,7 +53,7 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 	resourceErrs := make(reporter.ResourceErrors)
 
-	logger.Debugf("verifing upstream groups: %v", proxy.Metadata.Name)
+	logger.Debugf("verifying upstream groups: %v", proxy.Metadata.Name)
 	t.verifyUpstreamGroups(params, resourceErrs)
 
 	// endpoints and listeners are shared between listeners
@@ -63,9 +63,8 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 
 	endpoints := computeClusterEndpoints(params.Ctx, params.Snapshot.Upstreams, params.Snapshot.Endpoints)
 
-	// find all the eds clusters without endpoints (can happen with kube service that have no enpoints), and create a zero sized load assignment
+	// Find all the EDS clusters without endpoints (can happen with kube service that have no endpoints), and create a zero sized load assignment
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
-
 ClusterLoop:
 	for _, c := range clusters {
 		if c.GetType() != envoyapi.Cluster_EDS {
@@ -132,11 +131,13 @@ func (t *translator) computeListenerResources(params plugins.Params, proxy *v1.P
 
 	rdsName := routeConfigName(listener)
 
+	// Calculate routes before listeners, so that HttpFilters is called after ProcessVirtualHost\ProcessRoute
+	routeConfig := t.computeRouteConfig(params, proxy, listener, rdsName, report)
+
 	envoyListener := t.computeListener(params, proxy, listener, report)
 	if envoyListener == nil {
 		return nil
 	}
-	routeConfig := t.computeRouteConfig(params, proxy, listener, rdsName, report)
 
 	return &listenerResources{
 		listener:    envoyListener,
@@ -148,7 +149,9 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 	endpoints []*envoyapi.ClusterLoadAssignment,
 	routeConfigs []*envoyapi.RouteConfiguration,
 	listeners []*envoyapi.Listener) envoycache.Snapshot {
+
 	var endpointsProto, clustersProto, routesProto, listenersProto []envoycache.Resource
+
 	for _, ep := range endpoints {
 		endpointsProto = append(endpointsProto, xds.NewEnvoyResource(ep))
 	}
@@ -170,7 +173,7 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		listenersProto = append(listenersProto, xds.NewEnvoyResource(listener))
 	}
 	// construct version
-	// TODO: investigate whether we need a more sophisticated versionining algorithm
+	// TODO: investigate whether we need a more sophisticated versioning algorithm
 	endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
 	if err != nil {
 		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
@@ -191,32 +194,9 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
 	}
 
-	return xds.NewSnapshotFromResources(envoycache.NewResources(fmt.Sprintf("%v", endpointsVersion), endpointsProto),
+	return xds.NewSnapshotFromResources(
+		envoycache.NewResources(fmt.Sprintf("%v", endpointsVersion), endpointsProto),
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
 		envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
-}
-
-func deduplicateClusters(clusters []*envoyapi.Cluster) []*envoyapi.Cluster {
-	mapped := make(map[string]bool)
-	var deduped []*envoyapi.Cluster
-	for _, c := range clusters {
-		if _, added := mapped[c.Name]; added {
-			continue
-		}
-		deduped = append(deduped, c)
-	}
-	return deduped
-}
-
-func deduplicateEndpoints(endpoints []*envoyapi.ClusterLoadAssignment) []*envoyapi.ClusterLoadAssignment {
-	mapped := make(map[string]bool)
-	var deduped []*envoyapi.ClusterLoadAssignment
-	for _, ep := range endpoints {
-		if _, added := mapped[ep.String()]; added {
-			continue
-		}
-		deduped = append(deduped, ep)
-	}
-	return deduped
 }

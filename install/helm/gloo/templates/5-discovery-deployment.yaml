@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -41,6 +41,10 @@ spec:
                 fieldPath: metadata.namespace
         {{- if .Values.discovery.deployment.stats }}
           - name: START_STATS_SERVER
+            value: "true"
+        {{- end}}
+        {{- if .Values.discovery.disable_fds }}
+          - name: DISABLE_FDS
             value: "true"
         {{- end}}
 

@@ -220,9 +220,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      "wow-upstream",
-																Namespace: "example",
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      "wow-upstream",
+																	Namespace: "example",
+																},
 															},
 															DestinationSpec:      (*gloov1.DestinationSpec)(nil),
 															XXX_NoUnkeyedLiteral: struct{}{},
@@ -253,7 +255,7 @@ var _ = Describe("Translate", func() {
 							XXX_sizecache:        0,
 						},
 					},
-					SslConfiguations:     []*gloov1.SslConfig{},
+					SslConfigurations:    []*gloov1.SslConfig{},
 					XXX_NoUnkeyedLiteral: struct{}{},
 					XXX_unrecognized:     []uint8{},
 					XXX_sizecache:        0,
@@ -287,9 +289,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      "wow-upstream",
-																Namespace: "example",
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      "wow-upstream",
+																	Namespace: "example",
+																},
 															},
 															DestinationSpec:      (*gloov1.DestinationSpec)(nil),
 															XXX_NoUnkeyedLiteral: struct{}{},
@@ -323,9 +327,11 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															Upstream: core.ResourceRef{
-																Name:      "wow-upstream",
-																Namespace: "example",
+															DestinationType: &gloov1.Destination_Upstream{
+																Upstream: &core.ResourceRef{
+																	Name:      "wow-upstream",
+																	Namespace: "example",
+																},
 															},
 															DestinationSpec:      (*gloov1.DestinationSpec)(nil),
 															XXX_NoUnkeyedLiteral: struct{}{},
@@ -356,8 +362,8 @@ var _ = Describe("Translate", func() {
 							XXX_sizecache:        0,
 						},
 					},
-					SslConfiguations: []*gloov1.SslConfig{
-						&gloov1.SslConfig{
+					SslConfigurations: []*gloov1.SslConfig{
+						{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "areallygreatsecret",

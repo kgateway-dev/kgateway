@@ -3,11 +3,15 @@ package translator
 import (
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
+
+	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
@@ -47,7 +51,7 @@ func (t *translator) computeVirtualHosts(params plugins.Params, listener *v1.Lis
 	if err := validateVirtualHostDomains(virtualHosts); err != nil {
 		report(err, "invalid listener %v", listener.Name)
 	}
-	requireTls := len(listener.SslConfiguations) > 0
+	requireTls := len(listener.SslConfigurations) > 0
 	var envoyVirtualHosts []envoyroute.VirtualHost
 	for _, virtualHost := range virtualHosts {
 		envoyVirtualHosts = append(envoyVirtualHosts, t.computeVirtualHost(params, virtualHost, requireTls, report))
@@ -56,9 +60,18 @@ func (t *translator) computeVirtualHosts(params plugins.Params, listener *v1.Lis
 }
 
 func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.VirtualHost, requireTls bool, report reportFunc) envoyroute.VirtualHost {
+
+	// Make copy to avoid modifying the snapshot
+	virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
+	virtualHost.Name = utils.SanitizeForEnvoy(params.Ctx, virtualHost.Name, "virtual host")
+
 	var envoyRoutes []envoyroute.Route
 	for _, route := range virtualHost.Routes {
-		envoyRoute := t.envoyRoute(params, report, route)
+		routeParams := plugins.RouteParams{
+			Params:      params,
+			VirtualHost: virtualHost,
+		}
+		envoyRoute := t.envoyRoute(routeParams, report, route)
 		envoyRoutes = append(envoyRoutes, envoyRoute)
 	}
 	domains := virtualHost.Domains
@@ -76,12 +89,6 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 		Domains:    domains,
 		Routes:     envoyRoutes,
 		RequireTls: envoyRequireTls,
-		// TODO (ilackarms): plugins for these
-		// VirtualClusters: nil,
-		// RateLimits: nil,
-		// RequestHeadersToAdd: nil,
-		// ResponseHeadersToRemove: nil,
-		// Auth: nil,
 	}
 
 	// run the plugins
@@ -91,13 +98,13 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 			continue
 		}
 		if err := virtualHostPlugin.ProcessVirtualHost(params, virtualHost, &out); err != nil {
-			report(err, "invalid virtual host")
+			report(err, "invalid virtual host [%s]", virtualHost.Name)
 		}
 	}
 	return out
 }
 
-func (t *translator) envoyRoute(params plugins.Params, report reportFunc, in *v1.Route) envoyroute.Route {
+func (t *translator) envoyRoute(params plugins.RouteParams, report reportFunc, in *v1.Route) envoyroute.Route {
 	out := &envoyroute.Route{}
 
 	setMatch(in, out)
@@ -127,7 +134,7 @@ func setMatch(in *v1.Route, out *envoyroute.Route) {
 	out.Match = match
 }
 
-func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.Route, out *envoyroute.Route) {
+func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in *v1.Route, out *envoyroute.Route) {
 	switch action := in.Action.(type) {
 	case *v1.Route_RouteAction:
 		if err := validateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
@@ -137,7 +144,7 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 		out.Action = &envoyroute.Route_Route{
 			Route: &envoyroute.RouteAction{},
 		}
-		if err := setRouteAction(params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
+		if err := setRouteAction(params.Params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
 			report(err, "translator error on route")
 		}
 
@@ -148,19 +155,21 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 				continue
 			}
 			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
-				report(err, "plugin error on route")
+				report(err, "plugin error on ProcessRoute")
 			}
 		}
-		// run the plugins for RoutePlugin
+
+		// run the plugins for RouteActionPlugin
 		for _, plug := range t.plugins {
 			routePlugin, ok := plug.(plugins.RouteActionPlugin)
 			if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
 				continue
 			}
 			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), nil, out.GetRoute()); err != nil {
-				report(err, "plugin error on process route action")
+				report(err, "plugin error on ProcessRouteAction")
 			}
 		}
+
 	case *v1.Route_DirectResponseAction:
 		out.Action = &envoyroute.Route_DirectResponse{
 			DirectResponse: &envoyroute.DirectResponseAction{
@@ -168,6 +177,7 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 				Body:   DataSourceFromString(action.DirectResponseAction.Body),
 			},
 		}
+
 	case *v1.Route_RedirectAction:
 		out.Action = &envoyroute.Route_Redirect{
 			Redirect: &envoyroute.RedirectAction{
@@ -194,8 +204,12 @@ func (t *translator) setAction(params plugins.Params, report reportFunc, in *v1.
 func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.RouteAction) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
+		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
+		if err != nil {
+			return err
+		}
 		out.ClusterSpecifier = &envoyroute.RouteAction_Cluster{
-			Cluster: UpstreamToClusterName(dest.Single.Upstream),
+			Cluster: UpstreamToClusterName(*usRef),
 		}
 		out.MetadataMatch = getSubsetMatch(dest.Single.Subset)
 
@@ -227,15 +241,20 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 
 	var totalWeight uint32
 	for _, weightedDest := range multiDest.Destinations {
+
+		usRef, err := usconversion.DestinationToUpstreamRef(weightedDest.Destination)
+		if err != nil {
+			return err
+		}
+
 		totalWeight += weightedDest.Weight
 		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, &envoyroute.WeightedCluster_ClusterWeight{
-			Name:          UpstreamToClusterName(weightedDest.Destination.Upstream),
+			Name:          UpstreamToClusterName(*usRef),
 			Weight:        &types.UInt32Value{Value: weightedDest.Weight},
 			MetadataMatch: getSubsetMatch(weightedDest.Destination.Subset),
 		})
 
-		err := checkThatSubsetMatchesUpstream(params, weightedDest.Destination)
-		if err != nil {
+		if err = checkThatSubsetMatchesUpstream(params, weightedDest.Destination); err != nil {
 			return err
 		}
 	}
@@ -265,7 +284,11 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 	}
 	routeSubset := dest.Subset.Values
 
-	ref := dest.Upstream
+	ref, err := usconversion.DestinationToUpstreamRef(dest)
+	if err != nil {
+		return err
+	}
+
 	upstream, err := params.Snapshot.Upstreams.Find(ref.Namespace, ref.Name)
 	if err != nil {
 		return err
@@ -445,13 +468,17 @@ func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.Weigh
 }
 
 func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destination) error {
-	_, err := upstreams.Find(destination.Upstream.Strings())
+	upstreamRef, err := usconversion.DestinationToUpstreamRef(destination)
+	if err != nil {
+		return err
+	}
+	_, err = upstreams.Find(upstreamRef.Strings())
 	return err
 }
 
 func validateListenerSslConfig(listener *v1.Listener, secrets []*v1.Secret) error {
 	sslCfgTranslator := utils.NewSslConfigTranslator(secrets)
-	for _, ssl := range listener.SslConfiguations {
+	for _, ssl := range listener.SslConfigurations {
 		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(ssl); err != nil {
 			return err
 		}

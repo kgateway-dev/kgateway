@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Update API to support routing to Kubernetes services.
+    issueLink: https://github.com/solo-io/gloo/issues/746
+    resolvesIssue: false

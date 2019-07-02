@@ -214,7 +214,9 @@ func actionFromInput(input options.InputRoute) (*v1.Route_RouteAction, error) {
 	}
 	a.RouteAction.Destination = &v1.RouteAction_Single{
 		Single: &v1.Destination{
-			Upstream:        dest.Upstream,
+			DestinationType: &v1.Destination_Upstream{
+				Upstream: &dest.Upstream,
+			},
 			DestinationSpec: spec,
 		},
 	}

@@ -3,6 +3,8 @@ package syncer
 import (
 	"context"
 
+	"github.com/hashicorp/go-multierror"
+
 	"go.opencensus.io/tag"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -46,21 +48,24 @@ func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.S
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
-		go s.ServeXdsSnapshots()
+		go func() {
+			_ = s.ServeXdsSnapshots()
+		}()
 	}
 	return s
 }
 
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+	var multiErr *multierror.Error
 	err := s.syncEnvoy(ctx, snap)
 	if err != nil {
-		return err
+		multiErr = multierror.Append(multiErr, err)
 	}
 	for _, extension := range s.extensions {
 		err := extension.Sync(ctx, snap, s.xdsCache)
 		if err != nil {
-			return err
+			multiErr = multierror.Append(multiErr, err)
 		}
 	}
-	return nil
+	return multiErr.ErrorOrNil()
 }

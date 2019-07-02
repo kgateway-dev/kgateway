@@ -92,7 +92,7 @@ var _ = Describe("Translator", func() {
 		proxy, _ := Translate(context.Background(), ns, snap)
 
 		Expect(proxy.Listeners).To(HaveLen(1))
-		Expect(proxy.Listeners[0].SslConfiguations).To(BeEmpty())
+		Expect(proxy.Listeners[0].SslConfigurations).To(BeEmpty())
 	})
 
 	It("should translate a gateway to only have its vservices", func() {
@@ -213,7 +213,7 @@ var _ = Describe("Translator", func() {
 
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-			Expect(listener.VirtualHosts).To(HaveLen(0))
+			Expect(listener.VirtualHosts).To(HaveLen(1))
 		})
 
 		It("should not error with one contains ssl config", func() {
@@ -225,17 +225,31 @@ var _ = Describe("Translator", func() {
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 			Expect(listener.VirtualHosts).To(HaveLen(1))
-			Expect(listener.VirtualHosts[0].Routes).To(HaveLen(2))
+			Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
 		})
 
-		It("should error with both having ssl config", func() {
+		It("should error when two virtual services conflict", func() {
 			snap.Gateways[0].Ssl = true
 			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 			snap.VirtualServices[1].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[0].SslConfig.SniDomains = []string{"bar"}
+			snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
 
 			_, errs := Translate(context.Background(), ns, snap)
 
 			Expect(errs.Validate()).To(HaveOccurred())
+		})
+
+		It("should error when two virtual services conflict", func() {
+			snap.Gateways[0].Ssl = true
+			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[1].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[0].SslConfig.SniDomains = []string{"foo"}
+			snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
+
+			_, errs := Translate(context.Background(), ns, snap)
+
+			Expect(errs.Validate()).NotTo(HaveOccurred())
 		})
 
 	})

@@ -38,9 +38,11 @@ var _ = Describe("Headers", func() {
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
-								Upstream: core.ResourceRef{
-									Name:      "test",
-									Namespace: "",
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Name:      "test",
+										Namespace: "",
+									},
 								},
 							},
 						},
@@ -97,16 +99,20 @@ var _ = Describe("Headers", func() {
 							Multi: &v1.MultiDestination{
 								Destinations: []*v1.WeightedDestination{{
 									Destination: &v1.Destination{
-										Upstream: core.ResourceRef{
-											Name:      "yes",
-											Namespace: "",
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "yes",
+												Namespace: "",
+											},
 										},
 									},
 								}, {
 									Destination: &v1.Destination{
-										Upstream: core.ResourceRef{
-											Name:      "no",
-											Namespace: "",
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "no",
+												Namespace: "",
+											},
 										},
 									},
 								}},
@@ -137,7 +143,7 @@ var _ = Describe("Headers", func() {
 		It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
 			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
-				if spec.Upstream.Name == "yes" {
+				if spec.GetUpstream().Name == "yes" {
 					return headers, nil
 				}
 				return nil, nil
@@ -159,16 +165,20 @@ var _ = Describe("Headers", func() {
 					},
 					Destinations: []*v1.WeightedDestination{{
 						Destination: &v1.Destination{
-							Upstream: core.ResourceRef{
-								Name:      "yes",
-								Namespace: "",
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      "yes",
+									Namespace: "",
+								},
 							},
 						},
 					}, {
 						Destination: &v1.Destination{
-							Upstream: core.ResourceRef{
-								Name:      "no",
-								Namespace: "",
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      "no",
+									Namespace: "",
+								},
 							},
 						},
 					}},
@@ -194,7 +204,7 @@ var _ = Describe("Headers", func() {
 			It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
 				err := MarkHeaders(context.TODO(), snap, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
-					if spec.Upstream.Name == "yes" {
+					if spec.GetUpstream().Name == "yes" {
 						return headers, nil
 					}
 					return nil, nil

@@ -79,6 +79,7 @@ func SettingsClientTest(namespace string, client SettingsClient, name1, name2, n
 	Expect(r1.DevMode).To(Equal(input.DevMode))
 	Expect(r1.Linkerd).To(Equal(input.Linkerd))
 	Expect(r1.CircuitBreakers).To(Equal(input.CircuitBreakers))
+	Expect(r1.Knative).To(Equal(input.Knative))
 	Expect(r1.Extensions).To(Equal(input.Extensions))
 	Expect(r1.Status).To(Equal(input.Status))
 

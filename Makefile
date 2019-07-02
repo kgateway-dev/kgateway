@@ -59,8 +59,9 @@ update-deps:
 	go get -u golang.org/x/tools/cmd/goimports
 	go get -u github.com/gogo/protobuf/gogoproto
 	go get -u github.com/gogo/protobuf/protoc-gen-gogo
-	mkdir -p $$GOPATH/src/github.com/lyft
-	cd $$GOPATH/src/github.com/lyft && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git checkout v0.0.6
+	mkdir -p $$GOPATH/src/github.com/envoyproxy
+	# use a specific commit (c15f2c24fb27b136e722fa912accddd0c8db9dfa) until v0.0.15 is released, as in v0.0.14 the import paths were not yet changed
+	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout c15f2c24fb27b136e722fa912accddd0c8db9dfa
 	go get -u github.com/paulvollmer/2gobytes
 	go get -v -u github.com/golang/mock/gomock
 	go install github.com/golang/mock/mockgen
@@ -83,6 +84,7 @@ check-spelling:
 .PHONY: clean
 clean:
 	rm -rf _output
+	rm -rf _test
 	rm -fr site
 	git clean -xdf install
 
@@ -320,6 +322,16 @@ install/gloo-ingress.yaml: prepare-helm
 
 .PHONY: render-yaml
 render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
+
+.PHONY: save-helm
+save-helm:
+ifeq ($(RELEASE),"true")
+	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
+endif
+
+.PHONY: fetch-helm
+fetch-helm:
+	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
 
 #----------------------------------------------------------------------------------
 # Release

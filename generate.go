@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/solo-io/gloo/pkg/version"
 
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
-	"github.com/solo-io/go-utils/log"
 )
 
 //go:generate go run generate.go
@@ -19,7 +19,7 @@ func main() {
 	docsOpts := cmd.DocsOptions{
 		Output: options.Hugo,
 	}
-	if err := cmd.Run("projects", true, &docsOpts, nil, nil); err != nil {
+	if err := cmd.Generate(cmd.GenerateOptions{RelativeRoot: "projects", CompileProtos: true, GenDocs: &docsOpts, SkipGenMocks: true}); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
 }

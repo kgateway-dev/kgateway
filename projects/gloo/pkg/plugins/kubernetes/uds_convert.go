@@ -120,7 +120,7 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 		UpstreamSpec: &v1.UpstreamSpec{
 			UpstreamType: &v1.UpstreamSpec_Kube{
 				Kube: &kubeplugin.UpstreamSpec{
-					ServiceSpec:      getServiceSpec(svc, port),
+					ServiceSpec:      GetServiceSpec(svc, port),
 					ServiceName:      meta.Name,
 					ServiceNamespace: meta.Namespace,
 					ServicePort:      uint32(port.Port),
@@ -132,20 +132,23 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 	}
 }
 
-func getServiceSpec(svc *kubev1.Service, port kubev1.ServicePort) *plugins.ServiceSpec {
+func GetServiceSpec(svc *kubev1.Service, port kubev1.ServicePort) *plugins.ServiceSpec {
 	grpcSpec := &plugins.ServiceSpec{
 		PluginType: &plugins.ServiceSpec_Grpc{
 			Grpc: &grpcplugin.ServiceSpec{},
 		},
 	}
-	if strings.HasPrefix(port.Name, "grpc") || strings.HasPrefix(port.Name, "h2") {
-		return grpcSpec
-	}
 
 	if svc.Annotations != nil {
 		if svc.Annotations[GlooH2Annotation] == "true" {
 			return grpcSpec
+		} else if svc.Annotations[GlooH2Annotation] == "false" {
+			return nil
 		}
+	}
+
+	if strings.HasPrefix(port.Name, "grpc") || strings.HasPrefix(port.Name, "h2") {
+		return grpcSpec
 	}
 
 	return nil

@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -103,7 +105,9 @@ var _ = Describe("Transformations", func() {
 									RouteAction: &gloov1.RouteAction{
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
-												Upstream: up.Metadata.Ref(),
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: utils.ResourceRefPtr(up.Metadata.Ref()),
+												},
 											},
 										},
 									},

@@ -1,0 +1,22 @@
+changelog:
+- type: FIX
+  description: >
+    When the translation of the Gloo API snapshot to the xDS one returns an error we currently skip updating the xDS cache.
+    Gloo attempts to remove errored upstreams without compromising the consistency of the snapshot, but most errors still
+    result in the xDS cache not being updated. By not updating the cache, Envoy will continue using the previous snapshot,
+    which we assume to be valid. The problem with this approach is that endpoints are relatively ephemeral entities (think
+    Kubernetes pods) and the snapshot that Gloo is using might become stale if any endpoint changes.
+    With this fix Gloo will try to update the EDS information in the xDS cache even if an error occurred during translation.
+    It does so by retrieving the previous xDS snapshot, updating only the EDS information, verifying the consistency of the
+    resulting snapshot, and, if consistent, persisting it in the cache.
+  issueLink: https://github.com/solo-io/gloo/issues/657
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: go-utils
+  dependencyTag: v0.8.23
+  description: Update go-util to version v0.8.23.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: solo-kit
+  dependencyTag: v0.9.13
+  description: Update solo-kit to version v0.9.13.

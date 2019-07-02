@@ -36,10 +36,9 @@ func Translate(ctx context.Context, namespace string, snap *v1.ApiSnapshot) (*gl
 	validateGateways(filteredGateways, resourceErrs)
 	var listeners []*gloov1.Listener
 	for _, gateway := range filteredGateways {
-
 		virtualServices := getVirtualServiceForGateway(gateway, snap.VirtualServices, resourceErrs)
-		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, virtualServices, resourceErrs)
-		mergedVirtualServices = filterVirtualSeviceForGateway(gateway, mergedVirtualServices)
+		filtered := filterVirtualServiceForGateway(gateway, virtualServices)
+		mergedVirtualServices := validateAndMergeVirtualServices(namespace, gateway, filtered, resourceErrs)
 		listener := desiredListener(gateway, mergedVirtualServices)
 		listeners = append(listeners, listener)
 	}
@@ -151,8 +150,8 @@ func validateAndMergeVirtualServices(ns string, gateway *v1.Gateway, virtualServ
 			routes = append(routes, vs.VirtualHost.Routes...)
 			if sslConfig == nil {
 				sslConfig = vs.SslConfig
-			} else if vs.SslConfig != nil {
-				resourceErrs.AddError(gateway, fmt.Errorf("more than one ssl config is present in virtual service of these domains: %s", k))
+			} else if !vs.SslConfig.Equal(sslConfig) {
+				resourceErrs.AddError(gateway, fmt.Errorf("more than one distinct ssl config is present in virtual service of these domains: %s", k))
 			}
 
 			havePlugins := vs.VirtualHost != nil &&
@@ -221,7 +220,7 @@ func getVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.Virtual
 	return virtualServicesForGateway
 }
 
-func filterVirtualSeviceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
+func filterVirtualServiceForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
 	var virtualServicesForGateway v1.VirtualServiceList
 	for _, virtualService := range virtualServices {
 		if gateway.Ssl == hasSsl(virtualService) {
@@ -263,7 +262,7 @@ func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualSe
 				ListenerPlugins: gateway.Plugins,
 			},
 		},
-		SslConfiguations: sslConfigs,
-		UseProxyProto:    gateway.UseProxyProto,
+		SslConfigurations: sslConfigs,
+		UseProxyProto:     gateway.UseProxyProto,
 	}
 }

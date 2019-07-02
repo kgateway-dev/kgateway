@@ -26,7 +26,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 // TODO(yuval-k): We need to figure out what\if to do in edge cases where there is cluster weight transform
-func (p *Plugin) ProcessRoute(params plugins.Params, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	if in.RoutePlugins == nil {
 		return nil
 	}

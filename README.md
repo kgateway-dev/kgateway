@@ -49,3 +49,6 @@ Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generatio
 **Gloo** would not be possible without the valuable open-source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io).
 
 
+# Security
+
+*Reporting security issues:* We take Gloo's security very seriously. If you've found a security issue or a potential security issue in Gloo, please DO NOT file a public Github issue, instead send your report privately to [security@solo.io](mailto:security@solo.io).

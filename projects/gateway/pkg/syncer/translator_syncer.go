@@ -76,14 +76,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	}
 
 	// start propagating for new set of resources
-	if err := s.propagateProxyStatus(ctx, snap, proxy, resourceErrs); err != nil {
+	if err := s.propagateProxyStatus(ctx, proxy, resourceErrs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, snap *v1.ApiSnapshot, proxy *gloov1.Proxy, resourceErrs reporter.ResourceErrors) error {
+func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloov1.Proxy, resourceErrs reporter.ResourceErrors) error {
 	if proxy == nil {
 		return nil
 	}
@@ -131,9 +131,15 @@ func watchProxyStatus(ctx context.Context, proxyClient gloov1.ProxyClient, proxy
 			select {
 			case <-ctx.Done():
 				return
-			case err := <-errs:
+			case err, ok := <-errs:
+				if !ok {
+					return
+				}
 				contextutils.LoggerFrom(ctx).Error(err)
-			case list := <-proxies:
+			case list, ok := <-proxies:
+				if !ok {
+					return
+				}
 				proxy, err := list.Find(proxy.Metadata.Namespace, proxy.Metadata.Name)
 				if err != nil {
 					contextutils.LoggerFrom(ctx).Error(err)

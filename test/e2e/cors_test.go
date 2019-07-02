@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -159,7 +161,9 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
-											Upstream: ptd.up.Metadata.Ref(),
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: utils.ResourceRefPtr(ptd.up.Metadata.Ref()),
+											},
 										},
 									},
 								},

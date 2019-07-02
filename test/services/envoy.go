@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"text/template"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"bytes"
 	"io"
 
@@ -35,7 +37,9 @@ func NextBindPort() uint32 {
 
 func (ei *EnvoyInstance) buildBootstrap() string {
 	var b bytes.Buffer
-	parsedTemplate.Execute(&b, ei)
+	if err := parsedTemplate.Execute(&b, ei); err != nil {
+		panic(err)
+	}
 	return b.String()
 }
 
@@ -203,16 +207,13 @@ type EnvoyInstance struct {
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 	gloo := "127.0.0.1"
-	var err error
 
 	if ef.useDocker {
+		var err error
 		gloo, err = localAddr()
 		if err != nil {
 			return nil, err
 		}
-	}
-	if err != nil {
-		return nil, err
 	}
 
 	ei := &EnvoyInstance{
@@ -259,7 +260,7 @@ func (ei *EnvoyInstance) runWithPort(port uint32) error {
 
 	ei.envoycfg = ei.buildBootstrap()
 	if ei.useDocker {
-		err := runContainer(ei.envoycfg)
+		err := ei.runContainer()
 		if err != nil {
 			return err
 		}
@@ -309,30 +310,27 @@ func (ei *EnvoyInstance) Clean() error {
 	return nil
 }
 
-func runContainer(cfgpath string) error {
+func (ei *EnvoyInstance) runContainer() error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {
 		envoyImageTag = "latest"
 	}
 
-	cfgDir := filepath.Dir(cfgpath)
-	image := "soloio/envoy:" + envoyImageTag
-	args := []string{"run", "-d", "--rm", "--name", containerName,
-		"-v", cfgDir + ":/etc/config/",
-		"-p", "8080:8080",
-		"-p", "8443:8443",
-		"-p", "19000:19000",
+	image := "soloio/envoy-gloo:" + envoyImageTag
+	args := []string{"run", "--rm", "--name", containerName,
+		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
+		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
+		"-p", fmt.Sprintf("%d:%d", ei.AdminPort, ei.AdminPort),
 		image,
-		"/usr/local/bin/envoy", "--disable-hot-restart", "--log-level", "debug",
-		"--config-yaml", cfgpath,
+		"--disable-hot-restart", "--log-level", "debug",
+		"--config-yaml", ei.envoycfg,
 	}
 
 	fmt.Fprintln(ginkgo.GinkgoWriter, args)
 	cmd := exec.Command("docker", args...)
-	cmd.Dir = cfgDir
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter
-	err := cmd.Run()
+	err := cmd.Start()
 	if err != nil {
 		return errors.Wrap(err, "Unable to start envoy container")
 	}

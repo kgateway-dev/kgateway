@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: |
+    Implemented new upstream client that extends the regular client with functionality to list and watch ephemeral
+      upstreams derived from kubernetes service. This is required to implement service routing destinations.

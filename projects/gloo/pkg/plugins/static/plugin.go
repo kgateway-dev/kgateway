@@ -15,7 +15,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -136,13 +135,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	return nil
-
-	// configure the cluster to use EDS:ADS and call it a day
-	xds.SetEdsOnCluster(out)
-	return nil
 }
 
-func (p *plugin) ProcessRouteAction(params plugins.Params, in *v1.RouteAction, _ map[string]*plugins.RoutePlugin, out *envoyroute.RouteAction) error {
+func (p *plugin) ProcessRouteAction(params plugins.RouteParams, in *v1.RouteAction, _ map[string]*plugins.RoutePlugin, out *envoyroute.RouteAction) error {
 	upstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in)
 	if err != nil {
 		return err

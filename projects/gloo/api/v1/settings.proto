@@ -67,6 +67,15 @@ message Settings {
     // Default circuit breakers when not set in a specific upstream.
     CircuitBreakerConfig circuit_breakers = 3;
 
+    message KnativeOptions {
+        // address of the clusteringress proxy
+        // if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local
+        string cluster_ingress_proxy_address = 1;
+    }
+
+    // configuration options for the Clusteringress Controller (for Knative)
+    KnativeOptions knative = 18;
+
     // Settings for extensions
     Extensions extensions = 16;
 

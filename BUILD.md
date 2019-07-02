@@ -39,7 +39,7 @@ First install these dependencies:
 
 ```bash
 go get github.com/paulvollmer/2gobytes
-go get github.com/lyft/protoc-gen-validate
+go get github.com/envoyproxy/protoc-gen-validate
 go get github.com/gogo/protobuf/protoc-gen-gogo
 go get golang.org/x/tools/cmd/goimports
 ```

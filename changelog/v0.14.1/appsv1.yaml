@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Use apps/v1 api group for deployments
+    issueLink: https://github.com/solo-io/gloo/issues/767

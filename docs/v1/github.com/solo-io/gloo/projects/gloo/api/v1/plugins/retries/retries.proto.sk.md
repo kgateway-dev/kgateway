@@ -32,7 +32,7 @@ TODO: to solo-kit/api/envoy
 ### RetryPolicy
 
  
-Retry Policy applied to a route
+Retry Policy applied at the Route and/or Virtual Hosts levels.
 
 ```yaml
 "retryOn": string

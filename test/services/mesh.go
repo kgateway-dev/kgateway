@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -66,7 +68,9 @@ func (m *QuoteUnquoteMesh) getSelfListener(svcIndex int) *gloov1.Listener {
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
-										Upstream: m.upstreams[svcIndex].Metadata.Ref(),
+										DestinationType: &gloov1.Destination_Upstream{
+											Upstream: utils.ResourceRefPtr(m.upstreams[svcIndex].Metadata.Ref()),
+										},
 									},
 								},
 							},
@@ -208,7 +212,9 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 									RouteAction: &gloov1.RouteAction{
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
-												Upstream: m.meshupstreams[j].Metadata.Ref(),
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: utils.ResourceRefPtr(m.meshupstreams[j].Metadata.Ref()),
+												},
 											},
 										},
 									},

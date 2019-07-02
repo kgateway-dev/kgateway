@@ -11,6 +11,7 @@ type Config struct {
 	GatewayProxies map[string]GatewayProxy `json:"gatewayProxies,omitempty"`
 	Ingress        *Ingress                `json:"ingress,omitempty"`
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
+	K8s            *K8s                    `json:"k8s,omitempty"`
 }
 
 type Namespace struct {
@@ -42,9 +43,11 @@ type DeploymentSpec struct {
 type Integrations struct {
 	Knative *Knative `json:"knative"`
 }
+
 type Knative struct {
-	Enabled *bool         `json:"enabled"`
-	Proxy   *KnativeProxy `json:"proxy,omitempty"`
+	Enabled        *bool         `json:"enabled"`
+	InstallKnative *bool         `json:"installKnative"`
+	Proxy          *KnativeProxy `json:"proxy,omitempty"`
 }
 
 type KnativeProxy struct {
@@ -74,6 +77,7 @@ type GlooDeployment struct {
 
 type Discovery struct {
 	Deployment *DiscoveryDeployment `json:"deployment,omitempty"`
+	DisableFDS bool                 `json:"disable_fds,omitempty"`
 }
 
 type DiscoveryDeployment struct {
@@ -144,4 +148,8 @@ type IngressProxyDeployment struct {
 
 type IngressProxyConfigMap struct {
 	Data map[string]string `json:"data,omitempty"`
+}
+
+type K8s struct {
+	ClusterName string `json:"clusterName"`
 }

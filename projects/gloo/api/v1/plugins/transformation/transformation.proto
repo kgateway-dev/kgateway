@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 
-package transformation.plugins.gloo.solo.io;
+package envoy.api.v2.filter.http;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation";
 
@@ -13,9 +13,10 @@ import "gogoproto/gogo.proto";
 // TODO: can we get rid of this?
 option (gogoproto.equal_all) = true;
 
-
 message RouteTransformations {
   Transformation request_transformation = 1;
+  // clear the route cache if the request transformation was applied
+  bool clear_route_cache = 3;
   Transformation response_transformation = 2;
 }
 

@@ -30,8 +30,8 @@ type ReceivedRequest struct {
 }
 
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
-	backendport, responses := RunTestServer(ctx)
-	return newTestUpstream(addr, backendport, responses)
+	backendPort, responses := runTestServer(ctx)
+	return newTestUpstream(addr, backendPort, responses)
 }
 
 type TestUpstream struct {
@@ -44,7 +44,6 @@ type TestUpstream struct {
 var id = 0
 
 func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest) *TestUpstream {
-
 	id += 1
 	u := &gloov1.Upstream{
 		Metadata: core.Metadata{
@@ -71,23 +70,23 @@ func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest
 	}
 }
 
-func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
-	bodychan := make(chan *ReceivedRequest, 100)
-	handlerfunc := func(rw http.ResponseWriter, r *http.Request) {
+func runTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
+	bodyChan := make(chan *ReceivedRequest, 100)
+	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
 		rr.Method = r.Method
 		if r.Body != nil {
 			body, _ := ioutil.ReadAll(r.Body)
-			r.Body.Close()
+			_ = r.Body.Close()
 			if len(body) != 0 {
 				rr.Body = body
-				rw.Write(body)
+				_, _ = rw.Write(body)
 			}
 		}
 
 		rr.Host = r.Host
 
-		bodychan <- &rr
+		bodyChan <- &rr
 	}
 
 	listener, err := net.Listen("tcp", ":0")
@@ -96,17 +95,17 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 	}
 
 	addr := listener.Addr().String()
-	_, portstr, err := net.SplitHostPort(addr)
+	_, portStr, err := net.SplitHostPort(addr)
 	if err != nil {
 		panic(err)
 	}
 
-	port, err := strconv.Atoi(portstr)
+	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		panic(err)
 	}
 
-	handler := http.HandlerFunc(handlerfunc)
+	handler := http.HandlerFunc(handlerFunc)
 	go func() {
 		defer GinkgoRecover()
 		h := &http.Server{Handler: handler}
@@ -121,16 +120,15 @@ func RunTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 
 		<-ctx.Done()
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		h.Shutdown(ctx)
+		_ = h.Shutdown(ctx)
 		cancel()
 		// close channel, the http handler may panic but this should be caught by the http code.
-		close(bodychan)
+		close(bodyChan)
 	}()
-	return uint32(port), bodychan
+	return uint32(port), bodyChan
 }
 
-func TestUpstremReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
-
+func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 	body := []byte("solo.io test")
 
 	EventuallyWithOffset(1, func() error {
@@ -157,7 +155,7 @@ func TestUpstremReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 			}
 		}
 
-		res, err := client.Post(fmt.Sprintf(scheme+"://%s:%d/1", "localhost", envoyPort), "application/octet-stream", &buf)
+		res, err := client.Post(fmt.Sprintf("%s://%s:%d/1", scheme, "localhost", envoyPort), "application/octet-stream", &buf)
 		if err != nil {
 			return err
 		}

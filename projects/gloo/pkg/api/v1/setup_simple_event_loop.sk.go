@@ -14,13 +14,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-// a Syncer which implements this interface
+// SyncDeciders Syncer which implements this interface
 // can make smarter decisions over whether
 // it should be restarted (including having its context cancelled)
 // based on a diff of the previous and current snapshot
+
+// Deprecated: use SetupSyncDeciderWithContext
 type SetupSyncDecider interface {
 	SetupSyncer
 	ShouldSync(old, new *SetupSnapshot) bool
+}
+
+type SetupSyncDeciderWithContext interface {
+	SetupSyncer
+	ShouldSync(ctx context.Context, old, new *SetupSnapshot) bool
 }
 
 type setupSimpleEventLoop struct {
@@ -76,6 +83,10 @@ func (el *setupSimpleEventLoop) Run(ctx context.Context) (<-chan error, error) {
 						if shouldSync := syncDecider.ShouldSync(previousSnapshot, snapshot); !shouldSync {
 							continue // skip syncing this syncer
 						}
+					} else if syncDeciderWithContext, isDecider := syncer.(SetupSyncDeciderWithContext); isDecider {
+						if shouldSync := syncDeciderWithContext.ShouldSync(ctx, previousSnapshot, snapshot); !shouldSync {
+							continue // skip syncing this syncer
+						}
 					}
 
 					// if this syncer had a previous context, cancel it
@@ -98,8 +109,10 @@ func (el *setupSimpleEventLoop) Run(ctx context.Context) (<-chan error, error) {
 					}
 
 					syncerCancels[syncer] = canc
-					previousSnapshot = snapshot
 				}
+
+				previousSnapshot = snapshot
+
 			case <-ctx.Done():
 				return
 			}
