@@ -17,6 +17,12 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 		Short: "install Knative with Gloo on kubernetes",
 		Long:  "requires kubectl to be installed",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if opts.Install.InstallKnative {
+				if err := installKnativeServing(opts.Install.InstallKnativeVersion); err != nil {
+
+				}
+			}
+
 			if err := installGloo(opts, constants.KnativeValuesFileName); err != nil {
 				return errors.Wrapf(err, "installing gloo in knative mode")
 			}
@@ -25,5 +31,6 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
+	flagutils.AddKnativeInstallFlags(pflags, &opts.Install)
 	return cmd
 }

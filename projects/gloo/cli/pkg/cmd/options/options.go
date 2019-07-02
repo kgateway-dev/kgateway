@@ -28,9 +28,11 @@ type Top struct {
 }
 
 type Install struct {
-	DryRun            bool
-	Namespace         string
-	HelmChartOverride string
+	DryRun                bool
+	Namespace             string
+	HelmChartOverride     string
+	InstallKnative        bool
+	InstallKnativeVersion string
 }
 
 type Uninstall struct {
