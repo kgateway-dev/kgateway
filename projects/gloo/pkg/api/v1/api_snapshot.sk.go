@@ -69,7 +69,7 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 	fields = append(fields, zap.Uint64("artifacts", s.hashArtifacts()))
 	fields = append(fields, zap.Uint64("endpoints", s.hashEndpoints()))
 	fields = append(fields, zap.Uint64("proxies", s.hashProxies()))
-	fields = append(fields, zap.Uint64("UpstreamGroups", s.hashUpstreamGroups()))
+	fields = append(fields, zap.Uint64("upstreamGroups", s.hashUpstreamGroups()))
 	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
 	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
 

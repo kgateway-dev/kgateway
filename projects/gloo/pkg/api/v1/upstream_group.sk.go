@@ -135,7 +135,7 @@ func (o *UpstreamGroup) DeepCopyObject() runtime.Object {
 }
 
 var UpstreamGroupCrd = crd.NewCrd("gloo.solo.io",
-	"UpstreamGroups",
+	"upstreamgroups",
 	"gloo.solo.io",
 	"v1",
 	"UpstreamGroup",

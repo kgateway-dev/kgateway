@@ -99,19 +99,19 @@ func (client *upstreamGroupClient) Watch(namespace string, opts clients.WatchOpt
 	if initErr != nil {
 		return nil, nil, initErr
 	}
-	UpstreamGroupsChan := make(chan UpstreamGroupList)
+	upstreamGroupsChan := make(chan UpstreamGroupList)
 	go func() {
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				UpstreamGroupsChan <- convertToUpstreamGroup(resourceList)
+				upstreamGroupsChan <- convertToUpstreamGroup(resourceList)
 			case <-opts.Ctx.Done():
-				close(UpstreamGroupsChan)
+				close(upstreamGroupsChan)
 				return
 			}
 		}
 	}()
-	return UpstreamGroupsChan, errs, nil
+	return upstreamGroupsChan, errs, nil
 }
 
 func convertToUpstreamGroup(resources resources.ResourceList) UpstreamGroupList {
