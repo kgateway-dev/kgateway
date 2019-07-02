@@ -281,7 +281,7 @@ var _ = Describe("Happy path", func() {
 				},
 				Subsets: []kubev1.EndpointSubset{{
 					Addresses: []kubev1.EndpointAddress{{
-						IP:       getIpThatsNotLocalhost(),
+						IP:       getIpThatsNotLocalhost(envoyInstance),
 						Hostname: "localhost",
 					}},
 					Ports: []kubev1.EndpointPort{{
@@ -459,7 +459,7 @@ func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	}
 }
 
-func getIpThatsNotLocalhost() string {
+func getIpThatsNotLocalhost(instance *services.EnvoyInstance) string {
 	// kubernetes endpoints doesn't like localhost, so we just give it some other local address
 	// from: k8s.io/kubernetes/pkg/apis/core/validation/validation.go
 	/*
@@ -469,6 +469,11 @@ func getIpThatsNotLocalhost() string {
 		        // addresses tend to be used for node-centric purposes (e.g. metadata
 		        // service).
 	*/
+
+	if instance.UseDocker {
+		return instance.LocalAddr()
+	}
+
 	ifaces, err := net.Interfaces()
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
