@@ -16,7 +16,7 @@ type UpstreamGroupReconciler interface {
 	Reconcile(namespace string, desiredResources UpstreamGroupList, transition TransitionUpstreamGroupFunc, opts clients.ListOpts) error
 }
 
-func upstreamGroupsToResources(list UpstreamGroupList) resources.ResourceList {
+func UpstreamGroupsToResources(list UpstreamGroupList) resources.ResourceList {
 	var resourceList resources.ResourceList
 	for _, upstreamGroup := range list {
 		resourceList = append(resourceList, upstreamGroup)
@@ -43,5 +43,5 @@ func (r *upstreamGroupReconciler) Reconcile(namespace string, desiredResources U
 			return transition(original.(*UpstreamGroup), desired.(*UpstreamGroup))
 		}
 	}
-	return r.base.Reconcile(namespace, upstreamGroupsToResources(desiredResources), transitionResources, opts)
+	return r.base.Reconcile(namespace, UpstreamGroupsToResources(desiredResources), transitionResources, opts)
 }

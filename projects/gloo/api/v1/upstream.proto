@@ -7,19 +7,20 @@ option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 
 /*
-@solo-kit:resource.short_name=us
-@solo-kit:resource.plural_name=upstreams
-
  * Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
  * [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster) in Envoy terminology.
  * Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
  * Each upstream type is handled by a corresponding Gloo plugin.
  */
 message Upstream {
+
+    option (core.solo.io.resource).short_name = "us";
+    option (core.solo.io.resource).plural_name = "upstreams";
     // Type-specific configuration. Examples include static, kubernetes, and aws.
     // The type-specific config for the upstream is called a spec.
     UpstreamSpec upstream_spec = 2;

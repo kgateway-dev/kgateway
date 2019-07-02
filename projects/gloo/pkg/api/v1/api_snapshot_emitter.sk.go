@@ -218,7 +218,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		done.Add(1)
 		go func(namespace string) {
 			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, upstreamGroupErrs, namespace+"-upstreamgroups")
+			errutils.AggregateErrs(ctx, errs, upstreamGroupErrs, namespace+"-UpstreamGroups")
 		}(namespace)
 		/* Setup namespaced watch for Secret */
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
@@ -308,7 +308,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		artifactsByNamespace := make(map[string]ArtifactList)
 		endpointsByNamespace := make(map[string]EndpointList)
 		proxiesByNamespace := make(map[string]ProxyList)
-		upstreamgroupsByNamespace := make(map[string]UpstreamGroupList)
+		UpstreamGroupsByNamespace := make(map[string]UpstreamGroupList)
 		secretsByNamespace := make(map[string]SecretList)
 		upstreamsByNamespace := make(map[string]UpstreamList)
 
@@ -368,12 +368,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				namespace := upstreamGroupNamespacedList.namespace
 
 				// merge lists by namespace
-				upstreamgroupsByNamespace[namespace] = upstreamGroupNamespacedList.list
+				UpstreamGroupsByNamespace[namespace] = upstreamGroupNamespacedList.list
 				var upstreamGroupList UpstreamGroupList
-				for _, upstreamgroups := range upstreamgroupsByNamespace {
-					upstreamGroupList = append(upstreamGroupList, upstreamgroups...)
+				for _, UpstreamGroups := range UpstreamGroupsByNamespace {
+					upstreamGroupList = append(upstreamGroupList, UpstreamGroups...)
 				}
-				currentSnapshot.Upstreamgroups = upstreamGroupList.Sort()
+				currentSnapshot.UpstreamGroups = upstreamGroupList.Sort()
 			case secretNamespacedList := <-secretChan:
 				record()
 

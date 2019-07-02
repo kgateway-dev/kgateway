@@ -298,18 +298,18 @@ var _ = Describe("V1Emitter", func() {
 			UpstreamGroup
 		*/
 
-		assertSnapshotUpstreamgroups := func(expectUpstreamgroups UpstreamGroupList, unexpectUpstreamgroups UpstreamGroupList) {
+		assertSnapshotUpstreamGroups := func(expectUpstreamGroups UpstreamGroupList, unexpectUpstreamGroups UpstreamGroupList) {
 		drain:
 			for {
 				select {
 				case snap = <-snapshots:
-					for _, expected := range expectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+					for _, expected := range expectUpstreamGroups {
+						if _, err := snap.UpstreamGroups.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
-					for _, unexpected := range unexpectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+					for _, unexpected := range unexpectUpstreamGroups {
+						if _, err := snap.UpstreamGroups.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -329,27 +329,27 @@ var _ = Describe("V1Emitter", func() {
 		upstreamGroup1b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, nil)
+		assertSnapshotUpstreamGroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, nil)
 		upstreamGroup2a, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		upstreamGroup2b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b}, nil)
+		assertSnapshotUpstreamGroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b}, nil)
 
 		err = upstreamGroupClient.Delete(upstreamGroup2a.GetMetadata().Namespace, upstreamGroup2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = upstreamGroupClient.Delete(upstreamGroup2b.GetMetadata().Namespace, upstreamGroup2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, UpstreamGroupList{upstreamGroup2a, upstreamGroup2b})
+		assertSnapshotUpstreamGroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, UpstreamGroupList{upstreamGroup2a, upstreamGroup2b})
 
 		err = upstreamGroupClient.Delete(upstreamGroup1a.GetMetadata().Namespace, upstreamGroup1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = upstreamGroupClient.Delete(upstreamGroup1b.GetMetadata().Namespace, upstreamGroup1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(nil, UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b})
+		assertSnapshotUpstreamGroups(nil, UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b})
 
 		/*
 			Secret
@@ -653,18 +653,18 @@ var _ = Describe("V1Emitter", func() {
 			UpstreamGroup
 		*/
 
-		assertSnapshotUpstreamgroups := func(expectUpstreamgroups UpstreamGroupList, unexpectUpstreamgroups UpstreamGroupList) {
+		assertSnapshotUpstreamGroups := func(expectUpstreamGroups UpstreamGroupList, unexpectUpstreamGroups UpstreamGroupList) {
 		drain:
 			for {
 				select {
 				case snap = <-snapshots:
-					for _, expected := range expectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+					for _, expected := range expectUpstreamGroups {
+						if _, err := snap.UpstreamGroups.Find(expected.GetMetadata().Ref().Strings()); err != nil {
 							continue drain
 						}
 					}
-					for _, unexpected := range unexpectUpstreamgroups {
-						if _, err := snap.Upstreamgroups.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+					for _, unexpected := range unexpectUpstreamGroups {
+						if _, err := snap.UpstreamGroups.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
 							continue drain
 						}
 					}
@@ -684,27 +684,27 @@ var _ = Describe("V1Emitter", func() {
 		upstreamGroup1b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, nil)
+		assertSnapshotUpstreamGroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, nil)
 		upstreamGroup2a, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace1, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		upstreamGroup2b, err := upstreamGroupClient.Write(NewUpstreamGroup(namespace2, name2), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b}, nil)
+		assertSnapshotUpstreamGroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b}, nil)
 
 		err = upstreamGroupClient.Delete(upstreamGroup2a.GetMetadata().Namespace, upstreamGroup2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = upstreamGroupClient.Delete(upstreamGroup2b.GetMetadata().Namespace, upstreamGroup2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, UpstreamGroupList{upstreamGroup2a, upstreamGroup2b})
+		assertSnapshotUpstreamGroups(UpstreamGroupList{upstreamGroup1a, upstreamGroup1b}, UpstreamGroupList{upstreamGroup2a, upstreamGroup2b})
 
 		err = upstreamGroupClient.Delete(upstreamGroup1a.GetMetadata().Namespace, upstreamGroup1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = upstreamGroupClient.Delete(upstreamGroup1b.GetMetadata().Namespace, upstreamGroup1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotUpstreamgroups(nil, UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b})
+		assertSnapshotUpstreamGroups(nil, UpstreamGroupList{upstreamGroup1a, upstreamGroup1b, upstreamGroup2a, upstreamGroup2b})
 
 		/*
 			Secret

@@ -10,7 +10,7 @@ import (
 )
 
 type UpstreamGroupWatcher interface {
-	// watch namespace-scoped Upstreamgroups
+	// watch namespace-scoped UpstreamGroups
 	Watch(namespace string, opts clients.WatchOpts) (<-chan UpstreamGroupList, <-chan error, error)
 }
 
@@ -99,19 +99,19 @@ func (client *upstreamGroupClient) Watch(namespace string, opts clients.WatchOpt
 	if initErr != nil {
 		return nil, nil, initErr
 	}
-	upstreamgroupsChan := make(chan UpstreamGroupList)
+	UpstreamGroupsChan := make(chan UpstreamGroupList)
 	go func() {
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				upstreamgroupsChan <- convertToUpstreamGroup(resourceList)
+				UpstreamGroupsChan <- convertToUpstreamGroup(resourceList)
 			case <-opts.Ctx.Done():
-				close(upstreamgroupsChan)
+				close(UpstreamGroupsChan)
 				return
 			}
 		}
 	}()
-	return upstreamgroupsChan, errs, nil
+	return UpstreamGroupsChan, errs, nil
 }
 
 func convertToUpstreamGroup(resources resources.ResourceList) UpstreamGroupList {

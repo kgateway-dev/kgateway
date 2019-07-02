@@ -43,7 +43,6 @@ weight: 5
 ### Proxy
 
  
-
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
 Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
 for connections. Each listener has its own set of configuration.
@@ -327,7 +326,6 @@ Identifies a port on a kubernetes service to route traffic to.
 ---
 ### UpstreamGroup
 
- 
 
 
 ```yaml

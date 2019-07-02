@@ -88,7 +88,7 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 					case *Proxy:
 						currentSnapshot.Proxies = append(currentSnapshot.Proxies, typed)
 					case *UpstreamGroup:
-						currentSnapshot.Upstreamgroups = append(currentSnapshot.Upstreamgroups, typed)
+						currentSnapshot.UpstreamGroups = append(currentSnapshot.UpstreamGroups, typed)
 					case *Secret:
 						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					case *Upstream:
