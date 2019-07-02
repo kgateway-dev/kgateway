@@ -37,7 +37,7 @@ func (k *MockKubectl) Kubectl(stdin io.Reader, args ...string) error {
 var _ = Describe("Uninstall", func() {
 
 	const (
-		deleteCrds = "delete crd gateways.gateway.solo.io proxies.gloo.solo.io settings.gloo.solo.io upstreams.gloo.solo.io UpstreamGroups.gloo.solo.io virtualservices.gateway.solo.io"
+		deleteCrds = "delete crd gateways.gateway.solo.io proxies.gloo.solo.io settings.gloo.solo.io upstreams.gloo.solo.io upstreamgroups.gloo.solo.io virtualservices.gateway.solo.io"
 	)
 
 	var flagSet *pflag.FlagSet
