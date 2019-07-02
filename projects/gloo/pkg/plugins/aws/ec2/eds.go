@@ -33,7 +33,7 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpec)
 	for _, us := range upstreams {
 		ec2Upstream, ok := us.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
-		// only care about kube upstreams
+		// only care about ec2 upstreams
 		if !ok {
 			continue
 		}
@@ -153,5 +153,5 @@ func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, 
 const ec2EndpointNamePrefix = "ec2"
 
 func generateName(upstreamRef *core.ResourceRef, publicIpAddress string) string {
-	return kubeutils.SanitizeName(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String()+publicIpAddress))
+	return kubeutils.SanitizeName(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String(), publicIpAddress))
 }
