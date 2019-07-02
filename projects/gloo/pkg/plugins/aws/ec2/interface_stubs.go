@@ -9,8 +9,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
+// the user is creating the EC2 upstreams so we don't really have any processing to do
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	// not ours
 	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
 	if !ok {
 		return nil
