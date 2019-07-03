@@ -34,13 +34,13 @@ type Settings_DiscoveryOptions_FdsMode int32
 
 const (
 	// in BLACKLIST mode (default), FDS will poll all services in cluster
-	// except those services labled with
+	// except those services labeled with
 	// discovery.solo.io/function_discovery=disabled
 	// this label can also be used on namespaces to apply to all
 	// services within a namespace
 	Settings_DiscoveryOptions_BLACKLIST Settings_DiscoveryOptions_FdsMode = 0
 	// in WHITELIST mode (default), FDS will poll only services in cluster
-	// labled with discovery.solo.io/function_discovery=enabled
+	// labeled with discovery.solo.io/function_discovery=enabled
 	// this label can also be used on namespaces to apply to all
 	// services within a namespace
 	Settings_DiscoveryOptions_WHITELIST Settings_DiscoveryOptions_FdsMode = 1
