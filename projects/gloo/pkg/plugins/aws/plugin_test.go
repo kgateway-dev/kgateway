@@ -22,6 +22,7 @@ const (
 var _ = Describe("Plugin", func() {
 	var (
 		params   plugins.Params
+		vhostParams   plugins.VirtualHostParams
 		plugin   plugins.Plugin
 		upstream *v1.Upstream
 		route    *v1.Route
@@ -108,6 +109,8 @@ var _ = Describe("Plugin", func() {
 				},
 			}},
 		}
+		vhostParams =   plugins.VirtualHostParams{Params:params}
+
 	})
 	Context("upstreams", func() {
 
@@ -175,7 +178,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should process route", func() {
-			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{Params: params}, route, outroute)
+			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outroute.PerFilterConfig).To(HaveKey(filterName))
 		})
@@ -183,7 +186,7 @@ var _ = Describe("Plugin", func() {
 		It("should not process with no spec", func() {
 			destination.DestinationSpec = nil
 
-			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{Params: params}, route, outroute)
+			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outroute.PerFilterConfig).NotTo(HaveKey(filterName))
 		})
@@ -191,7 +194,7 @@ var _ = Describe("Plugin", func() {
 		It("should not process with a function mismatch", func() {
 			destination.DestinationSpec.DestinationType.(*v1.DestinationSpec_Aws).Aws.LogicalName = "somethingelse"
 
-			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{Params: params}, route, outroute)
+			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).To(HaveOccurred())
 			Expect(outroute.PerFilterConfig).NotTo(HaveKey(filterName))
 		})
@@ -200,7 +203,7 @@ var _ = Describe("Plugin", func() {
 			Skip("redo this when we have more destination type")
 			// destination.DestinationSpec.DestinationType =
 
-			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{Params: params}, route, outroute)
+			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outroute.PerFilterConfig).NotTo(HaveKey(filterName))
 		})
@@ -212,7 +215,7 @@ var _ = Describe("Plugin", func() {
 			// process upstream
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			err = plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{Params: params}, route, outroute)
+			err = plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 
 			// check that we have filters
