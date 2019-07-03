@@ -41,7 +41,6 @@ message ListenerPlugins {
 
 // Plugin-specific configuration that lives on http listeners
 message HttpListenerPlugins {
-    // Future sight for matching
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
     hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
 }

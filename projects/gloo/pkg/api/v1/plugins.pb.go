@@ -76,7 +76,6 @@ var xxx_messageInfo_ListenerPlugins proto.InternalMessageInfo
 
 // Plugin-specific configuration that lives on http listeners
 type HttpListenerPlugins struct {
-	// Future sight for matching
 	GrpcWeb                       *grpc_web.GrpcWeb                  `protobuf:"bytes,1,opt,name=grpc_web,json=grpcWeb,proto3" json:"grpc_web,omitempty"`
 	HttpConnectionManagerSettings *hcm.HttpConnectionManagerSettings `protobuf:"bytes,2,opt,name=http_connection_manager_settings,json=httpConnectionManagerSettings,proto3" json:"http_connection_manager_settings,omitempty"`
 	XXX_NoUnkeyedLiteral          struct{}                           `json:"-"`
