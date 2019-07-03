@@ -14,13 +14,20 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-// a Syncer which implements this interface
+// SyncDeciders Syncer which implements this interface
 // can make smarter decisions over whether
 // it should be restarted (including having its context cancelled)
 // based on a diff of the previous and current snapshot
+
+// Deprecated: use TranslatorSyncDeciderWithContext
 type TranslatorSyncDecider interface {
 	TranslatorSyncer
 	ShouldSync(old, new *TranslatorSnapshot) bool
+}
+
+type TranslatorSyncDeciderWithContext interface {
+	TranslatorSyncer
+	ShouldSync(ctx context.Context, old, new *TranslatorSnapshot) bool
 }
 
 type translatorSimpleEventLoop struct {
@@ -74,6 +81,10 @@ func (el *translatorSimpleEventLoop) Run(ctx context.Context) (<-chan error, err
 					// allow the syncer to decide if we should sync it + cancel its previous context
 					if syncDecider, isDecider := syncer.(TranslatorSyncDecider); isDecider {
 						if shouldSync := syncDecider.ShouldSync(previousSnapshot, snapshot); !shouldSync {
+							continue // skip syncing this syncer
+						}
+					} else if syncDeciderWithContext, isDecider := syncer.(TranslatorSyncDeciderWithContext); isDecider {
+						if shouldSync := syncDeciderWithContext.ShouldSync(ctx, previousSnapshot, snapshot); !shouldSync {
 							continue // skip syncing this syncer
 						}
 					}
