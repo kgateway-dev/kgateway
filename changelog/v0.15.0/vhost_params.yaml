@@ -1,0 +1,3 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Introduce vhost params for gloo plugins
