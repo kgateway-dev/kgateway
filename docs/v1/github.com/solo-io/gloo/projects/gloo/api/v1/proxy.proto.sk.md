@@ -21,7 +21,7 @@ weight: 5
 - [QueryParameterMatcher](#queryparametermatcher)
 - [RouteAction](#routeaction)
 - [Destination](#destination)
-- [ServiceDestination](#servicedestination)
+- [KubernetesServiceDestination](#kubernetesservicedestination)
 - [ConsulServiceDestination](#consulservicedestination)
 - [UpstreamGroup](#upstreamgroup) **Top-Level Resource**
 - [MultiDestination](#multidestination)
@@ -288,7 +288,7 @@ Destinations define routable destinations for proxied requests.
 
 ```yaml
 "upstream": .core.solo.io.ResourceRef
-"service": .gloo.solo.io.ServiceDestination
+"kube": .gloo.solo.io.KubernetesServiceDestination
 "consul": .gloo.solo.io.ConsulServiceDestination
 "destinationSpec": .gloo.solo.io.DestinationSpec
 "subset": .gloo.solo.io.Subset
@@ -298,7 +298,7 @@ Destinations define routable destinations for proxied requests.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | Route requests to a Gloo upstream |  |
-| `service` | [.gloo.solo.io.ServiceDestination](../proxy.proto.sk#servicedestination) | Route requests to a kubernetes service |  |
+| `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk#kubernetesservicedestination) | Route requests to a kubernetes service |  |
 | `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk#consulservicedestination) | TODO(marco): NOTE: not implemented yet Route requests to a consul service |  |
 | `destinationSpec` | [.gloo.solo.io.DestinationSpec](../plugins.proto.sk#destinationspec) | Some upstreams utilize plugins which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
 | `subset` | [.gloo.solo.io.Subset](../subset.proto.sk#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |  |
@@ -307,7 +307,7 @@ Destinations define routable destinations for proxied requests.
 
 
 ---
-### ServiceDestination
+### KubernetesServiceDestination
 
  
 Identifies a port on a kubernetes service to route traffic to.

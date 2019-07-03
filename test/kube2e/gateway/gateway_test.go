@@ -177,8 +177,8 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// Create virtual service routing directly to the testrunner service
 				dest := &gloov1.Destination{
-					DestinationType: &gloov1.Destination_Service{
-						Service: &gloov1.ServiceDestination{
+					DestinationType: &gloov1.Destination_Kube{
+						Kube: &gloov1.KubernetesServiceDestination{
 							Ref: core.ResourceRef{
 								Namespace: testHelper.InstallNamespace,
 								Name:      helper.TestrunnerName,
@@ -216,7 +216,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							for _, r := range vh.Routes {
 								if action := r.GetRouteAction(); action != nil {
 									if single := action.GetSingle(); single != nil {
-										if svcDest := single.GetService(); svcDest != nil {
+										if svcDest := single.GetKube(); svcDest != nil {
 											if svcDest.Ref.Name == helper.TestrunnerName &&
 												svcDest.Ref.Namespace == testHelper.InstallNamespace &&
 												svcDest.Port == uint32(helper.TestRunnerPort) {
