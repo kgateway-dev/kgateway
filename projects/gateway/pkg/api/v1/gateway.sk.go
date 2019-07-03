@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -139,11 +140,24 @@ func (o *Gateway) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Gateway)
 }
 
-var GatewayCrd = crd.NewCrd("gateway.solo.io",
-	"gateways",
-	"gateway.solo.io",
-	"v1",
-	"Gateway",
-	"gw",
-	false,
-	&Gateway{})
+var (
+	GatewayGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gateway.solo.io",
+		Kind:    "Gateway",
+	}
+	GatewayCrd = crd.NewCrd(
+		"gateways",
+		GatewayGVK.Group,
+		GatewayGVK.Version,
+		GatewayGVK.Kind,
+		"gw",
+		false,
+		&Gateway{})
+)
+
+func init() {
+	if err := crd.AddCrd(GatewayCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}

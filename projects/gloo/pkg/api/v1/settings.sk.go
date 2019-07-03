@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -145,11 +146,24 @@ func (o *Settings) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Settings)
 }
 
-var SettingsCrd = crd.NewCrd("gloo.solo.io",
-	"settings",
-	"gloo.solo.io",
-	"v1",
-	"Settings",
-	"st",
-	false,
-	&Settings{})
+var (
+	SettingsGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Settings",
+	}
+	SettingsCrd = crd.NewCrd(
+		"settings",
+		SettingsGVK.Group,
+		SettingsGVK.Version,
+		SettingsGVK.Kind,
+		"st",
+		false,
+		&Settings{})
+)
+
+func init() {
+	if err := crd.AddCrd(SettingsCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}
