@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -123,24 +122,11 @@ func (o *Ingress) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Ingress)
 }
 
-var (
-	IngressGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "ingress.solo.io",
-		Kind:    "Ingress",
-	}
-	IngressCrd = crd.NewCrd(
-		"ingresses",
-		IngressGVK.Group,
-		IngressGVK.Version,
-		IngressGVK.Kind,
-		"ig",
-		false,
-		&Ingress{})
-)
-
-func init() {
-	if err := crd.AddCrd(IngressCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
+var IngressCrd = crd.NewCrd("ingress.solo.io",
+	"ingresses",
+	"ingress.solo.io",
+	"v1",
+	"Ingress",
+	"ig",
+	false,
+	&Ingress{})

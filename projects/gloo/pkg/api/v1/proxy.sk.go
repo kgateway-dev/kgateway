@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -135,24 +134,11 @@ func (o *Proxy) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Proxy)
 }
 
-var (
-	ProxyGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gloo.solo.io",
-		Kind:    "Proxy",
-	}
-	ProxyCrd = crd.NewCrd(
-		"proxies",
-		ProxyGVK.Group,
-		ProxyGVK.Version,
-		ProxyGVK.Kind,
-		"px",
-		false,
-		&Proxy{})
-)
-
-func init() {
-	if err := crd.AddCrd(ProxyCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
+var ProxyCrd = crd.NewCrd("gloo.solo.io",
+	"proxies",
+	"gloo.solo.io",
+	"v1",
+	"Proxy",
+	"px",
+	false,
+	&Proxy{})

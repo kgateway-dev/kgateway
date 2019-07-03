@@ -1579,7 +1579,7 @@
   version = "v0.8.23"
 
 [[projects]]
-  digest = "1:af627124d53b9807002bfba827a0c54388c8c670089d810cbbfc3c89a8dc2ca4"
+  digest = "1:f36abee9b10b4e8478762cfcdd2a3b904066f57529c9d503197995c8ab5240fb"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1637,6 +1637,7 @@
     "test/helpers",
     "test/setup",
     "test/tests/typed",
+    "test/testutils",
   ]
   pruneopts = "UT"
   revision = "e44a028d3df45c66fe011cc6da615815f2760128"
@@ -2794,6 +2795,7 @@
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",
+    "github.com/solo-io/solo-kit/test/testutils",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "go.opencensus.io/stats",
@@ -2810,6 +2812,7 @@
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
+    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",

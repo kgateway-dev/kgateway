@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -136,24 +135,11 @@ func (o *VirtualService) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*VirtualService)
 }
 
-var (
-	VirtualServiceGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gateway.solo.io",
-		Kind:    "VirtualService",
-	}
-	VirtualServiceCrd = crd.NewCrd(
-		"virtualservices",
-		VirtualServiceGVK.Group,
-		VirtualServiceGVK.Version,
-		VirtualServiceGVK.Kind,
-		"vs",
-		false,
-		&VirtualService{})
-)
-
-func init() {
-	if err := crd.AddCrd(VirtualServiceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
+var VirtualServiceCrd = crd.NewCrd("gateway.solo.io",
+	"virtualservices",
+	"gateway.solo.io",
+	"v1",
+	"VirtualService",
+	"vs",
+	false,
+	&VirtualService{})

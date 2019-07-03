@@ -3,7 +3,6 @@
 package v1
 
 import (
-	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -124,24 +123,11 @@ func (o *KubeService) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*KubeService)
 }
 
-var (
-	KubeServiceGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "ingress.solo.io",
-		Kind:    "KubeService",
-	}
-	KubeServiceCrd = crd.NewCrd(
-		"services",
-		KubeServiceGVK.Group,
-		KubeServiceGVK.Version,
-		KubeServiceGVK.Kind,
-		"sv",
-		false,
-		&KubeService{})
-)
-
-func init() {
-	if err := crd.AddCrd(KubeServiceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
+var KubeServiceCrd = crd.NewCrd("ingress.solo.io",
+	"services",
+	"ingress.solo.io",
+	"v1",
+	"KubeService",
+	"sv",
+	false,
+	&KubeService{})
