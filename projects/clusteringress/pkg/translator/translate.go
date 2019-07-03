@@ -1,36 +1,31 @@
 package translator
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-
-	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
+	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
+	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+const (
+	bindPortHttp  = 80
+	bindPortHttps = 443
+)
+
 func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
-	var clusterIngresses []*v1alpha1.ClusterIngress
-	for _, ig := range snap.Clusteringresses {
-		kubeIngress, err := clusteringress.ToKube(ig)
-		if err != nil {
-			return nil, err
-		}
-		clusterIngresses = append(clusterIngresses, kubeIngress)
-	}
-	upstreams := snap.Upstreams
+	clusterIngresses := snap.Clusteringresses
 	secrets := snap.Secrets
 
-	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(clusterIngresses, upstreams, secrets)
+	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(clusterIngresses, secrets)
 	if err != nil {
 		return nil, errors.Wrapf(err, "computing virtual hosts")
 	}
@@ -50,7 +45,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 		listeners = append(listeners, &gloov1.Listener{
 			Name:        "http",
 			BindAddress: "::",
-			BindPort:    80,
+			BindPort:    bindPortHttp,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
 					VirtualHosts: virtualHostsHttp,
@@ -62,7 +57,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 		listeners = append(listeners, &gloov1.Listener{
 			Name:        "https",
 			BindAddress: "::",
-			BindPort:    443,
+			BindPort:    bindPortHttps,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
 					VirtualHosts: virtualHostsHttps,
@@ -85,7 +80,7 @@ type secureVirtualHost struct {
 	secret core.ResourceRef
 }
 
-func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.UpstreamList, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
+func virtualHosts(ingresses v1alpha1.ClusterIngressList, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
 	routesByHostHttp := make(map[string][]*gloov1.Route)
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)
@@ -151,7 +146,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 					},
 				}
 
-				action, err := routeActionFromSplits(route.Splits, upstreams)
+				action, err := routeActionFromSplits(route.Splits)
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "")
 				}
@@ -190,7 +185,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 		sortByLongestPathName(routes)
 		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
 			Name:    host + "-http",
-			Domains: []string{host},
+			Domains: []string{host, fmt.Sprintf("%v:%v", host, bindPortHttp)},
 			Routes:  routes,
 		})
 	}
@@ -204,7 +199,7 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
 			vh: &gloov1.VirtualHost{
 				Name:    host + "-http",
-				Domains: []string{host},
+				Domains: []string{host, fmt.Sprintf("%v:%v", host, bindPortHttps)},
 				Routes:  routes,
 			},
 			secret: *secret,
@@ -220,22 +215,16 @@ func virtualHosts(ingresses []*v1alpha1.ClusterIngress, upstreams gloov1.Upstrea
 	return virtualHostsHttp, virtualHostsHttps, nil
 }
 
-func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstreams gloov1.UpstreamList) (*gloov1.RouteAction, error) {
+func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov1.RouteAction, error) {
 	switch len(splits) {
 	case 0:
 		return nil, errors.Errorf("invalid cluster ingress: must provide at least 1 split")
 	case 1:
 		split := splits[0]
-		upstream, err := upstreamForSplit(upstreams, split)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting upstream for split %v", split)
-		}
 		return &gloov1.RouteAction{
 			Destination: &gloov1.RouteAction_Single{
 				Single: &gloov1.Destination{
-					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-					},
+					DestinationType: serviceForSplit(split),
 				},
 			},
 		}, nil
@@ -243,15 +232,9 @@ func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstrea
 
 	var destinations []*gloov1.WeightedDestination
 	for _, split := range splits {
-		upstream, err := upstreamForSplit(upstreams, split)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting upstream for split %v", split)
-		}
 		destinations = append(destinations, &gloov1.WeightedDestination{
 			Destination: &gloov1.Destination{
-				DestinationType: &gloov1.Destination_Upstream{
-					Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-				},
+				DestinationType: serviceForSplit(split),
 			},
 			Weight: uint32(split.Percent),
 		})
@@ -265,31 +248,13 @@ func routeActionFromSplits(splits []v1alpha1.ClusterIngressBackendSplit, upstrea
 	}, nil
 }
 
-func upstreamForSplit(upstreams gloov1.UpstreamList, backend v1alpha1.ClusterIngressBackendSplit) (*gloov1.Upstream, error) {
-	// find the upstream with the smallest matching selector
-	// longer selectors represent subsets of pods for a service
-	var matchingUpstream *gloov1.Upstream
-	for _, us := range upstreams {
-		switch spec := us.UpstreamSpec.UpstreamType.(type) {
-		case *gloov1.UpstreamSpec_Kube:
-			if spec.Kube.ServiceNamespace == backend.ServiceNamespace &&
-				spec.Kube.ServiceName == backend.ServiceName &&
-				spec.Kube.ServicePort == uint32(backend.ServicePort.IntVal) {
-				if matchingUpstream != nil {
-					originalSelectorLength := len(matchingUpstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.Selector)
-					newSelectorLength := len(spec.Kube.Selector)
-					if newSelectorLength > originalSelectorLength {
-						continue
-					}
-				}
-				matchingUpstream = us
-			}
-		}
+func serviceForSplit(split knativev1alpha1.IngressBackendSplit) *gloov1.Destination_Service {
+	return &gloov1.Destination_Service{
+		Service: &gloov1.ServiceDestination{
+			Ref:  core.ResourceRef{Name: split.ServiceName, Namespace: split.ServiceNamespace},
+			Port: uint32(split.ServicePort.IntValue()),
+		},
 	}
-	if matchingUpstream == nil {
-		return nil, errors.Errorf("discovery failure: upstream not found for kube service %v with port %v", backend.ServiceName, backend.ServicePort)
-	}
-	return matchingUpstream, nil
 }
 
 func sortByLongestPathName(routes []*gloov1.Route) {

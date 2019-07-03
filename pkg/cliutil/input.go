@@ -2,9 +2,10 @@ package cliutil
 
 import (
 	"fmt"
-	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
 	"strings"
+
+	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 func GetYesInput(msg string) (bool, error) {

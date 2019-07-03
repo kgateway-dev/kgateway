@@ -2,13 +2,13 @@ package main
 
 import (
 	"github.com/solo-io/gloo/pkg/version"
-
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
-	"github.com/solo-io/go-utils/log"
 )
 
 //go:generate go run generate.go
+
 
 func main() {
 	err := version.CheckVersions()
@@ -16,10 +16,18 @@ func main() {
 		log.Fatalf("generate failed!: %v", err)
 	}
 	log.Printf("starting generate")
-	docsOpts := cmd.DocsOptions{
-		Output: options.Hugo,
+
+	generateOptions := cmd.GenerateOptions{
+		SkipGenMocks:  true,
+		CustomImports: nil,
+		SkipDirs:      nil,
+		RelativeRoot:  "projects",
+		CompileProtos: true,
+		GenDocs: &cmd.DocsOptions{
+			Output: options.Hugo,
+		},
 	}
-	if err := cmd.Run("projects", true, &docsOpts, nil, nil); err != nil {
+	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
 }

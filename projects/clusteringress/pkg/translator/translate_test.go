@@ -3,14 +3,15 @@ package translator
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
+	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
+
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	ingresstype "github.com/solo-io/gloo/projects/clusteringress/pkg/api/clusteringress"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -23,6 +24,7 @@ var _ = Describe("Translate", func() {
 	It("creates the appropriate proxy object for the provided ingress objects", func() {
 		namespace := "example"
 		serviceName := "peteszah-service"
+		serviceNamespace := "peteszah-service-namespace"
 		servicePort := int32(80)
 		secretName := "areallygreatsecret"
 		ingress := &v1alpha1.ClusterIngress{
@@ -31,17 +33,18 @@ var _ = Describe("Translate", func() {
 				Namespace: namespace,
 			},
 			Spec: v1alpha1.IngressSpec{
-				Rules: []v1alpha1.ClusterIngressRule{
+				Rules: []v1alpha1.IngressRule{
 					{
 						Hosts: []string{"petes.com", "zah.net"},
-						HTTP: &v1alpha1.HTTPClusterIngressRuleValue{
-							Paths: []v1alpha1.HTTPClusterIngressPath{
+						HTTP: &v1alpha1.HTTPIngressRuleValue{
+							Paths: []v1alpha1.HTTPIngressPath{
 								{
 									Path: "/",
-									Splits: []v1alpha1.ClusterIngressBackendSplit{
+									Splits: []v1alpha1.IngressBackendSplit{
 										{
-											ClusterIngressBackend: v1alpha1.ClusterIngressBackend{
-												ServiceName: serviceName,
+											IngressBackend: v1alpha1.IngressBackend{
+												ServiceName:      serviceName,
+												ServiceNamespace: serviceNamespace,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
 													IntVal: servicePort,
@@ -61,14 +64,15 @@ var _ = Describe("Translate", func() {
 					},
 					{
 						Hosts: []string{"pog.com", "champ.net", "zah.net"},
-						HTTP: &v1alpha1.HTTPClusterIngressRuleValue{
-							Paths: []v1alpha1.HTTPClusterIngressPath{
+						HTTP: &v1alpha1.HTTPIngressRuleValue{
+							Paths: []v1alpha1.HTTPIngressPath{
 								{
 									Path: "/hay",
-									Splits: []v1alpha1.ClusterIngressBackendSplit{
+									Splits: []v1alpha1.IngressBackendSplit{
 										{
-											ClusterIngressBackend: v1alpha1.ClusterIngressBackend{
-												ServiceName: serviceName,
+											IngressBackend: v1alpha1.IngressBackend{
+												ServiceName:      serviceName,
+												ServiceNamespace: serviceNamespace,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
 													IntVal: servicePort,
@@ -95,23 +99,24 @@ var _ = Describe("Translate", func() {
 				Namespace: namespace,
 			},
 			Spec: v1alpha1.IngressSpec{
-				TLS: []v1alpha1.ClusterIngressTLS{
+				TLS: []v1alpha1.IngressTLS{
 					{
 						Hosts:      []string{"petes.com"},
 						SecretName: secretName,
 					},
 				},
-				Rules: []v1alpha1.ClusterIngressRule{
+				Rules: []v1alpha1.IngressRule{
 					{
 						Hosts: []string{"petes.com", "zah.net"},
-						HTTP: &v1alpha1.HTTPClusterIngressRuleValue{
-							Paths: []v1alpha1.HTTPClusterIngressPath{
+						HTTP: &v1alpha1.HTTPIngressRuleValue{
+							Paths: []v1alpha1.HTTPIngressPath{
 								{
 									Path: "/",
-									Splits: []v1alpha1.ClusterIngressBackendSplit{
+									Splits: []v1alpha1.IngressBackendSplit{
 										{
-											ClusterIngressBackend: v1alpha1.ClusterIngressBackend{
-												ServiceName: serviceName,
+											IngressBackend: v1alpha1.IngressBackend{
+												ServiceName:      serviceName,
+												ServiceNamespace: serviceNamespace,
 												ServicePort: intstr.IntOrString{
 													Type:   intstr.Int,
 													IntVal: servicePort,
@@ -132,10 +137,8 @@ var _ = Describe("Translate", func() {
 				},
 			},
 		}
-		ingressRes, err := ingresstype.FromKube(ingress)
-		Expect(err).NotTo(HaveOccurred())
-		ingressResTls, err := ingresstype.FromKube(ingressTls)
-		Expect(err).NotTo(HaveOccurred())
+		ingressRes := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingress)}
+		ingressResTls := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingressTls)}
 		secret := &gloov1.Secret{
 			Metadata: core.Metadata{Name: secretName, Namespace: namespace},
 			Kind: &gloov1.Secret_Tls{
@@ -146,46 +149,9 @@ var _ = Describe("Translate", func() {
 				},
 			},
 		}
-		us := &gloov1.Upstream{
-			Metadata: core.Metadata{
-				Namespace: namespace,
-				Name:      "wow-upstream",
-			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceNamespace: namespace,
-						ServiceName:      serviceName,
-						ServicePort:      uint32(servicePort),
-						Selector: map[string]string{
-							"a": "b",
-						},
-					},
-				},
-			},
-		}
-		usSubset := &gloov1.Upstream{
-			Metadata: core.Metadata{
-				Namespace: namespace,
-				Name:      "wow-upstream-subset",
-			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceName: serviceName,
-						ServicePort: uint32(servicePort),
-						Selector: map[string]string{
-							"a": "b",
-							"c": "d",
-						},
-					},
-				},
-			},
-		}
 		snap := &v1.TranslatorSnapshot{
-			Clusteringresses: v1.ClusterIngressList{ingressRes, ingressResTls},
+			Clusteringresses: v1alpha12.ClusterIngressList{ingressRes, ingressResTls},
 			Secrets:          gloov1.SecretList{secret},
-			Upstreams:        gloov1.UpstreamList{us, usSubset},
 		}
 		proxy, errs := translateProxy(namespace, snap)
 		Expect(errs).NotTo(HaveOccurred())
@@ -195,7 +161,6 @@ var _ = Describe("Translate", func() {
 		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(80)))
 
 		//utter.Dump(proxy)
-		Expect(err).NotTo(HaveOccurred())
 		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
 				&gloov1.Listener{
@@ -209,6 +174,7 @@ var _ = Describe("Translate", func() {
 									Name: string("champ.net-http"),
 									Domains: []string{
 										string("champ.net"),
+										string("champ.net:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -224,10 +190,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -271,6 +237,7 @@ var _ = Describe("Translate", func() {
 									Name: string("petes.com-http"),
 									Domains: []string{
 										string("petes.com"),
+										string("petes.com:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -286,10 +253,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -333,6 +300,7 @@ var _ = Describe("Translate", func() {
 									Name: string("pog.com-http"),
 									Domains: []string{
 										string("pog.com"),
+										string("pog.com:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -348,10 +316,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -395,6 +363,7 @@ var _ = Describe("Translate", func() {
 									Name: string("zah.net-http"),
 									Domains: []string{
 										string("zah.net"),
+										string("zah.net:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -410,10 +379,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -464,10 +433,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -518,10 +487,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -577,6 +546,7 @@ var _ = Describe("Translate", func() {
 									Name: string("petes.com-http"),
 									Domains: []string{
 										string("petes.com"),
+										string("petes.com:443"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -592,10 +562,10 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Upstream{
-																Upstream: &core.ResourceRef{
-																	Name:      string("wow-upstream-subset"),
-																	Namespace: string("example"),
+															DestinationType: &gloov1.Destination_Service{
+																Service: &gloov1.ServiceDestination{
+																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																	Port: uint32(servicePort),
 																},
 															},
 															DestinationSpec: (*gloov1.DestinationSpec)(nil),
@@ -648,6 +618,7 @@ var _ = Describe("Translate", func() {
 							},
 							SniDomains: []string{
 								string("petes.com"),
+								string("petes.com:443"),
 							},
 						},
 					},

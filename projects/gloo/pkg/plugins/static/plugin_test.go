@@ -53,11 +53,6 @@ var _ = Describe("Plugin", func() {
 			p.ProcessUpstream(params, upstream, out)
 			Expect(out.Http2ProtocolOptions).To(BeNil())
 		})
-		It("should enabled http 2", func() {
-			upstreamSpec.UseHttp2 = true
-			p.ProcessUpstream(params, upstream, out)
-			Expect(out.Http2ProtocolOptions).ToNot(BeNil())
-		})
 	})
 
 	Context("cluster type", func() {

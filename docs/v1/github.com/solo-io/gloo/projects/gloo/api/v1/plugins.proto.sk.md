@@ -141,6 +141,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "loadBalancerConfig": .gloo.solo.io.LoadBalancerConfig
 "connectionConfig": .gloo.solo.io.ConnectionConfig
+"useHttp2": bool
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
@@ -156,6 +157,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |  |
 | `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk#loadbalancerconfig) |  |  |
 | `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk#connectionconfig) |  |  |
+| `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  |  |
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#upstreamspec) |  |  |

@@ -15,7 +15,7 @@ type syncer struct {
 	discOpts    Opts
 }
 
-func NewEdsSyncer(disc *EndpointDiscovery, discOpts Opts, refreshRate time.Duration) v1.DiscoverySyncer {
+func NewEdsSyncer(disc *EndpointDiscovery, discOpts Opts, refreshRate time.Duration) v1.EdsSyncer {
 	s := &syncer{
 		eds:         disc,
 		refreshRate: refreshRate,
@@ -24,7 +24,7 @@ func NewEdsSyncer(disc *EndpointDiscovery, discOpts Opts, refreshRate time.Durat
 	return s
 }
 
-func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
+func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "syncer")
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams))

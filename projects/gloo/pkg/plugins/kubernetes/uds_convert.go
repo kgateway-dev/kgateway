@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	grpcplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -118,9 +116,9 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 	return &v1.Upstream{
 		Metadata: coremeta,
 		UpstreamSpec: &v1.UpstreamSpec{
+			UseHttp2: UseHttp2(svc, port),
 			UpstreamType: &v1.UpstreamSpec_Kube{
 				Kube: &kubeplugin.UpstreamSpec{
-					ServiceSpec:      GetServiceSpec(svc, port),
 					ServiceName:      meta.Name,
 					ServiceNamespace: meta.Namespace,
 					ServicePort:      uint32(port.Port),
@@ -132,26 +130,28 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 	}
 }
 
-func GetServiceSpec(svc *kubev1.Service, port kubev1.ServicePort) *plugins.ServiceSpec {
-	grpcSpec := &plugins.ServiceSpec{
-		PluginType: &plugins.ServiceSpec_Grpc{
-			Grpc: &grpcplugin.ServiceSpec{},
-		},
-	}
+var http2PortNames = []string{
+	"grpc",
+	"h2",
+	"http2",
+}
 
+func UseHttp2(svc *kubev1.Service, port kubev1.ServicePort) bool {
 	if svc.Annotations != nil {
 		if svc.Annotations[GlooH2Annotation] == "true" {
-			return grpcSpec
+			return true
 		} else if svc.Annotations[GlooH2Annotation] == "false" {
-			return nil
+			return false
 		}
 	}
 
-	if strings.HasPrefix(port.Name, "grpc") || strings.HasPrefix(port.Name, "h2") {
-		return grpcSpec
+	for _, http2Name := range http2PortNames {
+		if strings.HasPrefix(port.Name, http2Name) {
+			return true
+		}
 	}
 
-	return nil
+	return false
 }
 
 func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {

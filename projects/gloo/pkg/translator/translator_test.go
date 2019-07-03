@@ -388,7 +388,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, upstream2)
-			params.Snapshot.Upstreamgroups = v1.UpstreamGroupList{
+			params.Snapshot.UpstreamGroups = v1.UpstreamGroupList{
 				upstreamGroup,
 			}
 			ref := upstreamGroup.Metadata.Ref()

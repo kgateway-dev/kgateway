@@ -10,14 +10,12 @@ option (gogoproto.equal_all) = true;
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 /*
-@solo-kit:resource.short_name=px
-@solo-kit:resource.plural_name=proxies
-
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
 Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
 for connections. Each listener has its own set of configuration.
@@ -31,6 +29,9 @@ a proxy-specific identifier.
 * Node ID can be specified in Envoy with the `--service-node` flag, or in the Envoy instance's bootstrap config.
 */
 message Proxy {
+
+    option (core.solo.io.resource).short_name = "px";
+    option (core.solo.io.resource).plural_name = "proxies";
     // Define here each listener the proxy should create.
     // Listeners define the a set of behaviors for a single bind address/port where the proxy will listen
     // If no listeners are specified, the instances configured with the proxy resource will not accept connections.
@@ -280,11 +281,10 @@ message ServiceDestination {
     uint32 port = 2;
 }
 
-/*
-@solo-kit:resource.short_name=ug
-@solo-kit:resource.plural_name=upstreamgroups
-*/
 message UpstreamGroup {
+
+    option (core.solo.io.resource).short_name = "ug";
+    option (core.solo.io.resource).plural_name = "upstream_groups";
 
     // The destinations that are part of this upstream group.
     repeated WeightedDestination destinations = 1;

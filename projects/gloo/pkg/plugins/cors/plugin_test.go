@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("Plugin", func() {
 	var (
-		params plugins.Params
+		params plugins.VirtualHostParams
 		plugin plugins.Plugin
 		gloo1  *v1.VirtualHost
 		envoy1 *envoyroute.VirtualHost
@@ -58,7 +58,7 @@ var _ = Describe("Plugin", func() {
 			Cors: out1,
 		}
 
-		params = plugins.Params{}
+		params = plugins.VirtualHostParams{}
 
 	})
 

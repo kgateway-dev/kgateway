@@ -10,6 +10,14 @@
   version = "v0.33.1"
 
 [[projects]]
+  digest = "1:a0f79124a2fba5112d3d1466b917daf508e548c6c2da106399df92a79e06628b"
+  name = "contrib.go.opencensus.io/exporter/prometheus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f4a2c1e53ec45636355d35fb9022b64e4bdd4a91"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:6da51e5ec493ad2b44cb04129e2d0a068c8fb9bd6cb5739d199573558696bb94"
   name = "github.com/Azure/go-ansiterm"
@@ -211,17 +219,6 @@
   pruneopts = "UT"
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
   version = "v1.3.1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:7310ec5042e3a0dd73ed9f23f812e73ce0ae88d08039e4473472ebba20bf2996"
-  name = "github.com/bxcodec/faker"
-  packages = [
-    ".",
-    "support/slice",
-  ]
-  pruneopts = "UT"
-  revision = "bf89c38ff1742f295e15df0bd5e8b3e81da95855"
 
 [[projects]]
   branch = "master"
@@ -569,24 +566,24 @@
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
-  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
+  digest = "1:bf40199583e5143d1472fc34d10d6f4b69d97572142acf343b3e43136da40823"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
     "cmp/internal/diff",
+    "cmp/internal/flags",
     "cmp/internal/function",
     "cmp/internal/value",
   ]
   pruneopts = "UT"
-  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
-  version = "v0.2.0"
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
-  digest = "1:5ae77b6deaf1be337861bb792537719511f7372cb3b05905b47a45730d85f122"
+  digest = "1:7915c656a10819b240db94ffd6afc6a621af4687db735341d9919668750485ec"
   name = "github.com/google/go-containerregistry"
   packages = ["pkg/name"]
   pruneopts = "UT"
-  revision = "5f7b0e4895413d785ff15b84d218d73e8a47866a"
+  revision = "abf9ef06abd9f532944e28e8942644ea4b710a40"
 
 [[projects]]
   digest = "1:34bd52916ea0a9e4d95d34dab5bc4f125a7ee7b1e11b1a531d2ea43f41b4f4e8"
@@ -1097,49 +1094,57 @@
   revision = "668c8856d9992f97248b3177d45743d2cc1068db"
 
 [[projects]]
-  digest = "1:345bbba667abadd6263391c915251ede8d9fa6f6852839c60bb6738b6122b89c"
-  name = "github.com/knative/build"
-  packages = [
-    "pkg/apis/build",
-    "pkg/apis/build/v1alpha1",
-  ]
-  pruneopts = "UT"
-  revision = "94859753e2c6724df2be86f6a254f810895fa3eb"
-  version = "v0.2.0"
-
-[[projects]]
   branch = "master"
-  digest = "1:541a01315a0c0df6d36f5e41d0de33f5f1f0c4d1f9121efc4be612386326f098"
+  digest = "1:c7ad111ba1bdff781c09a02c83fa3ea20fa2223b0486e284a5cd1a7a5621efc5"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
+    "configmap",
     "kmeta",
     "kmp",
+    "ptr",
   ]
   pruneopts = "UT"
-  revision = "d6a2e27f7b67a2dee038e15154ced311c4bbf58e"
+  revision = "a93024b82d98ce079cc2794d85fe4157fe9881a3"
 
 [[projects]]
-  digest = "1:dc860ba5694192d09d61139be88186bc9aebde96bd991a1a6c481cb43153d231"
+  digest = "1:0fa4d8abbb2aa01c432499043d323d2c11902b3a93f46f2b12e5cfe1f1b72018"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
     "pkg/apis/autoscaling/v1alpha1",
+    "pkg/apis/config",
     "pkg/apis/networking",
     "pkg/apis/networking/v1alpha1",
     "pkg/apis/serving",
     "pkg/apis/serving/v1alpha1",
+    "pkg/apis/serving/v1beta1",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/autoscaling",
+    "pkg/client/informers/externalversions/autoscaling/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/networking",
+    "pkg/client/informers/externalversions/networking/v1alpha1",
+    "pkg/client/informers/externalversions/serving",
+    "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/informers/externalversions/serving/v1beta1",
+    "pkg/client/listers/autoscaling/v1alpha1",
+    "pkg/client/listers/networking/v1alpha1",
+    "pkg/client/listers/serving/v1alpha1",
+    "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "4d198db8756db2f8a3c228302a97fb3a216a9475"
-  version = "v0.3.0"
+  revision = "cb5c1810f2690efa0c434bc81aab3a1d45df497f"
+  version = "v0.7.0"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -1534,7 +1539,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:33aec427a8169c1f16f09a02d8a86639bdf62ae39af1417ffe4d72e3c9b13bcd"
+  digest = "1:eb5311f37ccffb6a78e22f096b32c5dda2411fcbcd0fddae02ab004a51d7eae3"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1566,18 +1571,20 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "c3a45bb546f7b699ceaa6814d195e490cb8e6e96"
-  version = "v0.8.18"
+  revision = "a6132166b2352c8b446e43f6bf10dc0061ce1def"
+  version = "v0.8.23"
 
 [[projects]]
-  digest = "1:57beeeddb6c4fad09aa3870390f9ee78aa2e2ede46e12654bc65cee16c382f91"
+  digest = "1:af627124d53b9807002bfba827a0c54388c8c670089d810cbbfc3c89a8dc2ca4"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
+    "api/external/kubernetes/customresourcedefinition",
     "api/external/kubernetes/deployment",
     "api/external/kubernetes/namespace",
     "api/external/kubernetes/pod",
     "api/external/kubernetes/service",
+    "pkg/api/external/kubernetes/namespace",
     "pkg/api/external/kubernetes/service",
     "pkg/api/v1/clients",
     "pkg/api/v1/clients/common",
@@ -1628,8 +1635,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "1edf3f38af4cf7569fc66e53d115032d3385706d"
-  version = "v0.9.9"
+  revision = "e44a028d3df45c66fe011cc6da615815f2760128"
+  version = "v0.10.0"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -1719,14 +1726,17 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:520b3fe2981935aec909ea78b4db76912e47235d9aea024212ffd11ae3b88dbb"
+  digest = "1:b7c2ac33d95453f9285cb06d1dd07e666341f597e8090c0c925af4e9f8a3a150"
   name = "go.opencensus.io"
   packages = [
     ".",
-    "exporter/prometheus",
     "internal",
     "internal/tagencoding",
+    "metric/metricdata",
+    "metric/metricexport",
+    "metric/metricproducer",
     "plugin/ocgrpc",
+    "resource",
     "stats",
     "stats/internal",
     "stats/view",
@@ -1739,8 +1749,8 @@
     "zpages/internal",
   ]
   pruneopts = "UT"
-  revision = "b11f239c032624b045c4c2bfd3d1287b4012ce89"
-  version = "v0.16.0"
+  revision = "9c377598961b706d1542bd2d84d538b5094d596e"
+  version = "v0.22.0"
 
 [[projects]]
   digest = "1:3c1a69cdae3501bf75e76d0d86dc6f2b0a7421bc205c0cb7b96b19eed464a34d"
@@ -2697,7 +2707,9 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
+    "github.com/golang/protobuf/ptypes/any",
     "github.com/google/go-github/github",
     "github.com/gorilla/mux",
     "github.com/grpc-ecosystem/go-grpc-middleware",
@@ -2716,6 +2728,8 @@
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
+    "github.com/knative/serving/pkg/client/informers/externalversions",
+    "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
@@ -2750,6 +2764,8 @@
     "github.com/solo-io/go-utils/testutils/exec",
     "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
+    "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
+    "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/factory",
@@ -2789,15 +2805,15 @@
     "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/AlecAivazis/survey.v1/terminal",
+    "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/informers",

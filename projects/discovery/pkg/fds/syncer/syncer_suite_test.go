@@ -1,4 +1,4 @@
-package clusteringress_test
+package syncer_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestClusteringress(t *testing.T) {
+func TestSyncer(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Clusteringress Suite")
+	RunSpecs(t, "Syncer Suite")
 }

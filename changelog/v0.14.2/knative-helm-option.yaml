@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: provide option for the helm chart to install gloo knative integration without installing knative itself
+    issueLink: https://github.com/solo-io/gloo/issues/774

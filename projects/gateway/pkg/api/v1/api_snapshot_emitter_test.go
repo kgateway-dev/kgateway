@@ -39,8 +39,8 @@ var _ = Describe("V1Emitter", func() {
 		cfg                  *rest.Config
 		kube                 kubernetes.Interface
 		emitter              ApiEmitter
-		gatewayClient        GatewayClient
 		virtualServiceClient VirtualServiceClient
+		gatewayClient        GatewayClient
 	)
 
 	BeforeEach(func() {
@@ -51,15 +51,6 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
-		// Gateway Constructor
-		gatewayClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         GatewayCrd,
-			Cfg:         cfg,
-			SharedCache: kuberc.NewKubeCache(context.TODO()),
-		}
-
-		gatewayClient, err = NewGatewayClient(gatewayClientFactory)
-		Expect(err).NotTo(HaveOccurred())
 		// VirtualService Constructor
 		virtualServiceClientFactory := &factory.KubeResourceClientFactory{
 			Crd:         VirtualServiceCrd,
@@ -69,7 +60,16 @@ var _ = Describe("V1Emitter", func() {
 
 		virtualServiceClient, err = NewVirtualServiceClient(virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewApiEmitter(gatewayClient, virtualServiceClient)
+		// Gateway Constructor
+		gatewayClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         GatewayCrd,
+			Cfg:         cfg,
+			SharedCache: kuberc.NewKubeCache(context.TODO()),
+		}
+
+		gatewayClient, err = NewGatewayClient(gatewayClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		emitter = NewApiEmitter(virtualServiceClient, gatewayClient)
 	})
 	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
@@ -89,63 +89,6 @@ var _ = Describe("V1Emitter", func() {
 		var snap *ApiSnapshot
 
 		/*
-			Gateway
-		*/
-
-		assertSnapshotGateways := func(expectGateways GatewayList, unexpectGateways GatewayList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectGateways {
-						if _, err := snap.Gateways.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectGateways {
-						if _, err := snap.Gateways.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := gatewayClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := gatewayClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, nil)
-		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
-
-		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
-
-		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
-
-		/*
 			VirtualService
 		*/
 
@@ -201,6 +144,63 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(nil, VirtualServiceList{virtualService1a, virtualService1b, virtualService2a, virtualService2b})
+
+		/*
+			Gateway
+		*/
+
+		assertSnapshotGateways := func(expectGateways GatewayList, unexpectGateways GatewayList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectGateways {
+						if _, err := snap.Gateways.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectGateways {
+						if _, err := snap.Gateways.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := gatewayClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := gatewayClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, nil)
+		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
+
+		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
+
+		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
 	})
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
@@ -216,63 +216,6 @@ var _ = Describe("V1Emitter", func() {
 		var snap *ApiSnapshot
 
 		/*
-			Gateway
-		*/
-
-		assertSnapshotGateways := func(expectGateways GatewayList, unexpectGateways GatewayList) {
-		drain:
-			for {
-				select {
-				case snap = <-snapshots:
-					for _, expected := range expectGateways {
-						if _, err := snap.Gateways.Find(expected.GetMetadata().Ref().Strings()); err != nil {
-							continue drain
-						}
-					}
-					for _, unexpected := range unexpectGateways {
-						if _, err := snap.Gateways.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
-							continue drain
-						}
-					}
-					break drain
-				case err := <-errs:
-					Expect(err).NotTo(HaveOccurred())
-				case <-time.After(time.Second * 10):
-					nsList1, _ := gatewayClient.List(namespace1, clients.ListOpts{})
-					nsList2, _ := gatewayClient.List(namespace2, clients.ListOpts{})
-					combined := append(nsList1, nsList2...)
-					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
-				}
-			}
-		}
-		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, nil)
-		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
-
-		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
-
-		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
-
-		/*
 			VirtualService
 		*/
 
@@ -328,5 +271,62 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotVirtualServices(nil, VirtualServiceList{virtualService1a, virtualService1b, virtualService2a, virtualService2b})
+
+		/*
+			Gateway
+		*/
+
+		assertSnapshotGateways := func(expectGateways GatewayList, unexpectGateways GatewayList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectGateways {
+						if _, err := snap.Gateways.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectGateways {
+						if _, err := snap.Gateways.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := gatewayClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := gatewayClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, nil)
+		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
+
+		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
+
+		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
 	})
 })

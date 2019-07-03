@@ -6,6 +6,8 @@ import (
 
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -15,13 +17,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/test/helpers"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("GraphQLSyncer", func() {
+var _ = Describe("Translate Proxy", func() {
+
 	It("writes the reports the translator spits out and calls SetSnapshot on the cache", func() {
 		ref := "syncer-test"
 		resourceClientFactory := &factory.MemoryResourceClientFactory{
@@ -34,7 +33,10 @@ var _ = Describe("GraphQLSyncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &v1.Proxy{
-			Metadata: helpers.NewRandomMetadata(),
+			Metadata: core.Metadata{
+				Namespace: "gloo-system",
+				Name:      "gateway-proxy",
+			},
 		}
 
 		c := &mockXdsCache{}
@@ -60,7 +62,8 @@ var _ = Describe("GraphQLSyncer", func() {
 			ReportedBy: ref,
 		}))
 
-		Expect(c.called).To(BeFalse())
+		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
+		Expect(c.called).To(BeTrue())
 
 		// update rv for proxy
 		p1, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
@@ -95,6 +98,8 @@ func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envo
 	return envoycache.NilSnapshot{}, nil, nil
 }
 
+var _ envoycache.SnapshotCache = &mockXdsCache{}
+
 type mockXdsCache struct {
 	called bool
 }
@@ -118,6 +123,10 @@ func (*mockXdsCache) GetStatusKeys() []string {
 func (c *mockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) error {
 	c.called = true
 	return nil
+}
+
+func (c *mockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
+	return &envoycache.NilSnapshot{}, nil
 }
 
 func (*mockXdsCache) ClearSnapshot(node string) {

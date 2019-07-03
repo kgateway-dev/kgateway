@@ -61,7 +61,8 @@ func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.En
 		CircuitBreakers: getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, t.settings.CircuitBreakers),
 		LbSubsetConfig:  createLbConfig(upstream),
 		// this field can be overridden by plugins
-		ConnectTimeout: ClusterConnectionTimeout,
+		ConnectTimeout:       ClusterConnectionTimeout,
+		Http2ProtocolOptions: getHttp2ptions(upstream.UpstreamSpec),
 	}
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
@@ -120,6 +121,13 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 			}}
 			return envoyCfg
 		}
+	}
+	return nil
+}
+
+func getHttp2ptions(spec *v1.UpstreamSpec) *envoycore.Http2ProtocolOptions {
+	if spec.GetUseHttp2() {
+		return &envoycore.Http2ProtocolOptions{}
 	}
 	return nil
 }

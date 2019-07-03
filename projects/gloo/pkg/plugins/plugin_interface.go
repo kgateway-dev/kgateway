@@ -25,8 +25,14 @@ type Params struct {
 	Snapshot *v1.ApiSnapshot
 }
 
-type RouteParams struct {
+type VirtualHostParams struct {
 	Params
+	Proxy    *v1.Proxy
+	Listener *v1.Listener
+}
+
+type RouteParams struct {
+	VirtualHostParams
 	VirtualHost *v1.VirtualHost
 }
 
@@ -79,7 +85,7 @@ type HttpFilterPlugin interface {
 
 type VirtualHostPlugin interface {
 	Plugin
-	ProcessVirtualHost(params Params, in *v1.VirtualHost, out *envoyroute.VirtualHost) error
+	ProcessVirtualHost(params VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error
 }
 
 type StagedHttpFilter struct {
