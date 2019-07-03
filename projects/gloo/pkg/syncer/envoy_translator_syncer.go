@@ -59,7 +59,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	logger.Debugf("%v", snap)
 	allResourceErrs := make(reporter.ResourceErrors)
 	allResourceErrs.Accept(snap.Upstreams.AsInputResources()...)
-	allResourceErrs.Accept(snap.Upstreamgroups.AsInputResources()...)
+	allResourceErrs.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allResourceErrs.Accept(snap.Proxies.AsInputResources()...)
 
 	s.xdsHasher.SetKeysFromProxies(snap.Proxies)

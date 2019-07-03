@@ -31,7 +31,6 @@ weight: 5
 ---
 ### Settings
 
- 
 
 
 ```yaml

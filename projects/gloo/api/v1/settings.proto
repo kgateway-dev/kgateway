@@ -7,17 +7,17 @@ option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
 
-/*
-@solo-kit:resource.short_name=st
-@solo-kit:resource.plural_name=settings
-*/
 message Settings {
+
+    option (core.solo.io.resource).short_name = "st";
+    option (core.solo.io.resource).plural_name = "settings";
     // namespace to write discovered data
     string discovery_namespace = 1;
     // namespaces to watch for user config as well as services

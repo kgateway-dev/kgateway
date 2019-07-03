@@ -223,7 +223,7 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 		return setWeightedClusters(params, dest.Multi, out)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
-		upstreamGroup, err := params.Snapshot.Upstreamgroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
+		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
 		if err != nil {
 			return err
 		}
@@ -450,7 +450,7 @@ func validateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) err
 
 func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
 
-	upstreamGroup, err := snap.Upstreamgroups.Find(ref.Namespace, ref.Name)
+	upstreamGroup, err := snap.UpstreamGroups.Find(ref.Namespace, ref.Name)
 	if err != nil {
 		return errors.Wrap(err, "invalid destination for upstream group")
 	}

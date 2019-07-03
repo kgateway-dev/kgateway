@@ -27,7 +27,6 @@ weight: 5
 ### Upstream
 
  
-
 Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
 [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v1/cluster_manager/cluster.html?highlight=cluster) in Envoy terminology.
 Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.

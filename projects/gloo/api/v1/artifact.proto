@@ -6,6 +6,7 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 /*
 @solo-kit:resource.short_name=art
@@ -21,6 +22,9 @@ Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/
 Supported artifact backends can be selected in Gloo's boostrap options.
  */
 message Artifact {
+
+    option (core.solo.io.resource).short_name = "art";
+    option (core.solo.io.resource).plural_name = "artifacts";
     // Raw data data being stored
     string data = 1;
 

@@ -41,45 +41,45 @@ func init() {
 
 type ApiEmitter interface {
 	Register() error
-	Gateway() GatewayClient
 	VirtualService() VirtualServiceClient
+	Gateway() GatewayClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
-func NewApiEmitter(gatewayClient GatewayClient, virtualServiceClient VirtualServiceClient) ApiEmitter {
-	return NewApiEmitterWithEmit(gatewayClient, virtualServiceClient, make(chan struct{}))
+func NewApiEmitter(virtualServiceClient VirtualServiceClient, gatewayClient GatewayClient) ApiEmitter {
+	return NewApiEmitterWithEmit(virtualServiceClient, gatewayClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(gatewayClient GatewayClient, virtualServiceClient VirtualServiceClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(virtualServiceClient VirtualServiceClient, gatewayClient GatewayClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
-		gateway:        gatewayClient,
 		virtualService: virtualServiceClient,
+		gateway:        gatewayClient,
 		forceEmit:      emit,
 	}
 }
 
 type apiEmitter struct {
 	forceEmit      <-chan struct{}
-	gateway        GatewayClient
 	virtualService VirtualServiceClient
+	gateway        GatewayClient
 }
 
 func (c *apiEmitter) Register() error {
-	if err := c.gateway.Register(); err != nil {
+	if err := c.virtualService.Register(); err != nil {
 		return err
 	}
-	if err := c.virtualService.Register(); err != nil {
+	if err := c.gateway.Register(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *apiEmitter) Gateway() GatewayClient {
-	return c.gateway
-}
-
 func (c *apiEmitter) VirtualService() VirtualServiceClient {
 	return c.virtualService
+}
+
+func (c *apiEmitter) Gateway() GatewayClient {
+	return c.gateway
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -98,31 +98,20 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
-	/* Create channel for Gateway */
-	type gatewayListWithNamespace struct {
-		list      GatewayList
-		namespace string
-	}
-	gatewayChan := make(chan gatewayListWithNamespace)
 	/* Create channel for VirtualService */
 	type virtualServiceListWithNamespace struct {
 		list      VirtualServiceList
 		namespace string
 	}
 	virtualServiceChan := make(chan virtualServiceListWithNamespace)
+	/* Create channel for Gateway */
+	type gatewayListWithNamespace struct {
+		list      GatewayList
+		namespace string
+	}
+	gatewayChan := make(chan gatewayListWithNamespace)
 
 	for _, namespace := range watchNamespaces {
-		/* Setup namespaced watch for Gateway */
-		gatewayNamespacesChan, gatewayErrs, err := c.gateway.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Gateway watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, gatewayErrs, namespace+"-gateways")
-		}(namespace)
 		/* Setup namespaced watch for VirtualService */
 		virtualServiceNamespacesChan, virtualServiceErrs, err := c.virtualService.Watch(namespace, opts)
 		if err != nil {
@@ -134,6 +123,17 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, virtualServiceErrs, namespace+"-virtualServices")
 		}(namespace)
+		/* Setup namespaced watch for Gateway */
+		gatewayNamespacesChan, gatewayErrs, err := c.gateway.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting Gateway watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, gatewayErrs, namespace+"-gateways")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -141,17 +141,17 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				select {
 				case <-ctx.Done():
 					return
-				case gatewayList := <-gatewayNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case gatewayChan <- gatewayListWithNamespace{list: gatewayList, namespace: namespace}:
-					}
 				case virtualServiceList := <-virtualServiceNamespacesChan:
 					select {
 					case <-ctx.Done():
 						return
 					case virtualServiceChan <- virtualServiceListWithNamespace{list: virtualServiceList, namespace: namespace}:
+					}
+				case gatewayList := <-gatewayNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case gatewayChan <- gatewayListWithNamespace{list: gatewayList, namespace: namespace}:
 					}
 				}
 			}
@@ -173,8 +173,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
-		gatewaysByNamespace := make(map[string]GatewayList)
 		virtualServicesByNamespace := make(map[string]VirtualServiceList)
+		gatewaysByNamespace := make(map[string]GatewayList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -190,18 +190,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
-			case gatewayNamespacedList := <-gatewayChan:
-				record()
-
-				namespace := gatewayNamespacedList.namespace
-
-				// merge lists by namespace
-				gatewaysByNamespace[namespace] = gatewayNamespacedList.list
-				var gatewayList GatewayList
-				for _, gateways := range gatewaysByNamespace {
-					gatewayList = append(gatewayList, gateways...)
-				}
-				currentSnapshot.Gateways = gatewayList.Sort()
 			case virtualServiceNamespacedList := <-virtualServiceChan:
 				record()
 
@@ -214,6 +202,18 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					virtualServiceList = append(virtualServiceList, virtualServices...)
 				}
 				currentSnapshot.VirtualServices = virtualServiceList.Sort()
+			case gatewayNamespacedList := <-gatewayChan:
+				record()
+
+				namespace := gatewayNamespacedList.namespace
+
+				// merge lists by namespace
+				gatewaysByNamespace[namespace] = gatewayNamespacedList.list
+				var gatewayList GatewayList
+				for _, gateways := range gatewaysByNamespace {
+					gatewayList = append(gatewayList, gateways...)
+				}
+				currentSnapshot.Gateways = gatewayList.Sort()
 			}
 		}
 	}()
