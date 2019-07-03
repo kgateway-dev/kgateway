@@ -35,8 +35,8 @@ var _ = Describe("Knative", func() {
 			kc := fake.NewSimpleClientset()
 			_, err = kc.CoreV1().Namespaces().Create(&v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:   "knative-serving",
-					Labels: map[string]string{installedByUsAnnotationKey: string(optsJson)},
+					Name:        "knative-serving",
+					Annotations: map[string]string{installedByUsAnnotationKey: string(optsJson)},
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
