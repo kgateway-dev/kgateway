@@ -29,7 +29,7 @@ func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, 
 	}
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+routeCfgName)
 
-	virtualHosts := t.computeVirtualHosts(params, listener, report)
+	virtualHosts := t.computeVirtualHosts(params, proxy, listener, report)
 
 	// validate ssl config if the listener specifies any
 	if err := validateListenerSslConfig(listener, params.Snapshot.Secrets); err != nil {
@@ -42,7 +42,7 @@ func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, 
 	}
 }
 
-func (t *translator) computeVirtualHosts(params plugins.Params, listener *v1.Listener, report reportFunc) []envoyroute.VirtualHost {
+func (t *translator) computeVirtualHosts(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, report reportFunc) []envoyroute.VirtualHost {
 	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
 	if !ok {
 		panic("non-HTTP listeners are not currently supported in Gloo")
@@ -54,12 +54,17 @@ func (t *translator) computeVirtualHosts(params plugins.Params, listener *v1.Lis
 	requireTls := len(listener.SslConfigurations) > 0
 	var envoyVirtualHosts []envoyroute.VirtualHost
 	for _, virtualHost := range virtualHosts {
-		envoyVirtualHosts = append(envoyVirtualHosts, t.computeVirtualHost(params, virtualHost, requireTls, report))
+		vhostParams := plugins.VirtualHostParams{
+			Params:   params,
+			Listener: listener,
+			Proxy:    proxy,
+		}
+		envoyVirtualHosts = append(envoyVirtualHosts, t.computeVirtualHost(vhostParams, virtualHost, requireTls, report))
 	}
 	return envoyVirtualHosts
 }
 
-func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.VirtualHost, requireTls bool, report reportFunc) envoyroute.VirtualHost {
+func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtualHost *v1.VirtualHost, requireTls bool, report reportFunc) envoyroute.VirtualHost {
 
 	// Make copy to avoid modifying the snapshot
 	virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
@@ -68,8 +73,8 @@ func (t *translator) computeVirtualHost(params plugins.Params, virtualHost *v1.V
 	var envoyRoutes []envoyroute.Route
 	for _, route := range virtualHost.Routes {
 		routeParams := plugins.RouteParams{
-			Params:      params,
-			VirtualHost: virtualHost,
+			VirtualHostParams: params,
+			VirtualHost:       virtualHost,
 		}
 		envoyRoute := t.envoyRoute(routeParams, report, route)
 		envoyRoutes = append(envoyRoutes, envoyRoute)
