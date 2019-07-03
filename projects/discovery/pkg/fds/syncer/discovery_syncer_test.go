@@ -3,40 +3,40 @@ package syncer
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var disabledLabels = map[string]string{FdsLabelKey: disbledLabelValue}
 var enabledLabels = map[string]string{FdsLabelKey: enbledLabelValue}
 var _ = Describe("filterUpstreamsForDiscovery", func() {
 	disabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   "explicitly-disabled-ns",
 			Labels: disabledLabels,
 		},
 	}}
 	enabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "implicitly-enabled-ns",
 		},
 	}}
 	enabledKubeSystemNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   "kube-system",
 			Labels: enabledLabels,
 		},
 	}}
 	disabledKubePublicNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "kube-public",
 		},
 	}}
 	explicitlyEnabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   "explicitly-enabled",
 			Labels: enabledLabels,
 		},
@@ -51,13 +51,13 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 	explicitlyEnabledUs1 := makeUpstream("f", explicitlyEnabledNs.Name, nil)
 	explicitlyEnabledUs2 := makeUpstream("g", enabledNs.Name, enabledLabels)
 
-	usList := v1.UpstreamList{disabledUs1, disabledUs2, disabledUs3, enabledUs1, enabledUs2, explicitlyEnabledUs1, explicitlyEnabledUs2}
+	usList := gloov1.UpstreamList{disabledUs1, disabledUs2, disabledUs3, enabledUs1, enabledUs2, explicitlyEnabledUs1, explicitlyEnabledUs2}
 
-	var filtered v1.UpstreamList
+	var filtered gloov1.UpstreamList
 
 	Context("blacklist mode", func() {
 		BeforeEach(func() {
-			filtered = filterUpstreamsForDiscovery(v1.Settings_DiscoveryOptions_BLACKLIST, usList, nsList)
+			filtered = filterUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_BLACKLIST, usList, nsList)
 		})
 
 		It("excludes upstreams whose namespace has the disabled label", func() {
@@ -83,7 +83,7 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 
 	Context("whitelist mode", func() {
 		BeforeEach(func() {
-			filtered = filterUpstreamsForDiscovery(v1.Settings_DiscoveryOptions_WHITELIST, usList, nsList)
+			filtered = filterUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_WHITELIST, usList, nsList)
 		})
 
 		It("excludes upstreams whose namespace has the disabled label", func() {
@@ -111,10 +111,10 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 	})
 })
 
-func makeUpstream(name, namespace string, labels map[string]string) *v1.Upstream {
-	us := v1.NewUpstream("gloo-system", name)
-	us.UpstreamSpec = &v1.UpstreamSpec{UpstreamType: &v1.UpstreamSpec_Kube{
-		Kube: &kubernetes2.UpstreamSpec{ServiceNamespace: namespace},
+func makeUpstream(name, namespace string, labels map[string]string) *gloov1.Upstream {
+	us := gloov1.NewUpstream("gloo-system", name)
+	us.UpstreamSpec = &gloov1.UpstreamSpec{UpstreamType: &gloov1.UpstreamSpec_Kube{
+		Kube: &kubeplugin.UpstreamSpec{ServiceNamespace: namespace},
 	}}
 	us.Metadata.Labels = labels
 	return us
