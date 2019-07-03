@@ -8,8 +8,12 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 )
 
-func KubectlApply(manifest []byte) error {
-	return Kubectl(bytes.NewBuffer(manifest), "apply", "-f", "-")
+func KubectlApply(manifest []byte, extraArgs ...string) error {
+	return Kubectl(bytes.NewBuffer(manifest), append([]string{"apply", "-f", "-"}, extraArgs...)...)
+}
+
+func KubectlDelete(manifest []byte, extraArgs ...string) error {
+	return Kubectl(bytes.NewBuffer(manifest), append([]string{"delete", "-f", "-"}, extraArgs...)...)
 }
 
 type KubeCli interface {

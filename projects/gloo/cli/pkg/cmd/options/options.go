@@ -28,11 +28,19 @@ type Top struct {
 }
 
 type Install struct {
-	DryRun                bool
-	Namespace             string
-	HelmChartOverride     string
-	InstallKnative        bool
-	InstallKnativeVersion string
+	DryRun            bool
+	Namespace         string
+	HelmChartOverride string
+	Knative           Knative
+}
+
+type Knative struct {
+	InstallKnativeVersion    string `json:"version"`
+	InstallKnative           bool   `json:"-"`
+	SkipGlooInstall          bool   `json:"-"`
+	InstallKnativeBuild      bool   `json:"build"`
+	InstallKnativeMonitoring bool   `json:"monitoring"`
+	InstallKnativeEventing   bool   `json:"eventing"`
 }
 
 type Uninstall struct {

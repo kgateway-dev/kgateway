@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: knative installation via the cli is now version-independent, allows installing additional knative components
+    issueLink: https://github.com/solo-io/gloo/issues/795

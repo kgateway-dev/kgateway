@@ -8,7 +8,6 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 )
 
 func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
@@ -42,7 +41,6 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 		}
 	}
 
-	// TODO: remove knative crds
 	if err := uninstallKnativeIfNecessary(cli); err != nil {
 		return err
 	}
@@ -90,15 +88,18 @@ func deleteNamespace(cli install.KubeCli, namespace string) error {
 }
 
 func uninstallKnativeIfNecessary(cli install.KubeCli) error {
-	installClient := DefaultGlooKubeInstallClient{}
-	knativeExists, isOurInstall, err := installClient.CheckKnativeInstallation()
+	_, installOpts, err := checkKnativeInstallation()
 	if err != nil {
 		return errors.Wrapf(err, "finding knative installation")
 	}
-	if knativeExists && isOurInstall {
-		fmt.Printf("Removing namespace %s...\n", constants.KnativeServingNamespace)
-		if err := cli.Kubectl(nil, "delete", "namespace", constants.KnativeServingNamespace); err != nil {
-			return errors.Wrapf(err, "delete knative failed")
+	if installOpts != nil {
+		fmt.Printf("Removing installed knative components %#v...\n", installOpts)
+		manifests, err := RenderKnativeManifests(*installOpts)
+		if err != nil {
+			return errors.Wrapf(err, "rendering knative manifests")
+		}
+		if err := install.KubectlDelete([]byte(manifests), "--ignore-not-found"); err != nil {
+			return errors.Wrapf(err, "deleting knative failed")
 		}
 	}
 	return nil

@@ -9,10 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/go-utils/kubeutils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/manifest"
 	"k8s.io/helm/pkg/proto/hapi/chart"
@@ -22,7 +18,6 @@ import (
 type GlooKubeInstallClient interface {
 	KubectlApply(manifest []byte) error
 	WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error
-	CheckKnativeInstallation() (isInstalled bool, isOurs bool, err error)
 }
 
 type DefaultGlooKubeInstallClient struct{}
@@ -50,32 +45,10 @@ func (i *DefaultGlooKubeInstallClient) WaitForCrdsToBeRegistered(crds []string, 
 			}
 			elapsed += interval
 			if elapsed > timeout {
-				return errors.Errorf("failed to confirm knative crd registration after %v", timeout)
+				return errors.Errorf("failed to confirm crd registration after %v", timeout)
 			}
 		}
 	}
-}
-
-func (i *DefaultGlooKubeInstallClient) CheckKnativeInstallation() (bool, bool, error) {
-	restCfg, err := kubeutils.GetConfig("", "")
-	if err != nil {
-		return false, false, err
-	}
-	kube, err := kubernetes.NewForConfig(restCfg)
-	if err != nil {
-		return false, false, err
-	}
-	namespaces, err := kube.CoreV1().Namespaces().List(metav1.ListOptions{})
-	if err != nil {
-		return false, false, err
-	}
-	for _, ns := range namespaces.Items {
-		if ns.Name == constants.KnativeServingNamespace {
-			ours := ns.Labels != nil && ns.Labels["app"] == "gloo"
-			return true, ours, nil
-		}
-	}
-	return false, false, nil
 }
 
 type ManifestInstaller interface {
@@ -133,17 +106,15 @@ type GlooStagedInstaller interface {
 	DoCrdInstall() error
 	DoPreInstall() error
 	DoInstall() error
-	DoKnativeInstall() error
 }
 
 type DefaultGlooStagedInstaller struct {
-	chart                *chart.Chart
-	values               *chart.Config
-	renderOpts           renderutil.Options
-	knativeInstallStatus KnativeInstallStatus
-	excludeResources     install.ResourceMatcherFunc
-	manifestInstaller    ManifestInstaller
-	dryRun               bool
+	chart             *chart.Chart
+	values            *chart.Config
+	renderOpts        renderutil.Options
+	excludeResources  install.ResourceMatcherFunc
+	manifestInstaller ManifestInstaller
+	dryRun            bool
 }
 
 func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client GlooKubeInstallClient) (GlooStagedInstaller, error) {
@@ -169,15 +140,6 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		},
 	}
 
-	isInstalled, isOurs, err := client.CheckKnativeInstallation()
-	if err != nil {
-		return nil, err
-	}
-	knativeInstallStatus := KnativeInstallStatus{
-		isInstalled: isInstalled,
-		isOurs:      isOurs,
-	}
-
 	var manifestInstaller ManifestInstaller
 	if opts.Install.DryRun {
 		manifestInstaller = &DryRunManifestInstaller{}
@@ -188,13 +150,12 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 	}
 
 	return &DefaultGlooStagedInstaller{
-		chart:                chart,
-		values:               values,
-		renderOpts:           renderOpts,
-		knativeInstallStatus: knativeInstallStatus,
-		excludeResources:     spec.ExcludeResources,
-		manifestInstaller:    manifestInstaller,
-		dryRun:               opts.Install.DryRun,
+		chart:             chart,
+		values:            values,
+		renderOpts:        renderOpts,
+		excludeResources:  spec.ExcludeResources,
+		manifestInstaller: manifestInstaller,
+		dryRun:            opts.Install.DryRun,
 	}, nil
 }
 
@@ -211,7 +172,6 @@ func (i *DefaultGlooStagedInstaller) DoCrdInstall() error {
 	// Render and install CRD manifests
 	crdManifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
 		install.ExcludeNotes,
-		install.KnativeResourceFilterFunction(i.knativeInstallStatus.isInstalled),
 		excludeNonCrdsAndCollectCrdNames,
 		install.ExcludeEmptyManifests)
 	if err != nil {
@@ -256,21 +216,6 @@ func (i *DefaultGlooStagedInstaller) DoInstall() error {
 	}
 	if !i.dryRun {
 		fmt.Printf("Installing...\n")
-	}
-	return i.manifestInstaller.InstallManifest(manifestBytes)
-}
-
-// This is a bit tricky. The manifest is already filtered based on the values file. If the values file includes
-// knative stuff, then we may want to do a knative install -- if there isn't an install already, or if there is
-// an install and it's ours (i.e. an upgrade)
-func (i *DefaultGlooStagedInstaller) DoKnativeInstall() error {
-	// Exclude everything but knative non-crds
-	manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
-		install.ExcludeNonKnative,
-		install.KnativeResourceFilterFunction(i.knativeInstallStatus.isInstalled && !i.knativeInstallStatus.isOurs),
-		install.ExcludeCrds)
-	if err != nil {
-		return err
 	}
 	return i.manifestInstaller.InstallManifest(manifestBytes)
 }
