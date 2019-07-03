@@ -17,7 +17,7 @@ var _ = Describe("Virtual Clusters", func() {
 	var (
 		ctx          = context.Background()
 		plugin       *Plugin
-		pluginParams = plugins.Params{Ctx: ctx}
+		pluginParams = plugins.VirtualHostParams{Params: plugins.Params{Ctx: ctx}}
 		inputVh      = v1.VirtualHost{
 			Name:    "my-vh",
 			Domains: []string{"a.com", "b.com"},

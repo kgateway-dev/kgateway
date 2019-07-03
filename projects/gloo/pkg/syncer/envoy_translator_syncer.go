@@ -59,7 +59,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	logger.Debugf("%v", snap)
 	allResourceErrs := make(reporter.ResourceErrors)
 	allResourceErrs.Accept(snap.Upstreams.AsInputResources()...)
-	allResourceErrs.Accept(snap.Upstreamgroups.AsInputResources()...)
+	allResourceErrs.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allResourceErrs.Accept(snap.Proxies.AsInputResources()...)
 
 	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
@@ -84,17 +84,31 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 		allResourceErrs.Merge(resourceErrs)
 
-		if xdsSnapshot, err = validateSnapshot(snap, xdsSnapshot, resourceErrs, logger); err != nil {
-			logger.Warnf("proxy %v was rejected due to invalid config: %v\nxDS cache will not be updated.", proxy.Metadata.Ref().Key(), err)
-			continue
-		}
 		key := xds.SnapshotKey(proxy)
+
+		xdsSnapshot, err = validateSnapshot(snap, xdsSnapshot, resourceErrs, logger)
+		if err != nil {
+			logger.Warnf("proxy %v was rejected due to invalid config: %v\n"+
+				"Attempting to update only EDS information", proxy.Metadata.Ref().Key(), err)
+
+			// If the snapshot is invalid, attempt at least to update the EDS information. This is important because
+			// endpoints are relatively ephemeral entities and the previous snapshot Envoy got might be stale by now.
+			xdsSnapshot, err = s.updateEndpointsOnly(key, xdsSnapshot)
+			if err != nil {
+				logger.Warnf("endpoint update failed. xDS snapshot for proxy %v will not be updated. "+
+					"Error is: %s", proxy.Metadata.Ref().Key(), err)
+				continue
+			}
+			logger.Infof("successfully updated EDS information for proxy %v", proxy.Metadata.Ref().Key())
+		}
+
 		if err := s.xdsCache.SetSnapshot(key, xdsSnapshot); err != nil {
 			err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
 
+		// Record some metrics
 		clustersLen := len(xdsSnapshot.GetResources(xds.ClusterType).Items)
 		listenersLen := len(xdsSnapshot.GetResources(xds.ListenerType).Items)
 		routesLen := len(xdsSnapshot.GetResources(xds.RouteType).Items)
@@ -113,6 +127,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 		logger.Debugf("Full snapshot for proxy %v: %v", proxy.Metadata.Name, xdsSnapshot)
 	}
+
 	if err := s.reporter.WriteReports(ctx, allResourceErrs, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
 		return errors.Wrapf(err, "writing reports")
@@ -132,20 +147,22 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 	return http.ListenAndServe(":10010", r)
 }
 
-func validateSnapshot(snap *v1.ApiSnapshot, snapshot envoycache.Snapshot, errs reporter.ResourceErrors, logger *zap.SugaredLogger) (envoycache.Snapshot, error) {
-
-	// find all the errored upstreams and remove them. if the snapshot is still consistent, we are good to go
+// If there are any errors on upstreams, this function tries to remove the correspondent clusters and endpoints from
+// the xDS snapshot. If the snapshot is still consistent after these mutations and there are no errors related to other
+// resources, we are good to send it to Envoy.
+func validateSnapshot(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, errs reporter.ResourceErrors, logger *zap.SugaredLogger) (envoycache.Snapshot, error) {
 	resourcesErr := errs.Validate()
 	if resourcesErr == nil {
-		return snapshot, nil
+		return xdsSnapshot, nil
 	}
 
-	logger.Debug("removing errored upstream and checking consistency")
+	logger.Debug("removing errored upstreams and checking consistency")
 
-	clusters := snapshot.GetResources(xds.ClusterType)
-	endpoints := snapshot.GetResources(xds.EndpointType)
+	clusters := xdsSnapshot.GetResources(xds.ClusterType)
+	endpoints := xdsSnapshot.GetResources(xds.EndpointType)
 
-	for _, up := range snap.Upstreams.AsInputResources() {
+	// Find all the errored upstreams and remove them from the xDS snapshot
+	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
 		if errs[up] != nil {
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 			// remove cluster and endpoints
@@ -154,24 +171,59 @@ func validateSnapshot(snap *v1.ApiSnapshot, snapshot envoycache.Snapshot, errs r
 		}
 	}
 
-	snapshot = xds.NewSnapshotFromResources(
+	// TODO(marco): the function accepts and return a Snapshot interface, but then swaps in its own implementation.
+	//  This breaks the abstraction and mocking the snapshot becomes impossible. We should have a generic way of
+	//  creating snapshots.
+	xdsSnapshot = xds.NewSnapshotFromResources(
 		endpoints,
 		clusters,
-		snapshot.GetResources(xds.RouteType),
-		snapshot.GetResources(xds.ListenerType),
+		xdsSnapshot.GetResources(xds.RouteType),
+		xdsSnapshot.GetResources(xds.ListenerType),
 	)
 
-	if snapshot.Consistent() != nil {
-		return snapshot, resourcesErr
+	// If the snapshot is not consistent,
+	if xdsSnapshot.Consistent() != nil {
+		return xdsSnapshot, resourcesErr
 	}
 
-	// snapshot is consistent, so check if we have errors not related to the upstreams
-	for _, up := range snap.Upstreams.AsInputResources() {
+	// Remove errors related to upstreams
+	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
 		if errs[up] != nil {
 			delete(errs, up)
 		}
 	}
 
+	// Snapshot is consistent, so check if we have errors not related to the upstreams
 	resourcesErr = errs.Validate()
-	return snapshot, resourcesErr
+
+	return xdsSnapshot, resourcesErr
+}
+
+// TODO(marco): should we update CDS resources as well?
+// Builds an xDS snapshot by combining:
+// - CDS/LDS/RDS information from the previous xDS snapshot
+// - EDS from the Gloo API snapshot translated curing this sync
+// The resulting snapshot will be checked for consistency before being returned.
+func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoycache.Snapshot) (envoycache.Snapshot, error) {
+
+	// Get a copy of the last successful snapshot
+	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
+	if err != nil {
+		return nil, err
+	}
+
+	newSnapshot := xds.NewSnapshotFromResources(
+		// Set endpoints calculated during this sync
+		current.GetResources(xds.EndpointType),
+		// Keep other resources from previous snapshot
+		previous.GetResources(xds.ClusterType),
+		previous.GetResources(xds.RouteType),
+		previous.GetResources(xds.ListenerType),
+	)
+
+	if err := newSnapshot.Consistent(); err != nil {
+		return nil, err
+	}
+
+	return newSnapshot, nil
 }

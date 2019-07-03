@@ -26,7 +26,6 @@ weight: 5
 ### Gateway
 
  
-
 A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
 
 ```yaml

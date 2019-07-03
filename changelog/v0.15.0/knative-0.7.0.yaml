@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: support Knative Version 0.7.0 by setting ClusterIngress.Status
+    issueLink: https://github.com/solo-io/gloo/issues/779

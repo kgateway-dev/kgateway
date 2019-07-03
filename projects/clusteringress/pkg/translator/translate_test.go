@@ -174,6 +174,7 @@ var _ = Describe("Translate", func() {
 									Name: string("champ.net-http"),
 									Domains: []string{
 										string("champ.net"),
+										string("champ.net:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -236,6 +237,7 @@ var _ = Describe("Translate", func() {
 									Name: string("petes.com-http"),
 									Domains: []string{
 										string("petes.com"),
+										string("petes.com:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -298,6 +300,7 @@ var _ = Describe("Translate", func() {
 									Name: string("pog.com-http"),
 									Domains: []string{
 										string("pog.com"),
+										string("pog.com:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -360,6 +363,7 @@ var _ = Describe("Translate", func() {
 									Name: string("zah.net-http"),
 									Domains: []string{
 										string("zah.net"),
+										string("zah.net:80"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -542,6 +546,7 @@ var _ = Describe("Translate", func() {
 									Name: string("petes.com-http"),
 									Domains: []string{
 										string("petes.com"),
+										string("petes.com:443"),
 									},
 									Routes: []*gloov1.Route{
 										&gloov1.Route{
@@ -613,6 +618,7 @@ var _ = Describe("Translate", func() {
 							},
 							SniDomains: []string{
 								string("petes.com"),
+								string("petes.com:443"),
 							},
 						},
 					},

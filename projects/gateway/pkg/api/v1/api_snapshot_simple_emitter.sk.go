@@ -81,10 +81,10 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 				currentSnapshot = ApiSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *Gateway:
-						currentSnapshot.Gateways = append(currentSnapshot.Gateways, typed)
 					case *VirtualService:
 						currentSnapshot.VirtualServices = append(currentSnapshot.VirtualServices, typed)
+					case *Gateway:
+						currentSnapshot.Gateways = append(currentSnapshot.Gateways, typed)
 					default:
 						select {
 						case errs <- fmt.Errorf("ApiSnapshotEmitter "+

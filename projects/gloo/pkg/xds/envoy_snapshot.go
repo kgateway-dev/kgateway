@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
@@ -56,7 +57,7 @@ func NewSnapshot(version string,
 func NewSnapshotFromResources(endpoints cache.Resources,
 	clusters cache.Resources,
 	routes cache.Resources,
-	listeners cache.Resources) *EnvoySnapshot {
+	listeners cache.Resources) cache.Snapshot {
 	return &EnvoySnapshot{
 		Endpoints: endpoints,
 		Clusters:  clusters,
@@ -108,4 +109,42 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return s.Listeners
 	}
 	return cache.Resources{}
+}
+
+func (s *EnvoySnapshot) Clone() cache.Snapshot {
+	snapshotClone := &EnvoySnapshot{}
+
+	snapshotClone.Endpoints = cache.Resources{
+		Version: s.Endpoints.Version,
+		Items:   cloneItems(s.Endpoints.Items),
+	}
+
+	snapshotClone.Clusters = cache.Resources{
+		Version: s.Clusters.Version,
+		Items:   cloneItems(s.Clusters.Items),
+	}
+
+	snapshotClone.Routes = cache.Resources{
+		Version: s.Routes.Version,
+		Items:   cloneItems(s.Routes.Items),
+	}
+
+	snapshotClone.Listeners = cache.Resources{
+		Version: s.Listeners.Version,
+		Items:   cloneItems(s.Listeners.Items),
+	}
+
+	return snapshotClone
+}
+
+func cloneItems(items map[string]cache.Resource) map[string]cache.Resource {
+	clonedItems := make(map[string]cache.Resource, len(items))
+	for k, v := range items {
+		resProto := v.ResourceProto()
+		// NOTE(marco): we have to use `github.com/golang/protobuf/proto.Clone()` to clone here,
+		// `github.com/gogo/protobuf/proto.Clone()` will panic!
+		resClone := proto.Clone(resProto)
+		clonedItems[k] = NewEnvoyResource(resClone)
+	}
+	return clonedItems
 }

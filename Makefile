@@ -100,7 +100,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=projects test
 $(OUTPUT_DIR)/.generated-code:
-	SKIP_MOCK_GEN=1 go generate ./...
+	go generate ./...
 	(rm docs/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go)
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
@@ -322,6 +322,16 @@ install/gloo-ingress.yaml: prepare-helm
 
 .PHONY: render-yaml
 render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
+
+.PHONY: save-helm
+save-helm:
+ifeq ($(RELEASE),"true")
+	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
+endif
+
+.PHONY: fetch-helm
+fetch-helm:
+	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
 
 #----------------------------------------------------------------------------------
 # Release

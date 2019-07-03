@@ -25,24 +25,24 @@ var _ = Describe("ApiEventLoop", func() {
 
 	BeforeEach(func() {
 
-		gatewayClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-		gatewayClient, err := NewGatewayClient(gatewayClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-
 		virtualServiceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		virtualServiceClient, err := NewVirtualServiceClient(virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		emitter = NewApiEmitter(gatewayClient, virtualServiceClient)
+		gatewayClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+		gatewayClient, err := NewGatewayClient(gatewayClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		emitter = NewApiEmitter(virtualServiceClient, gatewayClient)
 	})
 	It("runs sync function on a new snapshot", func() {
-		_, err = emitter.Gateway().Write(NewGateway(namespace, "jerry"), clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
 		_, err = emitter.VirtualService().Write(NewVirtualService(namespace, "jerry"), clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = emitter.Gateway().Write(NewGateway(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockApiSyncer{}
 		el := NewApiEventLoop(emitter, sync)
