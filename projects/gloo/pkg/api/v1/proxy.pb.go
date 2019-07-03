@@ -61,7 +61,7 @@ func (x RedirectAction_RedirectResponseCode) String() string {
 }
 
 func (RedirectAction_RedirectResponseCode) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_c6a47f72e9923590, []int{14, 0}
+	return fileDescriptor_c6a47f72e9923590, []int{15, 0}
 }
 
 //
@@ -1161,6 +1161,7 @@ type Destination struct {
 	// Types that are valid to be assigned to DestinationType:
 	//	*Destination_Upstream
 	//	*Destination_Service
+	//	*Destination_Consul
 	DestinationType isDestination_DestinationType `protobuf_oneof:"destination_type"`
 	// Some upstreams utilize plugins which require or permit additional configuration on routes targeting them.
 	// gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the
@@ -1210,9 +1211,13 @@ type Destination_Upstream struct {
 type Destination_Service struct {
 	Service *ServiceDestination `protobuf:"bytes,11,opt,name=service,proto3,oneof"`
 }
+type Destination_Consul struct {
+	Consul *ConsulServiceDestination `protobuf:"bytes,12,opt,name=consul,proto3,oneof"`
+}
 
 func (*Destination_Upstream) isDestination_DestinationType() {}
 func (*Destination_Service) isDestination_DestinationType()  {}
+func (*Destination_Consul) isDestination_DestinationType()   {}
 
 func (m *Destination) GetDestinationType() isDestination_DestinationType {
 	if m != nil {
@@ -1231,6 +1236,13 @@ func (m *Destination) GetUpstream() *core.ResourceRef {
 func (m *Destination) GetService() *ServiceDestination {
 	if x, ok := m.GetDestinationType().(*Destination_Service); ok {
 		return x.Service
+	}
+	return nil
+}
+
+func (m *Destination) GetConsul() *ConsulServiceDestination {
+	if x, ok := m.GetDestinationType().(*Destination_Consul); ok {
+		return x.Consul
 	}
 	return nil
 }
@@ -1254,6 +1266,7 @@ func (*Destination) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) e
 	return _Destination_OneofMarshaler, _Destination_OneofUnmarshaler, _Destination_OneofSizer, []interface{}{
 		(*Destination_Upstream)(nil),
 		(*Destination_Service)(nil),
+		(*Destination_Consul)(nil),
 	}
 }
 
@@ -1269,6 +1282,11 @@ func _Destination_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Destination_Service:
 		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Service); err != nil {
+			return err
+		}
+	case *Destination_Consul:
+		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Consul); err != nil {
 			return err
 		}
 	case nil:
@@ -1297,6 +1315,14 @@ func _Destination_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Bu
 		err := b.DecodeMessage(msg)
 		m.DestinationType = &Destination_Service{msg}
 		return true, err
+	case 12: // destination_type.consul
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ConsulServiceDestination)
+		err := b.DecodeMessage(msg)
+		m.DestinationType = &Destination_Consul{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -1313,6 +1339,11 @@ func _Destination_OneofSizer(msg proto.Message) (n int) {
 		n += s
 	case *Destination_Service:
 		s := proto.Size(x.Service)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Destination_Consul:
+		s := proto.Size(x.Consul)
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -1372,6 +1403,69 @@ func (m *ServiceDestination) GetPort() uint32 {
 	return 0
 }
 
+// Identifies a [Consul](https://www.consul.io/) [service](https://www.consul.io/docs/agent/services.html) to route traffic to.
+// Multiple Consul services with the same name can present distinct sets of tags, listen of different ports, and live in
+// multiple data centers (see an example [here](https://www.consul.io/docs/agent/services.html#multiple-service-definitions)).
+// You can target the desired subset of services via the fields in this configuration. Gloo will detect the correspondent
+// IP addresses and ports and load balance traffic between them.
+type ConsulServiceDestination struct {
+	// The name of the target service. This field is required.
+	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	// If provided, load balance traffic only between services matching all the given tags.
+	Tags []string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty"`
+	// If provided, load balance traffic only between services running in the given
+	// [data centers](https://www.consul.io/docs/internals/architecture.html).
+	DataCenters          []string `protobuf:"bytes,3,rep,name=data_centers,json=dataCenters,proto3" json:"data_centers,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ConsulServiceDestination) Reset()         { *m = ConsulServiceDestination{} }
+func (m *ConsulServiceDestination) String() string { return proto.CompactTextString(m) }
+func (*ConsulServiceDestination) ProtoMessage()    {}
+func (*ConsulServiceDestination) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c6a47f72e9923590, []int{11}
+}
+func (m *ConsulServiceDestination) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ConsulServiceDestination.Unmarshal(m, b)
+}
+func (m *ConsulServiceDestination) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ConsulServiceDestination.Marshal(b, m, deterministic)
+}
+func (m *ConsulServiceDestination) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsulServiceDestination.Merge(m, src)
+}
+func (m *ConsulServiceDestination) XXX_Size() int {
+	return xxx_messageInfo_ConsulServiceDestination.Size(m)
+}
+func (m *ConsulServiceDestination) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsulServiceDestination.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ConsulServiceDestination proto.InternalMessageInfo
+
+func (m *ConsulServiceDestination) GetServiceName() string {
+	if m != nil {
+		return m.ServiceName
+	}
+	return ""
+}
+
+func (m *ConsulServiceDestination) GetTags() []string {
+	if m != nil {
+		return m.Tags
+	}
+	return nil
+}
+
+func (m *ConsulServiceDestination) GetDataCenters() []string {
+	if m != nil {
+		return m.DataCenters
+	}
+	return nil
+}
+
 type UpstreamGroup struct {
 	// The destinations that are part of this upstream group.
 	Destinations []*WeightedDestination `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
@@ -1389,7 +1483,7 @@ func (m *UpstreamGroup) Reset()         { *m = UpstreamGroup{} }
 func (m *UpstreamGroup) String() string { return proto.CompactTextString(m) }
 func (*UpstreamGroup) ProtoMessage()    {}
 func (*UpstreamGroup) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c6a47f72e9923590, []int{11}
+	return fileDescriptor_c6a47f72e9923590, []int{12}
 }
 func (m *UpstreamGroup) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpstreamGroup.Unmarshal(m, b)
@@ -1445,7 +1539,7 @@ func (m *MultiDestination) Reset()         { *m = MultiDestination{} }
 func (m *MultiDestination) String() string { return proto.CompactTextString(m) }
 func (*MultiDestination) ProtoMessage()    {}
 func (*MultiDestination) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c6a47f72e9923590, []int{12}
+	return fileDescriptor_c6a47f72e9923590, []int{13}
 }
 func (m *MultiDestination) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MultiDestination.Unmarshal(m, b)
@@ -1487,7 +1581,7 @@ func (m *WeightedDestination) Reset()         { *m = WeightedDestination{} }
 func (m *WeightedDestination) String() string { return proto.CompactTextString(m) }
 func (*WeightedDestination) ProtoMessage()    {}
 func (*WeightedDestination) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c6a47f72e9923590, []int{13}
+	return fileDescriptor_c6a47f72e9923590, []int{14}
 }
 func (m *WeightedDestination) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WeightedDestination.Unmarshal(m, b)
@@ -1547,7 +1641,7 @@ func (m *RedirectAction) Reset()         { *m = RedirectAction{} }
 func (m *RedirectAction) String() string { return proto.CompactTextString(m) }
 func (*RedirectAction) ProtoMessage()    {}
 func (*RedirectAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c6a47f72e9923590, []int{14}
+	return fileDescriptor_c6a47f72e9923590, []int{15}
 }
 func (m *RedirectAction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RedirectAction.Unmarshal(m, b)
@@ -1717,7 +1811,7 @@ func (m *DirectResponseAction) Reset()         { *m = DirectResponseAction{} }
 func (m *DirectResponseAction) String() string { return proto.CompactTextString(m) }
 func (*DirectResponseAction) ProtoMessage()    {}
 func (*DirectResponseAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c6a47f72e9923590, []int{15}
+	return fileDescriptor_c6a47f72e9923590, []int{16}
 }
 func (m *DirectResponseAction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DirectResponseAction.Unmarshal(m, b)
@@ -1781,7 +1875,7 @@ func (m *CorsPolicy) Reset()         { *m = CorsPolicy{} }
 func (m *CorsPolicy) String() string { return proto.CompactTextString(m) }
 func (*CorsPolicy) ProtoMessage()    {}
 func (*CorsPolicy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c6a47f72e9923590, []int{16}
+	return fileDescriptor_c6a47f72e9923590, []int{17}
 }
 func (m *CorsPolicy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CorsPolicy.Unmarshal(m, b)
@@ -1863,6 +1957,7 @@ func init() {
 	proto.RegisterType((*RouteAction)(nil), "gloo.solo.io.RouteAction")
 	proto.RegisterType((*Destination)(nil), "gloo.solo.io.Destination")
 	proto.RegisterType((*ServiceDestination)(nil), "gloo.solo.io.ServiceDestination")
+	proto.RegisterType((*ConsulServiceDestination)(nil), "gloo.solo.io.ConsulServiceDestination")
 	proto.RegisterType((*UpstreamGroup)(nil), "gloo.solo.io.UpstreamGroup")
 	proto.RegisterType((*MultiDestination)(nil), "gloo.solo.io.MultiDestination")
 	proto.RegisterType((*WeightedDestination)(nil), "gloo.solo.io.WeightedDestination")
@@ -2677,6 +2772,30 @@ func (this *Destination_Service) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Destination_Consul) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Destination_Consul)
+	if !ok {
+		that2, ok := that.(Destination_Consul)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Consul.Equal(that1.Consul) {
+		return false
+	}
+	return true
+}
 func (this *ServiceDestination) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -2701,6 +2820,49 @@ func (this *ServiceDestination) Equal(that interface{}) bool {
 	}
 	if this.Port != that1.Port {
 		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *ConsulServiceDestination) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ConsulServiceDestination)
+	if !ok {
+		that2, ok := that.(ConsulServiceDestination)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ServiceName != that1.ServiceName {
+		return false
+	}
+	if len(this.Tags) != len(that1.Tags) {
+		return false
+	}
+	for i := range this.Tags {
+		if this.Tags[i] != that1.Tags[i] {
+			return false
+		}
+	}
+	if len(this.DataCenters) != len(that1.DataCenters) {
+		return false
+	}
+	for i := range this.DataCenters {
+		if this.DataCenters[i] != that1.DataCenters[i] {
+			return false
+		}
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false

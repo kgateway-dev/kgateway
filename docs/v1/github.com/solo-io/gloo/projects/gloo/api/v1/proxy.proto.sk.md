@@ -22,6 +22,7 @@ weight: 5
 - [RouteAction](#routeaction)
 - [Destination](#destination)
 - [ServiceDestination](#servicedestination)
+- [ConsulServiceDestination](#consulservicedestination)
 - [UpstreamGroup](#upstreamgroup) **Top-Level Resource**
 - [MultiDestination](#multidestination)
 - [WeightedDestination](#weighteddestination)
@@ -94,7 +95,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `name` | `string` | the name of the listener. names must be unique for each listener within a proxy |  |
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported |  |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy |  |
-| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing |  |
+| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for Gloo's HTTP-level features including request-based routing |  |
 | `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |
 
@@ -288,6 +289,7 @@ Destinations define routable destinations for proxied requests.
 ```yaml
 "upstream": .core.solo.io.ResourceRef
 "service": .gloo.solo.io.ServiceDestination
+"consul": .gloo.solo.io.ConsulServiceDestination
 "destinationSpec": .gloo.solo.io.DestinationSpec
 "subset": .gloo.solo.io.Subset
 
@@ -296,7 +298,8 @@ Destinations define routable destinations for proxied requests.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | Route requests to a Gloo upstream |  |
-| `service` | [.gloo.solo.io.ServiceDestination](../proxy.proto.sk#servicedestination) | TODO: currently not implemented Route requests to a kubernetes service |  |
+| `service` | [.gloo.solo.io.ServiceDestination](../proxy.proto.sk#servicedestination) | Route requests to a kubernetes service |  |
+| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk#consulservicedestination) | TODO(marco): NOTE: not implemented yet Route requests to a consul service |  |
 | `destinationSpec` | [.gloo.solo.io.DestinationSpec](../plugins.proto.sk#destinationspec) | Some upstreams utilize plugins which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
 | `subset` | [.gloo.solo.io.Subset](../subset.proto.sk#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |  |
 
@@ -319,6 +322,32 @@ Identifies a port on a kubernetes service to route traffic to.
 | ----- | ---- | ----------- |----------- | 
 | `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The target service |  |
 | `port` | `int` | The port attribute of the service |  |
+
+
+
+
+---
+### ConsulServiceDestination
+
+ 
+Identifies a [Consul](https://www.consul.io/) [service](https://www.consul.io/docs/agent/services.html) to route traffic to.
+Multiple Consul services with the same name can present distinct sets of tags, listen of different ports, and live in
+multiple data centers (see an example [here](https://www.consul.io/docs/agent/services.html#multiple-service-definitions)).
+You can target the desired subset of services via the fields in this configuration. Gloo will detect the correspondent
+IP addresses and ports and load balance traffic between them.
+
+```yaml
+"serviceName": string
+"tags": []string
+"dataCenters": []string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `serviceName` | `string` | The name of the target service. This field is required. |  |
+| `tags` | `[]string` | If provided, load balance traffic only between services matching all the given tags. |  |
+| `dataCenters` | `[]string` | If provided, load balance traffic only between services running in the given [data centers](https://www.consul.io/docs/internals/architecture.html). |  |
 
 
 
