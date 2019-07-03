@@ -198,7 +198,7 @@ type EnvoyInstance struct {
 	envoycfg      string
 	logs          *bytes.Buffer
 	cmd           *exec.Cmd
-	useDocker     bool
+	UseDocker     bool
 	GlooAddr      string // address for gloo and services
 	Port          uint32
 	AdminPort     uint32
@@ -218,7 +218,7 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 	ei := &EnvoyInstance{
 		envoypath: ef.envoypath,
-		useDocker: ef.useDocker,
+		UseDocker: ef.useDocker,
 		GlooAddr:  gloo,
 		AdminPort: atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
 	}
@@ -259,7 +259,7 @@ func (ei *EnvoyInstance) runWithPort(port uint32) error {
 	ei.Port = port
 
 	ei.envoycfg = ei.buildBootstrap()
-	if ei.useDocker {
+	if ei.UseDocker {
 		err := ei.runContainer()
 		if err != nil {
 			return err
@@ -302,7 +302,7 @@ func (ei *EnvoyInstance) Clean() error {
 		ei.cmd.Wait()
 	}
 
-	if ei.useDocker {
+	if ei.UseDocker {
 		if err := stopContainer(); err != nil {
 			return err
 		}

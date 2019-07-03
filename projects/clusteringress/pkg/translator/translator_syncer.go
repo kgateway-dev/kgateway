@@ -131,7 +131,7 @@ func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, cluste
 	}
 	for _, ci := range updatedClusterIngresses {
 		if _, err := s.clusterIngressClient.UpdateStatus(ci); err != nil {
-			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status", ci.Name)
+			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status with error %v", ci.Name, err)
 		}
 	}
 	return nil

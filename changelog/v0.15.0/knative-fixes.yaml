@@ -1,0 +1,16 @@
+changelog:
+  - type: FIX
+    description: fix missing hosts on clusteringress proxy translation
+    issueLink: https://github.com/solo-io/gloo/issues/790
+  - type: FIX
+    description: provide rbac for updating clusteringress/status
+    issueLink: https://github.com/solo-io/gloo/issues/789
+  - type: FIX
+    description: enable http2 for ports with prefix http2
+    issueLink: https://github.com/solo-io/gloo/issues/788
+  - type: BREAKING_CHANGE
+    description: Expose use_http2 field on upstream spec. The use_http2 field has been removed from the Static UpstreamSpec
+    issueLink: https://github.com/solo-io/gloo/issues/787
+  - type: NEW_FEATURE
+    description: allow disabling fds on a per-namespace and per-service basis
+    issueLink: https://github.com/solo-io/gloo/issues/679

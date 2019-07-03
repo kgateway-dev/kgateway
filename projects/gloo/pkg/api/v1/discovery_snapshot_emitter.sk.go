@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -42,30 +44,36 @@ func init() {
 type DiscoveryEmitter interface {
 	Register() error
 	Upstream() UpstreamClient
+	KubeNamespace() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient
 	Secret() SecretClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *DiscoverySnapshot, <-chan error, error)
 }
 
-func NewDiscoveryEmitter(upstreamClient UpstreamClient, secretClient SecretClient) DiscoveryEmitter {
-	return NewDiscoveryEmitterWithEmit(upstreamClient, secretClient, make(chan struct{}))
+func NewDiscoveryEmitter(upstreamClient UpstreamClient, kubeNamespaceClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient, secretClient SecretClient) DiscoveryEmitter {
+	return NewDiscoveryEmitterWithEmit(upstreamClient, kubeNamespaceClient, secretClient, make(chan struct{}))
 }
 
-func NewDiscoveryEmitterWithEmit(upstreamClient UpstreamClient, secretClient SecretClient, emit <-chan struct{}) DiscoveryEmitter {
+func NewDiscoveryEmitterWithEmit(upstreamClient UpstreamClient, kubeNamespaceClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient, secretClient SecretClient, emit <-chan struct{}) DiscoveryEmitter {
 	return &discoveryEmitter{
-		upstream:  upstreamClient,
-		secret:    secretClient,
-		forceEmit: emit,
+		upstream:      upstreamClient,
+		kubeNamespace: kubeNamespaceClient,
+		secret:        secretClient,
+		forceEmit:     emit,
 	}
 }
 
 type discoveryEmitter struct {
-	forceEmit <-chan struct{}
-	upstream  UpstreamClient
-	secret    SecretClient
+	forceEmit     <-chan struct{}
+	upstream      UpstreamClient
+	kubeNamespace github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient
+	secret        SecretClient
 }
 
 func (c *discoveryEmitter) Register() error {
 	if err := c.upstream.Register(); err != nil {
+		return err
+	}
+	if err := c.kubeNamespace.Register(); err != nil {
 		return err
 	}
 	if err := c.secret.Register(); err != nil {
@@ -76,6 +84,10 @@ func (c *discoveryEmitter) Register() error {
 
 func (c *discoveryEmitter) Upstream() UpstreamClient {
 	return c.upstream
+}
+
+func (c *discoveryEmitter) KubeNamespace() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient {
+	return c.kubeNamespace
 }
 
 func (c *discoveryEmitter) Secret() SecretClient {
@@ -104,6 +116,12 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 		namespace string
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
+	/* Create channel for KubeNamespace */
+	type kubeNamespaceListWithNamespace struct {
+		list      github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
+		namespace string
+	}
+	kubeNamespaceChan := make(chan kubeNamespaceListWithNamespace)
 	/* Create channel for Secret */
 	type secretListWithNamespace struct {
 		list      SecretList
@@ -122,6 +140,17 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 		go func(namespace string) {
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
+		}(namespace)
+		/* Setup namespaced watch for KubeNamespace */
+		kubeNamespaceNamespacesChan, kubeNamespaceErrs, err := c.kubeNamespace.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting KubeNamespace watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, kubeNamespaceErrs, namespace+"-kubenamespaces")
 		}(namespace)
 		/* Setup namespaced watch for Secret */
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
@@ -146,6 +175,12 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 					case <-ctx.Done():
 						return
 					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
+					}
+				case kubeNamespaceList := <-kubeNamespaceNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case kubeNamespaceChan <- kubeNamespaceListWithNamespace{list: kubeNamespaceList, namespace: namespace}:
 					}
 				case secretList := <-secretNamespacesChan:
 					select {
@@ -174,6 +209,7 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			snapshots <- &sentSnapshot
 		}
 		upstreamsByNamespace := make(map[string]UpstreamList)
+		kubenamespacesByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList)
 		secretsByNamespace := make(map[string]SecretList)
 
 		for {
@@ -202,6 +238,18 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 					upstreamList = append(upstreamList, upstreams...)
 				}
 				currentSnapshot.Upstreams = upstreamList.Sort()
+			case kubeNamespaceNamespacedList := <-kubeNamespaceChan:
+				record()
+
+				namespace := kubeNamespaceNamespacedList.namespace
+
+				// merge lists by namespace
+				kubenamespacesByNamespace[namespace] = kubeNamespaceNamespacedList.list
+				var kubeNamespaceList github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
+				for _, kubenamespaces := range kubenamespacesByNamespace {
+					kubeNamespaceList = append(kubeNamespaceList, kubenamespaces...)
+				}
+				currentSnapshot.Kubenamespaces = kubeNamespaceList.Sort()
 			case secretNamespacedList := <-secretChan:
 				record()
 

@@ -73,7 +73,7 @@ var _ = Describe("UdsConvert", func() {
 			Expect(spec.GetGrpc()).To(BeNil())
 		})
 
-		It("should create upstream with grpc service spec when anotation exists", func() {
+		It("should create upstream with use_http2=true when annotation exists", func() {
 			svc := &kubev1.Service{
 				Spec: kubev1.ServiceSpec{},
 			}
@@ -86,11 +86,10 @@ var _ = Describe("UdsConvert", func() {
 				Port: 123,
 			}
 			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
-			spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
-			Expect(spec.GetGrpc()).NotTo(BeNil())
+			Expect(up.GetUpstreamSpec().GetUseHttp2()).To(BeTrue())
 		})
 
-		DescribeTable("should create upstream with grpc service spec when port name starts with known prefix", func(portname string) {
+		DescribeTable("should create upstream with use_http2=true when port name starts with known prefix", func(portname string) {
 			svc := &kubev1.Service{
 				Spec: kubev1.ServiceSpec{},
 			}
@@ -102,13 +101,13 @@ var _ = Describe("UdsConvert", func() {
 				Name: portname,
 			}
 			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
-			spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
-			Expect(spec.GetGrpc()).NotTo(BeNil())
+			Expect(up.GetUpstreamSpec().GetUseHttp2()).To(BeTrue())
 		},
 			Entry("exactly grpc", "grpc"),
 			Entry("prefix grpc", "grpc-test"),
 			Entry("exactly h2", "h2"),
 			Entry("prefix h2", "h2-test"),
+			Entry("exactly http2", "http2"),
 		)
 	})
 })

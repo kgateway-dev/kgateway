@@ -23,9 +23,6 @@ message UpstreamSpec {
 
     // An optional Service Spec describing the service listening at this address
     .plugins.gloo.solo.io.ServiceSpec service_spec = 5;
-
-    // Use http2 when communicating with this upstream
-    bool use_http2 = 6;
 }
 
 // Represents a single instance of an upstream

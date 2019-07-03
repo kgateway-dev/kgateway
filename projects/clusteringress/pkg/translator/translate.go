@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -13,6 +14,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+)
+
+const (
+	bindPortHttp  = 80
+	bindPortHttps = 443
 )
 
 func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
@@ -39,7 +45,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 		listeners = append(listeners, &gloov1.Listener{
 			Name:        "http",
 			BindAddress: "::",
-			BindPort:    80,
+			BindPort:    bindPortHttp,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
 					VirtualHosts: virtualHostsHttp,
@@ -51,7 +57,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 		listeners = append(listeners, &gloov1.Listener{
 			Name:        "https",
 			BindAddress: "::",
-			BindPort:    443,
+			BindPort:    bindPortHttps,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
 					VirtualHosts: virtualHostsHttps,
@@ -179,7 +185,7 @@ func virtualHosts(ingresses v1alpha1.ClusterIngressList, secrets gloov1.SecretLi
 		sortByLongestPathName(routes)
 		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
 			Name:    host + "-http",
-			Domains: []string{host},
+			Domains: []string{host, fmt.Sprintf("%v:%v", host, bindPortHttp)},
 			Routes:  routes,
 		})
 	}
@@ -193,7 +199,7 @@ func virtualHosts(ingresses v1alpha1.ClusterIngressList, secrets gloov1.SecretLi
 		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
 			vh: &gloov1.VirtualHost{
 				Name:    host + "-http",
-				Domains: []string{host},
+				Domains: []string{host, fmt.Sprintf("%v:%v", host, bindPortHttps)},
 				Routes:  routes,
 			},
 			secret: *secret,
