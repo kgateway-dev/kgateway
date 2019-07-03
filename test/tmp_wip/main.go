@@ -46,7 +46,7 @@ func run(ctx context.Context) error {
 		}},
 	}
 	sess, err := getLocalAwsSession(tmpUpstream.Region)
-	result, err := ec2.ListEc2InstancesForCredentials(sess, tmpUpstream)
+	result, err := ec2.ListEc2InstancesForCredentials(ctx, sess, tmpUpstream)
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Fatalw("failure while running", zap.Error(err))
 	}

@@ -1,7 +1,11 @@
 package ec2
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 
@@ -24,7 +28,7 @@ How to find all instances that have a given tag-key, regardless of the tag value
 func GetEc2Session(ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (*session.Session, error) {
 	return aws2.GetAwsSession(ec2Upstream.SecretRef, secrets, &aws.Config{Region: aws.String(ec2Upstream.Region)})
 }
-func ListEc2InstancesForCredentials(sess *session.Session, ec2Upstream *glooec2.UpstreamSpec) ([]*ec2.Instance, error) {
+func ListEc2InstancesForCredentials(ctx context.Context, sess *session.Session, ec2Upstream *glooec2.UpstreamSpec) ([]*ec2.Instance, error) {
 	svc := ec2.New(sess)
 	input := &ec2.DescribeInstancesInput{
 		Filters: convertFiltersFromSpec(ec2Upstream),
@@ -33,16 +37,14 @@ func ListEc2InstancesForCredentials(sess *session.Session, ec2Upstream *glooec2.
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
+			// TODO - handle specific aws error codes
 			default:
-				fmt.Println(aerr.Error())
+				contextutils.LoggerFrom(ctx).Errorw("unable to describe instances, aws error", zap.Error(aerr))
 			}
 		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
+			contextutils.LoggerFrom(ctx).Errorw("unable to describe instances, other error", zap.Error(err))
 		}
 	}
-
 	return getInstancesFromDescription(result), nil
 }
 

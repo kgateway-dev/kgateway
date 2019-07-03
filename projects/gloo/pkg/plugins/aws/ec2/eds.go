@@ -129,7 +129,7 @@ func (c *edsWatcher) getEndpointsForUpstream(upstreamRef *core.ResourceRef, ec2U
 	if err != nil {
 		return nil, err
 	}
-	ec2InstancesForUpstream, err := ListEc2InstancesForCredentials(session, ec2Upstream)
+	ec2InstancesForUpstream, err := ListEc2InstancesForCredentials(c.watchContext, session, ec2Upstream)
 	if err != nil {
 		return nil, err
 	}
