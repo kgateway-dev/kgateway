@@ -1,0 +1,4 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: Change how listener plugins are arranged on the proxy object
+  issueLink: https://github.com/solo-io/gloo/issues/801

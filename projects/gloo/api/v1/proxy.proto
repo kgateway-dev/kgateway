@@ -90,7 +90,7 @@ message HttpListener {
     // Listener config is applied to all HTTP traffic that
     // connects to this listener. Some configuration here can be overridden in
     // Virtual Host Plugin configuration or Route Plugin configuration
-    ListenerPlugins listener_plugins = 2;
+    HttpListenerPlugins listener_plugins = 2;
 }
 
 /*
