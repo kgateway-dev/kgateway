@@ -1,3 +1,4 @@
 changelog:
   - type: BREAKING_CHANGE
     description: Introduce vhost params for gloo plugins
+    issueLink: https://github.com/solo-io/gloo/pull/796
