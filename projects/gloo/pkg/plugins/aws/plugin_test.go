@@ -21,13 +21,13 @@ const (
 
 var _ = Describe("Plugin", func() {
 	var (
-		params   plugins.Params
-		vhostParams   plugins.VirtualHostParams
-		plugin   plugins.Plugin
-		upstream *v1.Upstream
-		route    *v1.Route
-		out      *envoyapi.Cluster
-		outroute *envoyroute.Route
+		params      plugins.Params
+		vhostParams plugins.VirtualHostParams
+		plugin      plugins.Plugin
+		upstream    *v1.Upstream
+		route       *v1.Route
+		out         *envoyapi.Cluster
+		outroute    *envoyroute.Route
 	)
 	BeforeEach(func() {
 		var b bool
@@ -109,7 +109,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}},
 		}
-		vhostParams =   plugins.VirtualHostParams{Params:params}
+		vhostParams = plugins.VirtualHostParams{Params: params}
 
 	})
 	Context("upstreams", func() {
