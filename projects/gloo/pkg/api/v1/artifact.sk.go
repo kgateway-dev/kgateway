@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -122,11 +123,24 @@ func (o *Artifact) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Artifact)
 }
 
-var ArtifactCrd = crd.NewCrd("gloo.solo.io",
-	"artifacts",
-	"gloo.solo.io",
-	"v1",
-	"Artifact",
-	"art",
-	false,
-	&Artifact{})
+var (
+	ArtifactGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Artifact",
+	}
+	ArtifactCrd = crd.NewCrd(
+		"artifacts",
+		ArtifactGVK.Group,
+		ArtifactGVK.Version,
+		ArtifactGVK.Kind,
+		"art",
+		false,
+		&Artifact{})
+)
+
+func init() {
+	if err := crd.AddCrd(ArtifactCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}

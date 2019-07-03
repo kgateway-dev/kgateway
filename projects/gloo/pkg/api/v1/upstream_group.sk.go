@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -134,11 +135,24 @@ func (o *UpstreamGroup) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*UpstreamGroup)
 }
 
-var UpstreamGroupCrd = crd.NewCrd("gloo.solo.io",
-	"upstreamgroups",
-	"gloo.solo.io",
-	"v1",
-	"UpstreamGroup",
-	"ug",
-	false,
-	&UpstreamGroup{})
+var (
+	UpstreamGroupGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "UpstreamGroup",
+	}
+	UpstreamGroupCrd = crd.NewCrd(
+		"upstreamgroups",
+		UpstreamGroupGVK.Group,
+		UpstreamGroupGVK.Version,
+		UpstreamGroupGVK.Kind,
+		"ug",
+		false,
+		&UpstreamGroup{})
+)
+
+func init() {
+	if err := crd.AddCrd(UpstreamGroupCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}
