@@ -1,3 +1,9 @@
+namespace:
+  create: false
+rbac:
+  create: true
+crds:
+  create: true
 k8s:
   clusterName: cluster.local
 

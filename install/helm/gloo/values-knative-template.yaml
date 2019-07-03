@@ -1,3 +1,12 @@
+namespace:
+  create: false
+rbac:
+  create: true
+crds:
+  create: true
+k8s:
+  clusterName: cluster.local
+
 settings:
   integrations:
     knative:
@@ -25,6 +34,3 @@ ingress:
       repository: quay.io/solo-io/ingress
       pullPolicy: Always
     replicas: 1
-
-k8s:
-  clusterName: cluster.local
