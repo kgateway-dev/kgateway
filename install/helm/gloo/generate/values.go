@@ -20,7 +20,7 @@ type Namespace struct {
 
 type Rbac struct {
 	Create     bool `json:"create"`
-	namespaced bool `json:"Namespaced"`
+	Namespaced bool `json:"Namespaced"`
 }
 
 type Crds struct {
