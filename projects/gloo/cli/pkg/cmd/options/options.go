@@ -32,6 +32,7 @@ type Install struct {
 	Namespace         string
 	HelmChartOverride string
 	Knative           Knative
+	Verbose           bool
 }
 
 type Knative struct {
@@ -48,6 +49,7 @@ type Uninstall struct {
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
+	Verbose         bool
 }
 
 type Proxy struct {

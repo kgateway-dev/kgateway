@@ -26,6 +26,12 @@ func (k *CmdKubectl) Kubectl(stdin io.Reader, args ...string) error {
 	return Kubectl(stdin, args...)
 }
 
+var verbose bool
+
+func SetVerbose() {
+
+}
+
 func Kubectl(stdin io.Reader, args ...string) error {
 	kubectl := exec.Command("kubectl", args...)
 	if stdin != nil {
