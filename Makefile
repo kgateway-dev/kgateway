@@ -323,6 +323,16 @@ install/gloo-ingress.yaml: prepare-helm
 .PHONY: render-yaml
 render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
 
+.PHONY: save-helm
+save-helm:
+ifeq ($(RELEASE),"true")
+	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
+endif
+
+.PHONY: fetch-helm
+fetch-helm:
+	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
+
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
