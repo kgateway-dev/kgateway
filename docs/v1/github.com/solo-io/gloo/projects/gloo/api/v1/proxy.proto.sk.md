@@ -111,14 +111,14 @@ Some plugins can be configured to work both on the listener and virtual host lev
 
 ```yaml
 "virtualHosts": []gloo.solo.io.VirtualHost
-"listenerPlugins": .gloo.solo.io.ListenerPlugins
+"listenerPlugins": .gloo.solo.io.HttpListenerPlugins
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid |  |
-| `listenerPlugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#listenerplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration |  |
+| `listenerPlugins` | [.gloo.solo.io.HttpListenerPlugins](../plugins.proto.sk#httplistenerplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to all HTTP traffic that connects to this listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration |  |
 
 
 

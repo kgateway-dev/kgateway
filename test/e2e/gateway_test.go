@@ -67,7 +67,7 @@ var _ = Describe("Gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, g := range gw {
-				g.Plugins = &gloov1.ListenerPlugins{
+				g.Plugins = &gloov1.HttpListenerPlugins{
 					GrpcWeb: &grpc_web.GrpcWeb{
 						Disable: true,
 					},

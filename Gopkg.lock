@@ -1579,7 +1579,7 @@
   version = "v0.8.23"
 
 [[projects]]
-  digest = "1:af627124d53b9807002bfba827a0c54388c8c670089d810cbbfc3c89a8dc2ca4"
+  digest = "1:91c5c652a59f2c565cb81db8c1dd33bce32651da3488596ce603984318927020"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
