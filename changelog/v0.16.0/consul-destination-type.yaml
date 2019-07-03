@@ -1,5 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  description: Add new routing destination type for Consul services.
-  issueLink: https://github.com/solo-io/gloo/issues/803
-  resolvesIssue: false

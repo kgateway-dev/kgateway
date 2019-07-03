@@ -1,0 +1,9 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add new routing destination type for Consul services.
+  issueLink: https://github.com/solo-io/gloo/issues/803
+  resolvesIssue: false
+- type: BREAKING_CHANGE
+  description: Rename existing service destination type from `service` to `kubernetes`.
+  issueLink: https://github.com/solo-io/gloo/issues/803
+  resolvesIssue: false
