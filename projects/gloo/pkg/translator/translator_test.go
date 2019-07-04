@@ -111,25 +111,54 @@ var _ = Describe("Translator", func() {
 	})
 	JustBeforeEach(func() {
 		translator = NewTranslator(registeredPlugins, settings)
+		httpListener := &v1.Listener{
+			Name:        "http-listener",
+			BindAddress: "127.0.0.1",
+			BindPort:    80,
+			ListenerType: &v1.Listener_HttpListener{
+				HttpListener: &v1.HttpListener{
+					VirtualHosts: []*v1.VirtualHost{{
+						Name:    "virt1",
+						Domains: []string{"*"},
+						Routes:  routes,
+					}},
+				},
+			},
+		}
+		tcpListener := &v1.Listener{
+			Name:        "tcp-listener",
+			BindAddress: "127.0.0.1",
+			BindPort:    8080,
+			ListenerType: &v1.Listener_TcpListener{
+				TcpListener: &v1.TcpListener{
+					TcpHosts: []*v1.TcpHost{
+						{
+					 		Destination: &v1.RouteAction{
+					 			Destination: &v1.RouteAction_Single{
+					 				Single: &v1.Destination{
+					 					DestinationType: &v1.Destination_Upstream{
+					 						Upstream: &core.ResourceRef{
+					 							Name: "test",
+					 							Namespace: "gloo-system",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
 		proxy = &v1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "test",
 				Namespace: "gloo-system",
 			},
-			Listeners: []*v1.Listener{{
-				Name:        "listener",
-				BindAddress: "127.0.0.1",
-				BindPort:    80,
-				ListenerType: &v1.Listener_HttpListener{
-					HttpListener: &v1.HttpListener{
-						VirtualHosts: []*v1.VirtualHost{{
-							Name:    "virt1",
-							Domains: []string{"*"},
-							Routes:  routes,
-						}},
-					},
-				},
-			}},
+			Listeners: []*v1.Listener{
+				httpListener,
+				tcpListener,
+			},
 		}
 	})
 	translate := func() {
@@ -145,7 +174,7 @@ var _ = Describe("Translator", func() {
 		Expect(cluster).NotTo(BeNil())
 
 		listeners := snap.GetResources(xds.ListenerType)
-		listenerResource := listeners.Items["listener"]
+		listenerResource := listeners.Items["http-listener"]
 		listener = listenerResource.ResourceProto().(*envoyapi.Listener)
 		Expect(listener).NotTo(BeNil())
 
