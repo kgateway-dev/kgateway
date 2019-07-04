@@ -29,8 +29,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 		if len(listenerFilters) == 0 {
 			return nil
 		}
-		t.httpConnectionManager(params, listener, listenerFilters, report)
-		computeFilterChainsFromSslConfig(params.Snapshot, listener, sortListenerFilters(listenerFilters), report)
+		filterChains = computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, report)
 	case *v1.Listener_TcpListener:
 		// run the Listener Plugins
 		for _, plug := range t.plugins {
@@ -78,7 +77,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 	return out
 }
 
-func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.Listener, report reportFunc) []plugins.StagedListenerFilter {
+func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.Listener, report reportFunc) []envoylistener.Filter {
 	var listenerFilters []plugins.StagedListenerFilter
 	// run the Listener Filter Plugins
 	for _, plug := range t.plugins {
@@ -94,14 +93,11 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 			listenerFilters = append(listenerFilters, listenerFilter)
 		}
 	}
-	return listenerFilters
-}
 
-func (t *translator) httpConnectionManager(params plugins.Params, listener *v1.Listener, listenerFilters []plugins.StagedListenerFilter, report reportFunc) {
 	// add the http connection manager if listener is HTTP and has >= 1 virtual hosts
 	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
 	if !ok || len(httpListener.HttpListener.VirtualHosts) == 0 {
-		return
+		return nil
 	}
 
 	// add the http connection manager filter after all the InAuth Listener Filters
@@ -111,6 +107,8 @@ func (t *translator) httpConnectionManager(params plugins.Params, listener *v1.L
 		ListenerFilter: httpConnMgr,
 		Stage:          plugins.PostInAuth,
 	})
+
+	return sortListenerFilters(listenerFilters)
 }
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve

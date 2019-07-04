@@ -184,8 +184,8 @@ var _ = Describe("Translator", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
-		Expect(routes.Items).To(HaveKey("listener-routes"))
-		routeResource := routes.Items["listener-routes"]
+		Expect(routes.Items).To(HaveKey("http-listener-routes"))
+		routeResource := routes.Items["http-listener-routes"]
 		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(route_configuration).NotTo(BeNil())
 
@@ -203,8 +203,8 @@ var _ = Describe("Translator", func() {
 		Expect(snap).NotTo(BeNil())
 
 		routes := snap.GetResources(xds.RouteType)
-		Expect(routes.Items).To(HaveKey("listener-routes"))
-		routeResource := routes.Items["listener-routes"]
+		Expect(routes.Items).To(HaveKey("http-listener-routes"))
+		routeResource := routes.Items["http-listener-routes"]
 		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(route_configuration).NotTo(BeNil())
 		Expect(route_configuration.GetVirtualHosts()).To(HaveLen(1))
@@ -684,8 +684,8 @@ var _ = Describe("Translator", func() {
 
 			// A route to the kube service has been configured
 			routes := snapshot.GetResources(xds.RouteType)
-			Expect(routes.Items).To(HaveKey("listener-routes"))
-			routeResource := routes.Items["listener-routes"]
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
 			route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 			Expect(route_configuration).NotTo(BeNil())
 			Expect(route_configuration.VirtualHosts).To(HaveLen(1))
