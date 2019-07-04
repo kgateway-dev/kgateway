@@ -50,7 +50,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 
-	addTlsInspector(out)
+	// addTlsInspector(out)
 
 	if err := addTcpProxySettings(tl, out); err != nil {
 		return err
