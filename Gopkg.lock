@@ -1212,6 +1212,17 @@
   version = "v0.0.3"
 
 [[projects]]
+  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
+  version = "v0.0.1"
+
+[[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -1544,7 +1555,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:eb5311f37ccffb6a78e22f096b32c5dda2411fcbcd0fddae02ab004a51d7eae3"
+  digest = "1:fe48f5519aa611733df9b11123c46c0855d0a0ccce8c74ca1a20e75af42acbaf"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1576,11 +1587,11 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "a6132166b2352c8b446e43f6bf10dc0061ce1def"
-  version = "v0.8.23"
+  revision = "1c2dd400703ec1a7340609a6f5c00653ecf3d5c7"
+  version = "v0.9.1"
 
 [[projects]]
-  digest = "1:91c5c652a59f2c565cb81db8c1dd33bce32651da3488596ce603984318927020"
+  digest = "1:87cd7d6747166f9ae7dc2158dec21c6ebec9e576626b51071aaff1ecdbe23570"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1640,8 +1651,8 @@
     "test/tests/typed",
   ]
   pruneopts = "UT"
-  revision = "e44a028d3df45c66fe011cc6da615815f2760128"
-  version = "v0.10.0"
+  revision = "a5b6bd42322788ea33293f320de942e053506e18"
+  version = "v0.10.2"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2734,6 +2745,7 @@
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
