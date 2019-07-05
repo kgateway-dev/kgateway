@@ -88,12 +88,7 @@ func filterUpstreamsBlacklist(upstreams v1.UpstreamList, namespaces kubernetes.K
 		inBlacklistedNamespace := blacklistedNamespaces[getUpstreamNamespace(us)]
 		blacklisted := isBlacklisted(us.Metadata.Labels)
 		whitelisted := isWhitelisted(us.Metadata.Labels)
-		if inBlacklistedNamespace && !whitelisted || blacklisted {
-			continue
-		}
-		filtered = append(filtered, us)
-
-		if blacklistedNamespaces[getUpstreamNamespace(us)] && !isWhitelisted(us.Metadata.Labels) {
+		if (inBlacklistedNamespace && !whitelisted) || blacklisted {
 			continue
 		}
 		filtered = append(filtered, us)
