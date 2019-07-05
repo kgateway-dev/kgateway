@@ -158,7 +158,7 @@ var _ = Describe("Gateway", func() {
 			Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes).To(HaveLen(1))
 			Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
 			Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
-			service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetService()
+			service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
 			Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
 			Expect(service.Ref.Name).To(Equal(svc.Name))
 			Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
@@ -261,8 +261,8 @@ func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *
 
 func getTrivialVirtualServiceForService(ns string, service core.ResourceRef, port uint32) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
-	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Service{
-		Service: &gloov1.ServiceDestination{
+	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Kube{
+		Kube: &gloov1.KubernetesServiceDestination{
 			Ref:  service,
 			Port: port,
 		},

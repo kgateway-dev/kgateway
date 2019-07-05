@@ -19,6 +19,11 @@ spec:
     clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
 {{- end }}
 
+{{- if ne .Values.discovery.fdsMode "" }}
+  discovery:
+    fdsMode: {{.Values.discovery.fdsMode}}
+{{- end }}
+
 {{- if .Values.settings.extensions }}
   extensions:
 {{- toYaml .Values.settings.extensions | nindent 4 }}

@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: |
+      Allow disabling FDS on a per-namespace and per-service basis with blacklist/whitelist options.
+      Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in
+      blacklist mode.
+    issueLink: https://github.com/solo-io/gloo/issues/679

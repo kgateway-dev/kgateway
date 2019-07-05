@@ -414,8 +414,8 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 		VirtualHosts[0].Routes[0].Action.(*gloov1.Route_RouteAction).RouteAction.
 		Destination.(*gloov1.RouteAction_Single).Single.DestinationType =
-		&gloov1.Destination_Service{
-			Service: &gloov1.ServiceDestination{
+		&gloov1.Destination_Kube{
+			Kube: &gloov1.KubernetesServiceDestination{
 				Ref:  service,
 				Port: svcPort,
 			},

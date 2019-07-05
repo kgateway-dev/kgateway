@@ -1,3 +1,12 @@
+namespace:
+  create: false
+rbac:
+  create: true
+crds:
+  create: true
+k8s:
+  clusterName: cluster.local
+
 settings:
   integrations:
     knative:
@@ -13,6 +22,9 @@ settings:
 gateway:
   enabled: false
 
+discovery:
+  fdsMode: whitelist
+
 ingress:
   # ingress proxy is disabled, but we still need the controller for knative
   enabled: false
@@ -21,6 +33,3 @@ ingress:
       repository: quay.io/solo-io/ingress
       pullPolicy: Always
     replicas: 1
-
-k8s:
-  clusterName: cluster.local
