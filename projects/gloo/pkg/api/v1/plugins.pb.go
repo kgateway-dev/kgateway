@@ -6,9 +6,6 @@ package v1
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-	time "time"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/gogo/protobuf/types"
@@ -26,6 +23,8 @@ import (
 	stats "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 	tcp "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	math "math"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

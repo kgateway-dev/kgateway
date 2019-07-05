@@ -79,6 +79,35 @@ message Settings {
     // configuration options for the Clusteringress Controller (for Knative)
     KnativeOptions knative = 18;
 
+    message DiscoveryOptions {
+        // possible modes for running the function discovery service (FDS)
+        // FDS polls services in-cluster for Swagger and gRPC endpoints
+        // this behavior can be controlled with the use of annotations
+        // FdsMode specifies what policy FDS will use when
+        // determining which services to poll
+        enum FdsMode {
+            // in BLACKLIST mode (default), FDS will poll all services in cluster
+            // except those services labeled with
+            // discovery.solo.io/function_discovery=disabled
+            // this label can also be used on namespaces to apply to all
+            // services within a namespace *(which are not explicitly whitelisted)*
+            // Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in
+            // blacklist mode.
+            BLACKLIST = 0;
+            // in WHITELIST mode (default), FDS will poll only services in cluster
+            // labeled with discovery.solo.io/function_discovery=enabled
+            // this label can also be used on namespaces to apply to all
+            // services *(which are not explicitly blacklisted)* within a namespace
+            WHITELIST = 1;
+            // in DISABLED mode, FDS will not run
+            DISABLED = 2;
+        }
+
+        FdsMode fds_mode = 1;
+    }
+    // options for configuring Gloo's Discovery service
+    DiscoveryOptions discovery = 19;
+
     // Settings for extensions
     Extensions extensions = 16;
 

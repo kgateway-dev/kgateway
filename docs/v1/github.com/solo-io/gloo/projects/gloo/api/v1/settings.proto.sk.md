@@ -18,6 +18,8 @@ weight: 5
 - [KubernetesConfigmaps](#kubernetesconfigmaps)
 - [Directory](#directory)
 - [KnativeOptions](#knativeoptions)
+- [DiscoveryOptions](#discoveryoptions)
+- [FdsMode](#fdsmode)
   
 
 
@@ -50,6 +52,7 @@ Settings resource for Gloo
 "linkerd": bool
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "knative": .gloo.solo.io.Settings.KnativeOptions
+"discovery": .gloo.solo.io.Settings.DiscoveryOptions
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
@@ -73,6 +76,7 @@ Settings resource for Gloo
 | `linkerd` | `bool` | enable automatic linkerd upstream header addition for easier routing to linkerd services |  |
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. |  |
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | configuration options for the Clusteringress Controller (for Knative) |  |
+| `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | options for configuring Gloo's Discovery service |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
@@ -171,6 +175,42 @@ ilackarms(todo: make sure these are configurable)
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `clusterIngressProxyAddress` | `string` | address of the clusteringress proxy if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local |  |
+
+
+
+
+---
+### DiscoveryOptions
+
+
+
+```yaml
+"fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk#fdsmode) |  |  |
+
+
+
+
+---
+### FdsMode
+
+ 
+possible modes for running the function discovery service (FDS)
+FDS polls services in-cluster for Swagger and gRPC endpoints
+this behavior can be controlled with the use of annotations
+FdsMode specifies what policy FDS will use when
+determining which services to poll
+
+| Name | Description |
+| ----- | ----------- | 
+| `BLACKLIST` | in BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with discovery.solo.io/function_discovery=disabled this label can also be used on namespaces to apply to all services within a namespace *(which are not explicitly whitelisted)* Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode. |
+| `WHITELIST` | in WHITELIST mode (default), FDS will poll only services in cluster labeled with discovery.solo.io/function_discovery=enabled this label can also be used on namespaces to apply to all services *(which are not explicitly blacklisted)* within a namespace |
+| `DISABLED` | in DISABLED mode, FDS will not run |
 
 
 

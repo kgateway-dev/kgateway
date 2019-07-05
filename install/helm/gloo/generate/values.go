@@ -76,7 +76,7 @@ type GlooDeployment struct {
 
 type Discovery struct {
 	Deployment *DiscoveryDeployment `json:"deployment,omitempty"`
-	DisableFDS bool                 `json:"disable_fds,omitempty"`
+	FdsMode    string               `json:"fdsMode"`
 }
 
 type DiscoveryDeployment struct {
@@ -108,6 +108,7 @@ type GatewayProxyDeployment struct {
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec
 }
+
 type GatewayProxyService struct {
 	Type                  string            `json:"type,omitempty"`
 	HttpPort              string            `json:"httpPort,omitempty"`

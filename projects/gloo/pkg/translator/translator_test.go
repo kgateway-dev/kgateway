@@ -47,11 +47,11 @@ var _ = Describe("Translator", func() {
 		matcher           *v1.Matcher
 		routes            []*v1.Route
 
-		snapshot            envoycache.Snapshot
-		cluster             *envoyapi.Cluster
-		listener            *envoyapi.Listener
-		hcm_cfg             *envoyhttp.HttpConnectionManager
-		route_configuration *envoyapi.RouteConfiguration
+		snapshot           envoycache.Snapshot
+		cluster            *envoyapi.Cluster
+		listener           *envoyapi.Listener
+		hcmCfg             *envoyhttp.HttpConnectionManager
+		routeConfiguration *envoyapi.RouteConfiguration
 	)
 
 	BeforeEach(func() {
@@ -179,16 +179,23 @@ var _ = Describe("Translator", func() {
 		listener = listenerResource.ResourceProto().(*envoyapi.Listener)
 		Expect(listener).NotTo(BeNil())
 
-		hcm_filter := listener.FilterChains[0].Filters[0]
-		hcm_cfg = &envoyhttp.HttpConnectionManager{}
-		err = ParseConfig(&hcm_filter, hcm_cfg)
+		hcmFilter := listener.FilterChains[0].Filters[0]
+		hcmCfg = &envoyhttp.HttpConnectionManager{}
+		err = ParseConfig(&hcmFilter, hcmCfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
+<<<<<<< HEAD
 		Expect(routes.Items).To(HaveKey("http-listener-routes"))
 		routeResource := routes.Items["http-listener-routes"]
 		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(route_configuration).NotTo(BeNil())
+=======
+		Expect(routes.Items).To(HaveKey("listener-routes"))
+		routeResource := routes.Items["listener-routes"]
+		routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+		Expect(routeConfiguration).NotTo(BeNil())
+>>>>>>> 340a42d16380501dc2e36e3a541cc5b4a28db027
 
 		snapshot = snap
 	}
@@ -204,12 +211,21 @@ var _ = Describe("Translator", func() {
 		Expect(snap).NotTo(BeNil())
 
 		routes := snap.GetResources(xds.RouteType)
+<<<<<<< HEAD
 		Expect(routes.Items).To(HaveKey("http-listener-routes"))
 		routeResource := routes.Items["http-listener-routes"]
 		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(route_configuration).NotTo(BeNil())
 		Expect(route_configuration.GetVirtualHosts()).To(HaveLen(1))
 		Expect(route_configuration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
+=======
+		Expect(routes.Items).To(HaveKey("listener-routes"))
+		routeResource := routes.Items["listener-routes"]
+		routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+		Expect(routeConfiguration).NotTo(BeNil())
+		Expect(routeConfiguration.GetVirtualHosts()).To(HaveLen(1))
+		Expect(routeConfiguration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
+>>>>>>> 340a42d16380501dc2e36e3a541cc5b4a28db027
 	})
 
 	Context("service spec", func() {
@@ -217,12 +233,12 @@ var _ = Describe("Translator", func() {
 			translate()
 			oldVersion := snapshot.GetResources(xds.ClusterType).Version
 
-			svcspec := &v1plugins.ServiceSpec{
+			svcSpec := &v1plugins.ServiceSpec{
 				PluginType: &v1plugins.ServiceSpec_Grpc{
 					Grpc: &v1grpc.ServiceSpec{},
 				},
 			}
-			upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).SetServiceSpec(svcspec)
+			upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).SetServiceSpec(svcSpec)
 			translate()
 			newVersion := snapshot.GetResources(xds.ClusterType).Version
 			Expect(oldVersion).ToNot(Equal(newVersion))
@@ -238,7 +254,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			translate()
-			headermatch := route_configuration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headermatch.Name).To(Equal("test"))
 			presentmatch := headermatch.GetPresentMatch()
 			Expect(presentmatch).To(BeTrue())
@@ -254,7 +270,7 @@ var _ = Describe("Translator", func() {
 			}
 			translate()
 
-			headermatch := route_configuration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headermatch.Name).To(Equal("test"))
 			exactmatch := headermatch.GetExactMatch()
 			Expect(exactmatch).To(Equal("testvalue"))
@@ -271,7 +287,7 @@ var _ = Describe("Translator", func() {
 			}
 			translate()
 
-			headermatch := route_configuration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headermatch.Name).To(Equal("test"))
 			regex := headermatch.GetRegexMatch()
 			Expect(regex).To(Equal("testvalue"))
@@ -437,7 +453,7 @@ var _ = Describe("Translator", func() {
 		It("should translate upstream groups", func() {
 			translate()
 
-			route := route_configuration.VirtualHosts[0].Routes[0].GetRoute()
+			route := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute()
 			Expect(route).ToNot(BeNil())
 			clusters := route.GetWeightedClusters()
 			Expect(clusters).ToNot(BeNil())
@@ -460,10 +476,10 @@ var _ = Describe("Translator", func() {
 
 	Context("when handling subsets", func() {
 		var (
-			cla_configuration *envoyapi.ClusterLoadAssignment
+			claConfiguration *envoyapi.ClusterLoadAssignment
 		)
 		BeforeEach(func() {
-			cla_configuration = nil
+			claConfiguration = nil
 
 			upstream.UpstreamSpec.UpstreamType = &v1.UpstreamSpec_Kube{
 				Kube: &v1kubernetes.UpstreamSpec{
@@ -522,11 +538,11 @@ var _ = Describe("Translator", func() {
 			clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
 			Expect(endpoints.Items).To(HaveKey(clusterName))
 			endpointsResource := endpoints.Items[clusterName]
-			cla_configuration = endpointsResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
-			Expect(cla_configuration).NotTo(BeNil())
-			Expect(cla_configuration.ClusterName).To(Equal(clusterName))
-			Expect(cla_configuration.Endpoints).To(HaveLen(1))
-			Expect(cla_configuration.Endpoints[0].LbEndpoints).To(HaveLen(len(params.Snapshot.Endpoints)))
+			claConfiguration = endpointsResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
+			Expect(claConfiguration).NotTo(BeNil())
+			Expect(claConfiguration.ClusterName).To(Equal(clusterName))
+			Expect(claConfiguration.Endpoints).To(HaveLen(1))
+			Expect(claConfiguration.Endpoints[0].LbEndpoints).To(HaveLen(len(params.Snapshot.Endpoints)))
 		}
 
 		Context("when happy path", func() {
@@ -534,7 +550,7 @@ var _ = Describe("Translator", func() {
 			It("should transfer labels to envoy", func() {
 				translateWithEndpoints()
 
-				endpointMeta := cla_configuration.Endpoints[0].LbEndpoints[0].Metadata
+				endpointMeta := claConfiguration.Endpoints[0].LbEndpoints[0].Metadata
 				fields := endpointMeta.FilterMetadata["envoy.lb"].Fields
 				Expect(fields).To(HaveKeyWithValue("testkey", sv("testvalue")))
 			})
@@ -551,7 +567,7 @@ var _ = Describe("Translator", func() {
 			It("should add subset to route", func() {
 				translateWithEndpoints()
 
-				metadatamatch := route_configuration.VirtualHosts[0].Routes[0].GetRoute().GetMetadataMatch()
+				metadatamatch := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute().GetMetadataMatch()
 				fields := metadatamatch.FilterMetadata["envoy.lb"].Fields
 				Expect(fields).To(HaveKeyWithValue("testkey", sv("testvalue")))
 			})
@@ -560,7 +576,7 @@ var _ = Describe("Translator", func() {
 		It("should create empty value if missing labels on the endpoint are provided in the upstream", func() {
 			params.Snapshot.Endpoints[0].Metadata.Labels = nil
 			translateWithEndpoints()
-			endpointMeta := cla_configuration.Endpoints[0].LbEndpoints[0].Metadata
+			endpointMeta := claConfiguration.Endpoints[0].LbEndpoints[0].Metadata
 			Expect(endpointMeta).ToNot(BeNil())
 			Expect(endpointMeta.FilterMetadata).To(HaveKey("envoy.lb"))
 			fields := endpointMeta.FilterMetadata["envoy.lb"].Fields
@@ -649,8 +665,8 @@ var _ = Describe("Translator", func() {
 
 			// Configure Proxy to route to the service
 			serviceDestination := v1.Destination{
-				DestinationType: &v1.Destination_Service{
-					Service: &v1.ServiceDestination{
+				DestinationType: &v1.Destination_Kube{
+					Kube: &v1.KubernetesServiceDestination{
 						Ref: core.ResourceRef{
 							Namespace: svc.Namespace,
 							Name:      svc.Name,
@@ -685,6 +701,7 @@ var _ = Describe("Translator", func() {
 
 			// A route to the kube service has been configured
 			routes := snapshot.GetResources(xds.RouteType)
+<<<<<<< HEAD
 			Expect(routes.Items).To(HaveKey("http-listener-routes"))
 			routeResource := routes.Items["http-listener-routes"]
 			route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
@@ -694,6 +711,17 @@ var _ = Describe("Translator", func() {
 			Expect(route_configuration.VirtualHosts[0].Domains[0]).To(Equal("*"))
 			Expect(route_configuration.VirtualHosts[0].Routes).To(HaveLen(1))
 			routeAction, ok := route_configuration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
+=======
+			Expect(routes.Items).To(HaveKey("listener-routes"))
+			routeResource := routes.Items["listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := routeConfiguration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
+>>>>>>> 340a42d16380501dc2e36e3a541cc5b4a28db027
 			Expect(ok).To(BeTrue())
 			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
 			Expect(ok).To(BeTrue())

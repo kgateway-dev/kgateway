@@ -248,9 +248,9 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 	}, nil
 }
 
-func serviceForSplit(split knativev1alpha1.IngressBackendSplit) *gloov1.Destination_Service {
-	return &gloov1.Destination_Service{
-		Service: &gloov1.ServiceDestination{
+func serviceForSplit(split knativev1alpha1.IngressBackendSplit) *gloov1.Destination_Kube {
+	return &gloov1.Destination_Kube{
+		Kube: &gloov1.KubernetesServiceDestination{
 			Ref:  core.ResourceRef{Name: split.ServiceName, Namespace: split.ServiceNamespace},
 			Port: uint32(split.ServicePort.IntValue()),
 		},

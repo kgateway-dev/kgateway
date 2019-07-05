@@ -27,12 +27,8 @@ func run() error {
 	go func() {
 		errs <- uds.Main()
 	}()
-
-	runFunctionDiscovery := os.Getenv("DISABLE_FDS") != "true"
-	if runFunctionDiscovery {
-		go func() {
-			errs <- fdssetup.Main()
-		}()
-	}
+	go func() {
+		errs <- fdssetup.Main()
+	}()
 	return <-errs
 }

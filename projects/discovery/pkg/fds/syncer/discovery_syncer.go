@@ -10,12 +10,14 @@ import (
 )
 
 type syncer struct {
-	fd *fds.FunctionDiscovery
+	fd      *fds.FunctionDiscovery
+	fdsMode v1.Settings_DiscoveryOptions_FdsMode
 }
 
-func NewDiscoverySyncer(fd *fds.FunctionDiscovery) v1.DiscoverySyncer {
+func NewDiscoverySyncer(fd *fds.FunctionDiscovery, fdsMode v1.Settings_DiscoveryOptions_FdsMode) v1.DiscoverySyncer {
 	s := &syncer{
-		fd: fd,
+		fd:      fd,
+		fdsMode: fdsMode,
 	}
 	return s
 }
@@ -28,7 +30,7 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 
 	logger.Debugf("%v", snap)
 
-	upstreamsToDetect := filterUpstreamsForDiscovery(snap.Upstreams, snap.Kubenamespaces)
+	upstreamsToDetect := filterUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
 
 	return s.fd.Update(upstreamsToDetect, snap.Secrets)
 }
@@ -39,42 +41,80 @@ const (
 	disbledLabelValue = "disabled"
 )
 
-func filterUpstreamsForDiscovery(upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
-	fdsNamespaces := make(map[string]bool)
-	for _, ns := range namespaces {
-		fdsNamespaces[ns.Name] = shouldDiscoverOnNamespace(ns)
+func filterUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
+	switch fdsMode {
+	case v1.Settings_DiscoveryOptions_BLACKLIST:
+		return filterUpstreamsBlacklist(upstreams, namespaces)
+	case v1.Settings_DiscoveryOptions_WHITELIST:
+		return filterUpstreamsWhitelist(upstreams, namespaces)
 	}
+	panic("invalid fds mode: " + fdsMode.String())
+}
+
+func isBlacklisted(labels map[string]string) bool {
+	return labels != nil && labels[FdsLabelKey] == disbledLabelValue
+}
+
+func isWhitelisted(labels map[string]string) bool {
+	return labels != nil && labels[FdsLabelKey] == enbledLabelValue
+}
+
+// do not run fds on these namespaces unless explicitly enabled
+var defaultBlacklistedNamespaces = []string{"kube-system", "kube-public"}
+
+func isBlacklistedNamespace(ns *kubernetes.KubeNamespace) bool {
+	if isBlacklisted(ns.Labels) {
+		return true
+	}
+	for _, defaultBlacklistedNs := range defaultBlacklistedNamespaces {
+		if ns.Name == defaultBlacklistedNs {
+			return !isWhitelisted(ns.Labels)
+		}
+	}
+	return false
+}
+
+func filterUpstreamsBlacklist(upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
+	blacklistedNamespaces := make(map[string]bool)
+
+	for _, ns := range namespaces {
+		if isBlacklistedNamespace(ns) {
+			blacklistedNamespaces[ns.Name] = true
+		}
+	}
+
 	var filtered v1.UpstreamList
 	for _, us := range upstreams {
-		if shouldDiscoverOnUpstream(us, fdsNamespaces) {
-			filtered = append(filtered, us)
+		inBlacklistedNamespace := blacklistedNamespaces[getUpstreamNamespace(us)]
+		blacklisted := isBlacklisted(us.Metadata.Labels)
+		whitelisted := isWhitelisted(us.Metadata.Labels)
+		if (inBlacklistedNamespace && !whitelisted) || blacklisted {
+			continue
 		}
+		filtered = append(filtered, us)
 	}
 	return filtered
 }
 
-// do not run fds on these namespaces unless explicitly enabled
-var defaultOffNamespaces = []string{"kube-system", "kube-public"}
+func filterUpstreamsWhitelist(upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
+	whitelistedNamespaces := make(map[string]bool)
 
-func shouldDiscoverOnNamespace(ns *kubernetes.KubeNamespace) bool {
-	for _, defaultOff := range defaultOffNamespaces {
-		if ns.Name == defaultOff {
-			return ns.Labels != nil && ns.Labels[FdsLabelKey] == enbledLabelValue
+	for _, ns := range namespaces {
+		if isWhitelisted(ns.Labels) {
+			whitelistedNamespaces[ns.Name] = true
 		}
 	}
-	return ns.Labels == nil || ns.Labels[FdsLabelKey] != disbledLabelValue
-}
 
-func shouldDiscoverOnUpstream(us *v1.Upstream, fdsNamespaces map[string]bool) bool {
-	ns := getUpstreamNamespace(us)
-	if ns != "" {
-		// only apply this filter if namespace is set, otherwise
-		// it's not a kube upstream
-		if !fdsNamespaces[ns] {
-			return false
+	var filtered v1.UpstreamList
+	for _, us := range upstreams {
+		inWhitelistedNamespace := whitelistedNamespaces[getUpstreamNamespace(us)]
+		blacklisted := isBlacklisted(us.Metadata.Labels)
+		whitelisted := isWhitelisted(us.Metadata.Labels)
+		if (inWhitelistedNamespace && !blacklisted) || whitelisted {
+			filtered = append(filtered, us)
 		}
 	}
-	return us.Metadata.Labels == nil || us.Metadata.Labels[FdsLabelKey] != disbledLabelValue
+	return filtered
 }
 
 func getUpstreamNamespace(us *v1.Upstream) string {
