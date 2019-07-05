@@ -2,6 +2,7 @@ package install
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -39,6 +40,7 @@ func Kubectl(stdin io.Reader, args ...string) error {
 		kubectl.Stdin = stdin
 	}
 	if verbose {
+		fmt.Fprintf(os.Stderr, "running kubectl command: %v\n", kubectl.Args)
 		kubectl.Stdout = os.Stdout
 		kubectl.Stderr = os.Stderr
 	} else {

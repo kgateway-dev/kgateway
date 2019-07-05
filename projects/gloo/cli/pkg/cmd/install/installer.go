@@ -189,7 +189,6 @@ func (i *DefaultGlooStagedInstaller) DoPreInstall() error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
 		install.ExcludeNotes,
-		install.ExcludeKnative,
 		install.IncludeOnlyPreInstall,
 		install.ExcludeEmptyManifests,
 		install.ExcludeMatchingResources(i.excludeResources))
@@ -206,7 +205,6 @@ func (i *DefaultGlooStagedInstaller) DoInstall() error {
 	// Render and install Gloo manifest
 	manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
 		install.ExcludeNotes,
-		install.ExcludeKnative,
 		install.ExcludePreInstall,
 		install.ExcludeCrds,
 		install.ExcludeEmptyManifests,

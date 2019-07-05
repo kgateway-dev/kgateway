@@ -42,6 +42,8 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
+	testHelper.Verbose = true
+
 	options := clusterlock.Options{
 		IdPrefix: os.ExpandEnv("knative-${BUILD_ID}-"),
 	}
