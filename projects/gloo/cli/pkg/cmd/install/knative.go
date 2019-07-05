@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/solo-io/solo-kit/test/helpers"
+	helpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
