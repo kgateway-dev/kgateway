@@ -41,7 +41,7 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 		}
 	}
 
-	if err := uninstallKnativeIfNecessary(cli); err != nil {
+	if err := uninstallKnativeIfNecessary(); err != nil {
 		return err
 	}
 	return nil
@@ -87,7 +87,7 @@ func deleteNamespace(cli install.KubeCli, namespace string) error {
 	return nil
 }
 
-func uninstallKnativeIfNecessary(cli install.KubeCli) error {
+func uninstallKnativeIfNecessary() error {
 	_, installOpts, err := checkKnativeInstallation()
 	if err != nil {
 		return errors.Wrapf(err, "finding knative installation")

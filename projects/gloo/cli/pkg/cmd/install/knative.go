@@ -30,10 +30,10 @@ const (
 
 	knativeCrdSelector = "knative.dev/crd-install=true"
 
-	servingReleaseUrl    = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
-	buildReleaseUrl      = "https://github.com/knative/build/releases/download/v%v/build.yaml"
-	eventingReleaseUrl   = "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
-	monitoringReleaseUrl = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
+	servingReleaseUrlTemplate    = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
+	buildReleaseUrlTemplate      = "https://github.com/knative/build/releases/download/v%v/build.yaml"
+	eventingReleaseUrlTemplate   = "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
+	monitoringReleaseUrlTemplate = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
 
 	knativeIngressProviderLabel = "networking.knative.dev/ingress-provider"
 	knativeIngressProviderIstio = "istio"
@@ -120,6 +120,7 @@ func installKnativeServing(opts *options.Options) error {
 	return nil
 }
 
+// if knative is present but was not installed by us, the resturn values will be true, nil, nil
 func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *options.Knative, error) {
 	var kc kubernetes.Interface
 	if len(kubeclient) > 0 {
@@ -155,16 +156,16 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	eventing := opts.InstallKnativeEventing
 	monitoring := opts.InstallKnativeMonitoring
 
-	servingRelease := fmt.Sprintf(servingReleaseUrl, knativeVersion)
-	servingManifest, err := getManifestForInstallation(servingRelease)
+	servingReleaseUrl := fmt.Sprintf(servingReleaseUrlTemplate, knativeVersion)
+	servingManifest, err := getManifestForInstallation(servingReleaseUrl)
 	if err != nil {
 		return "", err
 	}
 	outputManifests := []string{servingManifest}
 
 	if build {
-		buildRelease := fmt.Sprintf(buildReleaseUrl, knativeVersion)
-		buildManifest, err := getManifestForInstallation(buildRelease)
+		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, knativeVersion)
+		buildManifest, err := getManifestForInstallation(buildReleaseUrl)
 		if err != nil {
 			return "", err
 		}
@@ -172,8 +173,8 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	}
 
 	if eventing {
-		eventingRelease := fmt.Sprintf(eventingReleaseUrl, knativeVersion)
-		eventingManifest, err := getManifestForInstallation(eventingRelease)
+		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, knativeVersion)
+		eventingManifest, err := getManifestForInstallation(eventingReleaseUrl)
 		if err != nil {
 			return "", err
 		}
@@ -181,8 +182,8 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	}
 
 	if monitoring {
-		monitoringRelease := fmt.Sprintf(monitoringReleaseUrl, knativeVersion)
-		monitoringManifest, err := getManifestForInstallation(monitoringRelease)
+		monitoringReleaseUrl := fmt.Sprintf(monitoringReleaseUrlTemplate, knativeVersion)
+		monitoringManifest, err := getManifestForInstallation(monitoringReleaseUrl)
 		if err != nil {
 			return "", err
 		}
