@@ -23,7 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Gateway", func() {
+var _ = FDescribe("Gateway", func() {
 
 	var (
 		ctx            context.Context
@@ -69,7 +69,7 @@ var _ = Describe("Gateway", func() {
 
 			for _, g := range gw {
 				httpGateway := g.GetHttpGateway()
-				if httpGateway == nil {
+				if httpGateway != nil {
 					httpGateway.Plugins = &gloov1.HttpListenerPlugins{
 						GrpcWeb: &grpc_web.GrpcWeb{
 							Disable: true,

@@ -1,0 +1,20 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: test
+  namespace: gloo-system
+spec:
+  displayName: test
+  virtualHost:
+    domains:
+    - '*'
+    name: gloo-system.test
+    routes:
+    - matcher:
+        methods: []
+        prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: gloo-system-gateway-proxy-8000
+            namespace: gloo-system
