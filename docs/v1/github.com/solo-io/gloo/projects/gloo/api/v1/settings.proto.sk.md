@@ -207,8 +207,8 @@ determining which services to poll
 
 | Name | Description |
 | ----- | ----------- | 
-| `BLACKLIST` | in BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with discovery.solo.io/function_discovery=disabled this label can also be used on namespaces to apply to all services within a namespace Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode. |
-| `WHITELIST` | in WHITELIST mode (default), FDS will poll only services in cluster labeled with discovery.solo.io/function_discovery=enabled this label can also be used on namespaces to apply to all services within a namespace |
+| `BLACKLIST` | in BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with discovery.solo.io/function_discovery=disabled this label can also be used on namespaces to apply to all services within a namespace *(which are not explicitly whitelisted)* Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode. |
+| `WHITELIST` | in WHITELIST mode (default), FDS will poll only services in cluster labeled with discovery.solo.io/function_discovery=enabled this label can also be used on namespaces to apply to all services *(which are not explicitly blacklisted)* within a namespace |
 | `DISABLED` | in DISABLED mode, FDS will not run |
 
 

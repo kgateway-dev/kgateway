@@ -37,14 +37,14 @@ const (
 	// except those services labeled with
 	// discovery.solo.io/function_discovery=disabled
 	// this label can also be used on namespaces to apply to all
-	// services within a namespace
+	// services within a namespace *(which are not explicitly whitelisted)*
 	// Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in
 	// blacklist mode.
 	Settings_DiscoveryOptions_BLACKLIST Settings_DiscoveryOptions_FdsMode = 0
 	// in WHITELIST mode (default), FDS will poll only services in cluster
 	// labeled with discovery.solo.io/function_discovery=enabled
 	// this label can also be used on namespaces to apply to all
-	// services within a namespace
+	// services *(which are not explicitly blacklisted)* within a namespace
 	Settings_DiscoveryOptions_WHITELIST Settings_DiscoveryOptions_FdsMode = 1
 	// in DISABLED mode, FDS will not run
 	Settings_DiscoveryOptions_DISABLED Settings_DiscoveryOptions_FdsMode = 2
