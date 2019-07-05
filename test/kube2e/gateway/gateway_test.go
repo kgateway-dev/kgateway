@@ -7,7 +7,9 @@ import (
 	"os"
 	"time"
 
+	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -472,11 +474,18 @@ var _ = Describe("Kube2e: gateway", func() {
 		var (
 			defaultGateway *gatewayv2alpha1.Gateway
 			tcpEcho        helper.TestRunner
-			podIp          string
+
+			tcpPort = corev1.ServicePort{
+				Name: "tcp-proxy",
+				Port: int32(defaults2.TcpPort),
+				TargetPort: intstr.FromInt(int(defaults2.TcpPort)),
+				Protocol: "TCP",
+			}
 		)
 
 		BeforeEach(func() {
 			var err error
+
 			tcpEcho, err = helper.NewEchoTcp(testHelper.InstallNamespace)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(tcpEcho.Deploy(time.Minute)).NotTo(HaveOccurred())
@@ -486,9 +495,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					Service: &gloov1.ServiceDestination{
 						Ref: core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
-							Name:      helper.TestrunnerName,
+							Name:      helper.TcpEchoName,
 						},
-						Port: uint32(helper.TestRunnerPort),
+						Port: uint32(helper.TcpEchoPort),
 					},
 				},
 			}
@@ -504,13 +513,35 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 			_, err = gatewayClient.Write(defaultGateway, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			gatewayProxyPod, err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Get(gatewayProxy, metav1.GetOptions{})
+			gwSvc, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Get(gatewayProxy, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			podIp = gatewayProxyPod.Status.PodIP
+			found := false
+			for _, v := range gwSvc.Spec.Ports {
+				if v.Name == tcpPort.Name || v.Port == tcpPort.Port {
+					found = true
+					break
+				}
+			}
+			if !found {
+				gwSvc.Spec.Ports = append(gwSvc.Spec.Ports, tcpPort)
+			}
+			_, err = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Update(gwSvc)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
 			Expect(gatewayClient.Delete(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.DeleteOpts{})).NotTo(HaveOccurred())
+			gwSvc, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Get(gatewayProxy, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			ports := make([]corev1.ServicePort, 0, len(gwSvc.Spec.Ports))
+			for _, v := range gwSvc.Spec.Ports {
+				if v.Name != tcpPort.Name {
+					ports = append(ports, v)
+				}
+			}
+			gwSvc.Spec.Ports = ports
+			_, err = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Update(gwSvc)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(tcpEcho.Terminate()).NotTo(HaveOccurred())
 		})
 
@@ -542,9 +573,9 @@ var _ = Describe("Kube2e: gateway", func() {
 						if action := tcph.GetDestination(); action != nil {
 							if single := action.GetSingle(); single != nil {
 								if svcDest := single.GetService(); svcDest != nil {
-									if svcDest.Ref.Name == helper.TestrunnerName &&
+									if svcDest.Ref.Name == helper.TcpEchoName &&
 										svcDest.Ref.Namespace == testHelper.InstallNamespace &&
-										svcDest.Port == uint32(helper.TestRunnerPort) {
+										svcDest.Port == uint32(helper.TcpEchoPort) {
 										return nil
 									}
 								}
@@ -557,12 +588,12 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, "15s", "0.5s").Should(BeNil())
 
 			responseString := fmt.Sprintf("Connected to %s",
-				helper.TcpEchoName)
+				gatewayProxy)
 
-			testHelper.CurlEventuallyShouldOutput(helper.CurlOpts{
+			tcpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
 				Protocol:          "telnet",
-				Service:           podIp, // Route directly to pod rather than editing gateway-proxy service
-				Port:              gatewayPort,
+				Service:           gatewayProxy,
+				Port:              int(defaultGateway.BindPort),
 				ConnectionTimeout: 10,
 				Verbose:           true,
 			}, responseString, 1, 30*time.Second)

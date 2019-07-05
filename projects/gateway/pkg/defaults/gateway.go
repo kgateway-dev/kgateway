@@ -34,7 +34,7 @@ func DefaultTcpGateway(writeNamespace string) *v2alpha1.Gateway {
 			TcpGateway: &v2alpha1.TcpGateway{},
 		},
 		BindAddress:   "::",
-		BindPort:      defaults.TcoPort,
+		BindPort:      defaults.TcpPort,
 		UseProxyProto: &types.BoolValue{Value: false},
 	}
 }
@@ -74,7 +74,7 @@ func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 					Status: 200,
 					Body: `Gloo and Envoy are configured correctly!
 
-Delete the '` + name + ` Virtual Service to get started. 
+Delete the '` + name + ` Virtual Service to get started. 	
 `,
 				}},
 			}},
