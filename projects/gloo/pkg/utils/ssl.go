@@ -15,18 +15,21 @@ const (
 	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"
 )
 
-type SslConfigTranslator struct {
-	secrets v1.SecretList
+type SslConfigTranslator interface {
+	ResolveUpstreamSslConfig(snap *v1.ApiSnapshot, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
+	ResolveDownstreamSslConfig(snap *v1.ApiSnapshot, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
+	ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error)
 }
 
-func NewSslConfigTranslator(secrets v1.SecretList) *SslConfigTranslator {
-	return &SslConfigTranslator{
-		secrets: secrets,
-	}
+type sslConfigTranslator struct {
 }
 
-func (s *SslConfigTranslator) ResolveUpstreamSslConfig(uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(uc)
+func NewSslConfigTranslator() *sslConfigTranslator {
+	return &sslConfigTranslator{}
+}
+
+func (s *sslConfigTranslator) ResolveUpstreamSslConfig(snap *v1.ApiSnapshot, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
+	common, err := s.ResolveCommonSslConfig(uc, snap.Secrets)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +38,8 @@ func (s *SslConfigTranslator) ResolveUpstreamSslConfig(uc *v1.UpstreamSslConfig)
 		Sni:              uc.Sni,
 	}, nil
 }
-func (s *SslConfigTranslator) ResolveDownstreamSslConfig(dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(dc)
+func (s *sslConfigTranslator) ResolveDownstreamSslConfig(snap *v1.ApiSnapshot, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
+	common, err := s.ResolveCommonSslConfig(dc, snap.Secrets)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +133,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	}
 }
 
-func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []string) (*envoyauth.CommonTlsContext, error) {
+func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []string) (*envoyauth.CommonTlsContext, error) {
 	if sslSecrets.CertificatesSecretName == "" && sslSecrets.ValidationContextName == "" {
 		return nil, errors.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
@@ -164,7 +167,7 @@ func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []st
 	return tlsContext, nil
 }
 
-func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.CommonTlsContext, error) {
+func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error) {
 	var (
 		certChain, privateKey, rootCa string
 		// if using a Secret ref, we will inline the certs in the tls config
@@ -175,7 +178,7 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 		var err error
 		inlineDataSource = true
 		ref := sslSecrets
-		certChain, privateKey, rootCa, err = getSslSecrets(*ref, s.secrets)
+		certChain, privateKey, rootCa, err = getSslSecrets(*ref, secrets)
 		if err != nil {
 			return nil, err
 		}

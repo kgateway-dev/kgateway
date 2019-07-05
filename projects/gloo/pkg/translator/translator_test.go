@@ -7,6 +7,7 @@ import (
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	k8scorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -110,7 +111,7 @@ var _ = Describe("Translator", func() {
 		}}
 	})
 	JustBeforeEach(func() {
-		translator = NewTranslator(registeredPlugins, settings)
+		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, registeredPlugins...)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",

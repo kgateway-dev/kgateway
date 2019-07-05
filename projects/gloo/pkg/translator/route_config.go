@@ -39,7 +39,7 @@ func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, 
 	virtualHosts := t.computeVirtualHosts(params, proxy, listener, report)
 
 	// validate ssl config if the listener specifies any
-	if err := validateListenerSslConfig(listener, params.Snapshot.Secrets); err != nil {
+	if err := validateListenerSslConfig(params, listener); err != nil {
 		report(err, "invalid listener %v", listener.Name)
 	}
 
@@ -488,10 +488,10 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 	return err
 }
 
-func validateListenerSslConfig(listener *v1.Listener, secrets []*v1.Secret) error {
-	sslCfgTranslator := utils.NewSslConfigTranslator(secrets)
+func validateListenerSslConfig(params plugins.Params,listener *v1.Listener) error {
+	sslCfgTranslator := utils.NewSslConfigTranslator()
 	for _, ssl := range listener.SslConfigurations {
-		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(ssl); err != nil {
+		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(params.Snapshot, ssl); err != nil {
 			return err
 		}
 	}

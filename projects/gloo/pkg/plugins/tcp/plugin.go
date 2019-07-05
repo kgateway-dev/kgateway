@@ -219,8 +219,8 @@ func computerTcpFilterChain(snap *v1.ApiSnapshot, listener *v1.Listener, listene
 		}, nil
 	}
 
-	sslCfgTranslator := utils.NewSslConfigTranslator(snap.Secrets)
-	downstreamConfig, err := sslCfgTranslator.ResolveDownstreamSslConfig(sslConfig)
+	sslCfgTranslator := utils.NewSslConfigTranslator()
+	downstreamConfig, err := sslCfgTranslator.ResolveDownstreamSslConfig(snap, sslConfig)
 	if err != nil {
 		return envoylistener.FilterChain{}, errors.Wrapf(err, "invalid secrets for listener %v", listener.Name)
 	}

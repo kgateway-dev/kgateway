@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -23,13 +24,15 @@ type translator struct {
 	plugins            []plugins.Plugin
 	extensionsSettings *v1.Extensions
 	settings           *v1.Settings
+	sslConfigTranslator utils.SslConfigTranslator
 }
 
-func NewTranslator(plugins []plugins.Plugin, settings *v1.Settings) Translator {
+func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.Settings, plugins ...plugins.Plugin) Translator {
 	return &translator{
 		plugins:            plugins,
 		extensionsSettings: settings.Extensions,
 		settings:           settings,
+		sslConfigTranslator: sslConfigTranslator,
 	}
 }
 

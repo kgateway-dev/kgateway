@@ -7,11 +7,10 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -29,7 +28,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 		if len(listenerFilters) == 0 {
 			return nil
 		}
-		filterChains = computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, report)
+		filterChains = t.computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, report)
 	case *v1.Listener_TcpListener:
 		// run the Listener Plugins
 		for _, plug := range t.plugins {
@@ -113,7 +112,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, report reportFunc) []envoylistener.FilterChain {
+func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, report reportFunc) []envoylistener.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfigurations) == 0 {
@@ -125,10 +124,9 @@ func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listene
 
 	var secureFilterChains []envoylistener.FilterChain
 
-	sslCfgTranslator := utils.NewSslConfigTranslator(snap.Secrets)
 	for _, sslConfig := range listener.SslConfigurations {
 		// get secrets
-		downstreamConfig, err := sslCfgTranslator.ResolveDownstreamSslConfig(sslConfig)
+		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap, sslConfig)
 		if err != nil {
 			report(err, "invalid secrets for listener %v", listener.Name)
 			continue
