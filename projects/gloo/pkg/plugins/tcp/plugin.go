@@ -50,8 +50,6 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 
-	// addTlsInspector(out)
-
 	if err := addTcpProxySettings(tl, out); err != nil {
 		return err
 	}
@@ -94,18 +92,6 @@ func addTcpProxySettings(tl *v1.TcpListener, out *envoyapi.Listener) error {
 func copySettings(cfg *envoytcp.TcpProxy, tcpSettings *tcp.TcpProxySettings) {
 	cfg.IdleTimeout = tcpSettings.IdleTimeout
 	cfg.MaxConnectAttempts = tcpSettings.MaxConnectAttempts
-}
-
-func addTlsInspector(out *envoyapi.Listener) {
-	for _, listenerFilter := range out.ListenerFilters {
-		if listenerFilter.Name == envoyutil.TlsInspector {
-			return
-		}
-	}
-	out.ListenerFilters = append(out.ListenerFilters, listener.ListenerFilter{
-		Name:       envoyutil.TlsInspector,
-		ConfigType: &listener.ListenerFilter_TypedConfig{TypedConfig: &types.Any{}},
-	})
 }
 
 func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listener) ([]envoylistener.FilterChain, error) {

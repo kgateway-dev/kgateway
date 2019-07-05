@@ -75,22 +75,6 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.MaxConnectAttempts).To(Equal(tcps.MaxConnectAttempts))
 		})
 
-		It("appends the tls inspector listener filter", func() {
-			p := NewPlugin()
-			err := p.ProcessListener(plugins.Params{}, in, outl)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(outl.ListenerFilters).To(HaveLen(1))
-		})
-
-		It("does not append the tls inspector if it already exists", func() {
-			p := NewPlugin()
-			outl.ListenerFilters = append(outl.ListenerFilters, envoylistener.ListenerFilter{
-				Name: envoyutil.TlsInspector,
-			})
-			err := p.ProcessListener(plugins.Params{}, in, outl)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(outl.ListenerFilters).To(HaveLen(1))
-		})
 	})
 
 	Context("listener filter chain plugin", func() {
