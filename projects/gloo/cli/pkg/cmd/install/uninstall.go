@@ -93,7 +93,7 @@ func uninstallKnativeIfNecessary(cli install.KubeCli) error {
 		return errors.Wrapf(err, "finding knative installation")
 	}
 	if installOpts != nil {
-		fmt.Printf("Removing installed knative components %#v...\n", installOpts)
+		fmt.Printf("Removing knative components installed by Gloo %#v...\n", installOpts)
 		manifests, err := RenderKnativeManifests(*installOpts)
 		if err != nil {
 			return errors.Wrapf(err, "rendering knative manifests")
