@@ -491,8 +491,8 @@ var _ = Describe("Kube2e: gateway", func() {
 			Expect(tcpEcho.Deploy(time.Minute)).NotTo(HaveOccurred())
 			defaultGateway = defaults.DefaultTcpGateway(testHelper.InstallNamespace)
 			dest := &gloov1.Destination{
-				DestinationType: &gloov1.Destination_Service{
-					Service: &gloov1.ServiceDestination{
+				DestinationType: &gloov1.Destination_Kube{
+					Kube: &gloov1.KubernetesServiceDestination{
 						Ref: core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
 							Name:      helper.TcpEchoName,
@@ -572,7 +572,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					for _, tcph := range tcpListener.TcpHosts {
 						if action := tcph.GetDestination(); action != nil {
 							if single := action.GetSingle(); single != nil {
-								if svcDest := single.GetService(); svcDest != nil {
+								if svcDest := single.GetKube(); svcDest != nil {
 									if svcDest.Ref.Name == helper.TcpEchoName &&
 										svcDest.Ref.Namespace == testHelper.InstallNamespace &&
 										svcDest.Port == uint32(helper.TcpEchoPort) {

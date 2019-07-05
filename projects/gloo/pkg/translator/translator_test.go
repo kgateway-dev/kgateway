@@ -185,17 +185,10 @@ var _ = Describe("Translator", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
-<<<<<<< HEAD
 		Expect(routes.Items).To(HaveKey("http-listener-routes"))
 		routeResource := routes.Items["http-listener-routes"]
-		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
-		Expect(route_configuration).NotTo(BeNil())
-=======
-		Expect(routes.Items).To(HaveKey("listener-routes"))
-		routeResource := routes.Items["listener-routes"]
 		routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(routeConfiguration).NotTo(BeNil())
->>>>>>> 340a42d16380501dc2e36e3a541cc5b4a28db027
 
 		snapshot = snap
 	}
@@ -211,21 +204,12 @@ var _ = Describe("Translator", func() {
 		Expect(snap).NotTo(BeNil())
 
 		routes := snap.GetResources(xds.RouteType)
-<<<<<<< HEAD
 		Expect(routes.Items).To(HaveKey("http-listener-routes"))
 		routeResource := routes.Items["http-listener-routes"]
-		route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
-		Expect(route_configuration).NotTo(BeNil())
-		Expect(route_configuration.GetVirtualHosts()).To(HaveLen(1))
-		Expect(route_configuration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
-=======
-		Expect(routes.Items).To(HaveKey("listener-routes"))
-		routeResource := routes.Items["listener-routes"]
 		routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(routeConfiguration).NotTo(BeNil())
 		Expect(routeConfiguration.GetVirtualHosts()).To(HaveLen(1))
 		Expect(routeConfiguration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
->>>>>>> 340a42d16380501dc2e36e3a541cc5b4a28db027
 	})
 
 	Context("service spec", func() {
@@ -701,19 +685,8 @@ var _ = Describe("Translator", func() {
 
 			// A route to the kube service has been configured
 			routes := snapshot.GetResources(xds.RouteType)
-<<<<<<< HEAD
 			Expect(routes.Items).To(HaveKey("http-listener-routes"))
 			routeResource := routes.Items["http-listener-routes"]
-			route_configuration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
-			Expect(route_configuration).NotTo(BeNil())
-			Expect(route_configuration.VirtualHosts).To(HaveLen(1))
-			Expect(route_configuration.VirtualHosts[0].Domains).To(HaveLen(1))
-			Expect(route_configuration.VirtualHosts[0].Domains[0]).To(Equal("*"))
-			Expect(route_configuration.VirtualHosts[0].Routes).To(HaveLen(1))
-			routeAction, ok := route_configuration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
-=======
-			Expect(routes.Items).To(HaveKey("listener-routes"))
-			routeResource := routes.Items["listener-routes"]
 			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 			Expect(routeConfiguration).NotTo(BeNil())
 			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
@@ -721,7 +694,6 @@ var _ = Describe("Translator", func() {
 			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
 			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
 			routeAction, ok := routeConfiguration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
->>>>>>> 340a42d16380501dc2e36e3a541cc5b4a28db027
 			Expect(ok).To(BeTrue())
 			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
 			Expect(ok).To(BeTrue())
