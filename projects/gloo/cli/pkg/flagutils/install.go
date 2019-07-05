@@ -14,7 +14,7 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
 	set.StringVar(&install.InstallKnativeVersion, "install-knative-version", "0.7.0",
-		"Version of Knative-Serving to install, when --install-knative is set to `true`")
+		"Version of Knative to install, when --install-knative is set to `true`")
 	set.BoolVarP(&install.InstallKnative, "install-knative", "k", true,
 		"Bundle Knative-Serving with your Gloo installation")
 	set.BoolVarP(&install.SkipGlooInstall, "skip-installing-gloo", "g", false,
