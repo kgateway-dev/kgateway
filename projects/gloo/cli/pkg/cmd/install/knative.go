@@ -107,7 +107,7 @@ func installKnativeServing(opts *options.Options) error {
 
 	fmt.Fprintln(os.Stderr, "installing Knative...")
 	if err := install.KubectlApply([]byte(manifests)); err != nil {
-		return errors.Wrapf(err, "installing knative crds with kubectl apply")
+		return errors.Wrapf(err, "installing knative resources with kubectl apply")
 	}
 	// label the knative-serving namespace as belonging to us
 	if err := install.Kubectl(nil, "annotate", "namespace",
