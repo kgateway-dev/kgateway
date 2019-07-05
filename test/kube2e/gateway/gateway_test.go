@@ -538,11 +538,15 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			err := virtualServiceClient.Delete(testHelper.InstallNamespace, vs.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
-			Expect(err).NotTo(HaveOccurred())
+			if vs != nil {
+				err := virtualServiceClient.Delete(testHelper.InstallNamespace, vs.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
+				Expect(err).NotTo(HaveOccurred())
+			}
 
-			err = upstreamGroupClient.Delete(testHelper.InstallNamespace, ug.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
-			Expect(err).NotTo(HaveOccurred())
+			if ug != nil {
+				err := upstreamGroupClient.Delete(testHelper.InstallNamespace, ug.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
+				Expect(err).NotTo(HaveOccurred())
+			}
 
 			Eventually(func() error {
 				coloredPods, err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).List(

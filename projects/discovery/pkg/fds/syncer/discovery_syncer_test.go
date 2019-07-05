@@ -41,15 +41,15 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 			Labels: enabledLabels,
 		},
 	}}
-	nsList := kubernetes.KubeNamespaceList{disabledNs, enabledNs, enabledKubeSystemNs, explicitlyEnabledNs}
+	nsList := kubernetes.KubeNamespaceList{disabledNs, enabledNs, enabledKubeSystemNs, disabledKubePublicNs, explicitlyEnabledNs}
 
-	disabledUs1 := makeUpstream("a", disabledNs.Name, nil)
-	disabledUs2 := makeUpstream("b", enabledNs.Name, disabledLabels)
-	disabledUs3 := makeUpstream("c", disabledKubePublicNs.Name, nil)
-	enabledUs1 := makeUpstream("d", enabledNs.Name, nil)
-	enabledUs2 := makeUpstream("e", enabledKubeSystemNs.Name, nil)
-	explicitlyEnabledUs1 := makeUpstream("f", explicitlyEnabledNs.Name, nil)
-	explicitlyEnabledUs2 := makeUpstream("g", enabledNs.Name, enabledLabels)
+	disabledUs1 := makeUpstream("disabledUs1", disabledNs.Name, nil)
+	disabledUs2 := makeUpstream("disabledUs2", enabledNs.Name, disabledLabels)
+	disabledUs3 := makeUpstream("disabledUs3", disabledKubePublicNs.Name, nil)
+	enabledUs1 := makeUpstream("enabledUs1", enabledNs.Name, nil)
+	enabledUs2 := makeUpstream("enabledUs2", enabledKubeSystemNs.Name, nil)
+	explicitlyEnabledUs1 := makeUpstream("explicitlyEnabledUs1", explicitlyEnabledNs.Name, nil)
+	explicitlyEnabledUs2 := makeUpstream("explicitlyEnabledUs2", enabledNs.Name, enabledLabels)
 
 	usList := gloov1.UpstreamList{disabledUs1, disabledUs2, disabledUs3, enabledUs1, enabledUs2, explicitlyEnabledUs1, explicitlyEnabledUs2}
 
