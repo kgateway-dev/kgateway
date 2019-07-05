@@ -134,13 +134,13 @@ var _ = Describe("Translator", func() {
 				TcpListener: &v1.TcpListener{
 					TcpHosts: []*v1.TcpHost{
 						{
-					 		Destination: &v1.RouteAction{
-					 			Destination: &v1.RouteAction_Single{
-					 				Single: &v1.Destination{
-					 					DestinationType: &v1.Destination_Upstream{
-					 						Upstream: &core.ResourceRef{
-					 							Name: "test",
-					 							Namespace: "gloo-system",
+							Destination: &v1.RouteAction{
+								Destination: &v1.RouteAction_Single{
+									Single: &v1.Destination{
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "test",
+												Namespace: "gloo-system",
 											},
 										},
 									},

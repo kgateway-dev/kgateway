@@ -21,17 +21,17 @@ type Translator interface {
 }
 
 type translator struct {
-	plugins            []plugins.Plugin
-	extensionsSettings *v1.Extensions
-	settings           *v1.Settings
+	plugins             []plugins.Plugin
+	extensionsSettings  *v1.Extensions
+	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
 func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.Settings, plugins ...plugins.Plugin) Translator {
 	return &translator{
-		plugins:            plugins,
-		extensionsSettings: settings.Extensions,
-		settings:           settings,
+		plugins:             plugins,
+		extensionsSettings:  settings.Extensions,
+		settings:            settings,
 		sslConfigTranslator: sslConfigTranslator,
 	}
 }

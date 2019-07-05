@@ -471,9 +471,15 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		var (
 			defaultGateway *gatewayv2alpha1.Gateway
+			tcpEcho        helper.TestRunner
+			podIp          string
 		)
 
 		BeforeEach(func() {
+			var err error
+			tcpEcho, err = helper.NewEchoTcp(testHelper.InstallNamespace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tcpEcho.Deploy(time.Minute)).NotTo(HaveOccurred())
 			defaultGateway = defaults.DefaultTcpGateway(testHelper.InstallNamespace)
 			dest := &gloov1.Destination{
 				DestinationType: &gloov1.Destination_Service{
@@ -496,12 +502,16 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				},
 			})
-			_, err := gatewayClient.Write(defaultGateway, clients.WriteOpts{})
+			_, err = gatewayClient.Write(defaultGateway, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+			gatewayProxyPod, err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).Get(gatewayProxy, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			podIp = gatewayProxyPod.Status.PodIP
 		})
 
 		AfterEach(func() {
 			Expect(gatewayClient.Delete(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.DeleteOpts{})).NotTo(HaveOccurred())
+			Expect(tcpEcho.Terminate()).NotTo(HaveOccurred())
 		})
 
 		It("correctly routes to the service (tcp)", func() {
@@ -546,16 +556,16 @@ var _ = Describe("Kube2e: gateway", func() {
 				return errors.Errorf("proxy did not contain expected route")
 			}, "15s", "0.5s").Should(BeNil())
 
-			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/",
-				Method:            "GET",
-				Host:              gatewayProxy,
-				Service:           gatewayProxy,
+			responseString := fmt.Sprintf("Connected to %s",
+				helper.TcpEchoName)
+
+			testHelper.CurlEventuallyShouldOutput(helper.CurlOpts{
+				Protocol:          "telnet",
+				Service:           podIp, // Route directly to pod rather than editing gateway-proxy service
 				Port:              gatewayPort,
-				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
-				WithoutStats:      true,
-			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+				ConnectionTimeout: 10,
+				Verbose:           true,
+			}, responseString, 1, 30*time.Second)
 		})
 	})
 

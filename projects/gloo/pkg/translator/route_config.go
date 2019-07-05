@@ -488,7 +488,7 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 	return err
 }
 
-func validateListenerSslConfig(params plugins.Params,listener *v1.Listener) error {
+func validateListenerSslConfig(params plugins.Params, listener *v1.Listener) error {
 	sslCfgTranslator := utils.NewSslConfigTranslator()
 	for _, ssl := range listener.SslConfigurations {
 		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(params.Snapshot, ssl); err != nil {
