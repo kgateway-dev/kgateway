@@ -115,7 +115,7 @@ func installKnativeServing(opts *options.Options) error {
 		return errors.Wrapf(err, "annotating installation namespace")
 	}
 
-	fmt.Fprintln(os.Stderr, "Knative Successfully installed!")
+	fmt.Fprintln(os.Stderr, "Knative successfully installed!")
 	return nil
 }
 
