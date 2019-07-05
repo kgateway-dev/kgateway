@@ -22,6 +22,7 @@ glooctl uninstall [flags]
       --delete-namespace   Delete the namespace (all objects written to this namespace will be deleted)
   -h, --help               help for uninstall
   -n, --namespace string   namespace in which Gloo is installed (default "gloo-system")
+  -v, --verbose            If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### Options inherited from parent commands

@@ -25,6 +25,7 @@ type Top struct {
 	File        string
 	Output      string
 	Ctx         context.Context
+	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
 }
 
 type Install struct {
@@ -32,7 +33,6 @@ type Install struct {
 	Namespace         string
 	HelmChartOverride string
 	Knative           Knative
-	Verbose           bool
 }
 
 type Knative struct {
@@ -49,7 +49,6 @@ type Uninstall struct {
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
-	Verbose         bool
 }
 
 type Proxy struct {

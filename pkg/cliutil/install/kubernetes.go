@@ -3,6 +3,7 @@ package install
 import (
 	"bytes"
 	"io"
+	"os"
 	"os/exec"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -28,8 +29,8 @@ func (k *CmdKubectl) Kubectl(stdin io.Reader, args ...string) error {
 
 var verbose bool
 
-func SetVerbose() {
-
+func SetVerbose(b bool) {
+	verbose = b
 }
 
 func Kubectl(stdin io.Reader, args ...string) error {
@@ -37,8 +38,14 @@ func Kubectl(stdin io.Reader, args ...string) error {
 	if stdin != nil {
 		kubectl.Stdin = stdin
 	}
-	cliutil.Initialize()
-	kubectl.Stdout = cliutil.GetLogger()
-	kubectl.Stderr = cliutil.GetLogger()
+	if verbose {
+		kubectl.Stdout = os.Stdout
+		kubectl.Stderr = os.Stderr
+	} else {
+		// use logfile
+		cliutil.Initialize()
+		kubectl.Stdout = cliutil.GetLogger()
+		kubectl.Stderr = cliutil.GetLogger()
+	}
 	return kubectl.Run()
 }

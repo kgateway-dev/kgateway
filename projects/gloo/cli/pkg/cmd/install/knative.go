@@ -43,9 +43,10 @@ const (
 
 func knativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "knative",
-		Short: "install Knative with Gloo on kubernetes",
-		Long:  "requires kubectl to be installed",
+		Use:    "knative",
+		Short:  "install Knative with Gloo on kubernetes",
+		Long:   "requires kubectl to be installed",
+		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Install.Knative.InstallKnative {
 				installed, _, err := checkKnativeInstallation()

@@ -13,7 +13,7 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 }
 
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
-	set.StringVarP(&install.InstallKnativeVersion, "install-knative-version", "v", "0.7.0",
+	set.StringVar(&install.InstallKnativeVersion, "install-knative-version", "0.7.0",
 		"Version of Knative-Serving to install, when --install-knative is set to `true`")
 	set.BoolVarP(&install.InstallKnative, "install-knative", "k", true,
 		"Bundle Knative-Serving with your Gloo installation")
@@ -25,4 +25,10 @@ func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
 		"Bundle Knative-Build with your Gloo installation. Requires install-knative to be true")
 	set.BoolVarP(&install.InstallKnativeMonitoring, "install-monitoring", "m", false,
 		"Bundle Knative-Monitoring with your Gloo installation. Requires install-knative to be true")
+}
+
+// currently only used by install/uninstall but should be changed if it gets shared by more
+func AddVerboseFlag(set *pflag.FlagSet, opts *options.Options) {
+	set.BoolVarP(&opts.Top.Verbose, "verbose", "v", false,
+		"If true, output from kubectl commands will print to stdout/stderr")
 }
