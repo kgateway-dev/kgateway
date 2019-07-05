@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Knative installation via the CLI is now version-independent, allows installing additional Knative components Build, Eventing, and Monitoring
+    issueLink: https://github.com/solo-io/gloo/issues/795
