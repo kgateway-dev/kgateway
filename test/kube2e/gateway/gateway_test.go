@@ -469,7 +469,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	FContext("tcp", func() {
+	Context("tcp", func() {
 
 		var (
 			defaultGateway *gatewayv2alpha1.Gateway
