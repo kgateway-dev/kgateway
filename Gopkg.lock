@@ -1539,7 +1539,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:eb5311f37ccffb6a78e22f096b32c5dda2411fcbcd0fddae02ab004a51d7eae3"
+  digest = "1:cfd9e761e31e865715d488031ce47a8bbadabc74ea1d8d45eb8b42183e552029"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1567,15 +1567,16 @@
     "testutils/clusterlock",
     "testutils/exec",
     "testutils/helper",
+    "testutils/kube",
     "versionutils",
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "a6132166b2352c8b446e43f6bf10dc0061ce1def"
-  version = "v0.8.23"
+  revision = "1c2dd400703ec1a7340609a6f5c00653ecf3d5c7"
+  version = "v0.9.1"
 
 [[projects]]
-  digest = "1:af627124d53b9807002bfba827a0c54388c8c670089d810cbbfc3c89a8dc2ca4"
+  digest = "1:f18ef9a5b343963b5fd3a1d2c13a831cbeb56fab12e498e3ee71ca697c60b713"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1633,10 +1634,11 @@
     "test/helpers",
     "test/setup",
     "test/tests/typed",
+    "test/testutils",
   ]
   pruneopts = "UT"
-  revision = "e44a028d3df45c66fe011cc6da615815f2760128"
-  version = "v0.10.0"
+  revision = "a5b6bd42322788ea33293f320de942e053506e18"
+  version = "v0.10.2"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2792,6 +2794,7 @@
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",
+    "github.com/solo-io/solo-kit/test/testutils",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "go.opencensus.io/stats",
@@ -2808,6 +2811,7 @@
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
+    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",

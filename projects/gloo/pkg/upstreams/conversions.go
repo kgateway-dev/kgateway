@@ -28,15 +28,15 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 	switch d := dest.DestinationType.(type) {
 	case *v1.Destination_Upstream:
 		ref = d.Upstream
-	case *v1.Destination_Service:
-		ref = serviceDestinationToUpstreamRef(d.Service)
+	case *v1.Destination_Kube:
+		ref = serviceDestinationToUpstreamRef(d.Kube)
 	default:
 		return nil, errors.Errorf("no destination type specified")
 	}
 	return ref, nil
 }
 
-func serviceDestinationToUpstreamRef(svcDest *v1.ServiceDestination) *core.ResourceRef {
+func serviceDestinationToUpstreamRef(svcDest *v1.KubernetesServiceDestination) *core.ResourceRef {
 	return &core.ResourceRef{
 		Namespace: svcDest.Ref.Namespace,
 		Name:      buildFakeUpstreamName(svcDest.Ref.Name, svcDest.Ref.Namespace, int32(svcDest.Port)),

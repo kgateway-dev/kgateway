@@ -158,8 +158,8 @@ var _ = Describe("Robustness tests", func() {
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
-										DestinationType: &gloov1.Destination_Service{
-											Service: &gloov1.ServiceDestination{
+										DestinationType: &gloov1.Destination_Kube{
+											Kube: &gloov1.KubernetesServiceDestination{
 												Ref: core.ResourceRef{
 													Namespace: appService.Namespace,
 													Name:      appService.Name,
@@ -215,8 +215,8 @@ var _ = Describe("Robustness tests", func() {
 				RouteAction: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{
 						Single: &gloov1.Destination{
-							DestinationType: &gloov1.Destination_Service{
-								Service: &gloov1.ServiceDestination{
+							DestinationType: &gloov1.Destination_Kube{
+								Kube: &gloov1.KubernetesServiceDestination{
 									Ref: core.ResourceRef{
 										Namespace: namespace,
 										Name:      "non-existent-svc",

@@ -177,8 +177,8 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// Create virtual service routing directly to the testrunner service
 				dest := &gloov1.Destination{
-					DestinationType: &gloov1.Destination_Service{
-						Service: &gloov1.ServiceDestination{
+					DestinationType: &gloov1.Destination_Kube{
+						Kube: &gloov1.KubernetesServiceDestination{
 							Ref: core.ResourceRef{
 								Namespace: testHelper.InstallNamespace,
 								Name:      helper.TestrunnerName,
@@ -216,7 +216,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							for _, r := range vh.Routes {
 								if action := r.GetRouteAction(); action != nil {
 									if single := action.GetSingle(); single != nil {
-										if svcDest := single.GetService(); svcDest != nil {
+										if svcDest := single.GetKube(); svcDest != nil {
 											if svcDest.Ref.Name == helper.TestrunnerName &&
 												svcDest.Ref.Namespace == testHelper.InstallNamespace &&
 												svcDest.Port == uint32(helper.TestRunnerPort) {
@@ -538,11 +538,15 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			err := virtualServiceClient.Delete(testHelper.InstallNamespace, vs.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
-			Expect(err).NotTo(HaveOccurred())
+			if vs != nil {
+				err := virtualServiceClient.Delete(testHelper.InstallNamespace, vs.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
+				Expect(err).NotTo(HaveOccurred())
+			}
 
-			err = upstreamGroupClient.Delete(testHelper.InstallNamespace, ug.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
-			Expect(err).NotTo(HaveOccurred())
+			if ug != nil {
+				err := upstreamGroupClient.Delete(testHelper.InstallNamespace, ug.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
+				Expect(err).NotTo(HaveOccurred())
+			}
 
 			Eventually(func() error {
 				coloredPods, err := kubeClient.CoreV1().Pods(testHelper.InstallNamespace).List(

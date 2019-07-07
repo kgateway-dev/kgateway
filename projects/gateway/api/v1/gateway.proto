@@ -38,7 +38,7 @@ message Gateway {
     uint32 bind_port = 4;
 
     // top level plugin configuration for all routes on the gateway
-    gloo.solo.io.ListenerPlugins plugins = 5;
+    gloo.solo.io.HttpListenerPlugins plugins = 5;
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation

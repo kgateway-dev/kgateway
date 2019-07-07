@@ -163,21 +163,21 @@ var _ = Describe("Translate", func() {
 		//utter.Dump(proxy)
 		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
-				&gloov1.Listener{
+				{
 					Name:        string("http"),
 					BindAddress: string("::"),
 					BindPort:    uint32(0x50),
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
-								&gloov1.VirtualHost{
+								{
 									Name: string("champ.net-http"),
 									Domains: []string{
 										string("champ.net"),
 										string("champ.net:80"),
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: string("/hay"),
@@ -190,8 +190,8 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Service{
-																Service: &gloov1.ServiceDestination{
+															DestinationType: &gloov1.Destination_Kube{
+																Kube: &gloov1.KubernetesServiceDestination{
 																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
 																	Port: uint32(servicePort),
 																},
@@ -206,10 +206,10 @@ var _ = Describe("Translate", func() {
 													RequestTransformation: &transformation.Transformation{
 														TransformationType: &transformation.Transformation_TransformationTemplate{
 															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: bool(false),
+																AdvancedTemplates: false,
 																Extractors:        map[string]*transformation.Extraction(nil),
 																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): &transformation.InjaTemplate{
+																	string("add"): {
 																		Text: string("me"),
 																	},
 																},
@@ -233,14 +233,14 @@ var _ = Describe("Translate", func() {
 										},
 									},
 								},
-								&gloov1.VirtualHost{
+								{
 									Name: string("petes.com-http"),
 									Domains: []string{
 										string("petes.com"),
 										string("petes.com:80"),
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: string("/"),
@@ -253,8 +253,8 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Service{
-																Service: &gloov1.ServiceDestination{
+															DestinationType: &gloov1.Destination_Kube{
+																Kube: &gloov1.KubernetesServiceDestination{
 																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
 																	Port: uint32(servicePort),
 																},
@@ -269,10 +269,10 @@ var _ = Describe("Translate", func() {
 													RequestTransformation: &transformation.Transformation{
 														TransformationType: &transformation.Transformation_TransformationTemplate{
 															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: bool(false),
+																AdvancedTemplates: false,
 																Extractors:        map[string]*transformation.Extraction(nil),
 																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): &transformation.InjaTemplate{
+																	string("add"): {
 																		Text: string("me"),
 																	},
 																},
@@ -296,14 +296,14 @@ var _ = Describe("Translate", func() {
 										},
 									},
 								},
-								&gloov1.VirtualHost{
+								{
 									Name: string("pog.com-http"),
 									Domains: []string{
 										string("pog.com"),
 										string("pog.com:80"),
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: string("/hay"),
@@ -316,8 +316,8 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Service{
-																Service: &gloov1.ServiceDestination{
+															DestinationType: &gloov1.Destination_Kube{
+																Kube: &gloov1.KubernetesServiceDestination{
 																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
 																	Port: uint32(servicePort),
 																},
@@ -332,10 +332,10 @@ var _ = Describe("Translate", func() {
 													RequestTransformation: &transformation.Transformation{
 														TransformationType: &transformation.Transformation_TransformationTemplate{
 															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: bool(false),
+																AdvancedTemplates: false,
 																Extractors:        map[string]*transformation.Extraction(nil),
 																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): &transformation.InjaTemplate{
+																	string("add"): {
 																		Text: string("me"),
 																	},
 																},
@@ -359,14 +359,14 @@ var _ = Describe("Translate", func() {
 										},
 									},
 								},
-								&gloov1.VirtualHost{
+								{
 									Name: string("zah.net-http"),
 									Domains: []string{
 										string("zah.net"),
 										string("zah.net:80"),
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: string("/hay"),
@@ -379,8 +379,8 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Service{
-																Service: &gloov1.ServiceDestination{
+															DestinationType: &gloov1.Destination_Kube{
+																Kube: &gloov1.KubernetesServiceDestination{
 																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
 																	Port: uint32(servicePort),
 																},
@@ -395,10 +395,10 @@ var _ = Describe("Translate", func() {
 													RequestTransformation: &transformation.Transformation{
 														TransformationType: &transformation.Transformation_TransformationTemplate{
 															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: bool(false),
+																AdvancedTemplates: false,
 																Extractors:        map[string]*transformation.Extraction(nil),
 																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): &transformation.InjaTemplate{
+																	string("add"): {
 																		Text: string("me"),
 																	},
 																},
@@ -420,7 +420,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 										},
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: string("/"),
@@ -433,8 +433,8 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Service{
-																Service: &gloov1.ServiceDestination{
+															DestinationType: &gloov1.Destination_Kube{
+																Kube: &gloov1.KubernetesServiceDestination{
 																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
 																	Port: uint32(servicePort),
 																},
@@ -449,10 +449,10 @@ var _ = Describe("Translate", func() {
 													RequestTransformation: &transformation.Transformation{
 														TransformationType: &transformation.Transformation_TransformationTemplate{
 															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: bool(false),
+																AdvancedTemplates: false,
 																Extractors:        map[string]*transformation.Extraction(nil),
 																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): &transformation.InjaTemplate{
+																	string("add"): {
 																		Text: string("me"),
 																	},
 																},
@@ -474,7 +474,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 										},
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: string("/"),
@@ -487,8 +487,8 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Service{
-																Service: &gloov1.ServiceDestination{
+															DestinationType: &gloov1.Destination_Kube{
+																Kube: &gloov1.KubernetesServiceDestination{
 																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
 																	Port: uint32(servicePort),
 																},
@@ -503,10 +503,10 @@ var _ = Describe("Translate", func() {
 													RequestTransformation: &transformation.Transformation{
 														TransformationType: &transformation.Transformation_TransformationTemplate{
 															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: bool(false),
+																AdvancedTemplates: false,
 																Extractors:        map[string]*transformation.Extraction(nil),
 																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): &transformation.InjaTemplate{
+																	string("add"): {
 																		Text: string("me"),
 																	},
 																},
@@ -535,21 +535,21 @@ var _ = Describe("Translate", func() {
 					},
 					SslConfigurations: []*gloov1.SslConfig(nil),
 				},
-				&gloov1.Listener{
+				{
 					Name:        string("https"),
 					BindAddress: string("::"),
 					BindPort:    uint32(0x1bb),
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
-								&gloov1.VirtualHost{
+								{
 									Name: string("petes.com-http"),
 									Domains: []string{
 										string("petes.com"),
 										string("petes.com:443"),
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: string("/"),
@@ -562,8 +562,8 @@ var _ = Describe("Translate", func() {
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Single{
 														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Service{
-																Service: &gloov1.ServiceDestination{
+															DestinationType: &gloov1.Destination_Kube{
+																Kube: &gloov1.KubernetesServiceDestination{
 																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
 																	Port: uint32(servicePort),
 																},
@@ -578,10 +578,10 @@ var _ = Describe("Translate", func() {
 													RequestTransformation: &transformation.Transformation{
 														TransformationType: &transformation.Transformation_TransformationTemplate{
 															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: bool(false),
+																AdvancedTemplates: false,
 																Extractors:        map[string]*transformation.Extraction(nil),
 																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): &transformation.InjaTemplate{
+																	string("add"): {
 																		Text: string("me"),
 																	},
 																},
@@ -609,7 +609,7 @@ var _ = Describe("Translate", func() {
 						},
 					},
 					SslConfigurations: []*gloov1.SslConfig{
-						&gloov1.SslConfig{
+						{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      string("areallygreatsecret"),

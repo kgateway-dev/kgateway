@@ -33,7 +33,7 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 "virtualServices": []core.solo.io.ResourceRef
 "bindAddress": string
 "bindPort": int
-"plugins": .gloo.solo.io.ListenerPlugins
+"plugins": .gloo.solo.io.HttpListenerPlugins
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
 "useProxyProto": .google.protobuf.BoolValue
@@ -46,7 +46,7 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 | `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | names of the the virtual services, which contain the actual routes for the gateway if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above). |  |
 | `bindAddress` | `string` | the bind address the gateway should serve traffic on |  |
 | `bindPort` | `int` | bind ports must not conflict across gateways in a namespace |  |
-| `plugins` | [.gloo.solo.io.ListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk#listenerplugins) | top level plugin configuration for all routes on the gateway |  |
+| `plugins` | [.gloo.solo.io.HttpListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk#httplistenerplugins) | top level plugin configuration for all routes on the gateway |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |

@@ -41,7 +41,7 @@ var _ = Describe("Plugin", func() {
 			DefaultHostForHttp_10: "DefaultHostForHttp_10",
 		}
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.ListenerPlugins{
+			ListenerPlugins: &v1.HttpListenerPlugins{
 				HttpConnectionManagerSettings: hcms,
 			},
 		}
