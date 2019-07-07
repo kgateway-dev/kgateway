@@ -1,7 +1,10 @@
 package ec2
 
 import (
+	"context"
 	"reflect"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -35,6 +38,7 @@ func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	contextutils.LoggerFrom(context.TODO()).Infow("EC2 plugin starting initialization")
 	var err error
 	p.secretClient, err = v1.NewSecretClient(p.secretFactory)
 	if err != nil {
@@ -43,6 +47,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	if err := p.secretClient.Register(); err != nil {
 		return err
 	}
+	contextutils.LoggerFrom(context.TODO()).Infow("EC2 plugin initialized")
 	return nil
 }
 

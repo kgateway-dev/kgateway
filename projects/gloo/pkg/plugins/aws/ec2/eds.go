@@ -21,18 +21,18 @@ import (
 // start the EDS watch which sends a new list of endpoints on any change
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreams v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	contextutils.LoggerFrom(opts.Ctx).Infow("calling WatchEndpoints on EC2")
-	return newEndpointsWatcher(opts.Ctx, writeNamespace, upstreams, p.secretClient, opts.RefreshRate).poll()
+	return newEndpointsWatcher(opts.Ctx, writeNamespace, upstreams, &p.secretClient, opts.RefreshRate).poll()
 }
 
 type edsWatcher struct {
 	upstreams      map[core.ResourceRef]*glooec2.UpstreamSpec
 	watchContext   context.Context
-	secretClient   v1.SecretClient
+	secretClient   *v1.SecretClient
 	refreshRate    time.Duration
 	writeNamespace string
 }
 
-func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
+func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient *v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
 	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpec)
 	for _, us := range upstreams {
 		ec2Upstream, ok := us.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
@@ -77,7 +77,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 			contextutils.LoggerFrom(c.watchContext).Infow("waiting for ec2 plugin to init")
 			return
 		}
-		secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{})
+		secrets, err := (*c.secretClient).List(tmpTODOAllNamespaces, clients.ListOpts{})
 		if err != nil {
 			errs <- err
 			return
@@ -138,7 +138,8 @@ func (c *edsWatcher) getEndpointsForUpstream(upstreamRef *core.ResourceRef, ec2U
 
 func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
 	// TODO - get port from upstream, instance tag, or elsewhere
-	var tmpTODOPort uint32 = 8080
+	// using 80 for now since it is a common default
+	var tmpTODOPort uint32 = 80
 	var list v1.EndpointList
 	for _, instance := range ec2InstancesForUpstream {
 		endpoint := &v1.Endpoint{

@@ -30,10 +30,13 @@ func GetEc2Session(ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (*s
 }
 func ListEc2InstancesForCredentials(ctx context.Context, sess *session.Session, ec2Upstream *glooec2.UpstreamSpec) ([]*ec2.Instance, error) {
 	svc := ec2.New(sess)
+	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream", zap.Any("spec", ec2Upstream))
 	input := &ec2.DescribeInstancesInput{
 		Filters: convertFiltersFromSpec(ec2Upstream),
 	}
+	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream input", zap.Any("value", input))
 	result, err := svc.DescribeInstances(input)
+	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream result", zap.Any("value", result))
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
