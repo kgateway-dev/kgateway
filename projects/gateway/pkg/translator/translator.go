@@ -14,6 +14,10 @@ import (
 
 const GatewayProxyName = "gateway-proxy"
 
+type ListenerFactory interface {
+	GenerateListeners(ctx context.Context, snap *v2alpha1.ApiSnapshot, filteredGateways []*v2alpha1.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener
+}
+
 type Translator interface {
 	Translate(ctx context.Context, namespace string, snap *v2alpha1.ApiSnapshot) (*gloov1.Proxy, reporter.ResourceErrors)
 }
@@ -39,7 +43,7 @@ func (t *translator) Translate(ctx context.Context, namespace string, snap *v2al
 		return nil, resourceErrs
 	}
 	validateGateways(filteredGateways, resourceErrs)
-	var listeners []*gloov1.Listener
+	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
 	for _, factory := range t.factories {
 		listeners = append(listeners, factory.GenerateListeners(ctx, snap, filteredGateways, resourceErrs)...)
 	}
@@ -110,10 +114,6 @@ func standardListener(gateway *v2alpha1.Gateway) *gloov1.Listener {
 
 func gatewayName(gateway *v2alpha1.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
-}
-
-type ListenerFactory interface {
-	GenerateListeners(ctx context.Context, snap *v2alpha1.ApiSnapshot, filteredGateways []*v2alpha1.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener
 }
 
 type TcpTranslator struct{}

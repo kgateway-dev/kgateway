@@ -38,9 +38,11 @@ var (
 )
 
 type Plugin struct {
+	sslConfigTranslator utils.SslConfigTranslator
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
+	p.sslConfigTranslator = utils.NewSslConfigTranslator()
 	return nil
 }
 
@@ -111,7 +113,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 		}
 		listenerFilters = append(listenerFilters, *tcpFilter)
 
-		filterChain, err := computerTcpFilterChain(params.Snapshot, in, listenerFilters, tcpHost)
+		filterChain, err := p.computerTcpFilterChain(params.Snapshot, in, listenerFilters, tcpHost)
 		if err != nil {
 			contextutils.LoggerFrom(params.Ctx).Debug(err, "could not compute tcp filter chain for %v", tcpHost)
 			continue
@@ -196,7 +198,7 @@ func convertToWeightedCluster(multiDest *v1.MultiDestination) (*envoytcp.TcpProx
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func computerTcpFilterChain(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, host *v1.TcpHost) (envoylistener.FilterChain, error) {
+func (p *Plugin) computerTcpFilterChain(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, host *v1.TcpHost) (envoylistener.FilterChain, error) {
 	sslConfig := host.GetSslConfig()
 	if sslConfig == nil {
 		return envoylistener.FilterChain{
@@ -205,8 +207,7 @@ func computerTcpFilterChain(snap *v1.ApiSnapshot, listener *v1.Listener, listene
 		}, nil
 	}
 
-	sslCfgTranslator := utils.NewSslConfigTranslator()
-	downstreamConfig, err := sslCfgTranslator.ResolveDownstreamSslConfig(snap, sslConfig)
+	downstreamConfig, err := p.sslConfigTranslator.ResolveDownstreamSslConfig(snap, sslConfig)
 	if err != nil {
 		return envoylistener.FilterChain{}, errors.Wrapf(err, "invalid secrets for listener %v", listener.Name)
 	}
