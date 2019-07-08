@@ -28,7 +28,7 @@ var _ = Describe("HybridUpstreams", func() {
 
 		existingFakeUpstreamName = upstreams.ServiceUpstreamNamePrefix + watchNamespace + "-svc-1-8081"
 
-		// Results in 5 upstreams being created, 2 real, 3 service-derived (one of which is in a different namespace)
+		// Results in 5 upstreams being created, 1 real, 4 service-derived (one of which is in a different namespace)
 		writeResources = func() {
 			opts := clients.WriteOpts{Ctx: ctx}
 			_, err = svcClient.Write(getService("svc-1", watchNamespace, []int32{8080, 8081}), opts)
