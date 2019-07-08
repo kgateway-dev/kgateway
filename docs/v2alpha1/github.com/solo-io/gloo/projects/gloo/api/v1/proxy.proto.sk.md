@@ -142,7 +142,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | the logical name of the tcp host. names must be unique for each tcp host within a listener |  |
-| `destination` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#routeaction) | Name of the destinations the gateway can route to |  |
+| `destination` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#routeaction) | Name of the destinations the gateway can route to. Note: the destination spec and subsets are not supported in this context and will be ignored. |  |
 | `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes |  |
 
 

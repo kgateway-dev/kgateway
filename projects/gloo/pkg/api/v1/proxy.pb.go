@@ -398,7 +398,8 @@ func (m *TcpListener) GetPlugins() *TcpListenerPlugins {
 type TcpHost struct {
 	// the logical name of the tcp host. names must be unique for each tcp host within a listener
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Name of the destinations the gateway can route to
+	// Name of the destinations the gateway can route to.
+	// Note: the destination spec and subsets are not supported in this context and will be ignored.
 	Destination *RouteAction `protobuf:"bytes,2,opt,name=destination,proto3" json:"destination,omitempty"`
 	// If provided, the Gateway will serve TLS/SSL traffic for this set of routes
 	SslConfig            *SslConfig `protobuf:"bytes,3,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
