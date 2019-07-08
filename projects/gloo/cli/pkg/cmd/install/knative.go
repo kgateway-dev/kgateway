@@ -113,7 +113,7 @@ func installKnativeServing(opts *options.Options) error {
 	}
 
 	if err := waitForCrdsToBeRegistered(knativeCrdNames, time.Second*5, time.Millisecond*500); err != nil {
-		return errors.Wrapf(err, "waiting for knative CRDs to be registerd")
+		return errors.Wrapf(err, "waiting for knative CRDs to be registered")
 	}
 
 	fmt.Fprintln(os.Stderr, "installing Knative...")
