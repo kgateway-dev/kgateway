@@ -536,7 +536,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:98d8bcc9b013ef48532bd746254dbd0bd2fb94d2c7dc5b4961f08c23908d214a"
+  digest = "1:a434da777d13a1093600eca7703330d796b56be4cac1ffcb536ac4eee7abe4d3"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -550,8 +550,8 @@
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   branch = "master"
@@ -1209,6 +1209,17 @@
   pruneopts = "UT"
   revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
   version = "v0.0.3"
+
+[[projects]]
+  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -1961,7 +1972,7 @@
   revision = "02b4e95473316948020af0b7a4f0f22c73929b0e"
 
 [[projects]]
-  digest = "1:06c16aeae09856afac96b2c50b16d9104c88a059be802ba5f6c421f95ba23208"
+  digest = "1:d51efa1a467f426c6c490a450f9e064ef27ca3181fc9cc960996664be3c1b80a"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -1982,6 +1993,7 @@
     "metadata",
     "naming",
     "peer",
+    "reflection",
     "reflection/grpc_reflection_v1alpha",
     "resolver",
     "resolver/dns",
@@ -2734,6 +2746,7 @@
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
@@ -2806,6 +2819,7 @@
     "go.uber.org/zap",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/reflection/grpc_reflection_v1alpha",
     "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
