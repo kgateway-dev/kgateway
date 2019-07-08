@@ -46,13 +46,17 @@ func (t *translator) Translate(ctx context.Context, namespace string, snap *v2al
 	if len(listeners) != len(filteredGateways) {
 		logger.Debug("length of listeners does not match the input gateways")
 	}
-	return &gloov1.Proxy{
-		Metadata: core.Metadata{
-			Name:      GatewayProxyName,
-			Namespace: namespace,
-		},
-		Listeners: listeners,
-	}, resourceErrs
+	var result *gloov1.Proxy
+	if len(listeners) > 0 {
+		result = &gloov1.Proxy{
+			Metadata: core.Metadata{
+				Name:      GatewayProxyName,
+				Namespace: namespace,
+			},
+			Listeners: listeners,
+		}
+	}
+	return result, resourceErrs
 }
 
 // https://github.com/solo-io/gloo/issues/538
