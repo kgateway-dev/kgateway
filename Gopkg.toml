@@ -2,7 +2,6 @@
   go-tests = true
   unused-packages = true
 
-
 [[override]]
   name = "gopkg.in/fsnotify.v1"
   source = "https://github.com/fsnotify/fsnotify.git"
@@ -34,7 +33,6 @@
 [[override]]
   name = "github.com/solo-io/go-utils"
   version = "0.9.3"
-
 
 [[constraint]]
   name = "github.com/hashicorp/consul"

@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  description: |
+    Add a field to the Consul `UpstreamSpec` to indicate in which data center the service instance represented by the
+    `Upstream` is registered.
+  issueLink: https://github.com/solo-io/gloo/issues/803
+  resolvesIssue: false

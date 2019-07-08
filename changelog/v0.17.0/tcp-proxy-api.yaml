@@ -1,0 +1,5 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: update the gateway API in preparation for TCP proxy
+  issueLink: https://github.com/solo-io/gloo/issues/778
+  resolvesIssue: false

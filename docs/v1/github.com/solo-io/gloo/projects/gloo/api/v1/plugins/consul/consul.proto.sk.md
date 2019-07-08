@@ -45,7 +45,7 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 | `serviceName` | `string` | The name of the Consul Service |  |
 | `serviceTags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream |  |
 | `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address |  |
-| `connectEnabled` | `bool` | is this consul service connect enabled. |  |
+| `connectEnabled` | `bool` | Is this consul service connect enabled. |  |
 
 
 
