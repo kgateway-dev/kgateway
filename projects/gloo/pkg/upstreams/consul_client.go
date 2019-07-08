@@ -8,6 +8,8 @@ import (
 
 // Wrap the Consul API in an interface to allow mocking
 type ConsulClient interface {
+	// Returns false if no connection to the Consul agent can be established
+	CanConnect() bool
 	DataCenters() ([]string, error)
 	Services(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error)
 }
@@ -22,6 +24,11 @@ func NewConsulClient() (ConsulClient, error) {
 
 type consul struct {
 	api *consulapi.Client
+}
+
+func (c *consul) CanConnect() bool {
+	_, err := c.api.Catalog().Datacenters()
+	return err == nil
 }
 
 func (c *consul) DataCenters() ([]string, error) {
