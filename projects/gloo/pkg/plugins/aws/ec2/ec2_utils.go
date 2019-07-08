@@ -75,7 +75,6 @@ func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 		}
 		filters = append(filters, currentFilter)
 	}
-	fmt.Printf("filters are:\n%v\n", filters)
 	return filters
 }
 

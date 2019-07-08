@@ -1,135 +1,82 @@
 package ec2
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-const (
-	accessKeyValue = "some acccess value"
-	secretKeyValue = "some secret value"
-)
-
 var _ = Describe("Plugin", func() {
-	var (
-		params      plugins.Params
-		vhostParams plugins.VirtualHostParams
-		plugin      plugins.Plugin
-		upstream    *v1.Upstream
-		route       *v1.Route
-		out         *envoyapi.Cluster
-		outroute    *envoyroute.Route
-	)
+	var ()
 	BeforeEach(func() {
-		var b bool
-		plugin = NewPlugin(&b)
-		plugin.Init(plugins.InitParams{})
-		upstreamName := "up"
-		clusterName := upstreamName
-		funcname := "foo"
-		upstream = &v1.Upstream{
-			Metadata: core.Metadata{
-				Name: upstreamName,
-				// TODO(yuval-k): namespace
-				Namespace: "",
-			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Aws{
-					Aws: &aws.UpstreamSpec{
-						LambdaFunctions: []*aws.LambdaFunctionSpec{{
-							LogicalName:        funcname,
-							LambdaFunctionName: "foo",
-							Qualifier:          "v1",
-						}},
-						Region: "us-east1",
-						SecretRef: core.ResourceRef{
-							Namespace: "",
-							Name:      "secretref",
-						},
-					},
-				},
-			},
-		}
-		route = &v1.Route{
-			Action: &v1.Route_RouteAction{
-				RouteAction: &v1.RouteAction{
-					Destination: &v1.RouteAction_Single{
-						Single: &v1.Destination{
-							DestinationType: &v1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Namespace: "",
-									Name:      upstreamName,
-								},
-							},
-							DestinationSpec: &v1.DestinationSpec{
-								DestinationType: &v1.DestinationSpec_Aws{
-									Aws: &awsapi.DestinationSpec{
-										LogicalName: funcname,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-
-		out = &envoyapi.Cluster{}
-		outroute = &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{
-					ClusterSpecifier: &envoyroute.RouteAction_Cluster{
-						Cluster: clusterName,
-					},
-				},
-			},
-		}
-
-		params.Snapshot = &v1.ApiSnapshot{
-			Secrets: v1.SecretList{{
-				Metadata: core.Metadata{
-					Name: "secretref",
-					// TODO(yuval-k): namespace
-					Namespace: "",
-				},
-				Kind: &v1.Secret_Aws{
-					Aws: &v1.AwsSecret{
-						AccessKey: accessKeyValue,
-						SecretKey: secretKeyValue,
-					},
-				},
-			}},
-		}
-		vhostParams = plugins.VirtualHostParams{Params: params}
 
 	})
 
-	Context("filters", func() {
-		It("should produce filters when upstream is present", func() {
-			// process upstream
-			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).NotTo(HaveOccurred())
-			err = plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-			Expect(err).NotTo(HaveOccurred())
+	Context("tag utils", func() {
 
-			// check that we have filters
-			filters, err := plugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(filters).NotTo(BeEmpty())
-		})
+		DescribeTable("filter from single tag key",
+			func(input string) {
+				output := tagFiltersKey(input)
+				Expect(*output.Name).To(Equal("tag-key"))
+				Expect(*output.Values[0]).To(Equal(input))
+			},
+			Entry("ex1", "some-key"),
+			Entry("ex2", "another-key"),
+		)
 
-		It("should not produce filters when no upstreams are present", func() {
-			filters, err := plugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(filters).To(BeEmpty())
-		})
+		DescribeTable("filter from tag key and value",
+			func(key, value string) {
+				output := tagFiltersKeyValue(key, value)
+				Expect(*output.Name).To(Equal("tag:" + key))
+				Expect(*output.Values[0]).To(Equal(value))
+			},
+			Entry("ex1", "some-key", "some-value"),
+			Entry("ex2", "another-key", "another-value"),
+		)
+	})
+
+	Context("convert filters from specs", func() {
+		key1 := "abc"
+		value1 := "123"
+		secret := core.ResourceRef{"secret", "ns"}
+		region := "us-east-1"
+		DescribeTable("filter conversion",
+			func(input *glooec2.UpstreamSpec, expected []*ec2.Filter) {
+				output := convertFiltersFromSpec(input)
+				for i, out := range output {
+					Expect(out).To(Equal(expected[i]))
+				}
+
+			},
+			Entry("ex1", &glooec2.UpstreamSpec{
+				Region:    region,
+				SecretRef: secret,
+				Filters: []*glooec2.Filter{{
+					Spec: &glooec2.Filter_Key{key1},
+				}},
+			},
+				[]*ec2.Filter{{
+					Name:   aws.String("tag-key"),
+					Values: []*string{aws.String(key1)},
+				}},
+			),
+			Entry("ex2", &glooec2.UpstreamSpec{
+				Region:    region,
+				SecretRef: secret,
+				Filters: []*glooec2.Filter{{
+					Spec: &glooec2.Filter_KvPair_{
+						KvPair: &glooec2.Filter_KvPair{Key: key1, Value: value1}},
+				}},
+			},
+				[]*ec2.Filter{{
+					Name:   aws.String("tag:" + key1),
+					Values: []*string{aws.String(value1)},
+				}},
+			),
+		)
 	})
 })
