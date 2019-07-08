@@ -14,21 +14,16 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto"
 // Gloo requires that a different upstream be created for each port
 // consul Upstreams are typically generated automatically by Gloo from the consul API
 message UpstreamSpec {
-
     // The name of the Consul Service
     string service_name = 1;
-
     // The list of service tags Gloo should search for on a service instance
     // before deciding whether or not to include the instance as part of this
     // upstream
     repeated string service_tags = 2;
 
-    // An optional Service Spec describing the service listening at this address
+    //     An optional Service Spec describing the service listening at this address
     .plugins.gloo.solo.io.ServiceSpec service_spec = 3;
 
-    // Is this consul service connect enabled.
+    // is this consul service connect enabled.
     bool connect_enabled = 4;
-
-    // The data center in which the service instance represented by this upstream is registered.
-    string data_center = 5;
 }

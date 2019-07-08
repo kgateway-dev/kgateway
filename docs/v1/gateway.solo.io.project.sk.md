@@ -18,6 +18,7 @@ API Version: `gateway.solo.io.v1`
 - [Artifact](../github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto.sk#artifact)
 - [Endpoint](../github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk#endpoint)
 - [Gateway](../github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk#gateway)
+- [Gateway](../github.com/solo-io/gloo/projects/gateway/api/v2alpha1/gateway.proto.sk#gateway)
 - [Ingress](../github.com/solo-io/gloo/projects/ingress/api/v1/ingress.proto.sk#ingress)
 - [KubeService](../github.com/solo-io/gloo/projects/ingress/api/v1/service.proto.sk#kubeservice)
 - [Proxy](../github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#proxy)

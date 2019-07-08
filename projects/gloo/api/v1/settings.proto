@@ -14,6 +14,9 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
 
+/*
+Settings resource for Gloo
+*/
 message Settings {
 
     option (core.solo.io.resource).short_name = "st";

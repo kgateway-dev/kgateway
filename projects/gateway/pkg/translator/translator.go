@@ -258,8 +258,8 @@ func desiredListener(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualSe
 		BindPort:    gateway.BindPort,
 		ListenerType: &gloov1.Listener_HttpListener{
 			HttpListener: &gloov1.HttpListener{
-				VirtualHosts:    virtualHosts,
-				ListenerPlugins: gateway.Plugins,
+				VirtualHosts: virtualHosts,
+				Plugins:      gateway.Plugins,
 			},
 		},
 		SslConfigurations: sslConfigs,

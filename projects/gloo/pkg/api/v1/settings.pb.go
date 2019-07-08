@@ -70,6 +70,8 @@ func (Settings_DiscoveryOptions_FdsMode) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_bd7533c2495e1752, []int{0, 6, 0}
 }
 
+//
+//Settings resource for Gloo
 type Settings struct {
 	// namespace to write discovered data
 	DiscoveryNamespace string `protobuf:"bytes,1,opt,name=discovery_namespace,json=discoveryNamespace,proto3" json:"discovery_namespace,omitempty"`

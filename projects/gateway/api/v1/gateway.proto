@@ -10,10 +10,10 @@ option (gogoproto.equal_all) = true;
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 /*
 A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
@@ -22,7 +22,6 @@ message Gateway {
 
     option (core.solo.io.resource).short_name = "gw";
     option (core.solo.io.resource).plural_name = "gateways";
-    
     // if set to false, only use virtual services with no ssl configured.
     // if set to true, only use virtual services with ssl configured.
     bool ssl = 1;
