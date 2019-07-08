@@ -21,9 +21,9 @@ message UpstreamSpec {
     // upstream
     repeated string service_tags = 2;
 
-    //     An optional Service Spec describing the service listening at this address
+    // An optional Service Spec describing the service listening at this address
     .plugins.gloo.solo.io.ServiceSpec service_spec = 3;
 
-    // is this consul service connect enabled.
+    // Is this consul service connect enabled.
     bool connect_enabled = 4;
 }
