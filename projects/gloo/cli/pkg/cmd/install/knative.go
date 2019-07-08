@@ -8,8 +8,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
-	helpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -99,11 +100,20 @@ func installKnativeServing(opts *options.Options) error {
 		return nil
 	}
 
+	knativeCrdNames, err := getCrdNames(manifests)
+	if err != nil {
+		return err
+	}
+
 	// install crds first by using selector
 	// https://knative.dev/docs/install/knative-with-any-k8s/
 	fmt.Fprintln(os.Stderr, "installing Knative CRDs...")
 	if err := install.KubectlApply([]byte(manifests), "--selector", knativeCrdSelector); err != nil {
 		return errors.Wrapf(err, "installing knative crds with kubectl apply")
+	}
+
+	if err := waitForCrdsToBeRegistered(knativeCrdNames, time.Second*5, time.Millisecond*500); err != nil {
+		return errors.Wrapf(err, "waiting for knative CRDs to be registerd")
 	}
 
 	fmt.Fprintln(os.Stderr, "installing Knative...")
@@ -319,4 +329,27 @@ func isEmptyYamlSnippet(objYaml string) bool {
 	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
 	removeSpaces := strings.Replace(removeDashes, " ", "", -1)
 	return removeSpaces == ""
+}
+
+func getCrdNames(manifests string) ([]string, error) {
+	// parse runtime.Objects from the input yaml
+	objects, err := parseUnstructured(manifests)
+	if err != nil {
+		return nil, err
+	}
+
+	var crdNames []string
+
+	for _, object := range objects {
+		// objects parsed by UnstructuredJSONScheme can only be of
+		// type *unstructured.Unstructured or *unstructured.UnstructuredList
+		if unstructuredObj, ok := object.obj.(*unstructured.Unstructured); ok {
+			if gvk := unstructuredObj.GroupVersionKind(); gvk.Kind == "CustomResourceDefinition" && gvk.Group == "apiextensions.k8s.io" {
+				crdNames = append(crdNames, unstructuredObj.GetName())
+			}
+		}
+	}
+
+	// re-join the objects into a single manifest
+	return crdNames, nil
 }

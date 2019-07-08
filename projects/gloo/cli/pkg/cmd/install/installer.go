@@ -27,6 +27,9 @@ func (i *DefaultGlooKubeInstallClient) KubectlApply(manifest []byte) error {
 }
 
 func (i *DefaultGlooKubeInstallClient) WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
+	return waitForCrdsToBeRegistered(crds, timeout, interval)
+}
+func waitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
 	if len(crds) == 0 {
 		return nil
 	}
