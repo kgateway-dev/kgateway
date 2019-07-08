@@ -17,14 +17,6 @@ import (
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 )
 
-/*
-NOTES on EC2
-How to find all instances that have a given tag-key, regardless of the tag value:
-  https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html
-  tag-key - The key of a tag assigned to the resource. Use this filter to find all resources that have a tag with a
-  specific key, regardless of the tag value.
-*/
-
 func GetEc2Session(ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (*session.Session, error) {
 	return aws2.GetAwsSession(ec2Upstream.SecretRef, secrets, &aws.Config{Region: aws.String(ec2Upstream.Region)})
 }
@@ -77,12 +69,13 @@ func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 		var currentFilter *ec2.Filter
 		switch x := filterSpec.Spec.(type) {
 		case *glooec2.Filter_Key:
-			currentFilter = tagFiltersKeyValue(x.Key, "")
+			currentFilter = tagFiltersKey(x.Key)
 		case *glooec2.Filter_KvPair_:
 			currentFilter = tagFiltersKeyValue(x.KvPair.Key, x.KvPair.Value)
 		}
 		filters = append(filters, currentFilter)
 	}
+	fmt.Printf("filters are:\n%v\n", filters)
 	return filters
 }
 
@@ -108,5 +101,20 @@ func tagFiltersKeyValue(tagName, tagValue string) *ec2.Filter {
 	return &ec2.Filter{
 		Name:   tagFilterName(tagName),
 		Values: tagFilterValue(tagValue),
+	}
+}
+
+/*
+NOTE on EC2
+How to find all instances that have a given tag-key, regardless of the tag value:
+  https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html
+  tag-key - The key of a tag assigned to the resource. Use this filter to find all resources that have a tag with a
+  specific key, regardless of the tag value.
+*/
+// generate a filter that selects all elements that contain a given tag
+func tagFiltersKey(tagName string) *ec2.Filter {
+	return &ec2.Filter{
+		Name:   aws.String("tag-key"),
+		Values: []*string{aws.String(tagName)},
 	}
 }

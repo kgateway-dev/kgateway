@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -130,6 +132,7 @@ func (c *edsWatcher) getEndpointsForUpstream(upstreamRef *core.ResourceRef, ec2U
 		return nil, err
 	}
 	ec2InstancesForUpstream, err := ListEc2InstancesForCredentials(c.watchContext, session, ec2Upstream)
+	contextutils.LoggerFrom(c.watchContext).Infow("list of EC2 instances", zap.Any("ec2_instances", ec2InstancesForUpstream), zap.Any("upstreamRef", upstreamRef))
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +144,7 @@ func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, 
 	// using 80 for now since it is a common default
 	var tmpTODOPort uint32 = 80
 	var list v1.EndpointList
+	contextutils.LoggerFrom(c.watchContext).Infow("begin listing EC2 endpoints in CITE")
 	for _, instance := range ec2InstancesForUpstream {
 		endpoint := &v1.Endpoint{
 			Upstreams: []*core.ResourceRef{upstreamRef},
@@ -151,6 +155,7 @@ func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, 
 				Namespace: c.writeNamespace,
 			},
 		}
+		contextutils.LoggerFrom(c.watchContext).Infow("EC2 endpoint", zap.Any("ep", endpoint))
 		list = append(list, endpoint)
 	}
 	return list
