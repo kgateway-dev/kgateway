@@ -1,10 +1,10 @@
-package upstreams
+package consul
 
 import (
 	consulapi "github.com/hashicorp/consul/api"
 )
 
-//go:generate mockgen -destination=./mock_consul_client.go -source consul_client.go -package upstreams
+//go:generate mockgen -destination=./mock_consul_client.go -source consul_client.go -package consul
 
 // Wrap the Consul API in an interface to allow mocking
 type ConsulClient interface {

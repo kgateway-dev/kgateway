@@ -1,4 +1,4 @@
-package upstreams
+package consul
 
 import (
 	"context"
@@ -9,13 +9,11 @@ import (
 	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
 	"github.com/solo-io/go-utils/errutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-const ConsulUpstreamNamePrefix = "consul-svc:"
+const notImplementedErrMsg = "this operation is not supported by this client"
 
 // This client can list and watch Consul services. A Gloo upstream will be generated for each unique
 // Consul service name. The Consul EDS will discover and characterize all endpoints for each one of
@@ -31,23 +29,23 @@ type consulUpstreamClient struct {
 }
 
 func (*consulUpstreamClient) BaseClient() skclients.ResourceClient {
-	panic("this operation is not supported by this client")
+	panic(notImplementedErrMsg)
 }
 
 func (*consulUpstreamClient) Register() error {
-	panic("this operation is not supported by this client")
+	panic(notImplementedErrMsg)
 }
 
 func (*consulUpstreamClient) Read(namespace, name string, opts skclients.ReadOpts) (*v1.Upstream, error) {
-	panic("this operation is not supported by this client")
+	panic(notImplementedErrMsg)
 }
 
 func (*consulUpstreamClient) Write(resource *v1.Upstream, opts skclients.WriteOpts) (*v1.Upstream, error) {
-	panic("this operation is not supported by this client")
+	panic(notImplementedErrMsg)
 }
 
 func (*consulUpstreamClient) Delete(namespace, name string, opts skclients.DeleteOpts) error {
-	panic("this operation is not supported by this client")
+	panic(notImplementedErrMsg)
 }
 
 // Represents the services registered in a data center
@@ -219,29 +217,6 @@ func (c *consulUpstreamClient) watchServicesInDataCenter(ctx context.Context, da
 	}(dataCenter)
 
 	return servicesChan, errors
-}
-
-// Create an upstream for each service in the map
-func toUpstreamList(services serviceToDataCentersMap) v1.UpstreamList {
-	var upstreams v1.UpstreamList
-	for serviceName, dataCenters := range services {
-		sort.Strings(dataCenters)
-		upstreams = append(upstreams, &v1.Upstream{
-			Metadata: core.Metadata{
-				Name:      ConsulUpstreamNamePrefix + serviceName,
-				Namespace: "", // no namespace
-			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Consul{
-					Consul: &consulplugin.UpstreamSpec{
-						ServiceName: serviceName,
-						DataCenters: dataCenters,
-					},
-				},
-			},
-		})
-	}
-	return upstreams
 }
 
 func indexByService(dcToSvcMap dataCenterToServicesMap) serviceToDataCentersMap {

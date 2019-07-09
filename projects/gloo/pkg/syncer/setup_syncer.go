@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -172,6 +174,17 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.DevMode = true
 	opts.Settings = settings
 
+	// Set up Consul client
+	consulClient, err := consul.NewConsulClient()
+	if err != nil {
+		return err
+	}
+
+	// If we cannot connect, no Consul agent is running on this node and the Consul-related features will be deactivated
+	if consulClient.CanConnect() {
+		opts.ConsulClient = consulClient
+	}
+
 	return s.runFunc(opts)
 }
 
@@ -202,7 +215,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, opts.Services)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, opts.Services, opts.ConsulClient)
 	if err != nil {
 		return err
 	}

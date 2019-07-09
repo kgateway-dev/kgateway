@@ -1,15 +1,12 @@
 package upstreams
 
 import (
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-// Delegates all the function calls to the underlying client in case of real upstreams and does nothing in case of
-// service-derived upstreams.
-//
-// NOTE: This is only to be used in reporters, which only call the Write function
+// This client implements only the `Write` function and panics on all the other functions.
+// It is meant to be used in the API event loop reporter, which calls only the Write function.
 type readOnlyUpstreamBaseClient struct {
 	rc clients.ResourceClient
 }
@@ -21,11 +18,11 @@ func newHybridBaseClient(rc clients.ResourceClient) *readOnlyUpstreamBaseClient 
 }
 
 func (c *readOnlyUpstreamBaseClient) Kind() string {
-	return c.rc.Kind()
+	panic(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) NewResource() resources.Resource {
-	return c.rc.NewResource()
+	panic(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) Register() error {
@@ -33,11 +30,7 @@ func (c *readOnlyUpstreamBaseClient) Register() error {
 }
 
 func (c *readOnlyUpstreamBaseClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	if isRealUpstream(name) {
-		return c.rc.Read(namespace, name, opts)
-	}
-	return nil, errors.Errorf("unable to read upstream %s.%s. Read calls are not supported "+
-		"for service-derived upstreams %s.%s", namespace, name)
+	panic(notImplementedErrMsg)
 }
 
 // TODO(marco): this will not write reports but still log an info message. Find a way of avoiding it.
@@ -49,16 +42,13 @@ func (c *readOnlyUpstreamBaseClient) Write(resource resources.Resource, opts cli
 }
 
 func (c *readOnlyUpstreamBaseClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	if isRealUpstream(name) {
-		return c.rc.Delete(namespace, name, opts)
-	}
-	return nil
+	panic(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
-	return c.rc.List(namespace, opts)
+	panic(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	return c.rc.Watch(namespace, opts)
+	panic(notImplementedErrMsg)
 }
