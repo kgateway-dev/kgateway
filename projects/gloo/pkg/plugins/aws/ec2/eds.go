@@ -90,7 +90,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 		for upstreamRef, upstreamSpec := range c.upstreams {
 			// TODO - call this asynchronously
 			// TODO - add timeouts
-			endpointsForUpstream, err := c.getEndpointsForUpstream(&upstreamRef, upstreamSpec, secrets)
+			endpointsForUpstream, err := c.getEndpointsForUpstream(upstreamRef, upstreamSpec, secrets)
 			if err != nil {
 				errs <- err
 				return
@@ -128,7 +128,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	return endpointsChan, errs, nil
 }
 
-func (c *edsWatcher) getEndpointsForUpstream(upstreamRef *core.ResourceRef, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (v1.EndpointList, error) {
+func (c *edsWatcher) getEndpointsForUpstream(upstreamRef core.ResourceRef, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (v1.EndpointList, error) {
 	ec2InstancesForUpstream, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, ec2Upstream, secrets)
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (c *edsWatcher) getEndpointsForUpstream(upstreamRef *core.ResourceRef, ec2U
 
 const defaultPort = 80
 
-func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, ec2UpstreamSpec *glooec2.UpstreamSpec, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
+func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef core.ResourceRef, ec2UpstreamSpec *glooec2.UpstreamSpec, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
 	var list v1.EndpointList
 	contextutils.LoggerFrom(c.watchContext).Debugw("begin listing EC2 endpoints in CITE")
 	for _, instance := range ec2InstancesForUpstream {
@@ -154,7 +154,7 @@ func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, 
 			port = defaultPort
 		}
 		endpoint := &v1.Endpoint{
-			Upstreams: []*core.ResourceRef{upstreamRef},
+			Upstreams: []*core.ResourceRef{&upstreamRef},
 			Address:   aws.StringValue(ipAddr),
 			Port:      ec2UpstreamSpec.GetPort(),
 			Metadata: core.Metadata{
@@ -172,7 +172,7 @@ func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, 
 // ... also include a function to ensure that the endpoint name conforms to the spec (is unique, begins with expected prefix)
 const ec2EndpointNamePrefix = "ec2"
 
-func generateName(upstreamRef *core.ResourceRef, publicIpAddress string) string {
+func generateName(upstreamRef core.ResourceRef, publicIpAddress string) string {
 	return SanitizeName(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String(), publicIpAddress))
 }
 
