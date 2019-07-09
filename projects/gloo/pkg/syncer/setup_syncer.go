@@ -175,7 +175,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.Settings = settings
 
 	// Set up Consul client
-	consulClient, err := consul.NewConsulClient()
+	consulClient, err := consul.NewConsulClient(settings)
 	if err != nil {
 		return err
 	}

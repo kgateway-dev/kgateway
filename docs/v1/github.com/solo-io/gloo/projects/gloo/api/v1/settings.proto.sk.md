@@ -20,6 +20,7 @@ weight: 5
 - [KnativeOptions](#knativeoptions)
 - [DiscoveryOptions](#discoveryoptions)
 - [FdsMode](#fdsmode)
+- [ConsulConfiguration](#consulconfiguration)
   
 
 
@@ -52,6 +53,7 @@ weight: 5
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "knative": .gloo.solo.io.Settings.KnativeOptions
 "discovery": .gloo.solo.io.Settings.DiscoveryOptions
+"consul": .gloo.solo.io.Settings.ConsulConfiguration
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
@@ -76,6 +78,7 @@ weight: 5
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. |  |
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | configuration options for the Clusteringress Controller (for Knative) |  |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | options for configuring Gloo's Discovery service |  |
+| `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
@@ -210,6 +213,32 @@ determining which services to poll
 | `BLACKLIST` | in BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with discovery.solo.io/function_discovery=disabled this label can also be used on namespaces to apply to all services within a namespace *(which are not explicitly whitelisted)* Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode. |
 | `WHITELIST` | in WHITELIST mode (default), FDS will poll only services in cluster labeled with discovery.solo.io/function_discovery=enabled this label can also be used on namespaces to apply to all services *(which are not explicitly blacklisted)* within a namespace |
 | `DISABLED` | in DISABLED mode, FDS will not run |
+
+
+
+
+---
+### ConsulConfiguration
+
+ 
+Provides overrides for the default configuration parameters used to connect to Consul.
+
+Note: It is also possible to configure the Consul client Gloo uses via the environment variables
+described [here](https://www.consul.io/docs/commands/index.html#environment-variables). These
+need to be set on the Gloo container.
+
+```yaml
+"address": .google.protobuf.StringValue
+"dataCenters": []string
+"waitTime": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `address` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The address of the Consul server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `dataCenters` | `[]string` | Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers. |  |
+| `waitTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used. |  |
 
 
 

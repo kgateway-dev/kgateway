@@ -62,7 +62,6 @@ type dataCenterToServicesMap map[string][]string
 
 func (c *consulUpstreamClient) List(_ string, opts skclients.ListOpts) (v1.UpstreamList, error) {
 
-	// TODO: add consul.dataCenters option to settings to restrict which data centers to consider
 	// Get a list of the available data centers
 	dataCenters, err := c.consul.DataCenters()
 	if err != nil {
