@@ -172,12 +172,6 @@ func aggregateUpstreams(ctx context.Context, dest chan *upstreamsWithSource, src
 			case <-ctx.Done():
 				return
 			default:
-
-				names := ""
-				for _, us := range upstreams {
-					names += us.Metadata.Name + ", "
-				}
-
 				dest <- &upstreamsWithSource{
 					source:    sourceName,
 					upstreams: upstreams,
