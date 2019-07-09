@@ -24,11 +24,13 @@ message UpstreamSpec {
     //  ```
     core.solo.io.ResourceRef secret_ref = 2 [(gogoproto.nullable) = false];
 
-//    // The list of EC2 instances contained within this region.
-//    // This list will be automatically populated by Gloo if discovery is enabled for AWS EC2
-//    repeated Ec2InstanceSpec ec2_instances = 3;
-
     repeated Filter filters = 3;
+
+    // If set, will use the EC2 public IP address. Defaults to the private IP address.
+    bool public_ip = 4;
+
+    // If set, will use this port on EC2 instances. Defaults to port 80.
+    uint32 port = 5;
 }
 
 message Filter {
@@ -44,14 +46,3 @@ message Filter {
     }
 }
 
-//// Each EC2 Instance Spec contains data necessary for Gloo to route to EC2 instances:
-//// - name of the function
-//// - qualifier for the function
-//message Ec2InstanceSpec {
-//    // the logical name gloo should associate with this function. if left empty, it will default to
-//    // lambda_function_name+qualifier
-//    string public_dns = 1;
-//
-//    // the port to which gloo should route
-//    uint32 port = 2;
-//}

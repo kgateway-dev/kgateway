@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
@@ -18,30 +19,62 @@ import (
 )
 
 func GetEc2Session(ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (*session.Session, error) {
-	return aws2.GetAwsSession(ec2Upstream.SecretRef, secrets, &aws.Config{Region: aws.String(ec2Upstream.Region)})
+	return aws2.GetAwsSession(
+		ec2Upstream.SecretRef,
+		secrets,
+		&aws.Config{
+			Region: aws.String(ec2Upstream.Region),
+		})
 }
-func ListEc2InstancesForCredentials(ctx context.Context, sess *session.Session, ec2Upstream *glooec2.UpstreamSpec) ([]*ec2.Instance, error) {
-	svc := ec2.New(sess)
-	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream", zap.Any("spec", ec2Upstream))
+
+type Ec2InstanceLister interface {
+	ListForCredentials(ctx context.Context, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) ([]*ec2.Instance, error)
+}
+
+type ec2InstanceLister struct {
+}
+
+func NewEc2InstanceLister() *ec2InstanceLister {
+	return &ec2InstanceLister{}
+}
+
+var _ Ec2InstanceLister = &ec2InstanceLister{}
+
+func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) ([]*ec2.Instance, error) {
+	logger := contextutils.LoggerFrom(ctx)
+	sess, err := GetEc2Session(ec2Upstream, secrets)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get client")
+	}
+	logger.Debugw("ec2Upstream", zap.Any("spec", ec2Upstream))
 	input := &ec2.DescribeInstancesInput{
 		Filters: convertFiltersFromSpec(ec2Upstream),
 	}
-	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream input", zap.Any("value", input))
+	logger.Debugw("ec2Upstream input", zap.Any("value", input))
+	svc := ec2.New(sess)
 	result, err := svc.DescribeInstances(input)
-	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream result", zap.Any("value", result))
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			// TODO - handle specific aws error codes
-			default:
-				contextutils.LoggerFrom(ctx).Errorw("unable to describe instances, aws error", zap.Error(aerr))
-			}
-		} else {
-			contextutils.LoggerFrom(ctx).Errorw("unable to describe instances, other error", zap.Error(err))
-		}
+		return nil, errors.Wrapf(err, "unable to describe instances")
 	}
+	logger.Debugw("ec2Upstream result", zap.Any("value", result))
 	return getInstancesFromDescription(result), nil
 }
+
+//func ListEc2InstancesForCredentials(ctx context.Context, sess *session.Session, ec2Upstream *glooec2.UpstreamSpec) ([]*ec2.Instance, error) {
+//	logger := contextutils.LoggerFrom(ctx)
+//	logger.Debugw("ec2Upstream", zap.Any("spec", ec2Upstream))
+//	input := &ec2.DescribeInstancesInput{
+//		Filters: convertFiltersFromSpec(ec2Upstream),
+//	}
+//	logger.Debugw("ec2Upstream input", zap.Any("value", input))
+//	svc := ec2.New(sess)
+//	result, err := svc.DescribeInstances(input)
+//	if err != nil {
+//		return nil, errors.Wrapf(err, "unable to describe instances")
+//	}
+//	logger.Debugw("ec2Upstream result", zap.Any("value", result))
+//	return getInstancesFromDescription(result), nil
+//}
 
 func getInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Instance {
 	var instances []*ec2.Instance

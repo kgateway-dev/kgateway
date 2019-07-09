@@ -27,13 +27,15 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreams v1.UpstreamList
 }
 
 type edsWatcher struct {
-	upstreams      map[core.ResourceRef]*glooec2.UpstreamSpec
-	watchContext   context.Context
-	secretClient   *v1.SecretClient
-	refreshRate    time.Duration
-	writeNamespace string
+	upstreams         map[core.ResourceRef]*glooec2.UpstreamSpec
+	watchContext      context.Context
+	secretClient      *v1.SecretClient
+	refreshRate       time.Duration
+	writeNamespace    string
+	ec2InstanceLister Ec2InstanceLister
 }
 
+// TODO implement an alternate version of this for tests
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient *v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
 	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpec)
 	for _, us := range upstreams {
@@ -45,11 +47,12 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 		upstreamSpecs[us.Metadata.Ref()] = ec2Upstream.AwsEc2
 	}
 	return &edsWatcher{
-		upstreams:      upstreamSpecs,
-		watchContext:   watchCtx,
-		secretClient:   secretClient,
-		refreshRate:    getRefreshRate(parentRefreshRate),
-		writeNamespace: writeNamespace,
+		upstreams:         upstreamSpecs,
+		watchContext:      watchCtx,
+		secretClient:      secretClient,
+		refreshRate:       getRefreshRate(parentRefreshRate),
+		writeNamespace:    writeNamespace,
+		ec2InstanceLister: NewEc2InstanceLister(),
 	}
 }
 
@@ -70,7 +73,6 @@ func getRefreshRate(parentRefreshRate time.Duration) time.Duration {
 
 // need to poll for each upstream, since each will have a different view
 func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
-
 	endpointsChan := make(chan v1.EndpointList)
 	errs := make(chan error)
 	updateResourceList := func() {
@@ -122,40 +124,45 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 				return
 			}
 		}
-
 	}()
 	return endpointsChan, errs, nil
 }
+
 func (c *edsWatcher) getEndpointsForUpstream(upstreamRef *core.ResourceRef, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (v1.EndpointList, error) {
-	session, err := GetEc2Session(ec2Upstream, secrets)
+	ec2InstancesForUpstream, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, ec2Upstream, secrets)
 	if err != nil {
 		return nil, err
 	}
-	ec2InstancesForUpstream, err := ListEc2InstancesForCredentials(c.watchContext, session, ec2Upstream)
-	contextutils.LoggerFrom(c.watchContext).Infow("list of EC2 instances", zap.Any("ec2_instances", ec2InstancesForUpstream), zap.Any("upstreamRef", upstreamRef))
-	if err != nil {
-		return nil, err
-	}
-	return c.convertInstancesToEndpoints(upstreamRef, ec2InstancesForUpstream), nil
+	contextutils.LoggerFrom(c.watchContext).Debugw("list of EC2 instances",
+		zap.Any("ec2_instances", ec2InstancesForUpstream),
+		zap.Any("upstreamRef", upstreamRef))
+	return c.convertInstancesToEndpoints(upstreamRef, ec2Upstream, ec2InstancesForUpstream), nil
 }
 
-func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
-	// TODO - get port from upstream, instance tag, or elsewhere
-	// using 80 for now since it is a common default
-	var tmpTODOPort uint32 = 80
+const defaultPort = 80
+
+func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef *core.ResourceRef, ec2UpstreamSpec *glooec2.UpstreamSpec, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
 	var list v1.EndpointList
-	contextutils.LoggerFrom(c.watchContext).Infow("begin listing EC2 endpoints in CITE")
+	contextutils.LoggerFrom(c.watchContext).Debugw("begin listing EC2 endpoints in CITE")
 	for _, instance := range ec2InstancesForUpstream {
+		ipAddr := instance.PrivateIpAddress
+		if ec2UpstreamSpec.PublicIp {
+			ipAddr = instance.PublicIpAddress
+		}
+		port := ec2UpstreamSpec.GetPort()
+		if port == 0 {
+			port = defaultPort
+		}
 		endpoint := &v1.Endpoint{
 			Upstreams: []*core.ResourceRef{upstreamRef},
-			Address:   aws.StringValue(instance.PublicIpAddress),
-			Port:      tmpTODOPort,
+			Address:   aws.StringValue(ipAddr),
+			Port:      ec2UpstreamSpec.GetPort(),
 			Metadata: core.Metadata{
-				Name:      generateName(upstreamRef, aws.StringValue(instance.PublicIpAddress)),
+				Name:      generateName(upstreamRef, aws.StringValue(ipAddr)),
 				Namespace: c.writeNamespace,
 			},
 		}
-		contextutils.LoggerFrom(c.watchContext).Infow("EC2 endpoint", zap.Any("ep", endpoint))
+		contextutils.LoggerFrom(c.watchContext).Debugw("EC2 endpoint", zap.Any("ep", endpoint))
 		list = append(list, endpoint)
 	}
 	return list

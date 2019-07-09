@@ -14,7 +14,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	glooaws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	awsUtils "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
+	awsutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -112,7 +112,7 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 		return nil, errors.New("not a lambda upstream spec")
 	}
 	lambdaSpec := awsspec.Aws
-	sess, err := awsUtils.GetAwsSession(lambdaSpec.SecretRef, secrets, nil)
+	sess, err := awsutils.GetAwsSession(lambdaSpec.SecretRef, secrets, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
 	}

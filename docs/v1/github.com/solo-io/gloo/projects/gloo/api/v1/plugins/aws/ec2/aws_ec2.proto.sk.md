@@ -36,6 +36,8 @@ in a particular region
 "region": string
 "secretRef": .core.solo.io.ResourceRef
 "filters": []aws_ec2.plugins.gloo.solo.io.Filter
+"publicIp": bool
+"port": int
 
 ```
 
@@ -44,6 +46,8 @@ in a particular region
 | `region` | `string` | The AWS Region where the desired EC2 instances exist |  |
 | `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ``` |  |
 | `filters` | [[]aws_ec2.plugins.gloo.solo.io.Filter](../aws_ec2.proto.sk#filter) |  |  |
+| `publicIp` | `bool` | If set, will use the EC2 public IP address. Defaults to the private IP address. |  |
+| `port` | `int` | If set, will use this port on EC2 instances. Defaults to port 80. |  |
 
 
 

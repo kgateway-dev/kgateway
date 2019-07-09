@@ -125,11 +125,12 @@ curl $URL/echoapp
 ```
 
 
-# TODO
-## Port selection
-- Currently, the upstream is hard coded to use port 80 on the EC2 instances.
-  - This should be configurable.
-  - Perhaps by a special tag or by a field on the upstream.
-## Private IP Address
-- Currently, the upstream routes to the instance's public IP address.
-  - Add a config setting to choose the private IP
+# Potential features, as needed
+## Discover upstreams
+- The user currently specifies the upstream.
+- Alternatively, the user could just provide credentials, and allow Gloo to discover the specs by inspection of the tags.
+## Port selection from tag
+- Currently, the port is specified on the upstream spec.
+- It might be useful to allow the user to define the port through a resource tag
+- This would support EC2 upstream discovery
+- What tag to use? Would this be defined on the upstream, a setting, or by a constant?

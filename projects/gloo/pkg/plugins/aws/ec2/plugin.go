@@ -1,10 +1,10 @@
 package ec2
 
 import (
-	"context"
 	"reflect"
 
-	"github.com/solo-io/go-utils/contextutils"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -38,7 +38,6 @@ func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
-	contextutils.LoggerFrom(context.TODO()).Infow("EC2 plugin starting initialization")
 	var err error
 	p.secretClient, err = v1.NewSecretClient(p.secretFactory)
 	if err != nil {
@@ -47,7 +46,6 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	if err := p.secretClient.Register(); err != nil {
 		return err
 	}
-	contextutils.LoggerFrom(context.TODO()).Infow("EC2 plugin initialized")
 	return nil
 }
 
@@ -65,4 +63,15 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 		return false, errors.New("expected no difference between *v1.UpstreamSpec_AwsEc2 upstreams")
 	}
 	return false, nil
+}
+
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	if !ok {
+		return nil
+	}
+
+	// configure the cluster to use EDS:ADS and call it a day
+	xds.SetEdsOnCluster(out)
+	return nil
 }
