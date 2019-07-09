@@ -2,6 +2,7 @@ package upstreams
 
 import (
 	"context"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
@@ -14,7 +15,12 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
-const notImplementedErrMsg = "this operation is not supported by this client"
+const (
+	sourceGloo           = "gloo"
+	sourceKube           = "kube"
+	sourceConsul         = "consul"
+	notImplementedErrMsg = "this operation is not supported by this client"
+)
 
 func NewHybridUpstreamClient(
 	upstreamClient v1.UpstreamClient,
@@ -26,14 +32,14 @@ func NewHybridUpstreamClient(
 	if upstreamClient == nil {
 		return nil, errors.New("required upstream client is nil")
 	}
-	clientMap["gloo"] = upstreamClient
-
-	if consulClient != nil {
-		clientMap["consul"] = consul.NewConsulUpstreamClient(consulClient)
-	}
+	clientMap[sourceGloo] = upstreamClient
 
 	if serviceClient != nil {
-		clientMap["kube"] = kubernetes.NewKubernetesUpstreamClient(serviceClient)
+		clientMap[sourceKube] = kubernetes.NewKubernetesUpstreamClient(serviceClient)
+	}
+
+	if consulClient != nil {
+		clientMap[sourceConsul] = consul.NewConsulUpstreamClient(consulClient)
 	}
 
 	return &hybridUpstreamClient{
