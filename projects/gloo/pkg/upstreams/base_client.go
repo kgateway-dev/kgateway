@@ -5,8 +5,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-// This client implements only the `Write` function and panics on all the other functions.
-// It is meant to be used in the API event loop reporter, which calls only the Write function.
+// This client implements only the `Kind` and `Write` functions and panics on all the other functions.
+// It is meant to be used in the API event loop reporter, which calls only those two functions.
 type readOnlyUpstreamBaseClient struct {
 	rc clients.ResourceClient
 }
@@ -18,7 +18,7 @@ func newHybridBaseClient(rc clients.ResourceClient) *readOnlyUpstreamBaseClient 
 }
 
 func (c *readOnlyUpstreamBaseClient) Kind() string {
-	panic(notImplementedErrMsg)
+	return c.rc.Kind()
 }
 
 func (c *readOnlyUpstreamBaseClient) NewResource() resources.Resource {
