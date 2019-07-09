@@ -1,6 +1,6 @@
 changelog:
 - type: NON_USER_FACING
   description: |
-    Added Consul as am upstream source for the hybrid upstream client used by Gloo's API event loop.
+    Added Consul as an upstream source for the hybrid upstream client used by Gloo's API event loop.
   issueLink: https://github.com/solo-io/gloo/issues/803
   resolvesIssue: false
