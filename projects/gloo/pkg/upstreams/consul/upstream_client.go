@@ -41,12 +41,6 @@ func (*consulUpstreamClient) Delete(namespace, name string, opts skclients.Delet
 	panic(notImplementedErrMsg)
 }
 
-// Represents the services registered in a data center
-type dataCenterServicesTuple struct {
-	dataCenter   string
-	serviceNames []string
-}
-
 func (c *consulUpstreamClient) List(_ string, opts skclients.ListOpts) (v1.UpstreamList, error) {
 
 	// Get a list of the available data centers
@@ -55,22 +49,23 @@ func (c *consulUpstreamClient) List(_ string, opts skclients.ListOpts) (v1.Upstr
 		return nil, err
 	}
 
-	dcToSvcMap := make(dataCenterToServicesMap)
+	var services []*dataCenterServicesTuple
 	for _, dataCenter := range dataCenters {
 
-		// Get the names of all services in the data center
-		serviceNamesAndTags, _, err := c.consul.Services(&consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: true})
+		// Get names and tags for all services in the data center
+		queryOpts := &consulapi.QueryOptions{Datacenter: dataCenter, RequireConsistent: true}
+		serviceNamesAndTags, _, err := c.consul.Services(queryOpts.WithContext(opts.Ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		// Ignore the tags
-		for serviceName := range serviceNamesAndTags {
-			dcToSvcMap[dataCenter] = append(dcToSvcMap[dataCenter], serviceName)
-		}
+		services = append(services, &dataCenterServicesTuple{
+			dataCenter: dataCenter,
+			services:   serviceNamesAndTags,
+		})
 	}
 
-	return toUpstreamList(toServiceMetaSlice(dcToSvcMap)), nil
+	return toUpstreamList(toServiceMetaSlice(services)), nil
 }
 
 func (c *consulUpstreamClient) Watch(_ string, opts skclients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {

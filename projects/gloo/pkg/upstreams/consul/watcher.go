@@ -2,7 +2,6 @@ package consul
 
 import (
 	"context"
-	"sort"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -15,16 +14,12 @@ import (
 type ServiceMeta struct {
 	Name        string
 	DataCenters []string
-}
-
-type Service struct {
-	ServiceMeta
-	Tags []string
+	Tags        []string
 }
 
 type ConsulWatcher interface {
 	ConsulClient
-	WatchServices(ctx context.Context, dataCenters []string) (<-chan []ServiceMeta, <-chan error)
+	WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error)
 }
 
 func NewConsulWatcher(settings *v1.Settings) (ConsulWatcher, error) {
@@ -39,29 +34,31 @@ func NewConsulWatcherFromClient(client ConsulClient) ConsulWatcher {
 	return &consulWatcher{client}
 }
 
+var _ ConsulWatcher = &consulWatcher{}
+
 type consulWatcher struct {
 	ConsulClient
 }
 
-// Maps a data center name to the services registered in it
-type dataCenterToServicesMap map[string][]string
-
-// Maps a service name to the data centers in which the service is registered
-type serviceToDataCentersMap map[string][]string
+// Maps a data center name to the services (including tags) registered in it
+type dataCenterServicesTuple struct {
+	dataCenter string
+	services   map[string][]string
+}
 
 // This returns only the names
-func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string) (<-chan []ServiceMeta, <-chan error) {
+func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error) {
 
 	var (
 		eg              errgroup.Group
-		outputChan      = make(chan []ServiceMeta)
+		outputChan      = make(chan []*ServiceMeta)
 		errorChan       = make(chan error)
 		allServicesChan = make(chan *dataCenterServicesTuple)
 	)
 
 	for _, dataCenter := range dataCenters {
 
-		// Alias before passing to goroutines
+		// Copy before passing to goroutines!
 		dcName := dataCenter
 
 		dataCenterServicesChan, errChan := c.watchServicesInDataCenter(ctx, dcName)
@@ -79,17 +76,22 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string)
 		})
 	}
 
-	dcToSvcMap := make(dataCenterToServicesMap)
+	servicesByDataCenter := make(map[string]*dataCenterServicesTuple)
 	go func() {
 		for {
 			select {
 			case dataCenterServices, ok := <-allServicesChan:
 				if ok {
-					dcToSvcMap[dataCenterServices.dataCenter] = dataCenterServices.serviceNames
+					servicesByDataCenter[dataCenterServices.dataCenter] = dataCenterServices
 
-					services := toServiceMetaSlice(dcToSvcMap)
+					var services []*dataCenterServicesTuple
+					for _, s := range servicesByDataCenter {
+						services = append(services, s)
+					}
 
-					outputChan <- services
+					servicesMetaList := toServiceMetaSlice(services)
+
+					outputChan <- servicesMetaList
 				}
 			case <-ctx.Done():
 				close(outputChan)
@@ -152,15 +154,9 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 					continue
 				}
 
-				newServices := make([]string, 0, len(services))
-				for serviceName := range services {
-					newServices = append(newServices, serviceName)
-				}
-				sort.Strings(newServices)
-
 				servicesChan <- &dataCenterServicesTuple{
-					dataCenter:   dataCenter,
-					serviceNames: newServices,
+					dataCenter: dataCenter,
+					services:   services,
 				}
 
 				// Update the last index
@@ -193,23 +189,4 @@ func aggregateServices(ctx context.Context, dest chan *dataCenterServicesTuple, 
 			return
 		}
 	}
-}
-
-func toServiceMetaSlice(dcToSvcMap dataCenterToServicesMap) []ServiceMeta {
-	var result []ServiceMeta
-	for serviceName, dataCenters := range indexByService(dcToSvcMap) {
-		sort.Strings(dataCenters)
-		result = append(result, ServiceMeta{Name: serviceName, DataCenters: dataCenters})
-	}
-	return result
-}
-
-func indexByService(dcToSvcMap dataCenterToServicesMap) serviceToDataCentersMap {
-	result := make(map[string][]string)
-	for dataCenter, services := range dcToSvcMap {
-		for _, svc := range services {
-			result[svc] = append(result[svc], dataCenter)
-		}
-	}
-	return result
 }

@@ -14,6 +14,7 @@ var ForbiddenDataCenterErr = func(dataCenter string) error {
 		"Use the settings to configure the data centers Gloo is allowed to query")
 }
 
+// TODO(marco): consider adding ctx to signatures instead on relying on caller to set it
 // Wrap the Consul API in an interface to allow mocking
 type ConsulClient interface {
 	// Returns false if no connection to the Consul agent can be established
