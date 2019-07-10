@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -26,9 +28,17 @@ func GetEc2Session(ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (*s
 			Region: aws.String(ec2Upstream.Region),
 		})
 }
+func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) (*session.Session, error) {
+	return aws2.GetAwsSession(
+		secretRef,
+		secrets,
+		&aws.Config{
+			Region: aws.String(awsRegion),
+		})
+}
 
 type Ec2InstanceLister interface {
-	ListForCredentials(ctx context.Context, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) ([]*ec2.Instance, error)
+	ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error)
 }
 
 type ec2InstanceLister struct {
@@ -40,19 +50,14 @@ func NewEc2InstanceLister() *ec2InstanceLister {
 
 var _ Ec2InstanceLister = &ec2InstanceLister{}
 
-func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) ([]*ec2.Instance, error) {
+func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error) {
 	logger := contextutils.LoggerFrom(ctx)
-	sess, err := GetEc2Session(ec2Upstream, secrets)
+	sess, err := getEc2SessionForCredentials(awsRegion, secretRef, secrets)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get client")
+		return nil, errors.Wrapf(err, "unable to get aws client")
 	}
-	logger.Debugw("ec2Upstream", zap.Any("spec", ec2Upstream))
-	input := &ec2.DescribeInstancesInput{
-		Filters: convertFiltersFromSpec(ec2Upstream),
-	}
-	logger.Debugw("ec2Upstream input", zap.Any("value", input))
 	svc := ec2.New(sess)
-	result, err := svc.DescribeInstances(input)
+	result, err := svc.DescribeInstances(describeInstancesInputForAllInstances())
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to describe instances")
 	}
@@ -96,6 +101,8 @@ func validInstance(instance *ec2.Instance) bool {
 	return true
 }
 
+// generate an ec2 filter spec for a given upstream.
+// not currently used since we are batching API calls by credentials, without filters
 func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 	var filters []*ec2.Filter
 	for _, filterSpec := range upstreamSpec.Filters {
@@ -109,6 +116,10 @@ func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 		filters = append(filters, currentFilter)
 	}
 	return filters
+}
+
+func describeInstancesInputForAllInstances() *ec2.DescribeInstancesInput {
+	return &ec2.DescribeInstancesInput{}
 }
 
 // EC2 Describe Instance filters expect a particular key format:
