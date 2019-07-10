@@ -35,11 +35,13 @@ message UpstreamSpec {
 
 message Filter {
     message KvPair {
+        // keys are not case-sensitive, as with AWS Condition Keys
         string key = 1;
         string value = 2;
     }
     oneof spec {
         // if set, only instances that have a tag with this key will be matched
+        // keys are not case-sensitive, as with AWS Condition Keys
         string key = 1;
         // if set, only instances that have a tag with this key and value
         KvPair kv_pair = 2;

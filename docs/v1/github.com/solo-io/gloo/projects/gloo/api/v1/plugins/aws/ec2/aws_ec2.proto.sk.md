@@ -65,7 +65,7 @@ in a particular region
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `key` | `string` | if set, only instances that have a tag with this key will be matched |  |
+| `key` | `string` | if set, only instances that have a tag with this key will be matched keys are not case-sensitive, as with AWS Condition Keys |  |
 | `kvPair` | [.aws_ec2.plugins.gloo.solo.io.Filter.KvPair](../aws_ec2.proto.sk#kvpair) | if set, only instances that have a tag with this key and value |  |
 
 
@@ -84,7 +84,7 @@ in a particular region
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `key` | `string` |  |  |
+| `key` | `string` | keys are not case-sensitive, as with AWS Condition Keys |  |
 | `value` | `string` |  |  |
 
 

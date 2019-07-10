@@ -248,6 +248,7 @@ func _Filter_OneofSizer(msg proto.Message) (n int) {
 }
 
 type Filter_KvPair struct {
+	// keys are not case-sensitive, as with AWS Condition Keys
 	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

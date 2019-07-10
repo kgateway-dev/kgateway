@@ -2,6 +2,7 @@ package ec2
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -89,7 +90,7 @@ func (c *credentialBatch) addUpstreamSpec(upstreamRef core.ResourceRef, ec2Spec 
 func generateFilterMap(instance *ec2.Instance) filterMap {
 	m := make(filterMap)
 	for _, t := range instance.Tags {
-		m[aws.StringValue(t.Key)] = aws.StringValue(t.Value)
+		m[awsKeyCase(aws.StringValue(t.Key))] = aws.StringValue(t.Value)
 	}
 	return m
 }
@@ -124,15 +125,21 @@ func (c *credentialBatch) filterEndpointsForUpstream(ec2Upstream *glooec2.Upstre
 		for _, filter := range ec2Upstream.Filters {
 			switch filterSpec := filter.Spec.(type) {
 			case *glooec2.Filter_Key:
-				if _, ok := fm[filterSpec.Key]; ok {
+				if _, ok := fm[awsKeyCase(filterSpec.Key)]; ok {
 					list = append(list, candidateInstance)
 				}
 			case *glooec2.Filter_KvPair_:
-				if val, ok := fm[filterSpec.KvPair.Key]; ok && val == filterSpec.KvPair.Value {
+				if val, ok := fm[awsKeyCase(filterSpec.KvPair.Key)]; ok && val == filterSpec.KvPair.Value {
 					list = append(list, candidateInstance)
 				}
 			}
 		}
 	}
 	return list
+}
+
+// AWS tag keys are not case-sensitive so cast them all to lowercase
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-policy-structure.html#amazon-ec2-keys
+func awsKeyCase(input string) string {
+	return strings.ToLower(input)
 }
