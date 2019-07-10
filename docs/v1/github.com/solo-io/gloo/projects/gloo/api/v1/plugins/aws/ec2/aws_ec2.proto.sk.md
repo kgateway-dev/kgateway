@@ -12,7 +12,7 @@ weight: 5
 
 
 - [UpstreamSpec](#upstreamspec)
-- [Filter](#filter)
+- [TagFilter](#tagfilter)
 - [KvPair](#kvpair)
   
 
@@ -35,7 +35,7 @@ in a particular region
 ```yaml
 "region": string
 "secretRef": .core.solo.io.ResourceRef
-"filters": []aws_ec2.plugins.gloo.solo.io.Filter
+"filters": []aws_ec2.plugins.gloo.solo.io.TagFilter
 "publicIp": bool
 "port": int
 
@@ -45,7 +45,7 @@ in a particular region
 | ----- | ---- | ----------- |----------- | 
 | `region` | `string` | The AWS Region where the desired EC2 instances exist |  |
 | `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ``` |  |
-| `filters` | [[]aws_ec2.plugins.gloo.solo.io.Filter](../aws_ec2.proto.sk#filter) |  |  |
+| `filters` | [[]aws_ec2.plugins.gloo.solo.io.TagFilter](../aws_ec2.proto.sk#tagfilter) | List of tag filters for selecting instances An instance must match all the filters in order to be selected Filter keys are not case-sensitive |  |
 | `publicIp` | `bool` | If set, will use the EC2 public IP address. Defaults to the private IP address. |  |
 | `port` | `int` | If set, will use this port on EC2 instances. Defaults to port 80. |  |
 
@@ -53,20 +53,20 @@ in a particular region
 
 
 ---
-### Filter
+### TagFilter
 
 
 
 ```yaml
 "key": string
-"kvPair": .aws_ec2.plugins.gloo.solo.io.Filter.KvPair
+"kvPair": .aws_ec2.plugins.gloo.solo.io.TagFilter.KvPair
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `key` | `string` | if set, only instances that have a tag with this key will be matched keys are not case-sensitive, as with AWS Condition Keys |  |
-| `kvPair` | [.aws_ec2.plugins.gloo.solo.io.Filter.KvPair](../aws_ec2.proto.sk#kvpair) | if set, only instances that have a tag with this key and value |  |
+| `kvPair` | [.aws_ec2.plugins.gloo.solo.io.TagFilter.KvPair](../aws_ec2.proto.sk#kvpair) | if set, only instances that have a tag with this key and value |  |
 
 
 
@@ -85,7 +85,7 @@ in a particular region
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `key` | `string` | keys are not case-sensitive, as with AWS Condition Keys |  |
-| `value` | `string` |  |  |
+| `value` | `string` | values are case-sensitive |  |
 
 
 

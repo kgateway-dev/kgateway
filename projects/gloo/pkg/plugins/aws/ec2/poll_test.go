@@ -173,8 +173,8 @@ var (
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    "us-east-1",
 					SecretRef: testCredential1,
-					Filters: []*glooec2.Filter{{
-						Spec: &glooec2.Filter_Key{
+					Filters: []*glooec2.TagFilter{{
+						Spec: &glooec2.TagFilter_Key{
 							Key: "k1",
 						},
 					}},
@@ -193,9 +193,9 @@ var (
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    "us-east-1",
 					SecretRef: testCredential2,
-					Filters: []*glooec2.Filter{{
-						Spec: &glooec2.Filter_KvPair_{
-							KvPair: &glooec2.Filter_KvPair{
+					Filters: []*glooec2.TagFilter{{
+						Spec: &glooec2.TagFilter_KvPair_{
+							KvPair: &glooec2.TagFilter_KvPair{
 								Key:   "k2",
 								Value: "v2",
 							},

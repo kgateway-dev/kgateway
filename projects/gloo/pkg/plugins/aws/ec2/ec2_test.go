@@ -50,8 +50,8 @@ var _ = Describe("Plugin", func() {
 			Entry("ex1", &glooec2.UpstreamSpec{
 				Region:    region,
 				SecretRef: secret,
-				Filters: []*glooec2.Filter{{
-					Spec: &glooec2.Filter_Key{key1},
+				Filters: []*glooec2.TagFilter{{
+					Spec: &glooec2.TagFilter_Key{key1},
 				}},
 			},
 				[]*ec2.Filter{{
@@ -62,9 +62,9 @@ var _ = Describe("Plugin", func() {
 			Entry("ex2", &glooec2.UpstreamSpec{
 				Region:    region,
 				SecretRef: secret,
-				Filters: []*glooec2.Filter{{
-					Spec: &glooec2.Filter_KvPair_{
-						KvPair: &glooec2.Filter_KvPair{Key: key1, Value: value1}},
+				Filters: []*glooec2.TagFilter{{
+					Spec: &glooec2.TagFilter_KvPair_{
+						KvPair: &glooec2.TagFilter_KvPair{Key: key1, Value: value1}},
 				}},
 			},
 				[]*ec2.Filter{{

@@ -170,7 +170,6 @@ const defaultPort = 80
 
 func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef core.ResourceRef, ec2UpstreamSpec *glooec2.UpstreamSpec, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
 	var list v1.EndpointList
-	contextutils.LoggerFrom(c.watchContext).Debugw("begin listing EC2 endpoints in CITE")
 	for _, instance := range ec2InstancesForUpstream {
 		ipAddr := instance.PrivateIpAddress
 		if ec2UpstreamSpec.PublicIp {

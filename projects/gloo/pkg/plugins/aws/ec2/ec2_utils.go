@@ -58,9 +58,9 @@ func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 	for _, filterSpec := range upstreamSpec.Filters {
 		var currentFilter *ec2.Filter
 		switch x := filterSpec.Spec.(type) {
-		case *glooec2.Filter_Key:
+		case *glooec2.TagFilter_Key:
 			currentFilter = tagFiltersKey(x.Key)
-		case *glooec2.Filter_KvPair_:
+		case *glooec2.TagFilter_KvPair_:
 			currentFilter = tagFiltersKeyValue(x.KvPair.Key, x.KvPair.Value)
 		}
 		filters = append(filters, currentFilter)

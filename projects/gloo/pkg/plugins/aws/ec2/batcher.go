@@ -124,11 +124,11 @@ func (c *credentialBatch) filterEndpointsForUpstream(ec2Upstream *glooec2.Upstre
 		candidateInstance := credRes.instances[i]
 		for _, filter := range ec2Upstream.Filters {
 			switch filterSpec := filter.Spec.(type) {
-			case *glooec2.Filter_Key:
+			case *glooec2.TagFilter_Key:
 				if _, ok := fm[awsKeyCase(filterSpec.Key)]; ok {
 					list = append(list, candidateInstance)
 				}
-			case *glooec2.Filter_KvPair_:
+			case *glooec2.TagFilter_KvPair_:
 				if val, ok := fm[awsKeyCase(filterSpec.KvPair.Key)]; ok && val == filterSpec.KvPair.Value {
 					list = append(list, candidateInstance)
 				}

@@ -24,7 +24,10 @@ message UpstreamSpec {
     //  ```
     core.solo.io.ResourceRef secret_ref = 2 [(gogoproto.nullable) = false];
 
-    repeated Filter filters = 3;
+    // List of tag filters for selecting instances
+    // An instance must match all the filters in order to be selected
+    // Filter keys are not case-sensitive
+    repeated TagFilter filters = 3;
 
     // If set, will use the EC2 public IP address. Defaults to the private IP address.
     bool public_ip = 4;
@@ -33,10 +36,11 @@ message UpstreamSpec {
     uint32 port = 5;
 }
 
-message Filter {
+message TagFilter {
     message KvPair {
         // keys are not case-sensitive, as with AWS Condition Keys
         string key = 1;
+        // values are case-sensitive
         string value = 2;
     }
     oneof spec {
