@@ -3,10 +3,11 @@ package ec2
 import (
 	"context"
 
+	"github.com/solo-io/go-utils/errors"
+
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 )

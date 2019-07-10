@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/solo-io/go-utils/errors"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
-	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -65,14 +66,14 @@ func (p *plugin) Init(params plugins.InitParams) error {
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	originalSpec, ok := original.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+		return false, WrongUpstreamTypeError(original)
 	}
 	desiredSpec, ok := desired.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+		return false, WrongUpstreamTypeError(desired)
 	}
 	if !originalSpec.Equal(desiredSpec) {
-		return false, errors.New("expected no difference between *v1.UpstreamSpec_AwsEc2 upstreams")
+		return false, UpstreamDeltaError()
 	}
 	return false, nil
 }
@@ -87,3 +88,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	xds.SetEdsOnCluster(out)
 	return nil
 }
+
+var (
+	WrongUpstreamTypeError = func(upstream *v1.Upstream) error {
+		return errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(upstream.UpstreamSpec.UpstreamType).Name())
+	}
+
+	UpstreamDeltaError = func() error {
+		return errors.New("expected no difference between *v1.UpstreamSpec_AwsEc2 upstreams")
+	}
+)
