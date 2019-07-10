@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package glootest;
+
+service TestService {
+  rpc TestMethod (TestRequest) returns (TestResponse) {}
+}
+
+message TestRequest {
+  string str = 1;
+}
+
+message TestResponse {
+  string str = 1;
+}

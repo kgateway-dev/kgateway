@@ -12,9 +12,10 @@ import (
 
 func gatewayCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "gateway",
-		Short: "install the Gloo Gateway on kubernetes",
-		Long:  "requires kubectl to be installed",
+		Use:    "gateway",
+		Short:  "install the Gloo Gateway on kubernetes",
+		Long:   "requires kubectl to be installed",
+		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := installGloo(opts, constants.GatewayValuesFileName); err != nil {
 				return errors.Wrapf(err, "installing gloo in gateway mode")

@@ -27,6 +27,7 @@ glooctl install gateway [flags]
 
 ```
   -i, --interactive   use interactive mode
+  -v, --verbose       If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### SEE ALSO

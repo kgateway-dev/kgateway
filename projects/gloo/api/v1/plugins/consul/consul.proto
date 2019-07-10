@@ -29,6 +29,6 @@ message UpstreamSpec {
     // Is this consul service connect enabled.
     bool connect_enabled = 4;
 
-    // The data center in which the service instance represented by this upstream is registered.
-    string data_center = 5;
+    // The data centers in which the service instance represented by this upstream is registered.
+    repeated string data_centers = 5;
 }

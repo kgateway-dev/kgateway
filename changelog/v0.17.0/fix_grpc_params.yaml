@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix an issue where routing to a grpc upstream using parameters did not work.
+    issueLink: https://github.com/solo-io/gloo/issues/809

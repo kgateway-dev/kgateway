@@ -13,6 +13,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 
 message Settings {
 
@@ -55,14 +56,17 @@ message Settings {
     bool linkerd = 17;
 
     // ilackarms(todo: make sure these are configurable)
-    message KubernetesCrds{} // watch kubernetes Crds
-    message KubernetesSecrets{} // watch kube secrets
-    message VaultSecrets{} // watch vault secrets
-    message KubernetesConfigmaps{}
-    message Directory{
+    message KubernetesCrds {
+    } // watch kubernetes Crds
+    message KubernetesSecrets {
+    } // watch kube secrets
+    message VaultSecrets {
+    } // watch vault secrets
+    message KubernetesConfigmaps {
+    }
+    message Directory {
         string directory = 1;
     } // watch a directory
-
 
     // Default circuit breakers when not set in a specific upstream.
     CircuitBreakerConfig circuit_breakers = 3;
@@ -104,6 +108,29 @@ message Settings {
     }
     // options for configuring Gloo's Discovery service
     DiscoveryOptions discovery = 19;
+
+    // Provides overrides for the default configuration parameters used to connect to Consul.
+    //
+    // Note: It is also possible to configure the Consul client Gloo uses via the environment variables
+    // described [here](https://www.consul.io/docs/commands/index.html#environment-variables). These
+    // need to be set on the Gloo container.
+    message ConsulConfiguration {
+
+        // The address of the Consul server.
+        // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
+        google.protobuf.StringValue address = 1;
+
+        // Use this parameter to restrict the data centers that will be considered when discovering and routing to
+        // services. If not provided, Gloo will use all available data centers.
+        repeated string data_centers = 2;
+
+        // WaitTime limits how long a watches for Consul resources will block.
+        // If not provided, the agent default values will be used.
+        google.protobuf.Duration wait_time = 3;
+    }
+
+    // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
+    ConsulConfiguration consul = 20;
 
     // Settings for extensions
     Extensions extensions = 16;

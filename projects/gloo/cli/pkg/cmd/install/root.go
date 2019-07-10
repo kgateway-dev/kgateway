@@ -21,14 +21,16 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 	cmd.AddCommand(ingressCmd(opts))
 	cmd.AddCommand(knativeCmd(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
+	flagutils.AddVerboseFlag(cmd.PersistentFlags(), opts)
 	return cmd
 }
 
 func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   constants.UNINSTALL_COMMAND.Use,
-		Short: constants.UNINSTALL_COMMAND.Short,
-		Long:  constants.UNINSTALL_COMMAND.Long,
+		Use:    constants.UNINSTALL_COMMAND.Use,
+		Short:  constants.UNINSTALL_COMMAND.Short,
+		Long:   constants.UNINSTALL_COMMAND.Long,
+		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Uninstalling Gloo...\n")
 			if err := UninstallGloo(opts, &install.CmdKubectl{}); err != nil {
@@ -43,5 +45,12 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 	flagutils.AddUninstallFlags(pFlags, &opts.Uninstall)
 
 	cliutils.ApplyOptions(cmd, optionsFunc)
+	flagutils.AddVerboseFlag(cmd.PersistentFlags(), opts)
 	return cmd
+}
+
+func setVerboseMode(opts *options.Options) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		install.SetVerbose(opts.Top.Verbose)
+	}
 }

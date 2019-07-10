@@ -19,6 +19,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -32,6 +33,20 @@ type ReceivedRequest struct {
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx)
 	return newTestUpstream(addr, backendPort, responses)
+}
+
+func NewTestGRPCUpstream(ctx context.Context, addr string) *TestUpstream {
+	srv := testgrpcservice.RunServer(ctx)
+	received := make(chan *ReceivedRequest, 100)
+	go func() {
+		defer GinkgoRecover()
+		for r := range srv.C {
+			received <- &ReceivedRequest{GRPCRequest: r}
+		}
+	}()
+
+	us := newTestUpstream(addr, srv.Port, received)
+	return us
 }
 
 type TestUpstream struct {
