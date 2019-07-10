@@ -30,13 +30,23 @@ func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, awsRegion st
 	logger := contextutils.LoggerFrom(ctx)
 	sess, err := getEc2SessionForCredentials(awsRegion, secretRef, secrets)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get aws client")
+		return nil, GetClientError(err)
 	}
 	svc := ec2.New(sess)
 	result, err := svc.DescribeInstances(describeInstancesInputForAllInstances())
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to describe instances")
+		return nil, DescribeInstancesError(err)
 	}
 	logger.Debugw("ec2Upstream result", zap.Any("value", result))
 	return getInstancesFromDescription(result), nil
 }
+
+var (
+	GetClientError = func(err error) error {
+		return errors.Wrapf(err, "unable to get aws client")
+	}
+
+	DescribeInstancesError = func(err error) error {
+		return errors.Wrapf(err, "unable to describe instances")
+	}
+)
