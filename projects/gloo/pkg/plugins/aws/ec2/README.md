@@ -134,3 +134,55 @@ curl $URL/echoapp
 - It might be useful to allow the user to define the port through a resource tag
 - This would support EC2 upstream discovery
 - What tag to use? Would this be defined on the upstream, a setting, or by a constant?
+
+
+# Notes on configuring user accounts for access to specific instances
+
+- To restrict your upstream to selecting among specific EC2 instances, you need to give it an AWS secret that has a custom policy which limits its access to specific resources.
+- AWS provides extensive documentation ([policy docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies.html), [EC2 example](https://aws.amazon.com/premiumsupport/knowledge-center/restrict-ec2-iam/)), but we will capture the gist here.
+
+## Sample custom policy
+
+```json
+{
+   "Version":"2012-10-17",
+   "Statement":[
+      {
+         "Effect":"Allow",
+         "Action":"ec2:DescribeInstances",
+         "Resource":[
+            "arn:aws:ec2:us-east-1:111122223333:instance/*"
+         ],
+         "Condition":{
+            "StringEquals":{
+               "ec2:ResourceTag/Owner":"Gloo"
+            }
+         }
+      }
+   ]
+}
+```
+
+### Action
+- The action that the EC2 upstream credentials must have is `ec2:DescribeInstances`.
+  - [DescribeInstances](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html) is the only AWS API that Gloo needs.
+  
+### Resource list
+- To restrict an upstream's access to a specific set of instances, list them (wildcards supported) by their Amazon Resource Name (ARN).
+- For EC2, your resource ARN will have this format:
+  - `arn:aws:ec2:[region]:[account-id]:instance:[resource]:[qualifier]`
+  - Other variants are possible, refer to the [ARN docs](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) for details.
+
+### Conditions
+- It is also possible to identify resources by various conditions.
+- The `ResourceTags`, in particular, are how Gloo chooses which EC2 instances to associate with a given upstream.
+  - Refer to the [policy condition docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition.html) for details
+
+## Considerations
+- AWS has a highly expressive policy definition protocol for restricting an account's access to resources.
+- Gloo uses the intersection of an upstream's credentials and its filter spec to determine which EC2 instances should be associated with an upstream.
+- You have a few options where to store your config:
+  - Permissive upstream credentials (an upstream may be able to list EC2 instances that it should not route to), discerning upstream filters (upstream filters refine the set of target instances)
+  - Restrictive upstream credentials (only allow upstream to the credentials that it should route to), no upstream filters
+  - Both restrictive upstream credentials and discerning upstream filters (this may serve as a form of documentation or consistency check)
+
