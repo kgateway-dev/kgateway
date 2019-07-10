@@ -2,8 +2,9 @@ package kubernetes
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"net/url"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

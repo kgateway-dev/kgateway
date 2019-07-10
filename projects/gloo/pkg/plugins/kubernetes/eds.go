@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-
 	"github.com/mitchellh/hashstructure"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"

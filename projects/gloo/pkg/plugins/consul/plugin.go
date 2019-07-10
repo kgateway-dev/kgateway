@@ -2,8 +2,9 @@ package consul
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"net/url"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
@@ -28,7 +29,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("tcp://%s.service.consul", consulSpec.Consul.ServiceName))
 }
 
-func NewPlugin(client consul.ConsulClient) plugins.Plugin {
+func NewPlugin(client consul.ConsulWatcher) plugins.Plugin {
 	return &plugin{client: client}
 }
 

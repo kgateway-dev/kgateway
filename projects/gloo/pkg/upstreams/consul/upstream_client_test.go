@@ -59,16 +59,16 @@ var _ = Describe("ConsulClient", func() {
 		})
 
 		It("returns the expected upstreams", func() {
-			usClient := NewConsulUpstreamClient(client)
+			usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
 			upstreams, err := usClient.List("", clients.ListOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(upstreams).To(HaveLen(3))
 			Expect(upstreams).To(ConsistOf(
-				toUpstream("svc-1", []string{"dc1", "dc2"}),
-				toUpstream("svc-2", []string{"dc1"}),
-				toUpstream("svc-3", []string{"dc2"}),
+				toUpstream(ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}}),
+				toUpstream(ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
+				toUpstream(ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}),
 			))
 		})
 	})
@@ -131,15 +131,15 @@ var _ = Describe("ConsulClient", func() {
 			})
 
 			It("correctly reacts to service updates", func() {
-				usClient := NewConsulUpstreamClient(client)
+				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
 				upstreamChan, errChan, err := usClient.Watch("", clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
-					toUpstream("svc-1", []string{"dc1", "dc2"}),
-					toUpstream("svc-2", []string{"dc1"}),
-					toUpstream("svc-3", []string{"dc2"}),
+					toUpstream(ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}}),
+					toUpstream(ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
+					toUpstream(ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}),
 				)))
 
 				Consistently(errChan).ShouldNot(Receive())
@@ -197,14 +197,14 @@ var _ = Describe("ConsulClient", func() {
 			})
 
 			It("can recover from the error", func() {
-				usClient := NewConsulUpstreamClient(client)
+				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
 				upstreamChan, errChan, err := usClient.Watch("", clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
-					toUpstream("svc-1", []string{"dc1"}),
-					toUpstream("svc-2", []string{"dc1"}),
+					toUpstream(ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}}),
+					toUpstream(ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
 				)))
 
 				Consistently(errChan).ShouldNot(Receive())
@@ -238,7 +238,7 @@ var _ = Describe("ConsulClient", func() {
 			})
 
 			It("publishes a single event", func() {
-				usClient := NewConsulUpstreamClient(client)
+				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
 				upstreamChan, errChan, err := usClient.Watch("", clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
@@ -247,7 +247,7 @@ var _ = Describe("ConsulClient", func() {
 				time.Sleep(50 * time.Millisecond)
 
 				// We get the expected message
-				Expect(upstreamChan).Should(Receive(ConsistOf(toUpstream("svc-1", []string{"dc1"}))))
+				Expect(upstreamChan).Should(Receive(ConsistOf(toUpstream(ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}}))))
 
 				// We don't get any further messages
 				Consistently(upstreamChan).ShouldNot(Receive())

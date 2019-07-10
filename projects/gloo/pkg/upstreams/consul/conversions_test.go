@@ -18,9 +18,9 @@ var _ = Describe("Conversions", func() {
 	})
 
 	It("correctly converts a list of services to upstreams", func() {
-		servicesWithDataCenters := map[string][]string{
-			"svc-1": {"dc1", "dc2"},
-			"svc-2": {"dc1", "dc3", "dc4"},
+		servicesWithDataCenters := []ServiceMeta{
+			{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}},
+			{Name: "svc-2", DataCenters: []string{"dc1", "dc3", "dc4"}},
 		}
 
 		usList := toUpstreamList(servicesWithDataCenters)

@@ -6,8 +6,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"sort"
-
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
 )
 
@@ -29,27 +27,25 @@ func fakeUpstreamName(consulSvcName string) string {
 }
 
 // Creates an upstream for each service in the map
-func toUpstreamList(services serviceToDataCentersMap) v1.UpstreamList {
+func toUpstreamList(services []ServiceMeta) v1.UpstreamList {
 	var upstreams v1.UpstreamList
-	for serviceName, dataCenters := range services {
-		sort.Strings(dataCenters)
-		upstreams = append(upstreams, toUpstream(serviceName, dataCenters))
+	for _, svc := range services {
+		upstreams = append(upstreams, toUpstream(svc))
 	}
 	return upstreams
 }
 
-func toUpstream(serviceName string, dataCenters []string) *v1.Upstream {
-	sort.Strings(dataCenters)
+func toUpstream(service ServiceMeta) *v1.Upstream {
 	return &v1.Upstream{
 		Metadata: core.Metadata{
-			Name:      fakeUpstreamName(serviceName),
+			Name:      fakeUpstreamName(service.Name),
 			Namespace: "", // no namespace
 		},
 		UpstreamSpec: &v1.UpstreamSpec{
 			UpstreamType: &v1.UpstreamSpec_Consul{
 				Consul: &consulplugin.UpstreamSpec{
-					ServiceName: serviceName,
-					DataCenters: dataCenters,
+					ServiceName: service.Name,
+					DataCenters: service.DataCenters,
 				},
 			},
 		},
