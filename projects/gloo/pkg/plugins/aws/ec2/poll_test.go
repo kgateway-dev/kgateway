@@ -26,7 +26,7 @@ var _ = Describe("polling", func() {
 		epw            *edsWatcher
 		ctx            context.Context
 		writeNamespace string
-		secretClient   *v1.SecretClient
+		secretClient   v1.SecretClient
 		refreshRate    time.Duration
 		responses      mockListerResponses
 	)
@@ -37,7 +37,7 @@ var _ = Describe("polling", func() {
 		secretClient = getSecretClient(ctx)
 		refreshRate = time.Second
 		responses = getMockListerResponses()
-		err := primeSecretClient(*secretClient, []core.ResourceRef{testCredential1, testCredential2})
+		err := primeSecretClient(secretClient, []core.ResourceRef{testCredential1, testCredential2})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -107,7 +107,7 @@ func testEndpointsWatcher(
 	watchCtx context.Context,
 	writeNamespace string,
 	upstreams v1.UpstreamList,
-	secretClient *v1.SecretClient,
+	secretClient v1.SecretClient,
 	parentRefreshRate time.Duration,
 	responses mockListerResponses,
 ) *edsWatcher {
@@ -149,7 +149,7 @@ func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, awsRegio
 	return v, nil
 }
 
-func getSecretClient(ctx context.Context) *v1.SecretClient {
+func getSecretClient(ctx context.Context) v1.SecretClient {
 	config, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 	mc := memory.NewInMemoryResourceCache()
@@ -159,7 +159,7 @@ func getSecretClient(ctx context.Context) *v1.SecretClient {
 	Expect(err).NotTo(HaveOccurred())
 	secretClient, err := v1.NewSecretClient(secretFactory)
 	Expect(err).NotTo(HaveOccurred())
-	return &secretClient
+	return secretClient
 
 }
 
