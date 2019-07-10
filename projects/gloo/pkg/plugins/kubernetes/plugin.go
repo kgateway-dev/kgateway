@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"net/url"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -10,6 +11,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"k8s.io/client-go/kubernetes"
 )
+
+var _ discovery.DiscoveryPlugin = new(plugin)
 
 type plugin struct {
 	kube kubernetes.Interface

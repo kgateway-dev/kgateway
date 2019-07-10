@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -19,10 +21,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-var _ discovery.DiscoveryPlugin = new(plugin)
-
 type upstreamController struct {
-	consul          *api.Client
+	consul          consul.ConsulClient
 	ctx             context.Context
 	watchNamespaces []string
 	writeNamespace  string
@@ -37,10 +37,6 @@ type consulService struct {
 }
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-	if err := p.tryGetClient(); err != nil {
-		return nil, nil, err
-	}
-
 	c := upstreamController{
 		consul:          p.client,
 		ctx:             opts.Ctx,
@@ -97,7 +93,7 @@ func (c *upstreamController) discoverUpstreamsOnce() (v1.UpstreamList, error) {
 		// find all services
 		var nonConnectServices []string
 		for svcName := range services {
-			serviceInstances, _, err := c.consul.Catalog().Service(svcName, "", &api.QueryOptions{RequireConsistent: true})
+			serviceInstances, _, err := c.consul.Service(svcName, "", &api.QueryOptions{RequireConsistent: true})
 			if err != nil {
 				return errors.Wrapf(err, "failed to get instances of service %s", svcName)
 			}
@@ -111,7 +107,7 @@ func (c *upstreamController) discoverUpstreamsOnce() (v1.UpstreamList, error) {
 		}
 
 		for _, svcName := range nonConnectServices {
-			serviceInstances, _, err := c.consul.Catalog().Service(svcName, "", &api.QueryOptions{RequireConsistent: true})
+			serviceInstances, _, err := c.consul.Service(svcName, "", &api.QueryOptions{RequireConsistent: true})
 			if err != nil {
 				return errors.Wrapf(err, "failed to get instances of service %s", svcName)
 			}
@@ -127,7 +123,7 @@ func (c *upstreamController) discoverUpstreamsOnce() (v1.UpstreamList, error) {
 				tagSets: uniqueTagSets(allTagSets),
 			}
 
-			proxyInstances, _, _ := c.consul.Catalog().Connect(svcName, "", &api.QueryOptions{RequireConsistent: true})
+			proxyInstances, _, _ := c.consul.Connect(svcName, "", &api.QueryOptions{RequireConsistent: true})
 
 			if len(proxyInstances) > 0 {
 				svc.connect = true
@@ -147,7 +143,7 @@ func (c *upstreamController) discoverUpstreamsOnce() (v1.UpstreamList, error) {
 func (c *upstreamController) getNextUpdate(ctx context.Context, lastIndex uint64) (map[string][]string, uint64, error) {
 	opts := &api.QueryOptions{RequireConsistent: true, WaitIndex: lastIndex}
 	opts = opts.WithContext(ctx)
-	services, meta, err := c.consul.Catalog().Services(opts)
+	services, meta, err := c.consul.Services(opts)
 	if err != nil {
 		return nil, lastIndex, errors.Wrapf(err, "failed to consul list services")
 	}
