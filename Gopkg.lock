@@ -1539,7 +1539,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:fe48f5519aa611733df9b11123c46c0855d0a0ccce8c74ca1a20e75af42acbaf"
+  digest = "1:cfd9e761e31e865715d488031ce47a8bbadabc74ea1d8d45eb8b42183e552029"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1567,6 +1567,7 @@
     "testutils/clusterlock",
     "testutils/exec",
     "testutils/helper",
+    "testutils/kube",
     "versionutils",
     "vfsutils",
   ]
@@ -1575,7 +1576,7 @@
   version = "v0.9.1"
 
 [[projects]]
-  digest = "1:87cd7d6747166f9ae7dc2158dec21c6ebec9e576626b51071aaff1ecdbe23570"
+  digest = "1:f18ef9a5b343963b5fd3a1d2c13a831cbeb56fab12e498e3ee71ca697c60b713"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1633,6 +1634,7 @@
     "test/helpers",
     "test/setup",
     "test/tests/typed",
+    "test/testutils",
   ]
   pruneopts = "UT"
   revision = "a5b6bd42322788ea33293f320de942e053506e18"
@@ -2677,7 +2679,6 @@
     "github.com/Netflix/go-expect",
     "github.com/avast/retry-go",
     "github.com/aws/aws-sdk-go/aws",
-    "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/ec2",
@@ -2793,6 +2794,7 @@
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",
+    "github.com/solo-io/solo-kit/test/testutils",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "go.opencensus.io/stats",
@@ -2811,6 +2813,7 @@
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
+    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",

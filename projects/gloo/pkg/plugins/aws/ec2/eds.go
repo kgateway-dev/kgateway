@@ -73,10 +73,6 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	errs := make(chan error)
 	updateResourceList := func() {
 		tmpTODOAllNamespaces := ""
-		if c.secretClient == nil || *c.secretClient == nil {
-			contextutils.LoggerFrom(c.watchContext).Infow("waiting for ec2 plugin to init")
-			return
-		}
 		secrets, err := (*c.secretClient).List(tmpTODOAllNamespaces, clients.ListOpts{})
 		if err != nil {
 			errs <- err

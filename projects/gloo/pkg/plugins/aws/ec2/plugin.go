@@ -25,7 +25,11 @@ type plugin struct {
 	secretClient v1.SecretClient
 
 	// pre-initialization only
-	secretFactory factory.ResourceClientFactory
+	// we need to register the secret while creating the plugin, otherwise our EDS poll will fail (requires a secret client)
+	// since Init can be called after our poll begins (race condition) we cannot create the client there
+	// since NewPlugin does not return an error, we will store any non-nil errors from initializing the secret client in the plugin struct
+	// we will check those errors during the Init call
+	constructorErr error
 }
 
 // checks to ensure interfaces are implemented
@@ -34,19 +38,22 @@ var _ plugins.UpstreamPlugin = new(plugin)
 var _ discovery.DiscoveryPlugin = new(plugin)
 
 func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
-	return &plugin{secretFactory: secretFactory}
+	p := &plugin{}
+	var err error
+	p.secretClient, err = v1.NewSecretClient(secretFactory)
+	if err != nil {
+		p.constructorErr = err
+		return p
+	}
+	if err := p.secretClient.Register(); err != nil {
+		p.constructorErr = err
+		return p
+	}
+	return p
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
-	var err error
-	p.secretClient, err = v1.NewSecretClient(p.secretFactory)
-	if err != nil {
-		return err
-	}
-	if err := p.secretClient.Register(); err != nil {
-		return err
-	}
-	return nil
+	return p.constructorErr
 }
 
 // we do not need to update any fields, just check that the input is valid
