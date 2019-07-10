@@ -142,16 +142,22 @@ func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*credent
 	waitChan := make(chan struct{})
 	errChan := make(chan error)
 	go func() {
+		// first copy from map to a slice in order to avoid a race condition
+		var credentialSpecs []credentialSpec
 		for credentialSpec := range credMap.resources {
+			credentialSpecs = append(credentialSpecs, credentialSpec)
+		}
+		for _, iterCredentialSpec := range credentialSpecs {
 			wg.Add(1)
-			go func() {
-				instances, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, credentialSpec.region, credentialSpec.secretRef, secrets)
+			// pass arguments to goroutine avoid a race condition
+			go func(cSpec credentialSpec) {
+				instances, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, cSpec.region, cSpec.secretRef, secrets)
 				if err != nil {
 					errChan <- err
 				}
-				credMap.addInstances(credentialSpec, instances)
+				credMap.addInstances(cSpec, instances)
 				wg.Done()
-			}()
+			}(iterCredentialSpec)
 		}
 		wg.Wait()
 		close(waitChan)

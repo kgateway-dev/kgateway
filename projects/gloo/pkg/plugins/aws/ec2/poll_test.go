@@ -26,7 +26,6 @@ var _ = Describe("polling", func() {
 		epw            *edsWatcher
 		ctx            context.Context
 		writeNamespace string
-		upstreams      v1.UpstreamList
 		secretClient   *v1.SecretClient
 		refreshRate    time.Duration
 		responses      mockListerResponses
@@ -35,14 +34,16 @@ var _ = Describe("polling", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 		writeNamespace = "default"
-		upstreams = getUpstreams()
 		secretClient = getSecretClient(ctx)
 		refreshRate = time.Second
 		responses = getMockListerResponses()
-		epw = testEndpointsWatcher(ctx, writeNamespace, upstreams, secretClient, refreshRate, responses)
+		err := primeSecretClient(*secretClient, []core.ResourceRef{testCredential1, testCredential2})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should poll", func() {
+	It("should poll, one key filter upstream", func() {
+		upstreams := v1.UpstreamList{&testUpstream1}
+		epw = testEndpointsWatcher(ctx, writeNamespace, upstreams, secretClient, refreshRate, responses)
 		ref1 := testUpstream1.Metadata.Ref()
 		matchPollResponse(epw, v1.EndpointList{{
 			Upstreams: []*core.ResourceRef{&ref1},
@@ -53,6 +54,10 @@ var _ = Describe("polling", func() {
 				Namespace: "default",
 			},
 		}})
+	})
+	It("should poll, one key-value filter upstream", func() {
+		upstreams := v1.UpstreamList{&testUpstream2}
+		epw = testEndpointsWatcher(ctx, writeNamespace, upstreams, secretClient, refreshRate, responses)
 		ref2 := testUpstream2.Metadata.Ref()
 		matchPollResponse(epw, v1.EndpointList{{
 			Upstreams: []*core.ResourceRef{&ref2},
@@ -86,7 +91,7 @@ func assertEndpointList(input, expected v1.EndpointList) error {
 		return fmt.Errorf("no input provided")
 	}
 	if len(input) != len(expected) {
-		return fmt.Errorf("expected equal length lists, input len: %v expected len: %v", len(input), len(expected))
+		return fmt.Errorf("expected equal length lists, got len: %v expected len: %v", len(input), len(expected))
 	}
 	for i := range input {
 		a := input[i]
@@ -154,14 +159,7 @@ func getSecretClient(ctx context.Context) *v1.SecretClient {
 	Expect(err).NotTo(HaveOccurred())
 	secretClient, err := v1.NewSecretClient(secretFactory)
 	Expect(err).NotTo(HaveOccurred())
-	err = primeSecretClient(secretClient)
-	Expect(err).NotTo(HaveOccurred())
 	return &secretClient
-
-}
-
-func getUpstreams() v1.UpstreamList {
-	return v1.UpstreamList{&testUpstream1, &testUpstream2}
 
 }
 
@@ -245,8 +243,8 @@ func getMockListerResponses() mockListerResponses {
 	return resp
 }
 
-func primeSecretClient(secretClient v1.SecretClient) error {
-	for _, ref := range []core.ResourceRef{testCredential1, testCredential2} {
+func primeSecretClient(secretClient v1.SecretClient, secretRefs []core.ResourceRef) error {
+	for _, ref := range secretRefs {
 		secret := &v1.Secret{
 			Kind: &v1.Secret_Aws{
 				Aws: &v1.AwsSecret{
