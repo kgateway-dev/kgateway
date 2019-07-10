@@ -1,15 +1,9 @@
 package ec2
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	"github.com/pkg/errors"
-
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 
@@ -36,50 +30,6 @@ func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, s
 			Region: aws.String(awsRegion),
 		})
 }
-
-type Ec2InstanceLister interface {
-	ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error)
-}
-
-type ec2InstanceLister struct {
-}
-
-func NewEc2InstanceLister() *ec2InstanceLister {
-	return &ec2InstanceLister{}
-}
-
-var _ Ec2InstanceLister = &ec2InstanceLister{}
-
-func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error) {
-	logger := contextutils.LoggerFrom(ctx)
-	sess, err := getEc2SessionForCredentials(awsRegion, secretRef, secrets)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get aws client")
-	}
-	svc := ec2.New(sess)
-	result, err := svc.DescribeInstances(describeInstancesInputForAllInstances())
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to describe instances")
-	}
-	logger.Debugw("ec2Upstream result", zap.Any("value", result))
-	return getInstancesFromDescription(result), nil
-}
-
-//func ListEc2InstancesForCredentials(ctx context.Context, sess *session.Session, ec2Upstream *glooec2.UpstreamSpec) ([]*ec2.Instance, error) {
-//	logger := contextutils.LoggerFrom(ctx)
-//	logger.Debugw("ec2Upstream", zap.Any("spec", ec2Upstream))
-//	input := &ec2.DescribeInstancesInput{
-//		Filters: convertFiltersFromSpec(ec2Upstream),
-//	}
-//	logger.Debugw("ec2Upstream input", zap.Any("value", input))
-//	svc := ec2.New(sess)
-//	result, err := svc.DescribeInstances(input)
-//	if err != nil {
-//		return nil, errors.Wrapf(err, "unable to describe instances")
-//	}
-//	logger.Debugw("ec2Upstream result", zap.Any("value", result))
-//	return getInstancesFromDescription(result), nil
-//}
 
 func getInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Instance {
 	var instances []*ec2.Instance

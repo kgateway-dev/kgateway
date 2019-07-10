@@ -44,7 +44,6 @@ var _ = Describe("polling", func() {
 
 	It("should poll", func() {
 		ref1 := testUpstream1.Metadata.Ref()
-		ref2 := testUpstream2.Metadata.Ref()
 		matchPollResponse(epw, v1.EndpointList{{
 			Upstreams: []*core.ResourceRef{&ref1},
 			Address:   testPrivateIp1,
@@ -53,7 +52,9 @@ var _ = Describe("polling", func() {
 				Name:      "ec2-name-u1-namespace-default--111-111-111-111",
 				Namespace: "default",
 			},
-		}, {
+		}})
+		ref2 := testUpstream2.Metadata.Ref()
+		matchPollResponse(epw, v1.EndpointList{{
 			Upstreams: []*core.ResourceRef{&ref2},
 			Address:   testPublicIp1,
 			Port:      testPort1,
@@ -85,7 +86,7 @@ func assertEndpointList(input, expected v1.EndpointList) error {
 		return fmt.Errorf("no input provided")
 	}
 	if len(input) != len(expected) {
-		return fmt.Errorf("expected equal length lists, got %v and %v", len(input), len(expected))
+		return fmt.Errorf("expected equal length lists, input len: %v expected len: %v", len(input), len(expected))
 	}
 	for i := range input {
 		a := input[i]
@@ -135,8 +136,8 @@ func newMockEc2InstanceLister(responses mockListerResponses) *mockEc2InstanceLis
 	}
 }
 
-func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) ([]*ec2.Instance, error) {
-	v, ok := m.responses[ec2Upstream.SecretRef.Key()]
+func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error) {
+	v, ok := m.responses[secretRef.Key()]
 	if !ok {
 		return nil, fmt.Errorf("invalid input, no test responses available")
 	}
