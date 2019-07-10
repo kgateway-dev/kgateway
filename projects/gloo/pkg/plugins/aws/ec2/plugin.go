@@ -1,6 +1,7 @@
 package ec2
 
 import (
+	"fmt"
 	"reflect"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -40,6 +41,10 @@ var _ discovery.DiscoveryPlugin = new(plugin)
 func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
 	p := &plugin{}
 	var err error
+	if secretFactory == nil {
+		p.constructorErr = fmt.Errorf("must provide a secret factory to use the EC2 plugin")
+		return p
+	}
 	p.secretClient, err = v1.NewSecretClient(secretFactory)
 	if err != nil {
 		p.constructorErr = err
