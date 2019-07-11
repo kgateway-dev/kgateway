@@ -143,9 +143,5 @@ func InstallGloo(opts *options.Options, spec GlooInstallSpec, client GlooKubeIns
 		return err
 	}
 
-	if err := installer.DoKnativeInstall(); err != nil {
-		return err
-	}
-
 	return installer.DoInstall()
 }

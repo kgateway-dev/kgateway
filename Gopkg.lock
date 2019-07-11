@@ -536,7 +536,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:98d8bcc9b013ef48532bd746254dbd0bd2fb94d2c7dc5b4961f08c23908d214a"
+  digest = "1:a434da777d13a1093600eca7703330d796b56be4cac1ffcb536ac4eee7abe4d3"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -550,8 +550,8 @@
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   branch = "master"
@@ -1961,7 +1961,7 @@
   revision = "02b4e95473316948020af0b7a4f0f22c73929b0e"
 
 [[projects]]
-  digest = "1:06c16aeae09856afac96b2c50b16d9104c88a059be802ba5f6c421f95ba23208"
+  digest = "1:d51efa1a467f426c6c490a450f9e064ef27ca3181fc9cc960996664be3c1b80a"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -1982,6 +1982,7 @@
     "metadata",
     "naming",
     "peer",
+    "reflection",
     "reflection/grpc_reflection_v1alpha",
     "resolver",
     "resolver/dns",
@@ -2804,8 +2805,10 @@
     "go.opencensus.io/tag",
     "go.opencensus.io/trace",
     "go.uber.org/zap",
+    "golang.org/x/sync/errgroup",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/reflection/grpc_reflection_v1alpha",
     "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
@@ -2816,6 +2819,7 @@
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
@@ -2838,6 +2842,7 @@
     "k8s.io/helm/pkg/tiller",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
+    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

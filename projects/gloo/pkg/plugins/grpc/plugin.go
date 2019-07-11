@@ -29,6 +29,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -171,12 +172,22 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		// TODO: support query for matching
 		outPath += `?{{ default(query_string), "")}}`
 
+		// Add param extractors back
+		var extractors map[string]*transformapi.Extraction
+		if grpcDestinationSpec.Parameters != nil {
+			extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.Parameters)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// we always choose post
 		httpMethod := "POST"
 		return &transformapi.RouteTransformations{
 			RequestTransformation: &transformapi.Transformation{
 				TransformationType: &transformapi.Transformation_TransformationTemplate{
 					TransformationTemplate: &transformapi.TransformationTemplate{
+						Extractors: extractors,
 						Headers: map[string]*transformapi.InjaTemplate{
 							":method": {Text: httpMethod},
 							":path":   {Text: outPath},

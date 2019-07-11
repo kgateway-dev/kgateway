@@ -13,7 +13,8 @@ choose which version of Gloo to install.
 ### Options
 
 ```
-  -h, --help   help for install
+  -h, --help      help for install
+  -v, --verbose   If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### Options inherited from parent commands

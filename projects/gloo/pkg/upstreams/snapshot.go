@@ -5,31 +5,42 @@ import (
 	"github.com/solo-io/go-utils/hashutils"
 )
 
-// Groups real and service-derived upstreams
+// Groups upstreams from different sources into a single snapshot
 type hybridUpstreamSnapshot struct {
-	realUpstreams, serviceUpstreams v1.UpstreamList
+	upstreamsBySource map[string]v1.UpstreamList
 }
 
-func (s *hybridUpstreamSnapshot) SetRealUpstreams(upstreams v1.UpstreamList) {
-	s.realUpstreams = upstreams
+func (s *hybridUpstreamSnapshot) setUpstreams(source string, upstreams v1.UpstreamList) {
+	s.upstreamsBySource[source] = upstreams
 }
 
-func (s *hybridUpstreamSnapshot) SetServiceUpstreams(upstreams v1.UpstreamList) {
-	s.serviceUpstreams = upstreams
+func (s *hybridUpstreamSnapshot) toList() v1.UpstreamList {
+	var allUpstreams v1.UpstreamList
+	for _, upstreams := range s.upstreamsBySource {
+		allUpstreams = append(allUpstreams, upstreams...)
+	}
+	return allUpstreams
 }
 
-func (s *hybridUpstreamSnapshot) ToList() v1.UpstreamList {
-	return append(s.realUpstreams, s.serviceUpstreams...)
-}
+func (s *hybridUpstreamSnapshot) clone() *hybridUpstreamSnapshot {
+	clone := make(map[string]v1.UpstreamList)
+	for source, upstreams := range s.upstreamsBySource {
+		clone[source] = upstreams.Clone()
+	}
 
-func (s *hybridUpstreamSnapshot) Clone() *hybridUpstreamSnapshot {
 	return &hybridUpstreamSnapshot{
-		realUpstreams:    s.realUpstreams.Clone(),
-		serviceUpstreams: s.serviceUpstreams.Clone()}
+		upstreamsBySource: clone,
+	}
 }
 
-func (s *hybridUpstreamSnapshot) Hash() uint64 {
+func (s *hybridUpstreamSnapshot) hash() uint64 {
+	var allUpstreams v1.UpstreamList
+	for _, upstreams := range s.upstreamsBySource {
+		allUpstreams = append(allUpstreams, upstreams...)
+	}
+
 	// Sort merged slice for consistent hashing
-	usList := append(s.realUpstreams.Clone(), s.serviceUpstreams.Clone()...).Sort()
-	return hashutils.HashAll(usList.AsInterfaces()...)
+	allUpstreams.Sort()
+
+	return hashutils.HashAll(allUpstreams.AsInterfaces()...)
 }

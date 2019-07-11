@@ -25,12 +25,23 @@ type Top struct {
 	File        string
 	Output      string
 	Ctx         context.Context
+	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
 }
 
 type Install struct {
 	DryRun            bool
 	Namespace         string
 	HelmChartOverride string
+	Knative           Knative
+}
+
+type Knative struct {
+	InstallKnativeVersion    string `json:"version"`
+	InstallKnative           bool   `json:"-"`
+	SkipGlooInstall          bool   `json:"-"`
+	InstallKnativeBuild      bool   `json:"build"`
+	InstallKnativeMonitoring bool   `json:"monitoring"`
+	InstallKnativeEventing   bool   `json:"eventing"`
 }
 
 type Uninstall struct {
