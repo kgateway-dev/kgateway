@@ -17,7 +17,7 @@ import (
 var _ discovery.DiscoveryPlugin = new(plugin)
 
 type plugin struct {
-	client consul.ConsulClient
+	client consul.ConsulWatcher
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -29,7 +29,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("tcp://%s.service.consul", consulSpec.Consul.ServiceName))
 }
 
-func NewPlugin(client consul.ConsulWatcher) plugins.Plugin {
+func NewPlugin(client consul.ConsulWatcher) discovery.DiscoveryPlugin {
 	return &plugin{client: client}
 }
 

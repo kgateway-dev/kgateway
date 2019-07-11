@@ -36,6 +36,7 @@ type consulService struct {
 	connect bool
 }
 
+//TODO(marco): remove this (or at least disable it)
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
 	c := upstreamController{
 		consul:          p.client,
