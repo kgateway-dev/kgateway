@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -106,8 +108,14 @@ func generateFilterMaps(instances []*ec2.Instance) []filterMap {
 func (c *credentialBatch) addInstances(credentialSpec credentialSpec, instances []*ec2.Instance) {
 	filterMaps := generateFilterMaps(instances)
 	c.mutex.Lock()
-	c.resources[credentialSpec].instances = instances
-	c.resources[credentialSpec].instanceFilterMaps = filterMaps
+	cr := c.resources[credentialSpec]
+	if cr == nil {
+		// should not happen
+		contextutils.LoggerFrom(context.TODO()).Errorw("credential resource map not initialized correctly", zap.Any("credSpec", credentialSpec))
+		return
+	}
+	cr.instances = instances
+	cr.instanceFilterMaps = filterMaps
 	c.mutex.Unlock()
 }
 
@@ -122,17 +130,24 @@ func (c *credentialBatch) filterEndpointsForUpstream(ec2Upstream *glooec2.Upstre
 	// sweep through each filter map, if all the upstream's filters are matched, add the corresponding instance to the list
 	for i, fm := range credRes.instanceFilterMaps {
 		candidateInstance := credRes.instances[i]
+		matchesAll := true
+	ScanFilters: // label so that we can break out of the for loop rather than the switch
 		for _, filter := range ec2Upstream.Filters {
 			switch filterSpec := filter.Spec.(type) {
 			case *glooec2.TagFilter_Key:
-				if _, ok := fm[awsKeyCase(filterSpec.Key)]; ok {
-					list = append(list, candidateInstance)
+				if _, ok := fm[awsKeyCase(filterSpec.Key)]; !ok {
+					matchesAll = false
+					break ScanFilters
 				}
 			case *glooec2.TagFilter_KvPair_:
-				if val, ok := fm[awsKeyCase(filterSpec.KvPair.Key)]; ok && val == filterSpec.KvPair.Value {
-					list = append(list, candidateInstance)
+				if val, ok := fm[awsKeyCase(filterSpec.KvPair.Key)]; !ok || val != filterSpec.KvPair.Value {
+					matchesAll = false
+					break ScanFilters
 				}
 			}
+		}
+		if matchesAll {
+			list = append(list, candidateInstance)
 		}
 	}
 	return list

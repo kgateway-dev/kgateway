@@ -34,7 +34,8 @@ func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, awsRegion st
 		return nil, GetClientError(err)
 	}
 	svc := ec2.New(sess)
-	result, err := svc.DescribeInstances(describeInstancesInputForAllInstances())
+	// pass an empty selector to get all instances that the session has access to
+	result, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{})
 	if err != nil {
 		return nil, DescribeInstancesError(err)
 	}

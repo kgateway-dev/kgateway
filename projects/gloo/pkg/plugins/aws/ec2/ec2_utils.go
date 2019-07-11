@@ -68,10 +68,6 @@ func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 	return filters
 }
 
-func describeInstancesInputForAllInstances() *ec2.DescribeInstancesInput {
-	return &ec2.DescribeInstancesInput{}
-}
-
 // EC2 Describe Instance filters expect a particular key format:
 //   https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html
 //   tag:<key> - The key/value combination of a tag assigned to the resource. Use the tag key in the filter name and the
