@@ -11,6 +11,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+//go:generate mockgen -destination ./mock_watcher.go -source watcher.go -package consul -aux_files github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul=./consul_client.go
+
 type ServiceMeta struct {
 	Name        string
 	DataCenters []string
@@ -46,7 +48,6 @@ type dataCenterServicesTuple struct {
 	services   map[string][]string
 }
 
-// This returns only the names
 func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error) {
 
 	var (
