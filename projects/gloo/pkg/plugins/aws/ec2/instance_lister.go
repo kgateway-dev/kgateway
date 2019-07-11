@@ -28,7 +28,6 @@ func NewEc2InstanceLister() *ec2InstanceLister {
 var _ Ec2InstanceLister = &ec2InstanceLister{}
 
 func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error) {
-	logger := contextutils.LoggerFrom(ctx)
 	sess, err := getEc2SessionForCredentials(awsRegion, secretRef, secrets)
 	if err != nil {
 		return nil, GetClientError(err)
@@ -39,7 +38,7 @@ func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, awsRegion st
 	if err != nil {
 		return nil, DescribeInstancesError(err)
 	}
-	logger.Debugw("ec2Upstream result", zap.Any("value", result))
+	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream result", zap.Any("value", result))
 	return getInstancesFromDescription(result), nil
 }
 

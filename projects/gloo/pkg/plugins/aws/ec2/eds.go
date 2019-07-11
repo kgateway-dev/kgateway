@@ -15,6 +15,8 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -75,7 +77,8 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	endpointsChan := make(chan v1.EndpointList)
 	errs := make(chan error)
 	updateResourceList := func() {
-		tmpTODOAllNamespaces := ""
+		// TODO(mitchdraft) refine the secret ingestion strategy. TBD if the AWS secret will come from a crd, env var, or file
+		tmpTODOAllNamespaces := metav1.NamespaceAll
 		secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{Ctx: c.watchContext})
 		if err != nil {
 			errs <- err
