@@ -5,8 +5,11 @@ import (
 	"crypto/md5"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/solo-io/go-utils/errors"
+
+	"golang.org/x/sync/errgroup"
 
 	"go.uber.org/zap"
 
@@ -87,7 +90,11 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 		// apply filters to the instance batches
 		var allEndpoints v1.EndpointList
 		for upstreamRef, upstreamSpec := range c.upstreams {
-			instancesForUpstream := credBatch.filterEndpointsForUpstream(upstreamSpec)
+			instancesForUpstream, err := credBatch.filterEndpointsForUpstream(upstreamSpec)
+			if err != nil {
+				errs <- err
+				return
+			}
 			endpointsForUpstream := c.convertInstancesToEndpoints(upstreamRef, upstreamSpec, instancesForUpstream)
 			allEndpoints = append(allEndpoints, endpointsForUpstream...)
 		}
@@ -126,7 +133,7 @@ var awsCallTimeout = 10 * time.Second
 
 func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*credentialBatch, error) {
 	// 1. group upstreams by secret ref
-	credMap := newCredentialBatch(secrets)
+	credMap := newCredentialBatch(c.watchContext, secrets)
 	for upstreamRef, upstreamSpec := range c.upstreams {
 		if err := credMap.addUpstreamSpec(upstreamRef, upstreamSpec); err != nil {
 			return nil, err
@@ -134,35 +141,36 @@ func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*credent
 	}
 	contextutils.LoggerFrom(c.watchContext).Debugw("batched credentials", zap.Any("count", len(credMap.resources)))
 	// 2. query the AWS API for each credential set
-	wg := sync.WaitGroup{}
-	waitChan := make(chan struct{})
 	errChan := make(chan error)
+	eg := errgroup.Group{}
 	go func() {
 		// first copy from map to a slice in order to avoid a race condition
 		var credentialSpecs []credentialSpec
 		for credentialSpec := range credMap.resources {
 			credentialSpecs = append(credentialSpecs, credentialSpec)
 		}
-		for _, iterCredentialSpec := range credentialSpecs {
-			wg.Add(1)
-			// pass arguments to goroutine avoid a race condition
-			go func(cSpec credentialSpec) {
+		for _, cSpec := range credentialSpecs {
+			eg.Go(func() error {
 				instances, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, cSpec.region, cSpec.secretRef, secrets)
 				if err != nil {
-					errChan <- err
+					return err
 				}
-				credMap.addInstances(cSpec, instances)
-				wg.Done()
-			}(iterCredentialSpec)
+				if err := credMap.addInstances(cSpec, instances); err != nil {
+					return err
+				}
+				return nil
+			})
 		}
-		wg.Wait()
-		close(waitChan)
+		errChan <- eg.Wait()
 	}()
 	select {
-	case <-waitChan:
+	case err := <-errChan:
+		if err != nil {
+			return nil, ListCredentialError(err)
+		}
 		return credMap, nil
 	case <-time.After(awsCallTimeout):
-		return nil, fmt.Errorf("timed out while waiting for response from aws")
+		return nil, TimeoutError
 	}
 }
 
@@ -226,3 +234,11 @@ func SanitizeName(name string) string {
 	name = strings.ToLower(name)
 	return name
 }
+
+var (
+	ListCredentialError = func(err error) error {
+		return errors.Wrapf(err, "unable to list credentials")
+	}
+
+	TimeoutError = errors.New("timed out while waiting for response from aws")
+)

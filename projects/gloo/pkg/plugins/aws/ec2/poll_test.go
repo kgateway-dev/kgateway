@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gogo/protobuf/proto"
@@ -13,7 +15,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -150,8 +151,7 @@ func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, awsRegio
 }
 
 func getSecretClient(ctx context.Context) v1.SecretClient {
-	config, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
+	config := &rest.Config{}
 	mc := memory.NewInMemoryResourceCache()
 	var kubeCoreCache corecache.KubeCoreCache
 	settings := &v1.Settings{}

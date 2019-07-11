@@ -5,20 +5,18 @@ import (
 	"strings"
 	"sync"
 
-	"go.uber.org/zap"
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // credentialResources represents the resources available to a given credential spec (secret and aws region pair)
 type credentialResources struct {
 	// all upstreams having the same credential spec (secret and aws region) will be listed here
-	// key: upstream resource ref, value: ec2 upstream spec
 	upstreams map[core.ResourceRef]*glooec2.UpstreamSpec
 
 	// instances contains all of the EC2 instances available for the given credential spec
@@ -48,6 +46,7 @@ type credentialBatch struct {
 	resources map[credentialSpec]*credentialResources
 	secrets   v1.SecretList
 	mutex     sync.Mutex
+	ctx       context.Context
 }
 
 // a credential spec represents an AWS client's view into AWS resources
@@ -66,8 +65,9 @@ func credentialSpecFromUpstreamSpec(ec2Spec *glooec2.UpstreamSpec) credentialSpe
 	}
 }
 
-func newCredentialBatch(secrets v1.SecretList) *credentialBatch {
+func newCredentialBatch(ctx context.Context, secrets v1.SecretList) *credentialBatch {
 	m := &credentialBatch{
+		ctx:     ctx,
 		secrets: secrets,
 	}
 	m.resources = make(map[credentialSpec]*credentialResources)
@@ -105,26 +105,26 @@ func generateFilterMaps(instances []*ec2.Instance) []filterMap {
 	return maps
 }
 
-func (c *credentialBatch) addInstances(credentialSpec credentialSpec, instances []*ec2.Instance) {
+func (c *credentialBatch) addInstances(credentialSpec credentialSpec, instances []*ec2.Instance) error {
 	filterMaps := generateFilterMaps(instances)
 	c.mutex.Lock()
 	cr := c.resources[credentialSpec]
 	if cr == nil {
 		// should not happen
-		contextutils.LoggerFrom(context.TODO()).Errorw("credential resource map not initialized correctly", zap.Any("credSpec", credentialSpec))
-		return
+		return ResourceMapInitializationError
 	}
 	cr.instances = instances
 	cr.instanceFilterMaps = filterMaps
 	c.mutex.Unlock()
+	return nil
 }
 
-func (c *credentialBatch) filterEndpointsForUpstream(ec2Upstream *glooec2.UpstreamSpec) []*ec2.Instance {
+func (c *credentialBatch) filterEndpointsForUpstream(ec2Upstream *glooec2.UpstreamSpec) ([]*ec2.Instance, error) {
 	credSpec := credentialSpecFromUpstreamSpec(ec2Upstream)
 	credRes, ok := c.resources[credSpec]
 	if !ok {
 		// This should never happen
-		contextutils.LoggerFrom(context.TODO()).Errorw("bad map construction in EC2 filter")
+		return nil, ResourceMapInitializationError
 	}
 	var list []*ec2.Instance
 	// sweep through each filter map, if all the upstream's filters are matched, add the corresponding instance to the list
@@ -150,7 +150,7 @@ func (c *credentialBatch) filterEndpointsForUpstream(ec2Upstream *glooec2.Upstre
 			list = append(list, candidateInstance)
 		}
 	}
-	return list
+	return list, nil
 }
 
 // AWS tag keys are not case-sensitive so cast them all to lowercase
@@ -158,3 +158,7 @@ func (c *credentialBatch) filterEndpointsForUpstream(ec2Upstream *glooec2.Upstre
 func awsKeyCase(input string) string {
 	return strings.ToLower(input)
 }
+
+var (
+	ResourceMapInitializationError = errors.New("credential resource map not initialized correctly")
+)

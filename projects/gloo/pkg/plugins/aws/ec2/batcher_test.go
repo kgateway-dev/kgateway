@@ -1,6 +1,7 @@
 package ec2
 
 import (
+	"context"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -27,7 +28,7 @@ var _ = Describe("Batcher tests", func() {
 			Metadata: secretMeta1,
 		}
 		secrets := v1.SecretList{secret1}
-		cb := newCredentialBatch(secrets)
+		cb := newCredentialBatch(context.TODO(), secrets)
 		region1 := "us-east-1"
 		upRef1 := core.ResourceRef{"up1", "default"}
 		upSpec1 := &glooec2.UpstreamSpec{
@@ -54,8 +55,9 @@ var _ = Describe("Batcher tests", func() {
 				Value: aws.String("any old value"),
 			}},
 		}}
-		cb.addInstances(credSpec1, instances)
-		filteredInstances1 := cb.filterEndpointsForUpstream(upSpec1)
+		Expect(cb.addInstances(credSpec1, instances)).NotTo(HaveOccurred())
+		filteredInstances1, err := cb.filterEndpointsForUpstream(upSpec1)
+		Expect(err).NotTo(HaveOccurred())
 		Expect(filteredInstances1).To(Equal(instances))
 
 	})
@@ -85,7 +87,7 @@ var _ = Describe("Batcher tests", func() {
 	// Each table entry describes what filters should be applied to the upstream and what instances should be returned
 	DescribeTable("batcher should assemble and disassemble batched results", func(input filterTestInput) {
 		secrets := v1.SecretList{secret1, secret2}
-		cb := newCredentialBatch(secrets)
+		cb := newCredentialBatch(context.TODO(), secrets)
 
 		// build the dummy upstreams
 		upA, upRefA := generateUpstreamWithCredentials("A", credSpecA, filterTestInput{})
@@ -100,12 +102,13 @@ var _ = Describe("Batcher tests", func() {
 		Expect(cb.addUpstreamSpec(upRefTest, upTest)).NotTo(HaveOccurred())
 
 		// "query" the api for each upstream
-		cb.addInstances(credSpecA, credInstancesA)
-		cb.addInstances(credSpecB, credInstancesB)
-		cb.addInstances(credSpecC, credInstancesC)
+		Expect(cb.addInstances(credSpecA, credInstancesA)).NotTo(HaveOccurred())
+		Expect(cb.addInstances(credSpecB, credInstancesB)).NotTo(HaveOccurred())
+		Expect(cb.addInstances(credSpecC, credInstancesC)).NotTo(HaveOccurred())
 
 		// core test: apply the filter, assert expectations
-		filteredInstances := cb.filterEndpointsForUpstream(upTest)
+		filteredInstances, err := cb.filterEndpointsForUpstream(upTest)
+		Expect(err).NotTo(HaveOccurred())
 		//Expect(len(filteredInstances)).To(Equal(len(input.expected)))
 		var filteredIds []string
 		for _, instance := range filteredInstances {
