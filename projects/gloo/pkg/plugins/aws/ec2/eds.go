@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
 
-	"golang.org/x/sync/errgroup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awscache"
 
 	"go.uber.org/zap"
 
@@ -38,7 +38,7 @@ type edsWatcher struct {
 	secretClient      v1.SecretClient
 	refreshRate       time.Duration
 	writeNamespace    string
-	ec2InstanceLister Ec2InstanceLister
+	ec2InstanceLister awslister.Ec2InstanceLister
 }
 
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
@@ -89,7 +89,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 			return
 		}
 		// query the source of truth and build a local representation of the EC2 instances, grouped by credentials
-		store, err := c.buildLocalStore(secrets)
+		store, err := c.buildCache(secrets)
 		if err != nil {
 			errs <- err
 			return
@@ -97,7 +97,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 		// apply filters to the instance batches
 		var allEndpoints v1.EndpointList
 		for _, upstreamSpecRef := range c.upstreams {
-			instancesForUpstream, err := store.filterEndpointsForUpstream(upstreamSpecRef)
+			instancesForUpstream, err := store.FilterEndpointsForUpstream(upstreamSpecRef)
 			if err != nil {
 				errs <- err
 				return
@@ -136,51 +136,9 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	return endpointsChan, errs, nil
 }
 
-var awsCallTimeout = 10 * time.Second
-
 // call AWS APIs
-func (c *edsWatcher) buildLocalStore(secrets v1.SecretList) (*localStore, error) {
-	// 1. group upstreams by secret ref
-	store := newLocalStore(c.watchContext, secrets)
-	for _, upstream := range c.upstreams {
-		if err := store.addUpstream(upstream); err != nil {
-			return nil, err
-		}
-	}
-	contextutils.LoggerFrom(c.watchContext).Debugw("local store", zap.Any("count", len(store.credentialMap)))
-	// 2. query the AWS API for each credential set
-	errChan := make(chan error)
-	defer close(errChan)
-	eg := errgroup.Group{}
-	go func() {
-		// first copy from map to a slice in order to avoid a race condition
-		var creds []credentialSpec
-		for cred := range store.credentialMap {
-			creds = append(creds, cred)
-		}
-		for _, cred := range creds {
-			eg.Go(func() error {
-				instances, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, cred.region, cred.secretRef, secrets)
-				if err != nil {
-					return err
-				}
-				if err := store.addInstances(cred, instances); err != nil {
-					return err
-				}
-				return nil
-			})
-		}
-		errChan <- eg.Wait()
-	}()
-	select {
-	case err := <-errChan:
-		if err != nil {
-			return nil, ListCredentialError(err)
-		}
-		return store, nil
-	case <-time.After(awsCallTimeout):
-		return nil, TimeoutError
-	}
+func (c *edsWatcher) buildCache(secrets v1.SecretList) (*awscache.Cache, error) {
+	return awscache.New(c.watchContext, secrets, c.upstreams, c.ec2InstanceLister)
 }
 
 const defaultPort = 80
@@ -243,11 +201,3 @@ func SanitizeName(name string) string {
 	name = strings.ToLower(name)
 	return name
 }
-
-var (
-	ListCredentialError = func(err error) error {
-		return errors.Wrapf(err, "unable to list credentials")
-	}
-
-	TimeoutError = errors.New("timed out while waiting for response from aws")
-)

@@ -3,6 +3,8 @@ package ec2
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
+
 	"github.com/solo-io/go-utils/errors"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -12,12 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Ec2InstanceLister is a simple interface for calling the AWS API.
-// This allows us to easily mock the API in our tests.
-type Ec2InstanceLister interface {
-	ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error)
-}
-
 type ec2InstanceLister struct {
 }
 
@@ -25,7 +21,7 @@ func NewEc2InstanceLister() *ec2InstanceLister {
 	return &ec2InstanceLister{}
 }
 
-var _ Ec2InstanceLister = &ec2InstanceLister{}
+var _ awslister.Ec2InstanceLister = &ec2InstanceLister{}
 
 func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error) {
 	sess, err := getEc2SessionForCredentials(awsRegion, secretRef, secrets)

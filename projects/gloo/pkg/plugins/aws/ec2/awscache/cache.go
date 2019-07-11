@@ -3,6 +3,12 @@ package awscache
 import (
 	"context"
 	"sync"
+	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -12,22 +18,22 @@ import (
 
 // a credential batch stores the credentialMap available to a given credential spec
 // it is possible that there will be duplicate resource records, for example, if two credentials have access to the same
-// resource, then that resource will be present in both credentialInstanceGroup entries. For simplicity, we will let that be.
-type localStore struct {
-	credentialMap map[credentialSpec]*credentialInstanceGroup
+// resource, then that resource will be present in both CredentialInstanceGroup entries. For simplicity, we will let that be.
+type Cache struct {
+	credentialMap map[credentialSpec]*CredentialInstanceGroup
 	secrets       v1.SecretList
 	mutex         sync.Mutex
 	ctx           context.Context
 }
 
-func newCredentialInstanceGroup() *credentialInstanceGroup {
-	return &credentialInstanceGroup{
+func NewCredentialInstanceGroup() *CredentialInstanceGroup {
+	return &CredentialInstanceGroup{
 		upstreams: make(map[core.ResourceRef]*glooec2.UpstreamSpecRef),
 	}
 }
 
-// credentialInstanceGroup represents the instances available to a given credentialSpec
-type credentialInstanceGroup struct {
+// CredentialInstanceGroup represents the instances available to a given credentialSpec
+type CredentialInstanceGroup struct {
 	// all upstreams having the same credential spec (secret and aws region) will be listed here
 	upstreams map[core.ResourceRef]*glooec2.UpstreamSpecRef
 
@@ -45,16 +51,67 @@ type credentialInstanceGroup struct {
 // filter maps are generated from tag lists, the keys are the tag keys, the values are the tag values
 type filterMap map[string]string
 
-func newLocalStore(ctx context.Context, secrets v1.SecretList) *localStore {
-	m := &localStore{
+func New(ctx context.Context, secrets v1.SecretList, upstreams map[core.ResourceRef]*glooec2.UpstreamSpecRef, ec2InstanceLister awslister.Ec2InstanceLister) (*Cache, error) {
+	m := newCache(ctx, secrets)
+	if err := m.build(upstreams, ec2InstanceLister); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// break out this function for easier testing
+func newCache(ctx context.Context, secrets v1.SecretList) *Cache {
+	m := &Cache{
 		ctx:     ctx,
 		secrets: secrets,
 	}
-	m.credentialMap = make(map[credentialSpec]*credentialInstanceGroup)
+	m.credentialMap = make(map[credentialSpec]*CredentialInstanceGroup)
 	return m
 }
 
-func (c *localStore) addUpstream(upstream *glooec2.UpstreamSpecRef) error {
+func (c *Cache) build(upstreams map[core.ResourceRef]*glooec2.UpstreamSpecRef, ec2InstanceLister awslister.Ec2InstanceLister) error {
+	for _, upstream := range upstreams {
+		if err := c.addUpstream(upstream); err != nil {
+			return err
+		}
+	}
+	contextutils.LoggerFrom(c.ctx).Debugw("local store", zap.Any("count", len(c.credentialMap)))
+	// 2. query the AWS API for each credential set
+	errChan := make(chan error)
+	defer close(errChan)
+	eg := errgroup.Group{}
+	go func() {
+		// first copy from map to a slice in order to avoid a race condition
+		var creds []credentialSpec
+		for cred := range c.credentialMap {
+			creds = append(creds, cred)
+		}
+		for _, cred := range creds {
+			eg.Go(func() error {
+				instances, err := ec2InstanceLister.ListForCredentials(c.ctx, cred.region, cred.secretRef, c.secrets)
+				if err != nil {
+					return err
+				}
+				if err := c.addInstances(cred, instances); err != nil {
+					return err
+				}
+				return nil
+			})
+		}
+		errChan <- eg.Wait()
+	}()
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return ListCredentialError(err)
+		}
+		return nil
+	case <-time.After(awsCallTimeout):
+		return TimeoutError
+	}
+}
+
+func (c *Cache) addUpstream(upstream *glooec2.UpstreamSpecRef) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	key := credentialSpecFromUpstreamSpec(upstream.Spec)
@@ -62,14 +119,14 @@ func (c *localStore) addUpstream(upstream *glooec2.UpstreamSpecRef) error {
 	if v, ok := c.credentialMap[key]; ok {
 		v.upstreams[upstream.Ref] = upstream
 	} else {
-		cr := newCredentialInstanceGroup()
+		cr := NewCredentialInstanceGroup()
 		cr.upstreams[upstream.Ref] = upstream
 		c.credentialMap[key] = cr
 	}
 	return nil
 }
 
-func (c *localStore) addInstances(credentialSpec credentialSpec, instances []*ec2.Instance) error {
+func (c *Cache) addInstances(credentialSpec credentialSpec, instances []*ec2.Instance) error {
 	filterMaps := generateFilterMaps(instances)
 	c.mutex.Lock()
 	cr := c.credentialMap[credentialSpec]

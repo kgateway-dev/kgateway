@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
 )
 
-func (c *localStore) filterEndpointsForUpstream(upstream *glooec2.UpstreamSpecRef) ([]*ec2.Instance, error) {
+func (c *Cache) FilterEndpointsForUpstream(upstream *glooec2.UpstreamSpecRef) ([]*ec2.Instance, error) {
 	credSpec := credentialSpecFromUpstreamSpec(upstream.Spec)
 	credRes, ok := c.credentialMap[credSpec]
 	if !ok {

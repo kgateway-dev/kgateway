@@ -28,7 +28,7 @@ var _ = Describe("Batcher tests", func() {
 			Metadata: secretMeta1,
 		}
 		secrets := v1.SecretList{secret1}
-		cb := newLocalStore(context.TODO(), secrets)
+		cb := newCache(context.TODO(), secrets)
 		region1 := "us-east-1"
 		upRef1 := core.ResourceRef{"up1", "default"}
 		upSpec1 := &glooec2.UpstreamSpec{
@@ -60,7 +60,7 @@ var _ = Describe("Batcher tests", func() {
 			}},
 		}}
 		Expect(cb.addInstances(credSpec1, instances)).NotTo(HaveOccurred())
-		filteredInstances1, err := cb.filterEndpointsForUpstream(up1)
+		filteredInstances1, err := cb.FilterEndpointsForUpstream(up1)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filteredInstances1).To(Equal(instances))
 
@@ -91,7 +91,7 @@ var _ = Describe("Batcher tests", func() {
 	// Each table entry describes what filters should be applied to the upstream and what instances should be returned
 	DescribeTable("batcher should assemble and disassemble batched results", func(input filterTestInput) {
 		secrets := v1.SecretList{secret1, secret2}
-		cb := newLocalStore(context.TODO(), secrets)
+		cb := newCache(context.TODO(), secrets)
 
 		// build the dummy upstreams
 		upA := generateUpstreamWithCredentials("A", credSpecA, filterTestInput{})
@@ -111,7 +111,7 @@ var _ = Describe("Batcher tests", func() {
 		Expect(cb.addInstances(credSpecC, credInstancesC)).NotTo(HaveOccurred())
 
 		// core test: apply the filter, assert expectations
-		filteredInstances, err := cb.filterEndpointsForUpstream(upTest)
+		filteredInstances, err := cb.FilterEndpointsForUpstream(upTest)
 		Expect(err).NotTo(HaveOccurred())
 		//Expect(len(filteredInstances)).To(Equal(len(input.expected)))
 		var filteredIds []string
