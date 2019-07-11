@@ -33,7 +33,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreams v1.UpstreamList
 }
 
 type edsWatcher struct {
-	upstreams         map[core.ResourceRef]*glooec2.UpstreamSpec
+	upstreams         map[core.ResourceRef]*glooec2.UpstreamSpecRef
 	watchContext      context.Context
 	secretClient      v1.SecretClient
 	refreshRate       time.Duration
@@ -42,14 +42,18 @@ type edsWatcher struct {
 }
 
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
-	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpec)
+	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpecRef)
 	for _, us := range upstreams {
 		ec2Upstream, ok := us.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
 		// only care about ec2 upstreams
 		if !ok {
 			continue
 		}
-		upstreamSpecs[us.Metadata.Ref()] = ec2Upstream.AwsEc2
+		ref := us.Metadata.Ref()
+		upstreamSpecs[ref] = &glooec2.UpstreamSpecRef{
+			Spec: ec2Upstream.AwsEc2,
+			Ref:  ref,
+		}
 	}
 	return &edsWatcher{
 		upstreams:         upstreamSpecs,
@@ -92,13 +96,13 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 		}
 		// apply filters to the instance batches
 		var allEndpoints v1.EndpointList
-		for upstreamRef, upstreamSpec := range c.upstreams {
-			instancesForUpstream, err := credBatch.filterEndpointsForUpstream(upstreamSpec)
+		for _, upstreamSpecRef := range c.upstreams {
+			instancesForUpstream, err := credBatch.filterEndpointsForUpstream(upstreamSpecRef)
 			if err != nil {
 				errs <- err
 				return
 			}
-			endpointsForUpstream := c.convertInstancesToEndpoints(upstreamRef, upstreamSpec, instancesForUpstream)
+			endpointsForUpstream := c.convertInstancesToEndpoints(upstreamSpecRef, instancesForUpstream)
 			allEndpoints = append(allEndpoints, endpointsForUpstream...)
 		}
 
@@ -134,22 +138,22 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 
 var awsCallTimeout = 10 * time.Second
 
-func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*credentialBatch, error) {
+func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*localStore, error) {
 	// 1. group upstreams by secret ref
-	credMap := newCredentialBatch(c.watchContext, secrets)
-	for upstreamRef, upstreamSpec := range c.upstreams {
-		if err := credMap.addUpstreamSpec(upstreamRef, upstreamSpec); err != nil {
+	credMap := newLocalStore(c.watchContext, secrets)
+	for _, upstream := range c.upstreams {
+		if err := credMap.addUpstream(upstream); err != nil {
 			return nil, err
 		}
 	}
-	contextutils.LoggerFrom(c.watchContext).Debugw("batched credentials", zap.Any("count", len(credMap.resources)))
+	contextutils.LoggerFrom(c.watchContext).Debugw("batched credentials", zap.Any("count", len(credMap.credentialMap)))
 	// 2. query the AWS API for each credential set
 	errChan := make(chan error)
 	eg := errgroup.Group{}
 	go func() {
 		// first copy from map to a slice in order to avoid a race condition
 		var credentialSpecs []credentialSpec
-		for credentialSpec := range credMap.resources {
+		for credentialSpec := range credMap.credentialMap {
 			credentialSpecs = append(credentialSpecs, credentialSpec)
 		}
 		for _, cSpec := range credentialSpecs {
@@ -179,23 +183,23 @@ func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*credent
 
 const defaultPort = 80
 
-func (c *edsWatcher) convertInstancesToEndpoints(upstreamRef core.ResourceRef, ec2UpstreamSpec *glooec2.UpstreamSpec, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
+func (c *edsWatcher) convertInstancesToEndpoints(upstream *glooec2.UpstreamSpecRef, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
 	var list v1.EndpointList
 	for _, instance := range ec2InstancesForUpstream {
 		ipAddr := instance.PrivateIpAddress
-		if ec2UpstreamSpec.PublicIp {
+		if upstream.Spec.PublicIp {
 			ipAddr = instance.PublicIpAddress
 		}
-		port := ec2UpstreamSpec.GetPort()
+		port := upstream.Spec.GetPort()
 		if port == 0 {
 			port = defaultPort
 		}
 		endpoint := &v1.Endpoint{
-			Upstreams: []*core.ResourceRef{&upstreamRef},
+			Upstreams: []*core.ResourceRef{&upstream.Ref},
 			Address:   aws.StringValue(ipAddr),
-			Port:      ec2UpstreamSpec.GetPort(),
+			Port:      upstream.Spec.GetPort(),
 			Metadata: core.Metadata{
-				Name:      generateName(upstreamRef, aws.StringValue(ipAddr)),
+				Name:      generateName(upstream.Ref, aws.StringValue(ipAddr)),
 				Namespace: c.writeNamespace,
 			},
 		}

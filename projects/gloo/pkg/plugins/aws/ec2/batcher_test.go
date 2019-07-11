@@ -28,7 +28,7 @@ var _ = Describe("Batcher tests", func() {
 			Metadata: secretMeta1,
 		}
 		secrets := v1.SecretList{secret1}
-		cb := newCredentialBatch(context.TODO(), secrets)
+		cb := newLocalStore(context.TODO(), secrets)
 		region1 := "us-east-1"
 		upRef1 := core.ResourceRef{"up1", "default"}
 		upSpec1 := &glooec2.UpstreamSpec{
@@ -42,7 +42,11 @@ var _ = Describe("Batcher tests", func() {
 			PublicIp: false,
 			Port:     8080,
 		}
-		err := cb.addUpstreamSpec(upRef1, upSpec1)
+		up1 := &glooec2.UpstreamSpecRef{
+			Spec: upSpec1,
+			Ref:  upRef1,
+		}
+		err := cb.addUpstream(up1)
 		Expect(err).NotTo(HaveOccurred())
 
 		credSpec1 := credentialSpec{
@@ -56,15 +60,15 @@ var _ = Describe("Batcher tests", func() {
 			}},
 		}}
 		Expect(cb.addInstances(credSpec1, instances)).NotTo(HaveOccurred())
-		filteredInstances1, err := cb.filterEndpointsForUpstream(upSpec1)
+		filteredInstances1, err := cb.filterEndpointsForUpstream(up1)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filteredInstances1).To(Equal(instances))
 
 	})
 
 	// Represent 3 credential specification cases:
-	// A: secret has full access to resources in it region
-	// B: secret has limited access to resources in it region
+	// A: secret has full access to credentialMap in it region
+	// B: secret has limited access to credentialMap in it region
 	// C: same as A, different region
 	var (
 		region1             = "us-east-1"
@@ -87,19 +91,19 @@ var _ = Describe("Batcher tests", func() {
 	// Each table entry describes what filters should be applied to the upstream and what instances should be returned
 	DescribeTable("batcher should assemble and disassemble batched results", func(input filterTestInput) {
 		secrets := v1.SecretList{secret1, secret2}
-		cb := newCredentialBatch(context.TODO(), secrets)
+		cb := newLocalStore(context.TODO(), secrets)
 
 		// build the dummy upstreams
-		upA, upRefA := generateUpstreamWithCredentials("A", credSpecA, filterTestInput{})
-		upB, upRefB := generateUpstreamWithCredentials("B", credSpecB, filterTestInput{})
-		upC, upRefC := generateUpstreamWithCredentials("C", credSpecC, filterTestInput{})
+		upA := generateUpstreamWithCredentials("A", credSpecA, filterTestInput{})
+		upB := generateUpstreamWithCredentials("B", credSpecB, filterTestInput{})
+		upC := generateUpstreamWithCredentials("C", credSpecC, filterTestInput{})
 		// build the upstream that we care about
-		upTest, upRefTest := generateUpstreamWithCredentials("Test", input.credentialSpec, input)
+		upTest := generateUpstreamWithCredentials("Test", input.credentialSpec, input)
 		// prime the map with the upstreams
-		Expect(cb.addUpstreamSpec(upRefA, upA)).NotTo(HaveOccurred())
-		Expect(cb.addUpstreamSpec(upRefB, upB)).NotTo(HaveOccurred())
-		Expect(cb.addUpstreamSpec(upRefC, upC)).NotTo(HaveOccurred())
-		Expect(cb.addUpstreamSpec(upRefTest, upTest)).NotTo(HaveOccurred())
+		Expect(cb.addUpstream(upA)).NotTo(HaveOccurred())
+		Expect(cb.addUpstream(upB)).NotTo(HaveOccurred())
+		Expect(cb.addUpstream(upC)).NotTo(HaveOccurred())
+		Expect(cb.addUpstream(upTest)).NotTo(HaveOccurred())
 
 		// "query" the api for each upstream
 		Expect(cb.addInstances(credSpecA, credInstancesA)).NotTo(HaveOccurred())
@@ -301,7 +305,7 @@ func generateCredSpec(region string, secretRef core.ResourceRef) credentialSpec 
 }
 
 // creates an upstream with the filters and credentials defined by the input
-func generateUpstreamWithCredentials(name string, credSpec credentialSpec, input filterTestInput) (*glooec2.UpstreamSpec, core.ResourceRef) {
+func generateUpstreamWithCredentials(name string, credSpec credentialSpec, input filterTestInput) *glooec2.UpstreamSpecRef {
 	upstreamRef := core.ResourceRef{
 		Name:      name,
 		Namespace: "default",
@@ -333,5 +337,8 @@ func generateUpstreamWithCredentials(name string, credSpec credentialSpec, input
 		}
 		upstreamSpec.Filters = append(upstreamSpec.Filters, f)
 	}
-	return upstreamSpec, upstreamRef
+	return &glooec2.UpstreamSpecRef{
+		Spec: upstreamSpec,
+		Ref:  upstreamRef,
+	}
 }

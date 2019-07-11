@@ -71,7 +71,7 @@ func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 // EC2 Describe Instance filters expect a particular key format:
 //   https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html
 //   tag:<key> - The key/value combination of a tag assigned to the resource. Use the tag key in the filter name and the
-//   tag value as the filter value. For example, to find all resources that have a tag with the key Owner and the value
+//   tag value as the filter value. For example, to find all credentialMap that have a tag with the key Owner and the value
 //   TeamA, specify tag:Owner for the filter name and TeamA for the filter value.
 func tagFilterName(tagName string) *string {
 	str := fmt.Sprintf("tag:%v", tagName)
@@ -97,7 +97,7 @@ func tagFiltersKeyValue(tagName, tagValue string) *ec2.Filter {
 NOTE on EC2
 How to find all instances that have a given tag-key, regardless of the tag value:
   https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html
-  tag-key - The key of a tag assigned to the resource. Use this filter to find all resources that have a tag with a
+  tag-key - The key of a tag assigned to the resource. Use this filter to find all credentialMap that have a tag with a
   specific key, regardless of the tag value.
 */
 // generate a filter that selects all elements that contain a given tag

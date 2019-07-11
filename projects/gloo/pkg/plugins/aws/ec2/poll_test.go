@@ -112,13 +112,17 @@ func testEndpointsWatcher(
 	parentRefreshRate time.Duration,
 	responses mockListerResponses,
 ) *edsWatcher {
-	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpec)
+	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpecRef)
 	for _, us := range upstreams {
 		ec2Upstream, ok := us.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
 		if !ok {
 			continue
 		}
-		upstreamSpecs[us.Metadata.Ref()] = ec2Upstream.AwsEc2
+		ref := us.Metadata.Ref()
+		upstreamSpecs[ref] = &glooec2.UpstreamSpecRef{
+			Spec: ec2Upstream.AwsEc2,
+			Ref:  ref,
+		}
 	}
 	return &edsWatcher{
 		upstreams:         upstreamSpecs,
