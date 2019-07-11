@@ -37,6 +37,7 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 "serviceTags": []string
 "serviceSpec": .plugins.gloo.solo.io.ServiceSpec
 "connectEnabled": bool
+"dataCenters": []string
 
 ```
 
@@ -46,6 +47,7 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 | `serviceTags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream |  |
 | `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address |  |
 | `connectEnabled` | `bool` | Is this consul service connect enabled. |  |
+| `dataCenters` | `[]string` | The data centers in which the service instance represented by this upstream is registered. |  |
 
 
 

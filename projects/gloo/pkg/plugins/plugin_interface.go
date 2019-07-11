@@ -8,7 +8,6 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 type InitParams struct {
@@ -116,18 +115,4 @@ const (
 type ClusterGeneratorPlugin interface {
 	Plugin
 	GeneratedClusters(params Params) ([]*envoyapi.Cluster, error)
-}
-
-/*
-	Non-translator plugins
-	TODO(ilackarms): consider combining eds plugin and uds
-*/
-
-type EdsPlugin interface {
-	Plugin
-	RunEds(opts clients.WatchOpts) error
-	SubscribeUpstream(upstream *v1.Upstream) (<-chan []*v1.Endpoint, error)
-}
-
-type UdsPlugin interface {
 }

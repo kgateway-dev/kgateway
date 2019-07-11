@@ -3,8 +3,11 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
+
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
@@ -22,6 +25,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var fakeKubeClientset *fake.Clientset
+
 var memResourceClient *factory.MemoryResourceClientFactory
 var lock sync.Mutex
 
@@ -37,6 +42,26 @@ func UseMemoryClients() {
 	memResourceClient = &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
+	fakeKubeClientset = fake.NewSimpleClientset()
+}
+
+func MustKubeClient() kubernetes.Interface {
+	client, err := KubeClient()
+	if err != nil {
+		log.Fatalf("failed to create kube client: %v", err)
+	}
+	return client
+}
+
+func KubeClient() (kubernetes.Interface, error) {
+	if fakeKubeClientset != nil {
+		return fakeKubeClientset, nil
+	}
+	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	return kubernetes.NewForConfig(cfg)
 }
 
 func MustGetNamespaces() []string {
