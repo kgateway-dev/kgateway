@@ -2,10 +2,10 @@ package ec2
 
 import (
 	"context"
-	"crypto/md5"
 	"fmt"
-	"strings"
 	"time"
+
+	"github.com/solo-io/go-utils/kubeutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
 
@@ -174,30 +174,5 @@ func (c *edsWatcher) convertInstancesToEndpoints(upstream *glooec2.UpstreamSpecR
 const ec2EndpointNamePrefix = "ec2"
 
 func generateName(upstreamRef core.ResourceRef, publicIpAddress string) string {
-	return SanitizeName(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String(), publicIpAddress))
-}
-
-// use function from go-utils when update merges
-// DEPRECATED
-func SanitizeName(name string) string {
-	name = strings.Replace(name, "*", "-", -1)
-	name = strings.Replace(name, "/", "-", -1)
-	name = strings.Replace(name, ".", "-", -1)
-	name = strings.Replace(name, "[", "", -1)
-	name = strings.Replace(name, "]", "", -1)
-	name = strings.Replace(name, ":", "-", -1)
-	name = strings.Replace(name, " ", "-", -1)
-	name = strings.Replace(name, "\n", "", -1)
-	// This is the new content
-	// begin diff
-	name = strings.Replace(name, "\"", "", -1)
-	// end diff
-	if len(name) > 63 {
-		hash := md5.Sum([]byte(name))
-		name = fmt.Sprintf("%s-%x", name[:31], hash)
-		name = name[:63]
-	}
-	name = strings.Replace(name, ".", "-", -1)
-	name = strings.ToLower(name)
-	return name
+	return kubeutils.SanitizeNameV2(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String(), publicIpAddress))
 }
