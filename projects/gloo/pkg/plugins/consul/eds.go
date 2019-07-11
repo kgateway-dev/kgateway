@@ -13,7 +13,6 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -26,11 +25,6 @@ const (
 	DataCenterLabelKey    = "data_center"
 )
 
-var DuplicatedConsulUpstreamErr = func(serviceName string) error {
-	return errors.Errorf("found multiple Consul upstreams mapping to the same Consul service with name [%s]. "+
-		"This should never happen.", serviceName)
-}
-
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
 // converts them to endpoints, and sends the result on the returned channel.
@@ -41,16 +35,11 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(opts.Ctx, "consul_eds"))
 
 	// Filter out non-consul upstreams
-	consulServicesToTrack := make(map[string]*v1.Upstream)
+	trackedServices := make(map[string][]*v1.Upstream)
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.UpstreamSpec.GetConsul(); consulUsSpec != nil {
-			// TODO(marco): this could happen if someone has discovered Consul upstreams hanging around! After we remove UDS this is safe.
 			// We generate one upstream for every Consul service name, so this should never happen.
-			// Still it is worth checking.
-			if _, ok := consulServicesToTrack[consulUsSpec.ServiceName]; ok {
-				return nil, nil, DuplicatedConsulUpstreamErr(consulUsSpec.ServiceName)
-			}
-			consulServicesToTrack[consulUsSpec.ServiceName] = us
+			trackedServices[consulUsSpec.ServiceName] = append(trackedServices[consulUsSpec.ServiceName], us)
 		}
 	}
 
@@ -128,8 +117,8 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
-					if upstream, ok := consulServicesToTrack[spec.ServiceName]; ok {
-						endpoints = append(endpoints, createEndpoint(spec, upstream))
+					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
+						endpoints = append(endpoints, createEndpoint(spec, upstreams))
 					}
 				}
 
@@ -154,15 +143,15 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 	return endpointsChan, errChan, nil
 }
 
-func createEndpoint(service *consulapi.CatalogService, upstream *v1.Upstream) *v1.Endpoint {
+func createEndpoint(service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
 	ep := &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       "", // no namespace
 			Name:            buildEndpointName(service),
-			Labels:          buildLabels(service, upstream),
+			Labels:          buildLabels(service, upstreams),
 			ResourceVersion: strconv.FormatUint(service.ModifyIndex, 10),
 		},
-		Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
+		Upstreams: toResourceRefs(upstreams),
 		Address:   service.Address,
 		Port:      uint32(service.ServicePort),
 	}
@@ -178,17 +167,17 @@ func buildEndpointName(service *consulapi.CatalogService) string {
 }
 
 // The labels will be used by to match the endpoint to the subsets of the cluster represented by the upstream.
-func buildLabels(service *consulapi.CatalogService, upstream *v1.Upstream) map[string]string {
+func buildLabels(service *consulapi.CatalogService, upstreams []*v1.Upstream) map[string]string {
 	svcTags := make(map[string]bool)
 	for _, tag := range service.ServiceTags {
 		svcTags[tag] = true
 	}
 
-	// The ServiceTags on the Consul Upstream represent all tags for Consul services with the given ServiceName across
+	// The ServiceTags on the Consul Upstream(s) represent all tags for Consul services with the given ServiceName across
 	// data centers. We create an endpoint label for each of these tags, where the label key is the name of the tag and
 	// the label value is "1" if the current service contains the same tag, else "0".
 	labels := make(map[string]string)
-	for _, usTag := range upstream.UpstreamSpec.GetConsul().ServiceTags {
+	for _, usTag := range getUniqueUpstreamTags(upstreams) {
 		if _, ok := svcTags[usTag]; ok {
 			labels[usTag] = EndpointTagMatchTrue
 		} else {
@@ -200,6 +189,26 @@ func buildLabels(service *consulapi.CatalogService, upstream *v1.Upstream) map[s
 	labels[DataCenterLabelKey] = service.Datacenter
 
 	return labels
+}
+
+func toResourceRefs(upstreams []*v1.Upstream) (out []*core.ResourceRef) {
+	for _, us := range upstreams {
+		out = append(out, utils.ResourceRefPtr(us.Metadata.Ref()))
+	}
+	return
+}
+
+func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
+	tagMap := make(map[string]bool)
+	for _, us := range upstreams {
+		for _, tag := range us.UpstreamSpec.GetConsul().ServiceTags {
+			tagMap[tag] = true
+		}
+	}
+	for tag := range tagMap {
+		tags = append(tags, tag)
+	}
+	return
 }
 
 func newSpecCollector() specCollector {

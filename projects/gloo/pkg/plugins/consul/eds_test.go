@@ -279,7 +279,7 @@ var _ = Describe("Consul EDS", func() {
 			}
 			upstream := createUpstream("my-svc", []string{"tag-1", "tag-2", "tag-3"}, []string{"dc-1", "dc-2"})
 
-			endpoint := createEndpoint(consulService, upstream)
+			endpoint := createEndpoint(consulService, v1.UpstreamList{upstream})
 
 			Expect(endpoint).To(BeEquivalentTo(&v1.Endpoint{
 				Metadata: core.Metadata{
