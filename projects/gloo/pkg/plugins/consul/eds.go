@@ -114,7 +114,10 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 					}
 				}
 
-				// Wait for all requests to complete, an error to occur, or for the underlying context to be cancelled
+				// Wait for all requests to complete, an error to occur, or for the underlying context to be cancelled.
+				//
+				// Don't return if an error occurred. We still want to propagate the endpoints  for the requests that
+				// succeeded. Any inconsistencies will be caught by the Gloo translator.
 				if err := eg.Wait(); err != nil {
 					select {
 					case errChan <- err:
@@ -123,12 +126,10 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 					}
 				}
 
-				// Continue despite the error, most likely a single request failed and we still want to propagate the
-				// endpoints. Any inconsistencies will be caught by the Gloo translator.
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
-					if usRef, ok := consulServicesToTrack[spec.ServiceName]; ok {
-						endpoints = append(endpoints, createEndpoint(spec, usRef))
+					if upstream, ok := consulServicesToTrack[spec.ServiceName]; ok {
+						endpoints = append(endpoints, createEndpoint(spec, upstream))
 					}
 				}
 
