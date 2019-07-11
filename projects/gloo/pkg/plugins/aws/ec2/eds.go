@@ -88,8 +88,8 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 			errs <- err
 			return
 		}
-		// consolidate api calls into batches by credential spec
-		credBatch, err := c.getInstancesForCredentials(secrets)
+		// query the source of truth and build a local representation of the EC2 instances, grouped by credentials
+		store, err := c.buildLocalStore(secrets)
 		if err != nil {
 			errs <- err
 			return
@@ -97,7 +97,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 		// apply filters to the instance batches
 		var allEndpoints v1.EndpointList
 		for _, upstreamSpecRef := range c.upstreams {
-			instancesForUpstream, err := credBatch.filterEndpointsForUpstream(upstreamSpecRef)
+			instancesForUpstream, err := store.filterEndpointsForUpstream(upstreamSpecRef)
 			if err != nil {
 				errs <- err
 				return
@@ -138,31 +138,33 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 
 var awsCallTimeout = 10 * time.Second
 
-func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*localStore, error) {
+// call AWS APIs
+func (c *edsWatcher) buildLocalStore(secrets v1.SecretList) (*localStore, error) {
 	// 1. group upstreams by secret ref
-	credMap := newLocalStore(c.watchContext, secrets)
+	store := newLocalStore(c.watchContext, secrets)
 	for _, upstream := range c.upstreams {
-		if err := credMap.addUpstream(upstream); err != nil {
+		if err := store.addUpstream(upstream); err != nil {
 			return nil, err
 		}
 	}
-	contextutils.LoggerFrom(c.watchContext).Debugw("batched credentials", zap.Any("count", len(credMap.credentialMap)))
+	contextutils.LoggerFrom(c.watchContext).Debugw("local store", zap.Any("count", len(store.credentialMap)))
 	// 2. query the AWS API for each credential set
 	errChan := make(chan error)
+	defer close(errChan)
 	eg := errgroup.Group{}
 	go func() {
 		// first copy from map to a slice in order to avoid a race condition
-		var credentialSpecs []credentialSpec
-		for credentialSpec := range credMap.credentialMap {
-			credentialSpecs = append(credentialSpecs, credentialSpec)
+		var creds []credentialSpec
+		for cred := range store.credentialMap {
+			creds = append(creds, cred)
 		}
-		for _, cSpec := range credentialSpecs {
+		for _, cred := range creds {
 			eg.Go(func() error {
-				instances, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, cSpec.region, cSpec.secretRef, secrets)
+				instances, err := c.ec2InstanceLister.ListForCredentials(c.watchContext, cred.region, cred.secretRef, secrets)
 				if err != nil {
 					return err
 				}
-				if err := credMap.addInstances(cSpec, instances); err != nil {
+				if err := store.addInstances(cred, instances); err != nil {
 					return err
 				}
 				return nil
@@ -175,7 +177,7 @@ func (c *edsWatcher) getInstancesForCredentials(secrets v1.SecretList) (*localSt
 		if err != nil {
 			return nil, ListCredentialError(err)
 		}
-		return credMap, nil
+		return store, nil
 	case <-time.After(awsCallTimeout):
 		return nil, TimeoutError
 	}
