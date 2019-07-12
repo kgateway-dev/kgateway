@@ -18,6 +18,7 @@ settings:
         httpPort: 80
         httpsPort: 443
         replicas: 1
+        stats: true
 
 gateway:
   enabled: false

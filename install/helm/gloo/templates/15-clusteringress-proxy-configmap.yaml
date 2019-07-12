@@ -33,6 +33,41 @@ data:
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
+
+{{- if .Values.settings.integrations.knative.proxy.stats }}
+      listeners:
+        - name: prometheus_listener
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: 8081
+          filter_chains:
+            - filters:
+                - name: envoy.http_connection_manager
+                  config:
+                    codec_type: auto
+                    stat_prefix: prometheus
+                    route_config:
+                      name: prometheus_route
+                      virtual_hosts:
+                        - name: prometheus_host
+                          domains:
+                            - "*"
+                          routes:
+                            - match:
+                                prefix: "/metrics"
+                                headers:
+                                - name: ":method"
+                                  exact_match: GET
+                              route:
+                                prefix_rewrite: "/stats/prometheus"
+                                cluster: admin_port_cluster
+                    http_filters:
+                      - name: envoy.router
+                        config: {}
+{{- end}}
+
+
     dynamic_resources:
       ads_config:
         api_type: GRPC
