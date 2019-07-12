@@ -1539,7 +1539,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:17a49ad0d47222618e7042b0a045f462f8316eb6c8d6e8340d9619d676297994"
+  digest = "1:ac9e1e15963b36682d08c86929746b2df16c5dbbdd1676f450186d2f550dc4e7"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1572,8 +1572,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "bb0009b14a67ee40cff9b7333de7d32fc31de3eb"
-  version = "v0.9.5"
+  revision = "dac5413311f05e6d28129f2b0e828596a209102f"
+  version = "v0.9.6"
 
 [[projects]]
   digest = "1:f18ef9a5b343963b5fd3a1d2c13a831cbeb56fab12e498e3ee71ca697c60b713"
@@ -2737,6 +2737,8 @@
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/ginkgo/extensions/table",
+    "github.com/onsi/ginkgo/reporters",
+    "github.com/onsi/ginkgo/types",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
