@@ -15,19 +15,9 @@ type ServiceSpecMutator interface {
 	ServiceSpecSetter
 }
 
-type SubsetSpecGetter interface {
-	GetSubsetSpec() *plugins.SubsetSpec
-}
-type SubsetSpecSetter interface {
-	SetSubsetSpec(*plugins.SubsetSpec)
-}
-type SubsetSpecMutator interface {
-	SubsetSpecGetter
-	SubsetSpecSetter
-}
-
 /*
-	Add these two methods to any upstream spec that supports
+	Add these two methods to any upstream spec that supports a ServiceSpec
+	describing the service represented by the upstream
 */
 func (us *UpstreamSpec_Kube) GetServiceSpec() *plugins.ServiceSpec {
 	return us.Kube.ServiceSpec
@@ -51,12 +41,4 @@ func (us *UpstreamSpec_Consul) GetServiceSpec() *plugins.ServiceSpec {
 
 func (us *UpstreamSpec_Consul) SetServiceSpec(spec *plugins.ServiceSpec) {
 	us.Consul.ServiceSpec = spec
-}
-
-func (us *UpstreamSpec_Kube) GetSubsetSpec() *plugins.SubsetSpec {
-	return us.Kube.SubsetSpec
-}
-
-func (us *UpstreamSpec_Kube) SetSubsetSpec(spec *plugins.SubsetSpec) {
-	us.Kube.SubsetSpec = spec
 }
