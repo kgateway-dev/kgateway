@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/proto"
@@ -57,8 +59,12 @@ var _ = Describe("Translator", func() {
 	BeforeEach(func() {
 		cluster = nil
 		settings = &v1.Settings{}
+		memoryClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
 		opts := bootstrap.Opts{
 			Settings: settings,
+			Secrets:  memoryClientFactory,
 		}
 		registeredPlugins = registry.Plugins(opts)
 
