@@ -95,13 +95,31 @@ type StagedHttpFilter struct {
 
 type FilterStage int
 
+const Space = 100
+
 const (
-	FaultFilter FilterStage = iota
-	PreInAuth
-	InAuth
-	PostInAuth
-	PreOutAuth
-	OutAuth
+	Fault FilterStage = iota*Space*3 + Space + Space/2
+
+	InAuthN   // Authentication stage
+	InAuthZ   // Authorization stage
+	RateLimit // Rate limiting stage
+
+	Accepted // Request passed all the checks and will be forwarded upstream
+	// JsonGrpc?
+	OutAuth // Add auth for the upstream (i.e. aws λ)
+	Route   // Request is going upstream.
+)
+
+func BeforeStage(f FilterStage) FilterStage { return f - 1 } // TODO: round down to 3Space and then minus one
+func AfterStage(f FilterStage) FilterStage  { return f + 1 }
+
+// TODO(yuval-k): these are here for to avoid a breaking change. remove these when we can.
+const (
+	FaultFilter = Fault
+	InAuth      = InAuthN
+	PreInAuth   = InAuth - 1
+	PostInAuth  = InAuth + 1
+	PreOutAuth  = OutAuth - 1
 )
 
 /*
