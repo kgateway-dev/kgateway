@@ -24,13 +24,14 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 	var filterChains []envoylistener.FilterChain
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
+		// run the http filter chain plugins and listener plugins
 		listenerFilters := t.computeListenerFilters(params, listener, report)
 		if len(listenerFilters) == 0 {
 			return nil
 		}
 		filterChains = t.computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, report)
 	case *v1.Listener_TcpListener:
-		// run the Listener Plugins
+		// run the tcp filter chain plugins
 		for _, plug := range t.plugins {
 			listenerPlugin, ok := plug.(plugins.ListenerFilterChainPlugin)
 			if !ok {
@@ -93,7 +94,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 		}
 	}
 
-	// add the http connection manager if listener is HTTP and has >= 1 virtual hosts
+	// return if listener type != http || no virtual hosts
 	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
 	if !ok || len(httpListener.HttpListener.VirtualHosts) == 0 {
 		return nil

@@ -35,6 +35,10 @@ var (
 	NoDestinationTypeError = func(host *v1.TcpHost) error {
 		return errors.Errorf("no destination type was specified for tcp host %v", host)
 	}
+
+	InvalidSecretsError = func(err error, name string) error {
+		return errors.Wrapf(err, "invalid secrets for listener %v", name)
+	}
 )
 
 type Plugin struct {
@@ -97,6 +101,7 @@ func copySettings(cfg *envoytcp.TcpProxy, tcpSettings *tcp.TcpProxySettings) {
 }
 
 func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listener) ([]envoylistener.FilterChain, error) {
+	logger := contextutils.LoggerFrom(params.Ctx)
 	tcpListener := in.GetTcpListener()
 	if tcpListener == nil {
 		return nil, nil
@@ -108,14 +113,14 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 
 		tcpFilter, err := tcpProxyFilter(params, tcpHost)
 		if err != nil {
-			contextutils.LoggerFrom(params.Ctx).Debug(err, "could not compute tcp proxy filter for %v", tcpHost)
+			logger.Debug(err, "could not compute tcp proxy filter for %v", tcpHost)
 			continue
 		}
 		listenerFilters = append(listenerFilters, *tcpFilter)
 
 		filterChain, err := p.computerTcpFilterChain(params.Snapshot, in, listenerFilters, tcpHost)
 		if err != nil {
-			contextutils.LoggerFrom(params.Ctx).Debug(err, "could not compute tcp filter chain for %v", tcpHost)
+			logger.Debug(err, "could not compute tcp filter chain for %v", tcpHost)
 			continue
 		}
 		filterChains = append(filterChains, filterChain)
@@ -209,7 +214,7 @@ func (p *Plugin) computerTcpFilterChain(snap *v1.ApiSnapshot, listener *v1.Liste
 
 	downstreamConfig, err := p.sslConfigTranslator.ResolveDownstreamSslConfig(snap, sslConfig)
 	if err != nil {
-		return envoylistener.FilterChain{}, errors.Wrapf(err, "invalid secrets for listener %v", listener.Name)
+		return envoylistener.FilterChain{}, InvalidSecretsError(err, listener.Name)
 	}
 	return newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listener.UseProxyProto, listenerFilters), nil
 }

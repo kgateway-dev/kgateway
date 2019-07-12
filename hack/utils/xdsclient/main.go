@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
 	"log"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/jsonpb"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -18,6 +16,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/proto"
 	"github.com/k0kubun/pp"
+	"github.com/solo-io/go-utils/protoutils"
 	"google.golang.org/grpc"
 )
 
@@ -27,16 +26,9 @@ func init() {
 	dr.Node = new(envoy_api_v2_core1.Node)
 }
 
-var jsonpbMarshaler = &jsonpb.Marshaler{OrigName: false}
-
 func GetYaml(pb proto.Message) []byte {
-	buf := &bytes.Buffer{}
-
-	 err := jsonpbMarshaler.Marshal(buf, pb)
-	if err != nil {
-		panic(err)
-	}
-	data, err := yaml.JSONToYAML(buf.Bytes())
+	jsn, err := protoutils.MarshalBytes(pb)
+	data, err := yaml.JSONToYAML(jsn)
 	if err != nil {
 		panic(err)
 	}
@@ -44,14 +36,7 @@ func GetYaml(pb proto.Message) []byte {
 }
 
 func main() {
-	buf := &bytes.Buffer{}
-
-	err := jsonpbMarshaler.Marshal(buf, &v2.Listener{})
-	if err != nil {
-		panic(err)
-	}
-
-	role := flag.String("r", "gloo-system~gateway-proxy", "role to register with")
+	role := flag.String("r", "gloo-system~clusteringress-proxy", "role to register with")
 	port := flag.String("p", "9977", "gloo port")
 	//out := flag.String("o", "gostructs", "output fmt gostructs|yaml")
 	flag.Parse()

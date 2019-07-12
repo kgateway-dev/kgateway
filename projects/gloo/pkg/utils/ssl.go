@@ -15,6 +15,22 @@ const (
 	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"
 )
 
+var (
+	TlsVersionNotFoundError = func(v v1.SslParameters_ProtocolVersion) error {
+		return errors.Errorf("tls version %v not found", v)
+	}
+
+	SslSecretNotFoundError = func(err error) error {
+		return errors.Wrapf(err, "SSL secret not found")
+	}
+
+	NotTlsSecretError = func(ref core.ResourceRef) error {
+		return errors.Errorf("%v is not a TLS secret", ref)
+	}
+
+	NoCertificateFoundError = errors.New("no certificate information found")
+)
+
 type SslConfigTranslator interface {
 	ResolveUpstreamSslConfig(snap *v1.ApiSnapshot, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
 	ResolveDownstreamSslConfig(snap *v1.ApiSnapshot, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
@@ -187,7 +203,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
 		return s.handleSds(sslSecrets, cs.GetVerifySubjectAltName())
 	} else {
-		return nil, errors.Errorf("no certificate information found")
+		return nil, NoCertificateFoundError
 	}
 
 	dataSource := dataSourceGenerator(inlineDataSource)
@@ -247,12 +263,12 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, error) {
 	secret, err := secrets.Find(ref.Strings())
 	if err != nil {
-		return "", "", "", errors.Wrapf(err, "SSL secret not found")
+		return "", "", "", SslSecretNotFoundError(err)
 	}
 
 	sslSecret, ok := secret.Kind.(*v1.Secret_Tls)
 	if !ok {
-		return "", "", "", errors.Errorf("%v is not a TLS secret", secret.GetMetadata().Ref())
+		return "", "", "", NotTlsSecretError(secret.GetMetadata().Ref())
 	}
 
 	certChain := sslSecret.Tls.CertChain
@@ -302,5 +318,5 @@ func convertVersion(v v1.SslParameters_ProtocolVersion) (envoyauth.TlsParameters
 		return envoyauth.TlsParameters_TLSv1_3, nil
 	}
 
-	return envoyauth.TlsParameters_TLS_AUTO, errors.Errorf("tls version %v not found", v)
+	return envoyauth.TlsParameters_TLS_AUTO, TlsVersionNotFoundError(v)
 }

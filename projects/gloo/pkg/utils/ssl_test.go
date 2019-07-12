@@ -6,7 +6,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -117,6 +117,7 @@ var _ = Describe("Ssl", func() {
 			secret.Kind = &v1.Secret_Aws{}
 			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets)
 			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(NotTlsSecretError(secret.GetMetadata().Ref())))
 		})
 
 		DescribeTable("should resolve from secret refs",
