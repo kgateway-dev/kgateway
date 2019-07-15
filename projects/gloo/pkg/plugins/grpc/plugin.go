@@ -113,6 +113,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func genFullServiceName(packageName, serviceName string) string {
+	if packageName == "" {
+		return serviceName
+	}
 	return packageName + "." + serviceName
 }
 
