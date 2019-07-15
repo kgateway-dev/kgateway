@@ -127,6 +127,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 		Port         uint32
 		PodName      string
 		PodNamespace string
+		UpstreamRef  core.ResourceRef
 	}
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
@@ -201,7 +202,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 							continue
 						}
 					}
-					key := Epkey{addr.IP, port, podName, podNamespace}
+					key := Epkey{addr.IP, port, podName, podNamespace, usRef}
 					copyRef := usRef
 					endpointsMap[key] = append(endpointsMap[key], &copyRef)
 				}
