@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
+
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/pkg/utils"
@@ -17,15 +19,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
-)
-
-const (
-	EndpointMetadataMatchTrue  = "1"
-	EndpointMetadataMatchFalse = "0"
-
-	// We use these prefixes to avoid shadowing in case a data center name is the same as a tag name
-	TagKeyPrefix        = "tag_"
-	DataCenterKeyPrefix = "dc_"
 )
 
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
@@ -121,7 +114,7 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
 					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
-						endpoints = append(endpoints, createEndpoint(spec, upstreams))
+						endpoints = append(endpoints, buildEndpoint(spec, upstreams))
 					}
 				}
 
@@ -146,12 +139,64 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 	return endpointsChan, errChan, nil
 }
 
-func createEndpoint(service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+// The ServiceTags on the Consul Upstream(s) represent all tags for Consul services with the given ServiceName across
+// data centers. We create an endpoint label for each of these tags, where the label key is the name of the tag and
+// the label value is "1" if the current service contains the same tag, else "0".
+func BuildTagMetadata(tags []string, upstreams []*v1.Upstream) map[string]string {
+
+	// Build maps for quick lookup
+	svcTags := make(map[string]bool)
+	for _, tag := range tags {
+		svcTags[tag] = true
+	}
+
+	labels := make(map[string]string)
+	for _, usTag := range getUniqueUpstreamTags(upstreams) {
+
+		// Prepend prefix
+		tagKey := constants.TagKeyPrefix + usTag
+
+		if _, ok := svcTags[usTag]; ok {
+			labels[tagKey] = constants.EndpointMetadataMatchTrue
+		} else {
+			labels[tagKey] = constants.EndpointMetadataMatchFalse
+		}
+	}
+
+	return labels
+}
+
+// Similarly to what we do with tags, create a label for each data center and set it to "1" if the service instance
+// is running in that data center.
+func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map[string]string {
+
+	// Build maps for quick lookup
+	svcDataCenters := make(map[string]bool)
+	for _, dc := range dataCenters {
+		svcDataCenters[dc] = true
+	}
+
+	labels := make(map[string]string)
+	for _, dc := range getUniqueUpstreamDataCenters(upstreams) {
+
+		// Prepend prefix
+		dcKey := constants.DataCenterKeyPrefix + dc
+
+		if _, ok := svcDataCenters[dc]; ok {
+			labels[dcKey] = constants.EndpointMetadataMatchTrue
+		} else {
+			labels[dcKey] = constants.EndpointMetadataMatchFalse
+		}
+	}
+	return labels
+}
+
+func buildEndpoint(service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
 	ep := &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       "", // no namespace
 			Name:            buildEndpointName(service),
-			Labels:          buildLabels(service, upstreams),
+			Labels:          buildLabels(service.ServiceTags, []string{service.Datacenter}, upstreams),
 			ResourceVersion: strconv.FormatUint(service.ModifyIndex, 10),
 		},
 		Upstreams: toResourceRefs(upstreams),
@@ -170,42 +215,11 @@ func buildEndpointName(service *consulapi.CatalogService) string {
 }
 
 // The labels will be used by to match the endpoint to the subsets of the cluster represented by the upstream.
-func buildLabels(service *consulapi.CatalogService, upstreams []*v1.Upstream) map[string]string {
-	svcTags := make(map[string]bool)
-	for _, tag := range service.ServiceTags {
-		svcTags[tag] = true
+func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[string]string {
+	labels := BuildTagMetadata(tags, upstreams)
+	for dcLabelKey, dcLabelValue := range BuildDataCenterMetadata(dataCenters, upstreams) {
+		labels[dcLabelKey] = dcLabelValue
 	}
-
-	// The ServiceTags on the Consul Upstream(s) represent all tags for Consul services with the given ServiceName across
-	// data centers. We create an endpoint label for each of these tags, where the label key is the name of the tag and
-	// the label value is "1" if the current service contains the same tag, else "0".
-	labels := make(map[string]string)
-	for _, usTag := range getUniqueUpstreamTags(upstreams) {
-
-		// Prepend prefix
-		tagKey := TagKeyPrefix + usTag
-
-		if _, ok := svcTags[usTag]; ok {
-			labels[tagKey] = EndpointMetadataMatchTrue
-		} else {
-			labels[tagKey] = EndpointMetadataMatchFalse
-		}
-	}
-
-	// Similarly to what we do with tags, create a label for each data center and set it to "1" if the service instance
-	// is running in that data center.
-	for _, dc := range getUniqueUpstreamDataCenters(upstreams) {
-
-		// Prepend prefix
-		dcKey := DataCenterKeyPrefix + dc
-
-		if dc == service.Datacenter {
-			labels[dcKey] = EndpointMetadataMatchTrue
-		} else {
-			labels[dcKey] = EndpointMetadataMatchFalse
-		}
-	}
-
 	return labels
 }
 

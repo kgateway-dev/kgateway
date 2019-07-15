@@ -1,6 +1,9 @@
 package v1
 
 import (
+	"sort"
+
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 )
 
@@ -26,4 +29,46 @@ func (us *UpstreamSpec_Kube) GetSubsetSpec() *plugins.SubsetSpec {
 
 func (us *UpstreamSpec_Kube) SetSubsetSpec(spec *plugins.SubsetSpec) {
 	us.Kube.SubsetSpec = spec
+}
+
+func (us *UpstreamSpec_Consul) GetSubsetSpec() *plugins.SubsetSpec {
+	subsets := &plugins.SubsetSpec{}
+
+	// Add a subset selector for data centers
+	// This will cause Envoy to partition the endpoints by their data center
+	var dataCenterMetadataKeys []string
+	for _, dc := range us.Consul.DataCenters {
+		dataCenterMetadataKeys = append(dataCenterMetadataKeys, constants.DataCenterKeyPrefix+dc)
+	}
+	sort.Strings(dataCenterMetadataKeys)
+
+	subsets.Selectors = append(subsets.Selectors, &plugins.Selector{
+		Keys: dataCenterMetadataKeys,
+	})
+
+	if tags := us.Consul.ServiceTags; len(tags) > 0 {
+
+		// If any tags are present, create a subset selector with the tags as key set
+		// This will cause Envoy to partition the endpoints (service instances) by their tags
+		var tagMetadataKeys []string
+		for _, tag := range tags {
+			tagMetadataKeys = append(tagMetadataKeys, constants.TagKeyPrefix+tag)
+		}
+		sort.Strings(tagMetadataKeys)
+
+		subsets.Selectors = append(subsets.Selectors, &plugins.Selector{
+			Keys: tagMetadataKeys,
+		})
+
+		// Also create a subset selector with both the data center and the tag keys
+		// This will cause Envoy to partition the endpoints by data center and by their tags
+		var allKeys []string
+		allKeys = append(allKeys, dataCenterMetadataKeys...)
+		allKeys = append(allKeys, tagMetadataKeys...)
+		subsets.Selectors = append(subsets.Selectors, &plugins.Selector{
+			Keys: allKeys,
+		})
+	}
+
+	return subsets
 }

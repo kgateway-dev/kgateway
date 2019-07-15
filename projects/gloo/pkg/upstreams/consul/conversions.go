@@ -31,12 +31,12 @@ func fakeUpstreamName(consulSvcName string) string {
 func toUpstreamList(services []*ServiceMeta) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
-		upstreams = append(upstreams, toUpstream(svc))
+		upstreams = append(upstreams, ToUpstream(svc))
 	}
 	return upstreams
 }
 
-func toUpstream(service *ServiceMeta) *v1.Upstream {
+func ToUpstream(service *ServiceMeta) *v1.Upstream {
 	return &v1.Upstream{
 		Metadata: core.Metadata{
 			Name:      fakeUpstreamName(service.Name),

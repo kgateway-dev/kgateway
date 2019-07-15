@@ -5,6 +5,8 @@ import (
 	"sort"
 	"sync/atomic"
 
+	. "github.com/solo-io/gloo/projects/gloo/constants"
+
 	"github.com/golang/mock/gomock"
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
@@ -295,7 +297,7 @@ var _ = Describe("Consul EDS", func() {
 			}
 			upstream := createTestUpstream("my-svc", []string{"tag-1", "tag-2", "tag-3"}, []string{"dc-1", "dc-2"})
 
-			endpoint := createEndpoint(consulService, v1.UpstreamList{upstream})
+			endpoint := buildEndpoint(consulService, v1.UpstreamList{upstream})
 
 			Expect(endpoint).To(BeEquivalentTo(&v1.Endpoint{
 				Metadata: core.Metadata{

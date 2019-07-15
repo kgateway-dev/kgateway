@@ -3,6 +3,9 @@ package translator
 import (
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+
 	"github.com/gogo/protobuf/proto"
 
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -216,7 +219,12 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 		out.ClusterSpecifier = &envoyroute.RouteAction_Cluster{
 			Cluster: UpstreamToClusterName(*usRef),
 		}
-		out.MetadataMatch = getSubsetMatch(dest.Single.Subset)
+
+		upstream, err := params.Snapshot.Upstreams.Find(usRef.Namespace, usRef.Name)
+		if err != nil {
+			return err // should never happen, as we already validated the destination
+		}
+		out.MetadataMatch = getSubsetMatch(dest.Single, upstream)
 
 		return checkThatSubsetMatchesUpstream(params, dest.Single)
 	case *v1.RouteAction_Multi:
@@ -252,11 +260,16 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 			return err
 		}
 
+		upstream, err := params.Snapshot.Upstreams.Find(usRef.Namespace, usRef.Name)
+		if err != nil {
+			return err // should never happen, as we already validated the destination
+		}
+
 		totalWeight += weightedDest.Weight
 		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, &envoyroute.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(*usRef),
 			Weight:        &types.UInt32Value{Value: weightedDest.Weight},
-			MetadataMatch: getSubsetMatch(weightedDest.Destination.Subset),
+			MetadataMatch: getSubsetMatch(weightedDest.Destination, upstream),
 		})
 
 		if err = checkThatSubsetMatchesUpstream(params, weightedDest.Destination); err != nil {
@@ -270,12 +283,45 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 	return nil
 }
 
-func getSubsetMatch(subset *v1.Subset) *envoycore.Metadata {
+func getSubsetMatch(destination *v1.Destination, upstream *v1.Upstream) *envoycore.Metadata {
+	var routeMetadata *envoycore.Metadata
+
 	// TODO(yuval-k): should we add validation that the route subset indeed exists in the upstream?
-	if subset == nil {
-		return nil
+	// First convert the subset information on the base destination, if present
+	if destination.Subset != nil {
+		routeMetadata = getLbMetadata(nil, destination.Subset.Values, "")
 	}
-	return getLbMetadata(nil, subset.Values)
+
+	// TODO(marco): consider cleaning up the route API so that subset information is specified on the typed destination
+	// If this is a Consul destination, add the correspondent subset information
+	// NOTE: if dest.Subset is set on a Consul upstream, this will overwrite it!
+	if consulDestination := destination.GetConsul(); consulDestination != nil {
+		routeMetadata = consulMetadataMatch(consulDestination, upstream)
+	}
+
+	return routeMetadata
+}
+
+// TODO: document a bit
+func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstream) *envoycore.Metadata {
+	labels := make(map[string]string)
+
+	// If tag filter is provided, set the correspondent metadata.
+	// Otherwise don't set them (will match endpoints regardless of tags).
+	if len(dest.Tags) > 0 {
+		labels = consul.BuildTagMetadata(dest.Tags, v1.UpstreamList{upstream})
+	}
+
+	// If data center filter is provided, set the correspondent metadata.
+	// Otherwise don't set them (will match endpoints in any data center).
+	if len(dest.DataCenters) > 0 {
+		dcLabels := consul.BuildDataCenterMetadata(dest.DataCenters, v1.UpstreamList{upstream})
+		for k, v := range dcLabels {
+			labels[k] = v
+		}
+	}
+
+	return getLbMetadata(upstream, labels, constants.EndpointMetadataMatchFalse)
 }
 
 func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination) error {
