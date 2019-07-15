@@ -20,6 +20,7 @@ import (
 //    mkdir -p glootest
 //    mkdir -p descriptors
 //    protoc -I. --go_out=plugins=grpc:glootest --descriptor_set_out=descriptors/proto.pb protos/glootest.proto
+//    protoc -I. --go_out=plugins=grpc:glootest --descriptor_set_out=descriptors/proto-nopkg.pb protos/glootest-nopackage.proto; sed -i 's/package glootest_nopackage/package glootest/' glootest/protos/glootest-nopackage.pb.go
 
 func RunServer(ctx context.Context) *TestGRPCServer {
 	lis, err := net.Listen("tcp", ":0")
@@ -30,6 +31,7 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	reflection.Register(grpcServer)
 	srv := newServer()
 	glootest.RegisterTestServiceServer(grpcServer, srv)
+	glootest.RegisterTestService2Server(grpcServer, srv)
 	go grpcServer.Serve(lis)
 	time.Sleep(time.Millisecond)
 
@@ -69,4 +71,14 @@ func (s *TestGRPCServer) TestMethod(_ context.Context, req *glootest.TestRequest
 		s.C <- req
 	}()
 	return &glootest.TestResponse{Str: req.Str}, nil
+}
+
+func (s *TestGRPCServer) TestMethod2(_ context.Context, req *glootest.TestRequest2) (*glootest.TestResponse2, error) {
+	if req == nil {
+		return nil, errors.New("cannot be nil")
+	}
+	go func() {
+		s.C <- &glootest.TestRequest{Str: req.Str}
+	}()
+	return &glootest.TestResponse2{Str: req.Str}, nil
 }
