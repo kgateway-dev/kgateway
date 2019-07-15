@@ -20,9 +20,12 @@ import (
 )
 
 const (
-	EndpointTagMatchTrue  = "1"
-	EndpointTagMatchFalse = "0"
-	DataCenterLabelKey    = "data_center"
+	EndpointMetadataMatchTrue  = "1"
+	EndpointMetadataMatchFalse = "0"
+
+	// We use these prefixes to avoid shadowing in case a data center name is the same as a tag name
+	TagKeyPrefix        = "tag_"
+	DataCenterKeyPrefix = "dc_"
 )
 
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
@@ -178,15 +181,30 @@ func buildLabels(service *consulapi.CatalogService, upstreams []*v1.Upstream) ma
 	// the label value is "1" if the current service contains the same tag, else "0".
 	labels := make(map[string]string)
 	for _, usTag := range getUniqueUpstreamTags(upstreams) {
+
+		// Prepend prefix
+		tagKey := TagKeyPrefix + usTag
+
 		if _, ok := svcTags[usTag]; ok {
-			labels[usTag] = EndpointTagMatchTrue
+			labels[tagKey] = EndpointMetadataMatchTrue
 		} else {
-			labels[usTag] = EndpointTagMatchFalse
+			labels[tagKey] = EndpointMetadataMatchFalse
 		}
 	}
 
-	// Create a label to associate the endpoint with a data center
-	labels[DataCenterLabelKey] = service.Datacenter
+	// Similarly to what we do with tags, create a label for each data center and set it to "1" if the service instance
+	// is running in that data center.
+	for _, dc := range getUniqueUpstreamDataCenters(upstreams) {
+
+		// Prepend prefix
+		dcKey := DataCenterKeyPrefix + dc
+
+		if dc == service.Datacenter {
+			labels[dcKey] = EndpointMetadataMatchTrue
+		} else {
+			labels[dcKey] = EndpointMetadataMatchFalse
+		}
+	}
 
 	return labels
 }
@@ -207,6 +225,19 @@ func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 	}
 	for tag := range tagMap {
 		tags = append(tags, tag)
+	}
+	return
+}
+
+func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) (dataCenters []string) {
+	dcMap := make(map[string]bool)
+	for _, us := range upstreams {
+		for _, dc := range us.UpstreamSpec.GetConsul().DataCenters {
+			dcMap[dc] = true
+		}
+	}
+	for dc := range dcMap {
+		dataCenters = append(dataCenters, dc)
 	}
 	return
 }
