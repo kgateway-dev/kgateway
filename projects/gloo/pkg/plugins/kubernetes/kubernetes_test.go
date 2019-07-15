@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -134,6 +133,7 @@ var _ = Describe("Kubernetes", func() {
 			setup.TeardownKube(svcNamespace)
 		})
 
+		// TODO: why is this not working?
 		PIt("uses json keys when serializing", func() {
 			plug := kubeplugin.NewPlugin(kubeClient).(discovery.DiscoveryPlugin)
 			upstreams, errs, err := plug.DiscoverUpstreams([]string{svcNamespace}, svcNamespace, clients.WatchOpts{
@@ -179,16 +179,8 @@ var _ = Describe("Kubernetes", func() {
 				clients.WatchOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() (v1.EndpointList, error) {
-				select {
-				case <-time.After(time.Second):
-					return nil, errors.Errorf("waiting for new set of endpoints")
-				case err := <-errs:
-					return nil, err
-				case eps := <-eds:
-					return eps, nil
-				}
-			}).Should(HaveLen(6)) // 2 endpoints x 3 upstreams
+			Eventually(eds, time.Second).Should(Receive(HaveLen(6)))
+			Consistently(errs).Should(Not(Receive()))
 		})
 	})
 })
