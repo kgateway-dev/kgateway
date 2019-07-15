@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -116,6 +119,7 @@ var _ = Describe("Translator", func() {
 			},
 		}}
 	})
+
 	JustBeforeEach(func() {
 		translator = NewTranslator(registeredPlugins, settings)
 		proxy = &v1.Proxy{
@@ -139,6 +143,7 @@ var _ = Describe("Translator", func() {
 			}},
 		}
 	})
+
 	translate := func() {
 
 		snap, errs, err := translator.Translate(params, proxy)
@@ -675,6 +680,181 @@ var _ = Describe("Translator", func() {
 			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
 			Expect(ok).To(BeTrue())
 			Expect(clusterAction.Cluster).To(Equal(UpstreamToClusterName(fakeUsList[0].Metadata.Ref())))
+		})
+	})
+
+	Context("when translating a route that points to a Consul service", func() {
+
+		var (
+			fakeUsList v1.UpstreamList
+			dc         = func(dataCenterName string) string {
+				return constants.DataCenterKeyPrefix + dataCenterName
+			}
+			tag = func(tagName string) string {
+				return constants.TagKeyPrefix + tagName
+			}
+
+			trueValue = &types.Value{
+				Kind: &types.Value_StringValue{
+					StringValue: constants.EndpointMetadataMatchTrue,
+				},
+			}
+			falseValue = &types.Value{
+				Kind: &types.Value_StringValue{
+					StringValue: constants.EndpointMetadataMatchFalse,
+				},
+			}
+		)
+
+		const (
+			svcName = "my-consul-svc"
+
+			// Data centers
+			east = "east"
+			west = "west"
+
+			// Tags
+			dev  = "dev"
+			prod = "prod"
+
+			yes = constants.EndpointMetadataMatchTrue
+			no  = constants.EndpointMetadataMatchFalse
+		)
+
+		BeforeEach(func() {
+
+			// Metadata for the Consul service that we want to route to
+			svc := &consul.ServiceMeta{
+				Name:        svcName,
+				DataCenters: []string{east, west},
+				Tags:        []string{dev, prod},
+			}
+			// These are the "fake" upstreams that represent the above service in the snapshot
+			fakeUsList = v1.UpstreamList{consul.ToUpstream(svc)}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, fakeUsList...)
+
+			// We need to manually add some fake endpoints for the above Consul service
+			// Normally these would have been discovered by EDS
+			params.Snapshot.Endpoints = v1.EndpointList{
+				// 2 prod endpoints, 1 in each data center, 1 dev endpoint in west data center
+				{
+					Metadata: core.Metadata{
+						Namespace: "",
+						Name:      svc.Name + "_1",
+						Labels: map[string]string{
+							dc(east):  yes,
+							dc(west):  no,
+							tag(dev):  no,
+							tag(prod): yes,
+						},
+					},
+					Port:      1001,
+					Address:   "1.0.0.1",
+					Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(fakeUsList[0].Metadata.Ref())},
+				},
+				{
+					Metadata: core.Metadata{
+						Namespace: "",
+						Name:      svc.Name + "_2",
+						Labels: map[string]string{
+							dc(east):  no,
+							dc(west):  yes,
+							tag(dev):  no,
+							tag(prod): yes,
+						},
+					},
+					Port:      2001,
+					Address:   "2.0.0.1",
+					Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(fakeUsList[0].Metadata.Ref())},
+				},
+				{
+					Metadata: core.Metadata{
+						Namespace: "",
+						Name:      svc.Name + "_3",
+						Labels: map[string]string{
+							dc(east):  no,
+							dc(west):  yes,
+							tag(dev):  yes,
+							tag(prod): no,
+						},
+					},
+					Port:      2002,
+					Address:   "2.0.0.2",
+					Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(fakeUsList[0].Metadata.Ref())},
+				},
+			}
+
+			// Configure Proxy to route to the service
+			serviceDestination := v1.Destination{
+				DestinationType: &v1.Destination_Consul{
+					Consul: &v1.ConsulServiceDestination{
+						ServiceName: svcName,
+						Tags:        []string{prod},
+						DataCenters: []string{east},
+					},
+				},
+			}
+			routes = []*v1.Route{{
+				Matcher: matcher,
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &serviceDestination,
+						},
+					},
+				},
+			}}
+		})
+
+		It("generates the expected envoy route configuration", func() {
+			translate()
+
+			// A cluster has been created for the "fake" upstream and has the expected subset config
+			clusters := snapshot.GetResources(xds.ClusterType)
+			clusterResource := clusters.Items[UpstreamToClusterName(fakeUsList[0].Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			Expect(cluster).NotTo(BeNil())
+			Expect(cluster.LbSubsetConfig).NotTo(BeNil())
+			Expect(cluster.LbSubsetConfig.SubsetSelectors).To(HaveLen(3))
+			// Order is important here
+			Expect(cluster.LbSubsetConfig.SubsetSelectors).To(ConsistOf(
+				&envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+					Keys: []string{dc(east), dc(west)},
+				},
+				&envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+					Keys: []string{tag(dev), tag(prod)},
+				},
+				&envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+					Keys: []string{dc(east), dc(west), tag(dev), tag(prod)},
+				},
+			))
+
+			// A route to the kube service has been configured
+			routes := snapshot.GetResources(xds.RouteType)
+			Expect(routes.Items).To(HaveKey("listener-routes"))
+			routeResource := routes.Items["listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			routeAction, ok := routeConfiguration.VirtualHosts[0].Routes[0].Action.(*envoyrouteapi.Route_Route)
+			Expect(ok).To(BeTrue())
+
+			clusterAction, ok := routeAction.Route.ClusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
+			Expect(ok).To(BeTrue())
+			Expect(clusterAction.Cluster).To(Equal(UpstreamToClusterName(fakeUsList[0].Metadata.Ref())))
+
+			Expect(routeAction.Route).NotTo(BeNil())
+			Expect(routeAction.Route.MetadataMatch).NotTo(BeNil())
+			metadata, ok := routeAction.Route.MetadataMatch.FilterMetadata[EnvoyLb]
+			Expect(ok).To(BeTrue())
+			Expect(metadata.Fields).To(HaveLen(4))
+			Expect(metadata.Fields[dc(east)]).To(Equal(trueValue))
+			Expect(metadata.Fields[dc(west)]).To(Equal(falseValue))
+			Expect(metadata.Fields[tag(dev)]).To(Equal(falseValue))
+			Expect(metadata.Fields[tag(prod)]).To(Equal(trueValue))
 		})
 	})
 
