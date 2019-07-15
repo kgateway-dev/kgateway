@@ -2,11 +2,12 @@ package kubernetes
 
 import (
 	"context"
-	"crypto/md5"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
+
+	sanitizer "github.com/solo-io/go-utils/kubeutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
@@ -155,21 +156,13 @@ func UseHttp2(svc *kubev1.Service, port kubev1.ServicePort) bool {
 }
 
 func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
-	const maxLen = 63
 
 	var labelsTag string
 	if len(extraLabels) > 0 {
 		_, values := keysAndValues(extraLabels)
 		labelsTag = fmt.Sprintf("-%v", strings.Join(values, "-"))
 	}
-	name := fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort)
-	if len(name) > maxLen {
-		hash := md5.Sum([]byte(name))
-		hexhash := fmt.Sprintf("%x", hash)
-		name = name[:maxLen-len(hexhash)] + hexhash
-	}
-	name = strings.Replace(name, ".", "-", -1)
-	return name
+	return sanitizer.SanitizeNameV2(fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort))
 }
 
 // TODO: move to a utils package
