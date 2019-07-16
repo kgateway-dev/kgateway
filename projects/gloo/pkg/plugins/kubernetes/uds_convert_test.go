@@ -69,12 +69,6 @@ var _ = Describe("UdsConvert", func() {
 		Expect(name).To(Equal(name2))
 	})
 
-	It("should sanitize the same way with truncation", func() {
-		name := UpstreamNameOld(strings.Repeat("y", 120), "gloo-system", 12, map[string]string{"test": "label"})
-		name2 := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, map[string]string{"test": "label"})
-		Expect(name).To(Equal(name2))
-	})
-
 	It("should ignore ignored labels", func() {
 
 		svcSelector := map[string]string{"app": "foo"}
