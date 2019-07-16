@@ -92,6 +92,14 @@
   version = "v2.18.0"
 
 [[projects]]
+  digest = "1:f9ae348e1f793dcf9ed930ed47136a67343dbd6809c5c91391322267f4476892"
+  name = "github.com/Microsoft/go-winio"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1a8911d1ed007260465c3bfbbc785ac6915a0bb8"
+  version = "v0.4.12"
+
+[[projects]]
   branch = "master"
   digest = "1:3f44afe45c6c5038d9d0bec55b8b9e598b3dba2547d99ba353d7c3bb485d01fa"
   name = "github.com/Netflix/go-expect"
@@ -122,6 +130,14 @@
   pruneopts = "UT"
   revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
   version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:0ec614bb3b9eb0b5717fe82b51dc9cc16d7de861ab73affe1c06d1c75a3c8534"
+  name = "github.com/armon/circbuf"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5111143e8da2e98b4ea6a8f32b9065ea1821c191"
 
 [[projects]]
   branch = "master"
@@ -307,6 +323,14 @@
   pruneopts = "UT"
   revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
   version = "v1.13.1"
+
+[[projects]]
+  digest = "1:5a900d94d96d41ea116d7e6c46717fdf330f35d8bdd116798e2bc0c319f66565"
+  name = "github.com/docker/go-connections"
+  packages = ["sockets"]
+  pruneopts = "UT"
+  revision = "7395e3f8aa162843a74ed6d48e79627d9792ac55"
+  version = "v0.4.0"
 
 [[projects]]
   branch = "master"
@@ -704,19 +728,23 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:e1c09cbd20e331f7962b644d1a3bae75edffbe20f6fc8818cdea332f36db4688"
+  digest = "1:e3a87b36d24cf870eac1fd044eb3df4449fd3a7ae82f78ddd31ac708d0771fbb"
   name = "github.com/hashicorp/consul"
   packages = [
     "acl",
     "agent/cache",
+    "agent/checks",
     "agent/config",
     "agent/connect",
     "agent/connect/ca",
     "agent/consul",
+    "agent/consul/authmethod",
+    "agent/consul/authmethod/kubeauth",
     "agent/consul/autopilot",
     "agent/consul/fsm",
     "agent/consul/prepared_query",
     "agent/consul/state",
+    "agent/exec",
     "agent/metadata",
     "agent/pool",
     "agent/router",
@@ -725,6 +753,7 @@
     "api",
     "ipaddr",
     "lib",
+    "lib/semaphore",
     "sentinel",
     "snapshot",
     "tlsutil",
@@ -732,7 +761,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "eba25a143821cec25bdb48fe64dd7b7a6152d01d"
+  revision = "a82e6a7fd33a0d05b9b871bcaf1d7595c9b8dedc"
+  version = "v1.5.2"
 
 [[projects]]
   branch = "master"
@@ -743,12 +773,28 @@
   revision = "d6c0cd88035724dd42e0f335ae30161c20575ecc"
 
 [[projects]]
+  digest = "1:a97a3a7d9bfff0da8bab62bac1839f84bc530425b38cdae48b4ba67de9116e80"
+  name = "github.com/hashicorp/go-bexpr"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4007189f46bb28292d9267d67f2664d96246a161"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:77cb3be9b21ba7f1a4701e870c84ea8b66e7d74c7c8951c58155fdadae9414ec"
   name = "github.com/hashicorp/go-cleanhttp"
   packages = ["."]
   pruneopts = "UT"
   revision = "d5fe4b57a186c716b0e00b8c301cbd9b4182694d"
+
+[[projects]]
+  digest = "1:cf6b61e1b4c26b0c7526cee4a0cee6d8302b17798af4b2a56a90eedac0aef11a"
+  name = "github.com/hashicorp/go-hclog"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5ccdce08c75b6c7b37af61159f13f6a4f5e2e928"
+  version = "v0.9.2"
 
 [[projects]]
   digest = "1:2be5a35f0c5b35162c41bb24971e5dcf6ce825403296ee435429cdcc4e1e847e"
@@ -901,14 +947,15 @@
   revision = "6e5ba93211eaf8d9a2ad7e41ffad8c6f160f9fe3"
 
 [[projects]]
-  digest = "1:214a66c340c52833ece014b2725e7aa67be8c8a9cd650c6a48701af1bd5f9a87"
+  digest = "1:56f92ad6e3432c53f4912c9d7c0b9a66cc19338f6a98f100d3b4557a32f1a33a"
   name = "github.com/hashicorp/serf"
   packages = [
     "coordinate",
     "serf",
   ]
   pruneopts = "UT"
-  revision = "19bbd39e421bdf3559d5025fb2c760f5ffa56233"
+  revision = "15cfd05de3dffb3664aa37b06e91f970b825e380"
+  version = "v0.8.3"
 
 [[projects]]
   digest = "1:31e20c290aaed8b03e36350241a9f862e4fd53d11780a41d231771ace9a1be03"
@@ -1828,7 +1875,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7accd33a3e00d6f416024d6466be6bf92a039647b5a8dc29f37b8d83f1dc86f5"
+  digest = "1:7420783d28b7b3043331422ac9fd65339ae05bb54157d5c19acb5a06cc8583bb"
   name = "golang.org/x/net"
   packages = [
     "bpf",
@@ -1843,9 +1890,11 @@
     "idna",
     "internal/iana",
     "internal/socket",
+    "internal/socks",
     "internal/timeseries",
     "ipv4",
     "ipv6",
+    "proxy",
     "trace",
   ]
   pruneopts = "UT"
@@ -1867,9 +1916,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b521f10a2d8fa85c04a8ef4e62f2d1e14d303599a55d64dabf9f5a02f84d35eb"
+  digest = "1:f4ec870c5739294b56471dbda4dd0793cf75f7bfe8a229dcbb8c691e52d17d8a"
   name = "golang.org/x/sync"
-  packages = ["errgroup"]
+  packages = [
+    "errgroup",
+    "singleflight",
+  ]
   pruneopts = "UT"
   revision = "37e7f081c4d4c64e13b10787722085407fe5d15f"
 
@@ -1968,7 +2020,7 @@
   revision = "02b4e95473316948020af0b7a4f0f22c73929b0e"
 
 [[projects]]
-  digest = "1:d51efa1a467f426c6c490a450f9e064ef27ca3181fc9cc960996664be3c1b80a"
+  digest = "1:e22ed6aaa8b1ca4f88f062a3b61b8432ff221feddfc8bafddd4ab6dae6997ff1"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -1981,6 +2033,7 @@
     "encoding",
     "encoding/proto",
     "grpclog",
+    "health/grpc_health_v1",
     "internal",
     "internal/backoff",
     "internal/channelz",

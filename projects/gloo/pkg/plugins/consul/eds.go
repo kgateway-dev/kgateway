@@ -24,7 +24,7 @@ import (
 // Starts a watch on the Consul service metadata endpoint for all the services associated with the tracked upstreams.
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
 // converts them to endpoints, and sends the result on the returned channel.
-func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
+func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	endpointsChan := make(chan v1.EndpointList)
 	errChan := make(chan error)
 
@@ -114,7 +114,7 @@ func (p *plugin) WatchEndpoints(_ string, upstreamsToTrack v1.UpstreamList, opts
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
 					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
-						endpoints = append(endpoints, buildEndpoint(spec, upstreams))
+						endpoints = append(endpoints, buildEndpoint(writeNamespace, spec, upstreams))
 					}
 				}
 
@@ -191,16 +191,24 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoint(service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+func buildEndpoint(namespace string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+
+	// Address is the IP address of the Consul node on which the service is registered.
+	// ServiceAddress is the IP address of the service host — if empty, node address should be used
+	address := service.ServiceAddress
+	if address == "" {
+		address = service.Address
+	}
+
 	ep := &v1.Endpoint{
 		Metadata: core.Metadata{
-			Namespace:       "", // no namespace
+			Namespace:       namespace,
 			Name:            buildEndpointName(service),
 			Labels:          buildLabels(service.ServiceTags, []string{service.Datacenter}, upstreams),
 			ResourceVersion: strconv.FormatUint(service.ModifyIndex, 10),
 		},
 		Upstreams: toResourceRefs(upstreams),
-		Address:   service.Address,
+		Address:   address,
 		Port:      uint32(service.ServicePort),
 	}
 	return ep
@@ -211,7 +219,7 @@ func buildEndpointName(service *consulapi.CatalogService) string {
 	if service.ServiceID != "" {
 		parts = append(parts, service.ServiceID)
 	}
-	return strings.Join(parts, "_")
+	return strings.Join(parts, "-")
 }
 
 // The labels will be used by to match the endpoint to the subsets of the cluster represented by the upstream.

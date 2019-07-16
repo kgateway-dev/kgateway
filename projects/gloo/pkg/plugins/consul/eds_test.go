@@ -5,6 +5,8 @@ import (
 	"sort"
 	"sync/atomic"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	. "github.com/solo-io/gloo/projects/gloo/constants"
 
 	"github.com/golang/mock/gomock"
@@ -22,6 +24,8 @@ import (
 )
 
 var _ = Describe("Consul EDS", func() {
+
+	const writeNamespace = defaults.GlooSystem
 
 	Describe("endpoints watch", func() {
 
@@ -137,7 +141,7 @@ var _ = Describe("Consul EDS", func() {
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
 				// 5 endpoints for service 1
-				createExpectedEndpoint(svc1, "a", "1.1.0.1", "100", 1234, map[string]string{
+				createExpectedEndpoint(svc1, "a", "1.1.0.1", "100", writeNamespace, 1234, map[string]string{
 					TagKeyPrefix + primary:    yes,
 					TagKeyPrefix + secondary:  no,
 					TagKeyPrefix + canary:     no,
@@ -145,7 +149,7 @@ var _ = Describe("Consul EDS", func() {
 					DataCenterKeyPrefix + dc2: no,
 					DataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "b", "1.1.0.2", "100", 1234, map[string]string{
+				createExpectedEndpoint(svc1, "b", "1.1.0.2", "100", writeNamespace, 1234, map[string]string{
 					TagKeyPrefix + primary:    yes,
 					TagKeyPrefix + secondary:  no,
 					TagKeyPrefix + canary:     no,
@@ -153,7 +157,7 @@ var _ = Describe("Consul EDS", func() {
 					DataCenterKeyPrefix + dc2: no,
 					DataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", 3456, map[string]string{
+				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
 					TagKeyPrefix + primary:    no,
 					TagKeyPrefix + secondary:  yes,
 					TagKeyPrefix + canary:     no,
@@ -161,7 +165,7 @@ var _ = Describe("Consul EDS", func() {
 					DataCenterKeyPrefix + dc2: yes,
 					DataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "d", "2.1.0.11", "100", 4567, map[string]string{
+				createExpectedEndpoint(svc1, "d", "2.1.0.11", "100", writeNamespace, 4567, map[string]string{
 					TagKeyPrefix + primary:    no,
 					TagKeyPrefix + secondary:  yes,
 					TagKeyPrefix + canary:     no,
@@ -169,7 +173,7 @@ var _ = Describe("Consul EDS", func() {
 					DataCenterKeyPrefix + dc2: yes,
 					DataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "e", "3.1.0.99", "100", 9999, map[string]string{
+				createExpectedEndpoint(svc1, "e", "3.1.0.99", "100", writeNamespace, 9999, map[string]string{
 					TagKeyPrefix + primary:    no,
 					TagKeyPrefix + secondary:  yes,
 					TagKeyPrefix + canary:     yes,
@@ -179,25 +183,25 @@ var _ = Describe("Consul EDS", func() {
 				}),
 
 				// 4 endpoints for service 2
-				createExpectedEndpoint(svc2, "a", "1.2.0.1", "100", 8080, map[string]string{
+				createExpectedEndpoint(svc2, "a", "1.2.0.1", "100", writeNamespace, 8080, map[string]string{
 					TagKeyPrefix + primary:    yes,
 					TagKeyPrefix + secondary:  no,
 					DataCenterKeyPrefix + dc1: yes,
 					DataCenterKeyPrefix + dc2: no,
 				}),
-				createExpectedEndpoint(svc2, "b", "1.2.0.2", "100", 8080, map[string]string{
+				createExpectedEndpoint(svc2, "b", "1.2.0.2", "100", writeNamespace, 8080, map[string]string{
 					TagKeyPrefix + primary:    yes,
 					TagKeyPrefix + secondary:  no,
 					DataCenterKeyPrefix + dc1: yes,
 					DataCenterKeyPrefix + dc2: no,
 				}),
-				createExpectedEndpoint(svc2, "c", "2.2.0.10", "100", 8088, map[string]string{
+				createExpectedEndpoint(svc2, "c", "2.2.0.10", "100", writeNamespace, 8088, map[string]string{
 					TagKeyPrefix + primary:    no,
 					TagKeyPrefix + secondary:  yes,
 					DataCenterKeyPrefix + dc1: no,
 					DataCenterKeyPrefix + dc2: yes,
 				}),
-				createExpectedEndpoint(svc2, "d", "2.2.0.11", "100", 8088, map[string]string{
+				createExpectedEndpoint(svc2, "d", "2.2.0.11", "100", writeNamespace, 8088, map[string]string{
 					TagKeyPrefix + primary:    no,
 					TagKeyPrefix + secondary:  yes,
 					DataCenterKeyPrefix + dc1: no,
@@ -212,7 +216,7 @@ var _ = Describe("Consul EDS", func() {
 
 			expectedEndpointsSecondAttempt = append(
 				expectedEndpointsFirstAttempt.Clone(),
-				createExpectedEndpoint(svc1, "b2", "1.1.0.3", "100", 1234, map[string]string{
+				createExpectedEndpoint(svc1, "b2", "1.1.0.3", "100", writeNamespace, 1234, map[string]string{
 					TagKeyPrefix + primary:    yes,
 					TagKeyPrefix + secondary:  no,
 					TagKeyPrefix + canary:     yes,
@@ -297,12 +301,12 @@ var _ = Describe("Consul EDS", func() {
 			}
 			upstream := createTestUpstream("my-svc", []string{"tag-1", "tag-2", "tag-3"}, []string{"dc-1", "dc-2"})
 
-			endpoint := buildEndpoint(consulService, v1.UpstreamList{upstream})
+			endpoint := buildEndpoint(writeNamespace, consulService, v1.UpstreamList{upstream})
 
 			Expect(endpoint).To(BeEquivalentTo(&v1.Endpoint{
 				Metadata: core.Metadata{
-					Namespace: "",
-					Name:      "my-svc_my-svc-0",
+					Namespace: writeNamespace,
+					Name:      "my-svc-my-svc-0",
 					Labels: map[string]string{
 						TagKeyPrefix + "tag-1":       EndpointMetadataMatchTrue,
 						TagKeyPrefix + "tag-2":       EndpointMetadataMatchFalse,
@@ -350,13 +354,13 @@ func createTestService(address, dc, name, id string, tags []string, port int, la
 	}
 }
 
-func createExpectedEndpoint(name, id, address, version string, port uint32, labels map[string]string) *v1.Endpoint {
+func createExpectedEndpoint(name, id, address, version, ns string, port uint32, labels map[string]string) *v1.Endpoint {
 	if id != "" {
-		id = "_" + id
+		id = "-" + id
 	}
 	return &v1.Endpoint{
 		Metadata: core.Metadata{
-			Namespace:       "",
+			Namespace:       ns,
 			Name:            name + id,
 			Labels:          labels,
 			ResourceVersion: version,

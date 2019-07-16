@@ -3,7 +3,6 @@ package translator
 import (
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 
 	"github.com/gogo/protobuf/proto"
@@ -302,7 +301,6 @@ func getSubsetMatch(destination *v1.Destination, upstream *v1.Upstream) *envoyco
 	return routeMetadata
 }
 
-// TODO: document a bit
 func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstream) *envoycore.Metadata {
 	labels := make(map[string]string)
 
@@ -321,7 +319,27 @@ func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstrea
 		}
 	}
 
-	return getLbMetadata(upstream, labels, constants.EndpointMetadataMatchFalse)
+	if len(labels) == 0 {
+		return nil
+	}
+
+	labelsStruct := &types.Struct{
+		Fields: map[string]*types.Value{},
+	}
+
+	for k, v := range labels {
+		labelsStruct.Fields[k] = &types.Value{
+			Kind: &types.Value_StringValue{
+				StringValue: v,
+			},
+		}
+	}
+
+	return &envoycore.Metadata{
+		FilterMetadata: map[string]*types.Struct{
+			EnvoyLb: labelsStruct,
+		},
+	}
 }
 
 func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination) error {
