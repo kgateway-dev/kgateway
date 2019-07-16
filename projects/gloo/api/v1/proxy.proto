@@ -258,7 +258,6 @@ message Destination {
         // Route requests to a kubernetes service
         KubernetesServiceDestination kube = 11;
 
-        // TODO(marco): NOTE: not implemented yet
         // Route requests to a consul service
         ConsulServiceDestination consul = 12;
     }
