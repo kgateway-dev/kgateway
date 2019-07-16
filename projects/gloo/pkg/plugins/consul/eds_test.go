@@ -244,7 +244,7 @@ var _ = Describe("Consul EDS", func() {
 		It("works as expected", func() {
 			eds := NewPlugin(consulWatcherMock)
 
-			endpointsChan, errorChan, err := eds.WatchEndpoints("", upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
+			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
 			Expect(err).NotTo(HaveOccurred())
 
