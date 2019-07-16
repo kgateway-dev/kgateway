@@ -39,6 +39,7 @@ weight: 5
 ```yaml
 "discoveryNamespace": string
 "watchNamespaces": []string
+"serviceDiscoveryNamespaces": []string
 "kubernetesConfigSource": .gloo.solo.io.Settings.KubernetesCrds
 "directoryConfigSource": .gloo.solo.io.Settings.Directory
 "kubernetesSecretSource": .gloo.solo.io.Settings.KubernetesSecrets
@@ -63,7 +64,8 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `discoveryNamespace` | `string` | namespace to write discovered data |  |
-| `watchNamespaces` | `[]string` | namespaces to watch for user config as well as services TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces... |  |
+| `watchNamespaces` | `[]string` | namespaces to watch for user config |  |
+| `serviceDiscoveryNamespaces` | `[]string` | namespaces to watch for services |  |
 | `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#kubernetescrds) |  |  |
 | `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
 | `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#kubernetessecrets) |  |  |
