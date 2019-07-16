@@ -16,15 +16,15 @@ var _ = Describe("UdsConvert", func() {
 
 		svcSelector := map[string]string{"app": "foo"}
 		podmetas := []map[string]string{
-			map[string]string{"app": "foo", "env": "prod"},
-			map[string]string{"app": "foo", "env": "prod"},
-			map[string]string{"app": "foo", "env": "dev"},
+			{"app": "foo", "env": "prod"},
+			{"app": "foo", "env": "prod"},
+			{"app": "foo", "env": "dev"},
 		}
 		result := GetUniqueLabelSetsForObjects(svcSelector, podmetas)
 		expected := []map[string]string{
-			map[string]string{"app": "foo"},
-			map[string]string{"app": "foo", "env": "prod"},
-			map[string]string{"app": "foo", "env": "dev"},
+			{"app": "foo"},
+			{"app": "foo", "env": "prod"},
+			{"app": "foo", "env": "dev"},
 		}
 		Expect(result).To(Equal(expected))
 	})
@@ -37,7 +37,7 @@ var _ = Describe("UdsConvert", func() {
 		Expect(len(name)).To(BeNumerically("<=", 63))
 	})
 
-	It("should handle colisions", func() {
+	It("should handle collisions", func() {
 		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
 		name2 := UpstreamName(strings.Repeat("y", 120)+"2", "gloo-system", 12, nil)
 		Expect(name).ToNot(Equal(name2))
@@ -47,12 +47,12 @@ var _ = Describe("UdsConvert", func() {
 
 		svcSelector := map[string]string{"app": "foo"}
 		podmetas := []map[string]string{
-			map[string]string{"app": "foo", "env": "prod", "release": "first"},
+			{"app": "foo", "env": "prod", "release": "first"},
 		}
 		result := GetUniqueLabelSetsForObjects(svcSelector, podmetas)
 		expected := []map[string]string{
-			map[string]string{"app": "foo"},
-			map[string]string{"app": "foo", "env": "prod"},
+			{"app": "foo"},
+			{"app": "foo", "env": "prod"},
 		}
 		Expect(result).To(Equal(expected))
 	})
