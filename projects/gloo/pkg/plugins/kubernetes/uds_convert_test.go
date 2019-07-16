@@ -2,6 +2,8 @@ package kubernetes
 
 import (
 	"context"
+	"crypto/md5"
+	"fmt"
 	"strings"
 
 	kubev1 "k8s.io/api/core/v1"
@@ -10,6 +12,24 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
+
+func UpstreamNameOld(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
+	const maxLen = 63
+
+	var labelsTag string
+	if len(extraLabels) > 0 {
+		_, values := keysAndValues(extraLabels)
+		labelsTag = fmt.Sprintf("-%v", strings.Join(values, "-"))
+	}
+	name := fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort)
+	if len(name) > maxLen {
+		hash := md5.Sum([]byte(name))
+		hexhash := fmt.Sprintf("%x", hash)
+		name = name[:maxLen-len(hexhash)] + hexhash
+	}
+	name = strings.Replace(name, ".", "-", -1)
+	return name
+}
 
 var _ = Describe("UdsConvert", func() {
 	It("should get uniq label set", func() {
@@ -41,6 +61,18 @@ var _ = Describe("UdsConvert", func() {
 		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
 		name2 := UpstreamName(strings.Repeat("y", 120)+"2", "gloo-system", 12, nil)
 		Expect(name).ToNot(Equal(name2))
+	})
+
+	It("should sanitize the same way", func() {
+		name := UpstreamNameOld("ns", "gloo-system", 12, map[string]string{"test": "label"})
+		name2 := UpstreamName("ns", "gloo-system", 12, map[string]string{"test": "label"})
+		Expect(name).To(Equal(name2))
+	})
+
+	It("should sanitize the same way with truncation", func() {
+		name := UpstreamNameOld(strings.Repeat("y", 120), "gloo-system", 12, map[string]string{"test": "label"})
+		name2 := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, map[string]string{"test": "label"})
+		Expect(name).To(Equal(name2))
 	})
 
 	It("should ignore ignored labels", func() {
