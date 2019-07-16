@@ -52,7 +52,7 @@ type TestClients struct {
 	GlooPort             int
 }
 
-var glooPortBase int32 = int32(30400)
+var glooPortBase = int32(30400)
 
 func AllocateGlooPort() int32 {
 	return atomic.AddInt32(&glooPortBase, 1) + int32(config.GinkgoConfig.ParallelNode*1000)
