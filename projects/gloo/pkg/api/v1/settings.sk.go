@@ -39,6 +39,7 @@ func (r *Settings) Hash() uint64 {
 		metaCopy,
 		r.DiscoveryNamespace,
 		r.WatchNamespaces,
+		r.ServiceDiscoveryNamespaces,
 		r.BindAddr,
 		r.RefreshRate,
 		r.DevMode,
