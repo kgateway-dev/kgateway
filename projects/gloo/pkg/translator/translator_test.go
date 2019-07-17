@@ -737,7 +737,7 @@ var _ = Describe("Translator", func() {
 	Context("TCP", func() {
 		It("can properly create a tcp listener", func() {
 			translate()
-			listeners :=snapshot.GetResources(xds.ListenerType).Items
+			listeners := snapshot.GetResources(xds.ListenerType).Items
 			Expect(listeners).NotTo(HaveLen(0))
 			val, found := listeners["tcp-listener"]
 			Expect(found).To(BeTrue())

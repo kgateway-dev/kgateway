@@ -125,7 +125,6 @@ var _ = Describe("Plugin", func() {
 			err = translatorutil.ParseConfig(&filterChains[0].Filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-
 			Expect(cfg.IdleTimeout).To(Equal(tcps.IdleTimeout))
 			Expect(cfg.MaxConnectAttempts).To(Equal(tcps.MaxConnectAttempts))
 		})

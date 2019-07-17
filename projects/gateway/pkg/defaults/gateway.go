@@ -59,8 +59,6 @@ func DefaultTcpSslGateway(writeNamespace string) *v2alpha1.Gateway {
 	return defaultgw
 }
 
-
-
 func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 	return &v1.VirtualService{
 		Metadata: core.Metadata{
