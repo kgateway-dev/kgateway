@@ -26,7 +26,6 @@ weight: 5
 ### KubeService
 
  
-
 A simple wrapper for a Kubernetes Service Object.
 
 ```yaml

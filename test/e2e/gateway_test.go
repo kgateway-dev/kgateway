@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2alpha1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -51,7 +52,7 @@ var _ = Describe("Gateway", func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 			// wait for the two gateways to be created.
-			Eventually(func() (gatewayv1.GatewayList, error) {
+			Eventually(func() (gatewayv2alpha1.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
@@ -67,11 +68,15 @@ var _ = Describe("Gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, g := range gw {
-				g.Plugins = &gloov1.HttpListenerPlugins{
-					GrpcWeb: &grpc_web.GrpcWeb{
-						Disable: true,
-					},
+				httpGateway := g.GetHttpGateway()
+				if httpGateway != nil {
+					httpGateway.Plugins = &gloov1.HttpListenerPlugins{
+						GrpcWeb: &grpc_web.GrpcWeb{
+							Disable: true,
+						},
+					}
 				}
+
 				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -98,7 +103,6 @@ var _ = Describe("Gateway", func() {
 									}
 								}
 							}
-
 						}
 					}
 					return numdisable, nil

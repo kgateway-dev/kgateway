@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
@@ -282,7 +283,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient)
 	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
-	apiSync := NewTranslatorSyncer(translator.NewTranslator(allPlugins, opts.Settings), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
+	apiSync := NewTranslatorSyncer(translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, allPlugins...), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
 	apiEventLoop := v1.NewApiEventLoop(apiCache, apiSync)
 	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {

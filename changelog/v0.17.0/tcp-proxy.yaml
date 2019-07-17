@@ -1,0 +1,7 @@
+changelog:
+- type: NEW_FEATURE
+  description: Fix race condition where helm chart sometimes wouldn't publish on release builds.
+  issueLink: https://github.com/solo-io/gloo/issues/778
+- type: BREAKING_CHANGE
+  description: update the gateway to have multiple types to support tcp proxy
+  issueLink: https://github.com/solo-io/gloo/issues/778

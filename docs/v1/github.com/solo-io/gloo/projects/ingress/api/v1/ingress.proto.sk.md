@@ -26,7 +26,6 @@ weight: 5
 ### Ingress
 
  
-
 A simple wrapper for a Kubernetes Ingress Object.
 
 ```yaml

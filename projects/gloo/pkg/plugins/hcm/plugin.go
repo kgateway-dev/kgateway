@@ -39,10 +39,10 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	if hl.HttpListener == nil {
 		return nil
 	}
-	if hl.HttpListener.Plugins == nil {
+	if hl.HttpListener.GetPlugins() == nil {
 		return nil
 	}
-	hcmSettings := hl.HttpListener.Plugins.HttpConnectionManagerSettings
+	hcmSettings := hl.HttpListener.GetPlugins().HttpConnectionManagerSettings
 	if hcmSettings == nil {
 		return nil
 	}

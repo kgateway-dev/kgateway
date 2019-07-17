@@ -15,18 +15,37 @@ const (
 	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"
 )
 
-type SslConfigTranslator struct {
-	secrets v1.SecretList
-}
-
-func NewSslConfigTranslator(secrets v1.SecretList) *SslConfigTranslator {
-	return &SslConfigTranslator{
-		secrets: secrets,
+var (
+	TlsVersionNotFoundError = func(v v1.SslParameters_ProtocolVersion) error {
+		return errors.Errorf("tls version %v not found", v)
 	}
+
+	SslSecretNotFoundError = func(err error) error {
+		return errors.Wrapf(err, "SSL secret not found")
+	}
+
+	NotTlsSecretError = func(ref core.ResourceRef) error {
+		return errors.Errorf("%v is not a TLS secret", ref)
+	}
+
+	NoCertificateFoundError = errors.New("no certificate information found")
+)
+
+type SslConfigTranslator interface {
+	ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
+	ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
+	ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error)
 }
 
-func (s *SslConfigTranslator) ResolveUpstreamSslConfig(uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(uc)
+type sslConfigTranslator struct {
+}
+
+func NewSslConfigTranslator() *sslConfigTranslator {
+	return &sslConfigTranslator{}
+}
+
+func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
+	common, err := s.ResolveCommonSslConfig(uc, secrets)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +54,8 @@ func (s *SslConfigTranslator) ResolveUpstreamSslConfig(uc *v1.UpstreamSslConfig)
 		Sni:              uc.Sni,
 	}, nil
 }
-func (s *SslConfigTranslator) ResolveDownstreamSslConfig(dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(dc)
+func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
+	common, err := s.ResolveCommonSslConfig(dc, secrets)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +149,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	}
 }
 
-func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []string) (*envoyauth.CommonTlsContext, error) {
+func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []string) (*envoyauth.CommonTlsContext, error) {
 	if sslSecrets.CertificatesSecretName == "" && sslSecrets.ValidationContextName == "" {
 		return nil, errors.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
@@ -164,7 +183,7 @@ func (s *SslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []st
 	return tlsContext, nil
 }
 
-func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.CommonTlsContext, error) {
+func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error) {
 	var (
 		certChain, privateKey, rootCa string
 		// if using a Secret ref, we will inline the certs in the tls config
@@ -175,7 +194,7 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 		var err error
 		inlineDataSource = true
 		ref := sslSecrets
-		certChain, privateKey, rootCa, err = getSslSecrets(*ref, s.secrets)
+		certChain, privateKey, rootCa, err = getSslSecrets(*ref, secrets)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +203,7 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
 		return s.handleSds(sslSecrets, cs.GetVerifySubjectAltName())
 	} else {
-		return nil, errors.Errorf("no certificate information found")
+		return nil, NoCertificateFoundError
 	}
 
 	dataSource := dataSourceGenerator(inlineDataSource)
@@ -244,12 +263,12 @@ func (s *SslConfigTranslator) ResolveCommonSslConfig(cs CertSource) (*envoyauth.
 func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, error) {
 	secret, err := secrets.Find(ref.Strings())
 	if err != nil {
-		return "", "", "", errors.Wrapf(err, "SSL secret not found")
+		return "", "", "", SslSecretNotFoundError(err)
 	}
 
 	sslSecret, ok := secret.Kind.(*v1.Secret_Tls)
 	if !ok {
-		return "", "", "", errors.Errorf("%v is not a TLS secret", secret.GetMetadata().Ref())
+		return "", "", "", NotTlsSecretError(secret.GetMetadata().Ref())
 	}
 
 	certChain := sslSecret.Tls.CertChain
@@ -299,5 +318,5 @@ func convertVersion(v v1.SslParameters_ProtocolVersion) (envoyauth.TlsParameters
 		return envoyauth.TlsParameters_TLSv1_3, nil
 	}
 
-	return envoyauth.TlsParameters_TLS_AUTO, errors.Errorf("tls version %v not found", v)
+	return envoyauth.TlsParameters_TLS_AUTO, TlsVersionNotFoundError(v)
 }

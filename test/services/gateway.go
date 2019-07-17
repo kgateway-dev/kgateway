@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2alpha1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
@@ -43,7 +44,7 @@ import (
 )
 
 type TestClients struct {
-	GatewayClient        gatewayv1.GatewayClient
+	GatewayClient        gatewayv2alpha1.GatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
@@ -130,7 +131,7 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 		Cache: cache,
 	}
 
-	gatewayClient, err := gatewayv1.NewGatewayClient(memFactory)
+	gatewayClient, err := gatewayv2alpha1.NewGatewayClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())

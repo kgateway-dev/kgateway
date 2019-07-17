@@ -4,6 +4,7 @@ import (
 	"context"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -21,12 +22,13 @@ type translatorSyncer struct {
 	reporter        reporter.Reporter
 	propagator      *propagator.Propagator
 	proxyClient     gloov1.ProxyClient
-	gwClient        v1.GatewayClient
+	gwClient        v2alpha1.GatewayClient
 	vsClient        v1.VirtualServiceClient
 	proxyReconciler gloov1.ProxyReconciler
+	translator      translator.Translator
 }
 
-func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator) v1.ApiSyncer {
+func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, gwClient v2alpha1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator) v2alpha1.ApiSyncer {
 	return &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
@@ -35,11 +37,12 @@ func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, 
 		gwClient:        gwClient,
 		vsClient:        vsClient,
 		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		translator:      translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}),
 	}
 }
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
-func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+func (s *translatorSyncer) Sync(ctx context.Context, snap *v2alpha1.ApiSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
 	logger := contextutils.LoggerFrom(ctx)
@@ -48,7 +51,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 
-	proxy, resourceErrs := translator.Translate(ctx, s.writeNamespace, snap)
+	proxy, resourceErrs := s.translator.Translate(ctx, s.writeNamespace, snap)
 	if err := resourceErrs.Validate(); err != nil {
 		if err := s.reporter.WriteReports(ctx, resourceErrs, nil); err != nil {
 			contextutils.LoggerFrom(ctx).Errorf("failed to write reports: %v", err)
