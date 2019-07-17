@@ -12,10 +12,10 @@ data:
   envoy.yaml: |
     node:
       cluster: clusteringress
-      id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
+      id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
         # this line must match !
-        role: "{{ "{{" }}.PodNamespace{{ "}}" }}~clusteringress-proxy"
+        role: "{{ `{{.PodNamespace}}` }}~clusteringress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster

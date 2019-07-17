@@ -7,16 +7,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
-    gloo: {{ $spec.name }}
+    gloo: ingress-proxy
 data:
 {{ if (empty .Values.ingressProxy.configMap.data) }}
   envoy.yaml: |
     node:
       cluster: ingress
-      id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
+      id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
         # this line must match !
-        role: "{{ "{{" }}.PodNamespace{{ "}}" }}~ingress-proxy"
+        role: "{{ `{{.PodNamespace}}` }}~ingress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster
