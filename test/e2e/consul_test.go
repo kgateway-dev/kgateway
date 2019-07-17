@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/v1helpers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
@@ -21,24 +23,17 @@ import (
 var _ = Describe("Consul e2e", func() {
 
 	var (
-		ctx                context.Context
-		cancel             context.CancelFunc
-		testClients        services.TestClients
-		containerFactory   *services.EchoContainerFactory
-		consulInstance     *services.ConsulInstance
-		envoyInstance      *services.EnvoyInstance
-		envoyPort          uint32
-		svc1Port, svc2Port int
-		err                error
+		ctx            context.Context
+		cancel         context.CancelFunc
+		testClients    services.TestClients
+		consulInstance *services.ConsulInstance
+		envoyInstance  *services.EnvoyInstance
+		envoyPort      uint32
+		svc1, svc2     *v1helpers.TestUpstream
+		err            error
 	)
 
-	const (
-		writeNamespace = defaults.GlooSystem
-		container1Name = "consul-svc-1"
-		container2Name = "consul-svc-2"
-		container1Msg  = "hello from svc-1"
-		container2Msg  = "hello from svc-2"
-	)
+	const writeNamespace = defaults.GlooSystem
 
 	queryService := func() (string, error) {
 		response, err := http.Get(fmt.Sprintf("http://localhost:%d", envoyPort))
@@ -67,14 +62,6 @@ var _ = Describe("Consul e2e", func() {
 		err = consulInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 
-		// Run two simple web applications locally
-		containerFactory, err = services.NewEchoContainerFactory()
-		Expect(err).NotTo(HaveOccurred())
-		svc1Port, err = containerFactory.RunEchoContainer(container1Name, container1Msg)
-		Expect(err).NotTo(HaveOccurred())
-		svc2Port, err = containerFactory.RunEchoContainer(container2Name, container2Msg)
-		Expect(err).NotTo(HaveOccurred())
-
 		// Start Gloo
 		consulClient, err := consul.NewConsulWatcher(nil)
 		Expect(err).NotTo(HaveOccurred())
@@ -98,10 +85,14 @@ var _ = Describe("Consul e2e", func() {
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+translator.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
+		// Run two simple web applications locally
+		svc1 = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+		svc2 = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+
 		// Register services with consul
-		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1Port)
+		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
 		Expect(err).NotTo(HaveOccurred())
-		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2Port)
+		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -112,10 +103,6 @@ var _ = Describe("Consul e2e", func() {
 		}
 		if envoyInstance != nil {
 			err = envoyInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
-		if containerFactory != nil {
-			err = containerFactory.CleanUp()
 			Expect(err).NotTo(HaveOccurred())
 		}
 
@@ -137,25 +124,37 @@ var _ = Describe("Consul e2e", func() {
 		}, "10s", "0.2s").Should(BeTrue())
 
 		By("requests are load balanced between the two services")
-		Eventually(func() (string, error) {
-			return queryService()
-		}, "10s", "0.2s").Should(ContainSubstring(container1Msg))
+		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc1.C, err
+			}
+			return svc1.C, nil
+		}, "10s", "0.2s").Should(Receive())
 
-		Eventually(func() (string, error) {
-			return queryService()
-		}, "10s", "0.2s").Should(ContainSubstring(container2Msg))
+		Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc2.C, err
+			}
+			return svc2.C, nil
+		}, "10s", "0.2s").Should(Receive())
 
 		By("update consul service definition")
-		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "2"}, svc2Port)
+		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "2"}, svc2.Port)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait a bit for the new endpoint information to propagate
 		time.Sleep(3 * time.Second)
 
 		// Service 2 does not match the tags on the route anymore, so we should get only requests from service 1
-		Consistently(func() (string, error) {
-			return queryService()
-		}, "2s", "0.2s").Should(ContainSubstring(container1Msg))
+		Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc1.C, err
+			}
+			return svc1.C, nil
+		}, "2s", "0.2s").Should(Receive())
 	})
 })
 

@@ -32,7 +32,7 @@ type serviceDef struct {
 type consulService struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
-	Port    int      `json:"port"`
+	Port    uint32   `json:"port"`
 	Tags    []string `json:"tags"`
 	Address string   `json:"address"`
 }
@@ -191,7 +191,7 @@ func (i *ConsulInstance) Clean() error {
 	return nil
 }
 
-func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port int) error {
+func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
 	svcDef := &serviceDef{
 		Service: &consulService{
 			ID:      svcId,
