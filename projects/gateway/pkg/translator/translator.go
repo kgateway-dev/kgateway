@@ -47,17 +47,16 @@ func (t *translator) Translate(ctx context.Context, namespace string, snap *v2al
 	for _, factory := range t.factories {
 		listeners = append(listeners, factory.GenerateListeners(ctx, snap, filteredGateways, resourceErrs)...)
 	}
-	var result *gloov1.Proxy
-	if len(listeners) > 0 {
-		result = &gloov1.Proxy{
-			Metadata: core.Metadata{
-				Name:      GatewayProxyName,
-				Namespace: namespace,
-			},
-			Listeners: listeners,
-		}
+	if len(listeners) == 0 {
+		return nil, resourceErrs
 	}
-	return result, resourceErrs
+	return &gloov1.Proxy{
+		Metadata: core.Metadata{
+			Name:      GatewayProxyName,
+			Namespace: namespace,
+		},
+		Listeners: listeners,
+	}, resourceErrs
 }
 
 // https://github.com/solo-io/gloo/issues/538
