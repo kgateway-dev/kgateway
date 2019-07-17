@@ -77,6 +77,8 @@ var _ = Describe("Plugin", func() {
 		err = translatorutil.ParseConfig(al, &falCfg)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(falCfg.Path).To(Equal(path))
+		str := falCfg.GetFormat()
+		Expect(str).To(Equal(strFormat))
 	})
 
 	It("can properly create AccessLog as string", func() {
@@ -134,5 +136,7 @@ var _ = Describe("Plugin", func() {
 		err = translatorutil.ParseConfig(al, &falCfg)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(falCfg.Path).To(Equal(path))
+		jsn := falCfg.GetJsonFormat()
+		Expect(jsn).To(Equal(jsonFormat))
 	})
 })
