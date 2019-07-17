@@ -7,9 +7,6 @@ import "gogoproto/gogo.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
 
-
-// TODO: can't use plugins/rest/rest.proto as it creates a import cycle in the generated go.
-
 option (gogoproto.equal_all) = true;
 
 // Describes APIs and application-level information for services

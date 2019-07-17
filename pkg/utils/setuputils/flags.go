@@ -21,7 +21,7 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 const (
-	POD_NAMESPACE = "POD_NAMESPACE"
+	PodNamespace = "POD_NAMESPACE"
 )
 
 var (
@@ -35,7 +35,7 @@ func init() {
 
 	// Allow for more dynamic setting of settings namespace
 	// Based on article https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#the-downward-api
-	defaultNamespace := os.Getenv(POD_NAMESPACE)
+	defaultNamespace := os.Getenv(PodNamespace)
 	if defaultNamespace == "" {
 		defaultNamespace = defaults.GlooSystem
 	}
