@@ -75,6 +75,8 @@ message Listener {
 
     // Enable ProxyProtocol support for this listener
     google.protobuf.BoolValue use_proxy_proto = 6;
+
+    ListenerPlugins plugins = 7;
 }
 
 // Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).

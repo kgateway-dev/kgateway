@@ -3,6 +3,7 @@ package registry
 import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
@@ -39,6 +40,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		hcm.NewPlugin(),
+		als.NewPlugin(),
 		static.NewPlugin(),
 		transformationPlugin,
 		grpc.NewPlugin(&transformationPlugin.RequireTransformationFilter),

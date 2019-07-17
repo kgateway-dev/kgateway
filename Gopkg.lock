@@ -335,7 +335,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:0dfad7ee31534a906ee24dad894c892144a9a445b1835aa6b18c3ac9559893b3"
+  digest = "1:e97c972468887bfe89bef992ef9d3ffdc784aa4bfd696f5ebc909b5d6dc643e7"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -345,6 +345,7 @@
     "envoy/api/v2/endpoint",
     "envoy/api/v2/listener",
     "envoy/api/v2/route",
+    "envoy/config/accesslog/v2",
     "envoy/config/bootstrap/v2",
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/fault/v2",
@@ -361,8 +362,8 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "094d054b10176dd84506e4f0f65e7f65d8499241"
-  version = "v0.8.0"
+  revision = "0f0598e8dab0c0306119ca6fff632b0a672cbfa1"
+  version = "v0.8.2"
 
 [[projects]]
   digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
@@ -1205,17 +1206,6 @@
   pruneopts = "UT"
   revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
   version = "v0.0.3"
-
-[[projects]]
-  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
-  name = "github.com/mattn/go-zglob"
-  packages = [
-    ".",
-    "fastwalk",
-  ]
-  pruneopts = "UT"
-  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
-  version = "v0.0.1"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -2144,6 +2134,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:525e411c9476f1a201efc22d7c4878002b001f20f241221c226a83ba654975e4"
+  name = "istio.io/gogo-genproto"
+  packages = ["opencensus/proto/trace/v1"]
+  pruneopts = "UT"
+  revision = "e88dc8b0e4dba2caf977ab9ec040cc2081db103f"
+
+[[projects]]
+  branch = "master"
   digest = "1:66c41d3da3f02989b7e372118f65bb3a31cc43ef22142e31502141d806f8dc4e"
   name = "k8s.io/api"
   packages = [
@@ -2701,6 +2699,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/route",
+    "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
@@ -2743,7 +2742,6 @@
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
-    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",

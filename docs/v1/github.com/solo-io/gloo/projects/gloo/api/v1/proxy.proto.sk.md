@@ -87,6 +87,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 "httpListener": .gloo.solo.io.HttpListener
 "sslConfigurations": []gloo.solo.io.SslConfig
 "useProxyProto": .google.protobuf.BoolValue
+"plugins": .gloo.solo.io.ListenerPlugins
 
 ```
 
@@ -98,6 +99,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for Gloo's HTTP-level features including request-based routing |  |
 | `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |
+| `plugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#listenerplugins) |  |  |
 
 
 
