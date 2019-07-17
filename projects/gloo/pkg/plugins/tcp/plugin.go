@@ -212,7 +212,7 @@ func (p *Plugin) computerTcpFilterChain(snap *v1.ApiSnapshot, listener *v1.Liste
 		}, nil
 	}
 
-	downstreamConfig, err := p.sslConfigTranslator.ResolveDownstreamSslConfig(snap, sslConfig)
+	downstreamConfig, err := p.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 	if err != nil {
 		return envoylistener.FilterChain{}, InvalidSecretsError(err, listener.Name)
 	}

@@ -78,6 +78,7 @@ type StagedListenerFilter struct {
 	Stage          FilterStage
 }
 
+// Currently only supported for TCP listeners, plan to change this in the future
 type ListenerFilterChainPlugin interface {
 	Plugin
 	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]envoylistener.FilterChain, error)

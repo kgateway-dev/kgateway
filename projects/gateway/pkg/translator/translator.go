@@ -47,9 +47,6 @@ func (t *translator) Translate(ctx context.Context, namespace string, snap *v2al
 	for _, factory := range t.factories {
 		listeners = append(listeners, factory.GenerateListeners(ctx, snap, filteredGateways, resourceErrs)...)
 	}
-	if len(listeners) != len(filteredGateways) {
-		logger.Debug("length of listeners does not match the input gateways")
-	}
 	var result *gloov1.Proxy
 	if len(listeners) > 0 {
 		result = &gloov1.Proxy{
@@ -114,25 +111,4 @@ func standardListener(gateway *v2alpha1.Gateway) *gloov1.Listener {
 
 func gatewayName(gateway *v2alpha1.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
-}
-
-type TcpTranslator struct{}
-
-func (t *TcpTranslator) GenerateListeners(ctx context.Context, snap *v2alpha1.ApiSnapshot, filteredGateways []*v2alpha1.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener {
-	var result []*gloov1.Listener
-	for _, gateway := range filteredGateways {
-		tcpGateway := gateway.GetTcpGateway()
-		if tcpGateway == nil {
-			continue
-		}
-		listener := standardListener(gateway)
-		listener.ListenerType = &gloov1.Listener_TcpListener{
-			TcpListener: &gloov1.TcpListener{
-				Plugins:  tcpGateway.Plugins,
-				TcpHosts: tcpGateway.Destinations,
-			},
-		}
-		result = append(result, listener)
-	}
-	return result
 }

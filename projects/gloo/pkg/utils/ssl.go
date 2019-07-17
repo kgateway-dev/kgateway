@@ -32,8 +32,8 @@ var (
 )
 
 type SslConfigTranslator interface {
-	ResolveUpstreamSslConfig(snap *v1.ApiSnapshot, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
-	ResolveDownstreamSslConfig(snap *v1.ApiSnapshot, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
+	ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
+	ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
 	ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error)
 }
 
@@ -44,8 +44,8 @@ func NewSslConfigTranslator() *sslConfigTranslator {
 	return &sslConfigTranslator{}
 }
 
-func (s *sslConfigTranslator) ResolveUpstreamSslConfig(snap *v1.ApiSnapshot, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(uc, snap.Secrets)
+func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
+	common, err := s.ResolveCommonSslConfig(uc, secrets)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +54,8 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(snap *v1.ApiSnapshot, uc 
 		Sni:              uc.Sni,
 	}, nil
 }
-func (s *sslConfigTranslator) ResolveDownstreamSslConfig(snap *v1.ApiSnapshot, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(dc, snap.Secrets)
+func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
+	common, err := s.ResolveCommonSslConfig(dc, secrets)
 	if err != nil {
 		return nil, err
 	}

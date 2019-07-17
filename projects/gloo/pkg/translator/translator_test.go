@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
+	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-
-	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/proto"
-	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	k8scorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -734,8 +734,27 @@ var _ = Describe("Translator", func() {
 
 	})
 
-	Context("Tcp", func() {
-
+	Context("TCP", func() {
+		It("can properly create a tcp listener", func() {
+			translate()
+			listeners :=snapshot.GetResources(xds.ListenerType).Items
+			Expect(listeners).NotTo(HaveLen(0))
+			val, found := listeners["tcp-listener"]
+			Expect(found).To(BeTrue())
+			listener, ok := val.ResourceProto().(*envoyapi.Listener)
+			Expect(ok).To(BeTrue())
+			Expect(listener.GetName()).To(Equal("tcp-listener"))
+			Expect(listener.GetFilterChains()).To(HaveLen(1))
+			fc := listener.GetFilterChains()[0]
+			Expect(fc.Filters).To(HaveLen(1))
+			tcpFilter := fc.Filters[0]
+			cfg := tcpFilter.GetConfig()
+			Expect(cfg).NotTo(BeNil())
+			var typedCfg envoytcp.TcpProxy
+			Expect(ParseConfig(&tcpFilter, &typedCfg)).NotTo(HaveOccurred())
+			clusterSpec := typedCfg.GetCluster()
+			Expect(clusterSpec).To(Equal("test_gloo-system"))
+		})
 	})
 
 })

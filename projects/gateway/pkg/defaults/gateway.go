@@ -24,6 +24,17 @@ func DefaultGateway(writeNamespace string) *v2alpha1.Gateway {
 	}
 }
 
+func DefaultSslGateway(writeNamespace string) *v2alpha1.Gateway {
+	defaultgw := DefaultGateway(writeNamespace)
+	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
+	defaultgw.BindPort = defaults.HttpsPort
+	defaultgw.Ssl = true
+
+	return defaultgw
+}
+
+// The default TCP gateways are currently only used for testing purposes
+// but could be included later if we decide they should be.
 func DefaultTcpGateway(writeNamespace string) *v2alpha1.Gateway {
 	return &v2alpha1.Gateway{
 		Metadata: core.Metadata{
@@ -48,14 +59,7 @@ func DefaultTcpSslGateway(writeNamespace string) *v2alpha1.Gateway {
 	return defaultgw
 }
 
-func DefaultSslGateway(writeNamespace string) *v2alpha1.Gateway {
-	defaultgw := DefaultGateway(writeNamespace)
-	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
-	defaultgw.BindPort = defaults.HttpsPort
-	defaultgw.Ssl = true
 
-	return defaultgw
-}
 
 func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 	return &v1.VirtualService{
