@@ -1,7 +1,6 @@
 package tcp
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -9,7 +8,6 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -29,7 +27,6 @@ func NewPlugin() *Plugin {
 
 var (
 	_ plugins.Plugin                    = new(Plugin)
-	_ plugins.ListenerPlugin            = new(Plugin)
 	_ plugins.ListenerFilterChainPlugin = new(Plugin)
 
 	NoDestinationTypeError = func(host *v1.TcpHost) error {
@@ -50,56 +47,6 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
-	tl := in.GetTcpListener()
-	if tl == nil {
-		return nil
-	}
-
-	if err := addTcpProxySettings(tl, out); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func addTcpProxySettings(tl *v1.TcpListener, out *envoyapi.Listener) error {
-	if tl.Plugins == nil {
-		return nil
-	}
-	tcpSettings := tl.Plugins.TcpProxySettings
-	if tcpSettings == nil {
-		return nil
-	}
-	for _, f := range out.FilterChains {
-		for i, filter := range f.Filters {
-			if filter.Name == envoyutil.TCPProxy {
-				// get config
-				var cfg envoytcp.TcpProxy
-				err := translatorutil.ParseConfig(&filter, &cfg)
-				// this should never error
-				if err != nil {
-					return err
-				}
-
-				copySettings(&cfg, tcpSettings)
-
-				f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.TCPProxy, &cfg)
-				// this should never error
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func copySettings(cfg *envoytcp.TcpProxy, tcpSettings *tcp.TcpProxySettings) {
-	cfg.IdleTimeout = tcpSettings.IdleTimeout
-	cfg.MaxConnectAttempts = tcpSettings.MaxConnectAttempts
-}
-
 func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listener) ([]envoylistener.FilterChain, error) {
 	logger := contextutils.LoggerFrom(params.Ctx)
 	tcpListener := in.GetTcpListener()
@@ -111,11 +58,12 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 
 		var listenerFilters []envoylistener.Filter
 
-		tcpFilter, err := tcpProxyFilter(params, tcpHost)
+		tcpFilter, err := tcpProxyFilter(params, tcpHost, tcpListener.GetPlugins())
 		if err != nil {
 			logger.Debug(err, "could not compute tcp proxy filter for %v", tcpHost)
 			continue
 		}
+
 		listenerFilters = append(listenerFilters, *tcpFilter)
 
 		filterChain, err := p.computerTcpFilterChain(params.Snapshot, in, listenerFilters, tcpHost)
@@ -128,10 +76,18 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 	return filterChains, nil
 }
 
-func tcpProxyFilter(params plugins.Params, host *v1.TcpHost) (*listener.Filter, error) {
+func tcpProxyFilter(params plugins.Params, host *v1.TcpHost, plugins *v1.TcpListenerPlugins) (*listener.Filter, error) {
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: "tcp",
 	}
+
+	if plugins != nil {
+		if tcpSettings := plugins.GetTcpProxySettings(); tcpSettings != nil {
+			cfg.MaxConnectAttempts = tcpSettings.MaxConnectAttempts
+			cfg.IdleTimeout = tcpSettings.IdleTimeout
+		}
+	}
+
 	if err := translatorutil.ValidateRouteDestinations(params.Snapshot, host.Destination); err != nil {
 		return nil, err
 	}

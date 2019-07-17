@@ -11,10 +11,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -25,62 +22,11 @@ var _ = Describe("Plugin", func() {
 		in *v1.Listener
 	)
 
-	Context("listener plugin", func() {
-
-		var (
-			outl    *envoyapi.Listener
-			filters []envoylistener.Filter
-			tcps    *tcp.TcpProxySettings
-		)
-
-		BeforeEach(func() {
-			pd := func(t time.Duration) *time.Duration { return &t }
-			tcps = &tcp.TcpProxySettings{
-				MaxConnectAttempts: &types.UInt32Value{
-					Value: 5,
-				},
-				IdleTimeout: pd(5 * time.Second),
-			}
-			tl := &v1.TcpListener{
-				Plugins: &v1.TcpListenerPlugins{
-					TcpProxySettings: tcps,
-				},
-			}
-
-			in = &v1.Listener{
-				ListenerType: &v1.Listener_TcpListener{
-					TcpListener: tl,
-				},
-			}
-			filters = []envoylistener.Filter{{
-				Name: envoyutil.TCPProxy,
-			}}
-			outl = &envoyapi.Listener{
-				FilterChains: []envoylistener.FilterChain{{
-					Filters: filters,
-				}},
-			}
-		})
-		It("copy all settings to tcp filter", func() {
-
-			p := NewPlugin()
-			err := p.ProcessListener(plugins.Params{}, in, outl)
-			Expect(err).NotTo(HaveOccurred())
-
-			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseConfig(&filters[0], &cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(cfg.IdleTimeout).To(Equal(tcps.IdleTimeout))
-			Expect(cfg.MaxConnectAttempts).To(Equal(tcps.MaxConnectAttempts))
-		})
-
-	})
-
 	Context("listener filter chain plugin", func() {
 		var (
 			tcpListener *v1.TcpListener
 			snap        *v1.ApiSnapshot
+			tcps        *tcp.TcpProxySettings
 
 			ns = "one"
 			wd = []*v1.WeightedDestination{
@@ -110,6 +56,7 @@ var _ = Describe("Plugin", func() {
 		)
 
 		BeforeEach(func() {
+			pd := func(t time.Duration) *time.Duration { return &t }
 			snap = &v1.ApiSnapshot{
 				Upstreams: v1.UpstreamList{
 					{
@@ -132,14 +79,55 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
+			tcps = &tcp.TcpProxySettings{
+				MaxConnectAttempts: &types.UInt32Value{
+					Value: 5,
+				},
+				IdleTimeout: pd(5 * time.Second),
+			}
 			tcpListener = &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{},
+				Plugins: &v1.TcpListenerPlugins{
+					TcpProxySettings: tcps,
+				},
 			}
 			in = &v1.Listener{
 				ListenerType: &v1.Listener_TcpListener{
 					TcpListener: tcpListener,
 				},
 			}
+		})
+
+		It("can copy over tcp plugin settings", func() {
+			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
+				Name: "one",
+				Destination: &v1.RouteAction{
+					Destination: &v1.RouteAction_Single{
+						Single: &v1.Destination{
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      "one",
+									Namespace: ns,
+								},
+							},
+						},
+					},
+				},
+				SslConfig: nil,
+			})
+
+			p := NewPlugin()
+			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filterChains).To(HaveLen(1))
+
+			var cfg envoytcp.TcpProxy
+			err = translatorutil.ParseConfig(&filterChains[0].Filters[0], &cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+
+			Expect(cfg.IdleTimeout).To(Equal(tcps.IdleTimeout))
+			Expect(cfg.MaxConnectAttempts).To(Equal(tcps.MaxConnectAttempts))
 		})
 
 		It("can transform a single destination", func() {
