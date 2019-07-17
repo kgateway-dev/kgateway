@@ -35,6 +35,9 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
+	if in.GetPlugins() == nil {
+		return nil
+	}
 	alSettings := in.GetPlugins()
 	if alSettings.Als == nil {
 		return nil
@@ -43,9 +46,6 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	switch listenerType := in.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
 		if listenerType.HttpListener == nil {
-			return nil
-		}
-		if listenerType.HttpListener.ListenerPlugins == nil {
 			return nil
 		}
 		for _, f := range out.FilterChains {
