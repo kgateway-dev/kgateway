@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
-	valuesOutput          = "install/helm/gloo/values.yaml"
+	gatewayValuesTemplate = "install/helm/gloo/values-gateway-template.yaml"
+	gatewayValuesOutput   = "install/helm/gloo/values.yaml"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
 	ingressValuesTemplate = "install/helm/gloo/values-ingress-template.yaml"
@@ -80,7 +80,7 @@ func writeYaml(obj interface{}, path string) error {
 
 func readGatewayConfig() (*generate.Config, error) {
 	var config generate.Config
-	if err := readYaml(valuesTemplate, &config); err != nil {
+	if err := readYaml(gatewayValuesTemplate, &config); err != nil {
 		return nil, err
 	}
 	return &config, nil
@@ -120,7 +120,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 
 	}
 
-	return writeYaml(cfg, valuesOutput)
+	return writeYaml(cfg, gatewayValuesOutput)
 }
 
 // install with knative only
