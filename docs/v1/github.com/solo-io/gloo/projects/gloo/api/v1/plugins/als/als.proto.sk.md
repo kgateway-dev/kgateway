@@ -91,21 +91,15 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 ### GrpcService
 
  
-[#not-implemented-hide:]
 Grpc service
+Not currently implemented
 
 ```yaml
-"additionalRequestHeadersToLog": []string
-"additionalResponseHeadersToLog": []string
-"additionalResponseTrailersToLog": []string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `additionalRequestHeadersToLog` | `[]string` |  |  |
-| `additionalResponseHeadersToLog` | `[]string` |  |  |
-| `additionalResponseTrailersToLog` | `[]string` |  |  |
 
 
 
@@ -113,7 +107,8 @@ Grpc service
 ---
 ### Filter
 
-
+ 
+filters for access logs
 
 ```yaml
 

@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHcm(t *testing.T) {
+func TestAls(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Hcm Suite")
+	RunSpecs(t, "Als Suite")
 }
