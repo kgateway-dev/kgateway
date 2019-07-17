@@ -25,7 +25,7 @@ const (
 func NewHybridUpstreamClient(
 	upstreamClient v1.UpstreamClient,
 	serviceClient skkube.ServiceClient,
-	consulClient consul.ConsulClient) (v1.UpstreamClient, error) {
+	consulClient consul.ConsulWatcher) (v1.UpstreamClient, error) {
 
 	clientMap := make(map[string]v1.UpstreamClient)
 

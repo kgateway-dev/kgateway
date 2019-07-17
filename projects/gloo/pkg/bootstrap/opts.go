@@ -26,7 +26,7 @@ type Opts struct {
 	Artifacts       factory.ResourceClientFactory
 	BindAddr        net.Addr
 	KubeClient      kubernetes.Interface
-	ConsulClient    consul.ConsulClient
+	ConsulClient    consul.ConsulWatcher
 	WatchOpts       clients.WatchOpts
 	DevMode         bool
 	ControlPlane    ControlPlane

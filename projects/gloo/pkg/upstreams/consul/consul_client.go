@@ -9,12 +9,25 @@ import (
 
 //go:generate mockgen -destination=./mock_consul_client.go -source consul_client.go -package consul
 
+var ForbiddenDataCenterErr = func(dataCenter string) error {
+	return errors.Errorf("not allowed to query data center [%s]. " +
+		"Use the settings to configure the data centers Gloo is allowed to query")
+}
+
+// TODO(marco): consider adding ctx to signatures instead on relying on caller to set it
 // Wrap the Consul API in an interface to allow mocking
 type ConsulClient interface {
 	// Returns false if no connection to the Consul agent can be established
 	CanConnect() bool
+	// DataCenters is used to query for all the known data centers.
+	// Results will be filtered based on the data center whitelist provided in the Gloo settings.
 	DataCenters() ([]string, error)
+	// Services is used to query for all known services
 	Services(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error)
+	// Service is used to query catalog entries for a given service
+	Service(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
+	// Connect is used to query catalog entries for a given Connect-enabled service
+	Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
 }
 
 func NewConsulClient(settings *v1.Settings) (ConsulClient, error) {
@@ -60,7 +73,24 @@ func (c *consul) DataCenters() ([]string, error) {
 }
 
 func (c *consul) Services(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
+	if err := c.validateDataCenter(q.Datacenter); err != nil {
+		return nil, nil, err
+	}
 	return c.api.Catalog().Services(q)
+}
+
+func (c *consul) Service(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+	if err := c.validateDataCenter(q.Datacenter); err != nil {
+		return nil, nil, err
+	}
+	return c.api.Catalog().Service(service, tag, q)
+}
+
+func (c *consul) Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+	if err := c.validateDataCenter(q.Datacenter); err != nil {
+		return nil, nil, err
+	}
+	return c.api.Catalog().Connect(service, tag, q)
 }
 
 // Applies the given settings to the default configuration
@@ -101,4 +131,13 @@ func (c *consul) filter(dataCenters []string) []string {
 		}
 	}
 	return filtered
+}
+
+// Checks whether we are allowed to query the given data center
+func (c *consul) validateDataCenter(dataCenter string) error {
+	// If empty, the Consul client will use the default agent data center, which we should allow
+	if dataCenter != "" && c.dataCenters[dataCenter] == false {
+		return ForbiddenDataCenterErr(dataCenter)
+	}
+	return nil
 }
