@@ -8,7 +8,7 @@ type Config struct {
 	Gloo           *Gloo                   `json:"gloo,omitempty"`
 	Discovery      *Discovery              `json:"discovery,omitempty"`
 	Gateway        *Gateway                `json:"gateway,omitempty"`
-	GatewayProxies map[string]GatewayProxy `json:"gatewayProxies,omitempty"`
+	GatewayProxies []GatewayProxy          `json:"gatewayProxies,omitempty"`
 	Ingress        *Ingress                `json:"ingress,omitempty"`
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
@@ -94,6 +94,7 @@ type GatewayDeployment struct {
 }
 
 type GatewayProxy struct {
+	Name       string                  `json:"name,omitempty"`
 	Deployment *GatewayProxyDeployment `json:"deployment,omitempty"`
 	ConfigMap  *GatewayProxyConfigMap  `json:"configMap,omitempty"`
 	Service    *GatewayProxyService    `json:"service,omitempty"`
