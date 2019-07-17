@@ -15,10 +15,10 @@ data:
   envoy.yaml: |
     node:
       cluster: gateway
-      id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
+      id: "{{ `{{.PodName }}.{{.PodNamespace}}` }}"
       metadata:
-        # this line must match !
-        role: "{{ "{{" }}.PodNamespace{{ "}}" }}~{{ $spec.name }}"
+        # role's value is the key for the in memory xds cache (envoy.go)
+        role: "{{ `{{.PodNamespace}}` }}~{{ $spec.name }}"
     static_resources:
 
 {{- if $spec.deployment.stats }}
