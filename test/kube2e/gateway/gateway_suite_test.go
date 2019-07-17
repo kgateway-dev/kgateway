@@ -60,7 +60,7 @@ var _ = AfterSuite(func() {
 	}
 
 	if testHelper != nil {
-		err := testHelper.UninstallGloo()
+		err := testHelper.UninstallGlooAll()
 		Expect(err).NotTo(HaveOccurred())
 
 		// TODO go-utils should expose `glooctl uninstall --delete-namespace`

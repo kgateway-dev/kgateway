@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
@@ -42,16 +43,19 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		tcp.NewPlugin(),
 		static.NewPlugin(),
 		transformationPlugin,
-		consul.NewPlugin(),
 		grpc.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		faultinjection.NewPlugin(),
 		basicroute.NewPlugin(),
 		cors.NewPlugin(),
 		linkerd.NewPlugin(),
 		stats.NewPlugin(),
+		ec2.NewPlugin(opts.Secrets),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient))
+	}
+	if opts.ConsulClient != nil {
+		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulClient))
 	}
 	for _, pluginExtension := range pluginExtensions {
 		reg.plugins = append(reg.plugins, pluginExtension)

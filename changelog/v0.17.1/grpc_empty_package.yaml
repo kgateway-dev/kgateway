@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix a bug with handling of gRPC upstreams without a package
+    issueLink: https://github.com/solo-io/gloo/issues/831
