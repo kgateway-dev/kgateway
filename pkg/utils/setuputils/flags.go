@@ -2,23 +2,9 @@ package setuputils
 
 import (
 	"flag"
-	"os"
-	"strings"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"os"
 )
-
-// TODO (ilackarms): move to a flags package
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	return strings.Join(*i, ",")
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
 
 const (
 	PodNamespace = "POD_NAMESPACE"

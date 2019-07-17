@@ -29,7 +29,6 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 // If your upstream service is a GRPC service, use this service spec (an empty
 // spec is fine), to make sure that traffic to it is routed with http2.
 type ServiceSpec struct {
-	// TODO(yuval-k): ideally this should be google.protobuf.FileDescriptorSet but that doesn't work with gogoproto.equal_all.
 	// Descriptors that contain information of the services listed below.
 	// this is a serialized google.protobuf.FileDescriptorSet
 	Descriptors []byte `protobuf:"bytes,1,opt,name=descriptors,proto3" json:"descriptors,omitempty"`

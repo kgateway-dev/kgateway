@@ -177,6 +177,8 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		if svcspec == nil {
 			return errors.New("not a GRPC upstream")
 		}
+		// TODO(yuval-k): ideally GrpcServices should be google.protobuf.FileDescriptorSet
+		//  but that doesn't work with gogoproto.equal_all.
 		svcspec.GrpcServices = grpcservices
 		svcspec.Descriptors = encodedDescriptors
 		return nil
