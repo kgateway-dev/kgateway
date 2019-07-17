@@ -4,6 +4,11 @@ import (
 	"context"
 	"time"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"k8s.io/client-go/kubernetes/fake"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -15,11 +20,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -36,9 +39,9 @@ var _ = Describe("Kubernetes", func() {
 
 	Context("kubernetes", func() {
 		var (
-			namespace  string
-			cfg        *rest.Config
-			kubeClient kubernetes.Interface
+			svcNamespace string
+			svcName      = "i-love-writing-tests"
+			kubeClient   kubernetes.Interface
 
 			baseLabels = map[string]string{
 				"tacos": "burritos",
@@ -51,20 +54,15 @@ var _ = Describe("Kubernetes", func() {
 		)
 
 		BeforeEach(func() {
-			namespace = helpers.RandString(8)
-			err := setup.SetupKubeForTest(namespace)
-			Expect(err).NotTo(HaveOccurred())
-			cfg, err = kubeutils.GetConfig("", "")
-			Expect(err).NotTo(HaveOccurred())
-			kubeClient, err = kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
+			svcNamespace = helpers.RandString(8)
+			kubeClient = fake.NewSimpleClientset()
 			// create a service
 			// create 2 pods for that service
 			// one with extra labels, one without
-			svc, err := kubeClient.CoreV1().Services(namespace).Create(&kubev1.Service{
+			svc, err := kubeClient.CoreV1().Services(svcNamespace).Create(&kubev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: namespace,
-					Name:      "i-love-writing-tests",
+					Namespace: svcNamespace,
+					Name:      svcName,
 				},
 				Spec: kubev1.ServiceSpec{
 					Selector: baseLabels,
@@ -81,10 +79,10 @@ var _ = Describe("Kubernetes", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = kubeClient.CoreV1().Pods(namespace).Create(&kubev1.Pod{
+			_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(&kubev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod-for-" + svc.Name + "-basic",
-					Namespace: namespace,
+					Namespace: svcNamespace,
 					Labels:    baseLabels,
 				},
 				Spec: kubev1.PodSpec{
@@ -97,10 +95,10 @@ var _ = Describe("Kubernetes", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = kubeClient.CoreV1().Pods(namespace).Create(&kubev1.Pod{
+			_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(&kubev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod-for-" + svc.Name + "-extra",
-					Namespace: namespace,
+					Namespace: svcNamespace,
 					Labels:    extendedLabels,
 				},
 				Spec: kubev1.PodSpec{
@@ -113,14 +111,32 @@ var _ = Describe("Kubernetes", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
+			_, err = kubeClient.CoreV1().Endpoints(svcNamespace).Create(&kubev1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      svc.Name,
+					Namespace: svcNamespace,
+				},
+				Subsets: []kubev1.EndpointSubset{{
+					Addresses: []kubev1.EndpointAddress{
+						{IP: "10.4.0.60"},
+						{IP: "10.4.0.61"},
+					},
+					Ports: []kubev1.EndpointPort{
+						{Name: "foo", Port: 9090, Protocol: kubev1.ProtocolTCP},
+						{Name: "bar", Port: 8080, Protocol: kubev1.ProtocolTCP},
+					},
+				}},
+			})
+			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {
-			setup.TeardownKube(namespace)
+			setup.TeardownKube(svcNamespace)
 		})
 
+		// TODO: why is this not working?
 		PIt("uses json keys when serializing", func() {
 			plug := kubeplugin.NewPlugin(kubeClient).(discovery.DiscoveryPlugin)
-			upstreams, errs, err := plug.DiscoverUpstreams([]string{namespace}, namespace, clients.WatchOpts{
+			upstreams, errs, err := plug.DiscoverUpstreams([]string{svcNamespace}, svcNamespace, clients.WatchOpts{
 				Ctx:         context.TODO(),
 				RefreshRate: time.Second,
 			}, discovery.Opts{})
@@ -139,6 +155,32 @@ var _ = Describe("Kubernetes", func() {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			}
+		})
+
+		It("shares endpoints between multiple upstreams that have the same endpoint", func() {
+			makeUpstream := func(name string) *v1.Upstream {
+				return &v1.Upstream{
+					Metadata: core.Metadata{Name: name},
+					UpstreamSpec: &v1.UpstreamSpec{
+						UpstreamType: &v1.UpstreamSpec_Kube{
+							Kube: &kubepluginapi.UpstreamSpec{
+								ServiceNamespace: svcNamespace,
+								ServiceName:      svcName,
+								ServicePort:      8080,
+							},
+						},
+					},
+				}
+			}
+			plug := kubeplugin.NewPlugin(kubeClient).(discovery.DiscoveryPlugin)
+			eds, errs, err := plug.WatchEndpoints(
+				"",
+				v1.UpstreamList{makeUpstream("a"), makeUpstream("b"), makeUpstream("c")},
+				clients.WatchOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(eds, time.Second).Should(Receive(HaveLen(6)))
+			Consistently(errs).Should(Not(Receive()))
 		})
 	})
 })

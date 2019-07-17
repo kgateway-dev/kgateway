@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-
 	"github.com/mitchellh/hashstructure"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
@@ -19,8 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 )
-
-var _ discovery.DiscoveryPlugin = new(plugin)
 
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	if p.kubeShareFactory == nil {
@@ -127,6 +123,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 		Port         uint32
 		PodName      string
 		PodNamespace string
+		UpstreamRef  core.ResourceRef
 	}
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
@@ -201,7 +198,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 							continue
 						}
 					}
-					key := Epkey{addr.IP, port, podName, podNamespace}
+					key := Epkey{addr.IP, port, podName, podNamespace, usRef}
 					copyRef := usRef
 					endpointsMap[key] = append(endpointsMap[key], &copyRef)
 				}

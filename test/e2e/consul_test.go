@@ -25,6 +25,10 @@ var _ = Describe("Consul", func() {
 	)
 
 	BeforeEach(func() {
+
+		// TODO(marco): revamp when writing final e2e tests for consul routing
+		Skip("consul e2e tests are temporarily disabled")
+
 		ctx, cancel = context.WithCancel(context.Background())
 		// start consul first
 		var err error

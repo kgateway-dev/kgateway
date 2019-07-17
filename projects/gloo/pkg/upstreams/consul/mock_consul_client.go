@@ -78,3 +78,35 @@ func (mr *MockConsulClientMockRecorder) Services(q interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Services", reflect.TypeOf((*MockConsulClient)(nil).Services), q)
 }
+
+// Service mocks base method
+func (m *MockConsulClient) Service(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Service", service, tag, q)
+	ret0, _ := ret[0].([]*api.CatalogService)
+	ret1, _ := ret[1].(*api.QueryMeta)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Service indicates an expected call of Service
+func (mr *MockConsulClientMockRecorder) Service(service, tag, q interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Service", reflect.TypeOf((*MockConsulClient)(nil).Service), service, tag, q)
+}
+
+// Connect mocks base method
+func (m *MockConsulClient) Connect(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Connect", service, tag, q)
+	ret0, _ := ret[0].([]*api.CatalogService)
+	ret1, _ := ret[1].(*api.QueryMeta)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Connect indicates an expected call of Connect
+func (mr *MockConsulClientMockRecorder) Connect(service, tag, q interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Connect", reflect.TypeOf((*MockConsulClient)(nil).Connect), service, tag, q)
+}
