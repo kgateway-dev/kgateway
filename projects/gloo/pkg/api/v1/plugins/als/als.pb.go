@@ -370,6 +370,8 @@ func _FileSink_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
+// [#not-implemented-hide:]
+// Grpc service
 type GrpcService struct {
 	AdditionalRequestHeadersToLog   []string `protobuf:"bytes,1,rep,name=additional_request_headers_to_log,json=additionalRequestHeadersToLog,proto3" json:"additional_request_headers_to_log,omitempty"`
 	AdditionalResponseHeadersToLog  []string `protobuf:"bytes,2,rep,name=additional_response_headers_to_log,json=additionalResponseHeadersToLog,proto3" json:"additional_response_headers_to_log,omitempty"`

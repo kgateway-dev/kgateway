@@ -1,6 +1,8 @@
 package als
 
 import (
+	"context"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
@@ -10,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 const (
@@ -57,8 +60,10 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := hcmCfg.GetAccessLog()
-					hcmCfg.AccessLog = handleAccessLogPlugins(alSettings.Als, accessLogs)
-
+					hcmCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.Als, accessLogs)
+					if err != nil {
+						return err
+					}
 
 					f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &hcmCfg)
 					// this should never error
@@ -72,17 +77,40 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	return nil
 }
 
-func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) []*envoyal.AccessLog {
+func handleAccessLogPlugins(ctx context.Context, service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
+	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
+		newAlsCfg := &envoyal.AccessLog{}
 		switch cfgType := al.GetOutputDestination().(type) {
 		case *als.AccessLog_FileSink:
 			var cfg envoyalcfg.FileAccessLog
-
+			copyFileSettings(&cfg, cfgType)
+			structConfig, err := translatorutil.NewConfig(&cfg)
+			if err != nil {
+				return nil, err
+			}
+			newAlsCfg.ConfigType = &envoyal.AccessLog_Config{
+				Config: structConfig,
+			}
+			results = append(results, newAlsCfg)
+		case *als.AccessLog_GrpcService:
+			contextutils.LoggerFrom(ctx).Debugf("grpc access logging not currently supported")
 		}
 	}
-	return logCfg
+	logCfg = append(logCfg, results...)
+	return logCfg, nil
 }
 
 func copyFileSettings(cfg *envoyalcfg.FileAccessLog, alsSettings *als.AccessLog_FileSink) {
-
+	cfg.Path = alsSettings.FileSink.Path
+	switch fileSinkType := alsSettings.FileSink.GetOutputFormat().(type) {
+	case *als.FileSink_StringFormat:
+		cfg.AccessLogFormat = &envoyalcfg.FileAccessLog_Format{
+			Format: fileSinkType.StringFormat,
+		}
+	case *als.FileSink_JsonFormat:
+		cfg.AccessLogFormat = &envoyalcfg.FileAccessLog_JsonFormat{
+			JsonFormat: fileSinkType.JsonFormat,
+		}
+	}
 }

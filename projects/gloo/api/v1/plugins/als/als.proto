@@ -40,13 +40,13 @@ message FileSink {
     }
 }
 
+// Grpc service
+// Not currently implemented
 message GrpcService {
 
-    repeated string additional_request_headers_to_log = 1;
-    repeated string additional_response_headers_to_log = 2;
-    repeated string additional_response_trailers_to_log = 3;
 }
 
+// filters for access logs
 message Filter {
 
 }

@@ -90,7 +90,9 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 ---
 ### GrpcService
 
-
+ 
+[#not-implemented-hide:]
+Grpc service
 
 ```yaml
 "additionalRequestHeadersToLog": []string

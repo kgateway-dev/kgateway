@@ -1,7 +1,7 @@
 package translator
 
 import (
-	fmt "fmt"
+	"fmt"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
@@ -34,6 +34,17 @@ func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filte
 	}
 
 	return s, nil
+}
+
+func NewConfig(config proto.Message) (*types.Struct, error) {
+	marshalledConf, err := envoyutil.MessageToStruct(config)
+	if err != nil {
+		// this should NEVER HAPPEN!
+		return nil, err
+	}
+	s := marshalledConf
+	return s, nil
+
 }
 
 func ParseConfig(c configObject, config proto.Message) error {
