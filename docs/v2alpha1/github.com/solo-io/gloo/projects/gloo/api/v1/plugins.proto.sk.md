@@ -183,6 +183,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
 "azure": .azure.plugins.gloo.solo.io.UpstreamSpec
 "consul": .consul.plugins.gloo.solo.io.UpstreamSpec
+"awsEc2": .aws_ec2.plugins.gloo.solo.io.UpstreamSpec
 
 ```
 
@@ -198,6 +199,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#upstreamspec) |  |  |
 | `azure` | [.azure.plugins.gloo.solo.io.UpstreamSpec](../plugins/azure/azure.proto.sk#upstreamspec) |  |  |
 | `consul` | [.consul.plugins.gloo.solo.io.UpstreamSpec](../plugins/consul/consul.proto.sk#upstreamspec) |  |  |
+| `awsEc2` | [.aws_ec2.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/ec2/aws_ec2.proto.sk#upstreamspec) |  |  |
 
 
 
