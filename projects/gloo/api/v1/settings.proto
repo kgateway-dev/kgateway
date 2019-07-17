@@ -15,56 +15,73 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
+// Represents global settings for all the Gloo components.
 message Settings {
 
     option (core.solo.io.resource).short_name = "st";
     option (core.solo.io.resource).plural_name = "settings";
-    // namespace to write discovered data
-    string discovery_namespace = 1;
-    // namespaces to watch for user config. default: watch all namespaces (same as providing empty string)
-    repeated string watch_namespaces = 2;
-    // namespaces to watch for services. default: watch all namespaces (same as providing empty string)
-    repeated string service_discovery_namespaces = 21;
 
-    // where to read user config (upstream, proxy) from
-    // if nil, use only in memory config
+    // This is the namespace to which Gloo will write its own resources, e.g. discovered Upstreams or default Gateways.
+    // If empty, this will default to "gloo-system".
+    string discovery_namespace = 1;
+
+    // Use this setting to restrict the namespaces that Gloo takes into consideration when watching for resources.In a
+    // usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces`
+    // contains namespaces outside of this whitelist, Gloo will fail to start.
+    //
+    // If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always
+    // be included in this list.
+    repeated string watch_namespaces = 2;
+
+    // This setting determines where Gloo will store its resources
     oneof config_source {
         KubernetesCrds kubernetes_config_source = 4;
         Directory directory_config_source = 5;
     };
 
-    // where to read secrets from (vault, k8s)
+    // Determines where Gloo will read/write secrets from/to.
     oneof secret_source {
         KubernetesSecrets kubernetes_secret_source = 6;
         VaultSecrets vault_secret_source = 7;
         Directory directory_secret_source = 8;
     };
 
-    // where to read artifacts from (configmap, file)
+    // Where to read artifacts from.
     oneof artifact_source {
         KubernetesConfigmaps kubernetes_artifact_source = 9;
         Directory directory_artifact_source = 10;
     };
 
-    // where the gloo xds server should bind (should not need configuration by user)
+    // Where the gloo xDS server should bind (should not need configuration by user)
     string bind_addr = 11;
-    // how frequently to resync watches, etc
+
+    // How frequently to resync watches, etc
     google.protobuf.Duration refresh_rate = 12;
-    // enable serving debug data on port 9090
+
+    // Enable serving debug data on port 9090
     bool dev_mode = 13;
 
-    // enable automatic linkerd upstream header addition for easier routing to linkerd services
+    // Enable automatic linkerd upstream header addition for easier routing to linkerd services
     bool linkerd = 17;
 
-    // ilackarms(todo: make sure these are configurable)
+    // USe Kubernetes CRDs as storage.
     message KubernetesCrds {
-    } // watch kubernetes Crds
+    }
+
+    // Use Kubernetes as storage for secret data.
     message KubernetesSecrets {
-    } // watch kube secrets
+    }
+
+    // Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
     message VaultSecrets {
-    } // watch vault secrets
+    }
+
+    // Use Kubernetes ConfigMaps as storage.
     message KubernetesConfigmaps {
     }
+
+    // As an alternative to Kubernetes CRDs, Gloo is able to store resources in a local file system.
+    // This option determines the root of the directory tree used to this end.
     message Directory {
         string directory = 1;
     } // watch a directory
@@ -73,41 +90,37 @@ message Settings {
     CircuitBreakerConfig circuit_breakers = 3;
 
     message KnativeOptions {
-        // address of the clusteringress proxy
-        // if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local
+        // Address of the clusteringress proxy.
+        // If empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local.
         string cluster_ingress_proxy_address = 1;
     }
 
-    // configuration options for the Clusteringress Controller (for Knative)
+    // Configuration options for the Clusteringress Controller (for Knative).
     KnativeOptions knative = 18;
 
     message DiscoveryOptions {
-        // possible modes for running the function discovery service (FDS)
-        // FDS polls services in-cluster for Swagger and gRPC endpoints
-        // this behavior can be controlled with the use of annotations
-        // FdsMode specifies what policy FDS will use when
-        // determining which services to poll
+
+        // Possible modes for running the function discovery service (FDS). FDS polls services in-cluster for Swagger
+        // and gRPC endpoints. This behavior can be controlled with the use of annotations.
+        // FdsMode specifies what policy FDS will use when determining which services to poll.
         enum FdsMode {
-            // in BLACKLIST mode (default), FDS will poll all services in cluster
-            // except those services labeled with
-            // discovery.solo.io/function_discovery=disabled
-            // this label can also be used on namespaces to apply to all
-            // services within a namespace *(which are not explicitly whitelisted)*
-            // Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in
-            // blacklist mode.
+            // In BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with
+            // `discovery.solo.io/function_discovery=disabled`. This label can also be used on namespaces to apply to
+            // all services within a namespace **which are not explicitly whitelisted**.
+            // Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode.
             BLACKLIST = 0;
-            // in WHITELIST mode (default), FDS will poll only services in cluster
-            // labeled with discovery.solo.io/function_discovery=enabled
-            // this label can also be used on namespaces to apply to all
-            // services *(which are not explicitly blacklisted)* within a namespace
+            // In WHITELIST mode, FDS will poll only services in cluster labeled with
+            // `discovery.solo.io/function_discovery=enabled`. This label can also be used on namespaces to apply to all
+            // services **which are not explicitly blacklisted** within a namespace.
             WHITELIST = 1;
-            // in DISABLED mode, FDS will not run
+            // In DISABLED mode, FDS will not run.
             DISABLED = 2;
         }
 
         FdsMode fds_mode = 1;
     }
-    // options for configuring Gloo's Discovery service
+
+    // Options for configuring Gloo's Discovery service
     DiscoveryOptions discovery = 19;
 
     // Provides overrides for the default configuration parameters used to connect to Consul.

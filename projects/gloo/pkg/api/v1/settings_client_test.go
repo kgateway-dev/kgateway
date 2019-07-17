@@ -74,7 +74,6 @@ func SettingsClientTest(namespace string, client SettingsClient, name1, name2, n
 	Expect(r1.GetMetadata().Ref()).To(Equal(input.GetMetadata().Ref()))
 	Expect(r1.DiscoveryNamespace).To(Equal(input.DiscoveryNamespace))
 	Expect(r1.WatchNamespaces).To(Equal(input.WatchNamespaces))
-	Expect(r1.ServiceDiscoveryNamespaces).To(Equal(input.ServiceDiscoveryNamespaces))
 	Expect(r1.BindAddr).To(Equal(input.BindAddr))
 	Expect(r1.RefreshRate).To(Equal(input.RefreshRate))
 	Expect(r1.DevMode).To(Equal(input.DevMode))
