@@ -7,7 +7,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
-    gloo: gateway-proxy
+    gloo: {{ $spec.name }}
 data:
 {{ if (empty .Values.ingressProxy.configMap.data) }}
   envoy.yaml: |

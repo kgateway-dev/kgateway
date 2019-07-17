@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -426,7 +427,7 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "gateway-proxy",
+			Name:      translator.GatewayProxyName,
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{

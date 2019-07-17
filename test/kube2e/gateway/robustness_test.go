@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"sort"
 	"time"
 
@@ -32,7 +33,7 @@ import (
 var _ = Describe("Robustness tests", func() {
 
 	const (
-		gatewayProxy = "gateway-proxy"
+		gatewayProxy = translator.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -179,7 +180,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to be accepted")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, "gateway-proxy", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
@@ -234,7 +235,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to be rejected")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, "gateway-proxy", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}

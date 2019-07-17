@@ -48,7 +48,7 @@ spec:
               fieldPath: metadata.name
         image: {{ $spec.deployment.image.repository }}:{{ $spec.deployment.image.tag }}
         imagePullPolicy: {{ $spec.deployment.image.pullPolicy }}
-        name: gateway-proxy
+        name: {{ $spec.name }}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
