@@ -63,8 +63,9 @@ var _ = Describe("Translator", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
-			Settings: settings,
-			Secrets:  memoryClientFactory,
+			Settings:  settings,
+			Secrets:   memoryClientFactory,
+			Upstreams: memoryClientFactory,
 		}
 		registeredPlugins = registry.Plugins(opts)
 
