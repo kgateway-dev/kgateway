@@ -19,9 +19,14 @@ func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
 	for _, us := range upstreams {
 		name := us.GetMetadata().Name
 		s := us.Status.State.String()
-		u := upstreamType(us)
 
-		details := upstreamDetails(us)
+		u := "Unknown"
+		details := []string{"Invalid: Spec was nil"}
+		if us.UpstreamSpec != nil {
+			u = upstreamType(us)
+			details = upstreamDetails(us)
+		}
+
 		if len(details) == 0 {
 			details = []string{""}
 		}
