@@ -3,12 +3,13 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 

@@ -2,9 +2,10 @@ package gateway_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"sort"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/testutils/helper"
