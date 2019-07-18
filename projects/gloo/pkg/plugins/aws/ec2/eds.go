@@ -11,8 +11,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awscache"
-
 	"go.uber.org/zap"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -68,8 +66,7 @@ func getRefreshRate(parentRefreshRate time.Duration) time.Duration {
 	return parentRefreshRate
 }
 
-// TODO(cleanup): remove the "V2" suffix
-func (c *edsWatcher) updateEndpointsListV2(endpointsChan chan v1.EndpointList, errs chan error) {
+func (c *edsWatcher) updateEndpointsList(endpointsChan chan v1.EndpointList, errs chan error) {
 	tmpTODOAllNamespaces := metav1.NamespaceAll
 	secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{Ctx: c.watchContext})
 	if err != nil {
@@ -91,47 +88,11 @@ func (c *edsWatcher) updateEndpointsListV2(endpointsChan chan v1.EndpointList, e
 func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	endpointsChan := make(chan v1.EndpointList)
 	errs := make(chan error)
-	// TODO(cleanup): remove "updateEndpointsList"
-	updateEndpointsList := func() {
-		// TODO(mitchdraft) refine the secret ingestion strategy. TBD if the AWS secret will come from a crd, env var, or file
-		tmpTODOAllNamespaces := metav1.NamespaceAll
-		secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{Ctx: c.watchContext})
-		if err != nil {
-			errs <- err
-			return
-		}
-		// query the source of truth and build a local representation of the EC2 instances, grouped by credentials
-		store, err := c.buildCache(secrets)
-		if err != nil {
-			errs <- err
-			return
-		}
-		// apply filters to the instance batches
-		var allEndpoints v1.EndpointList
-		for _, upstream := range c.upstreams {
-			instancesForUpstream, err := store.FilterEndpointsForUpstream(upstream.AwsEc2Spec)
-			if err != nil {
-				errs <- err
-				return
-			}
-			endpointsForUpstream := c.convertInstancesToEndpoints(upstream, instancesForUpstream)
-			allEndpoints = append(allEndpoints, endpointsForUpstream...)
-		}
-
-		select {
-		case <-c.watchContext.Done():
-			return
-		case endpointsChan <- allEndpoints:
-		}
-	}
-
 	go func() {
 		defer close(endpointsChan)
 		defer close(errs)
 
-		updateEndpointsList()
-		// TODO(cleanup) - replace above with:
-		//c.updateEndpointsListV2(endpointsChan, errs)
+		c.updateEndpointsList(endpointsChan, errs)
 		ticker := time.NewTicker(c.refreshRate)
 		defer ticker.Stop()
 
@@ -141,20 +102,13 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 				if !ok {
 					return
 				}
-				updateEndpointsList()
-				// TODO(cleanup) - replace above with:
-				//c.updateEndpointsListV2(endpointsChan, errs)
+				c.updateEndpointsList(endpointsChan, errs)
 			case <-c.watchContext.Done():
 				return
 			}
 		}
 	}()
 	return endpointsChan, errs, nil
-}
-
-// call AWS APIs
-func (c *edsWatcher) buildCache(secrets v1.SecretList) (*awscache.Cache, error) {
-	return awscache.New(c.watchContext, secrets, c.upstreams, c.ec2InstanceLister)
 }
 
 const defaultPort = 80

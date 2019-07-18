@@ -2,17 +2,16 @@ package ec2
 
 import (
 	"context"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awscache"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// TODO(cleanup): move retained content of awscache pkg into this pkg
 // TODO(cleanup): move retained content of awslister pkg into this pkg (MAYBE - keep separate, tbd)
 
 // one credentialGroup should be made for each unique credentialSpec
@@ -24,7 +23,7 @@ type credentialGroup struct {
 	// all the instances visible to the given credentials
 	instances []*ec2.Instance
 	// one filter map exists for each instance in order to support client-side filtering
-	filterMaps []awscache.FilterMap
+	filterMaps []FilterMap
 }
 
 // assumes that upstream are EC2 upstreams
@@ -62,7 +61,7 @@ func getInstancesForCredentialGroups(ctx context.Context, lister awslister.Ec2In
 			return err
 		}
 		credGroup.instances = instances
-		credGroup.filterMaps = awscache.GenerateFilterMaps(instances)
+		credGroup.filterMaps = generateFilterMaps(instances)
 	}
 	return nil
 }
@@ -77,12 +76,12 @@ func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGrou
 		for _, filter := range upstream.UpstreamSpec.GetAwsEc2().Filters {
 			switch filterSpec := filter.Spec.(type) {
 			case *glooec2.TagFilter_Key:
-				if _, ok := fm[awscache.AwsKeyCase(filterSpec.Key)]; !ok {
+				if _, ok := fm[awsKeyCase(filterSpec.Key)]; !ok {
 					matchesAll = false
 					break ScanFilters
 				}
 			case *glooec2.TagFilter_KvPair_:
-				if val, ok := fm[awscache.AwsKeyCase(filterSpec.KvPair.Key)]; !ok || val != filterSpec.KvPair.Value {
+				if val, ok := fm[awsKeyCase(filterSpec.KvPair.Key)]; !ok || val != filterSpec.KvPair.Value {
 					matchesAll = false
 					break ScanFilters
 				}
@@ -141,4 +140,31 @@ func getLatestEndpoints(ctx context.Context, lister awslister.Ec2InstanceLister,
 		}
 	}
 	return allEndpoints, nil
+}
+
+// a FilterMap is created for each EC2 instance so we can efficiently filter the instances associated with a given
+// upstream's filter spec
+// filter maps are generated from tag lists, the keys are the tag keys, the values are the tag values
+type FilterMap map[string]string
+
+func generateFilterMap(instance *ec2.Instance) FilterMap {
+	m := make(FilterMap)
+	for _, t := range instance.Tags {
+		m[awsKeyCase(aws.StringValue(t.Key))] = aws.StringValue(t.Value)
+	}
+	return m
+}
+
+func generateFilterMaps(instances []*ec2.Instance) []FilterMap {
+	var maps []FilterMap
+	for _, instance := range instances {
+		maps = append(maps, generateFilterMap(instance))
+	}
+	return maps
+}
+
+// AWS tag keys are not case-sensitive so cast them all to lowercase
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-policy-structure.html#amazon-ec2-keys
+func awsKeyCase(input string) string {
+	return strings.ToLower(input)
 }
