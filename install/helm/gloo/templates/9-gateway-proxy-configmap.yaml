@@ -15,9 +15,9 @@ data:
   envoy.yaml: |
     node:
       cluster: gateway
-      id: "{{ `{{.PodName }}.{{.PodNamespace}}` }}"
+      id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
-        # role's value is the key for the in memory xds cache (envoy.go)
+        # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
         role: "{{ `{{.PodNamespace}}` }}~{{ $spec.name }}"
     static_resources:
 

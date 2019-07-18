@@ -15,7 +15,7 @@ data:
       cluster: ingress
       id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
-        # this line must match !
+        # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
         role: "{{ `{{.PodNamespace}}` }}~ingress-proxy"
     static_resources:
       clusters:
