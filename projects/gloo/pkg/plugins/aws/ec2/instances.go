@@ -11,6 +11,34 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+// MUST filter the upstreamList to ONLY EC2 upstreams before calling this function
+func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v1.SecretList, writeNamespace string, upstreamList v1.UpstreamList) (v1.EndpointList, error) {
+	// we want unique creds so we can query api once per unique cred
+	// we need to make sure we maintain the association between those unique creds and the upstreams that share them
+	// so that when we get the instances associated with the creds, we will know which upstreams have access to those
+	// instances.
+	credGroups, err := getCredGroupsFromUpstreams(upstreamList)
+	if err != nil {
+		return nil, err
+	}
+	// call the EC2 DescribeInstances once for each set of credentials and apply the output to the credential groups
+	if err := getInstancesForCredentialGroups(ctx, lister, secrets, credGroups); err != nil {
+		return nil, err
+	}
+	// produce the endpoints list
+	var allEndpoints v1.EndpointList
+	for _, credGroup := range credGroups {
+		for _, upstream := range credGroup.upstreams {
+			instancesForUpstream := filterInstancesForUpstream(upstream, credGroup)
+			for _, instance := range instancesForUpstream {
+				allEndpoints = append(allEndpoints, upstreamInstanceToEndpoint(writeNamespace, upstream, instance))
+			}
+		}
+	}
+	return allEndpoints, nil
+}
+
+// credentialGroup exists to support batched calls to the AWS API
 // one credentialGroup should be made for each unique credentialSpec
 type credentialGroup struct {
 	// a unique credential spec
@@ -23,35 +51,32 @@ type credentialGroup struct {
 	filterMaps []FilterMap
 }
 
-// assumes that upstream are EC2 upstreams
-// initializes the credentialGroups
-func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) ([]*credentialGroup, error) {
-	uniqueCredentialsMap := make(map[CredentialKey]*credentialGroup)
+// Initializes the credentialGroups
+// Credential groups are returned as a map to enforce the "one credentialGroup per unique credential" property that is
+// required in order to realize the benefits of batched AWS API calls.
+// NOTE: assumes that upstreams are EC2 upstreams
+func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) (map[CredentialKey]*credentialGroup, error) {
+	credGroups := make(map[CredentialKey]*credentialGroup)
 	for _, upstream := range upstreams {
-		cred := getCredForUpstream(upstream)
+		cred := NewCredentialSpecFromEc2UpstreamSpec(upstream.UpstreamSpec.GetAwsEc2())
 		key := cred.GetKey()
-		if _, ok := uniqueCredentialsMap[key]; ok {
-			uniqueCredentialsMap[key].upstreams = append(uniqueCredentialsMap[key].upstreams, upstream)
+		if _, ok := credGroups[key]; ok {
+			credGroups[key].upstreams = append(credGroups[key].upstreams, upstream)
 		} else {
-			uniqueCredentialsMap[key] = &credentialGroup{
+			credGroups[key] = &credentialGroup{
 				upstreams:      v1.UpstreamList{upstream},
 				credentialSpec: cred,
 			}
 		}
 	}
-	var credGroups []*credentialGroup
-	for _, cred := range uniqueCredentialsMap {
-		credGroups = append(credGroups, cred)
-	}
 	return credGroups, nil
 }
 
-func getCredForUpstream(upstream *v1.Upstream) *CredentialSpec {
-	return NewCredentialSpecFromEc2UpstreamSpec(upstream.UpstreamSpec.GetAwsEc2())
-}
-
-//define a function to get all instances from a list of unique credentials
-func getInstancesForCredentialGroups(ctx context.Context, lister Ec2InstanceLister, secrets v1.SecretList, credGroups []*credentialGroup) error {
+// calls the AWS API and attaches the output to the the provided list of credentialGroups. Modifications include:
+// - adds the instances for each credentialGroup's credential
+// - adds tag filters for each instance for later use when refining the list of instances that an upstream has
+// permission to describe to the list of instances that the upstream should route to
+func getInstancesForCredentialGroups(ctx context.Context, lister Ec2InstanceLister, secrets v1.SecretList, credGroups map[CredentialKey]*credentialGroup) error {
 	for _, credGroup := range credGroups {
 		instances, err := lister.ListForCredentials(ctx, credGroup.credentialSpec, secrets)
 		if err != nil {
@@ -63,6 +88,8 @@ func getInstancesForCredentialGroups(ctx context.Context, lister Ec2InstanceList
 	return nil
 }
 
+// applies filter logic equivalent to the tag filter logic used in AWS's DescribeInstances API
+// NOTE: assumes that upstreams are EC2 upstreams
 func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGroup) []*ec2.Instance {
 	var instances []*ec2.Instance
 	// sweep through each filter map, if all the upstream's filters are matched, add the corresponding instance to the list
@@ -91,6 +118,7 @@ func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGrou
 	return instances
 }
 
+// NOTE: assumes that upstreams are EC2 upstreams
 func upstreamInstanceToEndpoint(writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
 	ipAddr := instance.PrivateIpAddress
 	if upstream.UpstreamSpec.GetAwsEc2().PublicIp {
@@ -110,33 +138,6 @@ func upstreamInstanceToEndpoint(writeNamespace string, upstream *v1.Upstream, in
 			Namespace: writeNamespace,
 		},
 	}
-}
-
-// MUST filter the upstreamList to ONLY EC2 upstreams before calling this function
-func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v1.SecretList, writeNamespace string, upstreamList v1.UpstreamList) (v1.EndpointList, error) {
-	// we want unique creds so we can query api once per unique cred
-	// we need to make sure we maintain the association between those unique creds and the upstreams that share them
-	// so that when we get the instances associated with the creds we will know which upstreams have access to those
-	// instances.
-	credGroups, err := getCredGroupsFromUpstreams(upstreamList)
-	if err != nil {
-		return nil, err
-	}
-	// call the EC2 DescribeInstances once for each set of credentials and apply the output to the credential groups
-	if err := getInstancesForCredentialGroups(ctx, lister, secrets, credGroups); err != nil {
-		return nil, err
-	}
-	// produce the endpoints list
-	var allEndpoints v1.EndpointList
-	for _, credGroup := range credGroups {
-		for _, upstream := range credGroup.upstreams {
-			instancesForUpstream := filterInstancesForUpstream(upstream, credGroup)
-			for _, instance := range instancesForUpstream {
-				allEndpoints = append(allEndpoints, upstreamInstanceToEndpoint(writeNamespace, upstream, instance))
-			}
-		}
-	}
-	return allEndpoints, nil
 }
 
 // a FilterMap is created for each EC2 instance so we can efficiently filter the instances associated with a given
