@@ -95,7 +95,7 @@ type GatewayDeployment struct {
 type GatewayProxy struct {
 	Name       string                   `json:"name,omitempty"`
 	Kind       *GatewayProxyKind        `json:"kind,omitempty"`
-	Deployment *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
+	PodTemplate *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
 	ConfigMap  *GatewayProxyConfigMap   `json:"configMap,omitempty"`
 	Service    *GatewayProxyService     `json:"service,omitempty"`
 }
@@ -112,6 +112,7 @@ type GatewayProxyPodTemplate struct {
 	Image            *Image            `json:"image,omitempty"`
 	HttpPort         string            `json:"httpPort,omitempty"`
 	HttpsPort        string            `json:"httpsPort,omitempty"`
+	HostPort         bool              `json:"hostPort"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	NodeName         string            `json:"nodeName,omitempty"`

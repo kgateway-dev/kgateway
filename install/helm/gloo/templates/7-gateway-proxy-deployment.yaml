@@ -67,9 +67,15 @@ spec:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
           protocol: TCP
+          {{- if $spec.podTemplate.hostPort}}
+          hostPort: {{ $spec.podTemplate.httpPort }}
+          {{- end}}
         - containerPort: {{ $spec.podTemplate.httpsPort }}
           name: https
           protocol: TCP
+          {{- if $spec.podTemplate.hostPort}}
+          hostPort: {{ $spec.podTemplate.httpsPort }}
+          {{- end}}
 {{- with $spec.podTemplate.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
         volumeMounts:
