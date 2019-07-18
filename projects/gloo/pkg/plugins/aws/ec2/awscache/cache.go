@@ -41,16 +41,16 @@ type CredentialInstanceGroup struct {
 	// instances contains all of the EC2 instances available for the given credential spec
 	instances []*ec2.Instance
 	// instanceFilterMaps contains one filter map for each instance
-	// indices correspond: instanceFilterMap[i] == filterMap(instance[i])
+	// indices correspond: instanceFilterMap[i] == FilterMap(instance[i])
 	// we store the filter map so that it can be reused across upstreams when determining if a given instance should be
 	// associated with a given upstream
-	instanceFilterMaps []filterMap
+	instanceFilterMaps []FilterMap
 }
 
-// a filterMap is created for each EC2 instance so we can efficiently filter the instances associated with a given
+// a FilterMap is created for each EC2 instance so we can efficiently filter the instances associated with a given
 // upstream's filter spec
 // filter maps are generated from tag lists, the keys are the tag keys, the values are the tag values
-type filterMap map[string]string
+type FilterMap map[string]string
 
 func New(ctx context.Context, secrets v1.SecretList, upstreams utils.InvertedEc2UpstreamRefMap, ec2InstanceLister awslister.Ec2InstanceLister) (*Cache, error) {
 	m := newCache(ctx, secrets)
@@ -134,7 +134,7 @@ func (c *Cache) addUpstream(upstream *utils.InvertedEc2Upstream) error {
 }
 
 func (c *Cache) addInstances(credentialSpec *awslister.CredentialSpec, instances []*ec2.Instance) error {
-	filterMaps := generateFilterMaps(instances)
+	filterMaps := GenerateFilterMaps(instances)
 	key := credentialSpec.GetKey()
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

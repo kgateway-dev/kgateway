@@ -26,12 +26,12 @@ func (c *Cache) FilterEndpointsForUpstream(upstreamSpec *glooec2.UpstreamSpec) (
 		for _, filter := range upstreamSpec.Filters {
 			switch filterSpec := filter.Spec.(type) {
 			case *glooec2.TagFilter_Key:
-				if _, ok := fm[awsKeyCase(filterSpec.Key)]; !ok {
+				if _, ok := fm[AwsKeyCase(filterSpec.Key)]; !ok {
 					matchesAll = false
 					break ScanFilters
 				}
 			case *glooec2.TagFilter_KvPair_:
-				if val, ok := fm[awsKeyCase(filterSpec.KvPair.Key)]; !ok || val != filterSpec.KvPair.Value {
+				if val, ok := fm[AwsKeyCase(filterSpec.KvPair.Key)]; !ok || val != filterSpec.KvPair.Value {
 					matchesAll = false
 					break ScanFilters
 				}
@@ -44,16 +44,16 @@ func (c *Cache) FilterEndpointsForUpstream(upstreamSpec *glooec2.UpstreamSpec) (
 	return list, nil
 }
 
-func generateFilterMap(instance *ec2.Instance) filterMap {
-	m := make(filterMap)
+func generateFilterMap(instance *ec2.Instance) FilterMap {
+	m := make(FilterMap)
 	for _, t := range instance.Tags {
-		m[awsKeyCase(aws.StringValue(t.Key))] = aws.StringValue(t.Value)
+		m[AwsKeyCase(aws.StringValue(t.Key))] = aws.StringValue(t.Value)
 	}
 	return m
 }
 
-func generateFilterMaps(instances []*ec2.Instance) []filterMap {
-	var maps []filterMap
+func GenerateFilterMaps(instances []*ec2.Instance) []FilterMap {
+	var maps []FilterMap
 	for _, instance := range instances {
 		maps = append(maps, generateFilterMap(instance))
 	}
@@ -62,6 +62,6 @@ func generateFilterMaps(instances []*ec2.Instance) []filterMap {
 
 // AWS tag keys are not case-sensitive so cast them all to lowercase
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-policy-structure.html#amazon-ec2-keys
-func awsKeyCase(input string) string {
+func AwsKeyCase(input string) string {
 	return strings.ToLower(input)
 }

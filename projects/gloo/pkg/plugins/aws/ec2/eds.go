@@ -34,7 +34,9 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreams v1.UpstreamList
 }
 
 type edsWatcher struct {
-	upstreams         utils.InvertedEc2UpstreamRefMap
+	upstreams utils.InvertedEc2UpstreamRefMap
+	// TODO(cleanup): remove "upstreams", rename "watchedUpstreams" to "upstreams"
+	watchedUpstreams  v1.UpstreamList
 	watchContext      context.Context
 	secretClient      v1.SecretClient
 	refreshRate       time.Duration
@@ -45,6 +47,7 @@ type edsWatcher struct {
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
 	return &edsWatcher{
 		upstreams:         utils.BuildInvertedUpstreamRefMap(upstreams),
+		watchedUpstreams:  upstreams,
 		watchContext:      watchCtx,
 		secretClient:      secretClient,
 		refreshRate:       getRefreshRate(parentRefreshRate),
@@ -65,10 +68,31 @@ func getRefreshRate(parentRefreshRate time.Duration) time.Duration {
 	return parentRefreshRate
 }
 
+// TODO(cleanup): remove the "V2" suffix
+func (c *edsWatcher) updateEndpointsListV2(endpointsChan chan v1.EndpointList, errs chan error) {
+	tmpTODOAllNamespaces := metav1.NamespaceAll
+	secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{Ctx: c.watchContext})
+	if err != nil {
+		errs <- err
+		return
+	}
+	allEndpoints, err := getLatestEndpoints(c.watchContext, c.ec2InstanceLister, secrets, c.writeNamespace, c.watchedUpstreams)
+	if err != nil {
+		errs <- err
+		return
+	}
+	select {
+	case <-c.watchContext.Done():
+		return
+	case endpointsChan <- allEndpoints:
+	}
+}
+
 func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	endpointsChan := make(chan v1.EndpointList)
 	errs := make(chan error)
-	updateResourceList := func() {
+	// TODO(cleanup): remove "updateEndpointsList"
+	updateEndpointsList := func() {
 		// TODO(mitchdraft) refine the secret ingestion strategy. TBD if the AWS secret will come from a crd, env var, or file
 		tmpTODOAllNamespaces := metav1.NamespaceAll
 		secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{Ctx: c.watchContext})
@@ -105,7 +129,9 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 		defer close(endpointsChan)
 		defer close(errs)
 
-		updateResourceList()
+		updateEndpointsList()
+		// TODO(cleanup) - replace above with:
+		//c.updateEndpointsListV2(endpointsChan, errs)
 		ticker := time.NewTicker(c.refreshRate)
 		defer ticker.Stop()
 
@@ -115,7 +141,9 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 				if !ok {
 					return
 				}
-				updateResourceList()
+				updateEndpointsList()
+				// TODO(cleanup) - replace above with:
+				//c.updateEndpointsListV2(endpointsChan, errs)
 			case <-c.watchContext.Done():
 				return
 			}
