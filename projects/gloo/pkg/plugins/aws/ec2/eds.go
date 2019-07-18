@@ -5,20 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2/utils"
-
 	"github.com/solo-io/go-utils/kubeutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
-
-	"go.uber.org/zap"
 
 	"github.com/solo-io/go-utils/contextutils"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -32,9 +26,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreams v1.UpstreamList
 }
 
 type edsWatcher struct {
-	upstreams utils.InvertedEc2UpstreamRefMap
-	// TODO(cleanup): remove "upstreams", rename "watchedUpstreams" to "upstreams"
-	watchedUpstreams  v1.UpstreamList
+	upstreams         v1.UpstreamList
 	watchContext      context.Context
 	secretClient      v1.SecretClient
 	refreshRate       time.Duration
@@ -44,8 +36,7 @@ type edsWatcher struct {
 
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
 	return &edsWatcher{
-		upstreams:         utils.BuildInvertedUpstreamRefMap(upstreams),
-		watchedUpstreams:  upstreams,
+		upstreams:         upstreams,
 		watchContext:      watchCtx,
 		secretClient:      secretClient,
 		refreshRate:       getRefreshRate(parentRefreshRate),
@@ -73,7 +64,7 @@ func (c *edsWatcher) updateEndpointsList(endpointsChan chan v1.EndpointList, err
 		errs <- err
 		return
 	}
-	allEndpoints, err := getLatestEndpoints(c.watchContext, c.ec2InstanceLister, secrets, c.writeNamespace, c.watchedUpstreams)
+	allEndpoints, err := getLatestEndpoints(c.watchContext, c.ec2InstanceLister, secrets, c.writeNamespace, c.upstreams)
 	if err != nil {
 		errs <- err
 		return
@@ -112,33 +103,6 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 }
 
 const defaultPort = 80
-
-func (c *edsWatcher) convertInstancesToEndpoints(upstream *utils.InvertedEc2Upstream, ec2InstancesForUpstream []*ec2.Instance) v1.EndpointList {
-	var list v1.EndpointList
-	for _, instance := range ec2InstancesForUpstream {
-		ipAddr := instance.PrivateIpAddress
-		if upstream.AwsEc2Spec.PublicIp {
-			ipAddr = instance.PublicIpAddress
-		}
-		port := upstream.AwsEc2Spec.GetPort()
-		if port == 0 {
-			port = defaultPort
-		}
-		ref := upstream.Base.Metadata.Ref()
-		endpoint := &v1.Endpoint{
-			Upstreams: []*core.ResourceRef{&ref},
-			Address:   aws.StringValue(ipAddr),
-			Port:      upstream.AwsEc2Spec.GetPort(),
-			Metadata: core.Metadata{
-				Name:      generateName(ref, aws.StringValue(ipAddr)),
-				Namespace: c.writeNamespace,
-			},
-		}
-		contextutils.LoggerFrom(c.watchContext).Debugw("EC2 endpoint", zap.Any("ep", endpoint))
-		list = append(list, endpoint)
-	}
-	return list
-}
 
 // TODO (separate pr) - update the EDS interface to include a registration function which would ensure uniqueness among prefixes
 // ... also include a function to ensure that the endpoint name conforms to the spec (is unique, begins with expected prefix)
