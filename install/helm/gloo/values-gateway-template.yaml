@@ -43,6 +43,12 @@ gateway:
       pullPolicy: Always
     replicas: 1
     stats: true
+  conversionJob:
+    image:
+      repository: quay.io/solo-io/gateway-conversion
+      pullPolicy: Always
+    restartPolicy: Never
+    ttlSecondsAfterFinished: 60
 
 gatewayProxies:
   gateway-proxy:
