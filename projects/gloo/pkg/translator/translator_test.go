@@ -3,6 +3,7 @@ package translator_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -739,7 +740,7 @@ var _ = Describe("Translator", func() {
 				// 2 prod endpoints, 1 in each data center, 1 dev endpoint in west data center
 				{
 					Metadata: core.Metadata{
-						Namespace: "",
+						Namespace: defaults.GlooSystem,
 						Name:      svc.Name + "_1",
 						Labels: map[string]string{
 							dc(east):  yes,
@@ -754,7 +755,7 @@ var _ = Describe("Translator", func() {
 				},
 				{
 					Metadata: core.Metadata{
-						Namespace: "",
+						Namespace: defaults.GlooSystem,
 						Name:      svc.Name + "_2",
 						Labels: map[string]string{
 							dc(east):  no,
@@ -769,7 +770,7 @@ var _ = Describe("Translator", func() {
 				},
 				{
 					Metadata: core.Metadata{
-						Namespace: "",
+						Namespace: defaults.GlooSystem,
 						Name:      svc.Name + "_3",
 						Labels: map[string]string{
 							dc(east):  no,
