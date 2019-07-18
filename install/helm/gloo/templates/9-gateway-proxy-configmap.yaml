@@ -21,7 +21,7 @@ data:
         role: "{{ `{{.PodNamespace}}` }}~{{ $spec.name }}"
     static_resources:
 
-{{- if $spec.deployment.stats }}
+{{- if $spec.podTemplate.stats }}
       listeners:
         - name: prometheus_listener
           address:
@@ -73,7 +73,7 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
 
-{{- if $spec.deployment.stats }}
+{{- if $spec.podTemplate.stats }}
       - name: admin_port_cluster
         connect_timeout: 5.000s
         type: STATIC
