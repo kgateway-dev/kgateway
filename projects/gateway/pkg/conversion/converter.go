@@ -17,10 +17,6 @@ var (
 		return errors.Wrapf(err, "Failed to list %v gateway resources in %v", version, namespace)
 	}
 
-	FailedToConvertGatewayError = func(err error, version, namespace, name string) error {
-		return errors.Wrapf(err, "Failed to convert %v gateway %v.%v", version, namespace, name)
-	}
-
 	FailedToDeleteGatewayError = func(err error, version, namespace, name string) error {
 		return errors.Wrapf(err, "Failed to delete %v gateway %v.%v", version, namespace, name)
 	}
@@ -70,15 +66,6 @@ func (c *ladder) Climb() error {
 	for _, oldGateway := range v1List {
 		g.Go(func() error {
 			convertedGateway := c.gatewayConverter.FromV1ToV2alpha1(oldGateway)
-			if err != nil {
-				wrapped := FailedToConvertGatewayError(
-					err,
-					"v1",
-					oldGateway.GetMetadata().Namespace,
-					oldGateway.GetMetadata().Name)
-				contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.Any("gateway", oldGateway))
-				return wrapped
-			}
 
 			if err := c.v1Client.Delete(
 				oldGateway.GetMetadata().Namespace,
@@ -93,6 +80,7 @@ func (c *ladder) Climb() error {
 				contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.Any("gateway", oldGateway))
 				return wrapped
 			}
+			contextutils.LoggerFrom(c.ctx).Infow("Successfully deleted v1 Gateway", zap.Any("gateway", oldGateway))
 
 			if _, err := c.v2alpha1Client.Write(convertedGateway, clients.WriteOpts{Ctx: c.ctx}); err != nil {
 				wrapped := FailedToWriteGatewayError(
@@ -103,6 +91,7 @@ func (c *ladder) Climb() error {
 				contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.Any("gateway", convertedGateway))
 				return wrapped
 			}
+			contextutils.LoggerFrom(c.ctx).Infow("Successfully wrote v2alpha1 gateway", zap.Any("gateway", convertedGateway))
 			return nil
 		})
 	}
