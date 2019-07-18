@@ -1,6 +1,7 @@
 package syncer_test
 
 import (
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
@@ -35,7 +36,7 @@ var _ = Describe("Translate Proxy", func() {
 		proxy := &v1.Proxy{
 			Metadata: core.Metadata{
 				Namespace: "gloo-system",
-				Name:      "gateway-proxy",
+				Name:      translator.GatewayProxyName,
 			},
 		}
 

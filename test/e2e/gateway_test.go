@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
@@ -85,7 +87,7 @@ var _ = Describe("Gateway", func() {
 			Eventually(
 				func() (int, error) {
 					numdisable := 0
-					proxy, err := testClients.ProxyClient.Read(writeNamespace, "gateway-proxy", clients.ReadOpts{})
+					proxy, err := testClients.ProxyClient.Read(writeNamespace, translator.GatewayProxyName, clients.ReadOpts{})
 					if err != nil {
 						return 0, err
 					}
@@ -137,7 +139,7 @@ var _ = Describe("Gateway", func() {
 			// Wait for proxy to be accepted
 			var proxy *gloov1.Proxy
 			Eventually(func() bool {
-				proxy, err = testClients.ProxyClient.Read(writeNamespace, "gateway-proxy", clients.ReadOpts{})
+				proxy, err = testClients.ProxyClient.Read(writeNamespace, translator.GatewayProxyName, clients.ReadOpts{})
 				if err != nil {
 					return false
 				}

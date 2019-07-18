@@ -67,10 +67,9 @@ message Listener {
         HttpListener http_listener = 4;
     }
 
-    // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port
+    // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.
     // Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
-    // must match a domain in virtual host
-    // TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored
+    // must match a domain in virtual host.
     repeated SslConfig ssl_configurations = 5;
 
     // Enable ProxyProtocol support for this listener
@@ -334,7 +333,6 @@ message WeightedDestination {
     uint32 weight = 2;
 }
 
-// TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
 // Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 message RedirectAction {
     // The host portion of the URL will be swapped with this value.
@@ -382,7 +380,6 @@ message RedirectAction {
     bool strip_query = 6;
 }
 
-// TODO(ilackarms): evaluate how much to differentiate (or if even to include) DirectResponseAction
 // DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 message DirectResponseAction {
     // Specifies the HTTP response status to be returned.

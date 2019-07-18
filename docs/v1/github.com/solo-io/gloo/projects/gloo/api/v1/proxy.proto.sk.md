@@ -96,7 +96,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported |  |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy |  |
 | `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for Gloo's HTTP-level features including request-based routing |  |
-| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
+| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host. |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |
 
 
@@ -416,7 +416,6 @@ WeightedDestination attaches a weight to a single destination.
 ### RedirectAction
 
  
-TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
 Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 
 ```yaml
@@ -461,7 +460,6 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 ### DirectResponseAction
 
  
-TODO(ilackarms): evaluate how much to differentiate (or if even to include) DirectResponseAction
 DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 
 ```yaml

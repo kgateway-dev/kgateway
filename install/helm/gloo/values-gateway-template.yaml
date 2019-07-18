@@ -45,7 +45,7 @@ gateway:
     stats: true
 
 gatewayProxies:
-  gateway-proxy:
+  - name: gateway-proxy
     deployment:
       image:
         repository: quay.io/solo-io/gloo-envoy-wrapper

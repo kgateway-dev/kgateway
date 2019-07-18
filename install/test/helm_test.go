@@ -2,6 +2,7 @@ package test
 
 import (
 	. "github.com/onsi/ginkgo"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -12,17 +13,17 @@ var _ = Describe("Helm Test", func() {
 
 	Describe("gateway proxy extra annotations and crds", func() {
 		labels := map[string]string{
-			"gloo": "gateway-proxy",
+			"gloo": translator.GatewayProxyName,
 			"app":  "gloo",
 		}
 		selector := map[string]string{
-			"gloo": "gateway-proxy",
+			"gloo": translator.GatewayProxyName,
 		}
 
 		It("has a namespace", func() {
 			rb := ResourceBuilder{
 				Namespace: namespace,
-				Name:      "gateway-proxy",
+				Name:      translator.GatewayProxyName,
 				Labels:    labels,
 				Service: ServiceSpec{
 					Ports: []PortSpec{
@@ -42,7 +43,6 @@ var _ = Describe("Helm Test", func() {
 			svc.Spec.Type = v1.ServiceTypeLoadBalancer
 			svc.Spec.Ports[0].TargetPort = intstr.FromInt(8080)
 			svc.Spec.Ports[1].TargetPort = intstr.FromInt(8443)
-			svc.Annotations = map[string]string{"test": "test"}
 			testManifest.ExpectService(svc)
 		})
 	})

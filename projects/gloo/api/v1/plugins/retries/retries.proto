@@ -1,7 +1,3 @@
-// TODO: this was copied form the transformation filter.
-// TODO: instead of manually copying, we want to do it via script, similar to the java-control-plane
-// TODO: to solo-kit/api/envoy
-
 syntax = "proto3";
 
 package retries.plugins.gloo.solo.io;

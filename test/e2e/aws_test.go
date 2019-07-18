@@ -310,21 +310,6 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.VirtualServiceClient.Write(vs, opts)
 		Expect(err).NotTo(HaveOccurred())
 
-		/* // TODO(yuval-k): i dont think we need this as we can use the default gateway.
-
-		gateway := &gw1.Gateway{
-			Metadata: core.Metadata{
-				Name:      "ingress",
-				Namespace: "default",
-			},
-			VirtualServices: []core.ResourceRef{vs.Metadata.Ref()},
-			BindPort:        envoyPort,
-			BindAddress:     "127.0.0.1",
-		}
-
-		_, err = testClients.GatewayClient.Write(gateway, opts)
-		Expect(err).NotTo(HaveOccurred())
-		*/
 		validateLambdaUppercase(defaults.HttpPort)
 	})
 })
