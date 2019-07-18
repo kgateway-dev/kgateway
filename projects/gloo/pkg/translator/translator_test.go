@@ -3,6 +3,7 @@ package translator_test
 import (
 	"context"
 	"fmt"
+	"github.com/golang/mock/gomock"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -45,6 +46,7 @@ import (
 
 var _ = Describe("Translator", func() {
 	var (
+		ctrl              *gomock.Controller
 		settings          *v1.Settings
 		translator        Translator
 		upstream          *v1.Upstream
@@ -62,14 +64,18 @@ var _ = Describe("Translator", func() {
 	)
 
 	BeforeEach(func() {
+
+		ctrl = gomock.NewController(T)
+
 		cluster = nil
 		settings = &v1.Settings{}
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
-			Settings: settings,
-			Secrets:  memoryClientFactory,
+			Settings:     settings,
+			Secrets:      memoryClientFactory,
+			ConsulClient: consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 		}
 		registeredPlugins = registry.Plugins(opts)
 
