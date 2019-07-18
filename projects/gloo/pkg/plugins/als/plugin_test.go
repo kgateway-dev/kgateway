@@ -83,7 +83,9 @@ var _ = Describe("Plugin", func() {
 
 	It("can properly create AccessLog as string", func() {
 		path := "path"
-		jsonFormat := &types.Struct{}
+		jsonFormat := &types.Struct{
+			Fields: map[string]*types.Value{},
+		}
 		fileConfig := &als.AccessLog_FileSink{
 			FileSink: &als.FileSink{
 				Path: path,
