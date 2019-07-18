@@ -38,7 +38,7 @@ func (us *UpstreamSpec_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 	// This will cause Envoy to partition the endpoints by their data center
 	var dataCenterMetadataKeys []string
 	for _, dc := range us.Consul.DataCenters {
-		dataCenterMetadataKeys = append(dataCenterMetadataKeys, constants.DataCenterKeyPrefix+dc)
+		dataCenterMetadataKeys = append(dataCenterMetadataKeys, constants.ConsulDataCenterKeyPrefix+dc)
 	}
 	sort.Strings(dataCenterMetadataKeys)
 
@@ -52,7 +52,7 @@ func (us *UpstreamSpec_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 		// This will cause Envoy to partition the endpoints (service instances) by their tags
 		var tagMetadataKeys []string
 		for _, tag := range tags {
-			tagMetadataKeys = append(tagMetadataKeys, constants.TagKeyPrefix+tag)
+			tagMetadataKeys = append(tagMetadataKeys, constants.ConsulTagKeyPrefix+tag)
 		}
 		sort.Strings(tagMetadataKeys)
 

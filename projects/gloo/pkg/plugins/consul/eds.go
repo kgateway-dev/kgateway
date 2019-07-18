@@ -154,12 +154,12 @@ func BuildTagMetadata(tags []string, upstreams []*v1.Upstream) map[string]string
 	for _, usTag := range getUniqueUpstreamTags(upstreams) {
 
 		// Prepend prefix
-		tagKey := constants.TagKeyPrefix + usTag
+		tagKey := constants.ConsulTagKeyPrefix + usTag
 
 		if _, ok := svcTags[usTag]; ok {
-			labels[tagKey] = constants.EndpointMetadataMatchTrue
+			labels[tagKey] = constants.ConsulEndpointMetadataMatchTrue
 		} else {
-			labels[tagKey] = constants.EndpointMetadataMatchFalse
+			labels[tagKey] = constants.ConsulEndpointMetadataMatchFalse
 		}
 	}
 
@@ -180,12 +180,12 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	for _, dc := range getUniqueUpstreamDataCenters(upstreams) {
 
 		// Prepend prefix
-		dcKey := constants.DataCenterKeyPrefix + dc
+		dcKey := constants.ConsulDataCenterKeyPrefix + dc
 
 		if _, ok := svcDataCenters[dc]; ok {
-			labels[dcKey] = constants.EndpointMetadataMatchTrue
+			labels[dcKey] = constants.ConsulEndpointMetadataMatchTrue
 		} else {
-			labels[dcKey] = constants.EndpointMetadataMatchFalse
+			labels[dcKey] = constants.ConsulEndpointMetadataMatchFalse
 		}
 	}
 	return labels

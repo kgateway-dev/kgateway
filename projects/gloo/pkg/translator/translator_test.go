@@ -688,20 +688,20 @@ var _ = Describe("Translator", func() {
 		var (
 			fakeUsList v1.UpstreamList
 			dc         = func(dataCenterName string) string {
-				return constants.DataCenterKeyPrefix + dataCenterName
+				return constants.ConsulDataCenterKeyPrefix + dataCenterName
 			}
 			tag = func(tagName string) string {
-				return constants.TagKeyPrefix + tagName
+				return constants.ConsulTagKeyPrefix + tagName
 			}
 
 			trueValue = &types.Value{
 				Kind: &types.Value_StringValue{
-					StringValue: constants.EndpointMetadataMatchTrue,
+					StringValue: constants.ConsulEndpointMetadataMatchTrue,
 				},
 			}
 			falseValue = &types.Value{
 				Kind: &types.Value_StringValue{
-					StringValue: constants.EndpointMetadataMatchFalse,
+					StringValue: constants.ConsulEndpointMetadataMatchFalse,
 				},
 			}
 		)
@@ -717,8 +717,8 @@ var _ = Describe("Translator", func() {
 			dev  = "dev"
 			prod = "prod"
 
-			yes = constants.EndpointMetadataMatchTrue
-			no  = constants.EndpointMetadataMatchFalse
+			yes = constants.ConsulEndpointMetadataMatchTrue
+			no  = constants.ConsulEndpointMetadataMatchFalse
 		)
 
 		BeforeEach(func() {

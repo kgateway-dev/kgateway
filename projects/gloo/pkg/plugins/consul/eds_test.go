@@ -49,8 +49,8 @@ var _ = Describe("Consul EDS", func() {
 			primary   = "primary"
 			secondary = "secondary"
 			canary    = "canary"
-			yes       = EndpointMetadataMatchTrue
-			no        = EndpointMetadataMatchFalse
+			yes       = ConsulEndpointMetadataMatchTrue
+			no        = ConsulEndpointMetadataMatchFalse
 
 			upstreamsToTrack      v1.UpstreamList
 			consulServiceSnapshot []*consul.ServiceMeta
@@ -142,70 +142,70 @@ var _ = Describe("Consul EDS", func() {
 			expectedEndpointsFirstAttempt = v1.EndpointList{
 				// 5 endpoints for service 1
 				createExpectedEndpoint(svc1, "a", "1.1.0.1", "100", writeNamespace, 1234, map[string]string{
-					TagKeyPrefix + primary:    yes,
-					TagKeyPrefix + secondary:  no,
-					TagKeyPrefix + canary:     no,
-					DataCenterKeyPrefix + dc1: yes,
-					DataCenterKeyPrefix + dc2: no,
-					DataCenterKeyPrefix + dc3: no,
+					ConsulTagKeyPrefix + primary:    yes,
+					ConsulTagKeyPrefix + secondary:  no,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: yes,
+					ConsulDataCenterKeyPrefix + dc2: no,
+					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
 				createExpectedEndpoint(svc1, "b", "1.1.0.2", "100", writeNamespace, 1234, map[string]string{
-					TagKeyPrefix + primary:    yes,
-					TagKeyPrefix + secondary:  no,
-					TagKeyPrefix + canary:     no,
-					DataCenterKeyPrefix + dc1: yes,
-					DataCenterKeyPrefix + dc2: no,
-					DataCenterKeyPrefix + dc3: no,
+					ConsulTagKeyPrefix + primary:    yes,
+					ConsulTagKeyPrefix + secondary:  no,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: yes,
+					ConsulDataCenterKeyPrefix + dc2: no,
+					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
 				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
-					TagKeyPrefix + primary:    no,
-					TagKeyPrefix + secondary:  yes,
-					TagKeyPrefix + canary:     no,
-					DataCenterKeyPrefix + dc1: no,
-					DataCenterKeyPrefix + dc2: yes,
-					DataCenterKeyPrefix + dc3: no,
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
+					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
 				createExpectedEndpoint(svc1, "d", "2.1.0.11", "100", writeNamespace, 4567, map[string]string{
-					TagKeyPrefix + primary:    no,
-					TagKeyPrefix + secondary:  yes,
-					TagKeyPrefix + canary:     no,
-					DataCenterKeyPrefix + dc1: no,
-					DataCenterKeyPrefix + dc2: yes,
-					DataCenterKeyPrefix + dc3: no,
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
+					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
 				createExpectedEndpoint(svc1, "e", "3.1.0.99", "100", writeNamespace, 9999, map[string]string{
-					TagKeyPrefix + primary:    no,
-					TagKeyPrefix + secondary:  yes,
-					TagKeyPrefix + canary:     yes,
-					DataCenterKeyPrefix + dc1: no,
-					DataCenterKeyPrefix + dc2: no,
-					DataCenterKeyPrefix + dc3: yes,
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulTagKeyPrefix + canary:     yes,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: no,
+					ConsulDataCenterKeyPrefix + dc3: yes,
 				}),
 
 				// 4 endpoints for service 2
 				createExpectedEndpoint(svc2, "a", "1.2.0.1", "100", writeNamespace, 8080, map[string]string{
-					TagKeyPrefix + primary:    yes,
-					TagKeyPrefix + secondary:  no,
-					DataCenterKeyPrefix + dc1: yes,
-					DataCenterKeyPrefix + dc2: no,
+					ConsulTagKeyPrefix + primary:    yes,
+					ConsulTagKeyPrefix + secondary:  no,
+					ConsulDataCenterKeyPrefix + dc1: yes,
+					ConsulDataCenterKeyPrefix + dc2: no,
 				}),
 				createExpectedEndpoint(svc2, "b", "1.2.0.2", "100", writeNamespace, 8080, map[string]string{
-					TagKeyPrefix + primary:    yes,
-					TagKeyPrefix + secondary:  no,
-					DataCenterKeyPrefix + dc1: yes,
-					DataCenterKeyPrefix + dc2: no,
+					ConsulTagKeyPrefix + primary:    yes,
+					ConsulTagKeyPrefix + secondary:  no,
+					ConsulDataCenterKeyPrefix + dc1: yes,
+					ConsulDataCenterKeyPrefix + dc2: no,
 				}),
 				createExpectedEndpoint(svc2, "c", "2.2.0.10", "100", writeNamespace, 8088, map[string]string{
-					TagKeyPrefix + primary:    no,
-					TagKeyPrefix + secondary:  yes,
-					DataCenterKeyPrefix + dc1: no,
-					DataCenterKeyPrefix + dc2: yes,
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
 				}),
 				createExpectedEndpoint(svc2, "d", "2.2.0.11", "100", writeNamespace, 8088, map[string]string{
-					TagKeyPrefix + primary:    no,
-					TagKeyPrefix + secondary:  yes,
-					DataCenterKeyPrefix + dc1: no,
-					DataCenterKeyPrefix + dc2: yes,
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
 				}),
 			}
 
@@ -217,12 +217,12 @@ var _ = Describe("Consul EDS", func() {
 			expectedEndpointsSecondAttempt = append(
 				expectedEndpointsFirstAttempt.Clone(),
 				createExpectedEndpoint(svc1, "b2", "1.1.0.3", "100", writeNamespace, 1234, map[string]string{
-					TagKeyPrefix + primary:    yes,
-					TagKeyPrefix + secondary:  no,
-					TagKeyPrefix + canary:     yes,
-					DataCenterKeyPrefix + dc1: yes,
-					DataCenterKeyPrefix + dc2: no,
-					DataCenterKeyPrefix + dc3: no,
+					ConsulTagKeyPrefix + primary:    yes,
+					ConsulTagKeyPrefix + secondary:  no,
+					ConsulTagKeyPrefix + canary:     yes,
+					ConsulDataCenterKeyPrefix + dc1: yes,
+					ConsulDataCenterKeyPrefix + dc2: no,
+					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
 			)
 			sort.SliceStable(expectedEndpointsSecondAttempt, func(i, j int) bool {
@@ -308,11 +308,11 @@ var _ = Describe("Consul EDS", func() {
 					Namespace: writeNamespace,
 					Name:      "my-svc-my-svc-0",
 					Labels: map[string]string{
-						TagKeyPrefix + "tag-1":       EndpointMetadataMatchTrue,
-						TagKeyPrefix + "tag-2":       EndpointMetadataMatchFalse,
-						TagKeyPrefix + "tag-3":       EndpointMetadataMatchTrue,
-						DataCenterKeyPrefix + "dc-1": EndpointMetadataMatchTrue,
-						DataCenterKeyPrefix + "dc-2": EndpointMetadataMatchFalse,
+						ConsulTagKeyPrefix + "tag-1":       ConsulEndpointMetadataMatchTrue,
+						ConsulTagKeyPrefix + "tag-2":       ConsulEndpointMetadataMatchFalse,
+						ConsulTagKeyPrefix + "tag-3":       ConsulEndpointMetadataMatchTrue,
+						ConsulDataCenterKeyPrefix + "dc-1": ConsulEndpointMetadataMatchTrue,
+						ConsulDataCenterKeyPrefix + "dc-2": ConsulEndpointMetadataMatchFalse,
 					},
 					ResourceVersion: "9876",
 				},
