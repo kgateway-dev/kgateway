@@ -11,7 +11,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// MUST filter the upstreamList to ONLY EC2 upstreams before calling this function
+// In order to minimize calls to the AWS API, we group calls by credentials and apply tag filters locally.
+// This function groups upstreams by credentials, calls the AWS API, maps the instances to upstreams, and returns the
+// endpoints associated with the provided upstream list
+// NOTE: MUST filter the upstreamList to ONLY EC2 upstreams before calling this function
 func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v1.SecretList, writeNamespace string, upstreamList v1.UpstreamList) (v1.EndpointList, error) {
 	// we want unique creds so we can query api once per unique cred
 	// we need to make sure we maintain the association between those unique creds and the upstreams that share them
