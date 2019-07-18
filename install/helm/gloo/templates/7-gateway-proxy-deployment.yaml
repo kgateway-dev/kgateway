@@ -67,20 +67,30 @@ spec:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
           protocol: TCP
-          {{- if $spec.podTemplate.hostPort}}
+          {{- if $spec.kind.daemonSet }}
+          {{- if $spec.kind.daemonSet.hostPort}}
           hostPort: {{ $spec.podTemplate.httpPort }}
+          {{- end}}
           {{- end}}
         - containerPort: {{ $spec.podTemplate.httpsPort }}
           name: https
           protocol: TCP
-          {{- if $spec.podTemplate.hostPort}}
+          {{- if  $spec.kind.daemonSet }}
+          {{- if $spec.kind.daemonSet.hostPort}}
           hostPort: {{ $spec.podTemplate.httpsPort }}
+          {{- end}}
           {{- end}}
 {{- with $spec.podTemplate.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+      {{- if $spec.kind.daemonSet }}
+      {{- if $spec.kind.daemonSet.hostPort}}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end}}
+      {{- end}}
       {{- if $spec.podTemplate.nodeName }}
       nodeName: {{$spec.podTemplate.nodeName}}
       {{- end }}
