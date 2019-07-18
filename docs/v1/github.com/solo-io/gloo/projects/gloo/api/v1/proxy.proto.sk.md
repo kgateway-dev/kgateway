@@ -97,7 +97,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported |  |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy |  |
 | `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for Gloo's HTTP-level features including request-based routing |  |
-| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored |  |
+| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config must match a domain in virtual host. |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |
 | `plugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#listenerplugins) |  |  |
 
@@ -301,7 +301,7 @@ Destinations define routable destinations for proxied requests.
 | ----- | ---- | ----------- |----------- | 
 | `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | Route requests to a Gloo upstream |  |
 | `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk#kubernetesservicedestination) | Route requests to a kubernetes service |  |
-| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk#consulservicedestination) | TODO(marco): NOTE: not implemented yet Route requests to a consul service |  |
+| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk#consulservicedestination) | Route requests to a consul service |  |
 | `destinationSpec` | [.gloo.solo.io.DestinationSpec](../plugins.proto.sk#destinationspec) | Some upstreams utilize plugins which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
 | `subset` | [.gloo.solo.io.Subset](../subset.proto.sk#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |  |
 
@@ -418,7 +418,6 @@ WeightedDestination attaches a weight to a single destination.
 ### RedirectAction
 
  
-TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
 Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 
 ```yaml
@@ -463,7 +462,6 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 ### DirectResponseAction
 
  
-TODO(ilackarms): evaluate how much to differentiate (or if even to include) DirectResponseAction
 DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 
 ```yaml

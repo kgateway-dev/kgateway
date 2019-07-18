@@ -1,13 +1,13 @@
 {{- if .Values.gateway.enabled }}
-{{- range $key, $spec := .Values.gatewayProxies }}
+{{- range $index, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     app: gloo
-    gloo: {{ $key }}
-  name: {{ $key }}
+    gloo: {{ $spec.name }}
+  name: {{ $spec.name }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
   annotations:
@@ -18,15 +18,15 @@ metadata:
 spec:
   ports:
   - port: {{ $spec.service.httpPort }}
-    targetPort: {{ $spec.deployment.httpPort }}
+    targetPort: {{ $spec.podTemplate.httpPort }}
     protocol: TCP
     name: http
   - port: {{ $spec.service.httpsPort }}
-    targetPort: {{ $spec.deployment.httpsPort }}
+    targetPort: {{ $spec.podTemplate.httpsPort }}
     protocol: TCP
     name: https
   selector:
-    gloo: {{ $key }}
+    gloo: {{ $spec.name }}
   type: {{ $spec.service.type }}
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}

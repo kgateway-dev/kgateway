@@ -45,15 +45,17 @@ gateway:
     stats: true
 
 gatewayProxies:
-  gateway-proxy:
-    deployment:
+  - name: gateway-proxy
+    kind:
+       deployment:
+         replicas: 1
+    podTemplate:
       image:
         repository: quay.io/solo-io/gloo-envoy-wrapper
         pullPolicy: Always
       stats: true
       httpPort: 8080
       httpsPort: 8443
-      replicas: 1
     service:
       type: LoadBalancer
       # clusterIP: None
