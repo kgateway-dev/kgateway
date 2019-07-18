@@ -9,10 +9,8 @@ import (
 
 	ec2api "github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
 
 	"github.com/solo-io/gloo/pkg/utils"
-	ec2utils "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2/utils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
 	"github.com/solo-io/go-utils/errors"
@@ -160,18 +158,15 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			},
 			Metadata: core.Metadata{Name: "without-role", Namespace: "default"},
 		}
-		iUpMap := ec2utils.BuildInvertedUpstreamRefMap(gloov1.UpstreamList{withRole, withOutRole})
 
 		By("should error when no role provided")
-		iUpWithOutRole := iUpMap[withOutRole.Metadata.Ref()]
-		svcWithout, err := ec2.GetEc2Client(awslister.NewCredentialSpecFromEc2UpstreamSpec(iUpWithOutRole.AwsEc2Spec), gloov1.SecretList{secret})
+		svcWithout, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withOutRole.UpstreamSpec.GetAwsEc2()), gloov1.SecretList{secret})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = svcWithout.DescribeInstances(&ec2api.DescribeInstancesInput{})
 		Expect(err).To(HaveOccurred())
 
 		By("should succeed when role provided")
-		iUpWithRole := iUpMap[withRole.Metadata.Ref()]
-		svc, err := ec2.GetEc2Client(awslister.NewCredentialSpecFromEc2UpstreamSpec(iUpWithRole.AwsEc2Spec), gloov1.SecretList{secret})
+		svc, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withRole.UpstreamSpec.GetAwsEc2()), gloov1.SecretList{secret})
 		Expect(err).NotTo(HaveOccurred())
 		result, err := svc.DescribeInstances(&ec2api.DescribeInstancesInput{})
 		Expect(err).NotTo(HaveOccurred())

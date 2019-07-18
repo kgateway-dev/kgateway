@@ -1,4 +1,4 @@
-package awslister
+package ec2
 
 import (
 	"fmt"

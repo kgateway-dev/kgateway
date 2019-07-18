@@ -7,8 +7,6 @@ import (
 
 	"github.com/solo-io/go-utils/kubeutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
-
 	"github.com/solo-io/go-utils/contextutils"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +29,7 @@ type edsWatcher struct {
 	secretClient      v1.SecretClient
 	refreshRate       time.Duration
 	writeNamespace    string
-	ec2InstanceLister awslister.Ec2InstanceLister
+	ec2InstanceLister Ec2InstanceLister
 }
 
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {

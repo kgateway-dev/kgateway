@@ -3,8 +3,6 @@ package ec2
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
-
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -26,7 +24,7 @@ func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, s
 		})
 }
 
-func GetEc2Client(cred *awslister.CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error) {
+func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error) {
 	sess, err := getEc2SessionForCredentials(cred.Region(), cred.SecretRef(), secrets)
 	if err != nil {
 		return nil, err

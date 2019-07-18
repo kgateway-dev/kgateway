@@ -8,16 +8,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
-
-// TODO(cleanup): move retained content of awslister pkg into this pkg (MAYBE - keep separate, tbd)
 
 // one credentialGroup should be made for each unique credentialSpec
 type credentialGroup struct {
 	// a unique credential spec
-	credentialSpec *awslister.CredentialSpec
+	credentialSpec *CredentialSpec
 	// all the upstreams that share the CredentialSpec
 	upstreams v1.UpstreamList
 	// all the instances visible to the given credentials
@@ -29,7 +26,7 @@ type credentialGroup struct {
 // assumes that upstream are EC2 upstreams
 // initializes the credentialGroups
 func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) ([]*credentialGroup, error) {
-	uniqueCredentialsMap := make(map[awslister.CredentialKey]*credentialGroup)
+	uniqueCredentialsMap := make(map[CredentialKey]*credentialGroup)
 	for _, upstream := range upstreams {
 		cred := getCredForUpstream(upstream)
 		key := cred.GetKey()
@@ -49,12 +46,12 @@ func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) ([]*credentialGroup, 
 	return credGroups, nil
 }
 
-func getCredForUpstream(upstream *v1.Upstream) *awslister.CredentialSpec {
-	return awslister.NewCredentialSpecFromEc2UpstreamSpec(upstream.UpstreamSpec.GetAwsEc2())
+func getCredForUpstream(upstream *v1.Upstream) *CredentialSpec {
+	return NewCredentialSpecFromEc2UpstreamSpec(upstream.UpstreamSpec.GetAwsEc2())
 }
 
 //define a function to get all instances from a list of unique credentials
-func getInstancesForCredentialGroups(ctx context.Context, lister awslister.Ec2InstanceLister, secrets v1.SecretList, credGroups []*credentialGroup) error {
+func getInstancesForCredentialGroups(ctx context.Context, lister Ec2InstanceLister, secrets v1.SecretList, credGroups []*credentialGroup) error {
 	for _, credGroup := range credGroups {
 		instances, err := lister.ListForCredentials(ctx, credGroup.credentialSpec, secrets)
 		if err != nil {
@@ -116,7 +113,7 @@ func upstreamInstanceToEndpoint(writeNamespace string, upstream *v1.Upstream, in
 }
 
 // MUST filter the upstreamList to ONLY EC2 upstreams before calling this function
-func getLatestEndpoints(ctx context.Context, lister awslister.Ec2InstanceLister, secrets v1.SecretList, writeNamespace string, upstreamList v1.UpstreamList) (v1.EndpointList, error) {
+func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v1.SecretList, writeNamespace string, upstreamList v1.UpstreamList) (v1.EndpointList, error) {
 	// we want unique creds so we can query api once per unique cred
 	// we need to make sure we maintain the association between those unique creds and the upstreams that share them
 	// so that when we get the instances associated with the creds we will know which upstreams have access to those

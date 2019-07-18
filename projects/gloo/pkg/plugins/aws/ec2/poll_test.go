@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2/awslister"
-
 	"k8s.io/client-go/rest"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -117,7 +113,7 @@ func testEndpointsWatcher(
 	responses mockListerResponses,
 ) *edsWatcher {
 	return &edsWatcher{
-		upstreams:         utils.BuildInvertedUpstreamRefMap(upstreams),
+		upstreams:         upstreams,
 		watchContext:      watchCtx,
 		secretClient:      secretClient,
 		refreshRate:       getRefreshRate(parentRefreshRate),
@@ -126,7 +122,7 @@ func testEndpointsWatcher(
 	}
 }
 
-type mockListerResponses map[awslister.CredentialKey][]*ec2.Instance
+type mockListerResponses map[CredentialKey][]*ec2.Instance
 type mockEc2InstanceLister struct {
 	responses mockListerResponses
 }
@@ -138,7 +134,7 @@ func newMockEc2InstanceLister(responses mockListerResponses) *mockEc2InstanceLis
 	}
 }
 
-func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, cred *awslister.CredentialSpec, secrets v1.SecretList) ([]*ec2.Instance, error) {
+func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, cred *CredentialSpec, secrets v1.SecretList) ([]*ec2.Instance, error) {
 	v, ok := m.responses[cred.GetKey()]
 	if !ok {
 		return nil, fmt.Errorf("invalid input, no test responses available")
@@ -167,7 +163,7 @@ func getMockListerResponses() mockListerResponses {
 		SecretRef: testSecretRef1,
 		RoleArns:  nil,
 	}
-	cred1 := awslister.NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream1)
+	cred1 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream1)
 	resp[cred1.GetKey()] = []*ec2.Instance{{
 		PrivateIpAddress: aws.String(testPrivateIp1),
 		PublicIpAddress:  aws.String(testPublicIp1),
@@ -182,7 +178,7 @@ func getMockListerResponses() mockListerResponses {
 		SecretRef: testSecretRef2,
 		RoleArns:  nil,
 	}
-	cred2 := awslister.NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream2)
+	cred2 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream2)
 	resp[cred2.GetKey()] = []*ec2.Instance{{
 		PrivateIpAddress: aws.String(testPrivateIp1),
 		PublicIpAddress:  aws.String(testPublicIp1),
