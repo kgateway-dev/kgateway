@@ -18,7 +18,7 @@ data:
       id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
         # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-        role: "{{ `{{.PodNamespace}}` }}~{{ $spec.name }}"
+        role: "{{ `{{.PodNamespace}}` }}~{{ $name | kebabcase }}"
     static_resources:
 
 {{- if $spec.podTemplate.stats }}
