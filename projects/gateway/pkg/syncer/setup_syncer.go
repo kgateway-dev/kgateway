@@ -6,7 +6,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -52,7 +52,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		settings,
 		inMemoryCache,
 		kubeCache,
-		v2alpha1.GatewayCrd,
+		v2.GatewayCrd,
 		&cfg,
 	)
 	if err != nil {
@@ -90,7 +90,7 @@ func RunGateway(opts Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 
-	gatewayClient, err := v2alpha1.NewGatewayClient(opts.Gateways)
+	gatewayClient, err := v2.NewGatewayClient(opts.Gateways)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func RunGateway(opts Opts) error {
 		return err
 	}
 
-	for _, gw := range []*v2alpha1.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
+	for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
 		if _, err := gatewayClient.Write(gw, clients.WriteOpts{
 			Ctx: opts.WatchOpts.Ctx,
 		}); err != nil && !errors.IsExist(err) {
@@ -122,7 +122,7 @@ func RunGateway(opts Opts) error {
 		}
 	}
 
-	emitter := v2alpha1.NewApiEmitter(virtualServiceClient, gatewayClient)
+	emitter := v2.NewApiEmitter(virtualServiceClient, gatewayClient)
 
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient())
 	writeErrs := make(chan error)
@@ -131,7 +131,7 @@ func RunGateway(opts Opts) error {
 
 	sync := NewTranslatorSyncer(opts.WriteNamespace, proxyClient, gatewayClient, virtualServiceClient, rpt, prop)
 
-	eventLoop := v2alpha1.NewApiEventLoop(emitter, sync)
+	eventLoop := v2.NewApiEventLoop(emitter, sync)
 	eventLoopErrs, err := eventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 	if err != nil {
 		return err

@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewayv2alpha1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
@@ -61,7 +61,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		cache      kube.SharedCache
 		kubeClient kubernetes.Interface
 
-		gatewayClient        gatewayv2alpha1.GatewayClient
+		gatewayClient        gatewayv2.GatewayClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
 		upstreamGroupClient  gloov1.UpstreamGroupClient
 		upstreamClient       gloov1.UpstreamClient
@@ -81,7 +81,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		cache = kube.NewKubeCache(ctx)
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gatewayv2alpha1.GatewayCrd,
+			Crd:         gatewayv2.GatewayCrd,
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
@@ -106,7 +106,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			SharedCache: cache,
 		}
 
-		gatewayClient, err = gatewayv2alpha1.NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err = gatewayv2.NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Register()
 		Expect(err).NotTo(HaveOccurred())
@@ -158,7 +158,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv2alpha1.Gateway, error) {
+			Eventually(func() (*gatewayv2.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -198,7 +198,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 
 				// wait for default gateway to be created
-				Eventually(func() *gatewayv2alpha1.Gateway {
+				Eventually(func() *gatewayv2.Gateway {
 					gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 					return gw
 				}, "15s", "0.5s").Should(Not(BeNil()))
@@ -288,7 +288,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 				// wait for default gateway to be created
-				Eventually(func() (*gatewayv2alpha1.Gateway, error) {
+				Eventually(func() (*gatewayv2.Gateway, error) {
 					return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 				}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -472,7 +472,7 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tcp", func() {
 
 		var (
-			defaultGateway *gatewayv2alpha1.Gateway
+			defaultGateway *gatewayv2.Gateway
 			tcpEcho        helper.TestRunner
 
 			tcpPort = corev1.ServicePort{
@@ -548,7 +548,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		It("correctly routes to the service (tcp)", func() {
 
 			// wait for default gateway to be created
-			Eventually(func() *gatewayv2alpha1.Gateway {
+			Eventually(func() *gatewayv2.Gateway {
 				gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 				return gw
 			}, "15s", "0.5s").Should(Not(BeNil()))
@@ -832,7 +832,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv2alpha1.Gateway, error) {
+			Eventually(func() (*gatewayv2.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 

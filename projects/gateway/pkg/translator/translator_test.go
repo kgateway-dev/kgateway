@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
@@ -21,26 +21,26 @@ const (
 
 var _ = Describe("Translator", func() {
 	var (
-		snap       *v2alpha1.ApiSnapshot
+		snap       *v2.ApiSnapshot
 		translator Translator
 	)
 
 	Context("translator", func() {
 		BeforeEach(func() {
 			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}})
-			snap = &v2alpha1.ApiSnapshot{
-				Gateways: v2alpha1.GatewayList{
+			snap = &v2.ApiSnapshot{
+				Gateways: v2.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
 					{
 						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
@@ -93,10 +93,10 @@ var _ = Describe("Translator", func() {
 		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {
 			snap.Gateways = append(
 				snap.Gateways,
-				&v2alpha1.Gateway{
+				&v2.Gateway{
 					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
-					GatewayType: &v2alpha1.Gateway_TcpGateway{
-						TcpGateway: &v2alpha1.TcpGateway{},
+					GatewayType: &v2.Gateway_TcpGateway{
+						TcpGateway: &v2.TcpGateway{},
 					},
 				},
 			)
@@ -112,10 +112,10 @@ var _ = Describe("Translator", func() {
 		It("should translate two gateways with same name (and types) to one proxy with the same name", func() {
 			snap.Gateways = append(
 				snap.Gateways,
-				&v2alpha1.Gateway{
+				&v2.Gateway{
 					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
-					GatewayType: &v2alpha1.Gateway_HttpGateway{
-						HttpGateway: &v2alpha1.HttpGateway{},
+					GatewayType: &v2.Gateway_HttpGateway{
+						HttpGateway: &v2.HttpGateway{},
 					},
 				},
 			)
@@ -129,7 +129,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should error on two gateways with the same port in the same namespace", func() {
-			dupeGateway := v2alpha1.Gateway{
+			dupeGateway := v2.Gateway{
 				Metadata: core.Metadata{Namespace: ns, Name: "name2"},
 				BindPort: 2,
 			}
@@ -151,19 +151,19 @@ var _ = Describe("Translator", func() {
 		BeforeEach(func() {
 			factory = &HttpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory})
-			snap = &v2alpha1.ApiSnapshot{
-				Gateways: v2alpha1.GatewayList{
+			snap = &v2.ApiSnapshot{
+				Gateways: v2.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
 					{
 						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
@@ -220,8 +220,8 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should translate a gateway to only have its vservices", func() {
-			snap.Gateways[0].GatewayType = &v2alpha1.Gateway_HttpGateway{
-				HttpGateway: &v2alpha1.HttpGateway{
+			snap.Gateways[0].GatewayType = &v2.Gateway_HttpGateway{
+				HttpGateway: &v2.HttpGateway{
 					VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
 				},
 			}
@@ -366,12 +366,12 @@ var _ = Describe("Translator", func() {
 		BeforeEach(func() {
 			factory = &TcpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory})
-			snap = &v2alpha1.ApiSnapshot{
-				Gateways: v2alpha1.GatewayList{
+			snap = &v2.ApiSnapshot{
+				Gateways: v2.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2alpha1.Gateway_TcpGateway{
-							TcpGateway: &v2alpha1.TcpGateway{},
+						GatewayType: &v2.Gateway_TcpGateway{
+							TcpGateway: &v2.TcpGateway{},
 						},
 						BindPort: 2,
 					},

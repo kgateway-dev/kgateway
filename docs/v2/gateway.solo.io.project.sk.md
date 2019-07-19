@@ -1,6 +1,6 @@
 
 ---
-title: "gloo.solo.io.project"
+title: "gateway.solo.io.project"
 weight: 5
 ---
 
@@ -8,11 +8,9 @@ weight: 5
 
 
 
-### API Reference for Gloo, The Hybrid Application Gateway
+### API Reference for 
 
-API Version: `gloo.solo.io.v1`
-
-Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
+API Version: `gateway.solo.io.v2`
 
 
 

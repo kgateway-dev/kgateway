@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
@@ -17,7 +17,7 @@ import (
 
 type HttpTranslator struct{}
 
-func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v2alpha1.ApiSnapshot, filteredGateways []*v2alpha1.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener {
+func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v2.ApiSnapshot, filteredGateways []*v2.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener {
 	if len(snap.VirtualServices) == 0 {
 		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snap.Hash())
 		return nil
@@ -45,7 +45,7 @@ func domainsToKey(domains []string) string {
 	return strings.Join(domains, ",")
 }
 
-func validateAndMergeVirtualServices(gateway *v2alpha1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
+func validateAndMergeVirtualServices(gateway *v2.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
 	ns := gateway.Metadata.GetNamespace()
 	domainKeysSets := map[string]v1.VirtualServiceList{}
 	for _, vs := range virtualServices {
@@ -135,7 +135,7 @@ func getMergedName(k string) string {
 	return "merged-" + k
 }
 
-func getVirtualServiceForGateway(gateway *v2alpha1.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
+func getVirtualServiceForGateway(gateway *v2.Gateway, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) v1.VirtualServiceList {
 	httpGateway := gateway.GetHttpGateway()
 	if httpGateway == nil {
 		return nil
@@ -164,7 +164,7 @@ func getVirtualServiceForGateway(gateway *v2alpha1.Gateway, virtualServices v1.V
 	return virtualServicesForGateway
 }
 
-func filterVirtualServiceForGateway(gateway *v2alpha1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
+func filterVirtualServiceForGateway(gateway *v2.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
 	var virtualServicesForGateway v1.VirtualServiceList
 	for _, virtualService := range virtualServices {
 		if gateway.Ssl == hasSsl(virtualService) {
@@ -178,7 +178,7 @@ func hasSsl(vs *v1.VirtualService) bool {
 	return vs.SslConfig != nil
 }
 
-func desiredListenerForHttp(gateway *v2alpha1.Gateway, virtualServicesForGateway v1.VirtualServiceList) *gloov1.Listener {
+func desiredListenerForHttp(gateway *v2.Gateway, virtualServicesForGateway v1.VirtualServiceList) *gloov1.Listener {
 	var (
 		virtualHosts []*gloov1.VirtualHost
 		sslConfigs   []*gloov1.SslConfig
