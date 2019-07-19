@@ -903,8 +903,8 @@ var _ = Describe("Translator", func() {
 
 			// A route to the kube service has been configured
 			routes := snapshot.GetResources(xds.RouteType)
-			Expect(routes.Items).To(HaveKey("listener-routes"))
-			routeResource := routes.Items["listener-routes"]
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
 			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 			Expect(routeConfiguration).NotTo(BeNil())
 			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
