@@ -47,7 +47,7 @@ import (
 var _ = Describe("Kube2e: gateway", func() {
 
 	const (
-		gatewayProxy = "gateway-proxy"
+		gatewayProxy = translator.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -288,7 +288,6 @@ var _ = Describe("Kube2e: gateway", func() {
 					return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 				}, "15s", "0.5s").Should(Not(BeNil()))
 
-				gatewayProxy := "gateway-proxy"
 				gatewayPort := int(443)
 				caFile := ToFile(helpers.Certificate())
 				//noinspection GoUnhandledErrorResult
@@ -301,8 +300,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Protocol:          "https",
 					Path:              "/",
 					Method:            "GET",
-					Host:              gatewayProxy,
-					Service:           gatewayProxy,
+					Host:              translator.GatewayProxyName,
+					Service:           translator.GatewayProxyName,
 					Port:              gatewayPort,
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,

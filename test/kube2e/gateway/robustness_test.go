@@ -5,6 +5,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -32,7 +34,7 @@ import (
 var _ = Describe("Robustness tests", func() {
 
 	const (
-		gatewayProxy = "gateway-proxy"
+		gatewayProxy = translator.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -179,7 +181,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to be accepted")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, "gateway-proxy", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
@@ -234,7 +236,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to be rejected")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, "gateway-proxy", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}

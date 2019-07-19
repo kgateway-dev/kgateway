@@ -34,7 +34,8 @@ weight: 5
 ---
 ### Settings
 
-
+ 
+Represents global settings for all the Gloo components.
 
 ```yaml
 "discoveryNamespace": string
@@ -62,8 +63,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `discoveryNamespace` | `string` | namespace to write discovered data |  |
-| `watchNamespaces` | `[]string` | namespaces to watch for user config as well as services TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces... |  |
+| `discoveryNamespace` | `string` | This is the namespace to which Gloo will write its own resources, e.g. discovered Upstreams or default Gateways. If empty, this will default to "gloo-system". |  |
+| `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo takes into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |  |
 | `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#kubernetescrds) |  |  |
 | `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
 | `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#kubernetessecrets) |  |  |
@@ -71,13 +72,13 @@ weight: 5
 | `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#kubernetesconfigmaps) |  |  |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
-| `bindAddr` | `string` | where the gloo xds server should bind (should not need configuration by user) |  |
-| `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how frequently to resync watches, etc |  |
-| `devMode` | `bool` | enable serving debug data on port 9090 |  |
-| `linkerd` | `bool` | enable automatic linkerd upstream header addition for easier routing to linkerd services |  |
+| `bindAddr` | `string` | Where the gloo xDS server should bind (should not need configuration by user) |  |
+| `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc |  |
+| `devMode` | `bool` | Enable serving debug data on port 9090 |  |
+| `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services |  |
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. |  |
-| `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | configuration options for the Clusteringress Controller (for Knative) |  |
-| `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | options for configuring Gloo's Discovery service |  |
+| `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |  |
+| `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | Options for configuring Gloo's Discovery service |  |
 | `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
@@ -90,7 +91,7 @@ weight: 5
 ### KubernetesCrds
 
  
-ilackarms(todo: make sure these are configurable)
+USe Kubernetes CRDs as storage.
 
 ```yaml
 
@@ -105,7 +106,8 @@ ilackarms(todo: make sure these are configurable)
 ---
 ### KubernetesSecrets
 
-
+ 
+Use Kubernetes as storage for secret data.
 
 ```yaml
 
@@ -120,7 +122,8 @@ ilackarms(todo: make sure these are configurable)
 ---
 ### VaultSecrets
 
-
+ 
+Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 
 ```yaml
 
@@ -135,7 +138,8 @@ ilackarms(todo: make sure these are configurable)
 ---
 ### KubernetesConfigmaps
 
-
+ 
+Use Kubernetes ConfigMaps as storage.
 
 ```yaml
 
@@ -150,7 +154,9 @@ ilackarms(todo: make sure these are configurable)
 ---
 ### Directory
 
-
+ 
+As an alternative to Kubernetes CRDs, Gloo is able to store resources in a local file system.
+This option determines the root of the directory tree used to this end.
 
 ```yaml
 "directory": string
@@ -176,7 +182,7 @@ ilackarms(todo: make sure these are configurable)
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `clusterIngressProxyAddress` | `string` | address of the clusteringress proxy if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local |  |
+| `clusterIngressProxyAddress` | `string` | Address of the clusteringress proxy. If empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local. |  |
 
 
 
@@ -202,17 +208,15 @@ ilackarms(todo: make sure these are configurable)
 ### FdsMode
 
  
-possible modes for running the function discovery service (FDS)
-FDS polls services in-cluster for Swagger and gRPC endpoints
-this behavior can be controlled with the use of annotations
-FdsMode specifies what policy FDS will use when
-determining which services to poll
+Possible modes for running the function discovery service (FDS). FDS polls services in-cluster for Swagger
+and gRPC endpoints. This behavior can be controlled with the use of annotations.
+FdsMode specifies what policy FDS will use when determining which services to poll.
 
 | Name | Description |
 | ----- | ----------- | 
-| `BLACKLIST` | in BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with discovery.solo.io/function_discovery=disabled this label can also be used on namespaces to apply to all services within a namespace *(which are not explicitly whitelisted)* Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode. |
-| `WHITELIST` | in WHITELIST mode (default), FDS will poll only services in cluster labeled with discovery.solo.io/function_discovery=enabled this label can also be used on namespaces to apply to all services *(which are not explicitly blacklisted)* within a namespace |
-| `DISABLED` | in DISABLED mode, FDS will not run |
+| `BLACKLIST` | In BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with `discovery.solo.io/function_discovery=disabled`. This label can also be used on namespaces to apply to all services within a namespace **which are not explicitly whitelisted**. Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode. |
+| `WHITELIST` | In WHITELIST mode, FDS will poll only services in cluster labeled with `discovery.solo.io/function_discovery=enabled`. This label can also be used on namespaces to apply to all services **which are not explicitly blacklisted** within a namespace. |
+| `DISABLED` | In DISABLED mode, FDS will not run. |
 
 
 

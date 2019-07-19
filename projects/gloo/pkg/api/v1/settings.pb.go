@@ -25,28 +25,22 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// possible modes for running the function discovery service (FDS)
-// FDS polls services in-cluster for Swagger and gRPC endpoints
-// this behavior can be controlled with the use of annotations
-// FdsMode specifies what policy FDS will use when
-// determining which services to poll
+// Possible modes for running the function discovery service (FDS). FDS polls services in-cluster for Swagger
+// and gRPC endpoints. This behavior can be controlled with the use of annotations.
+// FdsMode specifies what policy FDS will use when determining which services to poll.
 type Settings_DiscoveryOptions_FdsMode int32
 
 const (
-	// in BLACKLIST mode (default), FDS will poll all services in cluster
-	// except those services labeled with
-	// discovery.solo.io/function_discovery=disabled
-	// this label can also be used on namespaces to apply to all
-	// services within a namespace *(which are not explicitly whitelisted)*
-	// Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in
-	// blacklist mode.
+	// In BLACKLIST mode (default), FDS will poll all services in cluster except those services labeled with
+	// `discovery.solo.io/function_discovery=disabled`. This label can also be used on namespaces to apply to
+	// all services within a namespace **which are not explicitly whitelisted**.
+	// Note that `kube-system` and `kube-public` namespaces must be explicitly whitelisted even in blacklist mode.
 	Settings_DiscoveryOptions_BLACKLIST Settings_DiscoveryOptions_FdsMode = 0
-	// in WHITELIST mode (default), FDS will poll only services in cluster
-	// labeled with discovery.solo.io/function_discovery=enabled
-	// this label can also be used on namespaces to apply to all
-	// services *(which are not explicitly blacklisted)* within a namespace
+	// In WHITELIST mode, FDS will poll only services in cluster labeled with
+	// `discovery.solo.io/function_discovery=enabled`. This label can also be used on namespaces to apply to all
+	// services **which are not explicitly blacklisted** within a namespace.
 	Settings_DiscoveryOptions_WHITELIST Settings_DiscoveryOptions_FdsMode = 1
-	// in DISABLED mode, FDS will not run
+	// In DISABLED mode, FDS will not run.
 	Settings_DiscoveryOptions_DISABLED Settings_DiscoveryOptions_FdsMode = 2
 )
 
@@ -70,45 +64,50 @@ func (Settings_DiscoveryOptions_FdsMode) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_bd7533c2495e1752, []int{0, 6, 0}
 }
 
+// Represents global settings for all the Gloo components.
 type Settings struct {
-	// namespace to write discovered data
+	// This is the namespace to which Gloo will write its own resources, e.g. discovered Upstreams or default Gateways.
+	// If empty, this will default to "gloo-system".
 	DiscoveryNamespace string `protobuf:"bytes,1,opt,name=discovery_namespace,json=discoveryNamespace,proto3" json:"discovery_namespace,omitempty"`
-	// namespaces to watch for user config as well as services
-	// TODO(ilackarms): split out watch_namespaces and service_discovery_namespaces...
+	// Use this setting to restrict the namespaces that Gloo takes into consideration when watching for resources.In a
+	// usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces`
+	// contains namespaces outside of this whitelist, Gloo will fail to start.
+	//
+	// If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always
+	// be included in this list.
 	WatchNamespaces []string `protobuf:"bytes,2,rep,name=watch_namespaces,json=watchNamespaces,proto3" json:"watch_namespaces,omitempty"`
-	// where to read user config (upstream, proxy) from
-	// if nil, use only in memory config
+	// This setting determines where Gloo will store its resources
 	//
 	// Types that are valid to be assigned to ConfigSource:
 	//	*Settings_KubernetesConfigSource
 	//	*Settings_DirectoryConfigSource
 	ConfigSource isSettings_ConfigSource `protobuf_oneof:"config_source"`
-	// where to read secrets from (vault, k8s)
+	// Determines where Gloo will read/write secrets from/to.
 	//
 	// Types that are valid to be assigned to SecretSource:
 	//	*Settings_KubernetesSecretSource
 	//	*Settings_VaultSecretSource
 	//	*Settings_DirectorySecretSource
 	SecretSource isSettings_SecretSource `protobuf_oneof:"secret_source"`
-	// where to read artifacts from (configmap, file)
+	// Where to read artifacts from.
 	//
 	// Types that are valid to be assigned to ArtifactSource:
 	//	*Settings_KubernetesArtifactSource
 	//	*Settings_DirectoryArtifactSource
 	ArtifactSource isSettings_ArtifactSource `protobuf_oneof:"artifact_source"`
-	// where the gloo xds server should bind (should not need configuration by user)
+	// Where the gloo xDS server should bind (should not need configuration by user)
 	BindAddr string `protobuf:"bytes,11,opt,name=bind_addr,json=bindAddr,proto3" json:"bind_addr,omitempty"`
-	// how frequently to resync watches, etc
+	// How frequently to resync watches, etc
 	RefreshRate *types.Duration `protobuf:"bytes,12,opt,name=refresh_rate,json=refreshRate,proto3" json:"refresh_rate,omitempty"`
-	// enable serving debug data on port 9090
+	// Enable serving debug data on port 9090
 	DevMode bool `protobuf:"varint,13,opt,name=dev_mode,json=devMode,proto3" json:"dev_mode,omitempty"`
-	// enable automatic linkerd upstream header addition for easier routing to linkerd services
+	// Enable automatic linkerd upstream header addition for easier routing to linkerd services
 	Linkerd bool `protobuf:"varint,17,opt,name=linkerd,proto3" json:"linkerd,omitempty"`
 	// Default circuit breakers when not set in a specific upstream.
 	CircuitBreakers *CircuitBreakerConfig `protobuf:"bytes,3,opt,name=circuit_breakers,json=circuitBreakers,proto3" json:"circuit_breakers,omitempty"`
-	// configuration options for the Clusteringress Controller (for Knative)
+	// Configuration options for the Clusteringress Controller (for Knative).
 	Knative *Settings_KnativeOptions `protobuf:"bytes,18,opt,name=knative,proto3" json:"knative,omitempty"`
-	// options for configuring Gloo's Discovery service
+	// Options for configuring Gloo's Discovery service
 	Discovery *Settings_DiscoveryOptions `protobuf:"bytes,19,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	// Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
 	Consul *Settings_ConsulConfiguration `protobuf:"bytes,20,opt,name=consul,proto3" json:"consul,omitempty"`
@@ -543,7 +542,7 @@ func _Settings_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
-// ilackarms(todo: make sure these are configurable)
+// USe Kubernetes CRDs as storage.
 type Settings_KubernetesCrds struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -574,6 +573,7 @@ func (m *Settings_KubernetesCrds) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Settings_KubernetesCrds proto.InternalMessageInfo
 
+// Use Kubernetes as storage for secret data.
 type Settings_KubernetesSecrets struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -604,6 +604,7 @@ func (m *Settings_KubernetesSecrets) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Settings_KubernetesSecrets proto.InternalMessageInfo
 
+// Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 type Settings_VaultSecrets struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -634,6 +635,7 @@ func (m *Settings_VaultSecrets) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Settings_VaultSecrets proto.InternalMessageInfo
 
+// Use Kubernetes ConfigMaps as storage.
 type Settings_KubernetesConfigmaps struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -664,6 +666,8 @@ func (m *Settings_KubernetesConfigmaps) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Settings_KubernetesConfigmaps proto.InternalMessageInfo
 
+// As an alternative to Kubernetes CRDs, Gloo is able to store resources in a local file system.
+// This option determines the root of the directory tree used to this end.
 type Settings_Directory struct {
 	Directory            string   `protobuf:"bytes,1,opt,name=directory,proto3" json:"directory,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -703,8 +707,8 @@ func (m *Settings_Directory) GetDirectory() string {
 }
 
 type Settings_KnativeOptions struct {
-	// address of the clusteringress proxy
-	// if empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local
+	// Address of the clusteringress proxy.
+	// If empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local.
 	ClusterIngressProxyAddress string   `protobuf:"bytes,1,opt,name=cluster_ingress_proxy_address,json=clusterIngressProxyAddress,proto3" json:"cluster_ingress_proxy_address,omitempty"`
 	XXX_NoUnkeyedLiteral       struct{} `json:"-"`
 	XXX_unrecognized           []byte   `json:"-"`
