@@ -4,6 +4,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -18,7 +20,7 @@ func IsConsulUpstream(upstreamName string) bool {
 
 func DestinationToUpstreamRef(consulDest *v1.ConsulServiceDestination) *core.ResourceRef {
 	return &core.ResourceRef{
-		Namespace: "",
+		Namespace: defaults.GlooSystem,
 		Name:      fakeUpstreamName(consulDest.ServiceName),
 	}
 }
@@ -31,16 +33,16 @@ func fakeUpstreamName(consulSvcName string) string {
 func toUpstreamList(services []*ServiceMeta) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
-		upstreams = append(upstreams, toUpstream(svc))
+		upstreams = append(upstreams, ToUpstream(svc))
 	}
 	return upstreams
 }
 
-func toUpstream(service *ServiceMeta) *v1.Upstream {
+func ToUpstream(service *ServiceMeta) *v1.Upstream {
 	return &v1.Upstream{
 		Metadata: core.Metadata{
 			Name:      fakeUpstreamName(service.Name),
-			Namespace: "", // no namespace
+			Namespace: defaults.GlooSystem,
 		},
 		UpstreamSpec: &v1.UpstreamSpec{
 			UpstreamType: &v1.UpstreamSpec_Consul{

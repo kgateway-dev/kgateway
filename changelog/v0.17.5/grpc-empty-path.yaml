@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: gRPC plugin to handle missing path matcher
+    issueLink: https://github.com/solo-io/gloo/issues/860

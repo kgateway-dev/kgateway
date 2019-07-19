@@ -1,7 +1,6 @@
 package ec2
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/solo-io/go-utils/errors"
@@ -27,7 +26,7 @@ type plugin struct {
 	secretClient v1.SecretClient
 
 	// pre-initialization only
-	// we need to register the secret while creating the plugin, otherwise our EDS poll will fail (requires a secret client)
+	// we need to register the clients while creating the plugin, otherwise our EDS poll and upstream watch will fail
 	// since Init can be called after our poll begins (race condition) we cannot create the client there
 	// since NewPlugin does not return an error, we will store any non-nil errors from initializing the secret client in the plugin struct
 	// we will check those errors during the Init call
@@ -43,16 +42,16 @@ func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
 	p := &plugin{}
 	var err error
 	if secretFactory == nil {
-		p.constructorErr = fmt.Errorf("must provide a secret factory to use the EC2 plugin")
+		p.constructorErr = ConstructorInputError("secret")
 		return p
 	}
 	p.secretClient, err = v1.NewSecretClient(secretFactory)
 	if err != nil {
-		p.constructorErr = err
+		p.constructorErr = ConstructorGetClientError("secret", err)
 		return p
 	}
 	if err := p.secretClient.Register(); err != nil {
-		p.constructorErr = err
+		p.constructorErr = ConstructorRegisterClientError("secret", err)
 		return p
 	}
 	return p
@@ -90,6 +89,18 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 var (
+	ConstructorInputError = func(factoryType string) error {
+		return errors.Errorf("must provide %v factory for EC2 plugin", factoryType)
+	}
+
+	ConstructorGetClientError = func(name string, err error) error {
+		return errors.Wrapf(err, "unable to get %v client for EC2 plugin", name)
+	}
+
+	ConstructorRegisterClientError = func(name string, err error) error {
+		return errors.Wrapf(err, "unable to register %v client for EC2 plugin", name)
+	}
+
 	WrongUpstreamTypeError = func(upstream *v1.Upstream) error {
 		return errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(upstream.UpstreamSpec.UpstreamType).Name())
 	}

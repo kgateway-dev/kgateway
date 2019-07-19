@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 
 	. "github.com/onsi/ginkgo"
@@ -426,7 +428,7 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "gateway-proxy",
+			Name:      translator.GatewayProxyName,
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{

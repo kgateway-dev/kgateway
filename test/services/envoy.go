@@ -102,20 +102,20 @@ type EnvoyFactory struct {
 func NewEnvoyFactory() (*EnvoyFactory, error) {
 	// if an envoy binary is explicitly specified
 	// use it
-	envoypath := os.Getenv("ENVOY_BINARY")
-	if envoypath != "" {
-		log.Printf("Using envoy from environment variable: %s", envoypath)
+	envoyPath := os.Getenv("ENVOY_BINARY")
+	if envoyPath != "" {
+		log.Printf("Using envoy from environment variable: %s", envoyPath)
 		return &EnvoyFactory{
-			envoypath: envoypath,
+			envoypath: envoyPath,
 		}, nil
 	}
 
 	// maybe it is in the path?!
-	envoypath, err := exec.LookPath("envoy")
+	envoyPath, err := exec.LookPath("envoy")
 	if err == nil {
-		log.Printf("Using envoy from PATH: %s", envoypath)
+		log.Printf("Using envoy from PATH: %s", envoyPath)
 		return &EnvoyFactory{
-			envoypath: envoypath,
+			envoypath: envoyPath,
 		}, nil
 	}
 

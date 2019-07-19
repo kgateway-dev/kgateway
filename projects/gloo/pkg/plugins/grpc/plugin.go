@@ -39,7 +39,7 @@ type ServicesAndDescriptor struct {
 	Descriptors *descriptor.FileDescriptorSet
 }
 
-func NewPlugin(transformsAdded *bool) plugins.Plugin {
+func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
 		recordedUpstreams: make(map[core.ResourceRef]*v1.Upstream),
 		upstreamServices:  make(map[string]ServicesAndDescriptor),
@@ -146,6 +146,9 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		grpcDestinationSpec := *grpcDestinationSpecWrapper.Grpc
 
 		if grpcDestinationSpec.Parameters == nil {
+			if in.Matcher.PathSpecifier == nil {
+				return nil, errors.New("missing path for grpc route")
+			}
 			path := utils.PathAsString(in.Matcher) + "?{query_string}"
 
 			grpcDestinationSpec.Parameters = &transformapi.Parameters{

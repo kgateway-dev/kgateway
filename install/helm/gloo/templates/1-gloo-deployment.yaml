@@ -53,5 +53,5 @@ spec:
         {{- end}}
       {{- if .Values.gloo.deployment.image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.gloo.deployment.image.pullSecret }}{{end}}
-
+        - name: {{ .Values.gloo.deployment.image.pullSecret }}
+      {{- end}}

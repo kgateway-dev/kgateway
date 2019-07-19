@@ -10,8 +10,8 @@ import (
 //go:generate mockgen -destination=./mock_consul_client.go -source consul_client.go -package consul
 
 var ForbiddenDataCenterErr = func(dataCenter string) error {
-	return errors.Errorf("not allowed to query data center [%s]. " +
-		"Use the settings to configure the data centers Gloo is allowed to query")
+	return errors.Errorf("not allowed to query data center [%s]. "+
+		"Use the settings to configure the data centers Gloo is allowed to query", dataCenter)
 }
 
 // TODO(marco): consider adding ctx to signatures instead on relying on caller to set it
@@ -135,6 +135,12 @@ func (c *consul) filter(dataCenters []string) []string {
 
 // Checks whether we are allowed to query the given data center
 func (c *consul) validateDataCenter(dataCenter string) error {
+
+	// If empty, all are allowed
+	if len(c.dataCenters) == 0 {
+		return nil
+	}
+
 	// If empty, the Consul client will use the default agent data center, which we should allow
 	if dataCenter != "" && c.dataCenters[dataCenter] == false {
 		return ForbiddenDataCenterErr(dataCenter)
