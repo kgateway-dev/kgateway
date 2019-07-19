@@ -30,7 +30,7 @@ func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error)
 	var sess *session.Session
 	var err error
 	secretRef := cred.SecretRef()
-	if secretRef != nil {
+	if secretRef == nil {
 		sess, err = session.NewSession()
 		if err != nil {
 			return nil, CreateSessionFromEnvError(err)
