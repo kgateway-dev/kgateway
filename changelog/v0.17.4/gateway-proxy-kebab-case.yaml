@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Use map structure in values-gateway-template yaml so gateway proxy values can be easily overridden.
+    issueLink: https://github.com/solo-io/gloo/issues/857
