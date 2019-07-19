@@ -12,7 +12,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 

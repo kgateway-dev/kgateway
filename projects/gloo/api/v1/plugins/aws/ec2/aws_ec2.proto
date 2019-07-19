@@ -1,7 +1,7 @@
 syntax = "proto3";
 package aws_ec2.plugins.gloo.solo.io;
 
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
