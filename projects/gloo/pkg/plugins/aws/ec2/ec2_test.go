@@ -37,7 +37,7 @@ var _ = Describe("Plugin", func() {
 	Context("convert filters from specs", func() {
 		key1 := "abc"
 		value1 := "123"
-		secret := core.ResourceRef{"secret", "ns"}
+		secret := &core.ResourceRef{"secret", "ns"}
 		region := "us-east-1"
 		DescribeTable("filter conversion",
 			func(input *glooec2.UpstreamSpec, expected []*ec2.Filter) {

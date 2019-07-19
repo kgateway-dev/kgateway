@@ -260,11 +260,11 @@ var (
 			Namespace: "default",
 		},
 	}
-	testSecretRef1 = core.ResourceRef{
+	testSecretRef1 = &core.ResourceRef{
 		Name:      "secret1",
 		Namespace: "namespace",
 	}
-	testSecretRef2 = core.ResourceRef{
+	testSecretRef2 = &core.ResourceRef{
 		Name:      "secret2",
 		Namespace: "namespace",
 	}

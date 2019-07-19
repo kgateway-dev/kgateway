@@ -3,6 +3,8 @@ package ec2
 import (
 	"fmt"
 
+	"github.com/solo-io/go-utils/errors"
+
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -25,9 +27,19 @@ func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, s
 }
 
 func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error) {
-	sess, err := getEc2SessionForCredentials(cred.Region(), cred.SecretRef(), secrets)
-	if err != nil {
-		return nil, err
+	var sess *session.Session
+	var err error
+	secretRef := cred.SecretRef()
+	if secretRef != nil {
+		sess, err = session.NewSession()
+		if err != nil {
+			return nil, CreateSessionFromEnvError(err)
+		}
+	} else {
+		sess, err = getEc2SessionForCredentials(cred.Region(), *secretRef, secrets)
+		if err != nil {
+			return nil, CreateSessionFromSecretError(err)
+		}
 	}
 	var configs []*aws.Config
 	for _, arn := range cred.Arns() {
@@ -114,3 +126,13 @@ func tagFiltersKey(tagName string) *ec2.Filter {
 		Values: []*string{aws.String(tagName)},
 	}
 }
+
+var (
+	CreateSessionFromEnvError = func(err error) error {
+		return errors.Wrapf(err, "unable to create a session with credentials taken from env")
+	}
+
+	CreateSessionFromSecretError = func(err error) error {
+		return errors.Wrapf(err, "unable to create a session with credentials taken from secret ref")
+	}
+)
