@@ -59,8 +59,6 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	}, resourceErrs
 }
 
-
-
 func standardListener(gateway *v2.Gateway) *gloov1.Listener {
 	return &gloov1.Listener{
 		Name:          gatewayName(gateway),
@@ -74,7 +72,6 @@ func standardListener(gateway *v2.Gateway) *gloov1.Listener {
 func gatewayName(gateway *v2.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
 }
-
 
 func validateGateways(gateways v2.GatewayList, resourceErrs reporter.ResourceErrors) {
 	bindAddresses := map[string]v2.GatewayList{}
@@ -101,7 +98,6 @@ func gatewaysRefsToString(gateways v2.GatewayList) []string {
 	}
 	return ret
 }
-
 
 // https://github.com/solo-io/gloo/issues/538
 // Gloo should only pay attention to gateways it creates, i.e. in it's write namespace, to support
