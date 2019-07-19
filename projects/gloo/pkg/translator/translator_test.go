@@ -220,6 +220,21 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	Context("route header only match", func() {
+		It("should translate header matcher with no value to a PresentMatch", func() {
+			matcher.PathSpecifier = nil
+			matcher.Headers = []*v1.HeaderMatcher{
+				{
+					Name: "test",
+				},
+			}
+			translate()
+			pathSpecifier := routeConfiguration.VirtualHosts[0].Routes[0].Match.PathSpecifier
+			Expect(pathSpecifier).To(BeNil())
+			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headermatch.Name).To(Equal("test"))
+		})
+	})
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
