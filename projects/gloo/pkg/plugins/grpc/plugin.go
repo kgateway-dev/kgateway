@@ -146,13 +146,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		grpcDestinationSpec := *grpcDestinationSpecWrapper.Grpc
 
 		if grpcDestinationSpec.Parameters == nil {
-			path := "/"
-			pathSpecifier := in.GetMatcher().GetPathSpecifier()
-			if pathSpecifier != nil {
-				path = utils.PathAsString(in.Matcher)
-			}
-
-			path = path + "?{query_string}"
+			path := utils.PathAsString(in.Matcher) + "?{query_string}"
 
 			grpcDestinationSpec.Parameters = &transformapi.Parameters{
 				Path: &types.StringValue{Value: path},

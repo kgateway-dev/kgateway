@@ -81,12 +81,14 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("route", func() {
-		It("should process route without a path", func() {
+		It("should process route", func() {
 
 			var routeParams plugins.RouteParams
 			routeIn := &v1.Route{
 				Matcher: &v1.Matcher{
-					Methods: []string{"GET"},
+					PathSpecifier: &v1.Matcher_Prefix{
+						Prefix: "/",
+					},
 				},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{

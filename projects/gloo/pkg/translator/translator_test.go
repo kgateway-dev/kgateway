@@ -220,19 +220,18 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
-	Context("route header only match", func() {
-		It("should translate header matcher with no value to a PresentMatch", func() {
+	Context("route no path", func() {
+		It("should error when path math is missing", func() {
 			matcher.PathSpecifier = nil
 			matcher.Headers = []*v1.HeaderMatcher{
 				{
 					Name: "test",
 				},
 			}
-			translate()
-			pathSpecifier := routeConfiguration.VirtualHosts[0].Routes[0].Match.PathSpecifier
-			Expect(pathSpecifier).To(BeNil())
-			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
-			Expect(headermatch.Name).To(Equal("test"))
+			_, errs, err := translator.Translate(params, proxy)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("route_config.invalid route: no path specifier provided"))
 		})
 	})
 	Context("route header match", func() {

@@ -112,14 +112,18 @@ func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtua
 func (t *translator) envoyRoute(params plugins.RouteParams, report reportFunc, in *v1.Route) envoyroute.Route {
 	out := &envoyroute.Route{}
 
-	setMatch(in, out)
+	setMatch(in, report, out)
 
 	t.setAction(params, report, in, out)
 
 	return *out
 }
 
-func setMatch(in *v1.Route, out *envoyroute.Route) {
+func setMatch(in *v1.Route, report reportFunc, out *envoyroute.Route) {
+
+	if in.Matcher.PathSpecifier == nil {
+		report(errors.New("no path specifier provided"), "invalid route")
+	}
 	match := envoyroute.RouteMatch{
 		Headers:         envoyHeaderMatcher(in.Matcher.Headers),
 		QueryParameters: envoyQueryMatcher(in.Matcher.QueryParameters),
