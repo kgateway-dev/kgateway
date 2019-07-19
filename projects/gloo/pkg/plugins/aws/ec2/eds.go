@@ -43,6 +43,10 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 	}
 }
 
+// TODO[eds enhancement] - since EDS is restarted each time an upstream changes, this will be ignored during periods of
+// frequent upstream changes (such as on initialization, or with new discoveries). Also, since upstreams are bundled
+// together, changes to a non-EC2 upstream will also cause EC2 EDS to restart
+// This is not ideal, but tolerable because upstreams tend to stabilize
 const minRefreshRate = 30 * time.Second
 
 // unlike the other plugins, we are calling an external service (AWS) during our watches.
@@ -102,7 +106,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 
 const defaultPort = 80
 
-// TODO (separate pr) - update the EDS interface to include a registration function which would ensure uniqueness among prefixes
+// TODO[eds enhancement] - update the EDS interface to include a registration function which would ensure uniqueness among prefixes
 // ... also include a function to ensure that the endpoint name conforms to the spec (is unique, begins with expected prefix)
 const ec2EndpointNamePrefix = "ec2"
 

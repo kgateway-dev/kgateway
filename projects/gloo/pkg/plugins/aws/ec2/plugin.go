@@ -2,7 +2,6 @@ package ec2
 
 import (
 	"reflect"
-	"sync"
 
 	"github.com/solo-io/go-utils/errors"
 
@@ -24,15 +23,7 @@ Steps:
 */
 
 type plugin struct {
-	secretClient   v1.SecretClient
-	upstreamClient v1.UpstreamClient
-
-	// keep a map of the upstreams that were last observed for each namespace so that DiscoverUpstreams can more easily
-	// produce a list of all known upstreams. The key is a namespace and the value is an upstream list of AWS EC2-type
-	// upstreams.
-	watchedUpstreams map[string]v1.UpstreamList
-	// use a mutex to handle concurrent access to the watchedUpstreams map
-	discoveryMutex sync.Mutex
+	secretClient v1.SecretClient
 
 	// pre-initialization only
 	// we need to register the clients while creating the plugin, otherwise our EDS poll and upstream watch will fail
@@ -47,7 +38,7 @@ var _ plugins.Plugin = new(plugin)
 var _ plugins.UpstreamPlugin = new(plugin)
 var _ discovery.DiscoveryPlugin = new(plugin)
 
-func NewPlugin(secretFactory, upstreamFactory factory.ResourceClientFactory) *plugin {
+func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
 	p := &plugin{}
 	var err error
 	if secretFactory == nil {
@@ -63,20 +54,6 @@ func NewPlugin(secretFactory, upstreamFactory factory.ResourceClientFactory) *pl
 		p.constructorErr = ConstructorRegisterClientError("secret", err)
 		return p
 	}
-	if upstreamFactory == nil {
-		p.constructorErr = ConstructorInputError("upstream")
-		return p
-	}
-	p.upstreamClient, err = v1.NewUpstreamClient(upstreamFactory)
-	if err != nil {
-		p.constructorErr = ConstructorGetClientError("upstream", err)
-		return p
-	}
-	if err := p.upstreamClient.Register(); err != nil {
-		p.constructorErr = ConstructorRegisterClientError("upstream", err)
-		return p
-	}
-	p.watchedUpstreams = make(map[string]v1.UpstreamList)
 	return p
 }
 
