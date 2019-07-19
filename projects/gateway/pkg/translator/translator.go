@@ -19,7 +19,7 @@ type ListenerFactory interface {
 }
 
 type Translator interface {
-	Translate(ctx context.Context, namespace string, snap *v2.ApiSnapshot) (*gloov1.Proxy, reporter.ResourceErrors)
+	Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, filteredGateways v2.GatewayList) (*gloov1.Proxy, reporter.ResourceErrors)
 }
 
 type translator struct {
@@ -30,10 +30,10 @@ func NewTranslator(factories []ListenerFactory) *translator {
 	return &translator{factories: factories}
 }
 
-func (t *translator) Translate(ctx context.Context, namespace string, snap *v2.ApiSnapshot) (*gloov1.Proxy, reporter.ResourceErrors) {
+func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, gatewaysByProxy v2.GatewayList) (*gloov1.Proxy, reporter.ResourceErrors) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	filteredGateways := filterGatewaysForNamespace(snap.Gateways, namespace)
+	filteredGateways := filterGatewaysForNamespace(gatewaysByProxy, namespace)
 
 	resourceErrs := make(reporter.ResourceErrors)
 	resourceErrs.Accept(filteredGateways.AsInputResources()...)
@@ -52,25 +52,29 @@ func (t *translator) Translate(ctx context.Context, namespace string, snap *v2.A
 	}
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      GatewayProxyName,
+			Name:      proxyName,
 			Namespace: namespace,
 		},
 		Listeners: listeners,
 	}, resourceErrs
 }
 
-// https://github.com/solo-io/gloo/issues/538
-// Gloo should only pay attention to gateways it creates, i.e. in it's write namespace, to support
-// handling multiple gloo installations
-func filterGatewaysForNamespace(gateways v2.GatewayList, namespace string) v2.GatewayList {
-	var filteredGateways v2.GatewayList
-	for _, gateway := range gateways {
-		if gateway.Metadata.Namespace == namespace {
-			filteredGateways = append(filteredGateways, gateway)
-		}
+
+
+func standardListener(gateway *v2.Gateway) *gloov1.Listener {
+	return &gloov1.Listener{
+		Name:          gatewayName(gateway),
+		BindAddress:   gateway.BindAddress,
+		BindPort:      gateway.BindPort,
+		Plugins:       gateway.Plugins,
+		UseProxyProto: gateway.UseProxyProto,
 	}
-	return filteredGateways
 }
+
+func gatewayName(gateway *v2.Gateway) string {
+	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
+}
+
 
 func validateGateways(gateways v2.GatewayList, resourceErrs reporter.ResourceErrors) {
 	bindAddresses := map[string]v2.GatewayList{}
@@ -98,16 +102,16 @@ func gatewaysRefsToString(gateways v2.GatewayList) []string {
 	return ret
 }
 
-func standardListener(gateway *v2.Gateway) *gloov1.Listener {
-	return &gloov1.Listener{
-		Name:          gatewayName(gateway),
-		BindAddress:   gateway.BindAddress,
-		BindPort:      gateway.BindPort,
-		Plugins:       gateway.Plugins,
-		UseProxyProto: gateway.UseProxyProto,
-	}
-}
 
-func gatewayName(gateway *v2.Gateway) string {
-	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
+// https://github.com/solo-io/gloo/issues/538
+// Gloo should only pay attention to gateways it creates, i.e. in it's write namespace, to support
+// handling multiple gloo installations
+func filterGatewaysForNamespace(gateways v2.GatewayList, namespace string) v2.GatewayList {
+	var filteredGateways v2.GatewayList
+	for _, gateway := range gateways {
+		if gateway.Metadata.Namespace == namespace {
+			filteredGateways = append(filteredGateways, gateway)
+		}
+	}
+	return filteredGateways
 }
