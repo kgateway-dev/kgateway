@@ -84,10 +84,19 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:    region,
 						SecretRef: &secretRef,
-						RoleArns:  nil,
-						Filters:   nil,
-						PublicIp:  true,
-						Port:      80,
+						RoleArns:  []string{roleArn},
+						Filters: []*glooec2.TagFilter{
+							{
+								Spec: &glooec2.TagFilter_KvPair_{
+									KvPair: &glooec2.TagFilter_KvPair{
+										Key:   "svc",
+										Value: "worldwide-hello",
+									},
+								},
+							},
+						},
+						PublicIp: true,
+						Port:     80,
 					},
 				},
 			},
@@ -103,6 +112,8 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 		Eventually(func() (string, error) {
 
+			fmt.Printf("the default port: %v\n", defaults.HttpPort)
+			fmt.Printf("calling at port: %v\n", envoyPort)
 			res, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", envoyPort))
 			if err != nil {
 				return "", errors.Wrapf(err, "unable to call GET")
@@ -178,7 +189,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	})
 
 	// need to configure EC2 instances before running this
-	XIt("be able to call upstream function", func() {
+	It("be able to call upstream function", func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
