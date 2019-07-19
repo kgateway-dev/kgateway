@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
