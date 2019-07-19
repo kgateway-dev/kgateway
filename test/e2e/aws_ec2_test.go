@@ -189,7 +189,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	})
 
 	// need to configure EC2 instances before running this
-	It("be able to call upstream function", func() {
+	FIt("be able to call upstream function", func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
