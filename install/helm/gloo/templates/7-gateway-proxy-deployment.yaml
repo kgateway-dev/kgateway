@@ -1,5 +1,5 @@
 {{- if .Values.gateway.enabled }}
-{{- range $index, $spec := .Values.gatewayProxies }}
+{{- range $name, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -10,8 +10,8 @@ kind: DaemonSet
 metadata:
   labels:
     app: gloo
-    gloo: {{ $spec.name }}
-  name: {{ $spec.name }}
+    gloo: {{ $name | kebabcase }}
+  name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 spec:
   {{- if $spec.kind.deployment}}
@@ -19,11 +19,11 @@ spec:
   {{- end}}
   selector:
     matchLabels:
-      gloo: {{ $spec.name }}
+      gloo: {{ $name | kebabcase }}
   template:
     metadata:
       labels:
-        gloo: {{ $spec.name }}
+        gloo: {{ $name | kebabcase }}
 {{ $annotationExist := false}}
 {{- if $spec.podTemplate.extraAnnotations }}
 {{ $annotationExist = true}}
@@ -54,7 +54,7 @@ spec:
               fieldPath: metadata.name
         image: {{ $spec.podTemplate.image.repository }}:{{ $spec.podTemplate.image.tag }}
         imagePullPolicy: {{ $spec.podTemplate.image.pullPolicy }}
-        name: {{ $spec.name }}
+        name: {{ $name | kebabcase }}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -105,7 +105,7 @@ spec:
         - name: {{ $spec.podTemplate.image.pullSecret }}{{end}}
       volumes:
       - configMap:
-          name: {{ $spec.name }}-envoy-config
+          name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
 {{- end }}
 {{- end }}

@@ -1,17 +1,17 @@
 package generate
 
 type Config struct {
-	Namespace      *Namespace     `json:"namespace,omitempty"`
-	Rbac           *Rbac          `json:"rbac,omitempty"`
-	Crds           *Crds          `json:"crds,omitempty"`
-	Settings       *Settings      `json:"settings,omitempty"`
-	Gloo           *Gloo          `json:"gloo,omitempty"`
-	Discovery      *Discovery     `json:"discovery,omitempty"`
-	Gateway        *Gateway       `json:"gateway,omitempty"`
-	GatewayProxies []GatewayProxy `json:"gatewayProxies,omitempty"`
-	Ingress        *Ingress       `json:"ingress,omitempty"`
-	IngressProxy   *IngressProxy  `json:"ingressProxy,omitempty"`
-	K8s            *K8s           `json:"k8s,omitempty"`
+	Namespace      *Namespace              `json:"namespace,omitempty"`
+	Rbac           *Rbac                   `json:"rbac,omitempty"`
+	Crds           *Crds                   `json:"crds,omitempty"`
+	Settings       *Settings               `json:"settings,omitempty"`
+	Gloo           *Gloo                   `json:"gloo,omitempty"`
+	Discovery      *Discovery              `json:"discovery,omitempty"`
+	Gateway        *Gateway                `json:"gateway,omitempty"`
+	GatewayProxies map[string]GatewayProxy `json:"gatewayProxies,omitempty"`
+	Ingress        *Ingress                `json:"ingress,omitempty"`
+	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
+	K8s            *K8s                    `json:"k8s,omitempty"`
 }
 
 type Namespace struct {
@@ -93,7 +93,6 @@ type GatewayDeployment struct {
 }
 
 type GatewayProxy struct {
-	Name        string                   `json:"name,omitempty"`
 	Kind        *GatewayProxyKind        `json:"kind,omitempty"`
 	PodTemplate *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
 	ConfigMap   *GatewayProxyConfigMap   `json:"configMap,omitempty"`

@@ -1,13 +1,13 @@
 {{- if .Values.gateway.enabled }}
-{{- range $index, $spec := .Values.gatewayProxies }}
+{{- range $name, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     app: gloo
-    gloo: {{ $spec.name }}
-  name: {{ $spec.name }}
+    gloo: {{ $name | kebabcase }}
+  name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
   annotations:
@@ -26,7 +26,7 @@ spec:
     protocol: TCP
     name: https
   selector:
-    gloo: {{ $spec.name }}
+    gloo: {{ $name | kebabcase }}
   type: {{ $spec.service.type }}
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}

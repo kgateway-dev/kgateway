@@ -1,15 +1,15 @@
 {{- if .Values.gateway.enabled }}
-{{- range $index, $spec := .Values.gatewayProxies }}
+{{- range $name, $spec := .Values.gatewayProxies }}
 ---
 # config_map
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $spec.name }}-envoy-config
+  name: {{ $name | kebabcase }}-envoy-config
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-    gloo: {{ $spec.name }}
+    gloo: {{ $name | kebabcase }}
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |

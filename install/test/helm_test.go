@@ -43,6 +43,7 @@ var _ = Describe("Helm Test", func() {
 			svc.Spec.Type = v1.ServiceTypeLoadBalancer
 			svc.Spec.Ports[0].TargetPort = intstr.FromInt(8080)
 			svc.Spec.Ports[1].TargetPort = intstr.FromInt(8443)
+			svc.Annotations = map[string]string{"test": "test"}
 			testManifest.ExpectService(svc)
 		})
 	})

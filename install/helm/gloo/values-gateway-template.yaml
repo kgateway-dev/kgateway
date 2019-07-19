@@ -45,7 +45,7 @@ gateway:
     stats: true
 
 gatewayProxies:
-  - name: gateway-proxy
+  gatewayProxy:
     kind:
        deployment:
          replicas: 1
