@@ -18,27 +18,39 @@ import (
 	"github.com/solo-io/go-utils/log"
 )
 
-const defaultConsulDockerImage = "consul@sha256:6ffe55dcc1000126a6e874b298fe1f1b87f556fb344781af60681932e408ec6a"
+const consulDockerImage = "consul:1.5.2"
 
 type ConsulFactory struct {
-	consulpath string
+	consulPath string
 	tmpdir     string
 }
 
-func NewConsulFactory() (*ConsulFactory, error) {
-	consulpath := os.Getenv("CONSUL_BINARY")
+type serviceDef struct {
+	Service *consulService `json:"service"`
+}
 
-	if consulpath != "" {
+type consulService struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Port    uint32   `json:"port"`
+	Tags    []string `json:"tags"`
+	Address string   `json:"address"`
+}
+
+func NewConsulFactory() (*ConsulFactory, error) {
+	consulPath := os.Getenv("CONSUL_BINARY")
+
+	if consulPath != "" {
 		return &ConsulFactory{
-			consulpath: consulpath,
+			consulPath: consulPath,
 		}, nil
 	}
 
-	consulpath, err := exec.LookPath("consul")
+	consulPath, err := exec.LookPath("consul")
 	if err == nil {
-		log.Printf("Using consul from PATH: %s", consulpath)
+		log.Printf("Using consul from PATH: %s", consulPath)
 		return &ConsulFactory{
-			consulpath: consulpath,
+			consulPath: consulPath,
 		}, nil
 	}
 
@@ -58,12 +70,15 @@ docker inspect %s -f "{{.RepoDigests}}"
 
 docker cp $CID:/bin/consul .
 docker rm -f $CID
-    `, defaultConsulDockerImage, defaultConsulDockerImage)
-	scriptfile := filepath.Join(tmpdir, "getconsul.sh")
+    `, consulDockerImage, consulDockerImage)
+	scriptFile := filepath.Join(tmpdir, "get_consul.sh")
 
-	ioutil.WriteFile(scriptfile, []byte(bash), 0755)
+	err = ioutil.WriteFile(scriptFile, []byte(bash), 0755)
+	if err != nil {
+		return nil, err
+	}
 
-	cmd := exec.Command("bash", scriptfile)
+	cmd := exec.Command("bash", scriptFile)
 	cmd.Dir = tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
@@ -72,7 +87,7 @@ docker rm -f $CID
 	}
 
 	return &ConsulFactory{
-		consulpath: filepath.Join(tmpdir, "consul"),
+		consulPath: filepath.Join(tmpdir, "consul"),
 		tmpdir:     tmpdir,
 	}, nil
 }
@@ -82,19 +97,10 @@ func (ef *ConsulFactory) Clean() error {
 		return nil
 	}
 	if ef.tmpdir != "" {
-		os.RemoveAll(ef.tmpdir)
+		_ = os.RemoveAll(ef.tmpdir)
 
 	}
 	return nil
-}
-
-type ConsulInstance struct {
-	consulpath string
-	tmpdir     string
-	cfgdir     string
-	cmd        *exec.Cmd
-
-	session *gexec.Session
 }
 
 func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
@@ -104,36 +110,55 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cfgdir := filepath.Join(tmpdir, "config")
-	os.Mkdir(cfgdir, 0755)
+	cfgDir := filepath.Join(tmpdir, "config")
+	err = os.Mkdir(cfgDir, 0755)
+	if err != nil {
+		return nil, err
+	}
 
-	cmd := exec.Command(ef.consulpath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgdir)
+	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir)
 	cmd.Dir = ef.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
 	return &ConsulInstance{
-		consulpath: ef.consulpath,
-		tmpdir:     tmpdir,
-		cfgdir:     cfgdir,
-		cmd:        cmd,
+		consulPath:         ef.consulPath,
+		tmpdir:             tmpdir,
+		cfgDir:             cfgDir,
+		cmd:                cmd,
+		registeredServices: map[string]*serviceDef{},
 	}, nil
-
 }
 
-func (i *ConsulInstance) AddConfig(name, content string) {
-	fname := filepath.Join(i.cfgdir, name)
-	ioutil.WriteFile(fname, []byte(content), 0644)
-	i.ReloadConfig()
+type ConsulInstance struct {
+	consulPath string
+	tmpdir     string
+	cfgDir     string
+	cmd        *exec.Cmd
+
+	session *gexec.Session
+
+	registeredServices map[string]*serviceDef
 }
 
-func (i *ConsulInstance) AddConfigFromStruct(name string, cfg interface{}) {
+func (i *ConsulInstance) AddConfig(svcId, content string) error {
+	fileName := filepath.Join(i.cfgDir, svcId+".json")
+	return ioutil.WriteFile(fileName, []byte(content), 0644)
+}
+
+func (i *ConsulInstance) AddConfigFromStruct(svcId string, cfg interface{}) error {
 	content, err := json.Marshal(cfg)
-	Expect(err).NotTo(HaveOccurred())
-	i.AddConfig(name, string(content))
+	if err != nil {
+		return err
+	}
+	return i.AddConfig(svcId, string(content))
 }
 
-func (i *ConsulInstance) ReloadConfig() {
-	i.cmd.Process.Signal(syscall.SIGHUP)
+func (i *ConsulInstance) ReloadConfig() error {
+	err := i.cmd.Process.Signal(syscall.SIGHUP)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (i *ConsulInstance) Silence() {
@@ -153,7 +178,7 @@ func (i *ConsulInstance) Run() error {
 }
 
 func (i *ConsulInstance) Binary() string {
-	return i.consulpath
+	return i.consulPath
 }
 
 func (i *ConsulInstance) Clean() error {
@@ -161,7 +186,28 @@ func (i *ConsulInstance) Clean() error {
 		i.session.Kill()
 	}
 	if i.tmpdir != "" {
-		os.RemoveAll(i.tmpdir)
+		return os.RemoveAll(i.tmpdir)
 	}
 	return nil
+}
+
+func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
+	svcDef := &serviceDef{
+		Service: &consulService{
+			ID:      svcId,
+			Name:    svcName,
+			Address: address,
+			Tags:    tags,
+			Port:    port,
+		},
+	}
+
+	i.registeredServices[svcId] = svcDef
+
+	err := i.AddConfigFromStruct(svcId, svcDef)
+	if err != nil {
+		return err
+	}
+
+	return i.ReloadConfig()
 }

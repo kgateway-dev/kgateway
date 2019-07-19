@@ -10,7 +10,7 @@ import (
 var _ = Describe("Namespaces", func() {
 
 	var (
-		allNamespaces = [][]string{nil, []string{}, []string{""}}
+		allNamespaces = [][]string{nil, {}, {""}}
 	)
 
 	Context("all namespaces", func() {

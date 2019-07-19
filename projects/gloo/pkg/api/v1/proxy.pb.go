@@ -154,10 +154,8 @@ type Listener struct {
 	//	*Listener_HttpListener
 	//	*Listener_TcpListener
 	ListenerType isListener_ListenerType `protobuf_oneof:"ListenerType"`
-	// SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port
+	// SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.
 	// Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
-	// must match a domain in virtual host
-	// TODO(ilackarms): ensure that ssl configs without a matching virtual host are errored
 	SslConfigurations []*SslConfig `protobuf:"bytes,6,rep,name=ssl_configurations,json=sslConfigurations,proto3" json:"ssl_configurations,omitempty"`
 	// Enable ProxyProtocol support for this listener
 	UseProxyProto *types.BoolValue `protobuf:"bytes,7,opt,name=use_proxy_proto,json=useProxyProto,proto3" json:"use_proxy_proto,omitempty"`
@@ -1764,7 +1762,6 @@ func (m *WeightedDestination) GetWeight() uint32 {
 	return 0
 }
 
-// TODO(ilackarms): evaluate how much to differentiate (or if even to include) RedirectAction
 // Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 type RedirectAction struct {
 	// The host portion of the URL will be swapped with this value.
@@ -1940,7 +1937,6 @@ func _RedirectAction_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
-// TODO(ilackarms): evaluate how much to differentiate (or if even to include) DirectResponseAction
 // DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
 type DirectResponseAction struct {
 	// Specifies the HTTP response status to be returned.
