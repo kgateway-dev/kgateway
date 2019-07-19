@@ -73,6 +73,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	}
 	addUpstream := func() {
+		secretRef := secret.Metadata.Ref()
 		upstream = &gloov1.Upstream{
 			Metadata: core.Metadata{
 				Namespace: "default",
@@ -82,7 +83,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 				UpstreamType: &gloov1.UpstreamSpec_AwsEc2{
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:    region,
-						SecretRef: secret.Metadata.Ref(),
+						SecretRef: &secretRef,
 						RoleArns:  nil,
 						Filters:   nil,
 						PublicIp:  true,
@@ -134,7 +135,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 				UpstreamType: &gloov1.UpstreamSpec_AwsEc2{
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:    region,
-						SecretRef: secretRef,
+						SecretRef: &secretRef,
 						RoleArns:  []string{roleArn},
 						Filters:   filters,
 						PublicIp:  false,
@@ -149,7 +150,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 				UpstreamType: &gloov1.UpstreamSpec_AwsEc2{
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:    region,
-						SecretRef: secretRef,
+						SecretRef: &secretRef,
 						Filters:   filters,
 						PublicIp:  false,
 						Port:      80,
