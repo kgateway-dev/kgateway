@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix gRPC plugin handling of path without routes
+    issueLink: https://github.com/solo-io/gloo/issues/860
