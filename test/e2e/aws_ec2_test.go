@@ -109,18 +109,14 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	}
 
 	validateEc2Endpoint := func(envoyPort uint32, substring string) {
-
 		Eventually(func() (string, error) {
-
-			fmt.Printf("the default port: %v\n", defaults.HttpPort)
-			fmt.Printf("calling at port: %v\n", envoyPort)
 			res, err := http.Get(fmt.Sprintf("http://%v:%v/", "localhost", envoyPort))
 			if err != nil {
 				return "", errors.Wrapf(err, "unable to call GET")
 			}
-			//if res.StatusCode != http.StatusOK {
-			//	return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
-			//}
+			if res.StatusCode != http.StatusOK {
+				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+			}
 
 			defer res.Body.Close()
 			body, err := ioutil.ReadAll(res.Body)
@@ -128,8 +124,6 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 				return "", errors.Wrapf(err, "unable to read body")
 			}
 
-			fmt.Println("string(body)")
-			fmt.Println(string(body))
 			return string(body), nil
 		}, "10s", "1s").Should(ContainSubstring(substring))
 	}
@@ -236,7 +230,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		var opts clients.WriteOpts
 		_, err = testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
-		validateEc2Endpoint(defaults.HttpPort, "metrics")
+		validateEc2Endpoint(defaults.HttpPort, "Counts")
 	})
 
 	BeforeEach(func() {
