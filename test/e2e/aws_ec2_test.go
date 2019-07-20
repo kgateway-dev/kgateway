@@ -134,7 +134,8 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		// first make sure that the instance is ready (to avoid false negatives)
 		By("verifying instance is ready - if this failed, you may need to restart the EC2 instance")
 		// stitch the url together to avoid bot spam
-		ec2Url := fmt.Sprintf("http://%v:%v/metrics", strings.Join([]string{"52", "91", "199", "115"}, "."), envoyPort)
+		ec2Port := 80
+		ec2Url := fmt.Sprintf("http://%v:%v/metrics", strings.Join([]string{"52", "91", "199", "115"}, "."), ec2Port)
 		validateUrl(ec2Url, substring)
 
 		// do the actual verification
