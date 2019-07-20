@@ -118,10 +118,9 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			if err != nil {
 				return "", errors.Wrapf(err, "unable to call GET")
 			}
-			// TODO(mitchdraft) restore
-			//if res.StatusCode != http.StatusOK {
-			//	return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
-			//}
+			if res.StatusCode != http.StatusOK {
+				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+			}
 
 			defer res.Body.Close()
 			body, err := ioutil.ReadAll(res.Body)
