@@ -118,9 +118,9 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			if err != nil {
 				return "", errors.Wrapf(err, "unable to call GET")
 			}
-			if res.StatusCode != http.StatusOK {
-				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
-			}
+			//if res.StatusCode != http.StatusOK {
+			//	return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+			//}
 
 			defer res.Body.Close()
 			body, err := ioutil.ReadAll(res.Body)
@@ -128,6 +128,8 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 				return "", errors.Wrapf(err, "unable to read body")
 			}
 
+			fmt.Println("string(body)")
+			fmt.Println(string(body))
 			return string(body), nil
 		}, "10s", "1s").Should(ContainSubstring(substring))
 	}
