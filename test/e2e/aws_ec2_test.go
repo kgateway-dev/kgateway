@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	ec2api "github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
@@ -72,6 +73,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 	}
+
 	addUpstream := func() {
 		secretRef := secret.Metadata.Ref()
 		upstream = &gloov1.Upstream{
@@ -108,9 +110,9 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	}
 
-	validateEc2Endpoint := func(envoyPort uint32, substring string) {
+	validateUrl := func(url, substring string) {
 		Eventually(func() (string, error) {
-			res, err := http.Get(fmt.Sprintf("http://%v:%v/", "localhost", envoyPort))
+			res, err := http.Get(url)
 			if err != nil {
 				return "", errors.Wrapf(err, "unable to call GET")
 			}
@@ -127,12 +129,27 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			return string(body), nil
 		}, "10s", "1s").Should(ContainSubstring(substring))
 	}
+
+	validateEc2Endpoint := func(envoyPort uint32, substring string) {
+		// first make sure that the instance is ready (to avoid false negatives)
+		By("verifying instance is ready - if this failed, you may need to restart the EC2 instance")
+		// stitch the url together to avoid bot spam
+		ec2Url := fmt.Sprintf("http://%v:%v/metrics", strings.Join([]string{"52", "91", "199", "115"}, "."), envoyPort)
+		validateUrl(ec2Url, substring)
+
+		// do the actual verification
+		By("verifying Gloo has routed to the instance")
+		gatewayUrl := fmt.Sprintf("http://%v:%v/metrics", "localhost", envoyPort)
+		validateUrl(gatewayUrl, substring)
+	}
+
 	AfterEach(func() {
 		if envoyInstance != nil {
 			_ = envoyInstance.Clean()
 		}
 		cancel()
 	})
+
 	It("should assume role correctly", func() {
 		region := "us-east-1"
 		secretRef := secret.Metadata.Ref()
