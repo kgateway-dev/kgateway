@@ -28,6 +28,8 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 //
 //A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
+//
+//Deprecated: see gateway.solo.io.v2.Gateway
 type Gateway struct {
 	// if set to false, only use virtual services with no ssl configured.
 	// if set to true, only use virtual services with ssl configured.

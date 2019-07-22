@@ -42,6 +42,8 @@ var (
 		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("gateways.gateway.solo.io", &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
+		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("gateways.gateway.solo.io.v2", &metav1.DeleteOptions{})
+		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("ingresses.ingress.solo.io", &metav1.DeleteOptions{})
 		testutils.ErrorNotOccuredOrNotFound(err)
 		err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete("services.ingress.solo.io", &metav1.DeleteOptions{})

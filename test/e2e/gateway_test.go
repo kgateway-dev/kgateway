@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewayv2alpha1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -54,7 +54,7 @@ var _ = Describe("Gateway", func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 			// wait for the two gateways to be created.
-			Eventually(func() (gatewayv2alpha1.GatewayList, error) {
+			Eventually(func() (gatewayv2.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
@@ -192,7 +192,7 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy", testClients.GlooPort)
+				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 

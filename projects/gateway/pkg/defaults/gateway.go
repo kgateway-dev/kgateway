@@ -3,20 +3,22 @@ package defaults
 import (
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func DefaultGateway(writeNamespace string) *v2alpha1.Gateway {
-	return &v2alpha1.Gateway{
+func DefaultGateway(writeNamespace string) *v2.Gateway {
+	return &v2.Gateway{
 		Metadata: core.Metadata{
 			Name:      "gateway",
 			Namespace: writeNamespace,
 		},
-		GatewayType: &v2alpha1.Gateway_HttpGateway{
-			HttpGateway: &v2alpha1.HttpGateway{},
+		GatewayProxyName: translator.GatewayProxyName,
+		GatewayType: &v2.Gateway_HttpGateway{
+			HttpGateway: &v2.HttpGateway{},
 		},
 		BindAddress:   "::",
 		BindPort:      defaults.HttpPort,
@@ -24,7 +26,7 @@ func DefaultGateway(writeNamespace string) *v2alpha1.Gateway {
 	}
 }
 
-func DefaultSslGateway(writeNamespace string) *v2alpha1.Gateway {
+func DefaultSslGateway(writeNamespace string) *v2.Gateway {
 	defaultgw := DefaultGateway(writeNamespace)
 	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
 	defaultgw.BindPort = defaults.HttpsPort
@@ -35,22 +37,23 @@ func DefaultSslGateway(writeNamespace string) *v2alpha1.Gateway {
 
 // The default TCP gateways are currently only used for testing purposes
 // but could be included later if we decide they should be.
-func DefaultTcpGateway(writeNamespace string) *v2alpha1.Gateway {
-	return &v2alpha1.Gateway{
+func DefaultTcpGateway(writeNamespace string) *v2.Gateway {
+	return &v2.Gateway{
 		Metadata: core.Metadata{
 			Name:      "gateway-tcp",
 			Namespace: writeNamespace,
 		},
-		GatewayType: &v2alpha1.Gateway_TcpGateway{
-			TcpGateway: &v2alpha1.TcpGateway{},
+		GatewayType: &v2.Gateway_TcpGateway{
+			TcpGateway: &v2.TcpGateway{},
 		},
-		BindAddress:   "::",
-		BindPort:      defaults.TcpPort,
-		UseProxyProto: &types.BoolValue{Value: false},
+		GatewayProxyName: translator.GatewayProxyName,
+		BindAddress:      "::",
+		BindPort:         defaults.TcpPort,
+		UseProxyProto:    &types.BoolValue{Value: false},
 	}
 }
 
-func DefaultTcpSslGateway(writeNamespace string) *v2alpha1.Gateway {
+func DefaultTcpSslGateway(writeNamespace string) *v2.Gateway {
 	defaultgw := DefaultTcpGateway(writeNamespace)
 	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
 	defaultgw.BindPort = defaults.HttpsPort
