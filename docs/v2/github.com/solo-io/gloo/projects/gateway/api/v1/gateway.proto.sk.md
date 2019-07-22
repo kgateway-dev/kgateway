@@ -28,6 +28,8 @@ weight: 5
  
 A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
 
+Deprecated: see gateway.solo.io.v2.Gateway
+
 ```yaml
 "ssl": bool
 "virtualServices": []core.solo.io.ResourceRef
