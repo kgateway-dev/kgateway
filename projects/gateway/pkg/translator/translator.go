@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-const GatewayProxyName = "gateway-proxy"
+const GatewayProxyName = "gateway-proxy-v2"
 
 type ListenerFactory interface {
 	GenerateListeners(ctx context.Context, snap *v2.ApiSnapshot, filteredGateways []*v2.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener
