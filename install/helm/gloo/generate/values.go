@@ -43,8 +43,7 @@ type JobSpec struct {
 }
 
 type DeploymentSpec struct {
-	Replicas int  `json:"replicas"`
-	Stats    bool `json:"stats"`
+	Replicas int `json:"replicas"`
 }
 
 type Integrations struct {
@@ -108,17 +107,30 @@ type GatewayConversionJob struct {
 }
 
 type GatewayProxy struct {
-	Deployment *GatewayProxyDeployment `json:"deployment,omitempty"`
-	ConfigMap  *GatewayProxyConfigMap  `json:"configMap,omitempty"`
-	Service    *GatewayProxyService    `json:"service,omitempty"`
+	Kind        *GatewayProxyKind        `json:"kind,omitempty"`
+	PodTemplate *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
+	ConfigMap   *GatewayProxyConfigMap   `json:"configMap,omitempty"`
+	Service     *GatewayProxyService     `json:"service,omitempty"`
 }
 
-type GatewayProxyDeployment struct {
+type GatewayProxyKind struct {
+	Deployment *DeploymentSpec `json:"deployment,omitempty"`
+	DaemonSet  *DaemonSetSpec  `json:"daemonSet,omitempty"`
+}
+
+type DaemonSetSpec struct {
+	HostPort bool `json:"hostPort"`
+}
+
+type GatewayProxyPodTemplate struct {
 	Image            *Image            `json:"image,omitempty"`
 	HttpPort         string            `json:"httpPort,omitempty"`
 	HttpsPort        string            `json:"httpsPort,omitempty"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+	NodeName         string            `json:"nodeName,omitempty"`
+	NodeSelector     map[string]string `json:"nodeSelector,omitempty"`
+	Stats            bool              `json:"stats"`
 	*DeploymentSpec
 }
 

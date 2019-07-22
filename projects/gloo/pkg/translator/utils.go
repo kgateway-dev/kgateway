@@ -1,7 +1,7 @@
 package translator
 
 import (
-	fmt "fmt"
+	"fmt"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
@@ -11,6 +11,12 @@ import (
 )
 
 func UpstreamToClusterName(upstream core.ResourceRef) string {
+
+	// For non-namespaced resources, return only name
+	if upstream.Namespace == "" {
+		return upstream.Name
+	}
+
 	// Don't use dots in the name as it messes up prometheus stats
 	return fmt.Sprintf("%s_%s", upstream.Name, upstream.Namespace)
 }

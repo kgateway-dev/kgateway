@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update values-gateway-template to use proper helm naming conventions
+    issueLink: https://github.com/solo-io/gloo/issues/827

@@ -3,6 +3,7 @@ package ec2
 import (
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -10,18 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 )
 
-func GetEc2Session(ec2Upstream *glooec2.UpstreamSpec, secrets v1.SecretList) (*session.Session, error) {
-	return aws2.GetAwsSession(
-		ec2Upstream.SecretRef,
-		secrets,
-		&aws.Config{
-			Region: aws.String(ec2Upstream.Region),
-		})
-}
 func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) (*session.Session, error) {
 	return aws2.GetAwsSession(
 		secretRef,
@@ -31,7 +24,21 @@ func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, s
 		})
 }
 
-func getInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Instance {
+func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error) {
+	sess, err := getEc2SessionForCredentials(cred.Region(), cred.SecretRef(), secrets)
+	if err != nil {
+		return nil, err
+	}
+	var configs []*aws.Config
+	for _, arn := range cred.Arns() {
+		cred := stscreds.NewCredentials(sess, arn)
+		configs = append(configs, &aws.Config{Credentials: cred})
+	}
+	svc := ec2.New(sess, configs...)
+	return svc, nil
+}
+
+func GetInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Instance {
 	var instances []*ec2.Instance
 	for _, reservation := range desc.Reservations {
 		for _, instance := range reservation.Instances {

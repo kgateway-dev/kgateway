@@ -40,7 +40,7 @@ spec:
   scope: Namespaced
   version: v2alpha1
   versions:
-    - name: v2alpha1
+    - name: v2
       storage: true
       served: true
     - name: v1

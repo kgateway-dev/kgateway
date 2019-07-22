@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -38,7 +38,7 @@ var _ = Describe("polling", func() {
 		secretClient = getSecretClient(ctx)
 		refreshRate = time.Second
 		responses = getMockListerResponses()
-		err := primeSecretClient(secretClient, []core.ResourceRef{testCredential1, testCredential2})
+		err := primeSecretClient(secretClient, []core.ResourceRef{testSecretRef1, testSecretRef2})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -112,20 +112,8 @@ func testEndpointsWatcher(
 	parentRefreshRate time.Duration,
 	responses mockListerResponses,
 ) *edsWatcher {
-	upstreamSpecs := make(map[core.ResourceRef]*glooec2.UpstreamSpecRef)
-	for _, us := range upstreams {
-		ec2Upstream, ok := us.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
-		if !ok {
-			continue
-		}
-		ref := us.Metadata.Ref()
-		upstreamSpecs[ref] = &glooec2.UpstreamSpecRef{
-			Spec: ec2Upstream.AwsEc2,
-			Ref:  ref,
-		}
-	}
 	return &edsWatcher{
-		upstreams:         upstreamSpecs,
+		upstreams:         upstreams,
 		watchContext:      watchCtx,
 		secretClient:      secretClient,
 		refreshRate:       getRefreshRate(parentRefreshRate),
@@ -134,7 +122,7 @@ func testEndpointsWatcher(
 	}
 }
 
-type mockListerResponses map[string][]*ec2.Instance
+type mockListerResponses map[CredentialKey][]*ec2.Instance
 type mockEc2InstanceLister struct {
 	responses mockListerResponses
 }
@@ -146,8 +134,8 @@ func newMockEc2InstanceLister(responses mockListerResponses) *mockEc2InstanceLis
 	}
 }
 
-func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) ([]*ec2.Instance, error) {
-	v, ok := m.responses[secretRef.Key()]
+func (m *mockEc2InstanceLister) ListForCredentials(ctx context.Context, cred *CredentialSpec, secrets v1.SecretList) ([]*ec2.Instance, error) {
+	v, ok := m.responses[cred.GetKey()]
 	if !ok {
 		return nil, fmt.Errorf("invalid input, no test responses available")
 	}
@@ -169,7 +157,14 @@ func getSecretClient(ctx context.Context) v1.SecretClient {
 
 func getMockListerResponses() mockListerResponses {
 	resp := make(mockListerResponses)
-	resp[testCredential1.Key()] = []*ec2.Instance{{
+	region1 := "us-east-1"
+	ec2Upstream1 := &glooec2.UpstreamSpec{
+		Region:    region1,
+		SecretRef: testSecretRef1,
+		RoleArns:  nil,
+	}
+	cred1 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream1)
+	resp[cred1.GetKey()] = []*ec2.Instance{{
 		PrivateIpAddress: aws.String(testPrivateIp1),
 		PublicIpAddress:  aws.String(testPublicIp1),
 		Tags: []*ec2.Tag{{
@@ -178,7 +173,13 @@ func getMockListerResponses() mockListerResponses {
 		}},
 		VpcId: aws.String("id1"),
 	}}
-	resp[testCredential2.Key()] = []*ec2.Instance{{
+	ec2Upstream2 := &glooec2.UpstreamSpec{
+		Region:    region1,
+		SecretRef: testSecretRef2,
+		RoleArns:  nil,
+	}
+	cred2 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream2)
+	resp[cred2.GetKey()] = []*ec2.Instance{{
 		PrivateIpAddress: aws.String(testPrivateIp1),
 		PublicIpAddress:  aws.String(testPublicIp1),
 		Tags: []*ec2.Tag{{
@@ -211,3 +212,60 @@ func primeSecretClient(secretClient v1.SecretClient, secretRefs []core.ResourceR
 	}
 	return nil
 }
+
+var (
+	testPort1      uint32 = 8080
+	testPrivateIp1        = "111-111-111-111"
+	testPublicIp1         = "222.222.222.222"
+	testUpstream1         = v1.Upstream{
+		UpstreamSpec: &v1.UpstreamSpec{
+			UpstreamType: &v1.UpstreamSpec_AwsEc2{
+				AwsEc2: &glooec2.UpstreamSpec{
+					Region:    "us-east-1",
+					SecretRef: testSecretRef1,
+					Filters: []*glooec2.TagFilter{{
+						Spec: &glooec2.TagFilter_Key{
+							Key: "k1",
+						},
+					}},
+					PublicIp: false,
+					Port:     testPort1,
+				},
+			}},
+		Metadata: core.Metadata{
+			Name:      "u1",
+			Namespace: "default",
+		},
+	}
+	testUpstream2 = v1.Upstream{
+		UpstreamSpec: &v1.UpstreamSpec{
+			UpstreamType: &v1.UpstreamSpec_AwsEc2{
+				AwsEc2: &glooec2.UpstreamSpec{
+					Region:    "us-east-1",
+					SecretRef: testSecretRef2,
+					Filters: []*glooec2.TagFilter{{
+						Spec: &glooec2.TagFilter_KvPair_{
+							KvPair: &glooec2.TagFilter_KvPair{
+								Key:   "k2",
+								Value: "v2",
+							},
+						},
+					}},
+					PublicIp: true,
+					Port:     testPort1,
+				},
+			}},
+		Metadata: core.Metadata{
+			Name:      "u2",
+			Namespace: "default",
+		},
+	}
+	testSecretRef1 = core.ResourceRef{
+		Name:      "secret1",
+		Namespace: "namespace",
+	}
+	testSecretRef2 = core.ResourceRef{
+		Name:      "secret2",
+		Namespace: "namespace",
+	}
+)

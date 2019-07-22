@@ -73,9 +73,70 @@ curl http://<instance-public-ip>/
 glooctl create secret aws \
   --name gloo-tag-group1 \
   --namespace default \
-  --access-key <aws_secret_key_id> \
-  --secret-key <aws_secret_access_key>
+  --access-key [aws_secret_key_id] \
+  --secret-key [aws_secret_access_key]
 ```
+
+
+## Create roles for Gloo to assume on behalf of your upstreams
+- For additional control over Gloo's access to your resources and as an additional filter on your EC2 Upstream's list of
+available instances it is recommended that you credential your upstreams with a low-access user account that has the
+ability to assume the specific roles it requires.
+- When you provide both a secret ref and a list of Role ARNs to your upstream, Gloo will call the AWS API with credentials
+composed from that user account and those roles (via the AssumeRole feature).
+- To configure you AWS account for this use case, there are two steps to take (if you have not already done so):
+  - Create a policy that allows the policy holder to describe EC2 instances
+  - Create a role that contains that policy and trusts (ie: grants roles assumption to) the upstream's account 
+
+### Create a role
+- In the AWS console:
+  - Navigate to IAM > Roles, choose "Create Role"
+  - Follow the interactive guide to create a role
+    - Choose "AWS account" as the type of trusted entity and provide the 12 digit account id of the account which holds
+    the EC2 instances you want to route to.
+    
+- Choose or create a policy for the role
+    - An example of a **Policy** that allows the role to describe EC2 instances is shown below.
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "ec2:DescribeInstances",
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### Allow your upstream's user account to list EC2 instances
+- In the AWS console:
+  - Navigate to IAM > Roles, Select your role
+  - Select the "Trust relationships" tab
+      - Note the entries under the "Trusted entities" table
+  - Click "Edit trust relationship"
+  - Add your user/service account's ARN to the Principal.AWS list, as shown below
+- An example of **Trust Relationship** is shown below (many other variants are possible)
+  - Add the ARNs of each of the user accounts that you want to allow to assume this role.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::[account_id]:user/[user_id]"
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
 
 ## Create an EC2 Upstream
 

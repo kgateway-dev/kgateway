@@ -99,7 +99,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 	cfg.Gateway.ConversionJob.Image.Tag = version
 
 	for _, v := range cfg.GatewayProxies {
-		v.Deployment.Image.Tag = version
+		v.PodTemplate.Image.Tag = version
 	}
 
 	if version == "dev" {
@@ -108,7 +108,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Gateway.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.Gateway.ConversionJob.Image.PullPolicy = ifNotPresent
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.PullPolicy = ifNotPresent
+			v.PodTemplate.Image.PullPolicy = ifNotPresent
 		}
 	}
 
@@ -118,7 +118,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Gateway.ConversionJob.Image.Repository = replacePrefix(cfg.Gateway.ConversionJob.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}
 
 	}
@@ -158,7 +158,7 @@ func generateKnativeValuesYaml(version, repositoryPrefix string) error {
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}
 	}
 
@@ -197,7 +197,7 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}
 	}
 

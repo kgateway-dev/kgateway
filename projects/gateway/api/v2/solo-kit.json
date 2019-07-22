@@ -1,0 +1,18 @@
+{
+  "name": "gateway.solo.io",
+  "version": "v2",
+  "docs_dir": "../docs/v2",
+  "resource_groups": {
+    "api.gateway.solo.io": [
+      {
+        "name": "VirtualService",
+        "package": "gateway.solo.io",
+        "version": "v1"
+      },
+      {
+        "name": "Gateway",
+        "package": "gateway.solo.io.v2"
+      }
+    ]
+  }
+}

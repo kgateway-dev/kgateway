@@ -47,7 +47,7 @@ func MustMake(dir string, args ...string) {
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
-		MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS=--namespace "+namespace+" --set namespace.create=true --set gatewayProxies.gateway-proxy.service.extraAnnotations.test=test")
+		MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS=--namespace "+namespace+" --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test")
 		return nil
 	},
 	func(_ []byte) {

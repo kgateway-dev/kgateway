@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
@@ -21,26 +21,26 @@ const (
 
 var _ = Describe("Translator", func() {
 	var (
-		snap       *v2alpha1.ApiSnapshot
+		snap       *v2.ApiSnapshot
 		translator Translator
 	)
 
 	Context("translator", func() {
 		BeforeEach(func() {
 			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}})
-			snap = &v2alpha1.ApiSnapshot{
-				Gateways: v2alpha1.GatewayList{
+			snap = &v2.ApiSnapshot{
+				Gateways: v2.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
 					{
 						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
@@ -82,7 +82,7 @@ var _ = Describe("Translator", func() {
 
 		It("should translate proxy with default name", func() {
 
-			proxy, errs := translator.Translate(context.Background(), ns, snap)
+			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs).To(HaveLen(3))
 			Expect(errs.Validate()).NotTo(HaveOccurred())
@@ -93,15 +93,15 @@ var _ = Describe("Translator", func() {
 		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {
 			snap.Gateways = append(
 				snap.Gateways,
-				&v2alpha1.Gateway{
+				&v2.Gateway{
 					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
-					GatewayType: &v2alpha1.Gateway_TcpGateway{
-						TcpGateway: &v2alpha1.TcpGateway{},
+					GatewayType: &v2.Gateway_TcpGateway{
+						TcpGateway: &v2.TcpGateway{},
 					},
 				},
 			)
 
-			proxy, errs := translator.Translate(context.Background(), ns, snap)
+			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
@@ -112,15 +112,15 @@ var _ = Describe("Translator", func() {
 		It("should translate two gateways with same name (and types) to one proxy with the same name", func() {
 			snap.Gateways = append(
 				snap.Gateways,
-				&v2alpha1.Gateway{
+				&v2.Gateway{
 					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
-					GatewayType: &v2alpha1.Gateway_HttpGateway{
-						HttpGateway: &v2alpha1.HttpGateway{},
+					GatewayType: &v2.Gateway_HttpGateway{
+						HttpGateway: &v2.HttpGateway{},
 					},
 				},
 			)
 
-			proxy, errs := translator.Translate(context.Background(), ns, snap)
+			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
@@ -129,13 +129,13 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should error on two gateways with the same port in the same namespace", func() {
-			dupeGateway := v2alpha1.Gateway{
+			dupeGateway := v2.Gateway{
 				Metadata: core.Metadata{Namespace: ns, Name: "name2"},
 				BindPort: 2,
 			}
 			snap.Gateways = append(snap.Gateways, &dupeGateway)
 
-			_, errs := translator.Translate(context.Background(), ns, snap)
+			_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 			err := errs.Validate()
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("bind-address :2 is not unique in a proxy. gateways: gloo-system.name,gloo-system.name2"))
@@ -151,19 +151,19 @@ var _ = Describe("Translator", func() {
 		BeforeEach(func() {
 			factory = &HttpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory})
-			snap = &v2alpha1.ApiSnapshot{
-				Gateways: v2alpha1.GatewayList{
+			snap = &v2.ApiSnapshot{
+				Gateways: v2.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
 					{
 						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
-						GatewayType: &v2alpha1.Gateway_HttpGateway{
-							HttpGateway: &v2alpha1.HttpGateway{},
+						GatewayType: &v2.Gateway_HttpGateway{
+							HttpGateway: &v2.HttpGateway{},
 						},
 						BindPort: 2,
 					},
@@ -205,7 +205,7 @@ var _ = Describe("Translator", func() {
 
 		It("should translate an empty gateway to have all vservices", func() {
 
-			proxy, _ := translator.Translate(context.Background(), ns, snap)
+			proxy, _ := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(proxy.Listeners).To(HaveLen(1))
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -213,20 +213,20 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should have no ssl config", func() {
-			proxy, _ := translator.Translate(context.Background(), ns, snap)
+			proxy, _ := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(proxy.Listeners).To(HaveLen(1))
 			Expect(proxy.Listeners[0].SslConfigurations).To(BeEmpty())
 		})
 
 		It("should translate a gateway to only have its vservices", func() {
-			snap.Gateways[0].GatewayType = &v2alpha1.Gateway_HttpGateway{
-				HttpGateway: &v2alpha1.HttpGateway{
+			snap.Gateways[0].GatewayType = &v2.Gateway_HttpGateway{
+				HttpGateway: &v2.HttpGateway{
 					VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
 				},
 			}
 
-			proxy, errs := translator.Translate(context.Background(), ns, snap)
+			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(proxy).NotTo(BeNil())
@@ -238,7 +238,7 @@ var _ = Describe("Translator", func() {
 		It("should not have vhosts with ssl", func() {
 			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-			proxy, errs := translator.Translate(context.Background(), ns, snap)
+			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 
@@ -252,7 +252,7 @@ var _ = Describe("Translator", func() {
 			snap.Gateways[0].Ssl = true
 			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-			proxy, errs := translator.Translate(context.Background(), ns, snap)
+			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 
@@ -269,7 +269,7 @@ var _ = Describe("Translator", func() {
 
 			It("should translate 2 virtual services with the same domains to 1 virtual service", func() {
 
-				proxy, errs := translator.Translate(context.Background(), ns, snap)
+				proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
@@ -283,7 +283,7 @@ var _ = Describe("Translator", func() {
 				snap.VirtualServices[1].VirtualHost.Domains = nil
 				snap.VirtualServices[0].VirtualHost.Domains = nil
 
-				proxy, errs := translator.Translate(context.Background(), ns, snap)
+				proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				Expect(proxy.Listeners).To(HaveLen(1))
@@ -296,7 +296,7 @@ var _ = Describe("Translator", func() {
 			It("should not error with one contains plugins", func() {
 				snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 
-				_, errs := translator.Translate(context.Background(), ns, snap)
+				_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 			})
@@ -305,7 +305,7 @@ var _ = Describe("Translator", func() {
 				snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 				snap.VirtualServices[1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 
-				_, errs := translator.Translate(context.Background(), ns, snap)
+				_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).To(HaveOccurred())
 			})
@@ -313,7 +313,7 @@ var _ = Describe("Translator", func() {
 			It("should not error with one contains ssl config", func() {
 				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-				proxy, errs := translator.Translate(context.Background(), ns, snap)
+				proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -324,7 +324,7 @@ var _ = Describe("Translator", func() {
 				snap.Gateways[0].Ssl = true
 				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-				proxy, errs := translator.Translate(context.Background(), ns, snap)
+				proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -339,7 +339,7 @@ var _ = Describe("Translator", func() {
 				snap.VirtualServices[0].SslConfig.SniDomains = []string{"bar"}
 				snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
 
-				_, errs := translator.Translate(context.Background(), ns, snap)
+				_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).To(HaveOccurred())
 			})
@@ -351,7 +351,7 @@ var _ = Describe("Translator", func() {
 				snap.VirtualServices[0].SslConfig.SniDomains = []string{"foo"}
 				snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
 
-				_, errs := translator.Translate(context.Background(), ns, snap)
+				_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 			})
@@ -366,12 +366,12 @@ var _ = Describe("Translator", func() {
 		BeforeEach(func() {
 			factory = &TcpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory})
-			snap = &v2alpha1.ApiSnapshot{
-				Gateways: v2alpha1.GatewayList{
+			snap = &v2.ApiSnapshot{
+				Gateways: v2.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2alpha1.Gateway_TcpGateway{
-							TcpGateway: &v2alpha1.TcpGateway{},
+						GatewayType: &v2.Gateway_TcpGateway{
+							TcpGateway: &v2.TcpGateway{},
 						},
 						BindPort: 2,
 					},

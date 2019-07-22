@@ -3,6 +3,7 @@ package consul
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 var _ = Describe("Conversions", func() {
@@ -29,13 +30,13 @@ var _ = Describe("Conversions", func() {
 		Expect(usList).To(HaveLen(2))
 
 		Expect(usList[0].Metadata.Name).To(Equal(upstreamNamePrefix + "svc-1"))
-		Expect(usList[0].Metadata.Namespace).To(BeEmpty())
+		Expect(usList[0].Metadata.Namespace).To(Equal(defaults.GlooSystem))
 		Expect(usList[0].UpstreamSpec.GetConsul()).NotTo(BeNil())
 		Expect(usList[0].UpstreamSpec.GetConsul().ServiceName).To(Equal("svc-1"))
 		Expect(usList[0].UpstreamSpec.GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
 
 		Expect(usList[1].Metadata.Name).To(Equal(upstreamNamePrefix + "svc-2"))
-		Expect(usList[1].Metadata.Namespace).To(BeEmpty())
+		Expect(usList[1].Metadata.Namespace).To(Equal(defaults.GlooSystem))
 		Expect(usList[1].UpstreamSpec.GetConsul()).NotTo(BeNil())
 		Expect(usList[1].UpstreamSpec.GetConsul().ServiceName).To(Equal("svc-2"))
 		Expect(usList[1].UpstreamSpec.GetConsul().DataCenters).To(ConsistOf("dc1", "dc3", "dc4"))
