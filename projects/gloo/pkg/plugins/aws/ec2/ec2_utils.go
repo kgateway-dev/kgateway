@@ -17,26 +17,26 @@ import (
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 )
 
-func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) (*session.Session, error) {
+func getEc2SessionForCredentials(regionConfig *aws.Config, secretRef core.ResourceRef, secrets v1.SecretList) (*session.Session, error) {
 	return aws2.GetAwsSession(
 		secretRef,
 		secrets,
-		&aws.Config{
-			Region: aws.String(awsRegion),
-		})
+		regionConfig,
+	)
 }
 
 func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error) {
 	var sess *session.Session
 	var err error
+	regionConfig := &aws.Config{Region: aws.String(cred.Region())}
 	secretRef := cred.SecretRef()
 	if secretRef == nil {
-		sess, err = session.NewSession()
+		sess, err = session.NewSession(regionConfig)
 		if err != nil {
 			return nil, CreateSessionFromEnvError(err)
 		}
 	} else {
-		sess, err = getEc2SessionForCredentials(cred.Region(), *secretRef, secrets)
+		sess, err = getEc2SessionForCredentials(regionConfig, *secretRef, secrets)
 		if err != nil {
 			return nil, CreateSessionFromSecretError(err)
 		}
