@@ -44,15 +44,15 @@ func init() {
 type ApiEmitter interface {
 	Register() error
 	VirtualService() gateway_solo_io.VirtualServiceClient
-	Gateway() gateway_solo_io.GatewayClient
+	Gateway() GatewayClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
-func NewApiEmitter(virtualServiceClient gateway_solo_io.VirtualServiceClient, gatewayClient gateway_solo_io.GatewayClient) ApiEmitter {
+func NewApiEmitter(virtualServiceClient gateway_solo_io.VirtualServiceClient, gatewayClient GatewayClient) ApiEmitter {
 	return NewApiEmitterWithEmit(virtualServiceClient, gatewayClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(virtualServiceClient gateway_solo_io.VirtualServiceClient, gatewayClient gateway_solo_io.GatewayClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(virtualServiceClient gateway_solo_io.VirtualServiceClient, gatewayClient GatewayClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
 		virtualService: virtualServiceClient,
 		gateway:        gatewayClient,
@@ -63,7 +63,7 @@ func NewApiEmitterWithEmit(virtualServiceClient gateway_solo_io.VirtualServiceCl
 type apiEmitter struct {
 	forceEmit      <-chan struct{}
 	virtualService gateway_solo_io.VirtualServiceClient
-	gateway        gateway_solo_io.GatewayClient
+	gateway        GatewayClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -80,7 +80,7 @@ func (c *apiEmitter) VirtualService() gateway_solo_io.VirtualServiceClient {
 	return c.virtualService
 }
 
-func (c *apiEmitter) Gateway() gateway_solo_io.GatewayClient {
+func (c *apiEmitter) Gateway() GatewayClient {
 	return c.gateway
 }
 
@@ -108,7 +108,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	virtualServiceChan := make(chan virtualServiceListWithNamespace)
 	/* Create channel for Gateway */
 	type gatewayListWithNamespace struct {
-		list      gateway_solo_io.GatewayList
+		list      GatewayList
 		namespace string
 	}
 	gatewayChan := make(chan gatewayListWithNamespace)
@@ -176,7 +176,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			snapshots <- &sentSnapshot
 		}
 		virtualServicesByNamespace := make(map[string]gateway_solo_io.VirtualServiceList)
-		gatewaysByNamespace := make(map[string]gateway_solo_io.GatewayList)
+		gatewaysByNamespace := make(map[string]GatewayList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -211,7 +211,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				// merge lists by namespace
 				gatewaysByNamespace[namespace] = gatewayNamespacedList.list
-				var gatewayList gateway_solo_io.GatewayList
+				var gatewayList GatewayList
 				for _, gateways := range gatewaysByNamespace {
 					gatewayList = append(gatewayList, gateways...)
 				}

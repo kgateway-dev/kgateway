@@ -13,7 +13,7 @@ import (
 
 type ApiSnapshot struct {
 	VirtualServices gateway_solo_io.VirtualServiceList
-	Gateways        gateway_solo_io.GatewayList
+	Gateways        GatewayList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {

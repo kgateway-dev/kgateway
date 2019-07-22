@@ -36,7 +36,7 @@ var _ = Describe("ApiEventLoop", func() {
 		gatewayClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		gatewayClient, err := gateway_solo_io.NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err := NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		emitter = NewApiEmitter(virtualServiceClient, gatewayClient)
@@ -44,7 +44,7 @@ var _ = Describe("ApiEventLoop", func() {
 	It("runs sync function on a new snapshot", func() {
 		_, err = emitter.VirtualService().Write(gateway_solo_io.NewVirtualService(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = emitter.Gateway().Write(gateway_solo_io.NewGateway(namespace, "jerry"), clients.WriteOpts{})
+		_, err = emitter.Gateway().Write(NewGateway(namespace, "jerry"), clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		sync := &mockApiSyncer{}
 		el := NewApiEventLoop(emitter, sync)
