@@ -133,7 +133,11 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	validateEc2Endpoint := func(envoyPort uint32, substring string) {
 		// first make sure that the instance is ready (to avoid false negatives)
 		By("verifying instance is ready - if this failed, you may need to restart the EC2 instance")
-		// stitch the url together to avoid bot spam
+		// Stitch the url together to avoid bot spam
+		// The IP address corresponds to the public ip of an EC2 instance managed by Solo.io for the purpose of
+		// verifying that the EC2 upstream works as expected.
+		// The port is where the app listens for connections. The instance has been configured with an inbound traffic
+		// rule that allows port 80.
 		ec2Port := 80
 		ec2Url := fmt.Sprintf("http://%v:%v/metrics", strings.Join([]string{"52", "91", "199", "115"}, "."), ec2Port)
 		validateUrl(ec2Url, substring)
