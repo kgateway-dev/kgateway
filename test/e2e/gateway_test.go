@@ -25,7 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Gateway", func() {
+var _ = FDescribe("Gateway", func() {
 
 	var (
 		ctx            context.Context
@@ -192,7 +192,7 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy", testClients.GlooPort)
+				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
