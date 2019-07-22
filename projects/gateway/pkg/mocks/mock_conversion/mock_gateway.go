@@ -5,10 +5,11 @@
 package mock_conversion
 
 import (
-	gomock "github.com/golang/mock/gomock"
+	"reflect"
+
+	"github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2alpha1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
-	reflect "reflect"
+	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 )
 
 // MockGatewayConverter is a mock of GatewayConverter interface
@@ -34,16 +35,16 @@ func (m *MockGatewayConverter) EXPECT() *MockGatewayConverterMockRecorder {
 	return m.recorder
 }
 
-// FromV1ToV2alpha1 mocks base method
-func (m *MockGatewayConverter) FromV1ToV2alpha1(src *v1.Gateway) *v2alpha1.Gateway {
+// FromV1ToV2 mocks base method
+func (m *MockGatewayConverter) FromV1ToV2(src *v1.Gateway) *v2.Gateway {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FromV1ToV2alpha1", src)
-	ret0, _ := ret[0].(*v2alpha1.Gateway)
+	ret := m.ctrl.Call(m, "FromV1ToV2", src)
+	ret0, _ := ret[0].(*v2.Gateway)
 	return ret0
 }
 
-// FromV1ToV2alpha1 indicates an expected call of FromV1ToV2alpha1
-func (mr *MockGatewayConverterMockRecorder) FromV1ToV2alpha1(src interface{}) *gomock.Call {
+// FromV1ToV2 indicates an expected call of FromV1ToV2
+func (mr *MockGatewayConverterMockRecorder) FromV1ToV2(src interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FromV1ToV2alpha1", reflect.TypeOf((*MockGatewayConverter)(nil).FromV1ToV2alpha1), src)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FromV1ToV2", reflect.TypeOf((*MockGatewayConverter)(nil).FromV1ToV2), src)
 }

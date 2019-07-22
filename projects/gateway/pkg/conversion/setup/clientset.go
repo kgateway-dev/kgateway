@@ -3,8 +3,8 @@ package setup
 import (
 	"context"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -15,8 +15,8 @@ import (
 
 type ClientSet struct {
 	// Gateway clients
-	V1Gateway       v1.GatewayClient
-	V2alpha1Gateway v2alpha1.GatewayClient
+	V1Gateway       gatewayv1.GatewayClient
+	V2alpha1Gateway gatewayv2.GatewayClient
 }
 
 func MustClientSet(ctx context.Context) ClientSet {
@@ -26,37 +26,37 @@ func MustClientSet(ctx context.Context) ClientSet {
 
 	// Register v1 resource clients
 	v1GatewayClientFactory := &factory.KubeResourceClientFactory{
-		Crd:             v1.GatewayCrd,
+		Crd:             gatewayv1.GatewayCrd,
 		Cfg:             kubecfg,
 		SharedCache:     kubeCache,
 		SkipCrdCreation: false,
 	}
-	v1GatewayClient, err := v1.NewGatewayClient(v1GatewayClientFactory)
+	v1GatewayClient, err := gatewayv1.NewGatewayClient(v1GatewayClientFactory)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to set up v1 gateway client", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to set up gatewayv1 gateway client", zap.Error(err))
 	}
 	if err := v1GatewayClient.Register(); err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to register v1 gateway client", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to register gatewayv1 gateway client", zap.Error(err))
 	}
 
-	// Register v2alpha1 resource clients
-	v2alpha1GatewayClientFactory := &factory.KubeResourceClientFactory{
-		Crd:             v2alpha1.GatewayCrd,
+	// Register v2 resource clients
+	v2GatewayClientFactory := &factory.KubeResourceClientFactory{
+		Crd:             gatewayv2.GatewayCrd,
 		Cfg:             kubecfg,
 		SharedCache:     kubeCache,
 		SkipCrdCreation: false,
 	}
-	v2alpha1GatewayClient, err := v2alpha1.NewGatewayClient(v2alpha1GatewayClientFactory)
+	v2GatewayClient, err := gatewayv2.NewGatewayClient(v2GatewayClientFactory)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to create v2alpha1 gateway client", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to create gatewayv2 gateway client", zap.Error(err))
 	}
-	if err := v2alpha1GatewayClient.Register(); err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to register v2alpha1 gateway client", zap.Error(err))
+	if err := v2GatewayClient.Register(); err != nil {
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to register gatewayv2 gateway client", zap.Error(err))
 	}
 
 	return ClientSet{
 		V1Gateway:       v1GatewayClient,
-		V2alpha1Gateway: v2alpha1GatewayClient,
+		V2alpha1Gateway: v2GatewayClient,
 	}
 }
 

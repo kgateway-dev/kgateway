@@ -3,8 +3,8 @@ package conversion_test
 import (
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/conversion"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
@@ -16,7 +16,7 @@ import (
 var converter conversion.GatewayConverter
 
 var _ = Describe("Gateway Conversion", func() {
-	Describe("FromV1ToV2alpha1", func() {
+	Describe("FromV1ToV2", func() {
 		BeforeEach(func() {
 			converter = conversion.NewGatewayConverter()
 		})
@@ -36,7 +36,7 @@ var _ = Describe("Gateway Conversion", func() {
 				HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{ServerName: "test"},
 			}
 
-			input := &v1.Gateway{
+			input := &gatewayv1.Gateway{
 				Metadata:        metaV1,
 				Ssl:             true,
 				BindAddress:     bindAddress,
@@ -45,23 +45,22 @@ var _ = Describe("Gateway Conversion", func() {
 				VirtualServices: virtualServices,
 				Plugins:         plugins,
 			}
-			expected := &v2alpha1.Gateway{
+			expected := &gatewayv2.Gateway{
 				Metadata:      metaV2,
 				Ssl:           true,
 				BindAddress:   bindAddress,
 				BindPort:      bindPort,
 				UseProxyProto: useProxyProto,
-				GatewayType: &v2alpha1.Gateway_HttpGateway{
-					HttpGateway: &v2alpha1.HttpGateway{
+				GatewayType: &gatewayv2.Gateway_HttpGateway{
+					HttpGateway: &gatewayv2.HttpGateway{
 						VirtualServices: virtualServices,
 						Plugins:         plugins,
 					},
 				},
-				// TODO joekelley enable this
-				//GatewayProxyName: "gateway-proxy-v2",
+				GatewayProxyName: "gateway-proxy-v2",
 			}
 
-			actual := converter.FromV1ToV2alpha1(input)
+			actual := converter.FromV1ToV2(input)
 			ExpectEqualProtoMessages(actual, expected)
 		})
 	})
