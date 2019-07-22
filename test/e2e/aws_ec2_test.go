@@ -23,6 +23,40 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
+/*
+# Configure an EC2 instance for this test
+- Do this if this test ever starts to fail because the EC2 instance that it tests against has become unavailable.
+
+- Provision an EC2 instance
+  - Use an "amazon linux" image
+  - Configure the security group to allow http traffic on port 80
+
+- Tag your instance with the following tags
+  - svc: worldwide-hello
+
+- Set up your EC2 instance
+  - ssh into your instance
+  - download a demo app: an http response code echo app
+    - this app responds to requests with the corresponding response code
+      - ex: http://<my-instance-ip>/?code=404 produces a `404` response
+  - make the app executable
+  - run it in the background
+
+```bash
+wget https://mitch-solo-public.s3.amazonaws.com/echoapp2
+chmod +x echoapp2
+sudo ./echoapp2 --port 80 &
+```
+- Note: other dummy webservers will work fine - you may just need to update the path of the request
+  - Currently, we call the /metrics path during our tests
+
+- Verify that you can reach the app
+  - `curl` the app, you should see a help menu for the app
+```bash
+curl http://<instance-public-ip>/
+```
+*/
+
 var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	const region = "us-east-1"
@@ -135,6 +169,8 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		// verifying that the EC2 upstream works as expected.
 		// The port is where the app listens for connections. The instance has been configured with an inbound traffic
 		// rule that allows port 80.
+		// TODO[test enhancement] - create an EC2 instance on demand (or auto-skip the test) if the expected instance is unavailable
+		// See notes in the header of this file for instructions on how to restore the instance
 		ec2Port := 80
 		ec2Url := fmt.Sprintf("http://%v:%v/metrics", strings.Join([]string{"52", "91", "199", "115"}, "."), ec2Port)
 		validateUrl(ec2Url, substring)
