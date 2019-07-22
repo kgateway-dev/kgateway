@@ -24,6 +24,9 @@ rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices", "gateways"]
   verbs: ["*"]
+- apiGroups: ["gateway.solo.io.v2"]
+  resources: ["gateways"]
+  verbs: ["*"]
 {{- end -}}
 
 {{- end -}}

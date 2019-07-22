@@ -5,10 +5,11 @@
 package mock_v2
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	reflect "reflect"
 )
 
 // MockGatewayWatcher is a mock of GatewayWatcher interface

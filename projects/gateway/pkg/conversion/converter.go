@@ -65,7 +65,7 @@ func (c *resourceConverter) ConvertAll() error {
 		if _, err := c.v2GatewayClient.Write(convertedGateway, clients.WriteOpts{Ctx: c.ctx}); err != nil {
 			wrapped := FailedToWriteGatewayError(
 				err,
-				"gatewayv2",
+				"v2",
 				convertedGateway.GetMetadata().Namespace,
 				convertedGateway.GetMetadata().Name)
 			contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.Any("gateway", convertedGateway))

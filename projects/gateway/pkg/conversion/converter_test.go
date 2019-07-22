@@ -88,7 +88,7 @@ var _ = Describe("ResourceConverter", func() {
 			Expect(expectedErr.Error()).To(ContainSubstring(err.Error()))
 		})
 
-		It("errors if gatewayv2 gateway client errors on write", func() {
+		It("errors if v2 gateway client errors on write", func() {
 			fooV1 := getV1Gateway("foo")
 			fooV2 := getV2Gateway("foo")
 			v1Gateways := []*gatewayv1.Gateway{fooV1}
@@ -105,7 +105,7 @@ var _ = Describe("ResourceConverter", func() {
 
 			err := resourceConverter.ConvertAll()
 			Expect(err).To(HaveOccurred())
-			expectedErr := conversion.FailedToWriteGatewayError(err, "gatewayv2", namespace, "foo")
+			expectedErr := conversion.FailedToWriteGatewayError(err, "v2", namespace, "foo")
 			Expect(expectedErr.Error()).To(ContainSubstring(err.Error()))
 		})
 	})

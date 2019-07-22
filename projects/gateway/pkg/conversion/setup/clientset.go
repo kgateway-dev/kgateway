@@ -15,8 +15,8 @@ import (
 
 type ClientSet struct {
 	// Gateway clients
-	V1Gateway       gatewayv1.GatewayClient
-	V2alpha1Gateway gatewayv2.GatewayClient
+	V1Gateway gatewayv1.GatewayClient
+	V2Gateway gatewayv2.GatewayClient
 }
 
 func MustClientSet(ctx context.Context) ClientSet {
@@ -33,10 +33,10 @@ func MustClientSet(ctx context.Context) ClientSet {
 	}
 	v1GatewayClient, err := gatewayv1.NewGatewayClient(v1GatewayClientFactory)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to set up gatewayv1 gateway client", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to set up v1 gateway client", zap.Error(err))
 	}
 	if err := v1GatewayClient.Register(); err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to register gatewayv1 gateway client", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to register v1 gateway client", zap.Error(err))
 	}
 
 	// Register v2 resource clients
@@ -48,15 +48,15 @@ func MustClientSet(ctx context.Context) ClientSet {
 	}
 	v2GatewayClient, err := gatewayv2.NewGatewayClient(v2GatewayClientFactory)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to create gatewayv2 gateway client", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to create v2 gateway client", zap.Error(err))
 	}
 	if err := v2GatewayClient.Register(); err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to register gatewayv2 gateway client", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to register v2 gateway client", zap.Error(err))
 	}
 
 	return ClientSet{
-		V1Gateway:       v1GatewayClient,
-		V2alpha1Gateway: v2GatewayClient,
+		V1Gateway: v1GatewayClient,
+		V2Gateway: v2GatewayClient,
 	}
 }
 

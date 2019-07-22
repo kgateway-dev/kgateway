@@ -144,7 +144,7 @@ func (o *Gateway) DeepCopyObject() runtime.Object {
 var (
 	GatewayGVK = schema.GroupVersionKind{
 		Version: "v2",
-		Group:   "gateway.solo.io",
+		Group:   "gateway.solo.io.v2",
 		Kind:    "Gateway",
 	}
 	GatewayCrd = crd.NewCrd(

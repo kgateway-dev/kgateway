@@ -17,7 +17,7 @@ func main() {
 		ctx,
 		mustPodNamespace(ctx),
 		clientSet.V1Gateway,
-		clientSet.V2alpha1Gateway,
+		clientSet.V2Gateway,
 		conversion.NewGatewayConverter(),
 	)
 
