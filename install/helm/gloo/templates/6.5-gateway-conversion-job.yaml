@@ -23,5 +23,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
       restartPolicy: {{ .Values.gateway.conversionJob.restartPolicy }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.conversionJob.ttlSecondsAfterFinished }}
   {{- end }}

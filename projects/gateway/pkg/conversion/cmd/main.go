@@ -12,12 +12,8 @@ import (
 
 func main() {
 	ctx := contextutils.WithLogger(context.Background(), "gateway-conversion")
-	// Set v1 to served for the duration of the job.
-	crd := setup.MustSetV1ToServed(ctx)
-	defer setup.MustSetV1ToNotServed(ctx, crd)
-
 	clientSet := setup.MustClientSet(ctx)
-	gatewayLadder := conversion.NewLadder(
+	gatewayLadder := conversion.NewResourceConverter(
 		ctx,
 		mustPodNamespace(ctx),
 		clientSet.V1Gateway,
@@ -25,8 +21,8 @@ func main() {
 		conversion.NewGatewayConverter(),
 	)
 
-	if err := gatewayLadder.Climb(); err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to upgrade existing gateway resources.", zap.Error(err))
+	if err := gatewayLadder.ConvertAll(); err != nil {
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to upgrade all existing gateway resources.", zap.Error(err))
 	}
 }
 

@@ -6,9 +6,11 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/api/v2alpha1"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"go.uber.org/zap"
+	"k8s.io/client-go/rest"
 )
 
 type ClientSet struct {
@@ -19,7 +21,7 @@ type ClientSet struct {
 
 func MustClientSet(ctx context.Context) ClientSet {
 	// Get shared cache
-	kubecfg := MustKubeConfig(ctx)
+	kubecfg := mustKubeConfig(ctx)
 	kubeCache := kube.NewKubeCache(ctx)
 
 	// Register v1 resource clients
@@ -56,4 +58,12 @@ func MustClientSet(ctx context.Context) ClientSet {
 		V1Gateway:       v1GatewayClient,
 		V2alpha1Gateway: v2alpha1GatewayClient,
 	}
+}
+
+func mustKubeConfig(ctx context.Context) *rest.Config {
+	kubecfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Fatalw("Failed to get kubernetes config.", zap.Error(err))
+	}
+	return kubecfg
 }

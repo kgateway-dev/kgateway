@@ -48,7 +48,6 @@ gateway:
       repository: quay.io/solo-io/gateway-conversion
       pullPolicy: Always
     restartPolicy: Never
-    ttlSecondsAfterFinished: 60
 
 gatewayProxies:
   gateway-proxy:

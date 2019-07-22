@@ -22,7 +22,8 @@ var _ = Describe("Gateway Conversion", func() {
 		})
 
 		It("works", func() {
-			meta := core.Metadata{Namespace: "ns", Name: "n"}
+			metaV1 := core.Metadata{Namespace: "ns", Name: "n"}
+			metaV2 := core.Metadata{Namespace: "ns", Name: "n-v2"}
 			bindAddress := "test-bindaddress"
 			bindPort := uint32(100)
 			useProxyProto := &types.BoolValue{Value: true}
@@ -36,7 +37,7 @@ var _ = Describe("Gateway Conversion", func() {
 			}
 
 			input := &v1.Gateway{
-				Metadata:        meta,
+				Metadata:        metaV1,
 				Ssl:             true,
 				BindAddress:     bindAddress,
 				BindPort:        bindPort,
@@ -45,7 +46,7 @@ var _ = Describe("Gateway Conversion", func() {
 				Plugins:         plugins,
 			}
 			expected := &v2alpha1.Gateway{
-				Metadata:      meta,
+				Metadata:      metaV2,
 				Ssl:           true,
 				BindAddress:   bindAddress,
 				BindPort:      bindPort,
@@ -56,6 +57,8 @@ var _ = Describe("Gateway Conversion", func() {
 						Plugins:         plugins,
 					},
 				},
+				// TODO joekelley enable this
+				//GatewayProxyName: "gateway-proxy-v2",
 			}
 
 			actual := converter.FromV1ToV2alpha1(input)

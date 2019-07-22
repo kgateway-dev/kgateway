@@ -39,7 +39,6 @@ type PodSpec struct {
 }
 
 type JobSpec struct {
-	TtlSecondsAfterFinished int `json:"ttlSecondsAfterFinished,omitempty"`
 	*PodSpec
 }
 

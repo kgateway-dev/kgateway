@@ -20,7 +20,7 @@ func (c *gatewayConverter) FromV1ToV2alpha1(src *v1.Gateway) *v2alpha1.Gateway {
 	return &v2alpha1.Gateway{
 		Metadata: core.Metadata{
 			Namespace: src.GetMetadata().Namespace,
-			Name:      src.GetMetadata().Name,
+			Name:      src.GetMetadata().Name + "-v2",
 		},
 		Ssl:           src.Ssl,
 		BindAddress:   src.BindAddress,
@@ -32,5 +32,7 @@ func (c *gatewayConverter) FromV1ToV2alpha1(src *v1.Gateway) *v2alpha1.Gateway {
 				Plugins:         src.Plugins,
 			},
 		},
+		// TODO joekelley enable this
+		//GatewayProxyName: "gateway-proxy-v2",
 	}
 }
