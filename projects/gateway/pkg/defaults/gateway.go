@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-
 func DefaultGateway(writeNamespace string) *v2.Gateway {
 	return &v2.Gateway{
 		Metadata: core.Metadata{
