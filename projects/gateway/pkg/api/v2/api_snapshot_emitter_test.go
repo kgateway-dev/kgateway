@@ -42,7 +42,7 @@ var _ = Describe("V2Emitter", func() {
 		kube                 kubernetes.Interface
 		emitter              ApiEmitter
 		virtualServiceClient gateway_solo_io.VirtualServiceClient
-		gatewayClient        GatewayClient
+		gatewayClient        gateway_solo_io.GatewayClient
 	)
 
 	BeforeEach(func() {
@@ -64,12 +64,12 @@ var _ = Describe("V2Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 		// Gateway Constructor
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         GatewayCrd,
+			Crd:         gateway_solo_io.GatewayCrd,
 			Cfg:         cfg,
 			SharedCache: kuberc.NewKubeCache(context.TODO()),
 		}
 
-		gatewayClient, err = NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err = gateway_solo_io.NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		emitter = NewApiEmitter(virtualServiceClient, gatewayClient)
 	})
@@ -151,7 +151,7 @@ var _ = Describe("V2Emitter", func() {
 			Gateway
 		*/
 
-		assertSnapshotGateways := func(expectGateways GatewayList, unexpectGateways GatewayList) {
+		assertSnapshotGateways := func(expectGateways gateway_solo_io.GatewayList, unexpectGateways gateway_solo_io.GatewayList) {
 		drain:
 			for {
 				select {
@@ -177,32 +177,32 @@ var _ = Describe("V2Emitter", func() {
 				}
 			}
 		}
-		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		gateway1a, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, nil)
-		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		gateway1b, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
+		assertSnapshotGateways(gateway_solo_io.GatewayList{gateway1a, gateway1b}, nil)
+		gateway2a, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		gateway2b, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(gateway_solo_io.GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
 
 		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
+		assertSnapshotGateways(gateway_solo_io.GatewayList{gateway1a, gateway1b}, gateway_solo_io.GatewayList{gateway2a, gateway2b})
 
 		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
+		assertSnapshotGateways(nil, gateway_solo_io.GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
 	})
 	It("tracks snapshots on changes to any resource using AllNamespace", func() {
 		ctx := context.Background()
@@ -278,7 +278,7 @@ var _ = Describe("V2Emitter", func() {
 			Gateway
 		*/
 
-		assertSnapshotGateways := func(expectGateways GatewayList, unexpectGateways GatewayList) {
+		assertSnapshotGateways := func(expectGateways gateway_solo_io.GatewayList, unexpectGateways gateway_solo_io.GatewayList) {
 		drain:
 			for {
 				select {
@@ -304,31 +304,31 @@ var _ = Describe("V2Emitter", func() {
 				}
 			}
 		}
-		gateway1a, err := gatewayClient.Write(NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		gateway1a, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace1, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-		gateway1b, err := gatewayClient.Write(NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, nil)
-		gateway2a, err := gatewayClient.Write(NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		gateway2b, err := gatewayClient.Write(NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		gateway1b, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace2, name1), clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
+		assertSnapshotGateways(gateway_solo_io.GatewayList{gateway1a, gateway1b}, nil)
+		gateway2a, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		gateway2b, err := gatewayClient.Write(gateway_solo_io.NewGateway(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotGateways(gateway_solo_io.GatewayList{gateway1a, gateway1b, gateway2a, gateway2b}, nil)
 
 		err = gatewayClient.Delete(gateway2a.GetMetadata().Namespace, gateway2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Delete(gateway2b.GetMetadata().Namespace, gateway2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotGateways(GatewayList{gateway1a, gateway1b}, GatewayList{gateway2a, gateway2b})
+		assertSnapshotGateways(gateway_solo_io.GatewayList{gateway1a, gateway1b}, gateway_solo_io.GatewayList{gateway2a, gateway2b})
 
 		err = gatewayClient.Delete(gateway1a.GetMetadata().Namespace, gateway1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Delete(gateway1b.GetMetadata().Namespace, gateway1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		assertSnapshotGateways(nil, GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
+		assertSnapshotGateways(nil, gateway_solo_io.GatewayList{gateway1a, gateway1b, gateway2a, gateway2b})
 	})
 })
