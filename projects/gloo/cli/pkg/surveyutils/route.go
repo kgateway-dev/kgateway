@@ -62,14 +62,14 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 		return errors.Errorf("must specify one of %v", pathMatchOptions)
 	}
 
-	var headerMsgProvider = func()string {
+	var headerMsgProvider = func() string {
 		return fmt.Sprintf("Add a header matcher for this function (empty to skip)? %v", match.HeaderMatcher.Entries)
 	}
 	if err := cliutil.GetStringSliceInputLazy(headerMsgProvider, &match.HeaderMatcher.Entries); err != nil {
 		return err
 	}
 
-	var httpMsgProvider = func()string {
+	var httpMsgProvider = func() string {
 		return fmt.Sprintf("HTTP Method to match for this route (empty to skip)? %v", match.Methods)
 	}
 	if err := cliutil.GetStringSliceInputLazy(httpMsgProvider, &match.Methods); err != nil {

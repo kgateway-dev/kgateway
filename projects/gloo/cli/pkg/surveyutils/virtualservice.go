@@ -8,7 +8,7 @@ import (
 
 func AddVirtualServiceFlagsInteractive(vs *options.InputVirtualService) error {
 
-	var msgProvider = func()string {
+	var msgProvider = func() string {
 		return fmt.Sprintf("Add a domain for this virtual service (empty defaults to all domains)? Current domains %v", vs.Domains)
 	}
 
