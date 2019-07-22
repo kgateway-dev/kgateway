@@ -8,9 +8,6 @@ import (
 	"os"
 	"strings"
 
-	ec2api "github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
-
 	"github.com/solo-io/gloo/pkg/utils"
 
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
@@ -155,58 +152,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		cancel()
 	})
 
-	It("should assume role correctly", func() {
-		region := "us-east-1"
-		secretRef := secret.Metadata.Ref()
-		var filters []*glooec2.TagFilter
-		withRole := &gloov1.Upstream{
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_AwsEc2{
-					AwsEc2: &glooec2.UpstreamSpec{
-						Region:    region,
-						SecretRef: &secretRef,
-						RoleArns:  []string{roleArn},
-						Filters:   filters,
-						PublicIp:  false,
-						Port:      80,
-					},
-				},
-			},
-			Metadata: core.Metadata{Name: "with-role", Namespace: "default"},
-		}
-		withOutRole := &gloov1.Upstream{
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_AwsEc2{
-					AwsEc2: &glooec2.UpstreamSpec{
-						Region:    region,
-						SecretRef: &secretRef,
-						Filters:   filters,
-						PublicIp:  false,
-						Port:      80,
-					},
-				},
-			},
-			Metadata: core.Metadata{Name: "without-role", Namespace: "default"},
-		}
-
-		By("should error when no role provided")
-		svcWithout, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withOutRole.UpstreamSpec.GetAwsEc2()), gloov1.SecretList{secret})
-		Expect(err).NotTo(HaveOccurred())
-		_, err = svcWithout.DescribeInstances(&ec2api.DescribeInstancesInput{})
-		Expect(err).To(HaveOccurred())
-
-		By("should succeed when role provided")
-		svc, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withRole.UpstreamSpec.GetAwsEc2()), gloov1.SecretList{secret})
-		Expect(err).NotTo(HaveOccurred())
-		result, err := svc.DescribeInstances(&ec2api.DescribeInstancesInput{})
-		Expect(err).NotTo(HaveOccurred())
-		instances := ec2.GetInstancesFromDescription(result)
-		// quick and dirty way to verify that we got some results
-		// TODO(mitchdraft) validate output more thoroughly
-		Expect(len(instances)).To(BeNumerically(">", 0))
-	})
-
-	// need to configure EC2 instances before running this
+	// NOTE: you need to configure EC2 instances before running this
 	It("be able to call upstream function", func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
