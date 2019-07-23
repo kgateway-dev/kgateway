@@ -45,7 +45,7 @@ func NewResourceConverter(
 	v1GatewayClient gatewayv1.GatewayClient,
 	v2GatewayClient gatewayv2.GatewayClient,
 	gatewayConverter GatewayConverter,
-) ResourceConverter {
+) *resourceConverter {
 
 	return &resourceConverter{
 		namespace:        namespace,

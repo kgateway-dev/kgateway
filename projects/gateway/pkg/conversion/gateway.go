@@ -19,12 +19,22 @@ func NewGatewayConverter() GatewayConverter {
 }
 
 func (c *gatewayConverter) FromV1ToV2(src *gatewayv1.Gateway) *gatewayv2.Gateway {
+	srcMeta := src.GetMetadata()
+	dstMeta := core.Metadata{
+		Namespace:   srcMeta.Namespace,
+		Name:        srcMeta.Name,
+		Cluster:     srcMeta.Cluster,
+		Labels:      srcMeta.Labels,
+		Annotations: srcMeta.Annotations,
+	}
+
+	if dstMeta.Annotations == nil {
+		dstMeta.Annotations = make(map[string]string, 1)
+	}
+	dstMeta.Annotations[defaults.OriginKey] = defaults.ConvertedValue
+
 	return &gatewayv2.Gateway{
-		Metadata: core.Metadata{
-			Namespace:   src.GetMetadata().Namespace,
-			Name:        src.GetMetadata().Name,
-			Annotations: map[string]string{defaults.OriginKey: defaults.ConvertedValue},
-		},
+		Metadata:      dstMeta,
 		Ssl:           src.Ssl,
 		BindAddress:   src.BindAddress,
 		BindPort:      src.BindPort,
