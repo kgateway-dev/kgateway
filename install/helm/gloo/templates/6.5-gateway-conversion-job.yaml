@@ -1,5 +1,5 @@
 {{- if .Values.gateway.enabled }}
-{{- if .Values.gateway.conversionJob }}
+{{- if .Values.gateway.upgrade }}
 apiVersion: batch/v1
 kind: Job
 metadata:
