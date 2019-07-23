@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: EC2 upstream should default to port 80.
+    issueLink: https://github.com/solo-io/gloo/issues/873

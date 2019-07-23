@@ -138,7 +138,7 @@ func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upst
 	endpoint := v1.Endpoint{
 		Upstreams: []*core.ResourceRef{&ref},
 		Address:   aws.StringValue(ipAddr),
-		Port:      upstream.UpstreamSpec.GetAwsEc2().GetPort(),
+		Port:      port,
 		Metadata: core.Metadata{
 			Name:      generateName(ref, aws.StringValue(ipAddr)),
 			Namespace: writeNamespace,
