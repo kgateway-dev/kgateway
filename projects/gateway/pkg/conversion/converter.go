@@ -54,7 +54,7 @@ func NewResourceConverter(
 func (c *resourceConverter) ConvertAll() error {
 	v1List, err := c.v1GatewayClient.List(c.namespace, clients.ListOpts{Ctx: c.ctx})
 	if err != nil {
-		wrapped := FailedToListGatewayResourcesError(err, "gatewayv1", c.namespace)
+		wrapped := FailedToListGatewayResourcesError(err, "v1", c.namespace)
 		contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.String("namespace", c.namespace))
 		return wrapped
 	}
@@ -71,7 +71,7 @@ func (c *resourceConverter) ConvertAll() error {
 			contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.Any("gateway", convertedGateway))
 			writeErrors = multierror.Append(writeErrors, wrapped)
 		} else {
-			contextutils.LoggerFrom(c.ctx).Infow("Successfully wrote gatewayv2 gateway", zap.Any("gateway", convertedGateway))
+			contextutils.LoggerFrom(c.ctx).Infow("Successfully wrote v2 gateway", zap.Any("gateway", convertedGateway))
 		}
 	}
 	return writeErrors.ErrorOrNil()
