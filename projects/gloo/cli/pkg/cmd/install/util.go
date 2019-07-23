@@ -45,7 +45,7 @@ func init() {
 	GlooInstallKinds = append(GlooSystemKinds, GlooRbacKinds...)
 
 	GlooCrdNames = []string{
-		"gateways.gateway.solo.io",
+		"gateways.gateway.solo.io.v2",
 		"proxies.gloo.solo.io",
 		"settings.gloo.solo.io",
 		"upstreams.gloo.solo.io",
