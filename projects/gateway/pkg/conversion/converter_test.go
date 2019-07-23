@@ -58,7 +58,7 @@ var _ = Describe("ResourceConverter", func() {
 			v1GatewayClient = mock_v1.NewMockGatewayClient(mockCtrl)
 			v2GatewayClient = mock_v2.NewMockGatewayClient(mockCtrl)
 			gatewayConverter = mock_conversion.NewMockGatewayConverter(mockCtrl)
-			resourceConverter = conversion.NewResourceConverter(context.TODO(), namespace, v1GatewayClient, v2GatewayClient, gatewayConverter)
+			resourceConverter = conversion.NewResourceConverter(namespace, v1GatewayClient, v2GatewayClient, gatewayConverter)
 
 			fooV1 = getV1Gateway("foo")
 			barV1 = getV1Gateway("bar")
@@ -96,7 +96,7 @@ var _ = Describe("ResourceConverter", func() {
 					Write(barV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: false}).
 					Return(barV2, nil)
 
-				err := resourceConverter.ConvertAll()
+				err := resourceConverter.ConvertAll(context.TODO())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -126,7 +126,7 @@ var _ = Describe("ResourceConverter", func() {
 					Write(barV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: false}).
 					Return(barV2, nil)
 
-				err := resourceConverter.ConvertAll()
+				err := resourceConverter.ConvertAll(context.TODO())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -153,7 +153,7 @@ var _ = Describe("ResourceConverter", func() {
 					Write(barV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: false}).
 					Return(barV2, nil)
 
-				err := resourceConverter.ConvertAll()
+				err := resourceConverter.ConvertAll(context.TODO())
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -164,7 +164,7 @@ var _ = Describe("ResourceConverter", func() {
 					List(namespace, clients.ListOpts{Ctx: context.TODO()}).
 					Return(nil, testErr)
 
-				err := resourceConverter.ConvertAll()
+				err := resourceConverter.ConvertAll(context.TODO())
 				Expect(err).To(HaveOccurred())
 				expectedErr := conversion.FailedToListGatewayResourcesError(err, "gatewayv1", namespace)
 				Expect(expectedErr.Error()).To(ContainSubstring(err.Error()))
@@ -183,7 +183,7 @@ var _ = Describe("ResourceConverter", func() {
 					Read(namespace, "foo", clients.ReadOpts{Ctx: context.TODO()}).
 					Return(nil, testErr)
 
-				err := resourceConverter.ConvertAll()
+				err := resourceConverter.ConvertAll(context.TODO())
 				Expect(err).To(HaveOccurred())
 				expectedErr := conversion.FailedToReadExistingGatewayError(err, "v2", namespace, "foo")
 				Expect(expectedErr.Error()).To(ContainSubstring(err.Error()))
@@ -205,7 +205,7 @@ var _ = Describe("ResourceConverter", func() {
 					Write(fooV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: false}).
 					Return(nil, testErr)
 
-				err := resourceConverter.ConvertAll()
+				err := resourceConverter.ConvertAll(context.TODO())
 				Expect(err).To(HaveOccurred())
 				expectedErr := conversion.FailedToWriteGatewayError(err, "v2", namespace, "foo")
 				Expect(expectedErr.Error()).To(ContainSubstring(err.Error()))

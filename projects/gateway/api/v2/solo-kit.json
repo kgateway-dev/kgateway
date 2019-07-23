@@ -11,8 +11,7 @@
       },
       {
         "name": "Gateway",
-        "package": "gateway.solo.io.v2",
-        "version": "v2"
+        "package": "gateway.solo.io.v2"
       }
     ]
   }

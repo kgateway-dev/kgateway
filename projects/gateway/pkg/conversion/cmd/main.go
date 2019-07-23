@@ -14,14 +14,13 @@ func main() {
 	ctx := contextutils.WithLogger(context.Background(), "gateway-conversion")
 	clientSet := setup.MustClientSet(ctx)
 	resourceConverter := conversion.NewResourceConverter(
-		ctx,
 		mustPodNamespace(ctx),
 		clientSet.V1Gateway,
 		clientSet.V2Gateway,
 		conversion.NewGatewayConverter(),
 	)
 
-	if err := resourceConverter.ConvertAll(); err != nil {
+	if err := resourceConverter.ConvertAll(ctx); err != nil {
 		contextutils.LoggerFrom(ctx).Fatalw("Failed to upgrade all existing gateway resources.", zap.Error(err))
 	}
 }
@@ -29,7 +28,7 @@ func main() {
 func mustPodNamespace(ctx context.Context) string {
 	namespace := os.Getenv("POD_NAMESPACE")
 	if namespace == "" {
-		contextutils.LoggerFrom(ctx).Fatalw("POD_NAMESPACE is not set.")
+		contextutils.LoggerFrom(ctx).Fatal("POD_NAMESPACE is not set.")
 	}
 	return namespace
 }

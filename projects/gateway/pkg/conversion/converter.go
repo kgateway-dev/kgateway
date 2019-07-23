@@ -30,11 +30,10 @@ var (
 )
 
 type ResourceConverter interface {
-	ConvertAll() error
+	ConvertAll(ctx context.Context) error
 }
 
 type resourceConverter struct {
-	ctx              context.Context
 	namespace        string
 	v1GatewayClient  gatewayv1.GatewayClient
 	v2GatewayClient  gatewayv2.GatewayClient
@@ -42,7 +41,6 @@ type resourceConverter struct {
 }
 
 func NewResourceConverter(
-	ctx context.Context,
 	namespace string,
 	v1GatewayClient gatewayv1.GatewayClient,
 	v2GatewayClient gatewayv2.GatewayClient,
@@ -50,7 +48,6 @@ func NewResourceConverter(
 ) ResourceConverter {
 
 	return &resourceConverter{
-		ctx:              ctx,
 		namespace:        namespace,
 		v1GatewayClient:  v1GatewayClient,
 		v2GatewayClient:  v2GatewayClient,
@@ -58,11 +55,11 @@ func NewResourceConverter(
 	}
 }
 
-func (c *resourceConverter) ConvertAll() error {
-	v1List, err := c.v1GatewayClient.List(c.namespace, clients.ListOpts{Ctx: c.ctx})
+func (c *resourceConverter) ConvertAll(ctx context.Context) error {
+	v1List, err := c.v1GatewayClient.List(c.namespace, clients.ListOpts{Ctx: ctx})
 	if err != nil {
 		wrapped := FailedToListGatewayResourcesError(err, "v1", c.namespace)
-		contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.String("namespace", c.namespace))
+		contextutils.LoggerFrom(ctx).Errorw(wrapped.Error(), zap.Error(err), zap.String("namespace", c.namespace))
 		return wrapped
 	}
 
@@ -71,14 +68,14 @@ func (c *resourceConverter) ConvertAll() error {
 		convertedGateway := c.gatewayConverter.FromV1ToV2(oldGateway)
 
 		overwriteExisting := false
-		existing, err := c.v2GatewayClient.Read(c.namespace, convertedGateway.GetMetadata().Name, clients.ReadOpts{Ctx: c.ctx})
+		existing, err := c.v2GatewayClient.Read(c.namespace, convertedGateway.GetMetadata().Name, clients.ReadOpts{Ctx: ctx})
 		if err != nil && !sk_errors.IsNotExist(err) {
 			wrapped := FailedToReadExistingGatewayError(
 				err,
 				"v2",
 				convertedGateway.GetMetadata().Namespace,
 				convertedGateway.GetMetadata().Name)
-			contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err))
+			contextutils.LoggerFrom(ctx).Errorw(wrapped.Error(), zap.Error(err))
 			errs = multierror.Append(errs, wrapped)
 			continue
 		} else if existing != nil {
@@ -87,7 +84,7 @@ func (c *resourceConverter) ConvertAll() error {
 				msg := fmt.Sprintf("Not writing converted gateway %v.%v: already written as converted.",
 					existing.GetMetadata().Namespace,
 					existing.GetMetadata().Name)
-				contextutils.LoggerFrom(c.ctx).Info(msg)
+				contextutils.LoggerFrom(ctx).Info(msg)
 				continue
 			}
 			if existing.Metadata.Annotations[defaults.OriginKey] == defaults.DefaultValue {
@@ -96,16 +93,16 @@ func (c *resourceConverter) ConvertAll() error {
 			}
 		}
 
-		if _, err := c.v2GatewayClient.Write(convertedGateway, clients.WriteOpts{Ctx: c.ctx, OverwriteExisting: overwriteExisting}); err != nil {
+		if _, err := c.v2GatewayClient.Write(convertedGateway, clients.WriteOpts{Ctx: ctx, OverwriteExisting: overwriteExisting}); err != nil {
 			wrapped := FailedToWriteGatewayError(
 				err,
 				"v2",
 				convertedGateway.GetMetadata().Namespace,
 				convertedGateway.GetMetadata().Name)
-			contextutils.LoggerFrom(c.ctx).Errorw(wrapped.Error(), zap.Error(err), zap.Any("gateway", convertedGateway))
+			contextutils.LoggerFrom(ctx).Errorw(wrapped.Error(), zap.Error(err), zap.Any("gateway", convertedGateway))
 			errs = multierror.Append(errs, wrapped)
 		} else {
-			contextutils.LoggerFrom(c.ctx).Infow("Successfully wrote v2 gateway", zap.Any("gateway", convertedGateway))
+			contextutils.LoggerFrom(ctx).Infow("Successfully wrote v2 gateway", zap.Any("gateway", convertedGateway))
 		}
 	}
 	return errs.ErrorOrNil()
