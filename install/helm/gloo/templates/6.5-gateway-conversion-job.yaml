@@ -1,4 +1,5 @@
 {{- if .Values.gateway.enabled }}
+{{- if .Values.gateway.upgrade }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -23,4 +24,5 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
       restartPolicy: {{ .Values.gateway.conversionJob.restartPolicy }}
-  {{- end }}
+{{- end }}
+{{- end }}
