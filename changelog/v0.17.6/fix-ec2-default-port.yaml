@@ -2,3 +2,6 @@ changelog:
   - type: FIX
     description: EC2 upstream should default to port 80.
     issueLink: https://github.com/solo-io/gloo/issues/873
+  - type: FIX
+    description: glooctl should display EC2 type name.
+    issueLink: https://github.com/solo-io/gloo/issues/874
