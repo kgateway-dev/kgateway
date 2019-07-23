@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
+	"go.uber.org/zap"
 )
 
 const (
@@ -60,7 +61,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 
 		tcpFilter, err := tcpProxyFilter(params, tcpHost, tcpListener.GetPlugins())
 		if err != nil {
-			logger.Debug(err, "could not compute tcp proxy filter for %v", tcpHost)
+			logger.Errorw("could not compute tcp proxy filter", zap.Error(err), zap.Any("tcpHost", tcpHost))
 			continue
 		}
 
@@ -68,7 +69,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 
 		filterChain, err := p.computerTcpFilterChain(params.Snapshot, in, listenerFilters, tcpHost)
 		if err != nil {
-			logger.Debug(err, "could not compute tcp filter chain for %v", tcpHost)
+			logger.Errorw("could not compute tcp proxy filter", zap.Error(err), zap.Any("tcpHost", tcpHost))
 			continue
 		}
 		filterChains = append(filterChains, filterChain)
