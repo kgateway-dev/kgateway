@@ -54,6 +54,18 @@ spec:
           protocol: TCP
 {{- with .Values.ingressProxy.deployment.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
+        readinessProbe:
+          httpGet:
+            port: 19000
+            path: /ready
+          initialDelaySeconds: 1
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            port: 19000
+            path: /server_info
+          initialDelaySeconds: 1
+          periodSeconds: 10
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
