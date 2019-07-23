@@ -2,6 +2,7 @@ package options
 
 import (
 	"context"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -76,10 +77,6 @@ type Delete struct {
 
 type Create struct {
 	VirtualService InputVirtualService
-	InputUpstream  InputUpstream
-	InputSecret    Secret
-	DryRun         bool // print resource as a kubernetes style yaml and exit without writing to storage
-	PrintYaml      bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
@@ -117,6 +114,10 @@ type RoutePlugins struct {
 
 type PrefixRewrite struct {
 	Value *string
+}
+
+type InputUpstreamGroup struct {
+    WeightedDestinations[] v1.WeightedDestination
 }
 
 func (p *PrefixRewrite) String() string {

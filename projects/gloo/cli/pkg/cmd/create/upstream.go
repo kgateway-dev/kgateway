@@ -163,6 +163,7 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 		UpstreamSpec: spec,
 	}, nil
 }
+
 func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error) {
 	svcSpec, err := serviceSpecFromOpts(input.ServiceSpec)
 	if err != nil {

@@ -128,6 +128,25 @@ func ChooseFromList(message string, choice *string, options []string) error {
 	return nil
 }
 
+func MultiChooseFromList(message string, choices *[]string, options []string) error {
+	if len(options) == 0 {
+		return fmt.Errorf("No options to select from (for prompt: %v)", message)
+	}
+
+	question := &survey.MultiSelect{
+		Message: message,
+		Options: options,
+	}
+
+	if err := AskOne(question, choices, survey.Required); err != nil {
+		// this should not error
+		fmt.Println("error with input")
+		return err
+	}
+
+	return nil
+}
+
 func ChooseBool(message string, target *bool) error {
 
 	yes, no := "yes", "no"

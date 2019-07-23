@@ -35,7 +35,7 @@ var _ = Describe("Plugin", func() {
 		plugin.Init(plugins.InitParams{})
 		upstreamName := "up"
 		clusterName := upstreamName
-		funcname := "foo"
+		funcName := "foo"
 		upstream = &v1.Upstream{
 			Metadata: core.Metadata{
 				Name: upstreamName,
@@ -46,7 +46,7 @@ var _ = Describe("Plugin", func() {
 				UpstreamType: &v1.UpstreamSpec_Aws{
 					Aws: &aws.UpstreamSpec{
 						LambdaFunctions: []*aws.LambdaFunctionSpec{{
-							LogicalName:        funcname,
+							LogicalName:        funcName,
 							LambdaFunctionName: "foo",
 							Qualifier:          "v1",
 						}},
@@ -73,7 +73,7 @@ var _ = Describe("Plugin", func() {
 							DestinationSpec: &v1.DestinationSpec{
 								DestinationType: &v1.DestinationSpec_Aws{
 									Aws: &awsapi.DestinationSpec{
-										LogicalName: funcname,
+										LogicalName: funcName,
 									},
 								},
 							},
