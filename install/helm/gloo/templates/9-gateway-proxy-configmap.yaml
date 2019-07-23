@@ -110,4 +110,4 @@ data:
           port_value: 19000
 {{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} # if (empty $spec.configMap.data) ## allows full custom
 {{- end }} # range $name, $spec := .Values.gatewayProxies
-{{- end }} # if .Values.gateway.enabled
+{{- end -}} # if .Values.gateway.enabled
