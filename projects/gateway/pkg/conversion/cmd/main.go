@@ -37,12 +37,17 @@ func main() {
 	}()
 
 	go func() {
-		if err := resourceConverter.ConvertAll(ctx); err != nil {
-			contextutils.LoggerFrom(ctx).Errorw("Error encountered while upgrading gateway resources", zap.Error(err))
-			exit <- 1
-			return
+		attemptCount := 5
+		for i := 0; i < attemptCount; i++ {
+			if err := resourceConverter.ConvertAll(ctx); err != nil {
+				contextutils.LoggerFrom(ctx).Errorw("Error encountered while upgrading gateway resources", zap.Error(err))
+			} else {
+				exit <- 0
+				return
+			}
 		}
-		exit <- 0
+		contextutils.LoggerFrom(ctx).Errorw("Failed to convert all v1 resources after %v attempts", attemptCount)
+		exit <- 1
 	}()
 
 	os.Exit(<-exit)
