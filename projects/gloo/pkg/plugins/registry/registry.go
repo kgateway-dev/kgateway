@@ -52,8 +52,8 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient))
 	}
-	if opts.ConsulClient != nil {
-		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulClient))
+	if opts.ConsulWatcher != nil {
+		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulWatcher))
 	}
 	for _, pluginExtension := range pluginExtensions {
 		reg.plugins = append(reg.plugins, pluginExtension)

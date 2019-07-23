@@ -17,8 +17,6 @@ var ForbiddenDataCenterErr = func(dataCenter string) error {
 // TODO(marco): consider adding ctx to signatures instead on relying on caller to set it
 // Wrap the Consul API in an interface to allow mocking
 type ConsulClient interface {
-	// Returns false if no connection to the Consul agent can be established
-	CanConnect() bool
 	// DataCenters is used to query for all the known data centers.
 	// Results will be filtered based on the data center whitelist provided in the Gloo settings.
 	DataCenters() ([]string, error)
@@ -30,26 +28,15 @@ type ConsulClient interface {
 	Connect(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error)
 }
 
-func NewConsulClient(settings *v1.Settings) (ConsulClient, error) {
-	consulConfig := consulapi.DefaultConfig()
-
-	// If present, apply custom config
-	var dataCenters map[string]bool
-	if settings != nil && settings.Consul != nil {
-		var err error
-		consulConfig, dataCenters, err = apply(settings.Consul, consulConfig)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to configure Consul client")
-		}
+func NewConsulClient(client *consulapi.Client, dataCenters []string) (ConsulClient, error) {
+	dcMap := make(map[string]bool)
+	for _, dc := range dataCenters {
+		dcMap[dc] = true
 	}
 
-	client, err := consulapi.NewClient(consulConfig)
-	if err != nil {
-		return nil, err
-	}
 	return &consul{
 		api:         client,
-		dataCenters: dataCenters,
+		dataCenters: dcMap,
 	}, nil
 }
 
@@ -57,11 +44,6 @@ type consul struct {
 	api *consulapi.Client
 	// Whitelist of data centers to consider when querying the agent
 	dataCenters map[string]bool
-}
-
-func (c *consul) CanConnect() bool {
-	_, err := c.api.Catalog().Datacenters()
-	return err == nil
 }
 
 func (c *consul) DataCenters() ([]string, error) {
@@ -96,8 +78,8 @@ func (c *consul) Connect(service, tag string, q *consulapi.QueryOptions) ([]*con
 // Applies the given settings to the default configuration
 func apply(cfg *v1.Settings_ConsulConfiguration, defaultCfg *consulapi.Config) (*consulapi.Config, map[string]bool, error) {
 
-	if cfg.Address != nil {
-		defaultCfg.Address = cfg.Address.Value
+	if cfg.Address != "" {
+		defaultCfg.Address = cfg.Address
 	}
 
 	if cfg.WaitTime != nil {
@@ -109,8 +91,10 @@ func apply(cfg *v1.Settings_ConsulConfiguration, defaultCfg *consulapi.Config) (
 	}
 
 	dataCenters := make(map[string]bool)
-	for _, dc := range cfg.DataCenters {
-		dataCenters[dc] = true
+	if cfg.GetServiceDiscovery() != nil {
+		for _, dc := range cfg.GetServiceDiscovery().GetDataCenters() {
+			dataCenters[dc] = true
+		}
 	}
 
 	return defaultCfg, dataCenters, nil
