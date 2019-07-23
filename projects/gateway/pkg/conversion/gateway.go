@@ -4,6 +4,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -20,8 +21,9 @@ func NewGatewayConverter() GatewayConverter {
 func (c *gatewayConverter) FromV1ToV2(src *gatewayv1.Gateway) *gatewayv2.Gateway {
 	return &gatewayv2.Gateway{
 		Metadata: core.Metadata{
-			Namespace: src.GetMetadata().Namespace,
-			Name:      src.GetMetadata().Name,
+			Namespace:   src.GetMetadata().Namespace,
+			Name:        src.GetMetadata().Name,
+			Annotations: map[string]string{defaults.OriginKey: defaults.ConvertedValue},
 		},
 		Ssl:           src.Ssl,
 		BindAddress:   src.BindAddress,

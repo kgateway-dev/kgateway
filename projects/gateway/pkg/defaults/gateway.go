@@ -13,8 +13,9 @@ import (
 func DefaultGateway(writeNamespace string) *v2.Gateway {
 	return &v2.Gateway{
 		Metadata: core.Metadata{
-			Name:      "gateway",
-			Namespace: writeNamespace,
+			Name:        "gateway",
+			Namespace:   writeNamespace,
+			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},
 		GatewayProxyName: translator.GatewayProxyName,
 		GatewayType: &v2.Gateway_HttpGateway{
@@ -40,8 +41,9 @@ func DefaultSslGateway(writeNamespace string) *v2.Gateway {
 func DefaultTcpGateway(writeNamespace string) *v2.Gateway {
 	return &v2.Gateway{
 		Metadata: core.Metadata{
-			Name:      "gateway-tcp",
-			Namespace: writeNamespace,
+			Name:        "gateway-tcp",
+			Namespace:   writeNamespace,
+			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},
 		GatewayType: &v2.Gateway_TcpGateway{
 			TcpGateway: &v2.TcpGateway{},
