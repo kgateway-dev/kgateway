@@ -55,6 +55,8 @@ func NewResourceConverter(
 	}
 }
 
+var _ ResourceConverter = new(resourceConverter)
+
 func (c *resourceConverter) ConvertAll(ctx context.Context) error {
 	v1List, err := c.v1GatewayClient.List(c.namespace, clients.ListOpts{Ctx: ctx})
 	if err != nil {

@@ -17,7 +17,7 @@ func main() {
 	ctx := contextutils.WithLogger(context.Background(), "gateway-conversion")
 	clientSet := setup.MustClientSet(ctx)
 
-	var resourceConverter conversion.ResourceConverter = conversion.NewResourceConverter(
+	resourceConverter := conversion.NewResourceConverter(
 		mustPodNamespace(ctx),
 		clientSet.V1Gateway,
 		clientSet.V2Gateway,
