@@ -208,10 +208,11 @@ func getRestDestinationSpecInteractive(spec *options.RestDestinationSpec, restSp
 	); err != nil {
 		return err
 	}
-	if err := cliutil.GetStringSliceInput(
-		fmt.Sprintf("Add a header parameter for this function (empty to skip)? %v", spec.Parameters.Entries),
-		&spec.Parameters.Entries,
-	); err != nil {
+
+	var headerMsgProvider = func() string {
+		return fmt.Sprintf("Add a header parameter for this function (empty to skip)? %v", spec.Parameters.Entries)
+	}
+	if err := cliutil.GetStringSliceInputLazy(headerMsgProvider, &spec.Parameters.Entries); err != nil {
 		return err
 	}
 
