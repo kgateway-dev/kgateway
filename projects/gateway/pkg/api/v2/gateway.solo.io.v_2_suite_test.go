@@ -18,9 +18,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func TestGatewaysoloio(t *testing.T) {
+func TestGatewaysoloiov2(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Gatewaysoloio Suite")
+	RunSpecs(t, "Gatewaysoloiov2 Suite")
 }
 
 var (

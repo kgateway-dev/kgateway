@@ -2,7 +2,7 @@
 // Source: github.com/solo-io/gloo/projects/gateway/pkg/api/v1 (interfaces: GatewayClient)
 
 // Package mocks is a generated GoMock package.
-package mocks
+package mock_v1
 
 import (
 	reflect "reflect"
