@@ -102,7 +102,7 @@ func getStaticInteractive(static *options.InputStaticSpec) error {
 	var upstreamMsgProvider = func() string {
 		return fmt.Sprintf("Add another host for this upstream (empty to skip)? %v", static.Hosts)
 	}
-	if err := cliutil.GetStringSliceInputLazy(upstreamMsgProvider, &static.Hosts); err != nil {
+	if err := cliutil.GetStringSliceInputLazyPrompt(upstreamMsgProvider, &static.Hosts); err != nil {
 		return err
 	}
 	return nil

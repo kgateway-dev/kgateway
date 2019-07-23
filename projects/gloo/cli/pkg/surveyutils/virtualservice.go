@@ -13,7 +13,7 @@ func AddVirtualServiceFlagsInteractive(vs *options.InputVirtualService) error {
 		return fmt.Sprintf("Add a domain for this virtual service (empty defaults to all domains)? Current domains %v", vs.Domains)
 	}
 
-	if err := cliutil.GetStringSliceInputLazy(msgProvider, &vs.Domains); err != nil {
+	if err := cliutil.GetStringSliceInputLazyPrompt(msgProvider, &vs.Domains); err != nil {
 		return err
 	}
 

@@ -21,15 +21,15 @@ func GetYesInput(msg string) (bool, error) {
 	return strings.ToLower(yesAnswer) == "y", nil
 }
 
-func GetStringInputLazy(msgProvider func() string, value *string) error {
-	return GetStringInputDefaultLazy(msgProvider, value, "")
+func GetStringInputLazyPrompt(msgProvider func() string, value *string) error {
+	return GetStringInputDefaultLazyPrompt(msgProvider, value, "")
 }
 
 func GetStringInput(msg string, value *string) error {
 	return GetStringInputDefault(msg, value, "")
 }
 
-func GetStringInputDefaultLazy(msgProvider func() string, value *string, defaultValue string) error {
+func GetStringInputDefaultLazyPrompt(msgProvider func() string, value *string, defaultValue string) error {
 	prompt := &survey.Input{Message: msgProvider(), Default: defaultValue}
 	if err := AskOne(prompt, value, nil); err != nil {
 		return err
@@ -81,10 +81,10 @@ func GetBoolInputDefault(msg string, value *bool, defaultValue bool) error {
 	return nil
 }
 
-func GetStringSliceInputLazy(msgProvider func() string, value *[]string) error {
+func GetStringSliceInputLazyPrompt(msgProvider func() string, value *[]string) error {
 	for {
 		var entry string
-		if err := GetStringInputLazy(msgProvider, &entry); err != nil {
+		if err := GetStringInputLazyPrompt(msgProvider, &entry); err != nil {
 			return err
 		}
 
