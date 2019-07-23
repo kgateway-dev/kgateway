@@ -1,5 +1,9 @@
 package generate
 
+import (
+	appsv1 "k8s.io/api/core/v1"
+)
+
 type Config struct {
 	Namespace      *Namespace              `json:"namespace,omitempty"`
 	Rbac           *Rbac                   `json:"rbac,omitempty"`
@@ -109,14 +113,16 @@ type DaemonSetSpec struct {
 }
 
 type GatewayProxyPodTemplate struct {
-	Image            *Image            `json:"image,omitempty"`
-	HttpPort         string            `json:"httpPort,omitempty"`
-	HttpsPort        string            `json:"httpsPort,omitempty"`
-	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
-	NodeName         string            `json:"nodeName,omitempty"`
-	NodeSelector     map[string]string `json:"nodeSelector,omitempty"`
-	Stats            bool              `json:"stats"`
+	Image            *Image               `json:"image,omitempty"`
+	HttpPort         string               `json:"httpPort,omitempty"`
+	HttpsPort        string               `json:"httpsPort,omitempty"`
+	ExtraPorts       []interface{}        `json:"extraPorts,omitempty"`
+	ExtraAnnotations map[string]string    `json:"extraAnnotations,omitempty"`
+	NodeName         string               `json:"nodeName,omitempty"`
+	NodeSelector     map[string]string    `json:"nodeSelector,omitempty"`
+	Stats            bool                 `json:"stats"`
+	Tolerations      []*appsv1.Toleration `json:"tolerations,omitEmpty"`
+
 	*DeploymentSpec
 }
 
