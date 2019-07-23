@@ -47,9 +47,7 @@ func upstreamType(up *v1.Upstream) string {
 
 	switch up.UpstreamSpec.UpstreamType.(type) {
 	case *v1.UpstreamSpec_Aws:
-		return "AWS"
-		// TODO[next breaking change]
-		//return "AWS Lambda"
+		return "AWS Lambda"
 	case *v1.UpstreamSpec_Azure:
 		return "Azure"
 	case *v1.UpstreamSpec_Consul:
