@@ -137,6 +137,7 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 "clientKey": string
 "tlsServerName": string
 "insecure": .google.protobuf.BoolValue
+"rootKey": string
 
 ```
 
@@ -149,6 +150,7 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 | `clientKey` | `string` | clientKey is the path to the private key for Vault communication |  |
 | `tlsServerName` | `string` | tlsServerName, if set, is used to set the SNI host when connecting via TLS. |  |
 | `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Insecure enables or disables SSL verification |  |
+| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo` |  |
 
 
 

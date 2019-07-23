@@ -99,6 +99,11 @@ message Settings {
 
         // Insecure enables or disables SSL verification
         google.protobuf.BoolValue insecure = 7;
+
+        // all keys stored in Vault will begin with this Vault
+        // this can be used to run multiple instances of Gloo against the same Consul cluster
+        // defaults to `gloo`
+        string root_key = 8;
     }
 
     // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.

@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	consulapi "github.com/hashicorp/consul/api"
+	vaultapi "github.com/hashicorp/vault/api"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -21,7 +22,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const ConsulRootKey = "gloo"
+// used for vault and consul key-value storage
+const RootKey = "gloo"
 
 type ConfigFactoryParams struct {
 	Settings *v1.Settings
@@ -98,7 +100,7 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 		consulClient := params.Consul.ConsulClient
 		rootKey := source.ConsulKvSource.GetRootKey()
 		if rootKey == "" {
-			rootKey = ConsulRootKey
+			rootKey = RootKey
 		}
 		return &factory.ConsulResourceClientFactory{
 			Consul:  consulClient,
@@ -149,6 +151,7 @@ func SecretFactoryForSettings(ctx context.Context,
 	cfg **rest.Config,
 	clientset *kubernetes.Interface,
 	kubeCoreCache *cache.KubeCoreCache,
+	vaultClient *vaultapi.Client,
 	pluralName string) (factory.ResourceClientFactory, error) {
 	if settings.SecretSource == nil {
 		if sharedCache == nil {
@@ -170,6 +173,14 @@ func SecretFactoryForSettings(ctx context.Context,
 			SecretConverter: new(kubeconverters.TLSSecretConverter),
 		}, nil
 	case *v1.Settings_VaultSecretSource:
+		rootKey := source.VaultSecretSource.GetRootKey()
+		if rootKey == "" {
+			rootKey = RootKey
+		}
+		return &factory.VaultSecretClientFactory{
+			Vault:   vaultClient,
+			RootKey: rootKey,
+		}, nil
 		return nil, errors.Errorf("vault configuration not implemented")
 	case *v1.Settings_DirectorySecretSource:
 		return &factory.FileResourceClientFactory{

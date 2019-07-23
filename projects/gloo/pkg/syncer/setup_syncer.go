@@ -386,6 +386,7 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 		&cfg,
 		clientset,
 		&kubeCoreCache,
+		vaultClient,
 		v1.SecretCrd.Plural,
 	)
 	if err != nil {

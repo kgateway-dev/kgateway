@@ -67,6 +67,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		&cfg,
 		&clientset,
 		&kubeCoreCache,
+		nil, // ingress client does not support vault config
 		gloov1.SecretCrd.Plural,
 	)
 	if err != nil {
