@@ -1336,7 +1336,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:e910949226c7f04bf0c3e9bc3dc19778b6b5ecc5f2c175ba8acd4aeb9050cd25"
+  digest = "1:d9b5b6795a53ce9aa72ab9b6f8dc40885c76533411915eb415c1b4c2e73563af"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1345,6 +1345,7 @@
     "cliutils",
     "contextutils",
     "docsutils",
+    "envutils",
     "errors",
     "errutils",
     "githubutils",
@@ -2516,6 +2517,7 @@
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/docsutils",
+    "github.com/solo-io/go-utils/envutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/githubutils",
@@ -2578,7 +2580,6 @@
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",

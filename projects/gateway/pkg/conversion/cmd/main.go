@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/conversion"
 	"github.com/solo-io/gloo/projects/gateway/pkg/conversion/setup"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/envutils"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +19,7 @@ func main() {
 	clientSet := setup.MustClientSet(ctx)
 
 	resourceConverter := conversion.NewResourceConverter(
-		mustPodNamespace(ctx),
+		envutils.MustGetPodNamespace(ctx),
 		clientSet.V1Gateway,
 		clientSet.V2Gateway,
 		conversion.NewGatewayConverter(),
@@ -51,12 +52,4 @@ func main() {
 	}()
 
 	os.Exit(<-exit)
-}
-
-func mustPodNamespace(ctx context.Context) string {
-	namespace := os.Getenv("POD_NAMESPACE")
-	if namespace == "" {
-		contextutils.LoggerFrom(ctx).Fatal("POD_NAMESPACE is not set.")
-	}
-	return namespace
 }
