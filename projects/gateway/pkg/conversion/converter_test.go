@@ -43,12 +43,13 @@ var _ = Describe("ResourceConverter", func() {
 			}
 		}
 
-		getV2Gateway := func(name string, annotations map[string]string) *gatewayv2.Gateway {
+		getV2Gateway := func(name string, resourceVersion string, annotations map[string]string) *gatewayv2.Gateway {
 			return &gatewayv2.Gateway{
 				Metadata: core.Metadata{
-					Namespace:   namespace,
-					Name:        name,
-					Annotations: annotations,
+					Namespace:       namespace,
+					Name:            name,
+					ResourceVersion: resourceVersion,
+					Annotations:     annotations,
 				},
 			}
 		}
@@ -62,8 +63,8 @@ var _ = Describe("ResourceConverter", func() {
 
 			fooV1 = getV1Gateway("foo")
 			barV1 = getV1Gateway("bar")
-			fooV2 = getV2Gateway("foo", nil)
-			barV2 = getV2Gateway("bar", nil)
+			fooV2 = getV2Gateway("foo", "", map[string]string{defaults.OriginKey: defaults.ConvertedValue})
+			barV2 = getV2Gateway("bar", "", map[string]string{defaults.OriginKey: defaults.ConvertedValue})
 		})
 
 		AfterEach(func() {
@@ -101,7 +102,8 @@ var _ = Describe("ResourceConverter", func() {
 			})
 
 			It("overwrites existing v2 resources which are marked as defaults", func() {
-				existingFooV2 := getV2Gateway("foo", map[string]string{defaults.OriginKey: defaults.DefaultValue})
+				existingFooV2 := getV2Gateway("foo", "10", map[string]string{defaults.OriginKey: defaults.DefaultValue})
+				fooV2ToWrite := getV2Gateway("foo", "10", map[string]string{defaults.OriginKey: defaults.ConvertedValue})
 				v1Gateways := []*gatewayv1.Gateway{fooV1, barV1}
 
 				v1GatewayClient.EXPECT().
@@ -120,8 +122,8 @@ var _ = Describe("ResourceConverter", func() {
 					Read(namespace, "bar", clients.ReadOpts{Ctx: context.TODO()}).
 					Return(nil, sk_errors.NewNotExistErr(namespace, "bar", testErr))
 				v2GatewayClient.EXPECT().
-					Write(fooV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: true}).
-					Return(fooV2, nil)
+					Write(fooV2ToWrite, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: true}).
+					Return(fooV2ToWrite, nil)
 				v2GatewayClient.EXPECT().
 					Write(barV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: false}).
 					Return(barV2, nil)
@@ -131,7 +133,7 @@ var _ = Describe("ResourceConverter", func() {
 			})
 
 			It("does not overwrite existing resources which are marked as converted", func() {
-				existingFooV2 := getV2Gateway("foo", map[string]string{defaults.OriginKey: defaults.ConvertedValue})
+				existingFooV2 := getV2Gateway("foo", "", map[string]string{defaults.OriginKey: defaults.ConvertedValue})
 				v1Gateways := []*gatewayv1.Gateway{fooV1, barV1}
 
 				v1GatewayClient.EXPECT().

@@ -89,6 +89,7 @@ func (c *resourceConverter) ConvertAll(ctx context.Context) error {
 			}
 			if existing.Metadata.Annotations[defaults.OriginKey] == defaults.DefaultValue {
 				// If the resource was written to v2 as a default, overwrite it.
+				convertedGateway.Metadata.ResourceVersion = existing.Metadata.ResourceVersion
 				overwriteExisting = true
 			}
 		}
