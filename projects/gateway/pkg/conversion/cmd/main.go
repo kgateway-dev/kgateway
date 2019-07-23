@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/conversion"
 	"github.com/solo-io/gloo/projects/gateway/pkg/conversion/setup"
@@ -20,9 +23,28 @@ func main() {
 		conversion.NewGatewayConverter(),
 	)
 
-	if err := resourceConverter.ConvertAll(ctx); err != nil {
-		contextutils.LoggerFrom(ctx).Fatalw("Failed to upgrade all existing gateway resources.", zap.Error(err))
-	}
+	sigs := make(chan os.Signal, 1)
+	exit := make(chan int, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigs
+		timeToExit := 10 * time.Second
+		contextutils.LoggerFrom(ctx).Infof("Received %v. Will exit in %v", sig.String(), timeToExit.String())
+		time.Sleep(timeToExit)
+		exit <- 1
+	}()
+
+	go func() {
+		if err := resourceConverter.ConvertAll(ctx); err != nil {
+			contextutils.LoggerFrom(ctx).Errorw("Error encountered while upgrading gateway resources", zap.Error(err))
+			exit <- 1
+			return
+		}
+		exit <- 0
+	}()
+
+	os.Exit(<-exit)
 }
 
 func mustPodNamespace(ctx context.Context) string {
