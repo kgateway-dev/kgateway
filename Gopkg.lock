@@ -1374,7 +1374,7 @@
   version = "v0.9.9"
 
 [[projects]]
-  digest = "1:4ecf5d306dfd64759a6cefb7a9be64801b5eac34bba269609c8eb5cab92d04dc"
+  digest = "1:ad80c555d444533c9847dd0b21efd094dea12f1d14044601ca08390f95187beb"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1435,8 +1435,8 @@
     "test/testutils",
   ]
   pruneopts = "UT"
-  revision = "96dce349db114c370bf725c37f8636f8c5c24d5e"
-  version = "v0.10.3"
+  revision = "472cb6e323551e434ee67cdd9e823c82d8c25925"
+  version = "v0.10.4"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2483,6 +2483,7 @@
     "github.com/grpc-ecosystem/go-grpc-middleware/tags",
     "github.com/hashicorp/consul/api",
     "github.com/hashicorp/go-multierror",
+    "github.com/hashicorp/vault/api",
     "github.com/helm/helm/pkg/hooks",
     "github.com/hinshun/vt10x",
     "github.com/inconshreveable/go-update",

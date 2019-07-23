@@ -2,8 +2,9 @@ package setuputils
 
 import (
 	"flag"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"os"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 const (
