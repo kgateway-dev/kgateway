@@ -37,7 +37,6 @@ discovery:
 
 gateway:
   enabled: true
-  upgrade: false
   deployment:
     image:
       repository: quay.io/solo-io/gateway

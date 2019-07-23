@@ -92,7 +92,6 @@ type DiscoveryDeployment struct {
 
 type Gateway struct {
 	Enabled       *bool                 `json:"enabled"`
-	Upgrade       *bool                 `json:"upgrade"`
 	Deployment    *GatewayDeployment    `json:"deployment,omitempty"`
 	ConversionJob *GatewayConversionJob `json:"conversionJob,omitempty"`
 }
