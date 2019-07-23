@@ -6,6 +6,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/conversion"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
@@ -22,8 +23,7 @@ var _ = Describe("Gateway Conversion", func() {
 		})
 
 		It("works", func() {
-			metaV1 := core.Metadata{Namespace: "ns", Name: "n"}
-			metaV2 := core.Metadata{Namespace: "ns", Name: "n-v2"}
+			meta := core.Metadata{Namespace: "ns", Name: "n"}
 			bindAddress := "test-bindaddress"
 			bindPort := uint32(100)
 			useProxyProto := &types.BoolValue{Value: true}
@@ -37,7 +37,7 @@ var _ = Describe("Gateway Conversion", func() {
 			}
 
 			input := &gatewayv1.Gateway{
-				Metadata:        metaV1,
+				Metadata:        meta,
 				Ssl:             true,
 				BindAddress:     bindAddress,
 				BindPort:        bindPort,
@@ -46,7 +46,7 @@ var _ = Describe("Gateway Conversion", func() {
 				Plugins:         plugins,
 			}
 			expected := &gatewayv2.Gateway{
-				Metadata:      metaV2,
+				Metadata:      meta,
 				Ssl:           true,
 				BindAddress:   bindAddress,
 				BindPort:      bindPort,
@@ -57,7 +57,7 @@ var _ = Describe("Gateway Conversion", func() {
 						Plugins:         plugins,
 					},
 				},
-				GatewayProxyName: "gateway-proxy-v2",
+				GatewayProxyName: translator.GatewayProxyName,
 			}
 
 			actual := converter.FromV1ToV2(input)

@@ -62,7 +62,7 @@ func (c *resourceConverter) ConvertAll() error {
 	var writeErrors *multierror.Error
 	for _, oldGateway := range v1List {
 		convertedGateway := c.gatewayConverter.FromV1ToV2(oldGateway)
-		if _, err := c.v2GatewayClient.Write(convertedGateway, clients.WriteOpts{Ctx: c.ctx}); err != nil {
+		if _, err := c.v2GatewayClient.Write(convertedGateway, clients.WriteOpts{Ctx: c.ctx, OverwriteExisting: true}); err != nil {
 			wrapped := FailedToWriteGatewayError(
 				err,
 				"v2",

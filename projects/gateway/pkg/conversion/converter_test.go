@@ -67,10 +67,10 @@ var _ = Describe("ResourceConverter", func() {
 				FromV1ToV2(barV1).
 				Return(barV2)
 			v2GatewayClient.EXPECT().
-				Write(fooV2, clients.WriteOpts{Ctx: context.TODO()}).
+				Write(fooV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: true}).
 				Return(fooV2, nil)
 			v2GatewayClient.EXPECT().
-				Write(barV2, clients.WriteOpts{Ctx: context.TODO()}).
+				Write(barV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: true}).
 				Return(barV2, nil)
 
 			err := resourceConverter.ConvertAll()
@@ -100,7 +100,7 @@ var _ = Describe("ResourceConverter", func() {
 				FromV1ToV2(fooV1).
 				Return(fooV2)
 			v2GatewayClient.EXPECT().
-				Write(fooV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: false}).
+				Write(fooV2, clients.WriteOpts{Ctx: context.TODO(), OverwriteExisting: true}).
 				Return(nil, testErr)
 
 			err := resourceConverter.ConvertAll()
