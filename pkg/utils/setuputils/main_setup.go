@@ -24,6 +24,7 @@ type SetupOpts struct {
 	LoggingPrefix string
 	SetupFunc     SetupFunc
 	ExitOnError   bool
+	CustomCtx     context.Context
 }
 
 var once sync.Once
@@ -37,7 +38,10 @@ func Main(opts SetupOpts) error {
 		flag.Parse()
 	})
 
-	ctx := contextutils.WithLogger(context.Background(), loggingPrefix)
+	ctx := opts.CustomCtx
+	if ctx == nil {
+		ctx = contextutils.WithLogger(context.Background(), loggingPrefix)
+	}
 
 	settingsClient, err := KubeOrFileSettingsClient(ctx, setupDir)
 	if err != nil {

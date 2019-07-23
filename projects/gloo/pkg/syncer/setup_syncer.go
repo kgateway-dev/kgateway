@@ -166,7 +166,14 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 
 	var clientset kubernetes.Interface
-	opts, err := BootstrapFactories(ctx, &clientset, kubeCache, consulClient, vaultClient, memCache, settings)
+	opts, err := constructOpts(ctx,
+		&clientset,
+		kubeCache,
+		consulClient,
+		vaultClient,
+		memCache,
+		settings,
+	)
 	if err != nil {
 		return err
 	}
@@ -342,7 +349,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	return nil
 }
 
-func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {
+func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {
 
 	var (
 		cfg           *rest.Config
