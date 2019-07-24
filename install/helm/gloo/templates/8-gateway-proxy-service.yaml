@@ -1,4 +1,5 @@
 {{- if .Values.gateway.enabled }}
+{{- if not .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: v1
@@ -7,6 +8,7 @@ metadata:
   labels:
     app: gloo
     gloo: {{ $name | kebabcase }}
+    gateway-proxy: live
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
@@ -36,3 +38,4 @@ spec:
   {{- end }}
 {{- end }}
 {{- end }}
+{{ end }}
