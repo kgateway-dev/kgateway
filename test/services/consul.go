@@ -186,6 +186,9 @@ func (i *ConsulInstance) Clean() error {
 	if i.session != nil {
 		i.session.Kill()
 	}
+	if i.cmd != nil && i.cmd.Process != nil {
+		i.cmd.Process.Kill()
+	}
 	if i.tmpdir != "" {
 		return os.RemoveAll(i.tmpdir)
 	}

@@ -75,35 +75,38 @@ message Settings {
 
     // Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
     message VaultSecrets {
+        // the Token used to authenticate to Vault
+        string token = 1;
+
         // address is the address of the Vault server. This should be a complete
         // URL such as "http://vault.example.com".
-        string address = 1;
+        string address = 2;
 
         // caCert is the path to a PEM-encoded CA cert file to use to verify the
         // Vault server SSL certificate.
-        string ca_cert = 2;
+        string ca_cert = 3;
 
         // caPath is the path to a directory of PEM-encoded CA cert files to verify
         // the Vault server SSL certificate.
-        string ca_path = 3;
+        string ca_path = 4;
 
         // clientCert is the path to the certificate for Vault communication
-        string client_cert = 4;
+        string client_cert = 5;
 
         // clientKey is the path to the private key for Vault communication
-        string client_key = 5;
+        string client_key = 6;
 
         // tlsServerName, if set, is used to set the SNI host when connecting via
         // TLS.
-        string tls_server_name = 6;
+        string tls_server_name = 7;
 
         // Insecure enables or disables SSL verification
-        google.protobuf.BoolValue insecure = 7;
+        google.protobuf.BoolValue insecure = 8;
 
         // all keys stored in Vault will begin with this Vault
         // this can be used to run multiple instances of Gloo against the same Consul cluster
         // defaults to `gloo`
-        string root_key = 8;
+        string root_key = 9;
     }
 
     // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.

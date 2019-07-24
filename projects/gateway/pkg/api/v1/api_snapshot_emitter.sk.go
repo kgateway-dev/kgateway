@@ -104,6 +104,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		namespace string
 	}
 	virtualServiceChan := make(chan virtualServiceListWithNamespace)
+
+	var initialVirtualServiceList VirtualServiceList
 	/* Create channel for Gateway */
 	type gatewayListWithNamespace struct {
 		list      GatewayList
@@ -111,8 +113,19 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	}
 	gatewayChan := make(chan gatewayListWithNamespace)
 
+	var initialGatewayList GatewayList
+
+	currentSnapshot := ApiSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for VirtualService */
+		{
+			virtualServices, err := c.virtualService.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial VirtualService list")
+			}
+			initialVirtualServiceList = append(initialVirtualServiceList, virtualServices...)
+		}
 		virtualServiceNamespacesChan, virtualServiceErrs, err := c.virtualService.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting VirtualService watch")
@@ -124,6 +137,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			errutils.AggregateErrs(ctx, errs, virtualServiceErrs, namespace+"-virtualServices")
 		}(namespace)
 		/* Setup namespaced watch for Gateway */
+		{
+			gateways, err := c.gateway.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Gateway list")
+			}
+			initialGatewayList = append(initialGatewayList, gateways...)
+		}
 		gatewayNamespacesChan, gatewayErrs, err := c.gateway.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Gateway watch")
@@ -157,12 +177,16 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for VirtualServices */
+	currentSnapshot.VirtualServices = initialVirtualServiceList.Sort()
+	/* Initialize snapshot for Gateways */
+	currentSnapshot.Gateways = initialGatewayList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
 		originalSnapshot := ApiSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

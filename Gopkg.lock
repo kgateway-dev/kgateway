@@ -1374,7 +1374,7 @@
   version = "v0.9.9"
 
 [[projects]]
-  digest = "1:ad80c555d444533c9847dd0b21efd094dea12f1d14044601ca08390f95187beb"
+  digest = "1:d6faa45440f529a93def557cca1c73a828ad6f09cd8c443868090625c378b405"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1435,8 +1435,8 @@
     "test/testutils",
   ]
   pruneopts = "UT"
-  revision = "472cb6e323551e434ee67cdd9e823c82d8c25925"
-  version = "v0.10.4"
+  revision = "508b01868d70ddb62be7a9ae94c3d7f5840b5af5"
+  version = "v0.10.6"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2555,6 +2555,7 @@
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",
     "github.com/solo-io/solo-kit/pkg/utils/kubeutils",
+    "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",

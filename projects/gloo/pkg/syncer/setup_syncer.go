@@ -160,9 +160,12 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return err
 	}
 
-	vaultClient, err := bootstrap.VaultClientForSettings(settings)
-	if err != nil {
-		return err
+	var vaultClient *vaultapi.Client
+	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
+		vaultClient, err = bootstrap.VaultClientForSettings(vaultSettings)
+		if err != nil {
+			return err
+		}
 	}
 
 	var clientset kubernetes.Interface

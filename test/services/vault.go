@@ -2,10 +2,11 @@ package services
 
 import (
 	"fmt"
-	"github.com/solo-io/go-utils/log"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/solo-io/go-utils/log"
 
 	"io/ioutil"
 
@@ -35,7 +36,6 @@ func NewVaultFactory() (*VaultFactory, error) {
 			vaultPath: path,
 		}, nil
 	}
-
 
 	vaultPath, err := exec.LookPath("vault")
 	if err == nil {
@@ -157,6 +157,9 @@ func (i *VaultInstance) Clean() error {
 	if i.cmd != nil {
 		i.cmd.Process.Kill()
 		i.cmd.Wait()
+	}
+	if i.cmd != nil && i.cmd.Process != nil {
+		i.cmd.Process.Kill()
 	}
 	if i.tmpdir != "" {
 		os.RemoveAll(i.tmpdir)
