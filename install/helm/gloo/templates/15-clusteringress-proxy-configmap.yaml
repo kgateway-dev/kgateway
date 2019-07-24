@@ -33,6 +33,21 @@ data:
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
+{{- if .Values.settings.integrations.knative.proxy.stats }}
+      - name: admin_port_cluster
+        connect_timeout: 5.000s
+        type: STATIC
+        lb_policy: ROUND_ROBIN
+        load_assignment:
+          cluster_name: admin_port_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 19000
+{{- end}} # if Values.settings.integrations.knative.proxy.stats
 
 {{- if .Values.settings.integrations.knative.proxy.stats }}
       listeners:
