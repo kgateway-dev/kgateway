@@ -96,6 +96,20 @@ static_resources:
                         - "*"
                       routes:
                         - match:
+                            path: "/ready"
+                            headers:
+                            - name: ":method"
+                              exact_match: GET
+                          route:
+                            cluster: admin_port_cluster
+                        - match:
+                            path: "/server_info"
+                            headers:
+                            - name: ":method"
+                              exact_match: GET
+                          route:
+                            cluster: admin_port_cluster
+                        - match:
                             prefix: "/metrics"
                             headers:
                             - name: ":method"
@@ -198,13 +212,27 @@ static_resources:
                         - "*"
                       routes:
                         - match:
+                            path: "/ready"
+                            headers:
+                            - name: ":method"
+                              exact_match: GET
+                          route:
+                            cluster: admin_port_cluster
+                        - match:
+                            path: "/server_info"
+                            headers:
+                            - name: ":method"
+                              exact_match: GET
+                          route:
+                              cluster: admin_port_cluster
+                        - match:
                             prefix: "/metrics"
                             headers:
                             - name: ":method"
                               exact_match: GET
                           route:
-                            prefix_rewrite: "/stats/prometheus"
-                            cluster: admin_port_cluster
+                              prefix_rewrite: "/stats/prometheus"
+                              cluster: admin_port_cluster
                 http_filters:
                   - name: envoy.router
                     config: {} # if $spec.podTemplate.stats
