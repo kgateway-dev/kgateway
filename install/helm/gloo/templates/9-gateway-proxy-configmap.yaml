@@ -55,7 +55,7 @@ data:
 {{- end}} # if $spec.podTemplate.stats
 {{- if $spec.tracing }}
       tracing:
-{{ toYaml $spec.tracing | indent 6}}
+{{ toYaml $spec.tracing | indent 8}}
 {{- end}} # if $spec.tracing
 
 

@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/solo-io/go-utils/testutils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/go-utils/manifesttestutils"
@@ -14,6 +16,11 @@ import (
 
 func TestHelm(t *testing.T) {
 	RegisterFailHandler(Fail)
+	testutils.RegisterPreFailHandler(
+		func() {
+			testutils.PrintTrimmedStack()
+		})
+	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Helm Suite")
 }
 
@@ -27,14 +34,14 @@ var (
 )
 
 func MustMake(dir string, args ...string) {
-	make := exec.Command("make", args...)
-	make.Dir = dir
+	makeCmd := exec.Command("make", args...)
+	makeCmd.Dir = dir
 
 	var b bytes.Buffer
 	var be bytes.Buffer
-	make.Stdout = &b
-	make.Stderr = &be
-	err := make.Run()
+	makeCmd.Stdout = &b
+	makeCmd.Stderr = &be
+	err := makeCmd.Run()
 
 	if err != nil {
 		fmt.Printf(b.String())
@@ -47,7 +54,7 @@ func MustMake(dir string, args ...string) {
 
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
-		MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS=--namespace "+namespace+" --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test")
+		MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS=--namespace "+namespace+" --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test --set gatewayProxies.gatewayProxy.tracing=trace:spec")
 		return nil
 	},
 	func(_ []byte) {
