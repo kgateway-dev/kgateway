@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 
 	"github.com/solo-io/go-utils/log"
 
@@ -21,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const defaultVaultDockerImage = "vault:0.9.2"
+const defaultVaultDockerImage = "vault:1.1.3"
 
 type VaultFactory struct {
 	vaultPath string
@@ -96,6 +97,7 @@ type VaultInstance struct {
 	tmpdir    string
 	cmd       *exec.Cmd
 	token     string
+	lock      sync.Mutex
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -121,6 +123,9 @@ func (i *VaultInstance) Token() string {
 }
 
 func (i *VaultInstance) RunWithPort() error {
+	// prevent race
+	i.lock.Lock()
+	defer i.lock.Unlock()
 	cmd := exec.Command(i.vaultpath,
 		"server",
 		"-dev",
