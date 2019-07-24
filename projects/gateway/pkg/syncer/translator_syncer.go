@@ -57,7 +57,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 	logger.Debugf("%v", snap)
 
 	labels := map[string]string{
-		"created_by": "gateway",
+		"created_by": "gateway-v2",
 	}
 
 	byProxy := gatewaysByProxyNamespace(snap.Gateways)
