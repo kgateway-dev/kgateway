@@ -180,7 +180,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 		return nil
 	}, "10s", ".5s").Should(BeNil())
 
-	EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+	EventuallyWithOffset(1, tu.C, "5s", "0.2s").Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 		"Method": Equal("POST"),
 		"Body":   Equal(body),
 	}))))
