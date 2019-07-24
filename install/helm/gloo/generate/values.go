@@ -117,6 +117,7 @@ type GatewayProxyPodTemplate struct {
 	NodeName         string            `json:"nodeName,omitempty"`
 	NodeSelector     map[string]string `json:"nodeSelector,omitempty"`
 	Stats            bool              `json:"stats"`
+	Probes           bool              `json:"probes"`
 	*DeploymentSpec
 }
 

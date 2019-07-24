@@ -82,18 +82,22 @@ spec:
           {{- end}}
 {{- with $spec.podTemplate.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
+{{- if $spec.podTemplate.probes }}
         readinessProbe:
           httpGet:
-            port: 19000
+            port: 8081
             path: /ready
           initialDelaySeconds: 1
           periodSeconds: 10
+          failureThreshold: 10
         livenessProbe:
           httpGet:
-            port: 19000
+            port: 8081
             path: /server_info
           initialDelaySeconds: 1
           periodSeconds: 10
+          failureThreshold: 10
+{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
