@@ -2,10 +2,13 @@ package translator_test
 
 import (
 	"context"
+	"time"
 
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp"
 
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
@@ -361,17 +364,43 @@ var _ = Describe("Translator", func() {
 
 	Context("tcp", func() {
 		var (
-			factory *TcpTranslator
+			factory     *TcpTranslator
+			idleTimeout time.Duration
+			plugins     *gloov1.TcpListenerPlugins
+			destination *gloov1.TcpHost
 		)
 		BeforeEach(func() {
 			factory = &TcpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory})
+
+			idleTimeout = 5 * time.Second
+			plugins = &gloov1.TcpListenerPlugins{
+				TcpProxySettings: &tcp.TcpProxySettings{
+					MaxConnectAttempts: &types.UInt32Value{Value: 10},
+					IdleTimeout:        &idleTimeout,
+				},
+			}
+			destination = &gloov1.TcpHost{
+				Name: "host-one",
+				Destination: &gloov1.RouteAction{
+					Destination: &gloov1.RouteAction_UpstreamGroup{
+						UpstreamGroup: &core.ResourceRef{
+							Namespace: ns,
+							Name:      "ug-name",
+						},
+					},
+				},
+			}
+
 			snap = &v2.ApiSnapshot{
 				Gateways: v2.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v2.Gateway_TcpGateway{
-							TcpGateway: &v2.TcpGateway{},
+							TcpGateway: &v2.TcpGateway{
+								Destinations: []*gloov1.TcpHost{destination},
+								Plugins:      plugins,
+							},
 						},
 						BindPort: 2,
 					},
@@ -380,7 +409,13 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("can properly translate a tcp proxy", func() {
+			proxy, _ := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
+			Expect(proxy.Listeners).To(HaveLen(1))
+			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_TcpListener).TcpListener
+			Expect(listener.Plugins).To(Equal(plugins))
+			Expect(listener.TcpHosts).To(HaveLen(1))
+			Expect(listener.TcpHosts[0]).To(Equal(destination))
 		})
 
 	})
