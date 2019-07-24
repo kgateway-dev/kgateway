@@ -19,7 +19,7 @@ var _ = Describe("Helm Test", func() {
 			"app":  "gloo",
 		}
 		selector := map[string]string{
-			"gloo": translator.GatewayProxyName,
+			"gateway-proxy": "live",
 		}
 
 		prepareMakefile := func(helmFlags string) {
