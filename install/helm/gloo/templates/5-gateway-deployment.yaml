@@ -27,6 +27,11 @@ spec:
       - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.gateway.deployment.image.pullPolicy }}
         name: gateway
+{{- if .Values.gateway.deployment.resources }}
+        resources:
+{{ toYaml .Values.gateway.deployment.resources | indent 10}}
+{{- end}}
+
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false

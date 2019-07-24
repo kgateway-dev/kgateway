@@ -26,10 +26,15 @@ spec:
       - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.gloo.deployment.image.pullPolicy }}
         name: gloo
+{{- if .Values.gloo.deployment.resources }}
+        resources:
+{{ toYaml .Values.gloo.deployment.resources | indent 10}}
+{{- else}}
         resources:
           requests:
             cpu: 500m
             memory: 256Mi
+{{- end}}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false

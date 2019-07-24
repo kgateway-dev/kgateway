@@ -32,6 +32,10 @@ spec:
         image: {{ .Values.settings.integrations.knative.proxy.image.repository }}:{{ .Values.settings.integrations.knative.proxy.image.tag }}
         imagePullPolicy: {{ .Values.settings.integrations.knative.proxy.image.pullPolicy }}
         name: clusteringress-proxy
+{{- if .Values.ingressProxy.deployment.resources }}
+        resources:
+{{ toYaml .Values.ingressProxy.deployment.resources | indent 10}}
+{{- end}}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
