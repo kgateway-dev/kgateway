@@ -43,7 +43,7 @@ func Main(opts SetupOpts) error {
 		ctx = contextutils.WithLogger(context.Background(), loggingPrefix)
 	}
 
-	settingsClient, err := KubeOrFileSettingsClient(ctx, setupDir)
+	settingsClient, err := kubeOrFileSettingsClient(ctx, setupDir)
 	if err != nil {
 		return err
 	}
@@ -74,19 +74,20 @@ func Main(opts SetupOpts) error {
 	return nil
 }
 
-// TODO (ilackarms): instead of using an heuristic here, read from a CLI flag
-// first attempt to use kube crd, otherwise fall back to file
-func KubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.SettingsClient, error) {
-	cfg, err := kubeutils.GetConfig("", "")
-	if err == nil {
-		return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
-			Crd:         v1.SettingsCrd,
-			Cfg:         cfg,
-			SharedCache: kube.NewKubeCache(ctx),
+func kubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.SettingsClient, error) {
+	if settingsDir != "" {
+		return v1.NewSettingsClient(&factory.FileResourceClientFactory{
+			RootDir: settingsDir,
 		})
 	}
-	return v1.NewSettingsClient(&factory.FileResourceClientFactory{
-		RootDir: settingsDir,
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, err
+	}
+	return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
+		Crd:         v1.SettingsCrd,
+		Cfg:         cfg,
+		SharedCache: kube.NewKubeCache(ctx),
 	})
 }
 

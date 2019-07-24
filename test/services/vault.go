@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,16 +23,25 @@ import (
 const defaultVaultDockerImage = "vault:0.9.2"
 
 type VaultFactory struct {
-	vaultpath string
+	vaultPath string
 	tmpdir    string
 }
 
 func NewVaultFactory() (*VaultFactory, error) {
-	envoypath := os.Getenv("VAULT_BINARY")
+	path := os.Getenv("VAULT_BINARY")
 
-	if envoypath != "" {
+	if path != "" {
 		return &VaultFactory{
-			vaultpath: envoypath,
+			vaultPath: path,
+		}, nil
+	}
+
+
+	vaultPath, err := exec.LookPath("vault")
+	if err == nil {
+		log.Printf("Using vault from PATH: %s", vaultPath)
+		return &VaultFactory{
+			vaultPath: vaultPath,
 		}, nil
 	}
 
@@ -65,7 +75,7 @@ docker rm -f $CID
 	}
 
 	return &VaultFactory{
-		vaultpath: filepath.Join(tmpdir, "vault"),
+		vaultPath: filepath.Join(tmpdir, "vault"),
 		tmpdir:    tmpdir,
 	}, nil
 }
@@ -96,7 +106,7 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	}
 
 	return &VaultInstance{
-		vaultpath: ef.vaultpath,
+		vaultpath: ef.vaultPath,
 		tmpdir:    tmpdir,
 	}, nil
 
