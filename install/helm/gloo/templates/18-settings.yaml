@@ -29,6 +29,10 @@ spec:
 {{- toYaml .Values.settings.extensions | nindent 4 }}
 {{- end }}
 
+{{- if ne .Values.gatewayProxies.gatewayProxy.tracing "" }}
+  tracingEnabled: true
+{{- end }}
+
 {{- with .Values.settings.watchNamespaces }}
   watchNamespaces:
   {{- range . }}

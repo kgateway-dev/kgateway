@@ -48,6 +48,7 @@ func (r *Settings) Hash() uint64 {
 		r.Discovery,
 		r.Consul,
 		r.Extensions,
+		r.TracingEnabled,
 		r.ConfigSource,
 		r.SecretSource,
 		r.ArtifactSource,

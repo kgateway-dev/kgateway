@@ -83,6 +83,7 @@ func SettingsClientTest(namespace string, client SettingsClient, name1, name2, n
 	Expect(r1.Discovery).To(Equal(input.Discovery))
 	Expect(r1.Consul).To(Equal(input.Consul))
 	Expect(r1.Extensions).To(Equal(input.Extensions))
+	Expect(r1.TracingEnabled).To(Equal(input.TracingEnabled))
 	Expect(r1.Status).To(Equal(input.Status))
 
 	_, err = client.Write(input, clients.WriteOpts{
