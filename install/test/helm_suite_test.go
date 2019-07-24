@@ -3,9 +3,11 @@ package test
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
+	"sync"
 	"testing"
+
+	"github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,6 +16,11 @@ import (
 
 func TestHelm(t *testing.T) {
 	RegisterFailHandler(Fail)
+	testutils.RegisterPreFailHandler(
+		func() {
+			testutils.PrintTrimmedStack()
+		})
+	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Helm Suite")
 }
 
@@ -24,17 +31,19 @@ const (
 var (
 	version      string
 	testManifest TestManifest
+	// use a mutex to prevent these tests from running in parallel
+	makefileSerializer sync.Mutex
 )
 
 func MustMake(dir string, args ...string) {
-	make := exec.Command("make", args...)
-	make.Dir = dir
+	makeCmd := exec.Command("make", args...)
+	makeCmd.Dir = dir
 
 	var b bytes.Buffer
 	var be bytes.Buffer
-	make.Stdout = &b
-	make.Stderr = &be
-	err := make.Run()
+	makeCmd.Stdout = &b
+	makeCmd.Stderr = &be
+	err := makeCmd.Run()
 
 	if err != nil {
 		fmt.Printf(b.String())
@@ -44,18 +53,3 @@ func MustMake(dir string, args ...string) {
 	}
 	Expect(err).NotTo(HaveOccurred())
 }
-
-var _ = SynchronizedBeforeSuite(
-	func() []byte {
-		MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS=--namespace "+namespace+" --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test")
-		return nil
-	},
-	func(_ []byte) {
-		testManifest = NewTestManifest("../gloo-gateway.yaml")
-		version = os.Getenv("TAGGED_VERSION")
-		if version == "" {
-			version = "dev"
-		} else {
-			version = version[1:]
-		}
-	})

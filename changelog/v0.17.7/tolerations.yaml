@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add support for tolerations to gateway-proxy
+  issueLink: https://github.com/solo-io/gloo/issues/877

@@ -4,6 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -34,7 +37,7 @@ func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v
 		for _, upstream := range credGroup.upstreams {
 			instancesForUpstream := filterInstancesForUpstream(upstream, credGroup)
 			for _, instance := range instancesForUpstream {
-				allEndpoints = append(allEndpoints, upstreamInstanceToEndpoint(writeNamespace, upstream, instance))
+				allEndpoints = append(allEndpoints, upstreamInstanceToEndpoint(ctx, writeNamespace, upstream, instance))
 			}
 		}
 	}
@@ -122,7 +125,7 @@ func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGrou
 }
 
 // NOTE: assumes that upstreams are EC2 upstreams
-func upstreamInstanceToEndpoint(writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
+func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
 	ipAddr := instance.PrivateIpAddress
 	if upstream.UpstreamSpec.GetAwsEc2().PublicIp {
 		ipAddr = instance.PublicIpAddress
@@ -132,15 +135,20 @@ func upstreamInstanceToEndpoint(writeNamespace string, upstream *v1.Upstream, in
 		port = defaultPort
 	}
 	ref := upstream.Metadata.Ref()
-	return &v1.Endpoint{
+	endpoint := v1.Endpoint{
 		Upstreams: []*core.ResourceRef{&ref},
 		Address:   aws.StringValue(ipAddr),
-		Port:      upstream.UpstreamSpec.GetAwsEc2().GetPort(),
+		Port:      port,
 		Metadata: core.Metadata{
 			Name:      generateName(ref, aws.StringValue(ipAddr)),
 			Namespace: writeNamespace,
 		},
 	}
+	contextutils.LoggerFrom(ctx).Debugw("instance from upstream",
+		zap.Any("upstream", upstream),
+		zap.Any("instance", instance),
+		zap.Any("endpoint", endpoint))
+	return &endpoint
 }
 
 // a FilterMap is created for each EC2 instance so we can efficiently filter the instances associated with a given

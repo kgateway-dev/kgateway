@@ -325,11 +325,9 @@ prepare-helm:
 	go run install/helm/gloo/generate.go $(VERSION)
 
 update-helm-chart:
-ifeq ($(RELEASE),"true")
 	mkdir -p $(HELM_SYNC_DIR)/charts
 	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
 	helm repo index $(HELM_SYNC_DIR)
-endif
 
 HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
 

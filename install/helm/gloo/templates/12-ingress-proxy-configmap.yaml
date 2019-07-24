@@ -49,6 +49,10 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
+{{- if .Values.ingressProxy.tracing }}
+    tracing:
+{{ toYaml .Values.ingressProxy.tracing | indent 6}}
+{{- end}} # if .Values.ingressProxy.tracing
 {{- else}}{{ toYaml .Values.ingressProxy.configMap.data | indent 2}}{{- end}}
 
 {{- end }}
