@@ -76,6 +76,7 @@ data:
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
+        respect_dns_ttl: true
 
 {{- if $spec.podTemplate.stats }}
       - name: admin_port_cluster
