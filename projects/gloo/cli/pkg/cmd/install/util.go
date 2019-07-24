@@ -21,9 +21,10 @@ var (
 	GlooCrdNames []string
 
 	// Set up during pre-install (for OS gloo, namespace only)
-	GlooPreInstallKinds []string
-	GlooInstallKinds    []string
-	ExpectedLabels      map[string]string
+	GlooPreInstallKinds     []string
+	GlooInstallKinds        []string
+	GlooGatewayUpgradeKinds []string
+	ExpectedLabels          map[string]string
 
 	KnativeCrdNames []string
 )
@@ -43,6 +44,8 @@ func init() {
 	}
 
 	GlooInstallKinds = append(GlooSystemKinds, GlooRbacKinds...)
+
+	GlooGatewayUpgradeKinds = append(GlooInstallKinds, "Job")
 
 	GlooCrdNames = []string{
 		"gateways.gateway.solo.io.v2",
@@ -112,11 +115,16 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 		helmChartArchiveUri = helmChartOverride
 	}
 
+	var extraValues map[string]string
+	if opts.Install.Upgrade {
+		extraValues = map[string]string{"gateway": "{upgrade: true}"}
+	}
+
 	return &GlooInstallSpec{
 		HelmArchiveUri:   helmChartArchiveUri,
 		ValueFileName:    valueFileName,
 		ProductName:      "gloo",
-		ExtraValues:      nil,
+		ExtraValues:      extraValues,
 		ExcludeResources: nil,
 	}, nil
 }
