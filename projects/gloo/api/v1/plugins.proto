@@ -71,7 +71,6 @@ message RoutePlugins {
     transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
-    hcm.plugins.gloo.solo.io.RouteTracingSettings tracing = 7;
     Extensions extensions = 6;
 }
 

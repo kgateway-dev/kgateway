@@ -98,7 +98,7 @@ func copySettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpCon
 	}
 }
 
-func copyTracingSettings(trCfg *envoyhttp.HttpConnectionManager_Tracing, tracingSettings *hcm.HttpConnectionManagerSettings_ListenerTracingSettings) {
+func copyTracingSettings(trCfg *envoyhttp.HttpConnectionManager_Tracing, tracingSettings *hcm.HttpConnectionManagerSettings_TracingSettings) {
 	// these fields are user-configurable
 	trCfg.RequestHeadersForTags = tracingSettings.RequestHeadersForTags
 	trCfg.Verbose = tracingSettings.Verbose

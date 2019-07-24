@@ -12,8 +12,7 @@ weight: 5
 
 
 - [HttpConnectionManagerSettings](#httpconnectionmanagersettings)
-- [ListenerTracingSettings](#listenertracingsettings)
-- [RouteTracingSettings](#routetracingsettings)
+- [TracingSettings](#tracingsettings)
   
 
 
@@ -47,7 +46,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "serverName": string
 "acceptHttp10": bool
 "defaultHostForHttp10": string
-"tracing": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.ListenerTracingSettings
+"tracing": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.TracingSettings
 
 ```
 
@@ -68,13 +67,13 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `serverName` | `string` |  |  |
 | `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions |  |
 | `defaultHostForHttp10` | `string` |  |  |
-| `tracing` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.ListenerTracingSettings](../hcm.proto.sk#listenertracingsettings) |  |  |
+| `tracing` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.TracingSettings](../hcm.proto.sk#tracingsettings) |  |  |
 
 
 
 
 ---
-### ListenerTracingSettings
+### TracingSettings
 
  
 Contains various settings for configuring Envoy's tracing capabilities at the listener level.
@@ -89,25 +88,6 @@ Contains various settings for configuring Envoy's tracing capabilities at the li
 | ----- | ---- | ----------- |----------- | 
 | `requestHeadersForTags` | `[]string` | Optional. If specified, gloo will include the headers and header values for any matching request headers. |  |
 | `verbose` | `bool` | Optional. If true, gloo will include logs for streaming events. Default: false. |  |
-
-
-
-
----
-### RouteTracingSettings
-
- 
-Contains various settings for configuring Envoy's tracing capabilities at the route level.
-Note: must also specify ListenerTracingSettings for the associated listener.
-
-```yaml
-"routeDescriptor": string
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `routeDescriptor` | `string` | Optional. If set, will be used to identify the route that produced the trace. If empty, a descriptor will be generated for the route. The generated descriptor will be unique among all active routes but may collide with past or future routes. |  |
 
 
 

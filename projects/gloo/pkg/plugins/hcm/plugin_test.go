@@ -40,7 +40,7 @@ var _ = Describe("Plugin", func() {
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: "DefaultHostForHttp_10",
 
-			Tracing: &hcm.HttpConnectionManagerSettings_ListenerTracingSettings{
+			Tracing: &hcm.HttpConnectionManagerSettings_TracingSettings{
 				RequestHeadersForTags: []string{"path", "origin"},
 				Verbose:               true,
 			},
