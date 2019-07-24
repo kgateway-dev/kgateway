@@ -7,7 +7,7 @@ import (
 )
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	if in.RoutePlugins.Tracing == nil {
+	if in.RoutePlugins == nil || in.RoutePlugins.Tracing == nil {
 		return nil
 	}
 	// set the constant values

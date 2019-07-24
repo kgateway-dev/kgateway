@@ -98,3 +98,11 @@ func (s *envoyServer) DeltaClusters(_ v2.ClusterDiscoveryService_DeltaClustersSe
 func (s *envoyServer) DeltaRoutes(_ v2.RouteDiscoveryService_DeltaRoutesServer) error {
 	return errors.New("not implemented")
 }
+
+func (s *envoyServer) DeltaEndpoints(server v2.EndpointDiscoveryService_DeltaEndpointsServer) error {
+	return s.DeltaEndpoints(server)
+}
+
+func (s *envoyServer) DeltaListeners(server v2.ListenerDiscoveryService_DeltaListenersServer) error {
+	return s.DeltaListeners(server)
+}
