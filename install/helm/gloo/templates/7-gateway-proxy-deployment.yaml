@@ -24,6 +24,7 @@ spec:
     metadata:
       labels:
         gloo: {{ $name | kebabcase }}
+        gateway-proxy: live
 {{ $annotationExist := false}}
 {{- if $spec.podTemplate.extraAnnotations }}
 {{ $annotationExist = true}}
