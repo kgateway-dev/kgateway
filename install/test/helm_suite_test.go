@@ -3,8 +3,8 @@ package test
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
+	"sync"
 	"testing"
 
 	"github.com/solo-io/go-utils/testutils"
@@ -31,6 +31,8 @@ const (
 var (
 	version      string
 	testManifest TestManifest
+	// use a mutex to prevent these tests from running in parallel
+	makefileSerializer sync.Mutex
 )
 
 func MustMake(dir string, args ...string) {
@@ -51,18 +53,3 @@ func MustMake(dir string, args ...string) {
 	}
 	Expect(err).NotTo(HaveOccurred())
 }
-
-var _ = SynchronizedBeforeSuite(
-	func() []byte {
-		MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS=--namespace "+namespace+" --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test --set gatewayProxies.gatewayProxy.tracing=trace:spec")
-		return nil
-	},
-	func(_ []byte) {
-		testManifest = NewTestManifest("../gloo-gateway.yaml")
-		version = os.Getenv("TAGGED_VERSION")
-		if version == "" {
-			version = "dev"
-		} else {
-			version = version[1:]
-		}
-	})

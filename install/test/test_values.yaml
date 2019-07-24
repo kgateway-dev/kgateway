@@ -1,2 +1,5 @@
-trace: spec
-another: line
+gatewayProxies:
+  gatewayProxy:
+    tracing:
+      trace: spec
+      another: line
