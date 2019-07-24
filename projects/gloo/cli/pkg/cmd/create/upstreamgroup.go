@@ -2,26 +2,19 @@ package create
 
 import "C"
 import (
-	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
-	//"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	//"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
-	//"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
-	//"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
-	//"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
-	//"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	//"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	//"strconv"
-	//"strings"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 
@@ -35,13 +28,18 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 		Use:     constants.UPSTREAM_GROUP_COMMAND.Use,
 		Aliases: constants.UPSTREAM_GROUP_COMMAND.Aliases,
 		Short:   "Create an Upstream Group",
-		Long: "Upstream groups represent groups of upstreams",
+		Long: "Upstream groups represent groups of upstreams. An UpstreamGroup addresses an issue of how do you have " +
+			"multiple routes or virtual services referencing the same multiple weighted destinations where you want to " +
+			"change the weighting consistently for all calling routes. This is a common need for Canary deployments " +
+			"where you want all calling routes to forward traffic consistently across the two service versions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !opts.Top.Interactive {
+			if !opts.Top.Interactive && len(opts.Create.InputUpstreamGroup.WeightedDestinations.Entries) == 0 {
 				return errors.Errorf(EmptyUpstreamGroupCreateError)
 			}
-			if err := surveyutils.AddUpstreamGroupFlagsInteractive(&opts.Create.InputUpstreamGroup); err != nil {
-				return err
+			if len(opts.Create.InputUpstreamGroup.WeightedDestinations.Entries) == 0 {
+				if err := surveyutils.AddUpstreamGroupFlagsInteractive(&opts.Create.InputUpstreamGroup); err != nil {
+					return err
+				}
 			}
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
 				return err
@@ -50,6 +48,13 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 		},
 	}
 	cliutils.ApplyOptions(cmd, optionsFunc)
+
+	flags := cmd.Flags()
+	flags.StringSliceVar(
+		&opts.Create.InputUpstreamGroup.WeightedDestinations.Entries,
+		"weighted-upstreams",
+		[]string{},
+		"comma-separated list of weighted upstream key=value entries (namespace.upstreamName=weight)")
 	return cmd
 }
 
@@ -68,8 +73,7 @@ func createUpstreamGroup(opts *options.Options) error {
 		return err
 	}
 
-	// TODO(kdorosh) implement!
-	// helpers.PrintUpstreamGroups(v1.UpstreamGroupList{ug}, opts.Top.Output)
+	helpers.PrintUpstreamGroups(v1.UpstreamGroupList{ug}, opts.Top.Output)
 
 	return nil
 }
@@ -86,117 +90,46 @@ func upstreamGroupFromOpts(opts *options.Options) (*v1.UpstreamGroup, error) {
 }
 
 func upstreamGroupDestinationsFromOpts(input options.InputUpstreamGroup) ([]*v1.WeightedDestination, error) {
-	fmt.Println(input.WeightedDestinations)
-	destinations := make([]*v1.WeightedDestination, len(input.WeightedDestinations))
-	for i, v := range input.WeightedDestinations {
-		fmt.Println(v)
-		tmp := v
-		destinations[i] = &tmp
+	// collect upstreams list
+	usClient := helpers.MustUpstreamClient()
+	ussByKey := make(map[string]*v1.Upstream)
+	var usKeys []string
+	for _, ns := range helpers.MustGetNamespaces() {
+		usList, err := usClient.List(ns, clients.ListOpts{})
+		if err != nil {
+			return nil, err
+		}
+		for _, us := range usList {
+			ref := us.Metadata.Ref()
+			ussByKey[ref.Key()] = us
+			usKeys = append(usKeys, ref.Key())
+		}
 	}
-	fmt.Println(destinations)
-	return destinations, nil
+	if len(usKeys) == 0 {
+		return nil, errors.Errorf("no upstreams found. create an upstream first or enable discovery.")
+	}
 
-	//svcSpec, err := serviceSpecFromOpts(input.ServiceSpec)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//spec := &v1.UpstreamSpec{}
-	//switch input.UpstreamType {
-	//case options.UpstreamType_Aws:
-	//	if svcSpec != nil {
-	//		return nil, errors.Errorf("%v does not support service spec", input.UpstreamType)
-	//	}
-	//	if input.Aws.Secret.Namespace == "" {
-	//		return nil, errors.Errorf("aws secret namespace must not be empty")
-	//	}
-	//	if input.Aws.Secret.Name == "" {
-	//		return nil, errors.Errorf("aws secret name must not be empty")
-	//	}
-	//	spec.UpstreamType = &v1.UpstreamSpec_Aws{
-	//		Aws: &aws.UpstreamSpec{
-	//			Region:    input.Aws.Region,
-	//			SecretRef: input.Aws.Secret,
-	//		},
-	//	}
-	//case options.UpstreamType_Azure:
-	//	if svcSpec != nil {
-	//		return nil, errors.Errorf("%v does not support service spec", input.UpstreamType)
-	//	}
-	//	if input.Azure.Secret.Namespace == "" {
-	//		return nil, errors.Errorf("azure secret namespace must not be empty")
-	//	}
-	//	if input.Azure.Secret.Name == "" {
-	//		return nil, errors.Errorf("azure secret name must not be empty")
-	//	}
-	//	spec.UpstreamType = &v1.UpstreamSpec_Azure{
-	//		Azure: &azure.UpstreamSpec{
-	//			FunctionAppName: input.Azure.FunctionAppName,
-	//			SecretRef:       input.Azure.Secret,
-	//		},
-	//	}
-	//case options.UpstreamType_Consul:
-	//	if input.Consul.ServiceName == "" {
-	//		return nil, errors.Errorf("must provide consul service name")
-	//	}
-	//	spec.UpstreamType = &v1.UpstreamSpec_Consul{
-	//		Consul: &consul.UpstreamSpec{
-	//			ServiceName: input.Consul.ServiceName,
-	//			ServiceTags: input.Consul.ServiceTags,
-	//			ServiceSpec: svcSpec,
-	//		},
-	//	}
-	//case options.UpstreamType_Kube:
-	//	if input.Kube.ServiceName == "" {
-	//		return nil, errors.Errorf("Must provide kube service name")
-	//	}
-	//
-	//	spec.UpstreamType = &v1.UpstreamSpec_Kube{
-	//		Kube: &kubernetes.UpstreamSpec{
-	//			ServiceName:      input.Kube.ServiceName,
-	//			ServiceNamespace: input.Kube.ServiceNamespace,
-	//			ServicePort:      input.Kube.ServicePort,
-	//			Selector:         input.Kube.Selector.MustMap(),
-	//			ServiceSpec:      svcSpec,
-	//		},
-	//	}
-	//case options.UpstreamType_Static:
-	//	var hosts []*static.Host
-	//	if len(input.Static.Hosts) == 0 {
-	//		return nil, errors.Errorf("must provide at least 1 host for static upstream")
-	//	}
-	//	for _, host := range input.Static.Hosts {
-	//		var (
-	//			addr string
-	//			port uint32
-	//		)
-	//		parts := strings.Split(host, ":")
-	//		switch len(parts) {
-	//		case 1:
-	//			addr = host
-	//			port = 80
-	//		case 2:
-	//			addr = parts[0]
-	//			p, err := strconv.Atoi(parts[1])
-	//			if err != nil {
-	//				return nil, errors.Wrapf(err, "invalid port on host")
-	//			}
-	//			port = uint32(p)
-	//		default:
-	//			return nil, errors.Errorf("invalid host format. format must be IP:PORT or HOSTNAME:PORT " +
-	//				"eg www.google.com or www.google.com:80")
-	//		}
-	//		hosts = append(hosts, &static.Host{
-	//			Addr: addr,
-	//			Port: port,
-	//		})
-	//	}
-	//	spec.UpstreamType = &v1.UpstreamSpec_Static{
-	//		Static: &static.UpstreamSpec{
-	//			Hosts:       hosts,
-	//			UseTls:      input.Static.UseTls,
-	//			ServiceSpec: svcSpec,
-	//		},
-	//	}
-	//}
-	//return spec, nil
+	weightedDestinations := make([]*v1.WeightedDestination, 0)
+	for namespacedUpstream, usWeight := range input.WeightedDestinations.MustMap() {
+		weight := uint32(1)
+		if providedWeight, err := strconv.ParseUint(usWeight, 10, 64); err == nil && providedWeight > 0 {
+			weight = uint32(providedWeight)
+		}
+
+		if _, ok := ussByKey[namespacedUpstream]; !ok {
+			ns := strings.SplitAfter(namespacedUpstream, ".")[0]
+			us := strings.SplitAfter(namespacedUpstream, ".")[1]
+			return nil, errors.Errorf("no upstream found with name %v in namespace %v", us, ns)
+		}
+		wd := v1.WeightedDestination{
+			Destination: &v1.Destination{
+				DestinationType: &v1.Destination_Upstream{
+					Upstream: utils.ResourceRefPtr(ussByKey[namespacedUpstream].Metadata.Ref()),
+				},
+			},
+			Weight: weight,
+		}
+		weightedDestinations = append(weightedDestinations, &wd)
+	}
+	return weightedDestinations, nil
 }

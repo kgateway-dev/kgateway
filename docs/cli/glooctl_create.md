@@ -37,5 +37,6 @@ glooctl create [flags]
 * [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl create secret](../glooctl_create_secret)	 - Create a secret
 * [glooctl create upstream](../glooctl_create_upstream)	 - Create an Upstream
+* [glooctl create upstreamgroup](../glooctl_create_upstreamgroup)	 - Create an Upstream Group
 * [glooctl create virtualservice](../glooctl_create_virtualservice)	 - Create a Virtual Service
 

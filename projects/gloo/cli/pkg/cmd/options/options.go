@@ -2,7 +2,6 @@ package options
 
 import (
 	"context"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -117,7 +116,7 @@ type PrefixRewrite struct {
 }
 
 type InputUpstreamGroup struct {
-    WeightedDestinations[] v1.WeightedDestination
+	WeightedDestinations InputMapStringString
 }
 
 func (p *PrefixRewrite) String() string {

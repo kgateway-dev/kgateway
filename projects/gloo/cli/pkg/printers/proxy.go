@@ -9,7 +9,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-// PrintTable prints virtual services using tables to io.Writer
+// PrintTable prints proxies using tables to io.Writer
 func ProxyTable(list v1.ProxyList, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Proxy", "Listeners", "Virtual Hosts", "Status"})

@@ -2,9 +2,9 @@ package surveyutils
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -12,8 +12,8 @@ import (
 )
 
 func AddUpstreamGroupFlagsInteractive(upstreamGroup *options.InputUpstreamGroup) error {
-	// TODO this was copied -- refactor and prevent duplication
-	// collect secrets list
+
+	// collect upstreams list
 	usClient := helpers.MustUpstreamClient()
 	ussByKey := make(map[string]*v1.Upstream)
 	var usKeys []string
@@ -29,10 +29,8 @@ func AddUpstreamGroupFlagsInteractive(upstreamGroup *options.InputUpstreamGroup)
 		}
 	}
 	if len(usKeys) == 0 {
-		return errors.Errorf("no upstreams found. create an upstream first or enable " +
-			"discovery.")
+		return errors.Errorf("no upstreams found. create an upstream first or enable discovery.")
 	}
-	// TODO end of copied code
 
 	var chosenUpstreams []string
 	if err := cliutil.MultiChooseFromList(
@@ -43,23 +41,13 @@ func AddUpstreamGroupFlagsInteractive(upstreamGroup *options.InputUpstreamGroup)
 		return err
 	}
 
-	upstreamGroup.WeightedDestinations = make([]v1.WeightedDestination, len(chosenUpstreams))
+	upstreamGroup.WeightedDestinations.Entries = make([]string, len(chosenUpstreams))
 	for i, us := range chosenUpstreams {
 		var weight = uint32(0)
-		if err := cliutil.GetUint32InputDefault(fmt.Sprintf("Weight for the %v upstream?", us), &weight,1); err != nil {
+		if err := cliutil.GetUint32InputDefault(fmt.Sprintf("Weight for the %v upstream?", us), &weight, 1); err != nil {
 			return err
 		}
-		// TODO ensure weight is nonzero
-
-		// TODO handle all destination types, including multi?
-		upstreamGroup.WeightedDestinations[i] = v1.WeightedDestination{
-			Destination: &v1.Destination{
-				DestinationType: &v1.Destination_Upstream{
-					Upstream: utils.ResourceRefPtr(ussByKey[us].Metadata.Ref()),
-				},
-			},
-			Weight: uint32(weight),
-		}
+		upstreamGroup.WeightedDestinations.Entries[i] = us + "=" + fmt.Sprint(weight)
 	}
 	return nil
 }

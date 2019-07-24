@@ -18,6 +18,14 @@ func PrintUpstreams(upstreams v1.UpstreamList, outputType string) {
 		}, os.Stdout)
 }
 
+func PrintUpstreamGroups(upstreamGroups v1.UpstreamGroupList, outputType string) {
+	cliutils.PrintList(outputType, "", upstreamGroups,
+		func(data interface{}, w io.Writer) error {
+			printers.UpstreamGroupTable(data.(v1.UpstreamGroupList), w)
+			return nil
+		}, os.Stdout)
+}
+
 func PrintProxies(proxies v1.ProxyList, outputType string) {
 	cliutils.PrintList(outputType, "", proxies,
 		func(data interface{}, w io.Writer) error {

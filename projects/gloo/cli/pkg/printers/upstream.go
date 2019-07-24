@@ -11,7 +11,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-// PrintTable prints virtual services using tables to io.Writer
+// PrintTable prints upstreams using tables to io.Writer
 func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Upstream", "type", "status", "details"})
