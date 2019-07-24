@@ -2,9 +2,10 @@ package printers
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"io"
 )
 
 // PrintTable prints upstream groups using tables to io.Writer
@@ -76,7 +77,7 @@ func upstreamGroupDetails(ug *v1.UpstreamGroup) []string {
 			add(fmt.Sprintf("subset: %v", us.Destination.Subset.Values))
 		}
 
-		add(fmt.Sprintf("weight: %v   %% total: %.2f", us.Weight, float32(us.Weight) / float32(totalWeight)))
+		add(fmt.Sprintf("weight: %v   %% total: %.2f", us.Weight, float32(us.Weight)/float32(totalWeight)))
 	}
 	return details
 }

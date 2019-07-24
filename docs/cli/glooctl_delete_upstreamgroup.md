@@ -1,23 +1,23 @@
 ---
-title: "glooctl delete upstream"
+title: "glooctl delete upstreamgroup"
 weight: 5
 ---
-## glooctl delete upstream
+## glooctl delete upstreamgroup
 
-delete an upstream
+delete an upstream group
 
 ### Synopsis
 
-usage: glooctl delete upstream [NAME] [--namespace=namespace]
+usage: glooctl delete upstreamgroup [NAME] [--namespace=namespace]
 
 ```
-glooctl delete upstream [flags]
+glooctl delete upstreamgroup [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for upstream
+  -h, --help   help for upstreamgroup
 ```
 
 ### Options inherited from parent commands
