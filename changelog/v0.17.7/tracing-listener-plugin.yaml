@@ -1,4 +1,4 @@
 changelog:
-  - type: NON_USER_FACING
-    description: "Listener plugin for tracing. Not yet connected."
+  - type: NEW_FEATURE
+    description: "Enable tracing."
     issueLink: https://github.com/solo-io/gloo/issues/879

@@ -56,7 +56,6 @@ Represents global settings for all the Gloo components.
 "discovery": .gloo.solo.io.Settings.DiscoveryOptions
 "consul": .gloo.solo.io.Settings.ConsulConfiguration
 "extensions": .gloo.solo.io.Extensions
-"tracingEnabled": bool
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
 
@@ -82,7 +81,6 @@ Represents global settings for all the Gloo components.
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | Options for configuring Gloo's Discovery service |  |
 | `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
-| `tracingEnabled` | `bool` | Tracing enabled, if true, will configure envoy to capture traces (default false) This field is set by specifying a trace configuration in the helm values specification. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
 

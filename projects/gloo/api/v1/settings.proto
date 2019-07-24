@@ -149,10 +149,6 @@ message Settings {
     // Settings for extensions
     Extensions extensions = 16;
 
-    // Tracing enabled, if true, will configure envoy to capture traces (default false)
-    // This field is set by specifying a trace configuration in the helm values specification.
-    bool tracing_enabled = 21;
-
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 14 [(gogoproto.nullable) = false];
 

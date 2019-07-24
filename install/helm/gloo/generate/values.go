@@ -65,7 +65,6 @@ type Settings struct {
 	Integrations    *Integrations `json:"integrations,omitempty"`
 	Create          bool          `json:"create,omitempty"`
 	Extensions      interface{}   `json:"extensions,omitempty"`
-	TracingEnabled  bool          `json:"tracingEnabled,omitempty"`
 }
 
 type Gloo struct {
