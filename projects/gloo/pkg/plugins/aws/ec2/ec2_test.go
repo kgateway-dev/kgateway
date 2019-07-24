@@ -1,11 +1,16 @@
 package ec2
 
 import (
+	"context"
+
+	"github.com/solo-io/go-utils/testutils"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -37,7 +42,7 @@ var _ = Describe("Plugin", func() {
 	Context("convert filters from specs", func() {
 		key1 := "abc"
 		value1 := "123"
-		secret := core.ResourceRef{"secret", "ns"}
+		secret := &core.ResourceRef{"secret", "ns"}
 		region := "us-east-1"
 		DescribeTable("filter conversion",
 			func(input *glooec2.UpstreamSpec, expected []*ec2.Filter) {
@@ -72,6 +77,74 @@ var _ = Describe("Plugin", func() {
 					Values: []*string{aws.String(value1)},
 				}},
 			),
+		)
+	})
+
+	Context("convert to endpoint", func() {
+		pubIp := "1.2.3.4"
+		privateIp := "5.5.5.5"
+		writeNamespace := "default"
+		DescribeTable("convert to endpoints", func(input *v1.Upstream, instance *ec2.Instance, expected *v1.Endpoint) {
+			out := upstreamInstanceToEndpoint(context.TODO(), writeNamespace, input, instance)
+			Expect(out).To(Equal(expected))
+			testutils.ExpectEqualProtoMessages(out, expected)
+		},
+			Entry("should use proper default port and ip when not specified", &v1.Upstream{
+				UpstreamSpec: &v1.UpstreamSpec{
+					UpstreamType: &v1.UpstreamSpec_AwsEc2{
+						AwsEc2: &glooec2.UpstreamSpec{
+							Region:    "us-east-1",
+							SecretRef: nil,
+							RoleArns:  nil,
+							Filters:   nil,
+							PublicIp:  false,
+							Port:      0,
+						},
+					},
+				},
+				Metadata: core.Metadata{
+					Name:      "ex1",
+					Namespace: "default",
+				},
+			},
+				&ec2.Instance{
+					PublicIpAddress:  aws.String(pubIp),
+					PrivateIpAddress: aws.String(privateIp),
+				},
+				&v1.Endpoint{
+					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
+					Address:   privateIp,
+					Port:      80,
+					Metadata:  core.Metadata{Name: "ec2-name-ex1-namespace-default--5-5-5-5", Namespace: writeNamespace},
+				}),
+			Entry("should use proper port and ip when specified", &v1.Upstream{
+				UpstreamSpec: &v1.UpstreamSpec{
+					UpstreamType: &v1.UpstreamSpec_AwsEc2{
+						AwsEc2: &glooec2.UpstreamSpec{
+							Region:    "us-east-1",
+							SecretRef: nil,
+							RoleArns:  nil,
+							Filters:   nil,
+							PublicIp:  true,
+							Port:      77,
+						},
+					},
+				},
+				Metadata: core.Metadata{
+					Name:      "ex1",
+					Namespace: "default",
+				},
+			},
+				&ec2.Instance{
+					PublicIpAddress:  aws.String(pubIp),
+					PrivateIpAddress: aws.String(privateIp),
+				},
+				&v1.Endpoint{
+					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
+					Address:   pubIp,
+					Port:      77,
+					Metadata:  core.Metadata{Name: "ec2-name-ex1-namespace-default--1-2-3-4", Namespace: writeNamespace},
+				}),
 		)
 	})
 })

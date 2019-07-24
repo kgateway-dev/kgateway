@@ -13,7 +13,7 @@ import (
 // we expect multiple upstreams to share the same view (so we batch the queries and apply filters locally)
 type CredentialSpec struct {
 	// secretRef identifies the AWS secret that should be used to authenticate the client
-	secretRef core.ResourceRef
+	secretRef *core.ResourceRef
 	// region is the AWS region where our credentialMap live
 	region string
 	// roleArns are a list of AWS Roles (specified by their Amazon Resource Number (ARN)) which should be assumed when
@@ -34,7 +34,7 @@ func (cs *CredentialSpec) Region() string {
 	return cs.region
 }
 
-func (cs *CredentialSpec) SecretRef() core.ResourceRef {
+func (cs *CredentialSpec) SecretRef() *core.ResourceRef {
 	return cs.secretRef
 }
 

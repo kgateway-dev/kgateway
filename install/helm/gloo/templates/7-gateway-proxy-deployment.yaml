@@ -116,6 +116,10 @@ spec:
         {{ $key }}: {{ $value | quote }}
       {{- end }}
       {{- end }}
+      {{- if $spec.podTemplate.tolerations }}
+      tolerations:
+{{ toYaml $spec.podTemplate.tolerations | indent 6}}
+      {{- end }}
       {{- if $spec.podTemplate.image.pullSecret }}
       imagePullSecrets:
         - name: {{ $spec.podTemplate.image.pullSecret }}{{end}}

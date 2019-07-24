@@ -8,10 +8,12 @@ import (
 )
 
 func AddVirtualServiceFlagsInteractive(vs *options.InputVirtualService) error {
-	if err := cliutil.GetStringSliceInput(
-		fmt.Sprintf("Add another domain for this virtual service (empty to skip)? %v", vs.Domains),
-		&vs.Domains,
-	); err != nil {
+
+	var msgProvider = func() string {
+		return fmt.Sprintf("Add a domain for this virtual service (empty defaults to all domains)? Current domains %v", vs.Domains)
+	}
+
+	if err := cliutil.GetStringSliceInputLazyPrompt(msgProvider, &vs.Domains); err != nil {
 		return err
 	}
 

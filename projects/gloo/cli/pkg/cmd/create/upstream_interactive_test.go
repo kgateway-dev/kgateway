@@ -156,14 +156,16 @@ var _ = Describe("Upstream Interactive Mode", func() {
 		})
 	})
 
-	// TODO: https://github.com/solo-io/gloo/issues/387, see comment below
-	PIt("should work for static with hosts", func() {
+	It("should work for static with hosts", func() {
 		testutil.ExpectInteractive(func(c *testutil.Console) {
 			c.ExpectString(upstreamPrompt)
 			c.SendLine("static")
 			c.ExpectString("Add another host for this upstream (empty to skip)? []")
 			c.SendLine("foo")
-			c.SendLine("") // can not figure out how to advance in this case, some idiosyncrasy with the slice prompt
+			c.ExpectString("Add another host for this upstream (empty to skip)? [foo]")
+			c.SendLine("bar")
+			c.ExpectString("Add another host for this upstream (empty to skip)? [foo bar]")
+			c.SendLine("")
 			c.ExpectEOF()
 		}, func() {
 			var upstream options.InputUpstream

@@ -66,7 +66,11 @@ data:
                     http_filters:
                       - name: envoy.router
                         config: {}
-{{- end}}
+{{- end}} # if $spec.podTemplate.stats
+{{- if $spec.tracing }}
+      tracing:
+{{ toYaml $spec.tracing | indent 8}}
+{{- end}} # if $spec.tracing
 
 
       clusters:
@@ -101,7 +105,7 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}}
+{{- end}} # if $spec.podTemplate.stats
 
     dynamic_resources:
       ads_config:
@@ -118,6 +122,6 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
-{{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}}
-{{- end }}
-{{- end }}
+{{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} # if (empty $spec.configMap.data) ## allows full custom
+{{- end }} # range $name, $spec := .Values.gatewayProxies
+{{- end -}} # if .Values.gateway.enabled

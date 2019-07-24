@@ -38,7 +38,7 @@ var _ = Describe("polling", func() {
 		secretClient = getSecretClient(ctx)
 		refreshRate = time.Second
 		responses = getMockListerResponses()
-		err := primeSecretClient(secretClient, []core.ResourceRef{testSecretRef1, testSecretRef2})
+		err := primeSecretClient(secretClient, []*core.ResourceRef{testSecretRef1, testSecretRef2})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -191,7 +191,7 @@ func getMockListerResponses() mockListerResponses {
 	return resp
 }
 
-func primeSecretClient(secretClient v1.SecretClient, secretRefs []core.ResourceRef) error {
+func primeSecretClient(secretClient v1.SecretClient, secretRefs []*core.ResourceRef) error {
 	for _, ref := range secretRefs {
 		secret := &v1.Secret{
 			Kind: &v1.Secret_Aws{
@@ -260,11 +260,11 @@ var (
 			Namespace: "default",
 		},
 	}
-	testSecretRef1 = core.ResourceRef{
+	testSecretRef1 = &core.ResourceRef{
 		Name:      "secret1",
 		Namespace: "namespace",
 	}
-	testSecretRef2 = core.ResourceRef{
+	testSecretRef2 = &core.ResourceRef{
 		Name:      "secret2",
 		Namespace: "namespace",
 	}
