@@ -285,7 +285,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:0dfad7ee31534a906ee24dad894c892144a9a445b1835aa6b18c3ac9559893b3"
+  digest = "1:bf3570ae8ea25ecd192bf0f4e941c402d21c410cfa8f71f03ae27b2f1ec69901"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -311,8 +311,8 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "094d054b10176dd84506e4f0f65e7f65d8499241"
-  version = "v0.8.0"
+  revision = "0f0598e8dab0c0306119ca6fff632b0a672cbfa1"
+  version = "v0.8.2"
 
 [[projects]]
   digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
@@ -1893,6 +1893,14 @@
   pruneopts = "UT"
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:525e411c9476f1a201efc22d7c4878002b001f20f241221c226a83ba654975e4"
+  name = "istio.io/gogo-genproto"
+  packages = ["opencensus/proto/trace/v1"]
+  pruneopts = "UT"
+  revision = "e88dc8b0e4dba2caf977ab9ec040cc2081db103f"
 
 [[projects]]
   branch = "master"

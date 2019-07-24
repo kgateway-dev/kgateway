@@ -39,3 +39,12 @@ message HttpConnectionManagerSettings {
     }
     TracingSettings tracing = 17;
 }
+
+// Contains various settings for configuring Envoy's tracing capabilities at the route level.
+// Note: must also specify ListenerTracingSettings for the associated listener.
+message RouteTracingSettings {
+    // Optional. If set, will be used to identify the route that produced the trace.
+    // If empty, a descriptor will be generated for the route. The generated descriptor will be unique among all active
+    // routes but may collide with past or future routes.
+    string route_descriptor = 1;
+}
