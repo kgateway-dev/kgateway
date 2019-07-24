@@ -27,6 +27,7 @@ ingressProxy:
     stats: true
   configMap:
     data:
+  tracing:
 
 gateway:
   enabled: false

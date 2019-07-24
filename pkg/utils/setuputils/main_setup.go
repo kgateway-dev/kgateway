@@ -70,7 +70,7 @@ func Main(opts SetupOpts) error {
 	return nil
 }
 
-// TODO (ilackarms): instead of using an heuristic here, read from a CLI flagg
+// TODO (ilackarms): instead of using an heuristic here, read from a CLI flag
 // first attempt to use kube crd, otherwise fall back to file
 func KubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.SettingsClient, error) {
 	cfg, err := kubeutils.GetConfig("", "")
@@ -87,7 +87,7 @@ func KubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.Setti
 }
 
 // TODO(ilackarms): remove this or move it to a test package, only use settings watch for production gloo
-func writeDefaultSettings(settingsNamespace, name string, cli v1.SettingsClient) error {
+func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) error {
 	settings := &v1.Settings{
 		ConfigSource: &v1.Settings_KubernetesConfigSource{
 			KubernetesConfigSource: &v1.Settings_KubernetesCrds{},
@@ -101,8 +101,8 @@ func writeDefaultSettings(settingsNamespace, name string, cli v1.SettingsClient)
 		BindAddr:           "0.0.0.0:9977",
 		RefreshRate:        types.DurationProto(time.Minute),
 		DevMode:            true,
-		DiscoveryNamespace: settingsNamespace,
-		Metadata:           core.Metadata{Namespace: settingsNamespace, Name: name},
+		DiscoveryNamespace: defaultNamespace,
+		Metadata:           core.Metadata{Namespace: defaultNamespace, Name: name},
 	}
 	if _, err := cli.Write(settings, clients.WriteOpts{}); err != nil && !errors.IsExist(err) {
 		return errors.Wrapf(err, "failed to create default settings")

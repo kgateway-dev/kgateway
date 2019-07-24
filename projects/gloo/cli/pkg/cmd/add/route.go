@@ -258,5 +258,5 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 			},
 		}, nil
 	}
-	return nil, nil // errors.Errorf("unimplemented destination type: %v", input.DestinationType)
+	return nil, nil
 }

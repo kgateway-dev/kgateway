@@ -7,16 +7,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
-    gloo: gateway-proxy
+    gloo: ingress-proxy
 data:
 {{ if (empty .Values.ingressProxy.configMap.data) }}
   envoy.yaml: |
     node:
       cluster: ingress
-      id: "{{ "{{" }}.PodName{{ "}}" }}.{{ "{{" }}.PodNamespace{{ "}}" }}"
+      id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
-        # this line must match !
-        role: "{{ "{{" }}.PodNamespace{{ "}}" }}~ingress-proxy"
+        # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
+        role: "{{ `{{.PodNamespace}}` }}~ingress-proxy"
     static_resources:
       clusters:
       - name: xds_cluster
@@ -83,6 +83,10 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
+{{- if .Values.ingressProxy.tracing }}
+    tracing:
+{{ toYaml .Values.ingressProxy.tracing | indent 6}}
+{{- end}} # if .Values.ingressProxy.tracing
 {{- else}}{{ toYaml .Values.ingressProxy.configMap.data | indent 2}}{{- end}}
 
 {{- end }}

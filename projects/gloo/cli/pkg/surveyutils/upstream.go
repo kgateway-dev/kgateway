@@ -99,10 +99,10 @@ func getAzureInteractive(azure *options.InputAzureSpec) error {
 }
 
 func getStaticInteractive(static *options.InputStaticSpec) error {
-	if err := cliutil.GetStringSliceInput(
-		fmt.Sprintf("Add another host for this upstream (empty to skip)? %v", static.Hosts),
-		&static.Hosts,
-	); err != nil {
+	var upstreamMsgProvider = func() string {
+		return fmt.Sprintf("Add another host for this upstream (empty to skip)? %v", static.Hosts)
+	}
+	if err := cliutil.GetStringSliceInputLazyPrompt(upstreamMsgProvider, &static.Hosts); err != nil {
 		return err
 	}
 	return nil

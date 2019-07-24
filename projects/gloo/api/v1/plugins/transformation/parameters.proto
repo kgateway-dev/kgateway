@@ -26,6 +26,4 @@ message Parameters {
     //     parameters:
     //         path: /users/{ userId }
     google.protobuf.StringValue path = 2;
-    //TODO: support query params
-    //TODO: support form params
 }

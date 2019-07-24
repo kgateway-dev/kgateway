@@ -112,14 +112,18 @@ func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtua
 func (t *translator) envoyRoute(params plugins.RouteParams, report reportFunc, in *v1.Route) envoyroute.Route {
 	out := &envoyroute.Route{}
 
-	setMatch(in, out)
+	setMatch(in, report, out)
 
 	t.setAction(params, report, in, out)
 
 	return *out
 }
 
-func setMatch(in *v1.Route, out *envoyroute.Route) {
+func setMatch(in *v1.Route, report reportFunc, out *envoyroute.Route) {
+
+	if in.Matcher.PathSpecifier == nil {
+		report(errors.New("no path specifier provided"), "invalid route")
+	}
 	match := envoyroute.RouteMatch{
 		Headers:         envoyHeaderMatcher(in.Matcher.Headers),
 		QueryParameters: envoyQueryMatcher(in.Matcher.QueryParameters),
@@ -216,7 +220,8 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 		out.ClusterSpecifier = &envoyroute.RouteAction_Cluster{
 			Cluster: UpstreamToClusterName(*usRef),
 		}
-		out.MetadataMatch = getSubsetMatch(dest.Single.Subset)
+
+		out.MetadataMatch = getSubsetMatch(dest.Single)
 
 		return checkThatSubsetMatchesUpstream(params, dest.Single)
 	case *v1.RouteAction_Multi:
@@ -256,7 +261,7 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, &envoyroute.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(*usRef),
 			Weight:        &types.UInt32Value{Value: weightedDest.Weight},
-			MetadataMatch: getSubsetMatch(weightedDest.Destination.Subset),
+			MetadataMatch: getSubsetMatch(weightedDest.Destination),
 		})
 
 		if err = checkThatSubsetMatchesUpstream(params, weightedDest.Destination); err != nil {
@@ -270,12 +275,16 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 	return nil
 }
 
-func getSubsetMatch(subset *v1.Subset) *envoycore.Metadata {
+// TODO(marco): when we update the routing API we should move this to a RouteActionPlugin
+func getSubsetMatch(destination *v1.Destination) *envoycore.Metadata {
+	var routeMetadata *envoycore.Metadata
+
 	// TODO(yuval-k): should we add validation that the route subset indeed exists in the upstream?
-	if subset == nil {
-		return nil
+	// First convert the subset information on the base destination, if present
+	if destination.Subset != nil {
+		routeMetadata = getLbMetadata(nil, destination.Subset.Values, "")
 	}
-	return getLbMetadata(nil, subset.Values)
+	return routeMetadata
 }
 
 func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination) error {

@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
@@ -52,19 +54,19 @@ type TestClients struct {
 	GlooPort             int
 }
 
-var glooPortBase int32 = int32(30400)
+var glooPortBase = int32(30400)
 
 func AllocateGlooPort() int32 {
 	return atomic.AddInt32(&glooPortBase, 1) + int32(config.GinkgoConfig.ParallelNode*1000)
 }
 
-func RunGateway(ctx context.Context, justgloo bool) TestClients {
+func RunGateway(ctx context.Context, justGloo bool) TestClients {
 	ns := defaults.GlooSystem
 	ro := &RunOptions{
 		NsToWrite: ns,
 		NsToWatch: []string{"default", ns},
 		WhatToRun: What{
-			DisableGateway: justgloo,
+			DisableGateway: justGloo,
 		},
 		KubeClient: helpers.MustKubeClient(),
 	}
@@ -86,6 +88,7 @@ type RunOptions struct {
 	Extensions       syncer.Extensions
 	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
+	ConsulClient     consul.ConsulWatcher
 }
 
 //noinspection GoUnhandledErrorResult
@@ -207,8 +210,9 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
 		},
-		KubeClient: runOptions.KubeClient,
-		DevMode:    true,
+		KubeClient:   runOptions.KubeClient,
+		DevMode:      true,
+		ConsulClient: runOptions.ConsulClient,
 	}
 }
 

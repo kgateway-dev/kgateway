@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Assume ARN Role for EC2 plugin.
+    issueLink: https://github.com/solo-io/gloo/issues/825

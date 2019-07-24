@@ -25,7 +25,7 @@ const (
 func NewHybridUpstreamClient(
 	upstreamClient v1.UpstreamClient,
 	serviceClient skkube.ServiceClient,
-	consulClient consul.ConsulClient) (v1.UpstreamClient, error) {
+	consulClient consul.ConsulWatcher) (v1.UpstreamClient, error) {
 
 	clientMap := make(map[string]v1.UpstreamClient)
 
@@ -100,12 +100,21 @@ type upstreamsWithSource struct {
 func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
 	opts = opts.WithDefaults()
 	ctx := opts.Ctx
-
 	var (
 		eg                   = errgroup.Group{}
 		collectErrsChan      = make(chan error)
 		collectUpstreamsChan = make(chan *upstreamsWithSource)
 	)
+
+	// first thing, do a list of everything to get the current state
+	current := &hybridUpstreamSnapshot{upstreamsBySource: map[string]v1.UpstreamList{}}
+	for source, client := range c.clientMap {
+		upstreams, err := client.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+		if err != nil {
+			return nil, nil, err
+		}
+		current.setUpstreams(source, upstreams)
+	}
 
 	for source, client := range c.clientMap {
 		upstreamsFromSourceChan, errsFromSourceChan, err := client.Watch(namespace, opts)
@@ -128,9 +137,9 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	}
 
 	upstreamsOut := make(chan v1.UpstreamList)
+
 	go func() {
 		previous := &hybridUpstreamSnapshot{upstreamsBySource: map[string]v1.UpstreamList{}}
-		current := previous.clone()
 		syncFunc := func() {
 			if current.hash() == previous.hash() {
 				return
@@ -139,6 +148,9 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 			toSend := current.clone()
 			upstreamsOut <- toSend.toList()
 		}
+
+		// First time - sync the current state
+		syncFunc()
 
 		for {
 			select {
