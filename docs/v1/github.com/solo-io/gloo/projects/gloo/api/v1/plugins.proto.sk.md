@@ -126,6 +126,7 @@ to be usable by Gloo.
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "extensions": .gloo.solo.io.Extensions
+"tracing": .hcm.plugins.gloo.solo.io.RouteTracingSettings
 
 ```
 
@@ -137,6 +138,7 @@ to be usable by Gloo.
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `tracing` | [.hcm.plugins.gloo.solo.io.RouteTracingSettings](../plugins/hcm/hcm.proto.sk#routetracingsettings) |  |  |
 
 
 

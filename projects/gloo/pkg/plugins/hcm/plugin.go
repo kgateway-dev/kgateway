@@ -17,12 +17,28 @@ const (
 	pluginStage = plugins.PostInAuth
 )
 
+var (
+	// always produce a trace whenever the header "x-client-trace-id" is passed
+	clientSamplingNumerator uint32 = 100
+	// never trace at random
+	randomSamplingNumerator uint32 = 0
+	// do not limit the number of traces
+	// (always produce a trace whenever the header "x-client-trace-id" is passed)
+	overallSamplingNumerator uint32 = 100
+
+	// use the same fixed rates for the listener and route. Have to create separate vars due to different input types
+	clientSamplingRate, clientSamplingRateFractional   = getDualPercentForms(clientSamplingNumerator)
+	randomSamplingRate, randomSamplingRateFractional   = getDualPercentForms(randomSamplingNumerator)
+	overallSamplingRate, overallSamplingRateFractional = getDualPercentForms(overallSamplingNumerator)
+)
+
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
 var _ plugins.Plugin = new(Plugin)
 var _ plugins.ListenerPlugin = new(Plugin)
+var _ plugins.RoutePlugin = new(Plugin)
 
 type Plugin struct {
 }
@@ -106,11 +122,13 @@ func copyTracingSettings(trCfg *envoyhttp.HttpConnectionManager_Tracing, tracing
 	// the following fields are hard-coded (the may be exposed in the future as desired)
 	// Gloo configures envoy as an ingress, rather than an egress
 	trCfg.OperationName = envoyhttp.INGRESS
-	// always produce a trace whenever the header "x-client-trace-id" is passed
-	trCfg.ClientSampling = &envoy_type.Percent{Value: 100.0}
-	// never trace at random
-	trCfg.RandomSampling = &envoy_type.Percent{Value: 0.0}
-	// do not limit the number of traces
-	// (always produce a trace whenever the header "x-client-trace-id" is passed)
-	trCfg.OverallSampling = &envoy_type.Percent{Value: 100.0}
+	trCfg.ClientSampling = clientSamplingRate
+	trCfg.RandomSampling = randomSamplingRate
+	trCfg.OverallSampling = overallSamplingRate
+}
+
+func getDualPercentForms(numerator uint32) (*envoy_type.Percent, *envoy_type.FractionalPercent) {
+	percentForm := &envoy_type.Percent{Value: float64(numerator)}
+	fractionalForm := &envoy_type.FractionalPercent{Numerator: numerator, Denominator: envoy_type.FractionalPercent_HUNDRED}
+	return percentForm, fractionalForm
 }

@@ -13,6 +13,7 @@ weight: 5
 
 - [HttpConnectionManagerSettings](#httpconnectionmanagersettings)
 - [TracingSettings](#tracingsettings)
+- [RouteTracingSettings](#routetracingsettings)
   
 
 
@@ -76,7 +77,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 ### TracingSettings
 
  
-Contains various settings for configuring Envoy's tracing capabilities at the listener level.
+Contains settings for configuring Envoy's tracing capabilities at the listener level.
 
 ```yaml
 "requestHeadersForTags": []string
@@ -86,8 +87,27 @@ Contains various settings for configuring Envoy's tracing capabilities at the li
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `requestHeadersForTags` | `[]string` | Optional. If specified, gloo will include the headers and header values for any matching request headers. |  |
-| `verbose` | `bool` | Optional. If true, gloo will include logs for streaming events. Default: false. |  |
+| `requestHeadersForTags` | `[]string` | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |  |
+| `verbose` | `bool` | Optional. If true, Envoy will include logs for streaming events. Default: false. |  |
+
+
+
+
+---
+### RouteTracingSettings
+
+ 
+Contains settings for configuring Envoy's tracing capabilities at the route level.
+Note: must also specify ListenerTracingSettings for the associated listener.
+
+```yaml
+"routeDescriptor": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `routeDescriptor` | `string` | Optional. If set, will be used to identify the route that produced the trace. Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed. |  |
 
 
 

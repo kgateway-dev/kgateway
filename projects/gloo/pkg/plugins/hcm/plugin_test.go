@@ -11,6 +11,7 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
@@ -97,6 +98,15 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(0.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
+	})
+
+	It("should update routes properly", func() {
+		p := NewPlugin()
+		in := &v1.Route{}
+		out := &envoyroute.Route{}
+		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
+		Expect(err).NotTo(HaveOccurred())
+
 	})
 
 })
