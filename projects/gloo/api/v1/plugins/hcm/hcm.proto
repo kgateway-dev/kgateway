@@ -29,4 +29,22 @@ message HttpConnectionManagerSettings {
     // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
     bool accept_http_10 = 15;
     string default_host_for_http_10 = 16;
+
+    // Contains various settings for configuring Envoy's tracing capabilities at the listener level.
+    message ListenerTracingSettings {
+        // Optional. If specified, gloo will include the headers and header values for any matching request headers.
+        repeated string request_headers_for_tags = 1;
+        // Optional. If true, gloo will include logs for streaming events. Default: false.
+        bool verbose = 2;
+    }
+    ListenerTracingSettings tracing = 17;
+}
+
+// Contains various settings for configuring Envoy's tracing capabilities at the route level.
+// Note: must also specify ListenerTracingSettings for the associated listener.
+message RouteTracingSettings {
+    // Optional. If set, will be used to identify the route that produced the trace.
+    // If empty, a descriptor will be generated for the route. The generated descriptor will be unique among all active
+    // routes but may collide with past or future routes.
+    string route_descriptor = 1;
 }

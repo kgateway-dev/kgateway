@@ -4,8 +4,8 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -92,4 +92,25 @@ func copySettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpCon
 		}
 	}
 
+	if hcmSettings.Tracing != nil {
+		cfg.Tracing = &envoyhttp.HttpConnectionManager_Tracing{}
+		copyTracingSettings(cfg.Tracing, hcmSettings.Tracing)
+	}
+}
+
+func copyTracingSettings(trCfg *envoyhttp.HttpConnectionManager_Tracing, tracingSettings *hcm.HttpConnectionManagerSettings_ListenerTracingSettings) {
+	// these fields are user-configurable
+	trCfg.RequestHeadersForTags = tracingSettings.RequestHeadersForTags
+	trCfg.Verbose = tracingSettings.Verbose
+
+	// the following fields are hard-coded (the may be exposed in the future as desired)
+	// Gloo configures envoy as an ingress, rather than an egress
+	trCfg.OperationName = envoyhttp.INGRESS
+	// always produce a trace whenever the header "x-client-trace-id" is passed
+	trCfg.ClientSampling = &envoy_type.Percent{Value: 100.0}
+	// never trace at random
+	trCfg.RandomSampling = &envoy_type.Percent{Value: 0.0}
+	// do not limit the number of traces
+	// (always produce a trace whenever the header "x-client-trace-id" is passed)
+	trCfg.OverallSampling = &envoy_type.Percent{Value: 100.0}
 }

@@ -125,6 +125,7 @@ to be usable by Gloo.
 "prefixRewrite": .transformation.plugins.gloo.solo.io.PrefixRewrite
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
+"tracing": .hcm.plugins.gloo.solo.io.RouteTracingSettings
 "extensions": .gloo.solo.io.Extensions
 
 ```
@@ -136,6 +137,7 @@ to be usable by Gloo.
 | `prefixRewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#prefixrewrite) |  |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
+| `tracing` | [.hcm.plugins.gloo.solo.io.RouteTracingSettings](../plugins/hcm/hcm.proto.sk#routetracingsettings) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 
 
