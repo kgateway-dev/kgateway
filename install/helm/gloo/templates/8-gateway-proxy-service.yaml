@@ -1,5 +1,4 @@
 {{- if .Values.gateway.enabled }}
-{{- if not .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: v1
@@ -8,7 +7,6 @@ metadata:
   labels:
     app: gloo
     gloo: {{ $name | kebabcase }}
-    gateway-proxy: live
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
@@ -28,7 +26,7 @@ spec:
     protocol: TCP
     name: https
   selector:
-    gloo: {{ $name | kebabcase }}
+    gateway-proxy: live
   type: {{ $spec.service.type }}
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}
@@ -36,6 +34,5 @@ spec:
   {{- if and (eq $spec.service.type "LoadBalancer") $spec.service.loadBalancerIP }}
   loadBalancerIP: {{ $spec.service.loadBalancerIP }}
   {{- end }}
-{{- end }}
 {{- end }}
 {{ end }}

@@ -1,4 +1,5 @@
 {{- if .Values.gateway.enabled }}
+{{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: apps/v1
@@ -24,7 +25,9 @@ spec:
     metadata:
       labels:
         gloo: {{ $name | kebabcase }}
+        {{- if not $isUpgrade }}
         gateway-proxy: live
+        {{- end }}
 {{ $annotationExist := false}}
 {{- if $spec.podTemplate.extraAnnotations }}
 {{ $annotationExist = true}}
