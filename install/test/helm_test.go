@@ -236,12 +236,6 @@ static_resources:
                 http_filters:
                   - name: envoy.router
                     config: {} # if $spec.podTemplate.stats
-  tracing:
-    trace: spec
-    another: line
-      # if $spec.tracing
-
-
   clusters:
   - name: gloo.gloo-system.svc.cluster.local:9977
     alt_stat_name: xds_cluster
@@ -272,7 +266,11 @@ static_resources:
               socket_address:
                 address: 127.0.0.1
                 port_value: 19000 # if $spec.podTemplate.stats
-
+tracing:
+  http:
+    trace: spec
+    another: line
+      # if $spec.tracing
 dynamic_resources:
   ads_config:
     api_type: GRPC

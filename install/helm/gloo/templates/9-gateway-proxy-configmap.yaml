@@ -67,12 +67,6 @@ data:
                       - name: envoy.router
                         config: {}
 {{- end}} # if $spec.podTemplate.stats
-{{- if $spec.tracing }}
-      tracing:
-{{ toYaml $spec.tracing | indent 8}}
-{{- end}} # if $spec.tracing
-
-
       clusters:
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
@@ -86,6 +80,11 @@ data:
                   socket_address:
                     address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
                     port_value: {{ $.Values.gloo.deployment.xdsPort }}
+{{- if $spec.tracing -}}
+{{- if $spec.tracing.cluster -}}
+{{ toYaml $spec.tracing.cluster | indent 8}}
+{{- end}} # if $spec.tracing.cluster
+{{- end}} # if $spec.tracing
         http2_protocol_options: {}
         upstream_connection_options:
           tcp_keepalive: {}
@@ -107,6 +106,11 @@ data:
                     port_value: 19000
 {{- end}} # if $spec.podTemplate.stats
 
+{{- if $spec.tracing }}
+    tracing:
+      http:
+{{ toYaml $spec.tracing | indent 8}}
+{{- end}} # if $spec.tracing
     dynamic_resources:
       ads_config:
         api_type: GRPC
