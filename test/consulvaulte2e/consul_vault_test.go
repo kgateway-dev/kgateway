@@ -165,6 +165,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		vsClient, err := v1.NewVirtualServiceClient(consulResources)
 		Expect(err).NotTo(HaveOccurred())
 
+		proxyClient, err := gloov1.NewProxyClient(consulResources)
+		Expect(err).NotTo(HaveOccurred())
+
 		vs := makeSslVirtualService(secret.Metadata.Ref())
 
 		vs, err = vsClient.Write(vs, clients.WriteOpts{Ctx: ctx})
@@ -178,6 +181,16 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			}
 			return vs.Status.State, nil
 		}, "5s", "0.2s").Should(Equal(core.Status_Accepted))
+
+		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
+		// udpates every 30 seconds.
+		Eventually(func() (core.Status_State, error) {
+			proxy, err := proxyClient.Read(writeNamespace, "gateway-proxy-v2", clients.ReadOpts{Ctx: ctx})
+			if err != nil {
+				return 0, err
+			}
+			return proxy.Status.State, nil
+		}, "40s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
