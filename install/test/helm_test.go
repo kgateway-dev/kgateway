@@ -159,13 +159,6 @@ static_resources:
                           route:
                             cluster: admin_port_cluster
                         - match:
-                            path: "/server_info"
-                            headers:
-                            - name: ":method"
-                              exact_match: GET
-                          route:
-                            cluster: admin_port_cluster
-                        - match:
                             prefix: "/metrics"
                             headers:
                             - name: ":method"
@@ -255,13 +248,6 @@ static_resources:
                       routes:
                         - match:
                             path: "/ready"
-                            headers:
-                            - name: ":method"
-                              exact_match: GET
-                          route:
-                            cluster: admin_port_cluster
-                        - match:
-                            path: "/server_info"
                             headers:
                             - name: ":method"
                               exact_match: GET
@@ -359,13 +345,6 @@ static_resources:
                       routes:
                         - match:
                             path: "/ready"
-                            headers:
-                            - name: ":method"
-                              exact_match: GET
-                          route:
-                            cluster: admin_port_cluster
-                        - match:
-                            path: "/server_info"
                             headers:
                             - name: ":method"
                               exact_match: GET
