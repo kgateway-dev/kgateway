@@ -29,13 +29,6 @@ var _ = Describe("Helm Test", func() {
 			} else {
 				version = version[1:]
 			}
-			labels = map[string]string{
-				"gloo": translator.GatewayProxyName,
-				"app":  "gloo",
-			}
-			selector = map[string]string{
-				"gateway-proxy": "live",
-			}
 		})
 
 		prepareMakefile := func(helmFlags string) {
@@ -45,40 +38,51 @@ var _ = Describe("Helm Test", func() {
 			testManifest = NewTestManifest("../gloo-gateway.yaml")
 		}
 
-		It("has a namespace", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
-			prepareMakefile(helmFlags)
-			rb := ResourceBuilder{
-				Namespace: namespace,
-				Name:      translator.GatewayProxyName,
-				Labels:    labels,
-				Service: ServiceSpec{
-					Ports: []PortSpec{
-						{
-							Name: "http",
-							Port: 80,
-						},
-						{
-							Name: "https",
-							Port: 443,
+		Context("gateway", func() {
+			BeforeEach(func() {
+				labels = map[string]string{
+					"gloo": translator.GatewayProxyName,
+					"app":  "gloo",
+				}
+				selector = map[string]string{
+					"gateway-proxy": "live",
+				}
+			})
+
+			It("has a namespace", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
+				prepareMakefile(helmFlags)
+				rb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      translator.GatewayProxyName,
+					Labels:    labels,
+					Service: ServiceSpec{
+						Ports: []PortSpec{
+							{
+								Name: "http",
+								Port: 80,
+							},
+							{
+								Name: "https",
+								Port: 443,
+							},
 						},
 					},
-				},
-			}
-			svc := rb.GetService()
-			svc.Spec.Selector = selector
-			svc.Spec.Type = v1.ServiceTypeLoadBalancer
-			svc.Spec.Ports[0].TargetPort = intstr.FromInt(8080)
-			svc.Spec.Ports[1].TargetPort = intstr.FromInt(8443)
-			svc.Annotations = map[string]string{"test": "test"}
-			testManifest.ExpectService(svc)
-		})
+				}
+				svc := rb.GetService()
+				svc.Spec.Selector = selector
+				svc.Spec.Type = v1.ServiceTypeLoadBalancer
+				svc.Spec.Ports[0].TargetPort = intstr.FromInt(8080)
+				svc.Spec.Ports[1].TargetPort = intstr.FromInt(8443)
+				svc.Annotations = map[string]string{"test": "test"}
+				testManifest.ExpectService(svc)
+			})
 
-		It("has a proxy without tracing", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
-			prepareMakefile(helmFlags)
-			proxySpec := make(map[string]string)
-			proxySpec["envoy.yaml"] = `
+			It("has a proxy without tracing", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
+				prepareMakefile(helmFlags)
+				proxySpec := make(map[string]string)
+				proxySpec["envoy.yaml"] = `
 node:
   cluster: gateway
   id: "{{.PodName}}.{{.PodNamespace}}"
@@ -172,22 +176,22 @@ admin:
       address: 127.0.0.1
       port_value: 19000 # if (empty $spec.configMap.data) ## allows full custom # range $name, $spec := .Values.gatewayProxies# if .Values.gateway.enabled
 `
-			cmName := "gateway-proxy-v2-envoy-config"
-			cmRb := ResourceBuilder{
-				Namespace: namespace,
-				Name:      cmName,
-				Labels:    labels,
-				Data:      proxySpec,
-			}
-			proxy := cmRb.GetConfigMap()
-			testManifest.ExpectConfigMapWithYamlData(proxy)
-		})
+				cmName := "gateway-proxy-v2-envoy-config"
+				cmRb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      cmName,
+					Labels:    labels,
+					Data:      proxySpec,
+				}
+				proxy := cmRb.GetConfigMap()
+				testManifest.ExpectConfigMapWithYamlData(proxy)
+			})
 
-		It("has a proxy with tracing", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test --values install/test/test_values.yaml"
-			prepareMakefile(helmFlags)
-			proxySpec := make(map[string]string)
-			proxySpec["envoy.yaml"] = `
+			It("has a proxy with tracing", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test --values install/test/test_values.yaml"
+				prepareMakefile(helmFlags)
+				proxySpec := make(map[string]string)
+				proxySpec["envoy.yaml"] = `
 node:
   cluster: gateway
   id: "{{.PodName}}.{{.PodNamespace}}"
@@ -285,135 +289,143 @@ admin:
       address: 127.0.0.1
       port_value: 19000 # if (empty $spec.configMap.data) ## allows full custom # range $name, $spec := .Values.gatewayProxies# if .Values.gateway.enabled
 `
-			cmName := "gateway-proxy-v2-envoy-config"
-			cmRb := ResourceBuilder{
-				Namespace: namespace,
-				Name:      cmName,
-				Labels:    labels,
-				Data:      proxySpec,
-			}
-			proxy := cmRb.GetConfigMap()
-			testManifest.ExpectConfigMapWithYamlData(proxy)
-		})
+				cmName := "gateway-proxy-v2-envoy-config"
+				cmRb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      cmName,
+					Labels:    labels,
+					Data:      proxySpec,
+				}
+				proxy := cmRb.GetConfigMap()
+				testManifest.ExpectConfigMapWithYamlData(proxy)
+			})
 
-		Context("gateway-proxy deployment", func() {
-			var (
-				gatewayProxyDeployment *appsv1.Deployment
-			)
-			BeforeEach(func() {
-				podname := v1.EnvVar{
-					Name: "POD_NAME",
-					ValueFrom: &v1.EnvVarSource{
-						FieldRef: &v1.ObjectFieldSelector{
-							FieldPath: "metadata.name",
-						},
-					},
-				}
-				container := GetQuayContainerSpec("gloo-envoy-wrapper", version, GetPodNamespaceEnvVar(), podname)
-				container.Name = "gateway-proxy"
-				container.Args = []string{"--disable-hot-restart"}
-
-				rb := ResourceBuilder{
-					Namespace:  namespace,
-					Name:       translator.GatewayProxyName,
-					Labels:     labels,
-					Containers: []ContainerSpec{container},
-				}
-				deploy := rb.GetDeploymentAppsv1()
-				deploy.Spec.Selector = &metav1.LabelSelector{
-					MatchLabels: selector,
-				}
-				deploy.Spec.Template.ObjectMeta.Labels = selector
-				deploy.Spec.Template.ObjectMeta.Annotations = map[string]string{
-					"prometheus.io/path":   "/metrics",
-					"prometheus.io/port":   "8081",
-					"prometheus.io/scrape": "true",
-				}
-				deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
-					Name: "envoy-config",
-					VolumeSource: v1.VolumeSource{
-						ConfigMap: &v1.ConfigMapVolumeSource{
-							LocalObjectReference: v1.LocalObjectReference{
-								Name: "gateway-proxy-envoy-config",
+			Context("gateway-proxy deployment", func() {
+				var (
+					gatewayProxyDeployment *appsv1.Deployment
+				)
+				BeforeEach(func() {
+					selector = map[string]string{
+						"gloo": "gateway-proxy-v2",
+					}
+					podLabels := map[string]string{
+						"gloo":          "gateway-proxy-v2",
+						"gateway-proxy": "live",
+					}
+					podname := v1.EnvVar{
+						Name: "POD_NAME",
+						ValueFrom: &v1.EnvVarSource{
+							FieldRef: &v1.ObjectFieldSelector{
+								FieldPath: "metadata.name",
 							},
 						},
-					},
-				}}
-				deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
-					{Name: "http", ContainerPort: 8080, Protocol: "TCP"},
-					{Name: "https", ContainerPort: 8443, Protocol: "TCP"},
-				}
-				deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
-					Name:      "envoy-config",
-					ReadOnly:  false,
-					MountPath: "/etc/envoy",
-					SubPath:   "",
-				}}
-				truez := true
-				falsez := false
-				deploy.Spec.Template.Spec.Containers[0].SecurityContext = &v1.SecurityContext{
-					Capabilities: &v1.Capabilities{
-						Add:  []v1.Capability{"NET_BIND_SERVICE"},
-						Drop: []v1.Capability{"ALL"},
-					},
-					ReadOnlyRootFilesystem:   &truez,
-					AllowPrivilegeEscalation: &falsez,
-				}
+					}
+					container := GetQuayContainerSpec("gloo-envoy-wrapper", version, GetPodNamespaceEnvVar(), podname)
+					container.Name = "gateway-proxy-v2"
+					container.Args = []string{"--disable-hot-restart"}
 
-				readyProb := v1.Probe{
-					Handler: v1.Handler{
-						HTTPGet: &v1.HTTPGetAction{
-							Path: "/ready",
-							Port: intstr.FromInt(8081),
+					rb := ResourceBuilder{
+						Namespace:  namespace,
+						Name:       "gateway-proxy-v2",
+						Labels:     labels,
+						Containers: []ContainerSpec{container},
+					}
+					deploy := rb.GetDeploymentAppsv1()
+					deploy.Spec.Selector = &metav1.LabelSelector{
+						MatchLabels: selector,
+					}
+					deploy.Spec.Template.ObjectMeta.Labels = podLabels
+					deploy.Spec.Template.ObjectMeta.Annotations = map[string]string{
+						"prometheus.io/path":   "/metrics",
+						"prometheus.io/port":   "8081",
+						"prometheus.io/scrape": "true",
+					}
+					deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
+						Name: "envoy-config",
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: "gateway-proxy-v2-envoy-config",
+								},
+							},
 						},
-					},
-					InitialDelaySeconds: 1,
-					PeriodSeconds:       10,
-					FailureThreshold:    10,
-				}
-				liveProb := v1.Probe{
-					Handler: v1.Handler{
-						HTTPGet: &v1.HTTPGetAction{
-							Path: "/server_info",
-							Port: intstr.FromInt(8081),
+					}}
+					deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
+						{Name: "http", ContainerPort: 8080, Protocol: "TCP"},
+						{Name: "https", ContainerPort: 8443, Protocol: "TCP"},
+					}
+					deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
+						Name:      "envoy-config",
+						ReadOnly:  false,
+						MountPath: "/etc/envoy",
+						SubPath:   "",
+					}}
+					truez := true
+					falsez := false
+					deploy.Spec.Template.Spec.Containers[0].SecurityContext = &v1.SecurityContext{
+						Capabilities: &v1.Capabilities{
+							Add:  []v1.Capability{"NET_BIND_SERVICE"},
+							Drop: []v1.Capability{"ALL"},
 						},
-					},
-					InitialDelaySeconds: 1,
-					PeriodSeconds:       10,
-					FailureThreshold:    10,
-				}
+						ReadOnlyRootFilesystem:   &truez,
+						AllowPrivilegeEscalation: &falsez,
+					}
 
-				deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &readyProb
-				deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &liveProb
+					readyProb := v1.Probe{
+						Handler: v1.Handler{
+							HTTPGet: &v1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8081),
+							},
+						},
+						InitialDelaySeconds: 1,
+						PeriodSeconds:       10,
+						FailureThreshold:    10,
+					}
+					liveProb := v1.Probe{
+						Handler: v1.Handler{
+							Exec: &v1.ExecAction{
+								Command: []string{
+									"wget", "localhost:19000/server_info",
+								},
+							},
+						},
+						InitialDelaySeconds: 1,
+						PeriodSeconds:       10,
+						FailureThreshold:    10,
+					}
 
-				gatewayProxyDeployment = deploy
-			})
+					deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &readyProb
+					deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &liveProb
 
-			It("has a creates a deployment", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true --values install/test/test_values.yaml"
-				prepareMakefile(helmFlags)
-				testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-			})
+					gatewayProxyDeployment = deploy
+				})
 
-			It("has limits", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory=2  --set gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu=3 --set gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory=4  --set gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu=5 --values install/test/test_values.yaml"
-				prepareMakefile(helmFlags)
+				It("creates a deployment", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --values install/test/test_values.yaml"
+					prepareMakefile(helmFlags)
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
 
-				// Add the limits we are testing:
-				gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						v1.ResourceMemory: resource.MustParse("2"),
-						v1.ResourceCPU:    resource.MustParse("3"),
-					},
-					Requests: v1.ResourceList{
-						v1.ResourceMemory: resource.MustParse("4"),
-						v1.ResourceCPU:    resource.MustParse("5"),
-					},
-				}
-				testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				It("has limits", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.memory=2  --set gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.cpu=3 --set gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.memory=4  --set gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.cpu=5 --values install/test/test_values.yaml"
+					prepareMakefile(helmFlags)
+
+					// Add the limits we are testing:
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("2"),
+							v1.ResourceCPU:    resource.MustParse("3"),
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("4"),
+							v1.ResourceCPU:    resource.MustParse("5"),
+						},
+					}
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
 			})
 		})
-
 		Context("control plane deployments", func() {
 			updateDeployment := func(deploy *appsv1.Deployment) {
 				deploy.Spec.Selector = &metav1.LabelSelector{
@@ -510,7 +522,7 @@ admin:
 
 					rb := ResourceBuilder{
 						Namespace:  namespace,
-						Name:       "gateway",
+						Name:       "gateway-v2",
 						Labels:     labels,
 						Containers: []ContainerSpec{container},
 					}

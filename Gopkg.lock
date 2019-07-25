@@ -1347,7 +1347,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:840338477dced03bd298739ec33ddf5cc815d828b07ccbc614a594cb8f92e0bc"
+  digest = "1:1cf6c3693031022d119d2f9b50d120b9abb83a4d9cdb521abacde6e10e16e01b"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -2594,6 +2594,7 @@
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/labels",
