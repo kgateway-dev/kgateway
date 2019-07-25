@@ -1,9 +1,7 @@
 package consul
 
 import (
-	"github.com/gogo/protobuf/types"
 	consulapi "github.com/hashicorp/consul/api"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errors"
 )
 
@@ -73,31 +71,6 @@ func (c *consul) Connect(service, tag string, q *consulapi.QueryOptions) ([]*con
 		return nil, nil, err
 	}
 	return c.api.Catalog().Connect(service, tag, q)
-}
-
-// Applies the given settings to the default configuration
-func apply(cfg *v1.Settings_ConsulConfiguration, defaultCfg *consulapi.Config) (*consulapi.Config, map[string]bool, error) {
-
-	if cfg.Address != "" {
-		defaultCfg.Address = cfg.Address
-	}
-
-	if cfg.WaitTime != nil {
-		duration, err := types.DurationFromProto(cfg.WaitTime)
-		if err != nil {
-			return nil, nil, err
-		}
-		defaultCfg.WaitTime = duration
-	}
-
-	dataCenters := make(map[string]bool)
-	if cfg.GetServiceDiscovery() != nil {
-		for _, dc := range cfg.GetServiceDiscovery().GetDataCenters() {
-			dataCenters[dc] = true
-		}
-	}
-
-	return defaultCfg, dataCenters, nil
 }
 
 // Filters out the data centers not listed in the config
