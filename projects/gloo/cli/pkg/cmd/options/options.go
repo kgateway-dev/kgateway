@@ -75,7 +75,12 @@ type Delete struct {
 }
 
 type Create struct {
-	VirtualService InputVirtualService
+	VirtualService     InputVirtualService
+	InputUpstream      InputUpstream
+	InputUpstreamGroup InputUpstreamGroup
+	InputSecret        Secret
+	DryRun             bool // print resource as a kubernetes style yaml and exit without writing to storage
+	PrintYaml          bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
