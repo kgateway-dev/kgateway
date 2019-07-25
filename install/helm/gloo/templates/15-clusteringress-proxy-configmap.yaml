@@ -47,9 +47,7 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}} # if Values.settings.integrations.knative.proxy.stats
 
-{{- if .Values.settings.integrations.knative.proxy.stats }}
       listeners:
         - name: prometheus_listener
           address:
