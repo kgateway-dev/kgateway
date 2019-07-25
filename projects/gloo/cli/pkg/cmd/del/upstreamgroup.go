@@ -26,7 +26,7 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 				clients.DeleteOpts{Ctx: opts.Top.Ctx}); err != nil {
 				return err
 			}
-			fmt.Printf("uptreamgroup %v deleted", name)
+			fmt.Printf("upstreamgroup %v deleted", name)
 			return nil
 		},
 	}
