@@ -96,7 +96,9 @@ spec:
           failureThreshold: 10
         livenessProbe:
           exec:
-            command: wget localhost:19000/server_info
+            command:
+            - wget 
+            - localhost:19000/server_info
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
