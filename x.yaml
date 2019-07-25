@@ -12,7 +12,7 @@ spec:
   httpGateway: {}
   useProxyProto: false
   plugins:
-    als:
+    accessLogginService:
       accessLog:
       - fileSink:
           path: /dev/stdout

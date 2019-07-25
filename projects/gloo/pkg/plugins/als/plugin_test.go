@@ -156,7 +156,7 @@ var _ = Describe("Plugin", func() {
 					{
 						OutputDestination: &als.AccessLog_FileSink{
 							FileSink: &als.FileSink{
-								Path: path,
+								Path:         path,
 								OutputFormat: fsJsonFormat,
 							},
 						},

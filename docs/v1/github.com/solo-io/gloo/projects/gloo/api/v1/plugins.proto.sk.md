@@ -38,13 +38,13 @@ Note to developers: new Listener Plugins must be added to this struct
 to be usable by Gloo.
 
 ```yaml
-"als": .als.plugins.gloo.solo.io.AccessLoggingService
+"accessLoggingService": .als.plugins.gloo.solo.io.AccessLoggingService
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `als` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
+| `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
 
 
 
@@ -127,6 +127,7 @@ to be usable by Gloo.
 "prefixRewrite": .transformation.plugins.gloo.solo.io.PrefixRewrite
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
+"accessLoggingService": .als.plugins.gloo.solo.io.AccessLoggingService
 "extensions": .gloo.solo.io.Extensions
 
 ```
@@ -138,6 +139,7 @@ to be usable by Gloo.
 | `prefixRewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#prefixrewrite) |  |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
+| `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 
 

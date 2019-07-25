@@ -40,7 +40,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 	alSettings := in.GetPlugins()
-	if alSettings.Als == nil {
+	if alSettings.AccessLoggingService == nil {
 		return nil
 	}
 	// Use a switch here to support TCP in the future
@@ -61,7 +61,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := hcmCfg.GetAccessLog()
-					hcmCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.Als, accessLogs)
+					hcmCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.AccessLoggingService, accessLogs)
 					if err != nil {
 						return err
 					}
@@ -90,7 +90,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := tcpCfg.GetAccessLog()
-					tcpCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.Als, accessLogs)
+					tcpCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.AccessLoggingService, accessLogs)
 					if err != nil {
 						return err
 					}

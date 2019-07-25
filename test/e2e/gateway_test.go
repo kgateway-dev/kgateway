@@ -2,8 +2,11 @@ package e2e_test
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
@@ -277,12 +280,12 @@ var _ = FDescribe("Gateway", func() {
 				})
 				It("can create string access logs", func() {
 					gw.Plugins = &gloov1.ListenerPlugins{
-						Als: &als.AccessLoggingService{
+						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
 									OutputDestination: &als.AccessLog_FileSink{
 										FileSink: &als.FileSink{
-											Path: envoyInstance.AccessLog,
+											Path: "/dev/stdout",
 											OutputFormat: &als.FileSink_StringFormat{
 												StringFormat: "",
 											},
@@ -293,22 +296,39 @@ var _ = FDescribe("Gateway", func() {
 						},
 					}
 
+					gatewaycli := testClients.GatewayClient
+					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
 					up := tu.Upstream
 					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
-					_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
-
 					TestUpstreamReachable()
 
+
+
+					Eventually(func() error {
+						logs, err := envoyInstance.LogsCmd()
+						if err != nil {
+							return err
+						}
+						if logs == "" {
+							return errors.Errorf("logs should not be empty")
+						}
+						if !strings.Contains(logs, `"POST /1 HTTP/1.1" 200`) {
+							return errors.Errorf("no access logs present")
+						}
+						return nil
+					}, time.Second* 30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 				It("can create json access logs", func() {
 					gw.Plugins = &gloov1.ListenerPlugins{
-						Als: &als.AccessLoggingService{
+						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
 									OutputDestination: &als.AccessLog_FileSink{
 										FileSink: &als.FileSink{
-											Path: envoyInstance.AccessLog,
+											Path: "/dev/stdout",
 											OutputFormat: &als.FileSink_JsonFormat{
 												JsonFormat: &types.Struct{
 													Fields: map[string]*types.Value{
@@ -317,9 +337,9 @@ var _ = FDescribe("Gateway", func() {
 																StringValue: "%PROTOCOL%",
 															},
 														},
-														"duration": {
+														"method": {
 															Kind: &types.Value_StringValue{
-																StringValue: "%DURATION%",
+																StringValue: "%REQ(:METHOD)%",
 															},
 														},
 													},
@@ -331,13 +351,28 @@ var _ = FDescribe("Gateway", func() {
 							},
 						},
 					}
-
+					gatewaycli := testClients.GatewayClient
+					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
 					up := tu.Upstream
 					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
-					_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
 					TestUpstreamReachable()
+					Eventually(func() error {
+						logs, err := envoyInstance.LogsCmd()
+						if err != nil {
+							return err
+						}
+						if logs == "" {
+							return errors.Errorf("logs should not be empty")
+						}
+						if !strings.Contains(logs, `{"method":"POST","protocol":"HTTP/1.1"}`) {
+							return errors.Errorf("no access logs present")
+						}
+						return nil
+					}, time.Second* 30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 			})
 		})

@@ -202,7 +202,6 @@ type EnvoyInstance struct {
 	GlooAddr      string // address for gloo and services
 	Port          uint32
 	AdminPort     uint32
-	AccessLog     string
 }
 
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
@@ -217,17 +216,11 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		}
 	}
 
-	tmpfile, err := ioutil.TempFile("", "")
-	if err != nil {
-		return nil, err
-	}
-
 	ei := &EnvoyInstance{
 		envoypath: ef.envoypath,
 		UseDocker: ef.useDocker,
 		GlooAddr:  gloo,
 		AdminPort: atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
-		AccessLog: tmpfile.Name(),
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
@@ -309,10 +302,6 @@ func (ei *EnvoyInstance) Clean() error {
 		ei.cmd.Wait()
 	}
 
-	if ei.AccessLog != "" {
-		os.RemoveAll(ei.AccessLog)
-	}
-
 	if ei.UseDocker {
 		if err := stopContainer(); err != nil {
 			return err
@@ -320,6 +309,10 @@ func (ei *EnvoyInstance) Clean() error {
 	}
 	return nil
 }
+
+// func (ei *EnvoyInstance) GetLogs() io.Reader  {
+//
+// }
 
 func (ei *EnvoyInstance) runContainer() error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
@@ -342,10 +335,10 @@ func (ei *EnvoyInstance) runContainer() error {
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter
-	err := cmd.Start()
-	if err != nil {
+	if err := cmd.Start(); err != nil {
 		return errors.Wrap(err, "Unable to start envoy container")
 	}
+
 	return nil
 }
 
@@ -398,4 +391,18 @@ func localAddr() (string, error) {
 
 func (ei *EnvoyInstance) Logs() string {
 	return ei.logs.String()
+}
+
+func (ei *EnvoyInstance) LogsCmd() (string, error) {
+	if ei.UseDocker {
+		logsArgs := []string{"logs", containerName}
+		cmd := exec.Command("docker", logsArgs...)
+		byt, err := cmd.CombinedOutput()
+		if err != nil {
+			return "", errors.Wrap(err, "Unable to fetch logs from envoy container")
+		}
+		return string(byt), nil
+	}
+
+	return ei.logs.String(), nil
 }
