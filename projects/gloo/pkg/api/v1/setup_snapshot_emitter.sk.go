@@ -95,8 +95,19 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 	}
 	settingsChan := make(chan settingsListWithNamespace)
 
+	var initialSettingsList SettingsList
+
+	currentSnapshot := SetupSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Settings */
+		{
+			settings, err := c.settings.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Settings list")
+			}
+			initialSettingsList = append(initialSettingsList, settings...)
+		}
 		settingsNamespacesChan, settingsErrs, err := c.settings.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Settings watch")
@@ -124,12 +135,14 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Settings */
+	currentSnapshot.Settings = initialSettingsList.Sort()
 
 	snapshots := make(chan *SetupSnapshot)
 	go func() {
 		originalSnapshot := SetupSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

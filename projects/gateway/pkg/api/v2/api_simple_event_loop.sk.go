@@ -95,7 +95,7 @@ func (el *apiSimpleEventLoop) Run(ctx context.Context) (<-chan error, error) {
 						cancel()
 					}
 
-					ctx, span := trace.StartSpan(ctx, fmt.Sprintf("api.gateway.solo.io.SimpleEventLoopSync-%T", syncer))
+					ctx, span := trace.StartSpan(ctx, fmt.Sprintf("api.gateway.solo.io.v2.SimpleEventLoopSync-%T", syncer))
 					ctx, canc := context.WithCancel(ctx)
 					err := syncer.Sync(ctx, snapshot)
 					span.End()

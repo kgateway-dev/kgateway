@@ -116,12 +116,16 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 		namespace string
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
+
+	var initialUpstreamList UpstreamList
 	/* Create channel for KubeNamespace */
 	type kubeNamespaceListWithNamespace struct {
 		list      github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
 		namespace string
 	}
 	kubeNamespaceChan := make(chan kubeNamespaceListWithNamespace)
+
+	var initialKubeNamespaceList github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
 	/* Create channel for Secret */
 	type secretListWithNamespace struct {
 		list      SecretList
@@ -129,8 +133,19 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 	}
 	secretChan := make(chan secretListWithNamespace)
 
+	var initialSecretList SecretList
+
+	currentSnapshot := DiscoverySnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Upstream */
+		{
+			upstreams, err := c.upstream.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Upstream list")
+			}
+			initialUpstreamList = append(initialUpstreamList, upstreams...)
+		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
@@ -142,6 +157,13 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
 		}(namespace)
 		/* Setup namespaced watch for KubeNamespace */
+		{
+			kubenamespaces, err := c.kubeNamespace.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial KubeNamespace list")
+			}
+			initialKubeNamespaceList = append(initialKubeNamespaceList, kubenamespaces...)
+		}
 		kubeNamespaceNamespacesChan, kubeNamespaceErrs, err := c.kubeNamespace.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting KubeNamespace watch")
@@ -153,6 +175,13 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			errutils.AggregateErrs(ctx, errs, kubeNamespaceErrs, namespace+"-kubenamespaces")
 		}(namespace)
 		/* Setup namespaced watch for Secret */
+		{
+			secrets, err := c.secret.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Secret list")
+			}
+			initialSecretList = append(initialSecretList, secrets...)
+		}
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Secret watch")
@@ -192,12 +221,18 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Upstreams */
+	currentSnapshot.Upstreams = initialUpstreamList.Sort()
+	/* Initialize snapshot for Kubenamespaces */
+	currentSnapshot.Kubenamespaces = initialKubeNamespaceList.Sort()
+	/* Initialize snapshot for Secrets */
+	currentSnapshot.Secrets = initialSecretList.Sort()
 
 	snapshots := make(chan *DiscoverySnapshot)
 	go func() {
 		originalSnapshot := DiscoverySnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

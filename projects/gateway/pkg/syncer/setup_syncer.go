@@ -26,35 +26,31 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	var (
 		cfg *rest.Config
 	)
-	proxyFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		inMemoryCache,
-		kubeCache,
-		gloov1.ProxyCrd,
-		&cfg,
-	)
+
+	consulClient, err := bootstrap.ConsulClientForSettings(settings)
 	if err != nil {
 		return err
 	}
 
-	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(
+	params := bootstrap.NewConfigFactoryParams(
 		settings,
 		inMemoryCache,
 		kubeCache,
-		v1.VirtualServiceCrd,
 		&cfg,
+		consulClient,
 	)
+
+	proxyFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.ProxyCrd)
 	if err != nil {
 		return err
 	}
 
-	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		inMemoryCache,
-		kubeCache,
-		v2.GatewayCrd,
-		&cfg,
-	)
+	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.VirtualServiceCrd)
+	if err != nil {
+		return err
+	}
+
+	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v2.GatewayCrd)
 	if err != nil {
 		return err
 	}

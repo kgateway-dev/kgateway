@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	consulapi "github.com/hashicorp/consul/api"
+	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -154,8 +156,28 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.cancelControlPlane = cancel
 	}
 
+	consulClient, err := bootstrap.ConsulClientForSettings(settings)
+	if err != nil {
+		return err
+	}
+
+	var vaultClient *vaultapi.Client
+	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
+		vaultClient, err = bootstrap.VaultClientForSettings(vaultSettings)
+		if err != nil {
+			return err
+		}
+	}
+
 	var clientset kubernetes.Interface
-	opts, err := BootstrapFactories(ctx, &clientset, kubeCache, memCache, settings)
+	opts, err := constructOpts(ctx,
+		&clientset,
+		kubeCache,
+		consulClient,
+		vaultClient,
+		memCache,
+		settings,
+	)
 	if err != nil {
 		return err
 	}
@@ -175,15 +197,14 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.DevMode = true
 	opts.Settings = settings
 
-	// Set up Consul client
-	consulClient, err := consul.NewConsulWatcher(settings)
-	if err != nil {
-		return err
-	}
-
-	// If we cannot connect, no Consul agent is running on this node and the Consul-related features will be deactivated
-	if consulClient.CanConnect() {
-		opts.ConsulClient = consulClient
+	// if vault service discovery specified, initialize consul watcher
+	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
+		// Set up Consul client
+		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters())
+		if err != nil {
+			return err
+		}
+		opts.ConsulWatcher = consulClientWrapper
 	}
 
 	return s.runFunc(opts)
@@ -216,7 +237,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, opts.Services, opts.ConsulClient)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, opts.KubeServiceClient, opts.ConsulWatcher)
 	if err != nil {
 		return err
 	}
@@ -332,25 +353,27 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	return nil
 }
 
-func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {
+func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {
 
 	var (
 		cfg           *rest.Config
 		kubeCoreCache corecache.KubeCoreCache
 	)
 
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(
+	params := bootstrap.NewConfigFactoryParams(
 		settings,
 		memCache,
 		kubeCache,
-		v1.UpstreamCrd,
 		&cfg,
+		consulClient,
 	)
+
+	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.UpstreamCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	serviceClient, err := bootstrap.ServiceClientForSettings(
+	kubeServiceClient, err := bootstrap.KubeServiceClientForSettings(
 		ctx,
 		settings,
 		memCache,
@@ -362,13 +385,7 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 		return bootstrap.Opts{}, err
 	}
 
-	proxyFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		memCache,
-		kubeCache,
-		v1.ProxyCrd,
-		&cfg,
-	)
+	proxyFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
@@ -380,19 +397,14 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 		&cfg,
 		clientset,
 		&kubeCoreCache,
+		vaultClient,
 		v1.SecretCrd.Plural,
 	)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	upstreamGroupFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		memCache,
-		kubeCache,
-		v1.UpstreamGroupCrd,
-		&cfg,
-	)
+	upstreamGroupFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.UpstreamGroupCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
@@ -410,11 +422,11 @@ func BootstrapFactories(ctx context.Context, clientset *kubernetes.Interface, ku
 		return bootstrap.Opts{}, err
 	}
 	return bootstrap.Opts{
-		Upstreams:      upstreamFactory,
-		Services:       serviceClient,
-		Proxies:        proxyFactory,
-		UpstreamGroups: upstreamGroupFactory,
-		Secrets:        secretFactory,
-		Artifacts:      artifactFactory,
+		Upstreams:         upstreamFactory,
+		KubeServiceClient: kubeServiceClient,
+		Proxies:           proxyFactory,
+		UpstreamGroups:    upstreamGroupFactory,
+		Secrets:           secretFactory,
+		Artifacts:         artifactFactory,
 	}, nil
 }

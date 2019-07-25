@@ -95,8 +95,19 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
 
+	var initialUpstreamList UpstreamList
+
+	currentSnapshot := EdsSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Upstream */
+		{
+			upstreams, err := c.upstream.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Upstream list")
+			}
+			initialUpstreamList = append(initialUpstreamList, upstreams...)
+		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
@@ -124,12 +135,14 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Upstreams */
+	currentSnapshot.Upstreams = initialUpstreamList.Sort()
 
 	snapshots := make(chan *EdsSnapshot)
 	go func() {
 		originalSnapshot := EdsSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

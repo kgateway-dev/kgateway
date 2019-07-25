@@ -6,7 +6,6 @@ import (
 
 	"github.com/avast/retry-go"
 	consulapi "github.com/hashicorp/consul/api"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errutils"
 	"golang.org/x/sync/errgroup"
 )
@@ -24,12 +23,12 @@ type ConsulWatcher interface {
 	WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error)
 }
 
-func NewConsulWatcher(settings *v1.Settings) (ConsulWatcher, error) {
-	client, err := NewConsulClient(settings)
+func NewConsulWatcher(client *consulapi.Client, dataCenters []string) (ConsulWatcher, error) {
+	clientWrapper, err := NewConsulClient(client, dataCenters)
 	if err != nil {
 		return nil, err
 	}
-	return &consulWatcher{client}, nil
+	return NewConsulWatcherFromClient(clientWrapper), nil
 }
 
 func NewConsulWatcherFromClient(client ConsulClient) ConsulWatcher {

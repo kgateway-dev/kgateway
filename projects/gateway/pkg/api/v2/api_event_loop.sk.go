@@ -71,7 +71,7 @@ func (el *apiEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan
 				// cancel any open watches from previous loop
 				cancel()
 
-				ctx, span := trace.StartSpan(opts.Ctx, "api.gateway.solo.io.EventLoopSync")
+				ctx, span := trace.StartSpan(opts.Ctx, "api.gateway.solo.io.v2.EventLoopSync")
 				ctx, canc := context.WithCancel(ctx)
 				cancel = canc
 				err := el.syncer.Sync(ctx, snapshot)

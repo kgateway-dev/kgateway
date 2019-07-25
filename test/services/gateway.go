@@ -122,7 +122,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go uds_syncer.RunUDS(glooOpts)
 	}
 
-	testClients := getTestClients(runOptions.Cache, glooOpts.Services)
+	testClients := getTestClients(runOptions.Cache, glooOpts.KubeServiceClient)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	return testClients
 }
@@ -194,14 +194,14 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	}
 
 	return bootstrap.Opts{
-		WriteNamespace:  runOptions.NsToWrite,
-		Upstreams:       f,
-		UpstreamGroups:  f,
-		Proxies:         f,
-		Secrets:         f,
-		Artifacts:       f,
-		Services:        newServiceClient(ctx, f, runOptions),
-		WatchNamespaces: runOptions.NsToWatch,
+		WriteNamespace:    runOptions.NsToWrite,
+		Upstreams:         f,
+		UpstreamGroups:    f,
+		Proxies:           f,
+		Secrets:           f,
+		Artifacts:         f,
+		KubeServiceClient: newServiceClient(ctx, f, runOptions),
+		WatchNamespaces:   runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
@@ -211,9 +211,9 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
 		},
-		KubeClient:   runOptions.KubeClient,
-		DevMode:      true,
-		ConsulClient: runOptions.ConsulClient,
+		KubeClient:    runOptions.KubeClient,
+		DevMode:       true,
+		ConsulWatcher: runOptions.ConsulClient,
 	}
 }
 
