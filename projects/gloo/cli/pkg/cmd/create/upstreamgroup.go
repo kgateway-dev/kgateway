@@ -1,6 +1,5 @@
 package create
 
-import "C"
 import (
 	"strconv"
 	"strings"
