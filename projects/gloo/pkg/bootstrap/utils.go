@@ -23,7 +23,7 @@ import (
 )
 
 // used for vault and consul key-value storage
-const RootKey = "gloo"
+const DefaultRootKey = "gloo"
 
 type ConfigFactoryParams struct {
 	settings *v1.Settings
@@ -100,7 +100,7 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 		consulClient := params.consul.consulClient
 		rootKey := source.ConsulKvSource.GetRootKey()
 		if rootKey == "" {
-			rootKey = RootKey
+			rootKey = DefaultRootKey
 		}
 		return &factory.ConsulResourceClientFactory{
 			Consul:  consulClient,
@@ -175,7 +175,7 @@ func SecretFactoryForSettings(ctx context.Context,
 	case *v1.Settings_VaultSecretSource:
 		rootKey := source.VaultSecretSource.GetRootKey()
 		if rootKey == "" {
-			rootKey = RootKey
+			rootKey = DefaultRootKey
 		}
 		return &factory.VaultSecretClientFactory{
 			Vault:   vaultClient,

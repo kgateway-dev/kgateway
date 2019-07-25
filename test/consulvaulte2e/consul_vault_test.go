@@ -82,12 +82,12 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		consulResources = &factory.ConsulResourceClientFactory{
-			RootKey: bootstrap.RootKey,
+			RootKey: bootstrap.DefaultRootKey,
 			Consul:  consulClient,
 		}
 		vaultResources = &factory.VaultSecretClientFactory{
 			Vault:   vaultClient,
-			RootKey: bootstrap.RootKey,
+			RootKey: bootstrap.DefaultRootKey,
 		}
 
 		// set flag for gloo to use settings dir
