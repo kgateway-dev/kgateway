@@ -117,6 +117,10 @@ func upstreamGroupDestinationsFromOpts(input options.InputUpstreamGroup) ([]*v1.
 		}
 
 		if _, ok := ussByKey[namespacedUpstream]; !ok {
+			nsUsSplits := strings.SplitAfter(namespacedUpstream, ".")
+			if len(nsUsSplits) != 2 {
+				return nil, errors.Errorf("invalid format: provide namespaced upstream names (namespace.upstreamName)")
+			}
 			ns := strings.SplitAfter(namespacedUpstream, ".")[0]
 			us := strings.SplitAfter(namespacedUpstream, ".")[1]
 			return nil, errors.Errorf("no upstream found with name %v in namespace %v", us, ns)
