@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl get upstreamgroup
 
-read an upstream or list upstream groups in a namespace
+read an upstream group or list upstream groups in a namespace
 
 ### Synopsis
 
