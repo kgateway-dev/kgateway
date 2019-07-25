@@ -51,6 +51,7 @@ glooctl add route [flags]
   -i, --interactive        use interactive mode
       --name string        name of the resource to read or write
   -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+      --yaml               print basic (non-kubernetes) yaml rather than creating or updating a resource
 ```
 
 ### SEE ALSO
