@@ -5,16 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
 
+	"github.com/onsi/gomega/gexec"
 	"github.com/solo-io/go-utils/log"
 
 	"io/ioutil"
 
 	"time"
 
-	"bytes"
-	"io"
 	"regexp"
 	"strings"
 
@@ -97,7 +95,7 @@ type VaultInstance struct {
 	tmpdir    string
 	cmd       *exec.Cmd
 	token     string
-	lock      sync.Mutex
+	session   *gexec.Session
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -123,30 +121,28 @@ func (i *VaultInstance) Token() string {
 }
 
 func (i *VaultInstance) RunWithPort() error {
-	// prevent race
-	i.lock.Lock()
-	defer i.lock.Unlock()
 	cmd := exec.Command(i.vaultpath,
 		"server",
 		"-dev",
 		"-dev-root-token-id=root",
 		"-dev-listen-address=0.0.0.0:8200",
 	)
-	buf := &bytes.Buffer{}
-	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
 	cmd.Dir = i.tmpdir
-	cmd.Stdout = w
-	cmd.Stderr = w
-	err := cmd.Start()
+	cmd.Stdout = ginkgo.GinkgoWriter
+	cmd.Stderr = ginkgo.GinkgoWriter
+	session, err := gexec.Start(cmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 	if err != nil {
 		return err
 	}
 	time.Sleep(time.Millisecond * 1500)
 	i.cmd = cmd
+	i.session = session
 
-	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(buf.String(), 1)
+	out := string(session.Out.Contents())
+
+	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(out, 1)
 	if len(tokenSlice) < 1 {
-		return errors.Errorf("%s did not contain root token", buf.String())
+		return errors.Errorf("%s did not contain root token", out)
 	}
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
@@ -159,15 +155,14 @@ func (i *VaultInstance) Binary() string {
 }
 
 func (i *VaultInstance) Clean() error {
-	if i.cmd != nil {
-		i.cmd.Process.Kill()
-		i.cmd.Wait()
+	if i.session != nil {
+		i.session.Kill()
 	}
 	if i.cmd != nil && i.cmd.Process != nil {
 		i.cmd.Process.Kill()
 	}
 	if i.tmpdir != "" {
-		os.RemoveAll(i.tmpdir)
+		return os.RemoveAll(i.tmpdir)
 	}
 	return nil
 }
