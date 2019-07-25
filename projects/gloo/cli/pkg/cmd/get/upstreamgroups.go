@@ -13,7 +13,7 @@ func UpstreamGroup(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     constants.UPSTREAM_GROUP_COMMAND.Use,
 		Aliases: constants.UPSTREAM_GROUP_COMMAND.Aliases,
-		Short:   "read an upstream or list upstream groups in a namespace",
+		Short:   "read an upstream group or list upstream groups in a namespace",
 		Long:    "usage: glooctl get upstreamgroup [NAME] [--namespace=namespace] [-o FORMAT]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			upstreamGroups, err := common.GetUpstreamGroups(common.GetName(args, opts), opts)
