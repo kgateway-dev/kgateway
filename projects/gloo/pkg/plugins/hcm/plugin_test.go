@@ -105,30 +105,4 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
 	})
 
-	//It("should update routes properly", func() {
-	//	miniRegistry := []plugins.Plugin{tracing.NewPlugin()}
-	//	p := NewPlugin(miniRegistry)
-	//	in := &v1.Route{}
-	//	out := &envoyroute.Route{}
-	//	err := p.ProcessRoute(plugins.RouteParams{}, in, out)
-	//	Expect(err).NotTo(HaveOccurred())
-	//
-	//	inFull := &v1.Route{
-	//		Matcher: nil,
-	//		Action:  nil,
-	//		RoutePlugins: &v1.RoutePlugins{
-	//			Tracing: &hcm.RouteTracingSettings{
-	//				RouteDescriptor: "hello",
-	//			},
-	//		},
-	//	}
-	//	outFull := &envoyroute.Route{}
-	//	err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	Expect(outFull.Decorator.Operation).To(Equal("hello"))
-	//	Expect(outFull.Tracing.ClientSampling.Numerator).To(Equal(uint32(100)))
-	//	Expect(outFull.Tracing.RandomSampling.Numerator).To(Equal(uint32(0)))
-	//	Expect(outFull.Tracing.OverallSampling.Numerator).To(Equal(uint32(100)))
-	//})
-
 })
