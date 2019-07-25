@@ -38,8 +38,6 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-
-
 		hl := &v1.HttpListener{}
 
 		in := &v1.Listener{

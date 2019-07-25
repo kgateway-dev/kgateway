@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	gotestutils "github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,6 +14,11 @@ import (
 
 func TestInstall(t *testing.T) {
 	RegisterFailHandler(Fail)
+	gotestutils.RegisterPreFailHandler(
+		func() {
+			gotestutils.PrintTrimmedStack()
+		})
+	gotestutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Install Suite")
 }
 

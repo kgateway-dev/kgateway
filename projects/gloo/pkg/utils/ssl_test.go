@@ -1,4 +1,4 @@
-package utils_test
+package utils
 
 import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -6,13 +6,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	. "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var _ = Describe("Ssl", func() {
@@ -23,7 +21,7 @@ var _ = Describe("Ssl", func() {
 		tlsSecret        *v1.TlsSecret
 		secret           *v1.Secret
 		secrets          v1.SecretList
-		configTranslator *SslConfigTranslator
+		configTranslator *sslConfigTranslator
 	)
 
 	Context("files", func() {
@@ -48,12 +46,12 @@ var _ = Describe("Ssl", func() {
 					},
 				},
 			}
-			configTranslator = NewSslConfigTranslator(nil)
+			configTranslator = NewSslConfigTranslator()
 		})
 
 		DescribeTable("should resolve from files",
 			func(c func() CertSource) {
-				ValidateCommonContextFiles(configTranslator.ResolveCommonSslConfig(c()))
+				ValidateCommonContextFiles(configTranslator.ResolveCommonSslConfig(c(), nil))
 			},
 			Entry("upstreamCfg", func() CertSource { return upstreamCfg }),
 			Entry("downstreamCfg", func() CertSource { return downstreamCfg }),
@@ -63,13 +61,13 @@ var _ = Describe("Ssl", func() {
 			It("should error with san and not rootca", func() {
 				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
-				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("should add SAN verification when provided", func() {
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
-				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
 				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
@@ -106,24 +104,25 @@ var _ = Describe("Ssl", func() {
 					SecretRef: &ref,
 				},
 			}
-			configTranslator = NewSslConfigTranslator(secrets)
+			configTranslator = NewSslConfigTranslator()
 		})
 
 		It("should error with no secret", func() {
-			configTranslator = NewSslConfigTranslator(nil)
-			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+			configTranslator = NewSslConfigTranslator()
+			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, nil)
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("should error with wrong secret", func() {
 			secret.Kind = &v1.Secret_Aws{}
-			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+			_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets)
 			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(NotTlsSecretError(secret.GetMetadata().Ref())))
 		})
 
 		DescribeTable("should resolve from secret refs",
 			func(c func() CertSource) {
-				ValidateCommonContextInline(configTranslator.ResolveCommonSslConfig(c()))
+				ValidateCommonContextInline(configTranslator.ResolveCommonSslConfig(c(), secrets))
 			},
 			Entry("upstreamCfg", func() CertSource { return upstreamCfg }),
 			Entry("downstreamCfg", func() CertSource { return downstreamCfg }),
@@ -131,7 +130,7 @@ var _ = Describe("Ssl", func() {
 		DescribeTable("should fail if only cert is not provided",
 			func(c func() CertSource) {
 				tlsSecret.CertChain = ""
-				_, err := configTranslator.ResolveCommonSslConfig(c())
+				_, err := configTranslator.ResolveCommonSslConfig(c(), secrets)
 				Expect(err).To(HaveOccurred())
 
 			},
@@ -141,7 +140,7 @@ var _ = Describe("Ssl", func() {
 		DescribeTable("should fail if only private key is not provided",
 			func(c func() CertSource) {
 				tlsSecret.PrivateKey = ""
-				_, err := configTranslator.ResolveCommonSslConfig(c())
+				_, err := configTranslator.ResolveCommonSslConfig(c(), secrets)
 				Expect(err).To(HaveOccurred())
 
 			},
@@ -151,7 +150,7 @@ var _ = Describe("Ssl", func() {
 		DescribeTable("should not have validation context if no rootca",
 			func(c func() CertSource) {
 				tlsSecret.RootCa = ""
-				cfg, err := configTranslator.ResolveCommonSslConfig(c())
+				cfg, err := configTranslator.ResolveCommonSslConfig(c(), secrets)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(cfg.ValidationContextType).To(BeNil())
 
@@ -161,32 +160,32 @@ var _ = Describe("Ssl", func() {
 		)
 
 		It("should set require client cert for downstream config", func() {
-			cfg, err := configTranslator.ResolveDownstreamSslConfig(downstreamCfg)
+			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.RequireClientCertificate.GetValue()).To(BeTrue())
 		})
 
 		It("should set alpn for downstream config", func() {
-			cfg, err := configTranslator.ResolveDownstreamSslConfig(downstreamCfg)
+			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.CommonTlsContext.AlpnProtocols).To(Equal([]string{"h2", "http/1.1"}))
 		})
 
 		It("should NOT set alpn for upstream config", func() {
-			cfg, err := configTranslator.ResolveUpstreamSslConfig(upstreamCfg)
+			cfg, err := configTranslator.ResolveUpstreamSslConfig(secrets, upstreamCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.CommonTlsContext.AlpnProtocols).To(BeEmpty())
 		})
 
 		It("should not set require client cert for downstream config with no rootca", func() {
 			tlsSecret.RootCa = ""
-			cfg, err := configTranslator.ResolveDownstreamSslConfig(downstreamCfg)
+			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.RequireClientCertificate.GetValue()).To(BeFalse())
 		})
 
 		It("should set sni for upstream config", func() {
-			cfg, err := configTranslator.ResolveUpstreamSslConfig(upstreamCfg)
+			cfg, err := configTranslator.ResolveUpstreamSslConfig(secrets, upstreamCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.Sni).To(Equal("test.com"))
 		})
@@ -195,13 +194,13 @@ var _ = Describe("Ssl", func() {
 			It("should error with san and not rootca", func() {
 				tlsSecret.RootCa = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
-				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("should add SAN verification when provided", func() {
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
-				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
 				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
@@ -218,7 +217,7 @@ var _ = Describe("Ssl", func() {
 					CipherSuites:           []string{"cipher-test"},
 					EcdhCurves:             []string{"ec-dh-test"},
 				}
-				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets)
 				Expect(err).NotTo(HaveOccurred())
 				expectParams := &envoyauth.TlsParameters{
 					TlsMinimumProtocolVersion: envoyauth.TlsParameters_TLSv1_1,
@@ -254,11 +253,11 @@ var _ = Describe("Ssl", func() {
 					Sds: sdsConfig,
 				},
 			}
-			configTranslator = NewSslConfigTranslator(nil)
+			configTranslator = NewSslConfigTranslator()
 		})
 
 		It("should have a sds setup", func() {
-			c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+			c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
 			Expect(c.ValidationContextType).ToNot(BeNil())
@@ -304,13 +303,13 @@ var _ = Describe("Ssl", func() {
 			It("should error with san and not rootca", func() {
 				sdsConfig.ValidationContextName = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
-				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("should add SAN verification when provided", func() {
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
-				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg)
+				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_CombinedValidationContext).CombinedValidationContext
 				Expect(vctx.DefaultValidationContext.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))

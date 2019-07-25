@@ -14,7 +14,7 @@ import (
 	_ "github.com/gogo/protobuf/types"
 	als "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	aws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/glooec2"
+	ec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	azure "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
 	consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
 	faultinjection "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
@@ -595,7 +595,7 @@ type UpstreamSpec_Consul struct {
 	Consul *consul.UpstreamSpec `protobuf:"bytes,5,opt,name=consul,proto3,oneof"`
 }
 type UpstreamSpec_AwsEc2 struct {
-	AwsEc2 *glooec2.UpstreamSpec `protobuf:"bytes,11,opt,name=aws_ec2,json=awsEc2,proto3,oneof"`
+	AwsEc2 *ec2.UpstreamSpec `protobuf:"bytes,11,opt,name=aws_ec2,json=awsEc2,proto3,oneof"`
 }
 
 func (*UpstreamSpec_Kube) isUpstreamSpec_UpstreamType()   {}
@@ -682,7 +682,7 @@ func (m *UpstreamSpec) GetConsul() *consul.UpstreamSpec {
 	return nil
 }
 
-func (m *UpstreamSpec) GetAwsEc2() *glooec2.UpstreamSpec {
+func (m *UpstreamSpec) GetAwsEc2() *ec2.UpstreamSpec {
 	if x, ok := m.GetUpstreamType().(*UpstreamSpec_AwsEc2); ok {
 		return x.AwsEc2
 	}
@@ -789,7 +789,7 @@ func _UpstreamSpec_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.B
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(glooec2.UpstreamSpec)
+		msg := new(ec2.UpstreamSpec)
 		err := b.DecodeMessage(msg)
 		m.UpstreamType = &UpstreamSpec_AwsEc2{msg}
 		return true, err

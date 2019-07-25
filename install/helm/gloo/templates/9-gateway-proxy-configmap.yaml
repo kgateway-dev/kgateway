@@ -1,15 +1,15 @@
 {{- if .Values.gateway.enabled }}
-{{- range $index, $spec := .Values.gatewayProxies }}
+{{- range $name, $spec := .Values.gatewayProxies }}
 ---
 # config_map
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $spec.name }}-envoy-config
+  name: {{ $name | kebabcase }}-envoy-config
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-    gloo: {{ $spec.name }}
+    gloo: {{ $name | kebabcase }}
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |
@@ -18,7 +18,7 @@ data:
       id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
         # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-        role: "{{ `{{.PodNamespace}}` }}~{{ $spec.name }}"
+        role: "{{ `{{.PodNamespace}}` }}~{{ $name | kebabcase }}"
     static_resources:
 
 {{- if $spec.podTemplate.stats }}
@@ -42,6 +42,20 @@ data:
                             - "*"
                           routes:
                             - match:
+                                path: "/ready"
+                                headers:
+                                - name: ":method"
+                                  exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                            - match:
+                                path: "/server_info"
+                                headers:
+                                - name: ":method"
+                                  exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                            - match:
                                 prefix: "/metrics"
                                 headers:
                                 - name: ":method"
@@ -52,7 +66,11 @@ data:
                     http_filters:
                       - name: envoy.router
                         config: {}
-{{- end}}
+{{- end}} # if $spec.podTemplate.stats
+{{- if $spec.tracing }}
+      tracing:
+{{ toYaml $spec.tracing | indent 8}}
+{{- end}} # if $spec.tracing
 
 
       clusters:
@@ -87,7 +105,7 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}}
+{{- end}} # if $spec.podTemplate.stats
 
     dynamic_resources:
       ads_config:
@@ -104,6 +122,6 @@ data:
         socket_address:
           address: 127.0.0.1
           port_value: 19000
-{{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}}
-{{- end }}
-{{- end }}
+{{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} # if (empty $spec.configMap.data) ## allows full custom
+{{- end }} # range $name, $spec := .Values.gatewayProxies
+{{- end -}} # if .Values.gateway.enabled

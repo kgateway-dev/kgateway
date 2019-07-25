@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Make sure translator errors on routes without a path match
+    issueLink: https://github.com/solo-io/gloo/issues/860

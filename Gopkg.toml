@@ -2,6 +2,10 @@
   go-tests = true
   unused-packages = true
 
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
 [[constraint]]
   version = ">=0.8.2"
   name = "github.com/envoyproxy/go-control-plane"
@@ -24,20 +28,15 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.10.2"
+  version = "0.10.3"
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
-  version = "0.9.6"
+  version = "0.9.10"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
-  revision = "eba25a143821cec25bdb48fe64dd7b7a6152d01d"
-
-# go versioning story not ideal, so we have to pin serf to the version consul expects
-[[override]]
-  name = "github.com/hashicorp/serf"
-  revision = "19bbd39e421bdf3559d5025fb2c760f5ffa56233"
+  version = "1.5.2"
 
 [[constraint]]
   name = "github.com/solo-io/go-checkpoint"

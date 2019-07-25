@@ -96,6 +96,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
+	cfg.Gateway.ConversionJob.Image.Tag = version
 
 	for _, v := range cfg.GatewayProxies {
 		v.PodTemplate.Image.Tag = version
@@ -105,6 +106,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
 		cfg.Gateway.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Gateway.ConversionJob.Image.PullPolicy = ifNotPresent
 		for _, v := range cfg.GatewayProxies {
 			v.PodTemplate.Image.PullPolicy = ifNotPresent
 		}
@@ -114,6 +116,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Gloo.Deployment.Image.Repository = replacePrefix(cfg.Gloo.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Discovery.Deployment.Image.Repository = replacePrefix(cfg.Discovery.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
+		cfg.Gateway.ConversionJob.Image.Repository = replacePrefix(cfg.Gateway.ConversionJob.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
 			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}

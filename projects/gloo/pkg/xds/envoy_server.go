@@ -99,7 +99,6 @@ func (s *envoyServer) DeltaRoutes(_ v2.RouteDiscoveryService_DeltaRoutesServer) 
 	return errors.New("not implemented")
 }
 
-
 func (s *envoyServer) DeltaEndpoints(v2.EndpointDiscoveryService_DeltaEndpointsServer) error {
 	panic("implement me")
 }

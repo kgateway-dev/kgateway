@@ -31,7 +31,7 @@ func isDisabled(httplistener *v1.HttpListener) bool {
 	if httplistener == nil {
 		return false
 	}
-	listenerplugins := httplistener.GetListenerPlugins()
+	listenerplugins := httplistener.GetPlugins()
 	if listenerplugins == nil {
 		return false
 	}

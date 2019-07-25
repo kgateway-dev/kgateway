@@ -30,6 +30,7 @@ type Top struct {
 
 type Install struct {
 	DryRun            bool
+	Upgrade           bool
 	Namespace         string
 	HelmChartOverride string
 	Knative           Knative

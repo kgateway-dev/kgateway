@@ -74,7 +74,8 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			&api.QueryMeta{LastIndex: 100},
 			nil,
 		).AnyTimes()
-
+	})
+	JustBeforeEach(func() {
 		hybridClient, err = upstreams.NewHybridUpstreamClient(
 			baseUsClient,
 			svcClient,
@@ -111,4 +112,48 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		Eventually(usChan).Should(BeClosed())
 		Eventually(errChan).Should(BeClosed())
 	})
+
+	Context("Sleep client", func() {
+
+		BeforeEach(func() {
+			baseUsClient = sleepyClient{UpstreamClient: baseUsClient}
+		})
+
+		It("correctly returns a full snapshot even if watch is delayed", func() {
+			writeResources()
+
+			usChan, errChan, initErr := hybridClient.Watch(watchNamespace, clients.WatchOpts{Ctx: ctx})
+			Expect(initErr).NotTo(HaveOccurred())
+
+			Eventually(usChan, 500*time.Millisecond).Should(Receive(HaveLen(5)))
+			Consistently(errChan).Should(Not(Receive()))
+
+			cancel()
+			Eventually(usChan).Should(BeClosed())
+			Eventually(errChan).Should(BeClosed())
+		})
+
+	})
 })
+
+type sleepyClient struct {
+	v1.UpstreamClient
+}
+
+func (s sleepyClient) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
+	c, e, err := s.UpstreamClient.Watch(namespace, opts)
+	if err != nil {
+		return c, e, err
+	}
+
+	var delayedC chan v1.UpstreamList
+
+	go func() {
+		for e := range c {
+			time.Sleep(time.Second)
+			delayedC <- e
+		}
+	}()
+
+	return delayedC, e, err
+}

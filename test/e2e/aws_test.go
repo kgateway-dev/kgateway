@@ -267,7 +267,7 @@ var _ = Describe("AWS Lambda", func() {
 	})
 
 	It("be able to call lambda via gateway", func() {
-		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy", testClients.GlooPort)
+		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy-v2", testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := &gw1.VirtualService{
