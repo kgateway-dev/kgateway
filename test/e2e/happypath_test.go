@@ -88,7 +88,7 @@ var _ = Describe("Happy path", func() {
 				},
 			}
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			err := envoyInstance.RunWithRole(ns+"~gateway-proxy", testClients.GlooPort)
+			err := envoyInstance.RunWithRole(ns+"~gateway-proxy-v2", testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			up = tu.Upstream
@@ -330,7 +330,7 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy"
+				role := namespace + "~gateway-proxy-v2"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -377,7 +377,7 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy"
+				role := namespace + "~gateway-proxy-v2"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 

@@ -1,4 +1,5 @@
 {{- if .Values.gateway.enabled }}
+{{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: apps/v1
@@ -24,6 +25,9 @@ spec:
     metadata:
       labels:
         gloo: {{ $name | kebabcase }}
+        {{- if not $isUpgrade }}
+        gateway-proxy: live
+        {{- end }}
 {{ $annotationExist := false}}
 {{- if $spec.podTemplate.extraAnnotations }}
 {{ $annotationExist = true}}
@@ -82,6 +86,22 @@ spec:
           {{- end}}
 {{- with $spec.podTemplate.extraPorts }}
 {{toYaml  . | indent 8}}{{- end }}
+{{- if $spec.podTemplate.probes }}
+        readinessProbe:
+          httpGet:
+            port: 8081
+            path: /ready
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 10
+        livenessProbe:
+          httpGet:
+            port: 8081
+            path: /server_info
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 10
+{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config

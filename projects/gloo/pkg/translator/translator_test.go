@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -12,11 +15,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
+	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-
-	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/proto"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	k8scorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -131,26 +132,55 @@ var _ = Describe("Translator", func() {
 	})
 
 	JustBeforeEach(func() {
-		translator = NewTranslator(registeredPlugins, settings)
+		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, registeredPlugins...)
+		httpListener := &v1.Listener{
+			Name:        "http-listener",
+			BindAddress: "127.0.0.1",
+			BindPort:    80,
+			ListenerType: &v1.Listener_HttpListener{
+				HttpListener: &v1.HttpListener{
+					VirtualHosts: []*v1.VirtualHost{{
+						Name:    "virt1",
+						Domains: []string{"*"},
+						Routes:  routes,
+					}},
+				},
+			},
+		}
+		tcpListener := &v1.Listener{
+			Name:        "tcp-listener",
+			BindAddress: "127.0.0.1",
+			BindPort:    8080,
+			ListenerType: &v1.Listener_TcpListener{
+				TcpListener: &v1.TcpListener{
+					TcpHosts: []*v1.TcpHost{
+						{
+							Destination: &v1.RouteAction{
+								Destination: &v1.RouteAction_Single{
+									Single: &v1.Destination{
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "test",
+												Namespace: "gloo-system",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
 		proxy = &v1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "test",
 				Namespace: "gloo-system",
 			},
-			Listeners: []*v1.Listener{{
-				Name:        "listener",
-				BindAddress: "127.0.0.1",
-				BindPort:    80,
-				ListenerType: &v1.Listener_HttpListener{
-					HttpListener: &v1.HttpListener{
-						VirtualHosts: []*v1.VirtualHost{{
-							Name:    "virt1",
-							Domains: []string{"*"},
-							Routes:  routes,
-						}},
-					},
-				},
-			}},
+			Listeners: []*v1.Listener{
+				httpListener,
+				tcpListener,
+			},
 		}
 	})
 
@@ -167,7 +197,7 @@ var _ = Describe("Translator", func() {
 		Expect(cluster).NotTo(BeNil())
 
 		listeners := snap.GetResources(xds.ListenerType)
-		listenerResource := listeners.Items["listener"]
+		listenerResource := listeners.Items["http-listener"]
 		listener = listenerResource.ResourceProto().(*envoyapi.Listener)
 		Expect(listener).NotTo(BeNil())
 
@@ -177,8 +207,8 @@ var _ = Describe("Translator", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
-		Expect(routes.Items).To(HaveKey("listener-routes"))
-		routeResource := routes.Items["listener-routes"]
+		Expect(routes.Items).To(HaveKey("http-listener-routes"))
+		routeResource := routes.Items["http-listener-routes"]
 		routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(routeConfiguration).NotTo(BeNil())
 
@@ -196,8 +226,8 @@ var _ = Describe("Translator", func() {
 		Expect(snap).NotTo(BeNil())
 
 		routes := snap.GetResources(xds.RouteType)
-		Expect(routes.Items).To(HaveKey("listener-routes"))
-		routeResource := routes.Items["listener-routes"]
+		Expect(routes.Items).To(HaveKey("http-listener-routes"))
+		routeResource := routes.Items["http-listener-routes"]
 		routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(routeConfiguration).NotTo(BeNil())
 		Expect(routeConfiguration.GetVirtualHosts()).To(HaveLen(1))
@@ -709,8 +739,8 @@ var _ = Describe("Translator", func() {
 
 			// A route to the kube service has been configured
 			routes := snapshot.GetResources(xds.RouteType)
-			Expect(routes.Items).To(HaveKey("listener-routes"))
-			routeResource := routes.Items["listener-routes"]
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
 			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 			Expect(routeConfiguration).NotTo(BeNil())
 			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
@@ -873,8 +903,8 @@ var _ = Describe("Translator", func() {
 
 			// A route to the kube service has been configured
 			routes := snapshot.GetResources(xds.RouteType)
-			Expect(routes.Items).To(HaveKey("listener-routes"))
-			routeResource := routes.Items["listener-routes"]
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
 			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 			Expect(routeConfiguration).NotTo(BeNil())
 			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
@@ -924,6 +954,29 @@ var _ = Describe("Translator", func() {
 			Expect(hasVhost).To(BeTrue())
 		})
 
+	})
+
+	Context("TCP", func() {
+		It("can properly create a tcp listener", func() {
+			translate()
+			listeners := snapshot.GetResources(xds.ListenerType).Items
+			Expect(listeners).NotTo(HaveLen(0))
+			val, found := listeners["tcp-listener"]
+			Expect(found).To(BeTrue())
+			listener, ok := val.ResourceProto().(*envoyapi.Listener)
+			Expect(ok).To(BeTrue())
+			Expect(listener.GetName()).To(Equal("tcp-listener"))
+			Expect(listener.GetFilterChains()).To(HaveLen(1))
+			fc := listener.GetFilterChains()[0]
+			Expect(fc.Filters).To(HaveLen(1))
+			tcpFilter := fc.Filters[0]
+			cfg := tcpFilter.GetConfig()
+			Expect(cfg).NotTo(BeNil())
+			var typedCfg envoytcp.TcpProxy
+			Expect(ParseConfig(&tcpFilter, &typedCfg)).NotTo(HaveOccurred())
+			clusterSpec := typedCfg.GetCluster()
+			Expect(clusterSpec).To(Equal("test_gloo-system"))
+		})
 	})
 
 })

@@ -39,9 +39,14 @@ var _ = Describe("Plugin", func() {
 
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: "DefaultHostForHttp_10",
+
+			Tracing: &hcm.HttpConnectionManagerSettings_TracingSettings{
+				RequestHeadersForTags: []string{"path", "origin"},
+				Verbose:               true,
+			},
 		}
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.HttpListenerPlugins{
+			Plugins: &v1.HttpListenerPlugins{
 				HttpConnectionManagerSettings: hcms,
 			},
 		}
@@ -85,6 +90,13 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(hcms.DefaultHostForHttp_10))
+
+		trace := cfg.Tracing
+		Expect(trace.RequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))
+		Expect(trace.Verbose).To(BeTrue())
+		Expect(trace.ClientSampling.Value).To(Equal(100.0))
+		Expect(trace.RandomSampling.Value).To(Equal(0.0))
+		Expect(trace.OverallSampling.Value).To(Equal(100.0))
 	})
 
 })

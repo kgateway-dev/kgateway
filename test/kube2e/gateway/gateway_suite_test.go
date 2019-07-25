@@ -50,7 +50,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
-	// Install Gloo
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute)
 	Expect(err).NotTo(HaveOccurred())
 })

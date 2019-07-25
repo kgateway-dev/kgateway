@@ -26,6 +26,7 @@ ingressProxy:
     replicas: 1
   configMap:
     data:
+  tracing:
 
 gateway:
   enabled: false

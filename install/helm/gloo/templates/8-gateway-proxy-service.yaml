@@ -26,7 +26,7 @@ spec:
     protocol: TCP
     name: https
   selector:
-    gloo: {{ $name | kebabcase }}
+    gateway-proxy: live
   type: {{ $spec.service.type }}
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}
@@ -35,4 +35,4 @@ spec:
   loadBalancerIP: {{ $spec.service.loadBalancerIP }}
   {{- end }}
 {{- end }}
-{{- end }}
+{{ end }}

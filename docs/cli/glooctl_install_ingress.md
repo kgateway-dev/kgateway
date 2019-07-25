@@ -21,6 +21,7 @@ glooctl install ingress [flags]
   -f, --file string        Install Gloo from this Helm chart archive file rather than from a release
   -h, --help               help for ingress
   -n, --namespace string   namespace to install gloo into (default "gloo-system")
+  -u, --upgrade            Upgrade an existing v1 gateway installation to use v2 CRDs. Set this when upgrading from v0.17.x or earlier versions of gloo
 ```
 
 ### Options inherited from parent commands

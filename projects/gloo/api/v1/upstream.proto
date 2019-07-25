@@ -1,3 +1,4 @@
+
 syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";

@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamssl"
@@ -39,6 +40,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		hcm.NewPlugin(),
+		tcp.NewPlugin(),
 		static.NewPlugin(),
 		transformationPlugin,
 		grpc.NewPlugin(&transformationPlugin.RequireTransformationFilter),
