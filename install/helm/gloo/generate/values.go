@@ -102,7 +102,7 @@ type GatewayProxy struct {
 	PodTemplate *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
 	ConfigMap   *GatewayProxyConfigMap   `json:"configMap,omitempty"`
 	Service     *GatewayProxyService     `json:"service,omitempty"`
-	Tracing     *string                  `json:"tracing,omitempty"`
+	Tracing     *Tracing                 `json:"tracing,omitempty"`
 }
 
 type GatewayProxyKind struct {
@@ -136,6 +136,11 @@ type GatewayProxyService struct {
 	ClusterIP             string            `json:"clusterIP,omitempty"`
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
+}
+
+type Tracing struct {
+	Provider string `json:"provider",omitempty`
+	Cluster  string `json:"cluster",omitempty`
 }
 
 type GatewayProxyConfigMap struct {
