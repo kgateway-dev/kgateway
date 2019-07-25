@@ -58,7 +58,6 @@ Plugin-specific configuration that lives on http listeners
 ```yaml
 "grpcWeb": .grpc_web.plugins.gloo.solo.io.GrpcWeb
 "httpConnectionManagerSettings": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings
-"accessLoggingService": .als.plugins.gloo.solo.io.AccessLoggingService
 
 ```
 
@@ -66,7 +65,6 @@ Plugin-specific configuration that lives on http listeners
 | ----- | ---- | ----------- |----------- | 
 | `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk#grpcweb) |  |  |
 | `httpConnectionManagerSettings` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings](../plugins/hcm/hcm.proto.sk#httpconnectionmanagersettings) |  |  |
-| `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
 
 
 
