@@ -306,7 +306,7 @@ var _ = FDescribe("Gateway", func() {
 					TestUpstreamReachable()
 
 					Eventually(func() error {
-						logs, err := envoyInstance.LogsCmd()
+						logs, err := envoyInstance.Logs()
 						if err != nil {
 							return err
 						}
@@ -359,7 +359,7 @@ var _ = FDescribe("Gateway", func() {
 
 					TestUpstreamReachable()
 					Eventually(func() error {
-						logs, err := envoyInstance.LogsCmd()
+						logs, err := envoyInstance.Logs()
 						if err != nil {
 							return err
 						}

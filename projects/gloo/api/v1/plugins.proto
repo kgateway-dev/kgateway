@@ -45,8 +45,8 @@ message ListenerPlugins {
 message HttpListenerPlugins {
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
     hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
-    als.plugins.gloo.solo.io.AccessLoggingService access_logging_service = 6;
 }
+
 // Plugin-specific configuration that lives on tcp listeners
 message TcpListenerPlugins {
     tcp.plugins.gloo.solo.io.TcpProxySettings tcp_proxy_settings = 3;

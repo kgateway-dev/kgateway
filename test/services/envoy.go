@@ -389,11 +389,7 @@ func localAddr() (string, error) {
 	return "", errors.New("unable to find Gloo IP")
 }
 
-func (ei *EnvoyInstance) Logs() string {
-	return ei.logs.String()
-}
-
-func (ei *EnvoyInstance) LogsCmd() (string, error) {
+func (ei *EnvoyInstance) Logs() (string, error) {
 	if ei.UseDocker {
 		logsArgs := []string{"logs", containerName}
 		cmd := exec.Command("docker", logsArgs...)

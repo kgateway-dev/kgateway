@@ -77,7 +77,7 @@ var _ = Describe("Plugin", func() {
 					HttpListener: hl,
 				},
 				Plugins: &v1.ListenerPlugins{
-					Als: alsConfig,
+					AccessLoggingService: alsConfig,
 				},
 			}
 
@@ -110,7 +110,7 @@ var _ = Describe("Plugin", func() {
 					TcpListener: tl,
 				},
 				Plugins: &v1.ListenerPlugins{
-					Als: alsConfig,
+					AccessLoggingService: alsConfig,
 				},
 			}
 
@@ -172,7 +172,7 @@ var _ = Describe("Plugin", func() {
 					HttpListener: hl,
 				},
 				Plugins: &v1.ListenerPlugins{
-					Als: alsConfig,
+					AccessLoggingService: alsConfig,
 				},
 			}
 
@@ -205,7 +205,7 @@ var _ = Describe("Plugin", func() {
 					TcpListener: tl,
 				},
 				Plugins: &v1.ListenerPlugins{
-					Als: alsConfig,
+					AccessLoggingService: alsConfig,
 				},
 			}
 
