@@ -980,7 +980,9 @@ type Settings_ConsulConfiguration struct {
 	InsecureSkipVerify *types.BoolValue `protobuf:"bytes,10,opt,name=insecure_skip_verify,json=insecureSkipVerify,proto3" json:"insecure_skip_verify,omitempty"`
 	// WaitTime limits how long a watches for Consul resources will block.
 	// If not provided, the agent default values will be used.
-	WaitTime             *types.Duration                                       `protobuf:"bytes,11,opt,name=wait_time,json=waitTime,proto3" json:"wait_time,omitempty"`
+	WaitTime *types.Duration `protobuf:"bytes,11,opt,name=wait_time,json=waitTime,proto3" json:"wait_time,omitempty"`
+	// Enable Service Discovery via Consul with this field
+	// set to empty struct `{}` to enable with defaults
 	ServiceDiscovery     *Settings_ConsulConfiguration_ServiceDiscoveryOptions `protobuf:"bytes,12,opt,name=service_discovery,json=serviceDiscovery,proto3" json:"service_discovery,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                              `json:"-"`
 	XXX_unrecognized     []byte                                                `json:"-"`

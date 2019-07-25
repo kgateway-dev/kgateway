@@ -26,10 +26,10 @@ import (
 const RootKey = "gloo"
 
 type ConfigFactoryParams struct {
-	Settings *v1.Settings
-	Memory   ConfigFactoryParamsMemory
-	Kube     ConfigFactoryParamsKube
-	Consul   ConfigFactoryParamsConsul
+	settings *v1.Settings
+	memory   configFactoryParamsMemory
+	kube     configFactoryParamsKube
+	consul   configFactoryParamsConsul
 }
 
 func NewConfigFactoryParams(settings *v1.Settings,
@@ -38,39 +38,39 @@ func NewConfigFactoryParams(settings *v1.Settings,
 	cfg **rest.Config,
 	consulClient *consulapi.Client) ConfigFactoryParams {
 	return ConfigFactoryParams{
-		Settings: settings,
-		Memory: ConfigFactoryParamsMemory{
-			SharedCache: sharedCache,
+		settings: settings,
+		memory: configFactoryParamsMemory{
+			sharedCache: sharedCache,
 		},
-		Kube: ConfigFactoryParamsKube{
-			Cache:   cache,
-			RestCfg: cfg,
+		kube: configFactoryParamsKube{
+			kubeCache: cache,
+			restCfg:   cfg,
 		},
-		Consul: ConfigFactoryParamsConsul{
-			ConsulClient: consulClient,
+		consul: configFactoryParamsConsul{
+			consulClient: consulClient,
 		},
 	}
 }
 
-type ConfigFactoryParamsMemory struct {
-	SharedCache memory.InMemoryResourceCache
+type configFactoryParamsMemory struct {
+	sharedCache memory.InMemoryResourceCache
 }
 
-type ConfigFactoryParamsKube struct {
-	Cache   kube.SharedCache
-	RestCfg **rest.Config
+type configFactoryParamsKube struct {
+	kubeCache kube.SharedCache
+	restCfg   **rest.Config
 }
 
-type ConfigFactoryParamsConsul struct {
-	ConsulClient *consulapi.Client
+type configFactoryParamsConsul struct {
+	consulClient *consulapi.Client
 }
 
 // sharedCache, resourceCrd+cfg OR consulClient must be non-nil
 func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (factory.ResourceClientFactory, error) {
-	settings := params.Settings
+	settings := params.settings
 
 	if settings.ConfigSource == nil {
-		sharedCache := params.Memory.SharedCache
+		sharedCache := params.memory.sharedCache
 		if sharedCache == nil {
 			return nil, errors.Errorf("internal error: shared cache cannot be nil")
 		}
@@ -82,8 +82,8 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 	switch source := settings.ConfigSource.(type) {
 	// this is at trick to reuse the same cfg across multiple clients
 	case *v1.Settings_KubernetesConfigSource:
-		kubeCache := params.Kube.Cache
-		cfg := params.Kube.RestCfg
+		kubeCache := params.kube.kubeCache
+		cfg := params.kube.restCfg
 		if *cfg == nil {
 			c, err := kubeutils.GetConfig("", "")
 			if err != nil {
@@ -97,7 +97,7 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 			SharedCache: kubeCache,
 		}, nil
 	case *v1.Settings_ConsulKvSource:
-		consulClient := params.Consul.ConsulClient
+		consulClient := params.consul.consulClient
 		rootKey := source.ConsulKvSource.GetRootKey()
 		if rootKey == "" {
 			rootKey = RootKey

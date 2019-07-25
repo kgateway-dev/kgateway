@@ -1,6 +1,8 @@
 package consulvaulte2e_test
 
 import (
+	"log"
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -36,7 +38,14 @@ var _ = AfterSuite(func() {
 })
 
 func TestE2e(t *testing.T) {
-
+	if os.Getenv("RUN_VAULT_TESTS") != "1" {
+		log.Printf("This test downloads and runs consul and is disabled by default. To enable, set RUN_VAULT_TESTS=1 in your env.")
+		return
+	}
+	if os.Getenv("RUN_CONSUL_TESTS") != "1" {
+		log.Printf("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
+		return
+	}
 	// set default port to an unprivileged port for local testing.
 	defaults.HttpPort = 8081
 

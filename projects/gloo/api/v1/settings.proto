@@ -220,6 +220,8 @@ message Settings {
             repeated string data_centers = 1;
         }
 
+        // Enable Service Discovery via Consul with this field
+        // set to empty struct `{}` to enable with defaults
         ServiceDiscoveryOptions service_discovery = 12;
 
 
