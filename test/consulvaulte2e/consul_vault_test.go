@@ -38,7 +38,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		consulInstance *services.ConsulInstance
 		vaultInstance  *services.VaultInstance
 		envoyInstance  *services.EnvoyInstance
-		svc1, svc2     *v1helpers.TestUpstream
+		svc1           *v1helpers.TestUpstream
 		err            error
 		settingsDir    string
 
@@ -116,12 +116,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 		// Run two simple web applications locally
 		svc1 = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		svc2 = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
 		// Register services with consul
 		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
-		Expect(err).NotTo(HaveOccurred())
-		err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

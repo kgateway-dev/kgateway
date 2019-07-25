@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: add ability to print basic non-kube yaml with cli commands
+  issueLink: https://github.com/solo-io/gloo/issues/896

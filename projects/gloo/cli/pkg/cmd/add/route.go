@@ -2,6 +2,7 @@ package add
 
 import (
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
@@ -88,7 +89,7 @@ func selectOrCreateVirtualService(opts *options.Options) (*gatewayv1.VirtualServ
 		opts.Metadata.Namespace = defaults.GlooSystem
 	}
 
-	fmt.Printf("creating virtualservice %v with default domain *\n", opts.Metadata.Name)
+	fmt.Fprintf(os.Stderr, "creating virtualservice %v with default domain *\n", opts.Metadata.Name)
 	return &gatewayv1.VirtualService{
 		Metadata: opts.Metadata,
 		VirtualHost: &v1.VirtualHost{
@@ -130,6 +131,9 @@ func addRoute(opts *options.Options) error {
 
 	if opts.Add.DryRun {
 		return common.PrintKubeCrd(virtualService, gatewayv1.VirtualServiceCrd)
+	}
+	if opts.Add.PrintYaml {
+		return common.PrintYaml(virtualService)
 	}
 
 	out, err := helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{

@@ -59,6 +59,10 @@ func createVirtualService(opts *options.Options, args []string) error {
 		return common.PrintKubeCrd(vs, v1.VirtualServiceCrd)
 	}
 
+	if opts.Create.PrintYaml {
+		return common.PrintYaml(vs)
+	}
+
 	virtualServiceClient := helpers.MustVirtualServiceClient()
 	vs, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
 	if err != nil {
