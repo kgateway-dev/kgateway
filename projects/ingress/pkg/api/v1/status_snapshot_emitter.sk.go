@@ -104,6 +104,8 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 		namespace string
 	}
 	kubeServiceChan := make(chan kubeServiceListWithNamespace)
+
+	var initialKubeServiceList KubeServiceList
 	/* Create channel for Ingress */
 	type ingressListWithNamespace struct {
 		list      IngressList
@@ -111,8 +113,19 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 	}
 	ingressChan := make(chan ingressListWithNamespace)
 
+	var initialIngressList IngressList
+
+	currentSnapshot := StatusSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for KubeService */
+		{
+			services, err := c.kubeService.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial KubeService list")
+			}
+			initialKubeServiceList = append(initialKubeServiceList, services...)
+		}
 		kubeServiceNamespacesChan, kubeServiceErrs, err := c.kubeService.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting KubeService watch")
@@ -124,6 +137,13 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			errutils.AggregateErrs(ctx, errs, kubeServiceErrs, namespace+"-services")
 		}(namespace)
 		/* Setup namespaced watch for Ingress */
+		{
+			ingresses, err := c.ingress.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Ingress list")
+			}
+			initialIngressList = append(initialIngressList, ingresses...)
+		}
 		ingressNamespacesChan, ingressErrs, err := c.ingress.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Ingress watch")
@@ -157,12 +177,16 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Services */
+	currentSnapshot.Services = initialKubeServiceList.Sort()
+	/* Initialize snapshot for Ingresses */
+	currentSnapshot.Ingresses = initialIngressList.Sort()
 
 	snapshots := make(chan *StatusSnapshot)
 	go func() {
 		originalSnapshot := StatusSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

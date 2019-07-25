@@ -95,9 +95,10 @@ spec:
           periodSeconds: 10
           failureThreshold: 10
         livenessProbe:
-          httpGet:
-            port: 8081
-            path: /server_info
+          exec:
+            command:
+            - wget 
+            - localhost:19000/server_info
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10

@@ -2,8 +2,9 @@ package setuputils
 
 import (
 	"flag"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"os"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 const (
@@ -27,6 +28,6 @@ func init() {
 	}
 	flag.StringVar(&setupNamespace, "namespace", defaultNamespace, "namespace to watch for settings crd/file")
 	flag.StringVar(&setupName, "name", defaults.SettingsName, "name of settings crd/file to use")
-	flag.StringVar(&setupDir, "dir", "", "directory to find bootstrap settings if not using "+
-		"kubernetes crds")
+	flag.StringVar(&setupDir, "dir", "",
+		"directory to find bootstrap settings if not using kubernetes crds")
 }

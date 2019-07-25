@@ -34,20 +34,6 @@ func (m *MockConsulClient) EXPECT() *MockConsulClientMockRecorder {
 	return m.recorder
 }
 
-// CanConnect mocks base method
-func (m *MockConsulClient) CanConnect() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanConnect")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// CanConnect indicates an expected call of CanConnect
-func (mr *MockConsulClientMockRecorder) CanConnect() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanConnect", reflect.TypeOf((*MockConsulClient)(nil).CanConnect))
-}
-
 // DataCenters mocks base method
 func (m *MockConsulClient) DataCenters() ([]string, error) {
 	m.ctrl.T.Helper()

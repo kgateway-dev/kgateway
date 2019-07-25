@@ -38,6 +38,10 @@ func (r *KubeService) Hash() uint64 {
 	)
 }
 
+func (r *KubeService) GroupVersionKind() schema.GroupVersionKind {
+	return KubeServiceGVK
+}
+
 type KubeServiceList []*KubeService
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -111,8 +115,6 @@ func (list KubeServiceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &KubeService{}
-
 // Kubernetes Adapter for KubeService
 
 func (o *KubeService) GetObjectKind() schema.ObjectKind {
@@ -125,11 +127,6 @@ func (o *KubeService) DeepCopyObject() runtime.Object {
 }
 
 var (
-	KubeServiceGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "ingress.solo.io",
-		Kind:    "KubeService",
-	}
 	KubeServiceCrd = crd.NewCrd(
 		"services",
 		KubeServiceGVK.Group,
@@ -145,3 +142,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	KubeServiceGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "ingress.solo.io",
+		Kind:    "KubeService",
+	}
+)

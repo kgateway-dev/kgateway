@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewClusterIngress(namespace, name string) *ClusterIngress {
@@ -47,6 +48,10 @@ func (r *ClusterIngress) Hash() uint64 {
 	})
 
 	return hashutils.HashAll(clone)
+}
+
+func (r *ClusterIngress) GroupVersionKind() schema.GroupVersionKind {
+	return ClusterIngressGVK
 }
 
 type ClusterIngressList []*ClusterIngress
@@ -121,3 +126,11 @@ func (list ClusterIngressList) AsInterfaces() []interface{} {
 	})
 	return asInterfaces
 }
+
+var (
+	ClusterIngressGVK = schema.GroupVersionKind{
+		Version: "v1alpha1",
+		Group:   "networking.internal.knative.dev",
+		Kind:    "ClusterIngress",
+	}
+)
