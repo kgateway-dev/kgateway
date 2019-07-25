@@ -139,6 +139,10 @@ func createUpstream(opts *options.Options) error {
 		return common.PrintKubeCrd(us, v1.UpstreamCrd)
 	}
 
+	if opts.Create.PrintYaml {
+		return common.PrintYaml(us)
+	}
+
 	us, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
 	if err != nil {
 		return err

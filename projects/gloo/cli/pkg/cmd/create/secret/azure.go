@@ -35,7 +35,7 @@ func azureCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createAzureSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun); err != nil {
+			if err := createAzureSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Create.PrintYaml); err != nil {
 				return err
 			}
 			return nil
@@ -59,7 +59,7 @@ func AzureSecretArgsInteractive(meta *core.Metadata, input *options.AzureSecret)
 	return nil
 }
 
-func createAzureSecret(ctx context.Context, meta core.Metadata, input options.AzureSecret, dryRun bool) error {
+func createAzureSecret(ctx context.Context, meta core.Metadata, input options.AzureSecret, dryRun, printYaml bool) error {
 	if input.ApiKeys.Entries == nil {
 		return errors.Errorf("must provide azure api keys")
 	}
@@ -74,6 +74,9 @@ func createAzureSecret(ctx context.Context, meta core.Metadata, input options.Az
 
 	if dryRun {
 		return common.PrintKubeSecret(ctx, secret)
+	}
+	if printYaml {
+		return common.PrintYaml(secret)
 	}
 
 	secretClient := helpers.MustSecretClient()

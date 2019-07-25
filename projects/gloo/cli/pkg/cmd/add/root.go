@@ -22,6 +22,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddDryRunFlag(pflags, &opts.Add.DryRun)
+	flagutils.AddPrintYamlFlag(pflags, &opts.Add.PrintYaml)
 	cmd.AddCommand(Route(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
