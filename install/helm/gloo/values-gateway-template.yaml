@@ -37,15 +37,21 @@ discovery:
 
 gateway:
   enabled: true
+  upgrade: false
   deployment:
     image:
       repository: quay.io/solo-io/gateway
       pullPolicy: Always
     replicas: 1
     stats: true
+  conversionJob:
+    image:
+      repository: quay.io/solo-io/gateway-conversion
+      pullPolicy: Always
+    restartPolicy: Never
 
 gatewayProxies:
-  gatewayProxy:
+  gatewayProxyV2:
     kind:
        deployment:
          replicas: 1

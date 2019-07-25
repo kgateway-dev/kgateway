@@ -46,7 +46,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	upstreams := params.Snapshot.Upstreams
-	UpstreamGroups := params.Snapshot.UpstreamGroups
+	upstreamGroups := params.Snapshot.UpstreamGroups
 
 	switch destType := routeAction.GetDestination().(type) {
 	case *v1.RouteAction_Single:
@@ -77,7 +77,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			return err
 		}
 	case *v1.RouteAction_UpstreamGroup:
-		usg, err := UpstreamGroups.Find(destType.UpstreamGroup.Namespace, destType.UpstreamGroup.Name)
+		usg, err := upstreamGroups.Find(destType.UpstreamGroup.Namespace, destType.UpstreamGroup.Name)
 		if err != nil {
 			return err
 		}

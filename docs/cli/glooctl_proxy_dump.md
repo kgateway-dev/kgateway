@@ -24,7 +24,7 @@ glooctl proxy dump [flags]
 
 ```
   -i, --interactive        use interactive mode
-      --name string        the name of the proxy service/deployment to use (default "gateway-proxy")
+      --name string        the name of the proxy service/deployment to use (default "gateway-proxy-v2")
   -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
       --port string        the name of the service port to connect to (default "http")
 ```

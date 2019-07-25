@@ -15,6 +15,11 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("shouldn't get errors for gateway upgrade dry run", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run --upgrade", file))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	It("shouldn't get errors for knative dry run", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install knative --file %s --dry-run", file))
 		Expect(err).NotTo(HaveOccurred())

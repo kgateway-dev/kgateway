@@ -47,7 +47,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.HttpListenerPlugins{
+			Plugins: &v1.HttpListenerPlugins{
 				HttpConnectionManagerSettings: hcms,
 			},
 		}

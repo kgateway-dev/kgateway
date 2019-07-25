@@ -10,12 +10,12 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 /*
-@solo-kit:resource.short_name=ig
-@solo-kit:resource.plural_name=ingresses
-
 A simple wrapper for a Kubernetes Ingress Object.
 */
 message Ingress{
+
+    option (core.solo.io.resource).short_name = "ig";
+    option (core.solo.io.resource).plural_name = "ingresses";
     // a raw byte representation of the kubernetes ingress this resource wraps
     google.protobuf.Any kube_ingress_spec = 1;
     // a raw byte representation of the ingress status of the kubernetes ingress object

@@ -1,5 +1,5 @@
 gatewayProxies:
-  gatewayProxy:
+  gatewayProxyV2:
     tracing:
       provider:
         typed_config:

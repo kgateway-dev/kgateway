@@ -5,7 +5,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
-  name: gateway
+  name: gateway-v2
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gateway.deployment.replicas }}

@@ -38,6 +38,14 @@ type Image struct {
 	PullSecret string `json:"pullSecret,omitempty"`
 }
 
+type PodSpec struct {
+	RestartPolicy string `json:"restartPolicy,omitempty"`
+}
+
+type JobSpec struct {
+	*PodSpec
+}
+
 type DeploymentSpec struct {
 	Replicas int `json:"replicas"`
 }
@@ -88,13 +96,20 @@ type DiscoveryDeployment struct {
 }
 
 type Gateway struct {
-	Enabled    *bool              `json:"enabled"`
-	Deployment *GatewayDeployment `json:"deployment,omitempty"`
+	Enabled       *bool                 `json:"enabled"`
+	Upgrade       *bool                 `json:"upgrade"`
+	Deployment    *GatewayDeployment    `json:"deployment,omitempty"`
+	ConversionJob *GatewayConversionJob `json:"conversionJob,omitempty"`
 }
 
 type GatewayDeployment struct {
 	Image *Image `json:"image,omitempty"`
 	*DeploymentSpec
+}
+
+type GatewayConversionJob struct {
+	Image *Image `json:"image,omitempty"`
+	*JobSpec
 }
 
 type GatewayProxy struct {

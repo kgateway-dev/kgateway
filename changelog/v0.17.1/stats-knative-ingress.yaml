@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  description: |
+    add stats listener to knative and ingress proxy configmaps in helm chart
+  issueLink: https://github.com/solo-io/gloo/issues/821

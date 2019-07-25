@@ -13,13 +13,14 @@ import (
 
 var _ = Describe("Helm Test", func() {
 
+	var (
+		glooConfigMapName = "gateway-proxy-v2-envoy-config"
+	)
+
 	Describe("gateway proxy extra annotations and crds", func() {
 		labels := map[string]string{
 			"gloo": translator.GatewayProxyName,
 			"app":  "gloo",
-		}
-		selector := map[string]string{
-			"gloo": translator.GatewayProxyName,
 		}
 
 		prepareMakefile := func(helmFlags string) {
@@ -35,8 +36,17 @@ var _ = Describe("Helm Test", func() {
 			}
 		}
 
+		// helper for passing a values file
+		prepareMakefileFromValuesFile := func(valuesFile string) {
+			helmFlags := "--namespace " + namespace +
+				" --set namespace.create=true" +
+				" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test" +
+				" --values " + valuesFile
+			prepareMakefile(helmFlags)
+		}
+
 		It("has a namespace", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
+			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
 			prepareMakefile(helmFlags)
 			rb := ResourceBuilder{
 				Namespace: namespace,
@@ -56,6 +66,9 @@ var _ = Describe("Helm Test", func() {
 				},
 			}
 			svc := rb.GetService()
+			selector := map[string]string{
+				"gateway-proxy": "live",
+			}
 			svc.Spec.Selector = selector
 			svc.Spec.Type = v1.ServiceTypeLoadBalancer
 			svc.Spec.Ports[0].TargetPort = intstr.FromInt(8080)
@@ -65,37 +78,27 @@ var _ = Describe("Helm Test", func() {
 		})
 
 		It("has a proxy without tracing", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
+			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
 			prepareMakefile(helmFlags)
 			proxySpec := make(map[string]string)
 			proxySpec["envoy.yaml"] = confWithoutTracing
-			cmName := "gateway-proxy-envoy-config"
 			cmRb := ResourceBuilder{
 				Namespace: namespace,
-				Name:      cmName,
+				Name:      glooConfigMapName,
 				Labels:    labels,
 				Data:      proxySpec,
 			}
 			proxy := cmRb.GetConfigMap()
 			testManifest.ExpectConfigMapWithYamlData(proxy)
 		})
-
-		prepareMakefileForTracing := func(valuesFile string) {
-			helmFlags := "--namespace " + namespace +
-				" --set namespace.create=true" +
-				" --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test" +
-				" --values " + valuesFile
-			prepareMakefile(helmFlags)
-		}
 
 		It("has a proxy with tracing provider", func() {
-			prepareMakefileForTracing("install/test/val_tracing_provider.yaml")
+			prepareMakefileFromValuesFile("install/test/val_tracing_provider.yaml")
 			proxySpec := make(map[string]string)
 			proxySpec["envoy.yaml"] = confWithTracingProvider
-			cmName := "gateway-proxy-envoy-config"
 			cmRb := ResourceBuilder{
 				Namespace: namespace,
-				Name:      cmName,
+				Name:      glooConfigMapName,
 				Labels:    labels,
 				Data:      proxySpec,
 			}
@@ -103,14 +106,13 @@ var _ = Describe("Helm Test", func() {
 			testManifest.ExpectConfigMapWithYamlData(proxy)
 		})
 
-		FIt("has a proxy with tracing provider and cluster", func() {
-			prepareMakefileForTracing("install/test/val_tracing_provider_cluster.yaml")
+		It("has a proxy with tracing provider and cluster", func() {
+			prepareMakefileFromValuesFile("install/test/val_tracing_provider_cluster.yaml")
 			proxySpec := make(map[string]string)
 			proxySpec["envoy.yaml"] = confWithTracingProviderCluster
-			cmName := "gateway-proxy-envoy-config"
 			cmRb := ResourceBuilder{
 				Namespace: namespace,
-				Name:      cmName,
+				Name:      glooConfigMapName,
 				Labels:    labels,
 				Data:      proxySpec,
 			}
@@ -128,7 +130,7 @@ node:
   id: "{{.PodName}}.{{.PodNamespace}}"
   metadata:
     # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-    role: "{{.PodNamespace}}~gateway-proxy"
+    role: "{{.PodNamespace}}~gateway-proxy-v2"
 static_resources:
   listeners:
     - name: prometheus_listener
@@ -230,7 +232,7 @@ node:
   id: "{{.PodName}}.{{.PodNamespace}}"
   metadata:
     # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-    role: "{{.PodNamespace}}~gateway-proxy"
+    role: "{{.PodNamespace}}~gateway-proxy-v2"
 static_resources:
   listeners:
     - name: prometheus_listener
@@ -264,15 +266,15 @@ static_resources:
                             - name: ":method"
                               exact_match: GET
                           route:
-                              cluster: admin_port_cluster
+                            cluster: admin_port_cluster
                         - match:
                             prefix: "/metrics"
                             headers:
                             - name: ":method"
                               exact_match: GET
                           route:
-                              prefix_rewrite: "/stats/prometheus"
-                              cluster: admin_port_cluster
+                            prefix_rewrite: "/stats/prometheus"
+                            cluster: admin_port_cluster
                 http_filters:
                   - name: envoy.router
                     config: {} # if $spec.podTemplate.stats
@@ -292,7 +294,7 @@ static_resources:
     http2_protocol_options: {}
     upstream_connection_options:
       tcp_keepalive: {}
-    type: STRICT_DNS
+    type: STRICT_DNS # if $spec.tracing.cluster # if $spec.tracing
   - name: admin_port_cluster
     connect_timeout: 5.000s
     type: STATIC
@@ -308,9 +310,9 @@ static_resources:
                 port_value: 19000 # if $spec.podTemplate.stats
 tracing:
   http:
-    trace: spec
     another: line
-      # if $spec.tracing
+    trace: spec
+     # if $spec.tracing.provider # if $spec.tracing
 dynamic_resources:
   ads_config:
     api_type: GRPC
@@ -328,12 +330,13 @@ admin:
       port_value: 19000 # if (empty $spec.configMap.data) ## allows full custom # range $name, $spec := .Values.gatewayProxies# if .Values.gateway.enabled
 `
 
-var confWithTracingProviderCluster = `node:
+var confWithTracingProviderCluster = `
+node:
   cluster: gateway
   id: "{{.PodName}}.{{.PodNamespace}}"
   metadata:
     # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-    role: "{{.PodNamespace}}~gateway-proxy"
+    role: "{{.PodNamespace}}~gateway-proxy-v2"
 static_resources:
   listeners:
     - name: prometheus_listener
@@ -426,9 +429,9 @@ static_resources:
 tracing:
   http:
     typed_config:
-      "@type": "type.googleapis.com/envoy.config.trace.v2.ZipkinConfig"
+      '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
       collector_cluster: zipkin
-      collector_endpoint: "/api/v1/spans"
+      collector_endpoint: /api/v1/spans
      # if $spec.tracing.provider # if $spec.tracing
 dynamic_resources:
   ads_config:
