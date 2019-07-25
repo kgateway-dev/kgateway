@@ -35,9 +35,11 @@ var _ = Describe("UpstreamGroup", func() {
 				Name:      "us1",
 			},
 		}
-		_, _ = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		_, err := helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		us.Metadata.Name = "us2"
-		_, _ = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		_, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	getUpstreamGroup := func(name string) *v1.UpstreamGroup {
