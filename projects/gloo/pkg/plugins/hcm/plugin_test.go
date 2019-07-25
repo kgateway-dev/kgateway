@@ -18,6 +18,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
+	tracingv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -42,7 +43,7 @@ var _ = Describe("Plugin", func() {
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: "DefaultHostForHttp_10",
 
-			Tracing: &hcm.HttpConnectionManagerSettings_TracingSettings{
+			Tracing: &tracingv1.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"path", "origin"},
 				Verbose:               true,
 			},

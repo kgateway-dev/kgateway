@@ -2,12 +2,12 @@ package tracing
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -24,7 +24,7 @@ var _ = Describe("Plugin", func() {
 			Matcher: nil,
 			Action:  nil,
 			RoutePlugins: &v1.RoutePlugins{
-				Tracing: &hcm.RouteTracingSettings{
+				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
 				},
 			},

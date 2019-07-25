@@ -1,0 +1,26 @@
+syntax = "proto3";
+package tracing.plugins.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/duration.proto";
+
+option (gogoproto.equal_all) = true;
+
+// Contains settings for configuring Envoy's tracing capabilities at the listener level.
+message ListenerTracingSettings {
+    // Optional. If specified, Envoy will include the headers and header values for any matching request headers.
+    repeated string request_headers_for_tags = 1;
+    // Optional. If true, Envoy will include logs for streaming events. Default: false.
+    bool verbose = 2;
+}
+
+// Contains settings for configuring Envoy's tracing capabilities at the route level.
+// Note: must also specify ListenerTracingSettings for the associated listener.
+message RouteTracingSettings {
+    // Optional. If set, will be used to identify the route that produced the trace.
+    // Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed.
+    string route_descriptor = 1;
+}

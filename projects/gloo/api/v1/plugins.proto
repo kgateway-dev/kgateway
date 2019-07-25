@@ -20,6 +20,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc_web/grpc_web.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hcm/hcm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tcp/tcp.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tracing/tracing.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
@@ -72,7 +73,7 @@ message RoutePlugins {
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
     Extensions extensions = 6;
-    hcm.plugins.gloo.solo.io.RouteTracingSettings tracing = 7;
+    tracing.plugins.gloo.solo.io.RouteTracingSettings tracing = 7;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
