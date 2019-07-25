@@ -18,7 +18,7 @@ var _ = Describe("UpstreamGroup", func() {
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
-		us1 := &v1.Upstream{
+		us := &v1.Upstream{
 			UpstreamSpec: &v1.UpstreamSpec{
 				UpstreamType: &v1.UpstreamSpec_Aws{
 					Aws: &aws.UpstreamSpec{
@@ -35,25 +35,9 @@ var _ = Describe("UpstreamGroup", func() {
 				Name:      "us1",
 			},
 		}
-		_, _ = helpers.MustUpstreamClient().Write(us1, clients.WriteOpts{})
-		us2 := &v1.Upstream{
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Aws{
-					Aws: &aws.UpstreamSpec{
-						Region: "test-region",
-						SecretRef: core.ResourceRef{
-							Namespace: "gloo-system",
-							Name:      "test-aws-us",
-						},
-					},
-				},
-			},
-			Metadata: core.Metadata{
-				Namespace: "gloo-system",
-				Name:      "us2",
-			},
-		}
-		_, _ = helpers.MustUpstreamClient().Write(us2, clients.WriteOpts{})
+		_, _ = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		us.Metadata.Name = "us2"
+		_, _ = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
 	})
 
 	getUpstreamGroup := func(name string) *v1.UpstreamGroup {
