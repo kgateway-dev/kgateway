@@ -34,7 +34,7 @@ var _ = Describe("Helm Test", func() {
 				"app":  "gloo",
 			}
 			selector = map[string]string{
-				"gloo": translator.GatewayProxyName,
+				"gateway-proxy": "live",
 			}
 		})
 
@@ -46,7 +46,7 @@ var _ = Describe("Helm Test", func() {
 		}
 
 		It("has a namespace", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
+			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
 			prepareMakefile(helmFlags)
 			rb := ResourceBuilder{
 				Namespace: namespace,
@@ -75,7 +75,7 @@ var _ = Describe("Helm Test", func() {
 		})
 
 		It("has a proxy without tracing", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
+			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
 			prepareMakefile(helmFlags)
 			proxySpec := make(map[string]string)
 			proxySpec["envoy.yaml"] = `
@@ -84,7 +84,7 @@ node:
   id: "{{.PodName}}.{{.PodNamespace}}"
   metadata:
     # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-    role: "{{.PodNamespace}}~gateway-proxy"
+    role: "{{.PodNamespace}}~gateway-proxy-v2"
 static_resources:
   listeners:
     - name: prometheus_listener
@@ -107,13 +107,6 @@ static_resources:
                       routes:
                         - match:
                             path: "/ready"
-                            headers:
-                            - name: ":method"
-                              exact_match: GET
-                          route:
-                            cluster: admin_port_cluster
-                        - match:
-                            path: "/server_info"
                             headers:
                             - name: ":method"
                               exact_match: GET
@@ -179,7 +172,7 @@ admin:
       address: 127.0.0.1
       port_value: 19000 # if (empty $spec.configMap.data) ## allows full custom # range $name, $spec := .Values.gatewayProxies# if .Values.gateway.enabled
 `
-			cmName := "gateway-proxy-envoy-config"
+			cmName := "gateway-proxy-v2-envoy-config"
 			cmRb := ResourceBuilder{
 				Namespace: namespace,
 				Name:      cmName,
@@ -191,7 +184,7 @@ admin:
 		})
 
 		It("has a proxy with tracing", func() {
-			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test --values install/test/test_values.yaml"
+			helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test --values install/test/test_values.yaml"
 			prepareMakefile(helmFlags)
 			proxySpec := make(map[string]string)
 			proxySpec["envoy.yaml"] = `
@@ -200,7 +193,7 @@ node:
   id: "{{.PodName}}.{{.PodNamespace}}"
   metadata:
     # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-    role: "{{.PodNamespace}}~gateway-proxy"
+    role: "{{.PodNamespace}}~gateway-proxy-v2"
 static_resources:
   listeners:
     - name: prometheus_listener
@@ -228,13 +221,6 @@ static_resources:
                               exact_match: GET
                           route:
                             cluster: admin_port_cluster
-                        - match:
-                            path: "/server_info"
-                            headers:
-                            - name: ":method"
-                              exact_match: GET
-                          route:
-                              cluster: admin_port_cluster
                         - match:
                             prefix: "/metrics"
                             headers:
@@ -299,7 +285,7 @@ admin:
       address: 127.0.0.1
       port_value: 19000 # if (empty $spec.configMap.data) ## allows full custom # range $name, $spec := .Values.gatewayProxies# if .Values.gateway.enabled
 `
-			cmName := "gateway-proxy-envoy-config"
+			cmName := "gateway-proxy-v2-envoy-config"
 			cmRb := ResourceBuilder{
 				Namespace: namespace,
 				Name:      cmName,

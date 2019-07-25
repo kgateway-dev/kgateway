@@ -18,7 +18,7 @@ settings:
         httpPort: 80
         httpsPort: 443
         replicas: 1
-        tracing:
+        stats: true
 
 gateway:
   enabled: false

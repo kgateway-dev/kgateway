@@ -119,6 +119,47 @@ var _ = Describe("Install", func() {
 
 	})
 
+	Context("Gateway with default values and upgrade option", func() {
+		BeforeEach(func() {
+			opts.Install.Upgrade = true
+			spec, err := install.GetInstallSpec(&opts, constants.GatewayValuesFileName)
+			Expect(err).NotTo(HaveOccurred())
+			validator = MockInstallClient{
+				expectedCrds: install.GlooCrdNames,
+			}
+			installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("installs expected crds for gloo", func() {
+			err := installer.DoCrdInstall()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(validator.applied).To(BeTrue())
+			Expect(validator.waited).To(BeTrue())
+			expectKinds(validator.resources, []string{"CustomResourceDefinition"})
+			expectNames(validator.resources, install.GlooCrdNames)
+		})
+
+		It("does nothing on preinstall", func() {
+			err := installer.DoPreInstall()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(validator.applied).To(BeTrue())
+			Expect(validator.waited).To(BeFalse())
+			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectLabels(validator.resources, install.ExpectedLabels)
+		})
+
+		It("installs expected kinds for gloo", func() {
+			err := installer.DoInstall()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(validator.applied).To(BeTrue())
+			Expect(validator.waited).To(BeFalse())
+			expectKinds(validator.resources, install.GlooGatewayUpgradeKinds)
+			expectLabels(validator.resources, install.ExpectedLabels)
+		})
+
+	})
+
 	Context("Ingress with default values", func() {
 		BeforeEach(func() {
 			spec, err := install.GetInstallSpec(&opts, constants.IngressValuesFileName)
