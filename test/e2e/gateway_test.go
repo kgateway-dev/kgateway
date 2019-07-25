@@ -3,9 +3,10 @@ package e2e_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
-
+	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
@@ -25,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Gateway", func() {
+var _ = FDescribe("Gateway", func() {
 
 	var (
 		ctx            context.Context
@@ -251,6 +252,92 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					TestUpstreamSslReachable()
+				})
+			})
+
+			Context("Access logs", func() {
+				var (
+					gw *gatewayv2.Gateway
+				)
+
+				BeforeEach(func() {
+					gatewaycli := testClients.GatewayClient
+					var err error
+					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+				AfterEach(func() {
+					gatewaycli := testClients.GatewayClient
+					var err error
+					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					gw.Plugins = nil
+					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+				})
+				It("can create string access logs", func() {
+					gw.Plugins = &gloov1.ListenerPlugins{
+						Als: &als.AccessLoggingService{
+							AccessLog: []*als.AccessLog{
+								{
+									OutputDestination: &als.AccessLog_FileSink{
+										FileSink: &als.FileSink{
+											Path: envoyInstance.AccessLog,
+											OutputFormat: &als.FileSink_StringFormat{
+												StringFormat: "",
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					up := tu.Upstream
+					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					TestUpstreamReachable()
+
+				})
+				It("can create json access logs", func() {
+					gw.Plugins = &gloov1.ListenerPlugins{
+						Als: &als.AccessLoggingService{
+							AccessLog: []*als.AccessLog{
+								{
+									OutputDestination: &als.AccessLog_FileSink{
+										FileSink: &als.FileSink{
+											Path: envoyInstance.AccessLog,
+											OutputFormat: &als.FileSink_JsonFormat{
+												JsonFormat: &types.Struct{
+													Fields: map[string]*types.Value{
+														"protocol": {
+															Kind: &types.Value_StringValue{
+																StringValue: "%PROTOCOL%",
+															},
+														},
+														"duration": {
+															Kind: &types.Value_StringValue{
+																StringValue: "%DURATION%",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					up := tu.Upstream
+					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					TestUpstreamReachable()
 				})
 			})
 		})

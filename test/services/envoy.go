@@ -202,6 +202,7 @@ type EnvoyInstance struct {
 	GlooAddr      string // address for gloo and services
 	Port          uint32
 	AdminPort     uint32
+	AccessLog     string
 }
 
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
@@ -216,11 +217,17 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		}
 	}
 
+	tmpfile, err := ioutil.TempFile("", "")
+	if err != nil {
+		return nil, err
+	}
+
 	ei := &EnvoyInstance{
 		envoypath: ef.envoypath,
 		UseDocker: ef.useDocker,
 		GlooAddr:  gloo,
 		AdminPort: atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
+		AccessLog: tmpfile.Name(),
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
@@ -302,6 +309,10 @@ func (ei *EnvoyInstance) Clean() error {
 		ei.cmd.Wait()
 	}
 
+	if ei.AccessLog != "" {
+		os.RemoveAll(ei.AccessLog)
+	}
+
 	if ei.UseDocker {
 		if err := stopContainer(); err != nil {
 			return err
@@ -316,11 +327,12 @@ func (ei *EnvoyInstance) runContainer() error {
 		envoyImageTag = "latest"
 	}
 
-	image := "soloio/envoy-gloo:" + envoyImageTag
+	image := "quay.io/solo-io/gloo-envoy-wrapper:" + envoyImageTag
 	args := []string{"run", "--rm", "--name", containerName,
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
 		"-p", fmt.Sprintf("%d:%d", ei.AdminPort, ei.AdminPort),
+		"--entrypoint=envoy",
 		image,
 		"--disable-hot-restart", "--log-level", "debug",
 		"--config-yaml", ei.envoycfg,
