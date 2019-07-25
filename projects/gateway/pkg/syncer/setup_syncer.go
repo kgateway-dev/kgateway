@@ -142,7 +142,6 @@ func RunGateway(opts Opts) error {
 			case err := <-writeErrs:
 				logger.Errorf("error: %v", err)
 			case <-opts.WatchOpts.Ctx.Done():
-				close(writeErrs)
 				return
 			}
 		}
