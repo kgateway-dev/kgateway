@@ -305,8 +305,6 @@ var _ = FDescribe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 					TestUpstreamReachable()
 
-
-
 					Eventually(func() error {
 						logs, err := envoyInstance.LogsCmd()
 						if err != nil {
@@ -319,7 +317,7 @@ var _ = FDescribe("Gateway", func() {
 							return errors.Errorf("no access logs present")
 						}
 						return nil
-					}, time.Second* 30, time.Second/2).ShouldNot(HaveOccurred())
+					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 				It("can create json access logs", func() {
 					gw.Plugins = &gloov1.ListenerPlugins{
@@ -373,7 +371,7 @@ var _ = FDescribe("Gateway", func() {
 							return errors.Errorf("no access logs present")
 						}
 						return nil
-					}, time.Second* 30, time.Second/2).ShouldNot(HaveOccurred())
+					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 			})
 		})
