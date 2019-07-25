@@ -407,6 +407,14 @@ admin:
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.probes=false --values install/test/test_values.yaml"
+					prepareMakefile(helmFlags)
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
+
 				It("has limits", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.memory=2  --set gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.cpu=3 --set gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.memory=4  --set gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.cpu=5 --values install/test/test_values.yaml"
 					prepareMakefile(helmFlags)
@@ -487,6 +495,14 @@ admin:
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
 				})
 
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.probes=false --values install/test/test_values.yaml"
+					prepareMakefile(helmFlags)
+					glooDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					glooDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
+					testManifest.ExpectDeploymentAppsV1(glooDeployment)
+				})
+
 				It("has limits", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.resources.limits.memory=2  --set gloo.deployment.resources.limits.cpu=3 --set gloo.deployment.resources.requests.memory=4  --set gloo.deployment.resources.requests.cpu=5 --values install/test/test_values.yaml"
 					prepareMakefile(helmFlags)
@@ -537,6 +553,14 @@ admin:
 					testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 				})
 
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gateway.deployment.probes=false --values install/test/test_values.yaml"
+					prepareMakefile(helmFlags)
+					gatewayDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					gatewayDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
+					testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+				})
+
 				It("has limits", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gateway.deployment.resources.limits.memory=2  --set gateway.deployment.resources.limits.cpu=3 --set gateway.deployment.resources.requests.memory=4  --set gateway.deployment.resources.requests.cpu=5 --values install/test/test_values.yaml"
 					prepareMakefile(helmFlags)
@@ -584,6 +608,14 @@ admin:
 				It("has a creates a deployment", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --values install/test/test_values.yaml"
 					prepareMakefile(helmFlags)
+					testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+				})
+
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.probes=false --values install/test/test_values.yaml"
+					prepareMakefile(helmFlags)
+					discoveryDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					discoveryDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
 					testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 				})
 
