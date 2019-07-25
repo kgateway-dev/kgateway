@@ -1,6 +1,8 @@
 package create_test
 
 import (
+	"sort"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
@@ -10,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"sort"
 )
 
 var _ = Describe("UpstreamGroup", func() {
@@ -23,15 +24,15 @@ var _ = Describe("UpstreamGroup", func() {
 					Aws: &aws.UpstreamSpec{
 						Region: "test-region",
 						SecretRef: core.ResourceRef{
-						   Namespace: "gloo-system",
-						   Name: "test-aws-us",
+							Namespace: "gloo-system",
+							Name:      "test-aws-us",
 						},
 					},
 				},
 			},
 			Metadata: core.Metadata{
 				Namespace: "gloo-system",
-				Name: "us1",
+				Name:      "us1",
 			},
 		}
 		_, _ = helpers.MustUpstreamClient().Write(us1, clients.WriteOpts{})
@@ -42,14 +43,14 @@ var _ = Describe("UpstreamGroup", func() {
 						Region: "test-region",
 						SecretRef: core.ResourceRef{
 							Namespace: "gloo-system",
-							Name: "test-aws-us",
+							Name:      "test-aws-us",
 						},
 					},
 				},
 			},
 			Metadata: core.Metadata{
 				Namespace: "gloo-system",
-				Name: "us2",
+				Name:      "us2",
 			},
 		}
 		_, _ = helpers.MustUpstreamClient().Write(us2, clients.WriteOpts{})
