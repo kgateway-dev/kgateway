@@ -42,6 +42,10 @@ func (r *VirtualService) Hash() uint64 {
 	)
 }
 
+func (r *VirtualService) GroupVersionKind() schema.GroupVersionKind {
+	return VirtualServiceGVK
+}
+
 type VirtualServiceList []*VirtualService
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -123,8 +127,6 @@ func (list VirtualServiceList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &VirtualService{}
-
 // Kubernetes Adapter for VirtualService
 
 func (o *VirtualService) GetObjectKind() schema.ObjectKind {
@@ -137,11 +139,6 @@ func (o *VirtualService) DeepCopyObject() runtime.Object {
 }
 
 var (
-	VirtualServiceGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gateway.solo.io",
-		Kind:    "VirtualService",
-	}
 	VirtualServiceCrd = crd.NewCrd(
 		"virtualservices",
 		VirtualServiceGVK.Group,
@@ -157,3 +154,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	VirtualServiceGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gateway.solo.io",
+		Kind:    "VirtualService",
+	}
+)

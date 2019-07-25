@@ -18,18 +18,18 @@ import (
 )
 
 var (
-	mApiSnapshotIn  = stats.Int64("api.gateway.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mApiSnapshotOut = stats.Int64("api.gateway.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotIn  = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mApiSnapshotOut = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_out", "The number of snapshots out", "1")
 
 	apisnapshotInView = &view.View{
-		Name:        "api.gateway.solo.io_snap_emitter/snap_in",
+		Name:        "api.gateway.solo.io.v2_snap_emitter/snap_in",
 		Measure:     mApiSnapshotIn,
 		Description: "The number of snapshots updates coming in",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	apisnapshotOutView = &view.View{
-		Name:        "api.gateway.solo.io/snap_emitter/snap_out",
+		Name:        "api.gateway.solo.io.v2/snap_emitter/snap_out",
 		Measure:     mApiSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
@@ -106,6 +106,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		namespace string
 	}
 	virtualServiceChan := make(chan virtualServiceListWithNamespace)
+
+	var initialVirtualServiceList gateway_solo_io.VirtualServiceList
 	/* Create channel for Gateway */
 	type gatewayListWithNamespace struct {
 		list      GatewayList
@@ -113,8 +115,19 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	}
 	gatewayChan := make(chan gatewayListWithNamespace)
 
+	var initialGatewayList GatewayList
+
+	currentSnapshot := ApiSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for VirtualService */
+		{
+			virtualServices, err := c.virtualService.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial VirtualService list")
+			}
+			initialVirtualServiceList = append(initialVirtualServiceList, virtualServices...)
+		}
 		virtualServiceNamespacesChan, virtualServiceErrs, err := c.virtualService.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting VirtualService watch")
@@ -126,6 +139,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			errutils.AggregateErrs(ctx, errs, virtualServiceErrs, namespace+"-virtualServices")
 		}(namespace)
 		/* Setup namespaced watch for Gateway */
+		{
+			gateways, err := c.gateway.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Gateway list")
+			}
+			initialGatewayList = append(initialGatewayList, gateways...)
+		}
 		gatewayNamespacesChan, gatewayErrs, err := c.gateway.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Gateway watch")
@@ -159,12 +179,16 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for VirtualServices */
+	currentSnapshot.VirtualServices = initialVirtualServiceList.Sort()
+	/* Initialize snapshot for Gateways */
+	currentSnapshot.Gateways = initialGatewayList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
 		originalSnapshot := ApiSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

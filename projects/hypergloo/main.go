@@ -26,19 +26,19 @@ func run() error {
 	flag.Parse()
 	errs := make(chan error)
 	go func() {
-		errs <- gloosetup.Main()
+		errs <- gloosetup.Main(nil)
 	}()
 	go func() {
-		errs <- gatewaysetup.Main()
+		errs <- gatewaysetup.Main(nil)
 	}()
 	go func() {
-		errs <- ingresssetup.Main()
+		errs <- ingresssetup.Main(nil)
 	}()
 	go func() {
-		errs <- uds.Main()
+		errs <- uds.Main(nil)
 	}()
 	go func() {
-		errs <- fdssetup.Main()
+		errs <- fdssetup.Main(nil)
 	}()
 	return <-errs
 }

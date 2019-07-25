@@ -37,6 +37,10 @@ func (r *Ingress) Hash() uint64 {
 	)
 }
 
+func (r *Ingress) GroupVersionKind() schema.GroupVersionKind {
+	return IngressGVK
+}
+
 type IngressList []*Ingress
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -110,8 +114,6 @@ func (list IngressList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Ingress{}
-
 // Kubernetes Adapter for Ingress
 
 func (o *Ingress) GetObjectKind() schema.ObjectKind {
@@ -124,11 +126,6 @@ func (o *Ingress) DeepCopyObject() runtime.Object {
 }
 
 var (
-	IngressGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "ingress.solo.io",
-		Kind:    "Ingress",
-	}
 	IngressCrd = crd.NewCrd(
 		"ingresses",
 		IngressGVK.Group,
@@ -144,3 +141,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	IngressGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "ingress.solo.io",
+		Kind:    "Ingress",
+	}
+)

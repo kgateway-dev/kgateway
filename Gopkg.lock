@@ -1052,6 +1052,17 @@
   version = "v0.0.3"
 
 [[projects]]
+  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
+  version = "v0.0.1"
+
+[[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -1376,7 +1387,7 @@
   version = "v0.9.10"
 
 [[projects]]
-  digest = "1:4ecf5d306dfd64759a6cefb7a9be64801b5eac34bba269609c8eb5cab92d04dc"
+  digest = "1:d6faa45440f529a93def557cca1c73a828ad6f09cd8c443868090625c378b405"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1437,8 +1448,8 @@
     "test/testutils",
   ]
   pruneopts = "UT"
-  revision = "96dce349db114c370bf725c37f8636f8c5c24d5e"
-  version = "v0.10.3"
+  revision = "508b01868d70ddb62be7a9ae94c3d7f5840b5af5"
+  version = "v0.10.6"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2486,6 +2497,7 @@
     "github.com/grpc-ecosystem/go-grpc-middleware/tags",
     "github.com/hashicorp/consul/api",
     "github.com/hashicorp/go-multierror",
+    "github.com/hashicorp/vault/api",
     "github.com/helm/helm/pkg/hooks",
     "github.com/hinshun/vt10x",
     "github.com/inconshreveable/go-update",
@@ -2498,6 +2510,7 @@
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
@@ -2558,6 +2571,7 @@
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",
     "github.com/solo-io/solo-kit/pkg/utils/kubeutils",
+    "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",

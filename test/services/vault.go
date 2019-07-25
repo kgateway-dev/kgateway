@@ -6,12 +6,13 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/onsi/gomega/gexec"
+	"github.com/solo-io/go-utils/log"
+
 	"io/ioutil"
 
 	"time"
 
-	"bytes"
-	"io"
 	"regexp"
 	"strings"
 
@@ -19,19 +20,27 @@ import (
 	"github.com/pkg/errors"
 )
 
-const defaultVaultDockerImage = "vault:0.9.2"
+const defaultVaultDockerImage = "vault:1.1.3"
 
 type VaultFactory struct {
-	vaultpath string
+	vaultPath string
 	tmpdir    string
 }
 
 func NewVaultFactory() (*VaultFactory, error) {
-	envoypath := os.Getenv("VAULT_BINARY")
+	path := os.Getenv("VAULT_BINARY")
 
-	if envoypath != "" {
+	if path != "" {
 		return &VaultFactory{
-			vaultpath: envoypath,
+			vaultPath: path,
+		}, nil
+	}
+
+	vaultPath, err := exec.LookPath("vault")
+	if err == nil {
+		log.Printf("Using vault from PATH: %s", vaultPath)
+		return &VaultFactory{
+			vaultPath: vaultPath,
 		}, nil
 	}
 
@@ -65,7 +74,7 @@ docker rm -f $CID
 	}
 
 	return &VaultFactory{
-		vaultpath: filepath.Join(tmpdir, "vault"),
+		vaultPath: filepath.Join(tmpdir, "vault"),
 		tmpdir:    tmpdir,
 	}, nil
 }
@@ -86,6 +95,7 @@ type VaultInstance struct {
 	tmpdir    string
 	cmd       *exec.Cmd
 	token     string
+	session   *gexec.Session
 }
 
 func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -96,7 +106,7 @@ func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	}
 
 	return &VaultInstance{
-		vaultpath: ef.vaultpath,
+		vaultpath: ef.vaultPath,
 		tmpdir:    tmpdir,
 	}, nil
 
@@ -117,21 +127,22 @@ func (i *VaultInstance) RunWithPort() error {
 		"-dev-root-token-id=root",
 		"-dev-listen-address=0.0.0.0:8200",
 	)
-	buf := &bytes.Buffer{}
-	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
 	cmd.Dir = i.tmpdir
-	cmd.Stdout = w
-	cmd.Stderr = w
-	err := cmd.Start()
+	cmd.Stdout = ginkgo.GinkgoWriter
+	cmd.Stderr = ginkgo.GinkgoWriter
+	session, err := gexec.Start(cmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 	if err != nil {
 		return err
 	}
 	time.Sleep(time.Millisecond * 1500)
 	i.cmd = cmd
+	i.session = session
 
-	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(buf.String(), 1)
+	out := string(session.Out.Contents())
+
+	tokenSlice := regexp.MustCompile("Root Token: ([\\-[:word:]]+)").FindAllString(out, 1)
 	if len(tokenSlice) < 1 {
-		return errors.Errorf("%s did not contain root token", buf.String())
+		return errors.Errorf("%s did not contain root token", out)
 	}
 
 	i.token = strings.TrimPrefix(tokenSlice[0], "Root Token: ")
@@ -144,12 +155,14 @@ func (i *VaultInstance) Binary() string {
 }
 
 func (i *VaultInstance) Clean() error {
-	if i.cmd != nil {
+	if i.session != nil {
+		i.session.Kill()
+	}
+	if i.cmd != nil && i.cmd.Process != nil {
 		i.cmd.Process.Kill()
-		i.cmd.Wait()
 	}
 	if i.tmpdir != "" {
-		os.RemoveAll(i.tmpdir)
+		return os.RemoveAll(i.tmpdir)
 	}
 	return nil
 }

@@ -37,6 +37,10 @@ func (r *Artifact) Hash() uint64 {
 	)
 }
 
+func (r *Artifact) GroupVersionKind() schema.GroupVersionKind {
+	return ArtifactGVK
+}
+
 type ArtifactList []*Artifact
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -110,8 +114,6 @@ func (list ArtifactList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Artifact{}
-
 // Kubernetes Adapter for Artifact
 
 func (o *Artifact) GetObjectKind() schema.ObjectKind {
@@ -124,11 +126,6 @@ func (o *Artifact) DeepCopyObject() runtime.Object {
 }
 
 var (
-	ArtifactGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gloo.solo.io",
-		Kind:    "Artifact",
-	}
 	ArtifactCrd = crd.NewCrd(
 		"artifacts",
 		ArtifactGVK.Group,
@@ -144,3 +141,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	ArtifactGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Artifact",
+	}
+)

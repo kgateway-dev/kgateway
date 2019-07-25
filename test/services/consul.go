@@ -116,7 +116,8 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir)
+	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
+		"-node", "consul-dev")
 	cmd.Dir = ef.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
@@ -173,7 +174,7 @@ func (i *ConsulInstance) Run() error {
 	if err != nil {
 		return err
 	}
-	Eventually(i.session.Out, "5s").Should(gbytes.Say("New leader elected"))
+	EventuallyWithOffset(2, i.session.Out, "5s").Should(gbytes.Say("New leader elected"))
 	return nil
 }
 
@@ -184,6 +185,9 @@ func (i *ConsulInstance) Binary() string {
 func (i *ConsulInstance) Clean() error {
 	if i.session != nil {
 		i.session.Kill()
+	}
+	if i.cmd != nil && i.cmd.Process != nil {
+		i.cmd.Process.Kill()
 	}
 	if i.tmpdir != "" {
 		return os.RemoveAll(i.tmpdir)

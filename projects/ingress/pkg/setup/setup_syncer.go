@@ -41,24 +41,21 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		clientset     kubernetes.Interface
 		kubeCoreCache cache.KubeCoreCache
 	)
-	proxyFactory, err := bootstrap.ConfigFactoryForSettings(
+
+	params := bootstrap.NewConfigFactoryParams(
 		settings,
 		inMemoryCache,
 		kubeCache,
-		gloov1.ProxyCrd,
 		&cfg,
+		nil, // no consul client for ingress controller
 	)
+
+	proxyFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.ProxyCrd)
 	if err != nil {
 		return err
 	}
 
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		inMemoryCache,
-		kubeCache,
-		gloov1.UpstreamCrd,
-		&cfg,
-	)
+	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.UpstreamCrd)
 	if err != nil {
 		return err
 	}
@@ -70,6 +67,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		&cfg,
 		&clientset,
 		&kubeCoreCache,
+		nil, // ingress client does not support vault config
 		gloov1.SecretCrd.Plural,
 	)
 	if err != nil {

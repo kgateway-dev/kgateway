@@ -15,12 +15,14 @@ weight: 5
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
+- [ConsulKv](#consulkv)
 - [KubernetesConfigmaps](#kubernetesconfigmaps)
 - [Directory](#directory)
 - [KnativeOptions](#knativeoptions)
 - [DiscoveryOptions](#discoveryoptions)
 - [FdsMode](#fdsmode)
 - [ConsulConfiguration](#consulconfiguration)
+- [ServiceDiscoveryOptions](#servicediscoveryoptions)
   
 
 
@@ -42,6 +44,7 @@ Represents global settings for all the Gloo components.
 "watchNamespaces": []string
 "kubernetesConfigSource": .gloo.solo.io.Settings.KubernetesCrds
 "directoryConfigSource": .gloo.solo.io.Settings.Directory
+"consulKvSource": .gloo.solo.io.Settings.ConsulKv
 "kubernetesSecretSource": .gloo.solo.io.Settings.KubernetesSecrets
 "vaultSecretSource": .gloo.solo.io.Settings.VaultSecrets
 "directorySecretSource": .gloo.solo.io.Settings.Directory
@@ -67,6 +70,7 @@ Represents global settings for all the Gloo components.
 | `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo takes into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |  |
 | `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#kubernetescrds) |  |  |
 | `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
+| `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk#consulkv) |  |  |
 | `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#kubernetessecrets) |  |  |
 | `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk#vaultsecrets) |  |  |
 | `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
@@ -126,11 +130,49 @@ Use Kubernetes as storage for secret data.
 Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 
 ```yaml
+"token": string
+"address": string
+"caCert": string
+"caPath": string
+"clientCert": string
+"clientKey": string
+"tlsServerName": string
+"insecure": .google.protobuf.BoolValue
+"rootKey": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `token` | `string` | the Token used to authenticate to Vault |  |
+| `address` | `string` | address is the address of the Vault server. This should be a complete URL such as "http://vault.example.com". |  |
+| `caCert` | `string` | caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |  |
+| `caPath` | `string` | caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |  |
+| `clientCert` | `string` | clientCert is the path to the certificate for Vault communication |  |
+| `clientKey` | `string` | clientKey is the path to the private key for Vault communication |  |
+| `tlsServerName` | `string` | tlsServerName, if set, is used to set the SNI host when connecting via TLS. |  |
+| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Insecure enables or disables SSL verification |  |
+| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo` |  |
+
+
+
+
+---
+### ConsulKv
+
+ 
+Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
+Configuration options for connecting to Consul can be configured in the Settings' root
+`consul` field
+
+```yaml
+"rootKey": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `rootKey` | `string` | all keys stored in Consul will begin with this prefix this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo` |  |
 
 
 
@@ -232,17 +274,53 @@ described [here](https://www.consul.io/docs/commands/index.html#environment-vari
 need to be set on the Gloo container.
 
 ```yaml
-"address": .google.protobuf.StringValue
-"dataCenters": []string
+"address": string
+"datacenter": string
+"username": string
+"password": string
+"token": string
+"caFile": string
+"caPath": string
+"certFile": string
+"keyFile": string
+"insecureSkipVerify": .google.protobuf.BoolValue
 "waitTime": .google.protobuf.Duration
+"serviceDiscovery": .gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `address` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The address of the Consul server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
-| `dataCenters` | `[]string` | Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers. |  |
+| `address` | `string` | The address of the Consul server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `datacenter` | `string` | Datacenter to use. If not provided, the default agent datacenter is used. |  |
+| `username` | `string` | Username to use for HTTP Basic Authentication |  |
+| `password` | `string` | Password to use for HTTP Basic Authentication |  |
+| `token` | `string` | Token is used to provide a per-request ACL token which overrides the agent's default token. |  |
+| `caFile` | `string` | caFile is the optional path to the CA certificate used for Consul communication, defaults to the system bundle if not specified. |  |
+| `caPath` | `string` | caPath is the optional path to a directory of CA certificates to use for Consul communication, defaults to the system bundle if not specified. |  |
+| `certFile` | `string` | CertFile is the optional path to the certificate for Consul communication. If this is set then you need to also set KeyFile. |  |
+| `keyFile` | `string` | KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile. |  |
+| `insecureSkipVerify` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | InsecureSkipVerify if set to true will disable TLS host verification. |  |
 | `waitTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used. |  |
+| `serviceDiscovery` | [.gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions](../settings.proto.sk#servicediscoveryoptions) | Enable Service Discovery via Consul with this field set to empty struct `{}` to enable with defaults |  |
+
+
+
+
+---
+### ServiceDiscoveryOptions
+
+ 
+service discovery options for Consul
+
+```yaml
+"dataCenters": []string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `dataCenters` | `[]string` | Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers. |  |
 
 
 
