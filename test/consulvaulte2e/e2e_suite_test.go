@@ -10,8 +10,6 @@ import (
 
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/test/helpers"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 var (

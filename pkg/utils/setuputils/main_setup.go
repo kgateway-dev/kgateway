@@ -40,8 +40,9 @@ func Main(opts SetupOpts) error {
 
 	ctx := opts.CustomCtx
 	if ctx == nil {
-		ctx = contextutils.WithLogger(context.Background(), loggingPrefix)
+		ctx = context.Background()
 	}
+	ctx = contextutils.WithLogger(ctx, loggingPrefix)
 
 	settingsClient, err := kubeOrFileSettingsClient(ctx, setupDir)
 	if err != nil {
