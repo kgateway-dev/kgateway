@@ -368,7 +368,8 @@ var _ = FDescribe("Gateway", func() {
 						if logs == "" {
 							return errors.Errorf("logs should not be empty")
 						}
-						if !strings.Contains(logs, `{"method":"POST","protocol":"HTTP/1.1"}`) {
+						if !strings.Contains(logs, `{"method":"POST","protocol":"HTTP/1.1"}`) &&
+							!strings.Contains(logs, `{"protocol":"HTTP/1.1","method":"POST"}`) {
 							return errors.Errorf("no access logs present")
 						}
 						return nil

@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add access logging capability to gloo.
+  issueLink: https://github.com/solo-io/gloo/issues/872
