@@ -7,6 +7,7 @@ import (
 	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
@@ -66,6 +67,35 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &hcmCfg)
+					// this should never error
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	case *v1.Listener_TcpListener:
+		if listenerType.TcpListener == nil {
+			return nil
+		}
+		for _, f := range out.FilterChains {
+			for i, filter := range f.Filters {
+				if filter.Name == envoyutil.TCPProxy {
+					// get config
+					var tcpCfg envoytcp.TcpProxy
+					err := translatorutil.ParseConfig(&filter, &tcpCfg)
+					// this should never error
+					if err != nil {
+						return err
+					}
+
+					accessLogs := tcpCfg.GetAccessLog()
+					tcpCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.Als, accessLogs)
+					if err != nil {
+						return err
+					}
+
+					f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.TCPProxy, &tcpCfg)
 					// this should never error
 					if err != nil {
 						return err
