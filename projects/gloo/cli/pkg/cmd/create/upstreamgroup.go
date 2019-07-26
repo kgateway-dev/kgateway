@@ -66,6 +66,9 @@ func createUpstreamGroup(opts *options.Options) error {
 	if opts.Create.DryRun {
 		return common.PrintKubeCrd(ug, v1.UpstreamGroupCrd)
 	}
+	if opts.Create.PrintYaml {
+		return common.PrintYaml(ug)
+	}
 
 	ug, err = helpers.MustUpstreamGroupClient().Write(ug, clients.WriteOpts{})
 	if err != nil {

@@ -92,7 +92,6 @@ func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsS
 	if dryRun {
 		return common.PrintKubeSecret(ctx, secret)
 	}
-
 	if printYaml {
 		return common.PrintYaml(secret)
 	}
