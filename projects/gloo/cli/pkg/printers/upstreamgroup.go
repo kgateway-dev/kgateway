@@ -13,7 +13,7 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Upstream Group", "status", "total weight", "details"})
 
-	for _, ug := range upstreamGroups {
+	for i, ug := range upstreamGroups {
 		name := ug.GetMetadata().Name
 		status := ug.Status.State.String()
 
@@ -23,12 +23,15 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 		if len(details) == 0 {
 			details = []string{""}
 		}
-		for i, line := range details {
-			if i == 0 {
+		for j, line := range details {
+			if j == 0 {
 				table.Append([]string{name, status, weight, line})
 			} else {
 				table.Append([]string{"", "", "", line})
 			}
+		}
+		if i != len(upstreamGroups) -1 {
+			table.Append([]string{"", "", "", "---"})
 		}
 
 	}
