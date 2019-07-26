@@ -26,6 +26,10 @@ spec:
       - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
         imagePullPolicy: {{ .Values.discovery.deployment.image.pullPolicy }}
         name: discovery
+{{- if .Values.discovery.deployment.resources }}
+        resources:
+{{ toYaml .Values.discovery.deployment.resources | indent 10}}
+{{- end}}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false

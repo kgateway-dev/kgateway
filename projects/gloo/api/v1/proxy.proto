@@ -113,11 +113,11 @@ message HttpListener {
     // at least one virtual host must be specified for this listener to be active (else connections will be refused)
     // the set of domains for each virtual host must be unique, or the config will be considered invalid
     repeated VirtualHost virtual_hosts = 1;
-    // Plugins contains top-level plugin configuration to be applied to a listener
+    // Listener Plugins contains top-level plugin configuration to be applied to a listener
     // Listener config is applied to traffic for the given listener.
     // Some configuration here can be overridden in
     // Virtual Host Plugin configuration or Route Plugin configuration
-    HttpListenerPlugins plugins = 2;
+    HttpListenerPlugins listener_plugins = 2;
 }
 
 /*

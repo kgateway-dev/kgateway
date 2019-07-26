@@ -1337,7 +1337,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:840338477dced03bd298739ec33ddf5cc815d828b07ccbc614a594cb8f92e0bc"
+  digest = "1:1cf6c3693031022d119d2f9b50d120b9abb83a4d9cdb521abacde6e10e16e01b"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1373,8 +1373,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "e5ce38a2654b9eb22951d058fb229fc7e7c9196c"
-  version = "v0.9.10"
+  revision = "9b5b652c96f11a20b67b25a03899e53e509da411"
+  version = "v0.9.11"
 
 [[projects]]
   digest = "1:d6faa45440f529a93def557cca1c73a828ad6f09cd8c443868090625c378b405"
@@ -2595,6 +2595,7 @@
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/labels",

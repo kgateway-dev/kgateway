@@ -38,6 +38,15 @@ type Image struct {
 	PullSecret string `json:"pullSecret,omitempty"`
 }
 
+type ResourceAllocation struct {
+	Memory string `json:"memory"`
+	CPU    string `json:"cpu"`
+}
+
+type ResourceRequirements struct {
+	Limits   *ResourceAllocation `json:"limits"`
+	Requests *ResourceAllocation `json:"requests"`
+}
 type PodSpec struct {
 	RestartPolicy string `json:"restartPolicy,omitempty"`
 }
@@ -47,7 +56,8 @@ type JobSpec struct {
 }
 
 type DeploymentSpec struct {
-	Replicas int `json:"replicas"`
+	Replicas  int                   `json:"replicas"`
+	Resources *ResourceRequirements `json:"resources"`
 }
 
 type Integrations struct {
@@ -130,18 +140,17 @@ type DaemonSetSpec struct {
 }
 
 type GatewayProxyPodTemplate struct {
-	Image            *Image               `json:"image,omitempty"`
-	HttpPort         string               `json:"httpPort,omitempty"`
-	HttpsPort        string               `json:"httpsPort,omitempty"`
-	ExtraPorts       []interface{}        `json:"extraPorts,omitempty"`
-	ExtraAnnotations map[string]string    `json:"extraAnnotations,omitempty"`
-	NodeName         string               `json:"nodeName,omitempty"`
-	NodeSelector     map[string]string    `json:"nodeSelector,omitempty"`
-	Stats            bool                 `json:"stats"`
-	Tolerations      []*appsv1.Toleration `json:"tolerations,omitEmpty"`
-	Probes           bool                 `json:"probes"`
-
-	*DeploymentSpec
+	Image            *Image                `json:"image,omitempty"`
+	HttpPort         string                `json:"httpPort,omitempty"`
+	HttpsPort        string                `json:"httpsPort,omitempty"`
+	ExtraPorts       []interface{}         `json:"extraPorts,omitempty"`
+	ExtraAnnotations map[string]string     `json:"extraAnnotations,omitempty"`
+	NodeName         string                `json:"nodeName,omitempty"`
+	NodeSelector     map[string]string     `json:"nodeSelector,omitempty"`
+	Stats            bool                  `json:"stats"`
+	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
+	Probes           bool                  `json:"probes"`
+	Resources        *ResourceRequirements `json:"resources"`
 }
 
 type GatewayProxyService struct {
