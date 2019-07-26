@@ -5,8 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -72,20 +70,9 @@ var _ = Describe("Plugin", func() {
 			}},
 		}
 
-		// model the behavior of the plugin registrar
-		// (encapsulating in a function to clarify the intended sequence of events)
-		getRegisteredPlugin := func() *Plugin {
-			miniRegistry := []plugins.Plugin{loadbalancer.NewPlugin()}
-			p := NewPlugin(&miniRegistry)
-			// note: we append the plugin that implements the HcmPlugin interface *after* we construct the hcm plugin
-			// itself. This checks the case where our plugin happens to be constructed before one of the other plugins
-			// that it manages.
-			miniRegistry = append(miniRegistry, tracing.NewPlugin())
-			err := p.Init(plugins.InitParams{})
-			Expect(err).NotTo(HaveOccurred())
-			return p
-		}
-		p := getRegisteredPlugin()
+		p := NewPlugin()
+		pluginsList := []plugins.Plugin{tracing.NewPlugin(), p}
+		p.RegisterHcmPlugins(pluginsList)
 		err := p.ProcessListener(plugins.Params{}, in, outl)
 		Expect(err).NotTo(HaveOccurred())
 
