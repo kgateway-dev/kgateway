@@ -38,11 +38,13 @@ Note to developers: new Listener Plugins must be added to this struct
 to be usable by Gloo.
 
 ```yaml
+"accessLoggingService": .als.plugins.gloo.solo.io.AccessLoggingService
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
 
 
 

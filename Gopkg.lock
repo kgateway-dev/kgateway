@@ -285,7 +285,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:9572a166678dc747c1f2bd27748ee0337d71a5912359c504a7fabe2e195ae5b1"
+  digest = "1:f74866f96499508fd2a1993bf3cb272ecb7f3da0ca1bbc20fbf25f7d848ad73e"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -295,6 +295,7 @@
     "envoy/api/v2/endpoint",
     "envoy/api/v2/listener",
     "envoy/api/v2/route",
+    "envoy/config/accesslog/v2",
     "envoy/config/bootstrap/v2",
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/fault/v2",
@@ -312,8 +313,8 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "094d054b10176dd84506e4f0f65e7f65d8499241"
-  version = "v0.8.0"
+  revision = "0f0598e8dab0c0306119ca6fff632b0a672cbfa1"
+  version = "v0.8.2"
 
 [[projects]]
   digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
@@ -1909,6 +1910,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:525e411c9476f1a201efc22d7c4878002b001f20f241221c226a83ba654975e4"
+  name = "istio.io/gogo-genproto"
+  packages = ["opencensus/proto/trace/v1"]
+  pruneopts = "UT"
+  revision = "e88dc8b0e4dba2caf977ab9ec040cc2081db103f"
+
+[[projects]]
+  branch = "master"
   digest = "1:66c41d3da3f02989b7e372118f65bb3a31cc43ef22142e31502141d806f8dc4e"
   name = "k8s.io/api"
   packages = [
@@ -2467,6 +2476,8 @@
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/route",
+    "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",

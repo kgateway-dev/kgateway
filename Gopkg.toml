@@ -7,7 +7,7 @@
   source = "https://github.com/fsnotify/fsnotify.git"
 
 [[constraint]]
-  version = ">=0.8.0"
+  version = ">=0.8.2"
   name = "github.com/envoyproxy/go-control-plane"
 
 [[constraint]]
