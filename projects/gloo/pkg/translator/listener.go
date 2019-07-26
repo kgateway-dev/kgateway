@@ -63,7 +63,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 		FilterChains: filterChains,
 	}
 
-	// run the Listener Plugins
+	// run the Listener ListenerPlugins
 	for _, plug := range t.plugins {
 		listenerPlugin, ok := plug.(plugins.ListenerPlugin)
 		if !ok {
@@ -79,7 +79,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 
 func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.Listener, report reportFunc) []envoylistener.Filter {
 	var listenerFilters []plugins.StagedListenerFilter
-	// run the Listener Filter Plugins
+	// run the Listener Filter ListenerPlugins
 	for _, plug := range t.plugins {
 		filterPlugin, ok := plug.(plugins.ListenerFilterPlugin)
 		if !ok {

@@ -98,7 +98,7 @@ var _ = Describe("Gateway", func() {
 					}
 					for _, l := range proxy.Listeners {
 						if h := l.GetHttpListener(); h != nil {
-							if p := h.GetPlugins(); p != nil {
+							if p := h.GetListenerPlugins(); p != nil {
 								if grpcweb := p.GetGrpcWeb(); grpcweb != nil {
 									if grpcweb.Disable {
 										numdisable++

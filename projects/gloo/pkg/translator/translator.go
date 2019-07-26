@@ -104,7 +104,7 @@ ClusterLoop:
 		}
 	}
 
-	// run Cluster Generator Plugins
+	// run Cluster Generator ListenerPlugins
 	for _, plug := range t.plugins {
 		clusterGeneratorPlugin, ok := plug.(plugins.ClusterGeneratorPlugin)
 		if !ok {
