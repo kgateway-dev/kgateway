@@ -258,7 +258,7 @@ func writeSettings(settingsDir, writeNamespace string) (*gloov1.Settings, error)
 			ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},
 		},
 		BindAddr:           "0.0.0.0:9977",
-		RefreshRate:        types.DurationProto(time.Minute),
+		RefreshRate:        types.DurationProto(time.Second * 1),
 		DiscoveryNamespace: writeNamespace,
 		Metadata:           core.Metadata{Namespace: writeNamespace, Name: "default"},
 	}

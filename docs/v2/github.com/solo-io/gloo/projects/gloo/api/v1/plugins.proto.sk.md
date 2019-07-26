@@ -128,6 +128,7 @@ to be usable by Gloo.
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "extensions": .gloo.solo.io.Extensions
+"tracing": .tracing.plugins.gloo.solo.io.RouteTracingSettings
 
 ```
 
@@ -139,6 +140,7 @@ to be usable by Gloo.
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing |  |
 
 
 

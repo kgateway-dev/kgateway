@@ -6,6 +6,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hc
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tracing/tracing.proto";
 
 option (gogoproto.equal_all) = true;
 
@@ -30,12 +31,5 @@ message HttpConnectionManagerSettings {
     bool accept_http_10 = 15;
     string default_host_for_http_10 = 16;
 
-    // Contains various settings for configuring Envoy's tracing capabilities at the listener level.
-    message TracingSettings {
-        // Optional. If specified, gloo will include the headers and header values for any matching request headers.
-        repeated string request_headers_for_tags = 1;
-        // Optional. If true, gloo will include logs for streaming events. Default: false.
-        bool verbose = 2;
-    }
-    TracingSettings tracing = 17;
+    tracing.plugins.gloo.solo.io.ListenerTracingSettings tracing = 17;
 }

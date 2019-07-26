@@ -4,17 +4,12 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-)
-
-const (
-	// filter info
-	pluginStage = plugins.PostInAuth
 )
 
 func NewPlugin() *Plugin {
@@ -25,12 +20,24 @@ var _ plugins.Plugin = new(Plugin)
 var _ plugins.ListenerPlugin = new(Plugin)
 
 type Plugin struct {
+	hcmPlugins []HcmPlugin
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
+func (p *Plugin) RegisterHcmPlugins(allPlugins []plugins.Plugin) {
+	for _, plugin := range allPlugins {
+		if hp, ok := plugin.(HcmPlugin); ok {
+			p.hcmPlugins = append(p.hcmPlugins, hp)
+		}
+	}
+}
+
+// ProcessListener has two responsibilities:
+// 1. apply the core HCM settings from the HCM plugin to the listener
+// 2. call each of the HCM plugins to make sure that they have a chance to apply their modifications to the listener
 func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
 	hl, ok := in.ListenerType.(*v1.Listener_HttpListener)
 	if !ok {
@@ -39,13 +46,15 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	if hl.HttpListener == nil {
 		return nil
 	}
-	if hl.HttpListener.GetListenerPlugins() == nil {
+	var hcmSettings *hcm.HttpConnectionManagerSettings
+	if hl.HttpListener.GetListenerPlugins() != nil {
+		hcmSettings = hl.HttpListener.GetListenerPlugins().HttpConnectionManagerSettings
+	}
+	if hcmSettings == nil && len(p.hcmPlugins) == 0 {
+		// special case where we have nothing to do
 		return nil
 	}
-	hcmSettings := hl.HttpListener.GetListenerPlugins().HttpConnectionManagerSettings
-	if hcmSettings == nil {
-		return nil
-	}
+
 	for _, f := range out.FilterChains {
 		for i, filter := range f.Filters {
 			if filter.Name == envoyutil.HTTPConnectionManager {
@@ -57,7 +66,17 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					return err
 				}
 
-				copySettings(&cfg, hcmSettings)
+				// first apply the core HCM settings, if any
+				if hcmSettings != nil {
+					copyCoreHcmSettings(&cfg, hcmSettings)
+				}
+
+				// then allow any HCM plugins to make their changes, with respect to any changes the core plugin made
+				for _, hp := range p.hcmPlugins {
+					if err := hp.ProcessHcmSettings(&cfg, hcmSettings); err != nil {
+						return hcmPluginError(err)
+					}
+				}
 
 				f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &cfg)
 				// this should never error
@@ -70,7 +89,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	return nil
 }
 
-func copySettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) {
+func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) {
 	cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
 	cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
 	cfg.SkipXffAppend = hcmSettings.SkipXffAppend
@@ -91,26 +110,10 @@ func copySettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpCon
 			DefaultHostForHttp_10: hcmSettings.DefaultHostForHttp_10,
 		}
 	}
+}
 
-	if hcmSettings.Tracing != nil {
-		cfg.Tracing = &envoyhttp.HttpConnectionManager_Tracing{}
-		copyTracingSettings(cfg.Tracing, hcmSettings.Tracing)
+var (
+	hcmPluginError = func(err error) error {
+		return errors.Wrapf(err, "error while running hcm plugin")
 	}
-}
-
-func copyTracingSettings(trCfg *envoyhttp.HttpConnectionManager_Tracing, tracingSettings *hcm.HttpConnectionManagerSettings_TracingSettings) {
-	// these fields are user-configurable
-	trCfg.RequestHeadersForTags = tracingSettings.RequestHeadersForTags
-	trCfg.Verbose = tracingSettings.Verbose
-
-	// the following fields are hard-coded (the may be exposed in the future as desired)
-	// Gloo configures envoy as an ingress, rather than an egress
-	trCfg.OperationName = envoyhttp.INGRESS
-	// always produce a trace whenever the header "x-client-trace-id" is passed
-	trCfg.ClientSampling = &envoy_type.Percent{Value: 100.0}
-	// never trace at random
-	trCfg.RandomSampling = &envoy_type.Percent{Value: 0.0}
-	// do not limit the number of traces
-	// (always produce a trace whenever the header "x-client-trace-id" is passed)
-	trCfg.OverallSampling = &envoy_type.Percent{Value: 100.0}
-}
+)
