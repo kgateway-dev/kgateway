@@ -2,6 +2,8 @@ package e2e_test
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -258,16 +260,57 @@ var _ = Describe("Gateway", func() {
 				})
 			})
 
-			Context("Access logs", func() {
+			FContext("Access logs", func() {
 				var (
-					gw *gatewayv2.Gateway
+					gw   *gatewayv2.Gateway
+					path string
 				)
+
+				var checkLogs = func(ei *services.EnvoyInstance, logsPresent func(logs string) bool) error {
+					var (
+						logs string
+						err  error
+					)
+
+					if ei.UseDocker {
+						logs, err = ei.Logs()
+						if err != nil {
+							return err
+						}
+					} else {
+						file, err := os.OpenFile(ei.AccessLogs, os.O_RDONLY, 0777)
+						if err != nil {
+							return err
+						}
+						var byt []byte
+						byt, err = ioutil.ReadAll(file)
+						if err != nil {
+							return err
+						}
+						logs = string(byt)
+					}
+
+					if logs == "" {
+						return errors.Errorf("logs should not be empty")
+					}
+					if !logsPresent(logs) {
+						return errors.Errorf("no access logs present")
+					}
+					return nil
+				}
 
 				BeforeEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
 					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
+					path = "/dev/stdout"
+					if !envoyInstance.UseDocker {
+						tmpfile, err := ioutil.TempFile("", "")
+						Expect(err).NotTo(HaveOccurred())
+						path = tmpfile.Name()
+						envoyInstance.AccessLogs = path
+					}
 				})
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
@@ -285,7 +328,7 @@ var _ = Describe("Gateway", func() {
 								{
 									OutputDestination: &als.AccessLog_FileSink{
 										FileSink: &als.FileSink{
-											Path: "/dev/stdout",
+											Path: path,
 											OutputFormat: &als.FileSink_StringFormat{
 												StringFormat: "",
 											},
@@ -306,17 +349,10 @@ var _ = Describe("Gateway", func() {
 					TestUpstreamReachable()
 
 					Eventually(func() error {
-						logs, err := envoyInstance.Logs()
-						if err != nil {
-							return err
+						var logsPresent = func(logs string) bool {
+							return strings.Contains(logs, `"POST /1 HTTP/1.1" 200`)
 						}
-						if logs == "" {
-							return errors.Errorf("logs should not be empty")
-						}
-						if !strings.Contains(logs, `"POST /1 HTTP/1.1" 200`) {
-							return errors.Errorf("no access logs present")
-						}
-						return nil
+						return checkLogs(envoyInstance, logsPresent)
 					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 				It("can create json access logs", func() {
@@ -326,7 +362,7 @@ var _ = Describe("Gateway", func() {
 								{
 									OutputDestination: &als.AccessLog_FileSink{
 										FileSink: &als.FileSink{
-											Path: "/dev/stdout",
+											Path: path,
 											OutputFormat: &als.FileSink_JsonFormat{
 												JsonFormat: &types.Struct{
 													Fields: map[string]*types.Value{
@@ -359,18 +395,11 @@ var _ = Describe("Gateway", func() {
 
 					TestUpstreamReachable()
 					Eventually(func() error {
-						logs, err := envoyInstance.Logs()
-						if err != nil {
-							return err
+						var logsPresent = func(logs string) bool {
+							return strings.Contains(logs, `{"method":"POST","protocol":"HTTP/1.1"}`) ||
+								strings.Contains(logs, `{"protocol":"HTTP/1.1","method":"POST"}`)
 						}
-						if logs == "" {
-							return errors.Errorf("logs should not be empty")
-						}
-						if !strings.Contains(logs, `{"method":"POST","protocol":"HTTP/1.1"}`) &&
-							!strings.Contains(logs, `{"protocol":"HTTP/1.1","method":"POST"}`) {
-							return errors.Errorf("no access logs present")
-						}
-						return nil
+						return checkLogs(envoyInstance, logsPresent)
 					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 			})

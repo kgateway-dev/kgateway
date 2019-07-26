@@ -202,6 +202,8 @@ type EnvoyInstance struct {
 	GlooAddr      string // address for gloo and services
 	Port          uint32
 	AdminPort     uint32
+	// Path to access logs for binary run
+	AccessLogs    string
 }
 
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {

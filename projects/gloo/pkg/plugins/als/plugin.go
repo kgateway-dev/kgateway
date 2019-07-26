@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 const (
@@ -124,8 +123,6 @@ func handleAccessLogPlugins(ctx context.Context, service *als.AccessLoggingServi
 				Config: structConfig,
 			}
 			results = append(results, newAlsCfg)
-		case *als.AccessLog_GrpcService:
-			contextutils.LoggerFrom(ctx).Debugf("grpc access logging not currently supported")
 		}
 	}
 	logCfg = append(logCfg, results...)
