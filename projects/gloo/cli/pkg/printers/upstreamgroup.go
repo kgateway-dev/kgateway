@@ -30,7 +30,7 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 				table.Append([]string{"", "", "", line})
 			}
 		}
-		if i != len(upstreamGroups) -1 {
+		if i != len(upstreamGroups)-1 {
 			table.Append([]string{"", "", "", "---"})
 		}
 
