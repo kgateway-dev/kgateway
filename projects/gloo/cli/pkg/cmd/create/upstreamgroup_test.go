@@ -16,6 +16,10 @@ import (
 
 var _ = Describe("UpstreamGroup", func() {
 
+	var (
+		expectedDest []*v1.WeightedDestination
+	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		us := &v1.Upstream{
@@ -40,6 +44,31 @@ var _ = Describe("UpstreamGroup", func() {
 		us.Metadata.Name = "us2"
 		_, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
+
+		expectedDest = []*v1.WeightedDestination{
+			{
+				Destination: &v1.Destination{
+					DestinationType: &v1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Namespace: "gloo-system",
+							Name:      "us1",
+						},
+					},
+				},
+				Weight: uint32(1),
+			},
+			{
+				Destination: &v1.Destination{
+					DestinationType: &v1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Namespace: "gloo-system",
+							Name:      "us2",
+						},
+					},
+				},
+				Weight: uint32(3),
+			},
+		}
 	})
 
 	getUpstreamGroup := func(name string) *v1.UpstreamGroup {
@@ -65,31 +94,6 @@ var _ = Describe("UpstreamGroup", func() {
 	})
 
 	Context("It works", func() {
-		expectedDest := []*v1.WeightedDestination{
-			{
-				Destination: &v1.Destination{
-					DestinationType: &v1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: "gloo-system",
-							Name:      "us1",
-						},
-					},
-				},
-				Weight: uint32(1),
-			},
-			{
-				Destination: &v1.Destination{
-					DestinationType: &v1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: "gloo-system",
-							Name:      "us2",
-						},
-					},
-				},
-				Weight: uint32(3),
-			},
-		}
-
 		It("should work", func() {
 			err := testutils.Glooctl("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.us1=1,gloo-system.us2=3")
 			Expect(err).NotTo(HaveOccurred())
