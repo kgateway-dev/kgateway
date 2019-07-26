@@ -41,7 +41,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		azure.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
-		hcm.NewPlugin(reg.plugins),
+		hcm.NewPlugin(&reg.plugins),
 		als.NewPlugin(),
 		tcp.NewPlugin(),
 		static.NewPlugin(),

@@ -12,7 +12,7 @@ import (
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-func NewPlugin(registryPlugins []plugins.Plugin) *Plugin {
+func NewPlugin(registryPlugins *[]plugins.Plugin) *Plugin {
 	return &Plugin{
 		allPlugins: registryPlugins,
 	}
@@ -23,16 +23,19 @@ var _ plugins.ListenerPlugin = new(Plugin)
 
 type Plugin struct {
 	// assign this during construction
-	allPlugins []plugins.Plugin
+	allPlugins *[]plugins.Plugin
 	// assemble this from the allPlugins list during Init to make sure that all plugins passed to the registry are
 	// present (in case any get appended after our constructor is called)
 	hcmPlugins []HcmPlugin
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
+	if p.allPlugins == nil {
+		return initError()
+	}
 	// gather the plugins we care about
-	for _, candidate := range p.allPlugins {
-		if hp, ok := candidate.(HcmPlugin); ok {
+	for _, plugin := range *p.allPlugins {
+		if hp, ok := plugin.(HcmPlugin); ok {
 			p.hcmPlugins = append(p.hcmPlugins, hp)
 		}
 	}
@@ -117,6 +120,9 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 }
 
 var (
+	initError = func() error {
+		return errors.New("no plugins available at time of initialization")
+	}
 	hcmPluginError = func(err error) error {
 		return errors.Wrapf(err, "error while running hcm plugin")
 	}
