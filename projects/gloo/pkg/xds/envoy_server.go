@@ -99,10 +99,10 @@ func (s *envoyServer) DeltaRoutes(_ v2.RouteDiscoveryService_DeltaRoutesServer) 
 	return errors.New("not implemented")
 }
 
-func (s *envoyServer) DeltaEndpoints(server v2.EndpointDiscoveryService_DeltaEndpointsServer) error {
+func (s *envoyServer) DeltaEndpoints(v2.EndpointDiscoveryService_DeltaEndpointsServer) error {
 	return errors.New("not implemented")
 }
 
-func (s *envoyServer) DeltaListeners(server v2.ListenerDiscoveryService_DeltaListenersServer) error {
+func (s *envoyServer) DeltaListeners(v2.ListenerDiscoveryService_DeltaListenersServer) error {
 	return errors.New("not implemented")
 }
