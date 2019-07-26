@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -42,15 +43,24 @@ func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filte
 	return s, nil
 }
 
-func NewConfig(config proto.Message) (*types.Struct, error) {
-	marshalledConf, err := envoyutil.MessageToStruct(config)
-	if err != nil {
-		// this should NEVER HAPPEN!
-		return nil, err
+func NewAccessLogWithConfig(config proto.Message) (envoyal.AccessLog, error) {
+	s := envoyal.AccessLog{
+		Name: envoyutil.FileAccessLog,
 	}
-	s := marshalledConf
-	return s, nil
 
+	if config != nil {
+		marshalledConf, err := envoyutil.MessageToStruct(config)
+		if err != nil {
+			// this should NEVER HAPPEN!
+			return envoyal.AccessLog{}, err
+		}
+
+		s.ConfigType = &envoyal.AccessLog_Config{
+			Config: marshalledConf,
+		}
+	}
+
+	return s, nil
 }
 
 func ParseConfig(c configObject, config proto.Message) error {

@@ -108,21 +108,15 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 func handleAccessLogPlugins(ctx context.Context, service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
-		newAlsCfg := &envoyal.AccessLog{
-			Name: envoyutil.FileAccessLog,
-		}
 		switch cfgType := al.GetOutputDestination().(type) {
 		case *als.AccessLog_FileSink:
 			var cfg envoyalcfg.FileAccessLog
 			copyFileSettings(&cfg, cfgType)
-			structConfig, err := translatorutil.NewConfig(&cfg)
+			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(&cfg)
 			if err != nil {
 				return nil, err
 			}
-			newAlsCfg.ConfigType = &envoyal.AccessLog_Config{
-				Config: structConfig,
-			}
-			results = append(results, newAlsCfg)
+			results = append(results, &newAlsCfg)
 		}
 	}
 	logCfg = append(logCfg, results...)
