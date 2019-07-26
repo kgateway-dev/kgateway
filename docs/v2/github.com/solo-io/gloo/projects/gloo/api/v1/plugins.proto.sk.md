@@ -180,6 +180,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 "useHttp2": bool
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
+"pipe": .pipe.plugins.gloo.solo.io.UpstreamSpec
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
 "azure": .azure.plugins.gloo.solo.io.UpstreamSpec
 "consul": .consul.plugins.gloo.solo.io.UpstreamSpec
@@ -196,6 +197,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  |  |
+| `pipe` | [.pipe.plugins.gloo.solo.io.UpstreamSpec](../plugins/pipe/pipe.proto.sk#upstreamspec) |  |  |
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#upstreamspec) |  |  |
 | `azure` | [.azure.plugins.gloo.solo.io.UpstreamSpec](../plugins/azure/azure.proto.sk#upstreamspec) |  |  |
 | `consul` | [.consul.plugins.gloo.solo.io.UpstreamSpec](../plugins/consul/consul.proto.sk#upstreamspec) |  |  |

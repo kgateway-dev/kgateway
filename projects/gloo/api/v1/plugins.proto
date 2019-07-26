@@ -25,6 +25,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/pipe/pipe.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/stats/stats.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
@@ -109,6 +110,7 @@ message UpstreamSpec {
     oneof upstream_type {
         kubernetes.plugins.gloo.solo.io.UpstreamSpec kube = 1;
         static.plugins.gloo.solo.io.UpstreamSpec static = 4;
+        pipe.plugins.gloo.solo.io.UpstreamSpec pipe = 12;
         aws.plugins.gloo.solo.io.UpstreamSpec aws = 2;
         azure.plugins.gloo.solo.io.UpstreamSpec azure = 3;
         consul.plugins.gloo.solo.io.UpstreamSpec consul = 5;
