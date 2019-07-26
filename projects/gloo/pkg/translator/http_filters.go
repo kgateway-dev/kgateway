@@ -56,7 +56,7 @@ func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, l
 
 func (t *translator) computeHttpFilters(params plugins.Params, listener *v1.HttpListener, report reportFunc) []*envoyhttp.HttpFilter {
 	var httpFilters []plugins.StagedHttpFilter
-	// run the Http Filter ListenerPlugins
+	// run the Http Filter Plugins
 	for _, plug := range t.plugins {
 		filterPlugin, ok := plug.(plugins.HttpFilterPlugin)
 		if !ok {

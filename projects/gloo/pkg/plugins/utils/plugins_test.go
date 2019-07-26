@@ -12,7 +12,7 @@ import (
 	"github.com/gogo/protobuf/types"
 )
 
-var _ = Describe("ListenerPlugins", func() {
+var _ = Describe("Plugins", func() {
 
 	It("should deserialized a proto message from map", func() {
 		orginalMessage := &types.Api{Name: "test"}

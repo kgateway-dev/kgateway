@@ -37,7 +37,7 @@ type RouteParams struct {
 }
 
 /*
-	Upstream ListenerPlugins
+	Upstream Plugins
 */
 
 type UpstreamPlugin interface {
@@ -46,7 +46,7 @@ type UpstreamPlugin interface {
 }
 
 /*
-	Routing ListenerPlugins
+	Routing Plugins
 */
 
 type RoutePlugin interface {
@@ -60,7 +60,7 @@ type RouteActionPlugin interface {
 }
 
 /*
-	Listener ListenerPlugins
+	Listener Plugins
 */
 
 type ListenerPlugin interface {
