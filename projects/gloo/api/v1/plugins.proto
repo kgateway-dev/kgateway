@@ -75,6 +75,9 @@ message RoutePlugins {
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
     Extensions extensions = 6;
+    // Defines route-specific tracing configuration.
+    // See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
+    // See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
     tracing.plugins.gloo.solo.io.RouteTracingSettings tracing = 7;
 }
 

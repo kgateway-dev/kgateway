@@ -234,16 +234,19 @@ func (m *VirtualHostPlugins) GetStats() *stats.Stats {
 // Note to developers: new Route Plugins must be added to this struct
 // to be usable by Gloo.
 type RoutePlugins struct {
-	Transformations      *transformation.RouteTransformations `protobuf:"bytes,1,opt,name=transformations,proto3" json:"transformations,omitempty"`
-	Faults               *faultinjection.RouteFaults          `protobuf:"bytes,2,opt,name=faults,proto3" json:"faults,omitempty"`
-	PrefixRewrite        *transformation.PrefixRewrite        `protobuf:"bytes,3,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
-	Timeout              *time.Duration                       `protobuf:"bytes,4,opt,name=timeout,proto3,stdduration" json:"timeout,omitempty"`
-	Retries              *retries.RetryPolicy                 `protobuf:"bytes,5,opt,name=retries,proto3" json:"retries,omitempty"`
-	Extensions           *Extensions                          `protobuf:"bytes,6,opt,name=extensions,proto3" json:"extensions,omitempty"`
-	Tracing              *tracing.RouteTracingSettings        `protobuf:"bytes,7,opt,name=tracing,proto3" json:"tracing,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
-	XXX_unrecognized     []byte                               `json:"-"`
-	XXX_sizecache        int32                                `json:"-"`
+	Transformations *transformation.RouteTransformations `protobuf:"bytes,1,opt,name=transformations,proto3" json:"transformations,omitempty"`
+	Faults          *faultinjection.RouteFaults          `protobuf:"bytes,2,opt,name=faults,proto3" json:"faults,omitempty"`
+	PrefixRewrite   *transformation.PrefixRewrite        `protobuf:"bytes,3,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
+	Timeout         *time.Duration                       `protobuf:"bytes,4,opt,name=timeout,proto3,stdduration" json:"timeout,omitempty"`
+	Retries         *retries.RetryPolicy                 `protobuf:"bytes,5,opt,name=retries,proto3" json:"retries,omitempty"`
+	Extensions      *Extensions                          `protobuf:"bytes,6,opt,name=extensions,proto3" json:"extensions,omitempty"`
+	// Defines route-specific tracing configuration.
+	// See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
+	// See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
+	Tracing              *tracing.RouteTracingSettings `protobuf:"bytes,7,opt,name=tracing,proto3" json:"tracing,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
+	XXX_unrecognized     []byte                        `json:"-"`
+	XXX_sizecache        int32                         `json:"-"`
 }
 
 func (m *RoutePlugins) Reset()         { *m = RoutePlugins{} }
