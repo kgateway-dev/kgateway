@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add glooctl support for creating and deleting upstream groups
+    issueLink: https://github.com/solo-io/gloo/issues/649

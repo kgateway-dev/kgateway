@@ -75,10 +75,12 @@ type Delete struct {
 }
 
 type Create struct {
-	VirtualService InputVirtualService
-	InputUpstream  InputUpstream
-	InputSecret    Secret
-	DryRun         bool // print resource as a kubernetes style yaml and exit without writing to storage
+	VirtualService     InputVirtualService
+	InputUpstream      InputUpstream
+	InputUpstreamGroup InputUpstreamGroup
+	InputSecret        Secret
+	DryRun             bool // print resource as a kubernetes style yaml and exit without writing to storage
+	PrintYaml          bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
@@ -90,8 +92,9 @@ type RouteMatchers struct {
 }
 
 type Add struct {
-	Route  InputRoute
-	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
+	Route     InputRoute
+	DryRun    bool // print resource as a kubernetes style yaml and exit without writing to storage
+	PrintYaml bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
 }
 
 type InputRoute struct {
@@ -115,6 +118,10 @@ type RoutePlugins struct {
 
 type PrefixRewrite struct {
 	Value *string
+}
+
+type InputUpstreamGroup struct {
+	WeightedDestinations InputMapStringString
 }
 
 func (p *PrefixRewrite) String() string {

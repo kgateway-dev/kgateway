@@ -75,19 +75,19 @@ var _ = Describe("Translator", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
-			Settings:     settings,
-			Secrets:      memoryClientFactory,
-			Upstreams:    memoryClientFactory,
-			ConsulClient: consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			Settings:      settings,
+			Secrets:       memoryClientFactory,
+			Upstreams:     memoryClientFactory,
+			ConsulWatcher: consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 		}
 		registeredPlugins = registry.Plugins(opts)
 
-		upname := core.Metadata{
+		upName := core.Metadata{
 			Name:      "test",
 			Namespace: "gloo-system",
 		}
 		upstream = &v1.Upstream{
-			Metadata: upname,
+			Metadata: upName,
 			UpstreamSpec: &v1.UpstreamSpec{
 				UpstreamType: &v1.UpstreamSpec_Static{
 					Static: &v1static.UpstreamSpec{
@@ -122,7 +122,7 @@ var _ = Describe("Translator", func() {
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(upname.Ref()),
+								Upstream: utils.ResourceRefPtr(upName.Ref()),
 							},
 						},
 					},
@@ -292,10 +292,10 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			translate()
-			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
-			Expect(headermatch.Name).To(Equal("test"))
-			presentmatch := headermatch.GetPresentMatch()
-			Expect(presentmatch).To(BeTrue())
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.Name).To(Equal("test"))
+			presentMatch := headerMatch.GetPresentMatch()
+			Expect(presentMatch).To(BeTrue())
 		})
 
 		It("should translate header matcher with value to exact match", func() {
@@ -308,10 +308,10 @@ var _ = Describe("Translator", func() {
 			}
 			translate()
 
-			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
-			Expect(headermatch.Name).To(Equal("test"))
-			exactmatch := headermatch.GetExactMatch()
-			Expect(exactmatch).To(Equal("testvalue"))
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.Name).To(Equal("test"))
+			exactMatch := headerMatch.GetExactMatch()
+			Expect(exactMatch).To(Equal("testvalue"))
 		})
 
 		It("should translate header matcher with regex becomes regex match", func() {
@@ -325,9 +325,9 @@ var _ = Describe("Translator", func() {
 			}
 			translate()
 
-			headermatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
-			Expect(headermatch.Name).To(Equal("test"))
-			regex := headermatch.GetRegexMatch()
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.Name).To(Equal("test"))
+			regex := headerMatch.GetRegexMatch()
 			Expect(regex).To(Equal("testvalue"))
 		})
 
@@ -605,8 +605,8 @@ var _ = Describe("Translator", func() {
 			It("should add subset to route", func() {
 				translateWithEndpoints()
 
-				metadatamatch := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute().GetMetadataMatch()
-				fields := metadatamatch.FilterMetadata["envoy.lb"].Fields
+				metadataMatch := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute().GetMetadataMatch()
+				fields := metadataMatch.FilterMetadata["envoy.lb"].Fields
 				Expect(fields).To(HaveKeyWithValue("testkey", sv("testvalue")))
 			})
 		})
@@ -940,18 +940,18 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should have the virtual host when processing route", func() {
-			hasVhost := false
+			hasVHost := false
 			routePlugin.ProcessRouteFunc = func(params plugins.RouteParams, in *v1.Route, out *envoyrouteapi.Route) error {
 				if params.VirtualHost != nil {
 					if params.VirtualHost.GetName() == "virt1" {
-						hasVhost = true
+						hasVHost = true
 					}
 				}
 				return nil
 			}
 
 			translate()
-			Expect(hasVhost).To(BeTrue())
+			Expect(hasVHost).To(BeTrue())
 		})
 
 	})

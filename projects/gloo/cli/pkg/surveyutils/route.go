@@ -81,7 +81,7 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 
 func getDestinationInteractive(route *options.InputRoute) error {
 	dest := &route.Destination
-	// collect secrets list
+	// collect upstreams list
 	usClient := helpers.MustUpstreamClient()
 	ussByKey := make(map[string]*v1.Upstream)
 	ugsByKey := make(map[string]*v1.UpstreamGroup)
@@ -98,8 +98,7 @@ func getDestinationInteractive(route *options.InputRoute) error {
 		}
 	}
 	if len(usKeys) == 0 {
-		return errors.Errorf("no upstreams found. create an upstream first or enable " +
-			"discovery.")
+		return errors.Errorf("no upstreams found. create an upstream first or enable discovery.")
 	}
 
 	ugClient, err := helpers.UpstreamGroupClient()
@@ -263,11 +262,10 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 		}
 	} else {
 		// only get the insert index if the vs is predefined
-		if err := cliutil.GetUint32InputDefault(
+		if err := cliutil.GetUint32Input(
 			fmt.Sprintf("where do you want to insert the route in the "+
 				"virtual service's route list? "),
 			&opts.Add.Route.InsertIndex,
-			0,
 		); err != nil {
 			return err
 		}

@@ -285,7 +285,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:bf3570ae8ea25ecd192bf0f4e941c402d21c410cfa8f71f03ae27b2f1ec69901"
+  digest = "1:f74866f96499508fd2a1993bf3cb272ecb7f3da0ca1bbc20fbf25f7d848ad73e"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -295,6 +295,7 @@
     "envoy/api/v2/endpoint",
     "envoy/api/v2/listener",
     "envoy/api/v2/route",
+    "envoy/config/accesslog/v2",
     "envoy/config/bootstrap/v2",
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/fault/v2",
@@ -1052,17 +1053,6 @@
   version = "v0.0.3"
 
 [[projects]]
-  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
-  name = "github.com/mattn/go-zglob"
-  packages = [
-    ".",
-    "fastwalk",
-  ]
-  pruneopts = "UT"
-  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
-  version = "v0.0.1"
-
-[[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -1347,7 +1337,7 @@
   version = "0.0.4"
 
 [[projects]]
-  digest = "1:840338477dced03bd298739ec33ddf5cc815d828b07ccbc614a594cb8f92e0bc"
+  digest = "1:1cf6c3693031022d119d2f9b50d120b9abb83a4d9cdb521abacde6e10e16e01b"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1383,11 +1373,11 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "e5ce38a2654b9eb22951d058fb229fc7e7c9196c"
-  version = "v0.9.10"
+  revision = "9b5b652c96f11a20b67b25a03899e53e509da411"
+  version = "v0.9.11"
 
 [[projects]]
-  digest = "1:4ecf5d306dfd64759a6cefb7a9be64801b5eac34bba269609c8eb5cab92d04dc"
+  digest = "1:d6faa45440f529a93def557cca1c73a828ad6f09cd8c443868090625c378b405"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1448,8 +1438,8 @@
     "test/testutils",
   ]
   pruneopts = "UT"
-  revision = "96dce349db114c370bf725c37f8636f8c5c24d5e"
-  version = "v0.10.3"
+  revision = "508b01868d70ddb62be7a9ae94c3d7f5840b5af5"
+  version = "v0.10.6"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2475,6 +2465,8 @@
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener",
     "github.com/envoyproxy/go-control-plane/envoy/api/v2/route",
+    "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
@@ -2505,6 +2497,7 @@
     "github.com/grpc-ecosystem/go-grpc-middleware/tags",
     "github.com/hashicorp/consul/api",
     "github.com/hashicorp/go-multierror",
+    "github.com/hashicorp/vault/api",
     "github.com/helm/helm/pkg/hooks",
     "github.com/hinshun/vt10x",
     "github.com/inconshreveable/go-update",
@@ -2517,7 +2510,6 @@
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
-    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
@@ -2578,6 +2570,7 @@
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",
     "github.com/solo-io/solo-kit/pkg/utils/kubeutils",
+    "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/solo-io/solo-kit/test/tests/typed",
@@ -2602,6 +2595,7 @@
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/labels",

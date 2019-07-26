@@ -3,6 +3,7 @@ package registry
 import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
@@ -41,6 +42,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		hcm.NewPlugin(reg.plugins),
+		als.NewPlugin(),
 		tcp.NewPlugin(),
 		static.NewPlugin(),
 		transformationPlugin,
@@ -56,8 +58,8 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient))
 	}
-	if opts.ConsulClient != nil {
-		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulClient))
+	if opts.ConsulWatcher != nil {
+		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulWatcher))
 	}
 	for _, pluginExtension := range pluginExtensions {
 		reg.plugins = append(reg.plugins, pluginExtension)

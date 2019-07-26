@@ -31,6 +31,7 @@ glooctl create upstream azure [flags]
       --name string        name of the resource to read or write
   -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
   -o, --output string      output format: (yaml, json, table)
+      --yaml               print basic (non-kubernetes) yaml rather than creating or updating a resource
 ```
 
 ### SEE ALSO

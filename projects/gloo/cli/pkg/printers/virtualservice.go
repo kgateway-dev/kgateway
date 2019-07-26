@@ -15,7 +15,7 @@ import (
 // PrintTable prints virtual services using tables to io.Writer
 func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "Plugins", "Routes"})
+	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "ListenerPlugins", "Routes"})
 
 	for _, v := range list {
 		name := v.GetMetadata().Name

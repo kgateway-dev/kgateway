@@ -3,7 +3,7 @@
   "version": "v2",
   "docs_dir": "../docs/v2",
   "resource_groups": {
-    "api.gateway.solo.io": [
+    "api.gateway.solo.io.v2": [
       {
         "name": "VirtualService",
         "package": "gateway.solo.io",

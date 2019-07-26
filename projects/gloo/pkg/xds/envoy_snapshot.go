@@ -54,6 +54,7 @@ func NewSnapshot(version string,
 		Listeners: cache.NewResources(version, listeners),
 	}
 }
+
 func NewSnapshotFromResources(endpoints cache.Resources,
 	clusters cache.Resources,
 	routes cache.Resources,

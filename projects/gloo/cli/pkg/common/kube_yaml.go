@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -14,6 +16,15 @@ import (
 
 func PrintKubeCrd(in resources.InputResource, resourceCrd crd.Crd) error {
 	raw, err := yaml.Marshal(resourceCrd.KubeResource(in))
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(raw))
+	return nil
+}
+
+func PrintYaml(in resources.Resource) error {
+	raw, err := protoutils.MarshalYAML(in)
 	if err != nil {
 		return err
 	}

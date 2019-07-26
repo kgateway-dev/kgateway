@@ -107,6 +107,8 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 		namespace string
 	}
 	secretChan := make(chan secretListWithNamespace)
+
+	var initialSecretList gloo_solo_io.SecretList
 	/* Create channel for ClusterIngress */
 	type clusterIngressListWithNamespace struct {
 		list      github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList
@@ -114,8 +116,19 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	}
 	clusterIngressChan := make(chan clusterIngressListWithNamespace)
 
+	var initialClusterIngressList github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList
+
+	currentSnapshot := TranslatorSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Secret */
+		{
+			secrets, err := c.secret.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Secret list")
+			}
+			initialSecretList = append(initialSecretList, secrets...)
+		}
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Secret watch")
@@ -127,6 +140,13 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
 		}(namespace)
 		/* Setup namespaced watch for ClusterIngress */
+		{
+			clusteringresses, err := c.clusterIngress.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial ClusterIngress list")
+			}
+			initialClusterIngressList = append(initialClusterIngressList, clusteringresses...)
+		}
 		clusterIngressNamespacesChan, clusterIngressErrs, err := c.clusterIngress.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting ClusterIngress watch")
@@ -160,12 +180,16 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Secrets */
+	currentSnapshot.Secrets = initialSecretList.Sort()
+	/* Initialize snapshot for Clusteringresses */
+	currentSnapshot.Clusteringresses = initialClusterIngressList.Sort()
 
 	snapshots := make(chan *TranslatorSnapshot)
 	go func() {
 		originalSnapshot := TranslatorSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return

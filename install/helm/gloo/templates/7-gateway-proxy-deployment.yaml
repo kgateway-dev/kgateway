@@ -85,7 +85,11 @@ spec:
           {{- end}}
           {{- end}}
 {{- with $spec.podTemplate.extraPorts }}
-{{toYaml  . | indent 8}}{{- end }}
+{{toYaml . | indent 8}}{{- end }}
+{{- if $spec.podTemplate.resources }}
+        resources:
+{{ toYaml $spec.podTemplate.resources | indent 10}}
+{{- end}}
 {{- if $spec.podTemplate.probes }}
         readinessProbe:
           httpGet:

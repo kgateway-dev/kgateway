@@ -38,7 +38,7 @@ func awsCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun); err != nil {
+			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Create.PrintYaml); err != nil {
 				return err
 			}
 			return nil
@@ -68,7 +68,7 @@ func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) err
 	return nil
 }
 
-func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, dryRun bool) error {
+func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, dryRun, printYaml bool) error {
 	if input.AccessKey == "" || input.SecretKey == "" {
 		fmt.Printf("access key or secret key not provided, reading credentials from ~/.aws/credentials")
 		creds := credentials.NewSharedCredentials("", "")
@@ -91,6 +91,9 @@ func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsS
 
 	if dryRun {
 		return common.PrintKubeSecret(ctx, secret)
+	}
+	if printYaml {
+		return common.PrintYaml(secret)
 	}
 
 	secretClient := helpers.MustSecretClient()

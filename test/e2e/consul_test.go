@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/consul/api"
+
 	"github.com/solo-io/gloo/test/v1helpers"
 
 	. "github.com/onsi/ginkgo"
@@ -62,8 +64,12 @@ var _ = Describe("Consul e2e", func() {
 		err = consulInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
 
+		// init consul client
+		client, err := api.NewClient(api.DefaultConfig())
+		Expect(err).NotTo(HaveOccurred())
+
 		// Start Gloo
-		consulClient, err := consul.NewConsulWatcher(nil)
+		consulClient, err := consul.NewConsulWatcher(client, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		ro := &services.RunOptions{
