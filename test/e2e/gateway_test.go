@@ -260,7 +260,7 @@ var _ = Describe("Gateway", func() {
 				})
 			})
 
-			FContext("Access logs", func() {
+			Context("Access logs", func() {
 				var (
 					gw   *gatewayv2.Gateway
 					path string
