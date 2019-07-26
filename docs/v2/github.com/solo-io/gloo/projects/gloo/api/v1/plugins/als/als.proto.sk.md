@@ -14,8 +14,6 @@ weight: 5
 - [AccessLoggingService](#accessloggingservice)
 - [AccessLog](#accesslog)
 - [FileSink](#filesink)
-- [GrpcService](#grpcservice)
-- [Filter](#filter)
   
 
 
@@ -51,17 +49,13 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 
 ```yaml
-"filter": .als.plugins.gloo.solo.io.Filter
 "fileSink": .als.plugins.gloo.solo.io.FileSink
-"grpcService": .als.plugins.gloo.solo.io.GrpcService
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `filter` | [.als.plugins.gloo.solo.io.Filter](../als.proto.sk#filter) | filters for this listeners access logger. |  |
 | `fileSink` | [.als.plugins.gloo.solo.io.FileSink](../als.proto.sk#filesink) |  |  |
-| `grpcService` | [.als.plugins.gloo.solo.io.GrpcService](../als.proto.sk#grpcservice) |  |  |
 
 
 
@@ -83,39 +77,6 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | `path` | `string` | the file path to which the file access logging service will sink |  |
 | `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings |  |
 | `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries |  |
-
-
-
-
----
-### GrpcService
-
- 
-Grpc service
-Not currently implemented
-
-```yaml
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-
-
-
-
----
-### Filter
-
- 
-filters for access logs
-
-```yaml
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
 
 
 

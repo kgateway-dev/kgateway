@@ -43,7 +43,6 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	if alSettings.AccessLoggingService == nil {
 		return nil
 	}
-	// Use a switch here to support TCP in the future
 	switch listenerType := in.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
 		if listenerType.HttpListener == nil {

@@ -310,10 +310,6 @@ func (ei *EnvoyInstance) Clean() error {
 	return nil
 }
 
-// func (ei *EnvoyInstance) GetLogs() io.Reader  {
-//
-// }
-
 func (ei *EnvoyInstance) runContainer() error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {

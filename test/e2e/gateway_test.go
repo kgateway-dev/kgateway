@@ -29,7 +29,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Gateway", func() {
+var _ = Describe("Gateway", func() {
 
 	var (
 		ctx            context.Context
