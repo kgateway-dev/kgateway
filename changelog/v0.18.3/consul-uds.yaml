@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    description: Enable uds to run without crashing when kubernetes is not reachable
+    issueLink: https://github.com/solo-io/gloo/issues/905
+  - type: FIX
+    description: Sanitize Consul EDS names
+    issueLink: https://github.com/solo-io/gloo/issues/906
+  - type: NEW_FEATURE
+    description: Enable function discovery for consul upstreams
+    issueLink: https://github.com/solo-io/gloo/issues/913
+  - type: NEW_FEATURE
+    description: Enable upstream discovery for consul upstreams
+    issueLink: https://github.com/solo-io/gloo/issues/914

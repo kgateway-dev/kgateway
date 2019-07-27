@@ -241,17 +241,18 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		vs, err = vsClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
-		// udpates every 30 seconds.
+		// Wait for the proxy to be accepted.
 		Eventually(func() (core.Status_State, error) {
 			proxy, err := proxyClient.Read(writeNamespace, "gateway-proxy-v2", clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return 0, err
 			}
 			return proxy.Status.State, nil
-		}, "40s", "0.2s").Should(Equal(core.Status_Accepted))
+		}, "10s", "0.2s").Should(Equal(core.Status_Accepted))
 
-		
+		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
+			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+`)
 	})
 })
 
