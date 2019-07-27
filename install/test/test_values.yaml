@@ -1,5 +1,0 @@
-gatewayProxies:
-  gatewayProxyV2:
-    tracing:
-      trace: spec
-      another: line

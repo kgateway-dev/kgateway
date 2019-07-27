@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: "Enable route-specific tracing config."
+    issueLink: https://github.com/solo-io/gloo/issues/880

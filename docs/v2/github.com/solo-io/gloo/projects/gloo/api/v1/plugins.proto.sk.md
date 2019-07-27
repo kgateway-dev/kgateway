@@ -38,11 +38,13 @@ Note to developers: new Listener Plugins must be added to this struct
 to be usable by Gloo.
 
 ```yaml
+"accessLoggingService": .als.plugins.gloo.solo.io.AccessLoggingService
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
 
 
 
@@ -126,6 +128,7 @@ to be usable by Gloo.
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "extensions": .gloo.solo.io.Extensions
+"tracing": .tracing.plugins.gloo.solo.io.RouteTracingSettings
 
 ```
 
@@ -137,6 +140,7 @@ to be usable by Gloo.
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing |  |
 
 
 
@@ -180,6 +184,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 "useHttp2": bool
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
+"pipe": .pipe.plugins.gloo.solo.io.UpstreamSpec
 "aws": .aws.plugins.gloo.solo.io.UpstreamSpec
 "azure": .azure.plugins.gloo.solo.io.UpstreamSpec
 "consul": .consul.plugins.gloo.solo.io.UpstreamSpec
@@ -196,6 +201,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  |  |
+| `pipe` | [.pipe.plugins.gloo.solo.io.UpstreamSpec](../plugins/pipe/pipe.proto.sk#upstreamspec) |  |  |
 | `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#upstreamspec) |  |  |
 | `azure` | [.azure.plugins.gloo.solo.io.UpstreamSpec](../plugins/azure/azure.proto.sk#upstreamspec) |  |  |
 | `consul` | [.consul.plugins.gloo.solo.io.UpstreamSpec](../plugins/consul/consul.proto.sk#upstreamspec) |  |  |

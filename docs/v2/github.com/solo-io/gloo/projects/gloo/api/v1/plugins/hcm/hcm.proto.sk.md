@@ -12,7 +12,6 @@ weight: 5
 
 
 - [HttpConnectionManagerSettings](#httpconnectionmanagersettings)
-- [TracingSettings](#tracingsettings)
   
 
 
@@ -46,7 +45,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "serverName": string
 "acceptHttp10": bool
 "defaultHostForHttp10": string
-"tracing": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.TracingSettings
+"tracing": .tracing.plugins.gloo.solo.io.ListenerTracingSettings
 
 ```
 
@@ -67,27 +66,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `serverName` | `string` |  |  |
 | `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions |  |
 | `defaultHostForHttp10` | `string` |  |  |
-| `tracing` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.TracingSettings](../hcm.proto.sk#tracingsettings) |  |  |
-
-
-
-
----
-### TracingSettings
-
- 
-Contains various settings for configuring Envoy's tracing capabilities at the listener level.
-
-```yaml
-"requestHeadersForTags": []string
-"verbose": bool
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `requestHeadersForTags` | `[]string` | Optional. If specified, gloo will include the headers and header values for any matching request headers. |  |
-| `verbose` | `bool` | Optional. If true, gloo will include logs for streaming events. Default: false. |  |
+| `tracing` | [.tracing.plugins.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk#listenertracingsettings) |  |  |
 
 
 

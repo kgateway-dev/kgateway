@@ -35,6 +35,14 @@ func (us *UpstreamSpec_Static) SetServiceSpec(spec *plugins.ServiceSpec) {
 	us.Static.ServiceSpec = spec
 }
 
+func (us *UpstreamSpec_Pipe) GetServiceSpec() *plugins.ServiceSpec {
+	return us.Pipe.ServiceSpec
+}
+
+func (us *UpstreamSpec_Pipe) SetServiceSpec(spec *plugins.ServiceSpec) {
+	us.Pipe.ServiceSpec = spec
+}
+
 func (us *UpstreamSpec_Consul) GetServiceSpec() *plugins.ServiceSpec {
 	return us.Consul.ServiceSpec
 }
