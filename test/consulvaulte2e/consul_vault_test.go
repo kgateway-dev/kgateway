@@ -8,6 +8,10 @@ import (
 	"path/filepath"
 	"time"
 
+	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
+	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
+
 	"github.com/gogo/protobuf/types"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -46,6 +50,8 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		vaultClient     *vaultapi.Client
 		consulResources factory.ResourceClientFactory
 		vaultResources  factory.ResourceClientFactory
+
+		petstorePort int
 	)
 
 	const writeNamespace = defaults.GlooSystem
@@ -107,6 +113,18 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			err = gatewaysetup.Main(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
+		go func() {
+			defer GinkgoRecover()
+			// Start FDS
+			err = fdssetup.Main(ctx)
+			Expect(err).NotTo(HaveOccurred())
+		}()
+		go func() {
+			defer GinkgoRecover()
+			// Start UDS
+			err = udssetup.Main(ctx)
+			Expect(err).NotTo(HaveOccurred())
+		}()
 
 		// Start Envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
@@ -114,11 +132,25 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+translator.GatewayProxyName, 9977)
 		Expect(err).NotTo(HaveOccurred())
 
-		// Run two simple web applications locally
+		// Run a simple web application locally
 		svc1 = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+
+		// Run the petstore locally
+		petstorePort = 1234
+		go func() {
+			defer GinkgoRecover()
+			// Start petstore
+			err = services.RunPetstore(ctx, petstorePort)
+			if err != nil {
+				Expect(err.Error()).To(ContainSubstring("http: Server closed"))
+			}
+		}()
 
 		// Register services with consul
 		err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = consulInstance.RegisterService("petstore", "petstore-1", envoyInstance.GlooAddr, []string{"svc", "petstore"}, uint32(petstorePort))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -194,6 +226,33 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
+	It("can do function routing with consul services", func() {
+
+		vsClient, err := v1.NewVirtualServiceClient(consulResources)
+		Expect(err).NotTo(HaveOccurred())
+
+		proxyClient, err := gloov1.NewProxyClient(consulResources)
+		Expect(err).NotTo(HaveOccurred())
+
+		us := core.ResourceRef{Namespace: "gloo-system", Name: "petstore"}
+
+		vs := makeFunctionRoutingVirtualService(us, "findPetById")
+
+		vs, err = vsClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
+		// udpates every 30 seconds.
+		Eventually(func() (core.Status_State, error) {
+			proxy, err := proxyClient.Read(writeNamespace, "gateway-proxy-v2", clients.ReadOpts{Ctx: ctx})
+			if err != nil {
+				return 0, err
+			}
+			return proxy.Status.State, nil
+		}, "40s", "0.2s").Should(Equal(core.Status_Accepted))
+
+		
+	})
 })
 
 func makeSslVirtualService(secret core.ResourceRef) *v1.VirtualService {
@@ -234,6 +293,44 @@ func makeSslVirtualService(secret core.ResourceRef) *v1.VirtualService {
 					Namespace: secret.Namespace,
 				},
 			},
+		},
+	}
+}
+
+func makeFunctionRoutingVirtualService(upstream core.ResourceRef, funcName string) *v1.VirtualService {
+	return &v1.VirtualService{
+		Metadata: core.Metadata{
+			Name:      "vs-functions",
+			Namespace: "default",
+		},
+		VirtualHost: &gloov1.VirtualHost{
+			Name:    "virt1",
+			Domains: []string{"*"},
+			Routes: []*gloov1.Route{{
+				Matcher: &gloov1.Matcher{
+					PathSpecifier: &gloov1.Matcher_Prefix{
+						Prefix: "/",
+					},
+				},
+				Action: &gloov1.Route_RouteAction{
+					RouteAction: &gloov1.RouteAction{
+						Destination: &gloov1.RouteAction_Single{
+							Single: &gloov1.Destination{
+								DestinationType: &gloov1.Destination_Upstream{
+									Upstream: &upstream,
+								},
+								DestinationSpec: &gloov1.DestinationSpec{
+									DestinationType: &gloov1.DestinationSpec_Rest{
+										Rest: &rest.DestinationSpec{
+											FunctionName: funcName,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}},
 		},
 	}
 }

@@ -76,3 +76,7 @@
 [[override]]
   name = "k8s.io/helm"
   version = "v2.12.3"
+
+[[override]]
+  name = "github.com/go-openapi/spec"
+  version = "0.19.2"
