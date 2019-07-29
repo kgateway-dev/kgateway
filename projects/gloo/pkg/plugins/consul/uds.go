@@ -1,7 +1,6 @@
 package consul
 
 import (
-	"reflect"
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -11,6 +10,13 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+)
+
+var (
+	InvalidSpecTypeError = func(spec *v1.UpstreamSpec, name string) error {
+		return errors.Errorf("internal error: invalid %s spec, "+
+			"expected *v1.UpstreamSpec_Consul, got  %T", name, spec.UpstreamType)
+	}
 )
 
 func (p *plugin) DiscoverUpstreams(_ []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
@@ -63,11 +69,11 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	originalSpec, ok := original.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_Consul, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+		return false, InvalidSpecTypeError(original.UpstreamSpec, "original")
 	}
 	desiredSpec, ok := desired.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_Consul, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+		return false, InvalidSpecTypeError(desired.UpstreamSpec, "desired")
 	}
 
 	// copy service spec, we don't want to overwrite that

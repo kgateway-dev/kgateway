@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/pkg/errors"
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
@@ -39,7 +39,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	instances, _, err := p.client.Service(spec.ServiceName, "", &api.QueryOptions{Datacenter: dc, RequireConsistent: true})
 	if err != nil {
-		return nil, errors.Wrap(err, "getting service from catalog")
+		return nil, errors.Wrapf(err, "getting service from catalog")
 	}
 
 	scheme := "http"
