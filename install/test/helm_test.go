@@ -164,7 +164,7 @@ var _ = Describe("Helm Test", func() {
 						Handler: v1.Handler{
 							Exec: &v1.ExecAction{
 								Command: []string{
-									"wget", "localhost:19000/server_info",
+									"wget", "-O", "/dev/null", "localhost:19000/server_info",
 								},
 							},
 						},
