@@ -222,7 +222,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 				return 0, err
 			}
 			return proxy.Status.State, nil
-		}, "40s", "0.2s").Should(Equal(core.Status_Accepted))
+		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
