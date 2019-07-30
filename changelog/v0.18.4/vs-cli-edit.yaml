@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Fix VS edit cli command so it no longer always writes an empty sslConfig causing the VS to break.
+  issueLink: https://github.com/solo-io/gloo/issues/921
