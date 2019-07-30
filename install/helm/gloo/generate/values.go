@@ -149,7 +149,6 @@ type GatewayProxyPodTemplate struct {
 	NodeSelector     map[string]string     `json:"nodeSelector,omitempty"`
 	Stats            bool                  `json:"stats"`
 	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
-	// Probes           bool                  `json:"probes"`
 	Resources        *ResourceRequirements `json:"resources"`
 }
 
