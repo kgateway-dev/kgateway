@@ -43,10 +43,7 @@ var _ = BeforeSuite(func() {
 
 	testHelper.Verbose = true
 
-	options := clusterlock.Options{
-		IdPrefix: os.ExpandEnv("gateway-${BUILD_ID}-"),
-	}
-	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), options)
+	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
