@@ -90,25 +90,6 @@ spec:
         resources:
 {{ toYaml $spec.podTemplate.resources | indent 10}}
 {{- end}}
-{{- if $spec.podTemplate.probes }}
-        readinessProbe:
-          httpGet:
-            port: 8081
-            path: /ready
-          initialDelaySeconds: 1
-          periodSeconds: 10
-          failureThreshold: 10
-        livenessProbe:
-          exec:
-            command:
-            - wget
-            - -O
-            - /dev/null
-            - localhost:19000/server_info
-          initialDelaySeconds: 1
-          periodSeconds: 10
-          failureThreshold: 10
-{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
