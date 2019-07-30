@@ -44,7 +44,6 @@ func RootCmd(opts *options.EditOptions, optionsFunc ...cliutils.OptionsFunc) *co
 		},
 	}
 
-
 	addEditVirtualServiceOptions(cmd.Flags(), optsExt)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
@@ -85,7 +84,6 @@ func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, 
 		}
 	}
 
-
 	if optsExt.Remove {
 		vs.SslConfig = nil
 	} else {
@@ -108,7 +106,6 @@ func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, 
 			vs.SslConfig = nil
 		}
 	}
-
 
 	_, err = vsClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
 	return err
