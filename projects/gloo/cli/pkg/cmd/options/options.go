@@ -81,7 +81,6 @@ type Create struct {
 	InputUpstreamGroup InputUpstreamGroup
 	InputSecret        Secret
 	DryRun             bool // print resource as a kubernetes style yaml and exit without writing to storage
-	// PrintYaml          bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
@@ -95,7 +94,6 @@ type RouteMatchers struct {
 type Add struct {
 	Route  InputRoute
 	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
-	// PrintYaml bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
 }
 
 type InputRoute struct {

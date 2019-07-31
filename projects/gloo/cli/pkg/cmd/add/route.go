@@ -129,7 +129,7 @@ func addRoute(opts *options.Options) error {
 	copy(virtualService.VirtualHost.Routes[index+1:], virtualService.VirtualHost.Routes[index:])
 	virtualService.VirtualHost.Routes[index] = v1Route
 
-	if opts.Add.DryRun {
+	if !opts.Add.DryRun {
 		virtualService, err = helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
 			Ctx:               opts.Top.Ctx,
 			OverwriteExisting: true,
