@@ -82,6 +82,7 @@ var _ = Describe("Helm Test", func() {
 				var (
 					gatewayProxyDeployment *appsv1.Deployment
 				)
+
 				BeforeEach(func() {
 					selector = map[string]string{
 						"gloo": "gateway-proxy-v2",
@@ -149,18 +150,31 @@ var _ = Describe("Helm Test", func() {
 						AllowPrivilegeEscalation: &falsez,
 					}
 
-					readyProb := v1.Probe{
+					gatewayProxyDeployment = deploy
+				})
+
+				It("creates a deployment", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
+					prepareMakefile(helmFlags)
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
+
+				It("enables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.probes=true"
+
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 						Handler: v1.Handler{
-							HTTPGet: &v1.HTTPGetAction{
-								Path: "/ready",
-								Port: intstr.FromInt(8081),
+							Exec: &v1.ExecAction{
+								Command: []string{
+									"wget", "-O", "/dev/null", "localhost:19000/ready",
+								},
 							},
 						},
 						InitialDelaySeconds: 1,
 						PeriodSeconds:       10,
 						FailureThreshold:    10,
 					}
-					liveProb := v1.Probe{
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
 						Handler: v1.Handler{
 							Exec: &v1.ExecAction{
 								Command: []string{
@@ -172,25 +186,7 @@ var _ = Describe("Helm Test", func() {
 						PeriodSeconds:       10,
 						FailureThreshold:    10,
 					}
-
-					deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &readyProb
-					deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &liveProb
-
-					gatewayProxyDeployment = deploy
-				})
-
-				It("creates a deployment", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
 					prepareMakefile(helmFlags)
-					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-				})
-
-				It("disables probes", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.probes=false"
-
-					prepareMakefile(helmFlags)
-					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
-					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 

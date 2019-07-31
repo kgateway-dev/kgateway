@@ -92,9 +92,12 @@ spec:
 {{- end}}
 {{- if $spec.podTemplate.probes }}
         readinessProbe:
-          httpGet:
-            port: 8081
-            path: /ready
+          exec:
+            command:
+            - wget
+            - -O
+            - /dev/null
+            - localhost:19000/ready
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
