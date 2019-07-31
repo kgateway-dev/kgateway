@@ -7,7 +7,6 @@ import (
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 	set.VarP(outputType, "output", "o", "output format: (yaml, json, table, kube-yaml)")
-	// set.StringVarP(strptr, "output", "o", "kube-yaml", "output format: (yaml, json, table, kube-yaml)")
 }
 
 func AddFileFlag(set *pflag.FlagSet, strptr *string) {
