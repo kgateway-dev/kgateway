@@ -26,6 +26,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.AddCommand(dumpCmd(opts))
 	cmd.AddCommand(logsCmd(opts))
 	cmd.AddCommand(statsCmd(opts))
+	cmd.AddCommand(servedConfigCmd(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
