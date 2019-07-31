@@ -18,7 +18,7 @@ import (
 
 func PrintSecrets(secrets v1.SecretList, outputType OutputType) error {
 	if outputType == KUBE_YAML {
-		return PrintKubeSecretList(context.TODO(), secrets.AsResources())
+		return printKubeSecretList(context.TODO(), secrets.AsResources())
 	}
 	return cliutils.PrintList(outputType.String(), "", secrets,
 		func(data interface{}, w io.Writer) error {
@@ -56,7 +56,7 @@ func SecretTable(list v1.SecretList, w io.Writer) {
 }
 
 // note: prints secrets in the traditional way, without using plain secrets or a custom secret converter
-func PrintKubeSecret(ctx context.Context, in resources.Resource) error {
+func printKubeSecret(ctx context.Context, in resources.Resource) error {
 	baseSecretClient, err := secretBaseClient(ctx, in)
 	if err != nil {
 		return err
@@ -70,12 +70,12 @@ func PrintKubeSecret(ctx context.Context, in resources.Resource) error {
 	return nil
 }
 
-func PrintKubeSecretList(ctx context.Context, in resources.ResourceList) error {
+func printKubeSecretList(ctx context.Context, in resources.ResourceList) error {
 	for i, v := range in {
 		if i != 0 {
 			fmt.Print("\n --- \n")
 		}
-		if err := PrintKubeSecret(ctx, v); err != nil {
+		if err := printKubeSecret(ctx, v); err != nil {
 			return err
 		}
 	}
