@@ -3,9 +3,13 @@ package setup
 import (
 	"context"
 	"os"
+	"strconv"
+	"strings"
 
-	knativeclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
-	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
+	clusteringressv1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
+
+	knativeclient "github.com/solo-io/gloo/projects/knative/pkg/api/custom/knative"
+	knativev1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
@@ -22,6 +26,8 @@ import (
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/ingress/pkg/status"
 	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
+	knativev1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
+	knativetranslator "github.com/solo-io/gloo/projects/knative/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -34,6 +40,7 @@ import (
 )
 
 const defaultClusterIngressProxyAddress = "clusteringress-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
+const defaultKnativeProxyAddress = "knative-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
@@ -87,14 +94,21 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 	disableKubeIngress := os.Getenv("DISABLE_KUBE_INGRESS") == "true" || os.Getenv("DISABLE_KUBE_INGRESS") == "1"
 	enableKnative := os.Getenv("ENABLE_KNATIVE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
+	knativeVersion := os.Getenv("KNATIVE_VERSION")
 
 	clusterIngressProxyAddress := defaultClusterIngressProxyAddress
 	if settings.Knative != nil && settings.Knative.ClusterIngressProxyAddress != "" {
 		clusterIngressProxyAddress = settings.Knative.ClusterIngressProxyAddress
 	}
 
+	knativeProxyAddress := defaultKnativeProxyAddress
+	if settings.Knative != nil && settings.Knative.KnativeProxyAddress != "" {
+		knativeProxyAddress = settings.Knative.KnativeProxyAddress
+	}
+
 	opts := Opts{
 		ClusterIngressProxyAddress: clusterIngressProxyAddress,
+		KnativeProxyAddress:        knativeProxyAddress,
 		WriteNamespace:             writeNamespace,
 		WatchNamespaces:            watchNamespaces,
 		Proxies:                    proxyFactory,
@@ -105,6 +119,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			RefreshRate: refreshRate,
 		},
 		EnableKnative:      enableKnative,
+		KnativeVersion:     knativeVersion,
 		DisableKubeIngress: disableKubeIngress,
 	}
 
@@ -191,26 +206,51 @@ func RunIngress(opts Opts) error {
 			return errors.Wrapf(err, "creating knative clientset")
 		}
 
-		knativeCache, err := knativeclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
-		if err != nil {
-			return errors.Wrapf(err, "creating knative cache")
+		// if the version of the target knative is < 0.8.0 (or version not provided), use clusteringress
+		// else, use the new knative ingress object
+		if pre080knativeVersion(opts.KnativeVersion) {
+			knativeCache, err := knativeclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
+			if err != nil {
+				return errors.Wrapf(err, "creating knative cache")
+			}
+			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
+			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
+			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, ingressClient)
+			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
+				opts.ClusterIngressProxyAddress,
+				opts.WriteNamespace,
+				proxyClient,
+				knative.NetworkingV1alpha1().ClusterIngresses(),
+				writeErrs,
+			)
+			clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)
+			clusterIngTranslatorEventLoopErrs, err := clusterIngTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
+			if err != nil {
+				return err
+			}
+			go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, clusterIngTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
+		} else {
+			knativeCache, err := knativeclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
+			if err != nil {
+				return errors.Wrapf(err, "creating knative cache")
+			}
+			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
+			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
+			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(secretClient, ingressClient)
+			knativeTranslatorSync := knativetranslator.NewSyncer(
+				opts.KnativeProxyAddress,
+				opts.WriteNamespace,
+				proxyClient,
+				knative.NetworkingV1alpha1(),
+				writeErrs,
+			)
+			knativeTranslatorEventLoop := knativev1.NewTranslatorEventLoop(knativeTranslatorEmitter, knativeTranslatorSync)
+			knativeTranslatorEventLoopErrs, err := knativeTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
+			if err != nil {
+				return err
+			}
+			go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, knativeTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
 		}
-		baseClient := knativeclient.NewResourceClient(knative, knativeCache)
-		ingressClient := v1alpha1.NewClusterIngressClientWithBase(baseClient)
-		clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, ingressClient)
-		clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
-			opts.ClusterIngressProxyAddress,
-			opts.WriteNamespace,
-			proxyClient,
-			knative.NetworkingV1alpha1().ClusterIngresses(),
-			writeErrs,
-		)
-		clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)
-		clusterIngTranslatorEventLoopErrs, err := clusterIngTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
-		if err != nil {
-			return err
-		}
-		go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, clusterIngTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
 	}
 
 	go func() {
@@ -225,4 +265,32 @@ func RunIngress(opts Opts) error {
 		}
 	}()
 	return nil
+}
+
+// change this to set whether we default to assuming
+// knative is pre-0.8.0 in the absence of a valid version parameter
+const defaultPre080 = true
+
+func pre080knativeVersion(version string) bool {
+	// expected format: 0.8.0
+	parts := strings.Split(version, ".")
+	if len(parts) != 3 {
+		// default case is true
+		return defaultPre080
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return defaultPre080
+	}
+	if major > 0 {
+		return false
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return defaultPre080
+	}
+	if minor >= 8 {
+		return false
+	}
+	return true
 }

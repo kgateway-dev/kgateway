@@ -219,12 +219,14 @@ This option determines the root of the directory tree used to this end.
 
 ```yaml
 "clusterIngressProxyAddress": string
+"knativeProxyAddress": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `clusterIngressProxyAddress` | `string` | Address of the clusteringress proxy. If empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local. |  |
+| `clusterIngressProxyAddress` | `string` | Address of the clusteringress proxy. If empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local. Use if running Knative Version 0.7.X or less |  |
+| `knativeProxyAddress` | `string` | Address of the knative proxy. If empty, it will default to knative-proxy.$POD_NAMESPACE.svc.cluster.local. Use if running Knative Version 0.8.X or higher |  |
 
 
 

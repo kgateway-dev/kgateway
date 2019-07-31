@@ -66,6 +66,7 @@ type Integrations struct {
 
 type Knative struct {
 	Enabled *bool         `json:"enabled"`
+	Version *string       `json:"version"`
 	Proxy   *KnativeProxy `json:"proxy,omitempty"`
 }
 

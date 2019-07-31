@@ -16,7 +16,11 @@ spec:
   refreshRate: 60s
 {{- if .Values.settings.integrations.knative.enabled }}
   knative:
+{{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]" .Values.settings.integrations.knative.version ) }}
     clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
+{{- else }}
+    knativeProxyAddress: "knative-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
+{{- end }}
 {{- end }}
 
 {{- if ne .Values.discovery.fdsMode "" }}
