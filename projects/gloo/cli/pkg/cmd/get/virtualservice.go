@@ -4,7 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/go-utils/errors"
 
 	"github.com/spf13/cobra"
@@ -21,7 +21,7 @@ func VirtualService(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			helpers.PrintVirtualServices(virtualServices, opts.Top.Output)
+			printers.PrintVirtualServices(virtualServices, opts.Top.Output)
 			return nil
 		},
 	}
@@ -51,7 +51,7 @@ func Routes(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return errors.Errorf("virtualservice id provided was incorrect")
 			}
-			helpers.PrintRoutes(vs.VirtualHost.Routes, opts.Top.Output)
+			printers.PrintRoutes(vs.VirtualHost.Routes, opts.Top.Output)
 			return nil
 		},
 	}

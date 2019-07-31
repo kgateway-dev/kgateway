@@ -34,7 +34,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Create.PrintYaml); err != nil {
+			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, false); err != nil {
 				return err
 			}
 			return nil

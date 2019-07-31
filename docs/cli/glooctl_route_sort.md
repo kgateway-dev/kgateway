@@ -19,8 +19,8 @@ glooctl route sort [flags]
 ### Options
 
 ```
-  -h, --help            help for sort
-  -o, --output string   output format: (yaml, json, table)
+  -h, --help                help for sort
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default yaml)
 ```
 
 ### Options inherited from parent commands

@@ -8,20 +8,10 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"k8s.io/client-go/kubernetes/fake"
 )
-
-func PrintKubeCrd(in resources.InputResource, resourceCrd crd.Crd) error {
-	raw, err := yaml.Marshal(resourceCrd.KubeResource(in))
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(raw))
-	return nil
-}
 
 func PrintYaml(in resources.Resource) error {
 	raw, err := protoutils.MarshalYAML(in)

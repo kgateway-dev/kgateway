@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/cliutils"
@@ -68,6 +69,6 @@ func sortRoutes(opts *options.Options) error {
 		return errors.Wrapf(err, "writing updated vs")
 	}
 
-	helpers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
+	printers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
 	return nil
 }

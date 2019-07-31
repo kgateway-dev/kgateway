@@ -5,7 +5,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/go-utils/cliutils"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -130,21 +130,16 @@ func addRoute(opts *options.Options) error {
 	virtualService.VirtualHost.Routes[index] = v1Route
 
 	if opts.Add.DryRun {
-		return common.PrintKubeCrd(virtualService, gatewayv1.VirtualServiceCrd)
-	}
-	if opts.Add.PrintYaml {
-		return common.PrintYaml(virtualService)
-	}
-
-	out, err := helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
-		Ctx:               opts.Top.Ctx,
-		OverwriteExisting: true,
-	})
-	if err != nil {
-		return err
+		virtualService, err = helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
+			Ctx:               opts.Top.Ctx,
+			OverwriteExisting: true,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
-	helpers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
+	printers.PrintVirtualServices(gatewayv1.VirtualServiceList{virtualService}, opts.Top.Output)
 	return nil
 }
 

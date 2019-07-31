@@ -28,12 +28,11 @@ glooctl create upstream kube [flags]
 ### Options inherited from parent commands
 
 ```
-      --dry-run            print kubernetes-formatted yaml rather than creating or updating a resource
-  -i, --interactive        use interactive mode
-      --name string        name of the resource to read or write
-  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
-  -o, --output string      output format: (yaml, json, table)
-      --yaml               print basic (non-kubernetes) yaml rather than creating or updating a resource
+      --dry-run             print kubernetes-formatted yaml rather than creating or updating a resource
+  -i, --interactive         use interactive mode
+      --name string         name of the resource to read or write
+  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default yaml)
 ```
 
 ### SEE ALSO

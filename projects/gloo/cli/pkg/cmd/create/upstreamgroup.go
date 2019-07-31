@@ -7,9 +7,9 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -63,19 +63,14 @@ func createUpstreamGroup(opts *options.Options) error {
 		return err
 	}
 
-	if opts.Create.DryRun {
-		return common.PrintKubeCrd(ug, v1.UpstreamGroupCrd)
-	}
-	if opts.Create.PrintYaml {
-		return common.PrintYaml(ug)
-	}
-
-	ug, err = helpers.MustUpstreamGroupClient().Write(ug, clients.WriteOpts{})
-	if err != nil {
-		return err
+	if !opts.Create.DryRun {
+		ug, err = helpers.MustUpstreamGroupClient().Write(ug, clients.WriteOpts{})
+		if err != nil {
+			return err
+		}
 	}
 
-	helpers.PrintUpstreamGroups(v1.UpstreamGroupList{ug}, opts.Top.Output)
+	printers.PrintUpstreamGroups(v1.UpstreamGroupList{ug}, opts.Top.Output)
 
 	return nil
 }

@@ -29,7 +29,6 @@ glooctl add route [flags]
   -h, --help                              help for route
   -x, --index uint32                      index in the virtual service route list where to insert this route. routes after it will be shifted back one
   -m, --method strings                    the HTTP methods (GET, POST, etc.) to match on the request. if empty, all methods will match 
-  -o, --output string                     output format: (yaml, json, table)
   -e, --path-exact string                 exact path to match route
   -p, --path-prefix string                path prefix to match route
   -r, --path-regex string                 regex matcher for route. note: only one of path-exact, path-regex, or path-prefix should be set
@@ -47,11 +46,11 @@ glooctl add route [flags]
 ### Options inherited from parent commands
 
 ```
-      --dry-run            print kubernetes-formatted yaml rather than creating or updating a resource
-  -i, --interactive        use interactive mode
-      --name string        name of the resource to read or write
-  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
-      --yaml               print basic (non-kubernetes) yaml rather than creating or updating a resource
+      --dry-run             print kubernetes-formatted yaml rather than creating or updating a resource
+  -i, --interactive         use interactive mode
+      --name string         name of the resource to read or write
+  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default yaml)
 ```
 
 ### SEE ALSO

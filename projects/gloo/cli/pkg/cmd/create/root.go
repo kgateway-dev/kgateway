@@ -49,7 +49,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddOutputFlag(cmd.PersistentFlags(), &opts.Top.Output)
 	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &opts.Metadata)
 	flagutils.AddDryRunFlag(cmd.PersistentFlags(), &opts.Create.DryRun)
-	flagutils.AddPrintYamlFlag(cmd.PersistentFlags(), &opts.Create.PrintYaml)
 
 	cmd.AddCommand(VirtualService(opts))
 	cmd.AddCommand(Upstream(opts))
