@@ -4,9 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/version"
