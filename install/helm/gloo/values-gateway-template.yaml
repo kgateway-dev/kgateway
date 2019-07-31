@@ -56,7 +56,7 @@ gatewayProxies:
        deployment:
          replicas: 1
     podTemplate:
-      probes: true
+      probes: false
       image:
         repository: quay.io/solo-io/gloo-envoy-wrapper
         pullPolicy: Always
