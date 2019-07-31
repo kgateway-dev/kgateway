@@ -270,14 +270,6 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
 				})
 
-				It("disables probes", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.probes=false"
-					prepareMakefile(helmFlags)
-					glooDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
-					glooDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
-					testManifest.ExpectDeploymentAppsV1(glooDeployment)
-				})
-
 				It("has limits", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.resources.limits.memory=2  --set gloo.deployment.resources.limits.cpu=3 --set gloo.deployment.resources.requests.memory=4  --set gloo.deployment.resources.requests.cpu=5"
 					prepareMakefile(helmFlags)
