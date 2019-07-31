@@ -2,11 +2,9 @@ package secret
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -34,7 +32,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, false); err != nil {
+			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Top.Output); err != nil {
 				return err
 			}
 			return nil
@@ -70,7 +68,7 @@ func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) err
 	return nil
 }
 
-func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun, printYaml bool) error {
+func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun bool, outputType printers.OutputType) error {
 
 	// read the values
 
@@ -90,19 +88,15 @@ func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsS
 		},
 	}
 
-	if dryRun {
-		return common.PrintKubeSecret(ctx, secret)
-	}
-	if printYaml {
-		return common.PrintYaml(secret)
-	}
+	if !dryRun {
+		var err error
+		secretClient := helpers.MustSecretClient()
+		if secret, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
+			return err
+		}
 
-	secretClient := helpers.MustSecretClient()
-	if _, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
-		return err
 	}
 
-	fmt.Printf("Created TLS secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
-
+	printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 	return nil
 }
