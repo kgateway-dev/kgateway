@@ -9,12 +9,14 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
+	"github.com/solo-io/go-utils/installutils/helmchart"
 	"github.com/solo-io/go-utils/log"
 )
 
 var (
 	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
 	valuesOutput          = "install/helm/gloo/values.yaml"
+	docsOutput            = "docs/helm-values.md"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
 	ingressValuesTemplate = "install/helm/gloo/values-ingress-template.yaml"
@@ -78,6 +80,14 @@ func writeYaml(obj interface{}, path string) error {
 	return nil
 }
 
+func writeDocs(docs helmchart.HelmValues, path string) error {
+	err := ioutil.WriteFile(path, []byte(docs.ToMarkdown()), os.ModePerm)
+	if err != nil {
+		return errors.Wrapf(err, "failing writing helm values file")
+	}
+	return nil
+}
+
 func readGatewayConfig() (*generate.Config, error) {
 	var config generate.Config
 	if err := readYaml(valuesTemplate, &config); err != nil {
@@ -121,6 +131,10 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}
 
+	}
+
+	if err := writeDocs(helmchart.Doc(cfg), docsOutput); err != nil {
+		return err
 	}
 
 	return writeYaml(cfg, valuesOutput)
