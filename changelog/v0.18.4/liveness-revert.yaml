@@ -1,5 +1,0 @@
-changelog:
-- type: FIX
-  description: Disable liveness and readiness temporarily to bring the proxy back into a good state.
-  issueLink: https://github.com/solo-io/gloo/issues/924
-  resolvesIssue: false

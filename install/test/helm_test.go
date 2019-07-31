@@ -149,12 +149,48 @@ var _ = Describe("Helm Test", func() {
 						AllowPrivilegeEscalation: &falsez,
 					}
 
+					readyProb := v1.Probe{
+						Handler: v1.Handler{
+							HTTPGet: &v1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8081),
+							},
+						},
+						InitialDelaySeconds: 1,
+						PeriodSeconds:       10,
+						FailureThreshold:    10,
+					}
+					liveProb := v1.Probe{
+						Handler: v1.Handler{
+							Exec: &v1.ExecAction{
+								Command: []string{
+									"wget", "-O", "/dev/null", "localhost:19000/server_info",
+								},
+							},
+						},
+						InitialDelaySeconds: 1,
+						PeriodSeconds:       10,
+						FailureThreshold:    10,
+					}
+
+					deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &readyProb
+					deploy.Spec.Template.Spec.Containers[0].LivenessProbe = &liveProb
+
 					gatewayProxyDeployment = deploy
 				})
 
 				It("creates a deployment", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
 					prepareMakefile(helmFlags)
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
+
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.probes=false"
+
+					prepareMakefile(helmFlags)
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
@@ -238,6 +274,14 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
 				})
 
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.probes=false"
+					prepareMakefile(helmFlags)
+					glooDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					glooDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
+					testManifest.ExpectDeploymentAppsV1(glooDeployment)
+				})
+
 				It("has limits", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.resources.limits.memory=2  --set gloo.deployment.resources.limits.cpu=3 --set gloo.deployment.resources.requests.memory=4  --set gloo.deployment.resources.requests.cpu=5"
 					prepareMakefile(helmFlags)
@@ -288,6 +332,14 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 				})
 
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gateway.deployment.probes=false"
+					prepareMakefile(helmFlags)
+					gatewayDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					gatewayDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
+					testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+				})
+
 				It("has limits", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gateway.deployment.resources.limits.memory=2  --set gateway.deployment.resources.limits.cpu=3 --set gateway.deployment.resources.requests.memory=4  --set gateway.deployment.resources.requests.cpu=5"
 					prepareMakefile(helmFlags)
@@ -335,6 +387,14 @@ var _ = Describe("Helm Test", func() {
 				It("has a creates a deployment", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
 					prepareMakefile(helmFlags)
+					testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+				})
+
+				It("disables probes", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.probes=false"
+					prepareMakefile(helmFlags)
+					discoveryDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
+					discoveryDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
 					testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 				})
 
