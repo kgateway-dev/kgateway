@@ -11,7 +11,6 @@ weight: 5
 #### Types:
 
 
-- [ListenerTracingSettings](#listenertracingsettings)
 - [RouteShadowing](#routeshadowing)
   
 
@@ -19,28 +18,6 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/plugins/shadowing/shadowing.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/plugins/shadowing/shadowing.proto)
 
-
-
-
-
----
-### ListenerTracingSettings
-
- 
-Contains settings for configuring Envoy's tracing capabilities at the listener level.
-See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
-See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
-
-```yaml
-"requestHeadersForTags": []string
-"verbose": bool
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `requestHeadersForTags` | `[]string` | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |  |
-| `verbose` | `bool` | Optional. If true, Envoy will include logs for streaming events. Default: false. |  |
 
 
 
