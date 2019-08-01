@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("Plugin", func() {
 
-	It("should error when set on invalid routes", func() {
+	It("should work on valid inputs", func() {
 		p := NewPlugin()
 
 		upRef := &core.ResourceRef{
@@ -22,8 +22,6 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			Matcher: nil,
-			Action:  nil,
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
 					UpstreamRef: upRef,
