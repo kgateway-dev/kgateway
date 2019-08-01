@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -20,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/spf13/cobra"
@@ -85,7 +85,7 @@ func printGlooXdsDump(opts *options.Options) (string, error) {
 		case <-opts.Top.Ctx.Done():
 			return "", errors.Errorf("cancelled")
 		case err := <-errs:
-			log.Printf("connecting to gloo failed with err %v", err.Error())
+			contextutils.LoggerFrom(opts.Top.Ctx).Errorf("connecting to gloo failed with err %v", err.Error())
 		case res := <-result:
 			return res, nil
 		case <-timer:
@@ -229,7 +229,7 @@ func listEndpoints(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 	eds := v2.NewEndpointDiscoveryServiceClient(conn)
 	dresp, err := eds.FetchEndpoints(ctx, dr)
 	if err != nil {
-		log.Fatalf("endpoints err: %v", err)
+		return nil, errors.Errorf("endpoints err: %v", err)
 	}
 	var class []v2.ClusterLoadAssignment
 
@@ -250,7 +250,7 @@ func listListeners(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 	ldsc := v2.NewListenerDiscoveryServiceClient(conn)
 	dresp, err := ldsc.FetchListeners(ctx, dr)
 	if err != nil {
-		log.Fatalf("listeners err: %v", err)
+		return nil, errors.Errorf("listeners err: %v", err)
 	}
 	var listeners []v2.Listener
 
@@ -273,7 +273,7 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, dr *v2.DiscoveryRequ
 
 	dresp, err := ldsc.FetchRoutes(ctx, dr)
 	if err != nil {
-		log.Fatalf("routes err: %v", err)
+		return nil, errors.Errorf("routes err: %v", err)
 	}
 	var routes []v2.RouteConfiguration
 
