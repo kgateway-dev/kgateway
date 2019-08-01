@@ -1361,12 +1361,12 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:699918466a9758902a14923851a7fbd230500f93da6982dae7c79959afb0a664"
+  digest = "1:c5673cbf44dc752b282c962f514b0cc1b64d0d253cc64dba53b123a8e4bc3c4f"
   name = "github.com/solo-io/go-checkpoint"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b798a7563f831f081f2a73ca889888f1ceec06b3"
-  version = "0.0.4"
+  revision = "b56cd9c812e84da93eb577054ebdf60a27487acb"
+  version = "0.1.0"
 
 [[projects]]
   digest = "1:1cf6c3693031022d119d2f9b50d120b9abb83a4d9cdb521abacde6e10e16e01b"
