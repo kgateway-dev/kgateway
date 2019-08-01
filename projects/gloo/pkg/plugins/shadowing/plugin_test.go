@@ -24,8 +24,8 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					UpstreamRef: upRef,
-					Percent:     100,
+					Upstream: upRef,
+					Percent:  100,
 				},
 			},
 		}
@@ -46,8 +46,8 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					UpstreamRef: upRef,
-					Percent:     100,
+					Upstream: upRef,
+					Percent:  100,
 				},
 			},
 		}
@@ -83,8 +83,8 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					UpstreamRef: upRef,
-					Percent:     100,
+					Upstream: upRef,
+					Percent:  100,
 				},
 			},
 		}
@@ -119,8 +119,8 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					UpstreamRef: upRef,
-					Percent:     200,
+					Upstream: upRef,
+					Percent:  200,
 				},
 			},
 		}

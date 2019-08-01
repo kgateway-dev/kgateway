@@ -56,14 +56,14 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func applyShadowSpec(out *envoyroute.RouteAction, spec *shadowing.RouteShadowing) error {
-	if spec.UpstreamRef == nil {
+	if spec.Upstream == nil {
 		return UnspecifiedUpstreamError
 	}
 	if spec.Percent > 100 {
 		return InvalidNumeratorError(spec.Percent)
 	}
 	out.RequestMirrorPolicy = &envoyroute.RouteAction_RequestMirrorPolicy{
-		Cluster:         translator.UpstreamToClusterName(*spec.UpstreamRef),
+		Cluster:         translator.UpstreamToClusterName(*spec.Upstream),
 		RuntimeFraction: getFractionalPercent(spec.Percent),
 	}
 	return nil

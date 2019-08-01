@@ -33,14 +33,14 @@ Note that this plugin is only applicable to routes with upstream destinations (n
 See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
 
 ```yaml
-"upstreamRef": .core.solo.io.ResourceRef
+"upstream": .core.solo.io.ResourceRef
 "percent": int
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to which the shadowed traffic should be sent. |  |
+| `upstream` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to which the shadowed traffic should be sent. |  |
 | `percent` | `int` | The percent (represented as an integer between 0 and 100) of traffic that should be shadowed. |  |
 
 
