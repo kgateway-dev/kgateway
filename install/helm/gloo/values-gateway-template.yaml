@@ -22,7 +22,7 @@ gloo:
   deployment:
     image:
       repository: quay.io/solo-io/gloo
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     xdsPort: 9977
     replicas: 1
     stats: true
@@ -31,7 +31,7 @@ discovery:
   deployment:
     image:
       repository: quay.io/solo-io/discovery
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     replicas: 1
     stats: true
 
@@ -41,13 +41,13 @@ gateway:
   deployment:
     image:
       repository: quay.io/solo-io/gateway
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     replicas: 1
     stats: true
   conversionJob:
     image:
       repository: quay.io/solo-io/gateway-conversion
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     restartPolicy: Never
 
 gatewayProxies:
@@ -59,7 +59,7 @@ gatewayProxies:
       probes: false
       image:
         repository: quay.io/solo-io/gloo-envoy-wrapper
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
       stats: true
       httpPort: 8080
       httpsPort: 8443
