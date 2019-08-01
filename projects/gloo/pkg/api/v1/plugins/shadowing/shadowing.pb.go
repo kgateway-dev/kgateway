@@ -26,11 +26,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Specifies traffic shadowing configuration for the associated route.
+// If set, Envoy will send a portion of the route's traffic to the shadowed upstream. This can be a useful way to
+// preview a new service's behavior before putting the service in the critical path.
+// Note that this plugin is only applicable to routes with upstream destinations (not redirect or direct response routes).
 // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
 type RouteShadowing struct {
 	// The upstream to which the shadowed traffic should be sent.
 	UpstreamRef *core.ResourceRef `protobuf:"bytes,1,opt,name=upstream_ref,json=upstreamRef,proto3" json:"upstream_ref,omitempty"`
-	// the percent (represented as an integer between 0 and 100) of traffic that should be shadowed
+	// The percent (represented as an integer between 0 and 100) of traffic that should be shadowed.
 	Percent              uint32   `protobuf:"varint,2,opt,name=percent,proto3" json:"percent,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

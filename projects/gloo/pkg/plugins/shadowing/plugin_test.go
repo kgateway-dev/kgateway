@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("Plugin", func() {
 
-	It("should work on valid inputs", func() {
+	It("should work on valid inputs, with uninitialized outputs", func() {
 		p := NewPlugin()
 
 		upRef := &core.ResourceRef{
@@ -36,7 +36,36 @@ var _ = Describe("Plugin", func() {
 		Expect(out.GetRoute().RequestMirrorPolicy.Cluster).To(Equal("some-upstream_default"))
 	})
 
-	It("should handle empty configs", func() {
+	It("should work on valid inputs, with initialized outputs", func() {
+		p := NewPlugin()
+
+		upRef := &core.ResourceRef{
+			Name:      "some-upstream",
+			Namespace: "default",
+		}
+		in := &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{
+				Shadowing: &shadowing.RouteShadowing{
+					UpstreamRef: upRef,
+					Percent:     100,
+				},
+			},
+		}
+		var out = &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: &envoyroute.RouteAction{
+					PrefixRewrite: "/something/set/by/another/plugin",
+				},
+			},
+		}
+		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.GetRoute().RequestMirrorPolicy.RuntimeFraction.DefaultValue.Numerator).To(Equal(uint32(100)))
+		Expect(out.GetRoute().RequestMirrorPolicy.Cluster).To(Equal("some-upstream_default"))
+		Expect(out.GetRoute().PrefixRewrite).To(Equal("/something/set/by/another/plugin"))
+	})
+
+	It("should not error on empty configs", func() {
 		p := NewPlugin()
 		in := &v1.Route{}
 		out := &envoyroute.Route{}
@@ -52,12 +81,10 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			Matcher: nil,
-			Action:  nil,
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
 					UpstreamRef: upRef,
-					Percent:     190,
+					Percent:     100,
 				},
 			},
 		}
@@ -80,6 +107,39 @@ var _ = Describe("Plugin", func() {
 		err = p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(Equal(InvalidRouteActionError))
+	})
+
+	It("should error when given invalid specs", func() {
+		p := NewPlugin()
+
+		upRef := &core.ResourceRef{
+			Name:      "some-upstream",
+			Namespace: "default",
+		}
+		in := &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{
+				Shadowing: &shadowing.RouteShadowing{
+					UpstreamRef: upRef,
+					Percent:     200,
+				},
+			},
+		}
+		out := &envoyroute.Route{}
+		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(Equal(InvalidNumeratorError(uint32(200))))
+
+		in = &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{
+				Shadowing: &shadowing.RouteShadowing{
+					Percent: 100,
+				},
+			},
+		}
+		out = &envoyroute.Route{}
+		err = p.ProcessRoute(plugins.RouteParams{}, in, out)
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(Equal(UnspecifiedUpstreamError))
 	})
 
 })

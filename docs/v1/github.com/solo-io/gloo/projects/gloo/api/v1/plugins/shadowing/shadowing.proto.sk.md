@@ -27,6 +27,9 @@ weight: 5
 
  
 Specifies traffic shadowing configuration for the associated route.
+If set, Envoy will send a portion of the route's traffic to the shadowed upstream. This can be a useful way to
+preview a new service's behavior before putting the service in the critical path.
+Note that this plugin is only applicable to routes with upstream destinations (not redirect or direct response routes).
 See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
 
 ```yaml
@@ -38,7 +41,7 @@ See here for additional information on Envoy's shadowing capabilities: https://w
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to which the shadowed traffic should be sent. |  |
-| `percent` | `int` | the percent (represented as an integer between 0 and 100) of traffic that should be shadowed |  |
+| `percent` | `int` | The percent (represented as an integer between 0 and 100) of traffic that should be shadowed. |  |
 
 
 

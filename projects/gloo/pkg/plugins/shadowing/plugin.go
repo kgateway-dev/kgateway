@@ -48,6 +48,12 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func applyShadowSpec(out *envoyroute.RouteAction, spec *shadowing.RouteShadowing) error {
+	if spec.UpstreamRef == nil {
+		return UnspecifiedUpstreamError
+	}
+	if spec.Percent > 100 {
+		return InvalidNumeratorError(spec.Percent)
+	}
 	out.RequestMirrorPolicy = &envoyroute.RouteAction_RequestMirrorPolicy{
 		Cluster:         translator.UpstreamToClusterName(*spec.UpstreamRef),
 		RuntimeFraction: getFractionalPercent(spec.Percent),
@@ -65,5 +71,9 @@ func getFractionalPercent(numerator uint32) *envoycore.RuntimeFractionalPercent 
 }
 
 var (
-	InvalidRouteActionError = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
+	InvalidRouteActionError  = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
+	UnspecifiedUpstreamError = errors.New("invalid plugin spec: must specify an upstream ref")
+	InvalidNumeratorError    = func(num uint32) error {
+		return errors.Errorf("shadow percentage must be between 0 and 100, received %v", num)
+	}
 )
