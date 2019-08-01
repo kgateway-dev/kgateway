@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	mDiscoverySnapshotIn  = stats.Int64("discovery.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mDiscoverySnapshotOut = stats.Int64("discovery.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mDiscoverySnapshotIn     = stats.Int64("discovery.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mDiscoverySnapshotOut    = stats.Int64("discovery.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mDiscoverySnapshotMissed = stats.Int64("discovery.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	discoverysnapshotInView = &view.View{
 		Name:        "discovery.gloo.solo.io_snap_emitter/snap_in",
@@ -35,10 +36,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	discoverysnapshotMissedView = &view.View{
+		Name:        "discovery.gloo.solo.io/snap_emitter/snap_missed",
+		Measure:     mDiscoverySnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(discoverysnapshotInView, discoverysnapshotOutView)
+	view.Register(discoverysnapshotInView, discoverysnapshotOutView, discoverysnapshotMissedView)
 }
 
 type DiscoveryEmitter interface {
@@ -230,6 +238,10 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 
 	snapshots := make(chan *DiscoverySnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := DiscoverySnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 
@@ -238,10 +250,14 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 				return
 			}
 
-			stats.Record(ctx, mDiscoverySnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mDiscoverySnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mDiscoverySnapshotMissed.M(1))
+			}
 		}
 		upstreamsByNamespace := make(map[string]UpstreamList)
 		kubenamespacesByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList)
