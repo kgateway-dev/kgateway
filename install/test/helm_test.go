@@ -18,16 +18,19 @@ var _ = Describe("Helm Test", func() {
 
 	Describe("gateway proxy extra annotations and crds", func() {
 		var (
-			labels   map[string]string
-			selector map[string]string
+			labels        map[string]string
+			selector      map[string]string
+			getPullPolicy func() v1.PullPolicy
 		)
 
 		BeforeEach(func() {
 			version = os.Getenv("TAGGED_VERSION")
 			if version == "" {
 				version = "dev"
+				getPullPolicy = func() v1.PullPolicy { return v1.PullAlways }
 			} else {
 				version = version[1:]
+				getPullPolicy = func() v1.PullPolicy { return v1.PullIfNotPresent }
 			}
 		})
 
@@ -129,6 +132,7 @@ var _ = Describe("Helm Test", func() {
 							},
 						},
 					}}
+					deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = getPullPolicy()
 					deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 						{Name: "http", ContainerPort: 8080, Protocol: "TCP"},
 						{Name: "https", ContainerPort: 8443, Protocol: "TCP"},
@@ -228,6 +232,7 @@ var _ = Describe("Helm Test", func() {
 					ReadOnlyRootFilesystem:   &truez,
 					AllowPrivilegeEscalation: &falsez,
 				}
+				deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = getPullPolicy()
 			}
 			Context("gloo deployment", func() {
 				var (
