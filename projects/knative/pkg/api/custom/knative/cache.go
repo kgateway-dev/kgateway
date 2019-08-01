@@ -26,7 +26,7 @@ type knativeCache struct {
 
 // This context should live as long as the cache is desired. i.e. if the cache is shared
 // across clients, it should get a context that has a longer lifetime than the clients themselves
-func NewClusterIngreessCache(ctx context.Context, knativeClient knativeclient.Interface) (*knativeCache, error) {
+func NewIngreessCache(ctx context.Context, knativeClient knativeclient.Interface) (*knativeCache, error) {
 	resyncDuration := 12 * time.Hour
 	sharedInformerFactory := knativeinformers.NewSharedInformerFactory(knativeClient, resyncDuration)
 

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	clusteringressclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
+
 	clusteringressv1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 
 	knativeclient "github.com/solo-io/gloo/projects/knative/pkg/api/custom/knative"
@@ -209,11 +211,11 @@ func RunIngress(opts Opts) error {
 		// if the version of the target knative is < 0.8.0 (or version not provided), use clusteringress
 		// else, use the new knative ingress object
 		if pre080knativeVersion(opts.KnativeVersion) {
-			knativeCache, err := knativeclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
+			knativeCache, err := clusteringressclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
 			if err != nil {
 				return errors.Wrapf(err, "creating knative cache")
 			}
-			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
+			baseClient := clusteringressclient.NewResourceClient(knative, knativeCache)
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
 			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, ingressClient)
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
@@ -230,7 +232,7 @@ func RunIngress(opts Opts) error {
 			}
 			go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, clusterIngTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
 		} else {
-			knativeCache, err := knativeclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
+			knativeCache, err := knativeclient.NewIngreessCache(opts.WatchOpts.Ctx, knative)
 			if err != nil {
 				return errors.Wrapf(err, "creating knative cache")
 			}
