@@ -1,0 +1,32 @@
+syntax = "proto3";
+package shadowing.plugins.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/duration.proto";
+
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+
+option (gogoproto.equal_all) = true;
+
+// Contains settings for configuring Envoy's tracing capabilities at the listener level.
+// See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
+// See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
+message ListenerTracingSettings {
+    // Optional. If specified, Envoy will include the headers and header values for any matching request headers.
+    repeated string request_headers_for_tags = 1;
+    // Optional. If true, Envoy will include logs for streaming events. Default: false.
+    bool verbose = 2;
+}
+
+// Specifies traffic shadowing configuration for the associated route.
+// See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
+message RouteShadowing {
+    // The upstream to which the shadowed traffic should be sent.
+    core.solo.io.ResourceRef upstream_ref = 1;
+
+    // the percent (represented as an integer between 0 and 100) of traffic that should be shadowed
+    uint32 percent = 2;
+}
