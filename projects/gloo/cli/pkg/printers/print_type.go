@@ -12,7 +12,6 @@ type OutputType int
 const (
 	KUBE_YAML OutputType = iota
 	YAML
-	YML
 	JSON
 	TABLE
 )
@@ -20,7 +19,7 @@ const (
 var (
 	_OutputTypeToValue = map[string]OutputType{
 		"yaml":      YAML,
-		"yml":       YML,
+		"yml":       YAML,
 		"kube-yaml": KUBE_YAML,
 		"json":      JSON,
 		"table":     TABLE,
@@ -28,7 +27,6 @@ var (
 
 	_OutputValueToType = map[OutputType]string{
 		YAML:      "yaml",
-		YML:       "yml",
 		KUBE_YAML: "kube-yaml",
 		JSON:      "json",
 		TABLE:     "table",

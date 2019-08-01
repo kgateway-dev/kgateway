@@ -17,7 +17,7 @@ import (
 )
 
 func PrintSecrets(secrets v1.SecretList, outputType OutputType) error {
-	if outputType == KUBE_YAML || outputType == YAML || outputType == YML {
+	if outputType == KUBE_YAML || outputType == YAML {
 		return printKubeSecretList(context.TODO(), secrets.AsResources())
 	}
 	return cliutils.PrintList(outputType.String(), "", secrets,
