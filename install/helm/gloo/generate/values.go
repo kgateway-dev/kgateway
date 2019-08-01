@@ -83,6 +83,7 @@ type Settings struct {
 	Integrations    *Integrations `json:"integrations,omitempty"`
 	Create          bool          `json:"create,omitempty" desc:"create a Settings CRD which configures Gloo controllers at boot time"`
 	Extensions      interface{}   `json:"extensions,omitempty"`
+	SingleNamespace bool          `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 }
 
 type Gloo struct {

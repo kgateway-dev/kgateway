@@ -7,7 +7,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   bindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
+{{- if .Values.settings.singleNamespace }}
+  discoveryNamespace: {{ .Release.Namespace }}
+{{- else }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
+{{- end }}
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
@@ -27,11 +31,16 @@ spec:
 {{- toYaml .Values.settings.extensions | nindent 4 }}
 {{- end }}
 
+{{- if .Values.settings.singleNamespace }}
+  watchNamespaces:
+  - {{ .Release.Namespace }}
+{{- else }}
 {{- with .Values.settings.watchNamespaces }}
   watchNamespaces:
   {{- range . }}
   - {{ . }}
   {{- end }}
+{{- end }}
 {{- end }}
 
 {{- end }}
