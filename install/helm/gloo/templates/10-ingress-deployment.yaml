@@ -30,7 +30,7 @@ spec:
         - name: "ENABLE_KNATIVE_INGRESS"
           value: "true"
 {{- end }}
-{{- if not (eq .Values.settings.integrations.knative.version "") }}
+{{- if .Values.settings.integrations.knative.version }}
         - name: "KNATIVE_VERSION"
           value: "{{.Values.settings.integrations.knative.version}}"
 {{- end }}

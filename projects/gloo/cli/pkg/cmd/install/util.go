@@ -125,7 +125,15 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 	var valueCallbacks []install.ValuesCallback
 	if opts.Install.Knative.InstallKnativeVersion != "" {
 		valueCallbacks = append(valueCallbacks, func(config *generate.Config) {
-			config.Settings.Integrations.Knative.Version = &opts.Install.Knative.InstallKnativeVersion
+			if config.Settings != nil &&
+				config.Settings.Integrations != nil &&
+				config.Settings.Integrations.Knative != nil &&
+				config.Settings.Integrations.Knative.Enabled != nil &&
+				*config.Settings.Integrations.Knative.Enabled {
+
+				config.Settings.Integrations.Knative.Version = &opts.Install.Knative.InstallKnativeVersion
+
+			}
 		})
 	}
 
