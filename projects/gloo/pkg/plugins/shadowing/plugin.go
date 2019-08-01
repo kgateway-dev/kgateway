@@ -11,6 +11,14 @@ import (
 	"github.com/solo-io/go-utils/errors"
 )
 
+var (
+	InvalidRouteActionError  = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
+	UnspecifiedUpstreamError = errors.New("invalid plugin spec: must specify an upstream ref")
+	InvalidNumeratorError    = func(num uint32) error {
+		return errors.Errorf("shadow percentage must be between 0 and 100, received %v", num)
+	}
+)
+
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
@@ -69,11 +77,3 @@ func getFractionalPercent(numerator uint32) *envoycore.RuntimeFractionalPercent 
 		},
 	}
 }
-
-var (
-	InvalidRouteActionError  = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
-	UnspecifiedUpstreamError = errors.New("invalid plugin spec: must specify an upstream ref")
-	InvalidNumeratorError    = func(num uint32) error {
-		return errors.Errorf("shadow percentage must be between 0 and 100, received %v", num)
-	}
-)
