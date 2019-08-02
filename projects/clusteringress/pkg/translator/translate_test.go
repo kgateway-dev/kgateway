@@ -3,6 +3,8 @@ package translator
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 
@@ -188,38 +190,36 @@ var _ = Describe("Translate", func() {
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																				Port: uint32(servicePort),
+																			},
+																		},
+																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
+																	},
+																	Weight: 100,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														{
+															Header: &headers.HeaderValue{
+																Key:   "add",
+																Value: "me",
 															},
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
 												},
 												Faults:        (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
@@ -251,38 +251,36 @@ var _ = Describe("Translate", func() {
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																				Port: uint32(servicePort),
+																			},
+																		},
+																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
+																	},
+																	Weight: 100,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														{
+															Header: &headers.HeaderValue{
+																Key:   "add",
+																Value: "me",
 															},
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
 												},
 												Faults:        (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
@@ -314,38 +312,36 @@ var _ = Describe("Translate", func() {
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																				Port: uint32(servicePort),
+																			},
+																		},
+																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
+																	},
+																	Weight: 100,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														{
+															Header: &headers.HeaderValue{
+																Key:   "add",
+																Value: "me",
 															},
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
 												},
 												Faults:        (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
@@ -377,38 +373,36 @@ var _ = Describe("Translate", func() {
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																				Port: uint32(servicePort),
+																			},
+																		},
+																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
+																	},
+																	Weight: 100,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														{
+															Header: &headers.HeaderValue{
+																Key:   "add",
+																Value: "me",
 															},
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
 												},
 												Faults:        (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
@@ -431,38 +425,36 @@ var _ = Describe("Translate", func() {
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																				Port: uint32(servicePort),
+																			},
+																		},
+																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
+																	},
+																	Weight: 100,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														{
+															Header: &headers.HeaderValue{
+																Key:   "add",
+																Value: "me",
 															},
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
 												},
 												Faults:        (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
@@ -485,38 +477,36 @@ var _ = Describe("Translate", func() {
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																				Port: uint32(servicePort),
+																			},
+																		},
+																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
+																	},
+																	Weight: 100,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														{
+															Header: &headers.HeaderValue{
+																Key:   "add",
+																Value: "me",
 															},
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
 												},
 												Faults:        (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
@@ -560,38 +550,36 @@ var _ = Describe("Translate", func() {
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
+																				Port: uint32(servicePort),
+																			},
+																		},
+																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
+																	},
+																	Weight: 100,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
 														},
 													},
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														{
+															Header: &headers.HeaderValue{
+																Key:   "add",
+																Value: "me",
 															},
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
 												},
 												Faults:        (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
