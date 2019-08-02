@@ -5,8 +5,6 @@ kind: Settings
 metadata:
   name: default
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
 spec:
   bindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
