@@ -51,8 +51,9 @@ var _ = Describe("polling", func() {
 			Address:   testPrivateIp1,
 			Port:      testPort1,
 			Metadata: core.Metadata{
-				Name:      "ec2-name-u1-namespace-default--111-111-111-111",
-				Namespace: "default",
+				Name:        "ec2-name-u1-namespace-default--111-111-111-111",
+				Namespace:   "default",
+				Annotations: map[string]string{InstanceIdAnnotationKey: "instanceIdA"},
 			},
 		}})
 	})
@@ -65,8 +66,9 @@ var _ = Describe("polling", func() {
 			Address:   testPublicIp1,
 			Port:      testPort1,
 			Metadata: core.Metadata{
-				Name:      "ec2-name-u2-namespace-default--222-222-222-222",
-				Namespace: "default",
+				Name:        "ec2-name-u2-namespace-default--222-222-222-222",
+				Namespace:   "default",
+				Annotations: map[string]string{InstanceIdAnnotationKey: "instanceIdB"},
 			},
 		}})
 	})
@@ -165,6 +167,7 @@ func getMockListerResponses() mockListerResponses {
 	}
 	cred1 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream1)
 	resp[cred1.GetKey()] = []*ec2.Instance{{
+		InstanceId:       aws.String("instanceIdA"),
 		PrivateIpAddress: aws.String(testPrivateIp1),
 		PublicIpAddress:  aws.String(testPublicIp1),
 		Tags: []*ec2.Tag{{
@@ -180,6 +183,7 @@ func getMockListerResponses() mockListerResponses {
 	}
 	cred2 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream2)
 	resp[cred2.GetKey()] = []*ec2.Instance{{
+		InstanceId:       aws.String("instanceIdB"),
 		PrivateIpAddress: aws.String(testPrivateIp1),
 		PublicIpAddress:  aws.String(testPublicIp1),
 		Tags: []*ec2.Tag{{

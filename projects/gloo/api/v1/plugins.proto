@@ -33,6 +33,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/stats/stats.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/headers/headers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hostrewrite/hostrewrite.proto";
 
 import "google/protobuf/duration.proto";
 
@@ -64,6 +66,8 @@ message VirtualHostPlugins {
     Extensions extensions = 1;
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
     stats.plugins.gloo.solo.io.Stats stats = 10;
+    // Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
+    headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 2;
 }
 
 // Plugin-specific configuration that lives on routes
@@ -84,6 +88,10 @@ message RoutePlugins {
     // Specifies traffic shadowing configuration for the route.
     // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
     shadowing.plugins.gloo.solo.io.RouteShadowing shadowing = 8;
+    // Append/Remove headers on Requests or Responses on this Route
+    headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 9;
+    // Rewrite the Host header for requests matched on this route
+    hostrewrite.plugins.gloo.solo.io.HostRewrite host_rewrite = 10;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
@@ -96,6 +104,13 @@ message DestinationSpec {
         rest.plugins.gloo.solo.io.DestinationSpec rest = 3;
         grpc.plugins.gloo.solo.io.DestinationSpec grpc = 4;
     }
+}
+
+// Plugin-specific configuration that is applied when a specific weighted destination
+// is selected for routing.
+message WeightedDestinationPlugins {
+    // Append/Remove headers on Requests or Responses to/from this Weighted Destination
+    headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 1;
 }
 
 // Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.

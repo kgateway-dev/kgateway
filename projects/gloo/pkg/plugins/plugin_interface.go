@@ -59,6 +59,11 @@ type RouteActionPlugin interface {
 	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, inPlugins map[string]*RoutePlugin, out *envoyroute.RouteAction) error
 }
 
+type WeightedDestinationPlugin interface {
+	Plugin
+	ProcessWeightedDestination(params RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error
+}
+
 /*
 	Listener Plugins
 */
