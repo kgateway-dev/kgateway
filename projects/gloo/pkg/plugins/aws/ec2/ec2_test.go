@@ -108,6 +108,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 				&ec2.Instance{
+					InstanceId:       aws.String("id1"),
 					PublicIpAddress:  aws.String(pubIp),
 					PrivateIpAddress: aws.String(privateIp),
 				},
@@ -115,7 +116,11 @@ var _ = Describe("Plugin", func() {
 					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
 					Address:   privateIp,
 					Port:      80,
-					Metadata:  core.Metadata{Name: "ec2-name-ex1-namespace-default--5-5-5-5", Namespace: writeNamespace},
+					Metadata: core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
+						Namespace:   writeNamespace,
+						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
+					},
 				}),
 			Entry("should use proper port and ip when specified", &v1.Upstream{
 				UpstreamSpec: &v1.UpstreamSpec{
@@ -136,6 +141,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 				&ec2.Instance{
+					InstanceId:       aws.String("id1"),
 					PublicIpAddress:  aws.String(pubIp),
 					PrivateIpAddress: aws.String(privateIp),
 				},
@@ -143,7 +149,11 @@ var _ = Describe("Plugin", func() {
 					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
 					Address:   pubIp,
 					Port:      77,
-					Metadata:  core.Metadata{Name: "ec2-name-ex1-namespace-default--1-2-3-4", Namespace: writeNamespace},
+					Metadata: core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default--1-2-3-4",
+						Namespace:   writeNamespace,
+						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
+					},
 				}),
 		)
 	})

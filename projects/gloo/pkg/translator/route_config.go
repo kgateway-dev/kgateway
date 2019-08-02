@@ -160,7 +160,7 @@ func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in
 		out.Action = &envoyroute.Route_Route{
 			Route: &envoyroute.RouteAction{},
 		}
-		if err := setRouteAction(params.Params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
+		if err := t.setRouteAction(params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route, report); err != nil {
 			report(err, "translator error on route")
 		}
 
@@ -217,7 +217,7 @@ func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in
 	}
 }
 
-func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.RouteAction) error {
+func (t *translator) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoyroute.RouteAction, report reportFunc) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
@@ -230,9 +230,9 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 
 		out.MetadataMatch = getSubsetMatch(dest.Single)
 
-		return checkThatSubsetMatchesUpstream(params, dest.Single)
+		return checkThatSubsetMatchesUpstream(params.Params, dest.Single)
 	case *v1.RouteAction_Multi:
-		return setWeightedClusters(params, dest.Multi, out)
+		return t.setWeightedClusters(params, dest.Multi, out, report)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
@@ -242,12 +242,12 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.Destinations,
 		}
-		return setWeightedClusters(params, md, out)
+		return t.setWeightedClusters(params, md, out, report)
 	}
 	return errors.Errorf("unknown upstream destination type")
 }
 
-func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, out *envoyroute.RouteAction) error {
+func (t *translator) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoyroute.RouteAction, report reportFunc) error {
 	if len(multiDest.Destinations) == 0 {
 		return NoDestinationSpecifiedError
 	}
@@ -265,13 +265,27 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 		}
 
 		totalWeight += weightedDest.Weight
-		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, &envoyroute.WeightedCluster_ClusterWeight{
+
+		weightedCluster := &envoyroute.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(*usRef),
 			Weight:        &types.UInt32Value{Value: weightedDest.Weight},
 			MetadataMatch: getSubsetMatch(weightedDest.Destination),
-		})
+		}
 
-		if err = checkThatSubsetMatchesUpstream(params, weightedDest.Destination); err != nil {
+		// run the plugins for Weighted Destinations
+		for _, plug := range t.plugins {
+			weightedDestinationPlugin, ok := plug.(plugins.WeightedDestinationPlugin)
+			if !ok {
+				continue
+			}
+			if err := weightedDestinationPlugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
+				report(err, "plugin error on ProcessRoute")
+			}
+		}
+
+		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, weightedCluster)
+
+		if err = checkThatSubsetMatchesUpstream(params.Params, weightedDest.Destination); err != nil {
 			return err
 		}
 	}
