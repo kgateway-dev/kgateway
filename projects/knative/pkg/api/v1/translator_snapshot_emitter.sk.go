@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	mTranslatorSnapshotIn  = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mTranslatorSnapshotOut = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mTranslatorSnapshotIn     = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mTranslatorSnapshotOut    = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mTranslatorSnapshotMissed = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	translatorsnapshotInView = &view.View{
 		Name:        "translator.knative.gloo.solo.io_snap_emitter/snap_in",
@@ -36,10 +37,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	translatorsnapshotMissedView = &view.View{
+		Name:        "translator.knative.gloo.solo.io/snap_emitter/snap_missed",
+		Measure:     mTranslatorSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(translatorsnapshotInView, translatorsnapshotOutView)
+	view.Register(translatorsnapshotInView, translatorsnapshotOutView, translatorsnapshotMissedView)
 }
 
 type TranslatorEmitter interface {
@@ -187,6 +195,10 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 
 	snapshots := make(chan *TranslatorSnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := TranslatorSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 
@@ -195,10 +207,14 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				return
 			}
 
-			stats.Record(ctx, mTranslatorSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mTranslatorSnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
+			}
 		}
 		secretsByNamespace := make(map[string]gloo_solo_io.SecretList)
 		ingressesByNamespace := make(map[string]github_com_solo_io_gloo_projects_knative_pkg_api_external_knative.IngressList)
