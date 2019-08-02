@@ -17,6 +17,7 @@ weight: 5
 - [VirtualHostPlugins](#virtualhostplugins)
 - [RoutePlugins](#routeplugins)
 - [DestinationSpec](#destinationspec)
+- [WeightedDestinationPlugins](#weighteddestinationplugins)
 - [UpstreamSpec](#upstreamspec)
   
 
@@ -100,6 +101,7 @@ to be usable by Gloo.
 "extensions": .gloo.solo.io.Extensions
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "stats": .stats.plugins.gloo.solo.io.Stats
+"headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 
 ```
 
@@ -108,6 +110,7 @@ to be usable by Gloo.
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
+| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host |  |
 
 
 
@@ -130,6 +133,8 @@ to be usable by Gloo.
 "extensions": .gloo.solo.io.Extensions
 "tracing": .tracing.plugins.gloo.solo.io.RouteTracingSettings
 "shadowing": .shadowing.plugins.gloo.solo.io.RouteShadowing
+"headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
+"hostRewrite": .hostrewrite.plugins.gloo.solo.io.HostRewrite
 
 ```
 
@@ -143,6 +148,8 @@ to be usable by Gloo.
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 | `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing |  |
 | `shadowing` | [.shadowing.plugins.gloo.solo.io.RouteShadowing](../plugins/shadowing/shadowing.proto.sk#routeshadowing) | Specifies traffic shadowing configuration for the route. See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy |  |
+| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on this Route |  |
+| `hostRewrite` | [.hostrewrite.plugins.gloo.solo.io.HostRewrite](../plugins/hostrewrite/hostrewrite.proto.sk#hostrewrite) | Rewrite the Host header for requests matched on this route |  |
 
 
 
@@ -167,6 +174,25 @@ Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec 
 | `azure` | [.azure.plugins.gloo.solo.io.DestinationSpec](../plugins/azure/azure.proto.sk#destinationspec) |  |  |
 | `rest` | [.rest.plugins.gloo.solo.io.DestinationSpec](../plugins/rest/rest.proto.sk#destinationspec) |  |  |
 | `grpc` | [.grpc.plugins.gloo.solo.io.DestinationSpec](../plugins/grpc/grpc.proto.sk#destinationspec) |  |  |
+
+
+
+
+---
+### WeightedDestinationPlugins
+
+ 
+Plugin-specific configuration that is applied when a specific weighted destiantion
+is selected for routing.
+
+```yaml
+"headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination |  |
 
 
 
