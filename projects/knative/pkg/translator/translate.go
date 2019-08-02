@@ -5,11 +5,12 @@ import (
 	"sort"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+
 	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -119,10 +120,7 @@ func virtualHosts(ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, se
 				if pathRegex == "" {
 					pathRegex = ".*"
 				}
-				appendHeaders := make(map[string]*transformation.InjaTemplate)
-				for name, value := range route.AppendHeaders {
-					appendHeaders[name] = &transformation.InjaTemplate{Text: value}
-				}
+
 				var timeout *time.Duration
 				if route.Timeout != nil {
 					timeout = &route.Timeout.Duration
@@ -137,18 +135,6 @@ func virtualHosts(ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, se
 						NumRetries:    uint32(route.Retries.Attempts),
 						PerTryTimeout: perTryTimeout,
 					}
-				}
-				appendHeadersTransformation := &transformation.RouteTransformations{
-					RequestTransformation: &transformation.Transformation{
-						TransformationType: &transformation.Transformation_TransformationTemplate{
-							TransformationTemplate: &transformation.TransformationTemplate{
-								Headers: appendHeaders,
-								BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-									Passthrough: &transformation.Passthrough{},
-								},
-							},
-						},
-					},
 				}
 
 				action, err := routeActionFromSplits(route.Splits)
@@ -166,9 +152,9 @@ func virtualHosts(ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, se
 						RouteAction: action,
 					},
 					RoutePlugins: &gloov1.RoutePlugins{
-						Transformations: appendHeadersTransformation,
-						Timeout:         timeout,
-						Retries:         retryPolicy,
+						HeaderManipulation: getHeaderManipulation(route.AppendHeaders),
+						Timeout:            timeout,
+						Retries:            retryPolicy,
 					},
 				}
 				for _, host := range rule.Hosts {
@@ -185,7 +171,6 @@ func virtualHosts(ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, se
 	var virtualHostsHttp []*gloov1.VirtualHost
 	var virtualHostsHttps []secureVirtualHost
 
-	// TODO (ilackarms): support for VirtualHostPlugins on ingress?
 	for host, routes := range routesByHostHttp {
 		sortByLongestPathName(routes)
 		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
@@ -224,24 +209,26 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 	switch len(splits) {
 	case 0:
 		return nil, errors.Errorf("invalid cluster ingress: must provide at least 1 split")
-	case 1:
-		split := splits[0]
-		return &gloov1.RouteAction{
-			Destination: &gloov1.RouteAction_Single{
-				Single: &gloov1.Destination{
-					DestinationType: serviceForSplit(split),
-				},
-			},
-		}, nil
 	}
 
 	var destinations []*gloov1.WeightedDestination
 	for _, split := range splits {
+		var weightedDestinationPlugins *gloov1.WeightedDestinationPlugins
+		if headerManipulaion := getHeaderManipulation(split.AppendHeaders); headerManipulaion != nil {
+			weightedDestinationPlugins = &gloov1.WeightedDestinationPlugins{
+				HeaderManipulation: headerManipulaion,
+			}
+		}
+		weight := uint32(split.Percent)
+		if len(splits) == 1 {
+			weight = 100
+		}
 		destinations = append(destinations, &gloov1.WeightedDestination{
 			Destination: &gloov1.Destination{
 				DestinationType: serviceForSplit(split),
 			},
-			Weight: uint32(split.Percent),
+			Weight:                    weight,
+			WeighedDestinationPlugins: weightedDestinationPlugins,
 		})
 	}
 	return &gloov1.RouteAction{
@@ -266,4 +253,17 @@ func sortByLongestPathName(routes []*gloov1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
 		return routes[i].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex > routes[j].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex
 	})
+}
+
+func getHeaderManipulation(headersToAppend map[string]string) *headers.HeaderManipulation {
+	if len(headersToAppend) == 0 {
+		return nil
+	}
+	var headersToAdd []*headers.HeaderValueOption
+	for name, value := range headersToAppend {
+		headersToAdd = append(headersToAdd, &headers.HeaderValueOption{Header: &headers.HeaderValue{Key: name, Value: value}})
+	}
+	return &headers.HeaderManipulation{
+		RequestHeadersToAdd: headersToAdd,
+	}
 }

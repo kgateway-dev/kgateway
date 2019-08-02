@@ -232,7 +232,7 @@ func RunIngress(opts Opts) error {
 			}
 			go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, clusterIngTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
 		} else {
-			knativeCache, err := knativeclient.NewIngreessCache(opts.WatchOpts.Ctx, knative)
+			knativeCache, err := knativeclient.NewIngressCache(opts.WatchOpts.Ctx, knative)
 			if err != nil {
 				return errors.Wrapf(err, "creating knative cache")
 			}

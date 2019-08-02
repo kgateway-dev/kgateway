@@ -193,7 +193,6 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 	var virtualHostsHttp []*gloov1.VirtualHost
 	var virtualHostsHttps []secureVirtualHost
 
-	// TODO (ilackarms): support for VirtualHostPlugins on ingress?
 	for host, routes := range routesByHostHttp {
 		sortByLongestPathName(routes)
 		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
