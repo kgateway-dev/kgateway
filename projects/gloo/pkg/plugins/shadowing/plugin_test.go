@@ -1,6 +1,7 @@
 package shadowing
 
 import (
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -24,15 +25,15 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					Upstream: upRef,
-					Percent:  100,
+					Upstream:   upRef,
+					Percentage: 100,
 				},
 			},
 		}
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.GetRoute().RequestMirrorPolicy.RuntimeFraction.DefaultValue.Numerator).To(Equal(uint32(100)))
+		checkFraction(out.GetRoute().RequestMirrorPolicy.RuntimeFraction, 100)
 		Expect(out.GetRoute().RequestMirrorPolicy.Cluster).To(Equal("some-upstream_default"))
 	})
 
@@ -46,8 +47,8 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					Upstream: upRef,
-					Percent:  100,
+					Upstream:   upRef,
+					Percentage: 100,
 				},
 			},
 		}
@@ -60,7 +61,7 @@ var _ = Describe("Plugin", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.GetRoute().RequestMirrorPolicy.RuntimeFraction.DefaultValue.Numerator).To(Equal(uint32(100)))
+		checkFraction(out.GetRoute().RequestMirrorPolicy.RuntimeFraction, 100)
 		Expect(out.GetRoute().RequestMirrorPolicy.Cluster).To(Equal("some-upstream_default"))
 		Expect(out.GetRoute().PrefixRewrite).To(Equal("/something/set/by/another/plugin"))
 	})
@@ -83,8 +84,8 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					Upstream: upRef,
-					Percent:  100,
+					Upstream:   upRef,
+					Percentage: 100,
 				},
 			},
 		}
@@ -119,20 +120,20 @@ var _ = Describe("Plugin", func() {
 		in := &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					Upstream: upRef,
-					Percent:  200,
+					Upstream:   upRef,
+					Percentage: 200,
 				},
 			},
 		}
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).To(HaveOccurred())
-		Expect(err).To(Equal(InvalidNumeratorError(uint32(200))))
+		Expect(err).To(Equal(InvalidNumeratorError(200)))
 
 		in = &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
 				Shadowing: &shadowing.RouteShadowing{
-					Percent: 100,
+					Percentage: 100,
 				},
 			},
 		}
@@ -143,3 +144,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 })
+
+func checkFraction(frac *envoycore.RuntimeFractionalPercent, percentage float32) {
+	Expect(frac.DefaultValue.Numerator).To(Equal(uint32(percentage * 10000)))
+}
