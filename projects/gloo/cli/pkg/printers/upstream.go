@@ -6,6 +6,8 @@ import (
 	"os"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -13,19 +15,19 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType) error {
+func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump) error {
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
 	}
 	return cliutils.PrintList(outputType.String(), "", upstreams,
 		func(data interface{}, w io.Writer) error {
-			UpstreamTable(data.(v1.UpstreamList), w)
+			UpstreamTable(xdsDump, data.(v1.UpstreamList), w)
 			return nil
 		}, os.Stdout)
 }
 
 // PrintTable prints upstreams using tables to io.Writer
-func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
+func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Upstream", "type", "status", "details"})
 
@@ -34,7 +36,7 @@ func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
 		s := us.Status.State.String()
 
 		u := upstreamType(us)
-		details := upstreamDetails(us)
+		details := upstreamDetails(us, xdsDump)
 
 		if len(details) == 0 {
 			details = []string{""}
@@ -76,7 +78,7 @@ func upstreamType(up *v1.Upstream) string {
 	}
 }
 
-func upstreamDetails(up *v1.Upstream) []string {
+func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 	if up.UpstreamSpec == nil {
 		return []string{"invalid: spec was nil"}
 	}
@@ -101,6 +103,14 @@ func upstreamDetails(up *v1.Upstream) []string {
 			}
 			add(fmt.Sprintf("- %v", functions[i]))
 		}
+	case *v1.UpstreamSpec_AwsEc2:
+		instances := xdsDump.GetInstancesForUpstream(up.Metadata.Ref())
+		add(
+			"EC2 Instance Ids:",
+		)
+		add(
+			instances...,
+		)
 	case *v1.UpstreamSpec_Azure:
 		var functions []string
 		for _, fn := range usType.Azure.Functions {

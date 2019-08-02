@@ -141,7 +141,7 @@ func createUpstream(opts *options.Options) error {
 		}
 	}
 
-	printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output)
+	printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output, nil)
 
 	return nil
 }

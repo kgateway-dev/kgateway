@@ -16,7 +16,6 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
@@ -25,9 +24,9 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func GetGlooXdsDump(opts *options.Options) (*XdsDump, error) {
+func GetGlooXdsDump(ctx context.Context, proxyName, namespace string) (*XdsDump, error) {
 	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
-	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
+	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
 		"deployment/gloo", xdsPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
@@ -44,11 +43,11 @@ func GetGlooXdsDump(opts *options.Options) (*XdsDump, error) {
 	go func() {
 		for {
 			select {
-			case <-opts.Top.Ctx.Done():
+			case <-ctx.Done():
 				return
 			default:
 			}
-			out, err := getXdsDump(opts.Top.Ctx, xdsPort, opts.Proxy.Name, opts.Metadata.Namespace)
+			out, err := getXdsDump(ctx, xdsPort, proxyName, namespace)
 			if err != nil {
 				errs <- err
 				time.Sleep(time.Millisecond * 250)
@@ -63,10 +62,10 @@ func GetGlooXdsDump(opts *options.Options) (*XdsDump, error) {
 
 	for {
 		select {
-		case <-opts.Top.Ctx.Done():
+		case <-ctx.Done():
 			return nil, errors.Errorf("cancelled")
 		case err := <-errs:
-			contextutils.LoggerFrom(opts.Top.Ctx).Errorf("connecting to gloo failed with err %v", err.Error())
+			contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v", err.Error())
 		case res := <-result:
 			return res, nil
 		case <-timer:

@@ -23,7 +23,7 @@ func CreateAndPrintObject(yml []byte, outputType printers.OutputType) error {
 		if err != nil {
 			return errors.Wrapf(err, "saving Upstream to storage")
 		}
-		printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType)
+		printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType, nil)
 	case *v1.VirtualService:
 		vs, err := helpers.MustVirtualServiceClient().Write(res, clients.WriteOpts{})
 		if err != nil {
