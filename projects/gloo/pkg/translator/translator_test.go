@@ -511,6 +511,55 @@ var _ = Describe("Translator", func() {
 			Expect(err.Error()).To(ContainSubstring("destination # 1: upstream not found: list did not find upstream gloo-system.notexist"))
 		})
 	})
+	Context("when handling endpoints", func() {
+		var (
+			claConfiguration *envoyapi.ClusterLoadAssignment
+			annotations      map[string]string
+		)
+		BeforeEach(func() {
+			claConfiguration = nil
+			annotations = map[string]string{"testkey": "testvalue"}
+
+			upstream.UpstreamSpec.UpstreamType = &v1.UpstreamSpec_Kube{
+				Kube: &v1kubernetes.UpstreamSpec{},
+			}
+			ref := upstream.Metadata.Ref()
+			params.Snapshot.Endpoints = v1.EndpointList{
+				{
+					Metadata: core.Metadata{
+						Name:        "test",
+						Namespace:   "gloo-system",
+						Annotations: annotations,
+					},
+					Upstreams: []*core.ResourceRef{
+						&ref,
+					},
+					Address: "1.2.3.4",
+					Port:    1234,
+				},
+			}
+		})
+		It("should transfer annotations to snapshot", func() {
+			translate()
+
+			endpoints := snapshot.GetResources(xds.EndpointType)
+
+			clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
+			Expect(endpoints.Items).To(HaveKey(clusterName))
+			endpointsResource := endpoints.Items[clusterName]
+			claConfiguration = endpointsResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
+			Expect(claConfiguration).NotTo(BeNil())
+			Expect(claConfiguration.ClusterName).To(Equal(clusterName))
+			Expect(claConfiguration.Endpoints).To(HaveLen(1))
+			Expect(claConfiguration.Endpoints[0].LbEndpoints).To(HaveLen(len(params.Snapshot.Endpoints)))
+			filterMetadata := claConfiguration.Endpoints[0].LbEndpoints[0].GetMetadata().GetFilterMetadata()
+
+			Expect(filterMetadata).NotTo(BeNil())
+			Expect(filterMetadata).To(HaveKey(SoloAnnotations))
+			Expect(filterMetadata[SoloAnnotations].Fields).To(HaveKey("testkey"))
+			Expect(filterMetadata[SoloAnnotations].Fields["testkey"].GetStringValue()).To(Equal("testvalue"))
+		})
+	})
 
 	Context("when handling subsets", func() {
 		var (

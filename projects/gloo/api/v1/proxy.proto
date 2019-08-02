@@ -362,6 +362,9 @@ message WeightedDestination {
     // Weight must be greater than zero
     // Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route
     uint32 weight = 2;
+
+    // Apply configuration to traffic that is sent to this weighted destination
+    WeightedDestinationPlugins weighed_destination_plugins = 3;
 }
 
 // Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto

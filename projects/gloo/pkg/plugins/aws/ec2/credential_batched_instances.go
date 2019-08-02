@@ -14,6 +14,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+const InstanceIdAnnotationKey = "instanceId"
+
 // In order to minimize calls to the AWS API, we group calls by credentials and apply tag filters locally.
 // This function groups upstreams by credentials, calls the AWS API, maps the instances to upstreams, and returns the
 // endpoints associated with the provided upstream list
@@ -135,13 +137,17 @@ func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upst
 		port = defaultPort
 	}
 	ref := upstream.Metadata.Ref()
+	// for easier debugging, add the instance id to the xds output
+	instanceInfo := make(map[string]string)
+	instanceInfo[InstanceIdAnnotationKey] = aws.StringValue(instance.InstanceId)
 	endpoint := v1.Endpoint{
 		Upstreams: []*core.ResourceRef{&ref},
 		Address:   aws.StringValue(ipAddr),
 		Port:      port,
 		Metadata: core.Metadata{
-			Name:      generateName(ref, aws.StringValue(ipAddr)),
-			Namespace: writeNamespace,
+			Name:        generateName(ref, aws.StringValue(ipAddr)),
+			Namespace:   writeNamespace,
+			Annotations: instanceInfo,
 		},
 	}
 	contextutils.LoggerFrom(ctx).Debugw("instance from upstream",

@@ -34,7 +34,7 @@ var (
 )
 
 func (o *OutputType) String() string {
-	return [...]string{"yaml", "yml", "kube-yaml", "json", "table"}[*o]
+	return _OutputValueToType[*o]
 }
 
 func (o *OutputType) Set(s string) error {
