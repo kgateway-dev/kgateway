@@ -34,14 +34,14 @@ See here for additional information on Envoy's shadowing capabilities: https://w
 
 ```yaml
 "upstream": .core.solo.io.ResourceRef
-"percent": int
+"percentage": float
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `upstream` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to which the shadowed traffic should be sent. |  |
-| `percent` | `int` | The percent (represented as an integer between 0 and 100) of traffic that should be shadowed. |  |
+| `percentage` | `float` | This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
 
 
 

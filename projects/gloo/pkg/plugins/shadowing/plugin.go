@@ -3,10 +3,10 @@ package shadowing
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/errors"
 )
@@ -14,7 +14,7 @@ import (
 var (
 	InvalidRouteActionError  = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
 	UnspecifiedUpstreamError = errors.New("invalid plugin spec: must specify an upstream ref")
-	InvalidNumeratorError    = func(num uint32) error {
+	InvalidNumeratorError    = func(num float32) error {
 		return errors.Errorf("shadow percentage must be between 0 and 100, received %v", num)
 	}
 )
@@ -59,21 +59,18 @@ func applyShadowSpec(out *envoyroute.RouteAction, spec *shadowing.RouteShadowing
 	if spec.Upstream == nil {
 		return UnspecifiedUpstreamError
 	}
-	if spec.Percent > 100 {
-		return InvalidNumeratorError(spec.Percent)
+	if spec.Percentage < 0 || spec.Percentage > 100 {
+		return InvalidNumeratorError(spec.Percentage)
 	}
 	out.RequestMirrorPolicy = &envoyroute.RouteAction_RequestMirrorPolicy{
 		Cluster:         translator.UpstreamToClusterName(*spec.Upstream),
-		RuntimeFraction: getFractionalPercent(spec.Percent),
+		RuntimeFraction: getFractionalPercent(spec.Percentage),
 	}
 	return nil
 }
 
-func getFractionalPercent(numerator uint32) *envoycore.RuntimeFractionalPercent {
+func getFractionalPercent(numerator float32) *envoycore.RuntimeFractionalPercent {
 	return &envoycore.RuntimeFractionalPercent{
-		DefaultValue: &envoy_type.FractionalPercent{
-			Numerator:   numerator,
-			Denominator: envoy_type.FractionalPercent_HUNDRED,
-		},
+		DefaultValue: common.ToEnvoyPercentage(numerator),
 	}
 }

@@ -20,6 +20,6 @@ message RouteShadowing {
     // The upstream to which the shadowed traffic should be sent.
     core.solo.io.ResourceRef upstream = 1;
 
-    // The percent (represented as an integer between 0 and 100) of traffic that should be shadowed.
-    uint32 percent = 2;
+    // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
+    float percentage = 2;
 }
