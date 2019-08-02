@@ -28,7 +28,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.10.6"
+  version = "0.10.7"
 
 [[constraint]]
   name = "github.com/solo-io/go-utils"
@@ -40,7 +40,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/go-checkpoint"
-  version = "0.0.4"
+  version = "0.1.0"
 
 # make sure all kubernetes code is the same version.
 # when updating, update all in the same time.

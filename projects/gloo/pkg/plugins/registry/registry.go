@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pipe"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/shadowing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
@@ -57,6 +58,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		stats.NewPlugin(),
 		ec2.NewPlugin(opts.Secrets),
 		tracing.NewPlugin(),
+		shadowing.NewPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient))
