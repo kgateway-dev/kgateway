@@ -2,3 +2,4 @@ changelog:
   - type: NON_USER_FACING
     description: Add instance id to endpoint annotations for EC2 upstreams.
     issueLink: https://github.com/solo-io/gloo/issues/954
+    resolvesIssue: false
