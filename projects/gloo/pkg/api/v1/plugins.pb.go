@@ -573,7 +573,7 @@ func _DestinationSpec_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
-// Plugin-specific configuration that is applied when a specific weighted destiantion
+// Plugin-specific configuration that is applied when a specific weighted destination
 // is selected for routing.
 type WeightedDestinationPlugins struct {
 	// Append/Remove headers on Requests or Responses to/from this Weighted Destination

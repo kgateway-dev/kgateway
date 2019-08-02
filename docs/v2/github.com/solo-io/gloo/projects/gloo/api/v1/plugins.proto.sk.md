@@ -182,7 +182,7 @@ Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec 
 ### WeightedDestinationPlugins
 
  
-Plugin-specific configuration that is applied when a specific weighted destiantion
+Plugin-specific configuration that is applied when a specific weighted destination
 is selected for routing.
 
 ```yaml
