@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	mStatusSnapshotIn  = stats.Int64("status.ingress.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mStatusSnapshotOut = stats.Int64("status.ingress.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mStatusSnapshotIn     = stats.Int64("status.ingress.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mStatusSnapshotOut    = stats.Int64("status.ingress.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mStatusSnapshotMissed = stats.Int64("status.ingress.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	statussnapshotInView = &view.View{
 		Name:        "status.ingress.solo.io_snap_emitter/snap_in",
@@ -33,10 +34,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	statussnapshotMissedView = &view.View{
+		Name:        "status.ingress.solo.io/snap_emitter/snap_missed",
+		Measure:     mStatusSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(statussnapshotInView, statussnapshotOutView)
+	view.Register(statussnapshotInView, statussnapshotOutView, statussnapshotMissedView)
 }
 
 type StatusEmitter interface {
@@ -184,6 +192,10 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 
 	snapshots := make(chan *StatusSnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := StatusSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 
@@ -192,10 +204,14 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 				return
 			}
 
-			stats.Record(ctx, mStatusSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mStatusSnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mStatusSnapshotMissed.M(1))
+			}
 		}
 		servicesByNamespace := make(map[string]KubeServiceList)
 		ingressesByNamespace := make(map[string]IngressList)
