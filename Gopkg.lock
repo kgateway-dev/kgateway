@@ -1361,12 +1361,12 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:699918466a9758902a14923851a7fbd230500f93da6982dae7c79959afb0a664"
+  digest = "1:c5673cbf44dc752b282c962f514b0cc1b64d0d253cc64dba53b123a8e4bc3c4f"
   name = "github.com/solo-io/go-checkpoint"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b798a7563f831f081f2a73ca889888f1ceec06b3"
-  version = "0.0.4"
+  revision = "b56cd9c812e84da93eb577054ebdf60a27487acb"
+  version = "0.1.0"
 
 [[projects]]
   digest = "1:39c42fab9382b641e012aa05577483412c513982da3813afcf205477de185612"
@@ -1409,7 +1409,7 @@
   version = "v0.9.13"
 
 [[projects]]
-  digest = "1:d6faa45440f529a93def557cca1c73a828ad6f09cd8c443868090625c378b405"
+  digest = "1:4ca8462fb2924c2ee71e9acd01eb7983301bb47ed9369bef3b851d0d05b49fdc"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1470,8 +1470,8 @@
     "test/testutils",
   ]
   pruneopts = "UT"
-  revision = "508b01868d70ddb62be7a9ae94c3d7f5840b5af5"
-  version = "v0.10.6"
+  revision = "235c090eeac040b276a40ef2a01fdbc98785f2b5"
+  version = "v0.10.7"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"

@@ -129,6 +129,7 @@ to be usable by Gloo.
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "extensions": .gloo.solo.io.Extensions
 "tracing": .tracing.plugins.gloo.solo.io.RouteTracingSettings
+"shadowing": .shadowing.plugins.gloo.solo.io.RouteShadowing
 
 ```
 
@@ -141,6 +142,7 @@ to be usable by Gloo.
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 | `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing |  |
+| `shadowing` | [.shadowing.plugins.gloo.solo.io.RouteShadowing](../plugins/shadowing/shadowing.proto.sk#routeshadowing) | Specifies traffic shadowing configuration for the route. See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy |  |
 
 
 

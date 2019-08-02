@@ -3,6 +3,7 @@ package options
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -23,7 +24,7 @@ type Options struct {
 type Top struct {
 	Interactive bool
 	File        string
-	Output      string
+	Output      printers.OutputType
 	Ctx         context.Context
 	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
 }
@@ -80,7 +81,6 @@ type Create struct {
 	InputUpstreamGroup InputUpstreamGroup
 	InputSecret        Secret
 	DryRun             bool // print resource as a kubernetes style yaml and exit without writing to storage
-	PrintYaml          bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
@@ -92,9 +92,8 @@ type RouteMatchers struct {
 }
 
 type Add struct {
-	Route     InputRoute
-	DryRun    bool // print resource as a kubernetes style yaml and exit without writing to storage
-	PrintYaml bool // print resource as basic (non-kubernetes) yaml and exit without writing to storage
+	Route  InputRoute
+	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type InputRoute struct {

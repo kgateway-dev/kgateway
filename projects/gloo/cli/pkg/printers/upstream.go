@@ -3,13 +3,26 @@ package printers
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
+
+func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType) error {
+	if outputType == KUBE_YAML {
+		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
+	}
+	return cliutils.PrintList(outputType.String(), "", upstreams,
+		func(data interface{}, w io.Writer) error {
+			UpstreamTable(data.(v1.UpstreamList), w)
+			return nil
+		}, os.Stdout)
+}
 
 // PrintTable prints upstreams using tables to io.Writer
 func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {

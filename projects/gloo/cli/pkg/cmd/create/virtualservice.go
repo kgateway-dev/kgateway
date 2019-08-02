@@ -4,10 +4,10 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
@@ -55,21 +55,15 @@ func createVirtualService(opts *options.Options, args []string) error {
 		return err
 	}
 
-	if opts.Create.DryRun {
-		return common.PrintKubeCrd(vs, v1.VirtualServiceCrd)
+	if !opts.Create.DryRun {
+		virtualServiceClient := helpers.MustVirtualServiceClient()
+		vs, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
+		if err != nil {
+			return err
+		}
 	}
 
-	if opts.Create.PrintYaml {
-		return common.PrintYaml(vs)
-	}
-
-	virtualServiceClient := helpers.MustVirtualServiceClient()
-	vs, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
-	if err != nil {
-		return err
-	}
-
-	helpers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output)
+	printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output)
 
 	return nil
 }

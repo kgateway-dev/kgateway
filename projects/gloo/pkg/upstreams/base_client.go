@@ -1,11 +1,12 @@
 package upstreams
 
 import (
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-// This client implements only the `Kind` and `Write` functions and panics on all the other functions.
+// This client implements only the `Kind` `Read` and `Write` functions and panics on all the other functions.
 // It is meant to be used in the API event loop reporter, which calls only those two functions.
 type readOnlyUpstreamBaseClient struct {
 	rc clients.ResourceClient
@@ -30,7 +31,7 @@ func (c *readOnlyUpstreamBaseClient) Register() error {
 }
 
 func (c *readOnlyUpstreamBaseClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	panic(notImplementedErrMsg)
+	return nil, errors.New(notImplementedErrMsg)
 }
 
 // TODO(marco): this will not write reports but still log an info message. Find a way of avoiding it.

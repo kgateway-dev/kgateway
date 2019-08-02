@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	mApiSnapshotIn  = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mApiSnapshotOut = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotIn     = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mApiSnapshotOut    = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotMissed = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	apisnapshotInView = &view.View{
 		Name:        "api.gateway.solo.io.v2_snap_emitter/snap_in",
@@ -35,10 +36,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	apisnapshotMissedView = &view.View{
+		Name:        "api.gateway.solo.io.v2/snap_emitter/snap_missed",
+		Measure:     mApiSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(apisnapshotInView, apisnapshotOutView)
+	view.Register(apisnapshotInView, apisnapshotOutView, apisnapshotMissedView)
 }
 
 type ApiEmitter interface {
@@ -186,6 +194,10 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := ApiSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 
@@ -194,10 +206,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return
 			}
 
-			stats.Record(ctx, mApiSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mApiSnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mApiSnapshotMissed.M(1))
+			}
 		}
 		virtualServicesByNamespace := make(map[string]gateway_solo_io.VirtualServiceList)
 		gatewaysByNamespace := make(map[string]GatewayList)

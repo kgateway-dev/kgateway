@@ -81,6 +81,8 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 		}
 	}()
 
+	timer := time.Tick(time.Second * 5)
+
 	for {
 		select {
 		case <-opts.Top.Ctx.Done():
@@ -89,7 +91,7 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 			log.Printf("connecting to envoy failed with err %v", err.Error())
 		case res := <-result:
 			return res, nil
-		case <-time.After(time.Second * 3):
+		case <-timer:
 			return "", errors.Errorf("timed out trying to connect to Envoy admin port")
 		}
 	}

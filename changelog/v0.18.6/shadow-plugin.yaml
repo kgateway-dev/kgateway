@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Expose Envoy's traffic shadowing capabilities.
+    issueLink: https://github.com/solo-io/gloo/issues/934

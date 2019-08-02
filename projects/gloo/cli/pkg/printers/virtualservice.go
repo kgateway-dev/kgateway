@@ -3,14 +3,27 @@ package printers
 import (
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
+
+func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType OutputType) error {
+	if outputType == KUBE_YAML {
+		return PrintKubeCrdList(virtualServices.AsInputResources(), v1.VirtualServiceCrd)
+	}
+	return cliutils.PrintList(outputType.String(), "", virtualServices,
+		func(data interface{}, w io.Writer) error {
+			VirtualServiceTable(data.(v1.VirtualServiceList), w)
+			return nil
+		}, os.Stdout)
+}
 
 // PrintTable prints virtual services using tables to io.Writer
 func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {

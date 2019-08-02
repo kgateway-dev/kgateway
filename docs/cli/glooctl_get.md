@@ -13,10 +13,10 @@ Display one or a list of Gloo resources
 ### Options
 
 ```
-  -h, --help               help for get
-      --name string        name of the resource to read or write
-  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
-  -o, --output string      output format: (yaml, json, table)
+  -h, --help                help for get
+      --name string         name of the resource to read or write
+  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default kube-yaml)
 ```
 
 ### Options inherited from parent commands
