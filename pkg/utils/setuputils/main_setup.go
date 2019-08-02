@@ -3,7 +3,6 @@ package setuputils
 import (
 	"context"
 	"flag"
-	"fmt"
 	"sync"
 	"time"
 
@@ -32,7 +31,7 @@ var once sync.Once
 
 func Main(opts SetupOpts) error {
 	loggingPrefix := opts.LoggingPrefix
-	check.NewUsageClient().Start(fmt.Sprintf("gloo-%v", loggingPrefix), version.Version)
+	check.NewUsageClient().Start(loggingPrefix, version.Version)
 	// prevent panic if multiple flag.Parse called concurrently
 	once.Do(func() {
 		flag.Parse()
