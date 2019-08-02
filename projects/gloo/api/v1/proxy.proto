@@ -16,6 +16,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/headers/headers.proto";
+
 /*
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
 Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
@@ -362,6 +364,9 @@ message WeightedDestination {
     // Weight must be greater than zero
     // Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route
     uint32 weight = 2;
+
+    // Append/Remove headers on Requests or Responses to/from this weighted destination
+    headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 8;
 }
 
 // Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
