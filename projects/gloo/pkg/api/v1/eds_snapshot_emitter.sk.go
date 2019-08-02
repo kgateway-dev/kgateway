@@ -16,9 +16,8 @@ import (
 )
 
 var (
-	mEdsSnapshotIn     = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mEdsSnapshotOut    = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mEdsSnapshotMissed = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	mEdsSnapshotIn  = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mEdsSnapshotOut = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
 
 	edssnapshotInView = &view.View{
 		Name:        "eds.gloo.solo.io_snap_emitter/snap_in",
@@ -34,17 +33,10 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
-	edssnapshotMissedView = &view.View{
-		Name:        "eds.gloo.solo.io/snap_emitter/snap_missed",
-		Measure:     mEdsSnapshotMissed,
-		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
-		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
-	}
 )
 
 func init() {
-	view.Register(edssnapshotInView, edssnapshotOutView, edssnapshotMissedView)
+	view.Register(edssnapshotInView, edssnapshotOutView)
 }
 
 type EdsEmitter interface {
@@ -148,10 +140,6 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 	snapshots := make(chan *EdsSnapshot)
 	go func() {
-		// sent initial snapshot to kick off the watch
-		initialSnapshot := currentSnapshot.Clone()
-		snapshots <- &initialSnapshot
-
 		originalSnapshot := EdsSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 
@@ -160,14 +148,10 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return
 			}
 
+			stats.Record(ctx, mEdsSnapshotOut.M(1))
+			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			select {
-			case snapshots <- &sentSnapshot:
-				stats.Record(ctx, mEdsSnapshotOut.M(1))
-				originalSnapshot = currentSnapshot.Clone()
-			default:
-				stats.Record(ctx, mEdsSnapshotMissed.M(1))
-			}
+			snapshots <- &sentSnapshot
 		}
 		upstreamsByNamespace := make(map[string]UpstreamList)
 

@@ -16,9 +16,8 @@ import (
 )
 
 var (
-	mSetupSnapshotIn     = stats.Int64("setup.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mSetupSnapshotOut    = stats.Int64("setup.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mSetupSnapshotMissed = stats.Int64("setup.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	mSetupSnapshotIn  = stats.Int64("setup.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mSetupSnapshotOut = stats.Int64("setup.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
 
 	setupsnapshotInView = &view.View{
 		Name:        "setup.gloo.solo.io_snap_emitter/snap_in",
@@ -34,17 +33,10 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
-	setupsnapshotMissedView = &view.View{
-		Name:        "setup.gloo.solo.io/snap_emitter/snap_missed",
-		Measure:     mSetupSnapshotMissed,
-		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
-		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{},
-	}
 )
 
 func init() {
-	view.Register(setupsnapshotInView, setupsnapshotOutView, setupsnapshotMissedView)
+	view.Register(setupsnapshotInView, setupsnapshotOutView)
 }
 
 type SetupEmitter interface {
@@ -148,10 +140,6 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 
 	snapshots := make(chan *SetupSnapshot)
 	go func() {
-		// sent initial snapshot to kick off the watch
-		initialSnapshot := currentSnapshot.Clone()
-		snapshots <- &initialSnapshot
-
 		originalSnapshot := SetupSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
 
@@ -160,14 +148,10 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 				return
 			}
 
+			stats.Record(ctx, mSetupSnapshotOut.M(1))
+			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			select {
-			case snapshots <- &sentSnapshot:
-				stats.Record(ctx, mSetupSnapshotOut.M(1))
-				originalSnapshot = currentSnapshot.Clone()
-			default:
-				stats.Record(ctx, mSetupSnapshotMissed.M(1))
-			}
+			snapshots <- &sentSnapshot
 		}
 		settingsByNamespace := make(map[string]SettingsList)
 

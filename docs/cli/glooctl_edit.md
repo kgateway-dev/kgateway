@@ -16,7 +16,7 @@ Edit a Gloo resource
   -h, --help                      help for edit
       --name string               name of the resource to read or write
   -n, --namespace string          namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType         output format: (yaml, json, table, kube-yaml) (default yaml)
+  -o, --output OutputType         output format: (yaml, json, table, kube-yaml) (default kube-yaml)
       --resource-version string   the resource version of the resource we are editing. if not empty, resource will only be changed if the resource version matches
 ```
 
