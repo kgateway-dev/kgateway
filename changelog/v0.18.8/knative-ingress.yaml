@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Support Knative Namespace-Scoped Ingress
-    issueLink: https://github.com/solo-io/gloo/issues/937
