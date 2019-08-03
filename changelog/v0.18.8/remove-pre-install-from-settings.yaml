@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Remove pre-install hook from settings resource in helm chart.
+    issueLink: https://github.com/solo-io/gloo/issues/956
+  - type: FIX
+    description: Apply namespace exclusively in pre-install.
+    issueLink: https://github.com/solo-io/gloo/issues/957
