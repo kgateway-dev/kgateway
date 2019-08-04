@@ -43,6 +43,8 @@ func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error)
 	}
 	var configs []*aws.Config
 	for _, arn := range cred.Arns() {
+		// TODO: what does this do? will it use all of them?
+		// one of them? last one? first one?
 		cred := stscreds.NewCredentials(sess, arn)
 		configs = append(configs, &aws.Config{Credentials: cred})
 	}
@@ -64,10 +66,13 @@ func GetInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Insta
 
 // this filter function defines what gloo considers a valid EC2 instance
 func validInstance(instance *ec2.Instance) bool {
-	if instance.PublicIpAddress == nil {
-		return false
+	if instance.PublicIpAddress != nil {
+		return true
 	}
-	return true
+	if instance.PrivateIpAddress != nil {
+		return true
+	}
+	return false
 }
 
 // generate an ec2 filter spec for a given upstream.
