@@ -39,7 +39,9 @@ func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v
 		for _, upstream := range credGroup.upstreams {
 			instancesForUpstream := filterInstancesForUpstream(ctx, upstream, credGroup)
 			for _, instance := range instancesForUpstream {
-				allEndpoints = append(allEndpoints, upstreamInstanceToEndpoint(ctx, writeNamespace, upstream, instance))
+				if endpoint := upstreamInstanceToEndpoint(ctx, writeNamespace, upstream, instance); endpoint != nil {
+					allEndpoints = append(allEndpoints, endpoint)
+				}
 			}
 		}
 	}
@@ -136,6 +138,9 @@ func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upst
 	ipAddr := instance.PrivateIpAddress
 	if upstream.UpstreamSpec.GetAwsEc2().PublicIp {
 		ipAddr = instance.PublicIpAddress
+	}
+	if ipAddr == nil {
+		return nil
 	}
 	port := upstream.UpstreamSpec.GetAwsEc2().GetPort()
 	if port == 0 {
