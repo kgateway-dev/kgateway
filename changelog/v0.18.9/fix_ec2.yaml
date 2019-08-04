@@ -1,0 +1,3 @@
+changelog:
+  - type: FIX
+    description: Fix ec2 bug where it only listedp public ips
