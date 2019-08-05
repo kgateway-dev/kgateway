@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/client-go/kubernetes/fake"
-
+	"github.com/solo-io/gloo/pkg/utils/selection"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"k8s.io/client-go/kubernetes/fake"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -96,6 +96,18 @@ func GetNamespaces() ([]string, error) {
 		namespaces = append(namespaces, ns.Name)
 	}
 	return namespaces, nil
+}
+
+type namespaceLister struct{}
+
+var _ selection.NamespaceLister = namespaceLister{}
+
+func (namespaceLister) List() ([]string, error) {
+	return GetNamespaces()
+}
+
+func NewNamespaceLister() selection.NamespaceLister {
+	return namespaceLister{}
 }
 
 func MustUpstreamClient() v1.UpstreamClient {
