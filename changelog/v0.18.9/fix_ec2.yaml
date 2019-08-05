@@ -1,4 +1,4 @@
 changelog:
   - type: FIX
-    description: Fix ec2 bug where it only listedp public ips
+    description: Fix ec2 bug where it only listed public ips
     issueLink: https://github.com/solo-io/gloo/pull/968
