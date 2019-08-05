@@ -23,6 +23,8 @@ weight: 5
 - [FdsMode](#fdsmode)
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
+- [KubernetesConfiguration](#kubernetesconfiguration)
+- [RateLimits](#ratelimits)
   
 
 
@@ -58,6 +60,7 @@ Represents global settings for all the Gloo components.
 "knative": .gloo.solo.io.Settings.KnativeOptions
 "discovery": .gloo.solo.io.Settings.DiscoveryOptions
 "consul": .gloo.solo.io.Settings.ConsulConfiguration
+"kubernetes": .gloo.solo.io.Settings.KubernetesConfiguration
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
@@ -84,6 +87,7 @@ Represents global settings for all the Gloo components.
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |  |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | Options for configuring Gloo's Discovery service |  |
 | `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
+| `kubernetes` | [.gloo.solo.io.Settings.KubernetesConfiguration](../settings.proto.sk#kubernetesconfiguration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
@@ -95,7 +99,7 @@ Represents global settings for all the Gloo components.
 ### KubernetesCrds
 
  
-USe Kubernetes CRDs as storage.
+Use Kubernetes CRDs as storage.
 
 ```yaml
 
@@ -323,6 +327,43 @@ service discovery options for Consul
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `dataCenters` | `[]string` | Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers. |  |
+
+
+
+
+---
+### KubernetesConfiguration
+
+ 
+Provides overrides for the default configuration parameters used to interact with Kubernetes.
+
+```yaml
+"rateLimits": .gloo.solo.io.Settings.KubernetesConfiguration.RateLimits
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `rateLimits` | [.gloo.solo.io.Settings.KubernetesConfiguration.RateLimits](../settings.proto.sk#ratelimits) |  |  |
+
+
+
+
+---
+### RateLimits
+
+
+
+```yaml
+"qPS": float
+"burst": int
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `qPS` | `float` |  |  |
+| `burst` | `int` |  |  |
 
 
 

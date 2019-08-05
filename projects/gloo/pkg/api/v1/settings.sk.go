@@ -47,6 +47,7 @@ func (r *Settings) Hash() uint64 {
 		r.Knative,
 		r.Discovery,
 		r.Consul,
+		r.Kubernetes,
 		r.Extensions,
 		r.ConfigSource,
 		r.SecretSource,

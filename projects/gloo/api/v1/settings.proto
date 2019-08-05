@@ -65,7 +65,7 @@ message Settings {
     // Enable automatic linkerd upstream header addition for easier routing to linkerd services
     bool linkerd = 17;
 
-    // USe Kubernetes CRDs as storage.
+    // Use Kubernetes CRDs as storage.
     message KubernetesCrds {
     }
 
@@ -235,6 +235,19 @@ message Settings {
 
     // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
     ConsulConfiguration consul = 20;
+
+
+    // Provides overrides for the default configuration parameters used to interact with Kubernetes.
+    message KubernetesConfiguration {
+        message RateLimits {
+            float QPS = 1;
+            uint32 burst = 2;
+        }
+        RateLimits rate_limits =1;
+    }
+
+    // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
+    KubernetesConfiguration kubernetes = 22;
 
     // Settings for extensions
     Extensions extensions = 16;
