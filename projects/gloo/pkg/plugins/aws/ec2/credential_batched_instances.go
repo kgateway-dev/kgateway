@@ -136,10 +136,14 @@ func filterInstancesForUpstream(ctx context.Context, upstream *v1.Upstream, cred
 // NOTE: assumes that upstreams are EC2 upstreams
 func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
 	ipAddr := instance.PrivateIpAddress
-	if upstream.UpstreamSpec.GetAwsEc2().PublicIp {
+	if upstream.UpstreamSpec.GetAwsEc2().GetPublicIp() {
 		ipAddr = instance.PublicIpAddress
 	}
 	if ipAddr == nil {
+		contextutils.LoggerFrom(ctx).Warnw("no ip found for config",
+			zap.Any("upstreamRef", upstream.GetMetadata().Ref()),
+			zap.Any("instanceId", aws.StringValue(instance.InstanceId)),
+			zap.Any("upstream.usePublicIp", upstream.UpstreamSpec.GetAwsEc2().GetPublicIp()))
 		return nil
 	}
 	port := upstream.UpstreamSpec.GetAwsEc2().GetPort()
