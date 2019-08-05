@@ -5,6 +5,7 @@ import (
 
 	"github.com/solo-io/go-utils/errors"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -31,13 +32,34 @@ func (c *ec2InstanceLister) ListForCredentials(ctx context.Context, cred *Creden
 	if err != nil {
 		return nil, GetClientError(err)
 	}
-	// pass an empty selector to get all instances that the session has access to
-	result, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{})
+	return c.ListWithClient(ctx, svc)
+}
+
+func (c *ec2InstanceLister) ListWithClient(ctx context.Context, svc *ec2.EC2) ([]*ec2.Instance, error) {
+
+	var results []*ec2.DescribeInstancesOutput
+	// pass a filter to only get running instances.
+	input := &ec2.DescribeInstancesInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("instance-state-name"),
+				Values: []*string{aws.String("running")}},
+		},
+	}
+	err := svc.DescribeInstancesPagesWithContext(ctx, input, func(r *ec2.DescribeInstancesOutput, more bool) bool {
+		results = append(results, r)
+		return true
+	})
 	if err != nil {
 		return nil, DescribeInstancesError(err)
 	}
+
+	var result []*ec2.Instance
+	for _, dio := range results {
+		result = append(result, GetInstancesFromDescription(dio)...)
+	}
+
 	contextutils.LoggerFrom(ctx).Debugw("ec2Upstream result", zap.Any("value", result))
-	return GetInstancesFromDescription(result), nil
+	return result, nil
 }
 
 var (
