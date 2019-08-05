@@ -83,3 +83,8 @@ gatewayProxies:
 
 ingress:
   enabled: false
+
+global:
+  image:
+    registry: quay.io/solo-io
+    pullPolicy: IfNotPresent

@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	Global         *Global                 `json:"global,omitempty"`
 	Namespace      *Namespace              `json:"namespace,omitempty"`
 	Rbac           *Rbac                   `json:"rbac,omitempty"`
 	Crds           *Crds                   `json:"crds,omitempty"`
@@ -16,6 +17,10 @@ type Config struct {
 	Ingress        *Ingress                `json:"ingress,omitempty"`
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
+}
+
+type Global struct {
+	Image *Image `json:"image,omitempty"`
 }
 
 type Namespace struct {

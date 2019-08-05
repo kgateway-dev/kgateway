@@ -1,6 +1,9 @@
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (regexMatch "[0-9]+[.][8-9]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
-
+{{- $image := .Values.settings.integrations.knative.proxy.image }}
+{{- if .Values.global  }}
+{{- $image = mergeOverwrite .Values.global.image .Values.settings.integrations.knative.proxy.image }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,8 +33,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{template "gloo.image" .Values.settings.integrations.knative.proxy.image}}
-        imagePullPolicy: {{ .Values.settings.integrations.knative.proxy.image.pullPolicy }}
+        image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: knative-proxy
 {{- if .Values.settings.integrations.knative.proxy.resources }}
         resources:
