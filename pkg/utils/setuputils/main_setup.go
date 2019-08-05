@@ -46,7 +46,7 @@ func Main(opts SetupOpts) error {
 	}
 	ctx = contextutils.WithLogger(ctx, loggingPrefix)
 
-	settingsClient, err := KubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
+	settingsClient, err := kubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
 		return err
 	}
