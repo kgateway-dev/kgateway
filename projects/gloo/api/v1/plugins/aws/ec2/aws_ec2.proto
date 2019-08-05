@@ -35,7 +35,9 @@ message UpstreamSpec {
     // queries for eligible EC2 instances.
     // If provided, Gloo will create an EC2 API client with the provided role. If not provided, Gloo will not assume
     // a role.
-    string role_arn = 6;
+    string role_arn = 7;
+    // deprecated: use role_arn. If you do use this field, only the first element will be read
+    repeated string role_arns = 6;
 
     // List of tag filters for selecting instances
     // An instance must match all the filters in order to be selected
