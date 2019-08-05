@@ -84,7 +84,7 @@ var _ = Describe("", func() {
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:    region,
 						SecretRef: &secretRef,
-						RoleArns:  []string{roleArn},
+						RoleArn:   roleArn,
 						Filters:   filters,
 						PublicIp:  false,
 						Port:      80,
@@ -98,7 +98,7 @@ var _ = Describe("", func() {
 				UpstreamType: &v1.UpstreamSpec_AwsEc2{
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:   region,
-						RoleArns: []string{roleArn},
+						RoleArn:  roleArn,
 						Filters:  filters,
 						PublicIp: false,
 						Port:     80,
