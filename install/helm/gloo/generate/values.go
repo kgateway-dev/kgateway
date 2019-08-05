@@ -37,10 +37,10 @@ type Crds struct {
 
 // Common
 type Image struct {
-	Tag        string `json:"tag"  desc:"tag for the container"`
-	Repository string `json:"repository"  desc:"image name (repository) for the container."`
-	Registry   string `json:"registry" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
-	PullPolicy string `json:"pullPolicy"  desc:"image pull policy for the container"`
+	Tag        string `json:"tag,omitempty"  desc:"tag for the container"`
+	Repository string `json:"repository,omitempty"  desc:"image name (repository) for the container."`
+	Registry   string `json:"registry,omitempty" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
+	PullPolicy string `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
 	PullSecret string `json:"pullSecret,omitempty" desc:"image pull policy for the container "`
 }
 

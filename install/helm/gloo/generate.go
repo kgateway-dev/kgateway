@@ -123,14 +123,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 	}
 
 	if repositoryPrefix != "" {
-		cfg.Gloo.Deployment.Image.Repository = replacePrefix(cfg.Gloo.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Discovery.Deployment.Image.Repository = replacePrefix(cfg.Discovery.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Gateway.ConversionJob.Image.Repository = replacePrefix(cfg.Gateway.ConversionJob.Image.Repository, repositoryPrefix)
-		for _, v := range cfg.GatewayProxies {
-			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
-		}
-
+		cfg.Global.Image.Registry = repositoryPrefix
 	}
 
 	if err := writeDocs(helmchart.Doc(cfg), docsOutput); err != nil {
@@ -164,16 +157,7 @@ func generateKnativeValuesYaml(version, repositoryPrefix string) error {
 	}
 
 	if repositoryPrefix != "" {
-		cfg.Gloo.Deployment.Image.Repository = replacePrefix(cfg.Gloo.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Discovery.Deployment.Image.Repository = replacePrefix(cfg.Discovery.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Ingress.Deployment.Image.Repository = replacePrefix(cfg.Ingress.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Settings.Integrations.Knative.Proxy.Image.Repository = replacePrefix(cfg.Settings.Integrations.Knative.Proxy.Image.Repository, repositoryPrefix)
-
-		// Also override for images that are not used in this option, so we don't have an inconsistent value file
-		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
-		for _, v := range cfg.GatewayProxies {
-			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
-		}
+		cfg.Global.Image.Registry = repositoryPrefix
 	}
 
 	return writeYaml(&cfg, knativeValuesOutput)
@@ -203,16 +187,7 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 	}
 
 	if repositoryPrefix != "" {
-		cfg.Gloo.Deployment.Image.Repository = replacePrefix(cfg.Gloo.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Discovery.Deployment.Image.Repository = replacePrefix(cfg.Discovery.Deployment.Image.Repository, repositoryPrefix)
-		cfg.Ingress.Deployment.Image.Repository = replacePrefix(cfg.Ingress.Deployment.Image.Repository, repositoryPrefix)
-		cfg.IngressProxy.Deployment.Image.Repository = replacePrefix(cfg.IngressProxy.Deployment.Image.Repository, repositoryPrefix)
-
-		// Also override for images that are not used in this option, so we don't have an inconsistent value file
-		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
-		for _, v := range cfg.GatewayProxies {
-			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
-		}
+		cfg.Global.Image.Registry = repositoryPrefix
 	}
 
 	return writeYaml(&cfg, ingressValuesOutput)
