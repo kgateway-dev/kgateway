@@ -59,7 +59,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	logger.Debugf("%v", snap)
 	allResourceErrs := make(reporter.ResourceErrors)
 	allResourceErrs.Accept(snap.Upstreams.AsInputResources()...)
-	allResourceErrs.Accept(snap.Upstreamgroups.AsInputResources()...)
+	allResourceErrs.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allResourceErrs.Accept(snap.Proxies.AsInputResources()...)
 
 	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
@@ -213,10 +213,10 @@ func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoy
 	}
 
 	newSnapshot := xds.NewSnapshotFromResources(
-		// Set endpoints calculated during this sync
+		// Set endpoints and clusters calculated during this sync
 		current.GetResources(xds.EndpointType),
+		current.GetResources(xds.ClusterType),
 		// Keep other resources from previous snapshot
-		previous.GetResources(xds.ClusterType),
 		previous.GetResources(xds.RouteType),
 		previous.GetResources(xds.ListenerType),
 	)

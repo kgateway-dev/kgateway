@@ -1,0 +1,14 @@
+package hcm
+
+import (
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+)
+
+// Other plugins may implement this interface if they need to make modifications to a listener's HttpConnectionManager
+// settings
+type HcmPlugin interface {
+	plugins.Plugin
+	ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, settings *hcm.HttpConnectionManagerSettings) error
+}

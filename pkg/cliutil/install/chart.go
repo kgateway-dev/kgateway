@@ -42,9 +42,12 @@ func GetHelmArchive(chartArchiveUri string) (*chart.Chart, error) {
 	return helmChart, err
 }
 
+// use to overwrite / modify values file before passing to helm
+type ValuesCallback func(*generate.Config)
+
 // Searches for the value file with the given name in the chart and returns its raw content.
 // NOTE: this also sets the namespace.create attribute to 'true'.
-func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, extraValues map[string]string) (*chart.Config, error) {
+func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, extraValues map[string]string, valueOptions ...ValuesCallback) (*chart.Config, error) {
 	rawAdditionalValues := "{}"
 	if fileName != "" {
 		var found bool
@@ -68,6 +71,10 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, ex
 	// Namespace creation is disabled by default, otherwise install with helm will fail
 	// (`helm install --namespace=<namespace_name>` creates the given namespace)
 	valueStruct.Namespace = &generate.Namespace{Create: true}
+
+	for _, opt := range valueOptions {
+		opt(valueStruct)
+	}
 
 	valueBytes, err := yaml.Marshal(valueStruct)
 	if err != nil {

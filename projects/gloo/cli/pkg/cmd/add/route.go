@@ -2,9 +2,10 @@ package add
 
 import (
 	"fmt"
+	"os"
 	"sort"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/go-utils/cliutils"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -88,7 +89,7 @@ func selectOrCreateVirtualService(opts *options.Options) (*gatewayv1.VirtualServ
 		opts.Metadata.Namespace = defaults.GlooSystem
 	}
 
-	fmt.Printf("creating virtualservice %v with default domain *\n", opts.Metadata.Name)
+	fmt.Fprintf(os.Stderr, "creating virtualservice %v with default domain *\n", opts.Metadata.Name)
 	return &gatewayv1.VirtualService{
 		Metadata: opts.Metadata,
 		VirtualHost: &v1.VirtualHost{
@@ -128,19 +129,17 @@ func addRoute(opts *options.Options) error {
 	copy(virtualService.VirtualHost.Routes[index+1:], virtualService.VirtualHost.Routes[index:])
 	virtualService.VirtualHost.Routes[index] = v1Route
 
-	if opts.Add.DryRun {
-		return common.PrintKubeCrd(virtualService, gatewayv1.VirtualServiceCrd)
+	if !opts.Add.DryRun {
+		virtualService, err = helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
+			Ctx:               opts.Top.Ctx,
+			OverwriteExisting: true,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
-	out, err := helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
-		Ctx:               opts.Top.Ctx,
-		OverwriteExisting: true,
-	})
-	if err != nil {
-		return err
-	}
-
-	helpers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
+	printers.PrintVirtualServices(gatewayv1.VirtualServiceList{virtualService}, opts.Top.Output)
 	return nil
 }
 
@@ -258,5 +257,5 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 			},
 		}, nil
 	}
-	return nil, nil // errors.Errorf("unimplemented destination type: %v", input.DestinationType)
+	return nil, nil
 }

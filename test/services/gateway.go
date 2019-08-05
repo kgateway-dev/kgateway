@@ -4,6 +4,10 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
+	"github.com/solo-io/solo-kit/test/helpers"
+
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
@@ -20,6 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
@@ -41,7 +46,7 @@ import (
 )
 
 type TestClients struct {
-	GatewayClient        gatewayv1.GatewayClient
+	GatewayClient        gatewayv2.GatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
@@ -50,20 +55,21 @@ type TestClients struct {
 	GlooPort             int
 }
 
-var glooPortBase int32 = int32(30400)
+var glooPortBase = int32(30400)
 
 func AllocateGlooPort() int32 {
 	return atomic.AddInt32(&glooPortBase, 1) + int32(config.GinkgoConfig.ParallelNode*1000)
 }
 
-func RunGateway(ctx context.Context, justgloo bool) TestClients {
+func RunGateway(ctx context.Context, justGloo bool) TestClients {
 	ns := defaults.GlooSystem
 	ro := &RunOptions{
 		NsToWrite: ns,
 		NsToWatch: []string{"default", ns},
 		WhatToRun: What{
-			DisableGateway: justgloo,
+			DisableGateway: justGloo,
 		},
+		KubeClient: helpers.MustKubeClient(),
 	}
 	return RunGlooGatewayUdsFds(ctx, ro)
 }
@@ -83,6 +89,7 @@ type RunOptions struct {
 	Extensions       syncer.Extensions
 	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
+	ConsulClient     consul.ConsulWatcher
 }
 
 //noinspection GoUnhandledErrorResult
@@ -115,7 +122,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go uds_syncer.RunUDS(glooOpts)
 	}
 
-	testClients := getTestClients(runOptions.Cache, glooOpts.Services)
+	testClients := getTestClients(runOptions.Cache, glooOpts.KubeServiceClient)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	return testClients
 }
@@ -127,7 +134,7 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 		Cache: cache,
 	}
 
-	gatewayClient, err := gatewayv1.NewGatewayClient(memFactory)
+	gatewayClient, err := gatewayv2.NewGatewayClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
@@ -187,14 +194,14 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	}
 
 	return bootstrap.Opts{
-		WriteNamespace:  runOptions.NsToWrite,
-		Upstreams:       f,
-		UpstreamGroups:  f,
-		Proxies:         f,
-		Secrets:         f,
-		Artifacts:       f,
-		Services:        newServiceClient(ctx, f, runOptions),
-		WatchNamespaces: runOptions.NsToWatch,
+		WriteNamespace:    runOptions.NsToWrite,
+		Upstreams:         f,
+		UpstreamGroups:    f,
+		Proxies:           f,
+		Secrets:           f,
+		Artifacts:         f,
+		KubeServiceClient: newServiceClient(ctx, f, runOptions),
+		WatchNamespaces:   runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
@@ -204,8 +211,9 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
 		},
-		KubeClient: runOptions.KubeClient,
-		DevMode:    true,
+		KubeClient:    runOptions.KubeClient,
+		DevMode:       true,
+		ConsulWatcher: runOptions.ConsulClient,
 	}
 }
 

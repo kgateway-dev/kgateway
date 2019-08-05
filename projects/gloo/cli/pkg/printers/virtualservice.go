@@ -3,19 +3,32 @@ package printers
 import (
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
+
+func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType OutputType) error {
+	if outputType == KUBE_YAML {
+		return PrintKubeCrdList(virtualServices.AsInputResources(), v1.VirtualServiceCrd)
+	}
+	return cliutils.PrintList(outputType.String(), "", virtualServices,
+		func(data interface{}, w io.Writer) error {
+			VirtualServiceTable(data.(v1.VirtualServiceList), w)
+			return nil
+		}, os.Stdout)
+}
 
 // PrintTable prints virtual services using tables to io.Writer
 func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "Plugins", "Routes"})
+	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "ListenerPlugins", "Routes"})
 
 	for _, v := range list {
 		name := v.GetMetadata().Name
@@ -131,8 +144,8 @@ func destinationString(route *gloov1.Route) string {
 			switch destType := dest.Single.DestinationType.(type) {
 			case *gloov1.Destination_Upstream:
 				return fmt.Sprintf("%s (upstream)", destType.Upstream.Key())
-			case *gloov1.Destination_Service:
-				return fmt.Sprintf("%s (service)", destType.Service.Ref.Key())
+			case *gloov1.Destination_Kube:
+				return fmt.Sprintf("%s (service)", destType.Kube.Ref.Key())
 			}
 		case *gloov1.RouteAction_UpstreamGroup:
 			return fmt.Sprintf("upstream group: %s.%s", dest.UpstreamGroup.Name, dest.UpstreamGroup.Namespace)

@@ -3,13 +3,26 @@ package printers
 import (
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/cliutils"
 )
 
-// PrintTable prints virtual services using tables to io.Writer
+func PrintProxies(proxies v1.ProxyList, outputType OutputType) error {
+	if outputType == KUBE_YAML {
+		return PrintKubeCrdList(proxies.AsInputResources(), v1.ProxyCrd)
+	}
+	return cliutils.PrintList(outputType.String(), "", proxies,
+		func(data interface{}, w io.Writer) error {
+			ProxyTable(data.(v1.ProxyList), w)
+			return nil
+		}, os.Stdout)
+}
+
+// PrintTable prints proxies using tables to io.Writer
 func ProxyTable(list v1.ProxyList, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Proxy", "Listeners", "Virtual Hosts", "Status"})

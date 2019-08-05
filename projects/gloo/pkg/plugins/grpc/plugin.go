@@ -29,6 +29,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -38,7 +39,7 @@ type ServicesAndDescriptor struct {
 	Descriptors *descriptor.FileDescriptorSet
 }
 
-func NewPlugin(transformsAdded *bool) plugins.Plugin {
+func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
 		recordedUpstreams: make(map[core.ResourceRef]*v1.Upstream),
 		upstreamServices:  make(map[string]ServicesAndDescriptor),
@@ -57,8 +58,6 @@ type plugin struct {
 const (
 	filterName  = "envoy.grpc_json_transcoder"
 	pluginStage = plugins.PreOutAuth
-
-	ServiceTypeGRPC = "gRPC"
 )
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -114,6 +113,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func genFullServiceName(packageName, serviceName string) string {
+	if packageName == "" {
+		return serviceName
+	}
 	return packageName + "." + serviceName
 }
 
@@ -144,6 +146,9 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		grpcDestinationSpec := *grpcDestinationSpecWrapper.Grpc
 
 		if grpcDestinationSpec.Parameters == nil {
+			if in.Matcher.PathSpecifier == nil {
+				return nil, errors.New("missing path for grpc route")
+			}
 			path := utils.PathAsString(in.Matcher) + "?{query_string}"
 
 			grpcDestinationSpec.Parameters = &transformapi.Parameters{
@@ -173,12 +178,22 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		// TODO: support query for matching
 		outPath += `?{{ default(query_string), "")}}`
 
+		// Add param extractors back
+		var extractors map[string]*transformapi.Extraction
+		if grpcDestinationSpec.Parameters != nil {
+			extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.Parameters)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// we always choose post
 		httpMethod := "POST"
 		return &transformapi.RouteTransformations{
 			RequestTransformation: &transformapi.Transformation{
 				TransformationType: &transformapi.Transformation_TransformationTemplate{
 					TransformationTemplate: &transformapi.TransformationTemplate{
+						Extractors: extractors,
 						Headers: map[string]*transformapi.InjaTemplate{
 							":method": {Text: httpMethod},
 							":path":   {Text: outPath},

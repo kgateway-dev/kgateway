@@ -3,6 +3,8 @@ package hcm_test
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
+	tracingv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -39,9 +42,14 @@ var _ = Describe("Plugin", func() {
 
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: "DefaultHostForHttp_10",
+
+			Tracing: &tracingv1.ListenerTracingSettings{
+				RequestHeadersForTags: []string{"path", "origin"},
+				Verbose:               true,
+			},
 		}
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.ListenerPlugins{
+			ListenerPlugins: &v1.HttpListenerPlugins{
 				HttpConnectionManagerSettings: hcms,
 			},
 		}
@@ -63,6 +71,8 @@ var _ = Describe("Plugin", func() {
 		}
 
 		p := NewPlugin()
+		pluginsList := []plugins.Plugin{tracing.NewPlugin(), p}
+		p.RegisterHcmPlugins(pluginsList)
 		err := p.ProcessListener(plugins.Params{}, in, outl)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -85,6 +95,13 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(hcms.DefaultHostForHttp_10))
+
+		trace := cfg.Tracing
+		Expect(trace.RequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))
+		Expect(trace.Verbose).To(BeTrue())
+		Expect(trace.ClientSampling.Value).To(Equal(100.0))
+		Expect(trace.RandomSampling.Value).To(Equal(0.0))
+		Expect(trace.OverallSampling.Value).To(Equal(100.0))
 	})
 
 })

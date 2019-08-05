@@ -7,14 +7,16 @@ option (gogoproto.equal_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 /*
-@solo-kit:resource.short_name=ep
-@solo-kit:resource.plural_name=endpoints
 
 Endpoints represent dynamically discovered address/ports where an upstream service is listening
  */
 message Endpoint {
+
+    option (core.solo.io.resource).short_name = "ep";
+    option (core.solo.io.resource).plural_name = "endpoints";
     // List of the upstreams the endpoint belongs to
     repeated core.solo.io.ResourceRef upstreams = 1;
     // Address of the endpoint (ip or hostname)

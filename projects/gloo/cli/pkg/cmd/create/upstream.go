@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -24,7 +24,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -135,16 +134,14 @@ func createUpstream(opts *options.Options) error {
 		return err
 	}
 
-	if opts.Create.DryRun {
-		return common.PrintKubeCrd(us, v1.UpstreamCrd)
+	if !opts.Create.DryRun {
+		us, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		if err != nil {
+			return err
+		}
 	}
 
-	us, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
-	if err != nil {
-		return err
-	}
-
-	helpers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output)
+	printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output)
 
 	return nil
 }
@@ -159,6 +156,7 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 		UpstreamSpec: spec,
 	}, nil
 }
+
 func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error) {
 	svcSpec, err := serviceSpecFromOpts(input.ServiceSpec)
 	if err != nil {

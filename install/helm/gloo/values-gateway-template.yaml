@@ -22,7 +22,7 @@ gloo:
   deployment:
     image:
       repository: quay.io/solo-io/gloo
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     xdsPort: 9977
     replicas: 1
     stats: true
@@ -31,29 +31,38 @@ discovery:
   deployment:
     image:
       repository: quay.io/solo-io/discovery
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     replicas: 1
     stats: true
 
 gateway:
   enabled: true
+  upgrade: false
   deployment:
     image:
       repository: quay.io/solo-io/gateway
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     replicas: 1
     stats: true
+  conversionJob:
+    image:
+      repository: quay.io/solo-io/gateway-conversion
+      pullPolicy: IfNotPresent
+    restartPolicy: Never
 
 gatewayProxies:
-  gateway-proxy:
-    deployment:
+  gatewayProxyV2:
+    kind:
+       deployment:
+         replicas: 1
+    podTemplate:
+      probes: false
       image:
         repository: quay.io/solo-io/gloo-envoy-wrapper
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
       stats: true
       httpPort: 8080
       httpsPort: 8443
-      replicas: 1
     service:
       type: LoadBalancer
       # clusterIP: None
@@ -62,6 +71,7 @@ gatewayProxies:
     # Annotation example: setup ssl with aws cert when service.type is LoadBalancer
     # extraAnnotations:
     #   service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:EXAMPLE_CERT
+    tracing:
     configMap:
       data:
 

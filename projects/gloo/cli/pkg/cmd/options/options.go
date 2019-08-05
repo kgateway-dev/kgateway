@@ -3,6 +3,7 @@ package options
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -23,14 +24,26 @@ type Options struct {
 type Top struct {
 	Interactive bool
 	File        string
-	Output      string
+	Output      printers.OutputType
 	Ctx         context.Context
+	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
 }
 
 type Install struct {
 	DryRun            bool
+	Upgrade           bool
 	Namespace         string
 	HelmChartOverride string
+	Knative           Knative
+}
+
+type Knative struct {
+	InstallKnativeVersion    string `json:"version"`
+	InstallKnative           bool   `json:"-"`
+	SkipGlooInstall          bool   `json:"-"`
+	InstallKnativeBuild      bool   `json:"build"`
+	InstallKnativeMonitoring bool   `json:"monitoring"`
+	InstallKnativeEventing   bool   `json:"eventing"`
 }
 
 type Uninstall struct {
@@ -63,10 +76,11 @@ type Delete struct {
 }
 
 type Create struct {
-	VirtualService InputVirtualService
-	InputUpstream  InputUpstream
-	InputSecret    Secret
-	DryRun         bool // print resource as a kubernetes style yaml and exit without writing to storage
+	VirtualService     InputVirtualService
+	InputUpstream      InputUpstream
+	InputUpstreamGroup InputUpstreamGroup
+	InputSecret        Secret
+	DryRun             bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
@@ -103,6 +117,10 @@ type RoutePlugins struct {
 
 type PrefixRewrite struct {
 	Value *string
+}
+
+type InputUpstreamGroup struct {
+	WeightedDestinations InputMapStringString
 }
 
 func (p *PrefixRewrite) String() string {

@@ -2,8 +2,16 @@ package e2e_test
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
+	"strings"
+	"time"
 
+	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
@@ -12,6 +20,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -51,7 +60,7 @@ var _ = Describe("Gateway", func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 			// wait for the two gateways to be created.
-			Eventually(func() (gatewayv1.GatewayList, error) {
+			Eventually(func() (gatewayv2.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
@@ -67,11 +76,15 @@ var _ = Describe("Gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, g := range gw {
-				g.Plugins = &gloov1.ListenerPlugins{
-					GrpcWeb: &grpc_web.GrpcWeb{
-						Disable: true,
-					},
+				httpGateway := g.GetHttpGateway()
+				if httpGateway != nil {
+					httpGateway.Plugins = &gloov1.HttpListenerPlugins{
+						GrpcWeb: &grpc_web.GrpcWeb{
+							Disable: true,
+						},
+					}
 				}
+
 				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -85,7 +98,7 @@ var _ = Describe("Gateway", func() {
 			Eventually(
 				func() (int, error) {
 					numdisable := 0
-					proxy, err := testClients.ProxyClient.Read(writeNamespace, "gateway-proxy", clients.ReadOpts{})
+					proxy, err := testClients.ProxyClient.Read(writeNamespace, translator.GatewayProxyName, clients.ReadOpts{})
 					if err != nil {
 						return 0, err
 					}
@@ -98,7 +111,6 @@ var _ = Describe("Gateway", func() {
 									}
 								}
 							}
-
 						}
 					}
 					return numdisable, nil
@@ -137,7 +149,7 @@ var _ = Describe("Gateway", func() {
 			// Wait for proxy to be accepted
 			var proxy *gloov1.Proxy
 			Eventually(func() bool {
-				proxy, err = testClients.ProxyClient.Read(writeNamespace, "gateway-proxy", clients.ReadOpts{})
+				proxy, err = testClients.ProxyClient.Read(writeNamespace, translator.GatewayProxyName, clients.ReadOpts{})
 				if err != nil {
 					return false
 				}
@@ -158,7 +170,7 @@ var _ = Describe("Gateway", func() {
 			Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes).To(HaveLen(1))
 			Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction()).NotTo(BeNil())
 			Expect(nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle()).NotTo(BeNil())
-			service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetService()
+			service := nonSslListener.GetHttpListener().VirtualHosts[0].Routes[0].GetRouteAction().GetSingle().GetKube()
 			Expect(service.Ref.Namespace).To(Equal(svc.Namespace))
 			Expect(service.Ref.Name).To(Equal(svc.Name))
 			Expect(service.Port).To(BeEquivalentTo(svc.Spec.Ports[0].Port))
@@ -186,7 +198,7 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy", testClients.GlooPort)
+				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -247,6 +259,150 @@ var _ = Describe("Gateway", func() {
 					TestUpstreamSslReachable()
 				})
 			})
+
+			Context("Access logs", func() {
+				var (
+					gw   *gatewayv2.Gateway
+					path string
+				)
+
+				var checkLogs = func(ei *services.EnvoyInstance, logsPresent func(logs string) bool) error {
+					var (
+						logs string
+						err  error
+					)
+
+					if ei.UseDocker {
+						logs, err = ei.Logs()
+						if err != nil {
+							return err
+						}
+					} else {
+						file, err := os.OpenFile(ei.AccessLogs, os.O_RDONLY, 0777)
+						if err != nil {
+							return err
+						}
+						var byt []byte
+						byt, err = ioutil.ReadAll(file)
+						if err != nil {
+							return err
+						}
+						logs = string(byt)
+					}
+
+					if logs == "" {
+						return errors.Errorf("logs should not be empty")
+					}
+					if !logsPresent(logs) {
+						return errors.Errorf("no access logs present")
+					}
+					return nil
+				}
+
+				BeforeEach(func() {
+					gatewaycli := testClients.GatewayClient
+					var err error
+					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					path = "/dev/stdout"
+					if !envoyInstance.UseDocker {
+						tmpfile, err := ioutil.TempFile("", "")
+						Expect(err).NotTo(HaveOccurred())
+						path = tmpfile.Name()
+						envoyInstance.AccessLogs = path
+					}
+				})
+				AfterEach(func() {
+					gatewaycli := testClients.GatewayClient
+					var err error
+					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					gw.Plugins = nil
+					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+				})
+				It("can create string access logs", func() {
+					gw.Plugins = &gloov1.ListenerPlugins{
+						AccessLoggingService: &als.AccessLoggingService{
+							AccessLog: []*als.AccessLog{
+								{
+									OutputDestination: &als.AccessLog_FileSink{
+										FileSink: &als.FileSink{
+											Path: path,
+											OutputFormat: &als.FileSink_StringFormat{
+												StringFormat: "",
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					gatewaycli := testClients.GatewayClient
+					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+					up := tu.Upstream
+					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+					TestUpstreamReachable()
+
+					Eventually(func() error {
+						var logsPresent = func(logs string) bool {
+							return strings.Contains(logs, `"POST /1 HTTP/1.1" 200`)
+						}
+						return checkLogs(envoyInstance, logsPresent)
+					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
+				})
+				It("can create json access logs", func() {
+					gw.Plugins = &gloov1.ListenerPlugins{
+						AccessLoggingService: &als.AccessLoggingService{
+							AccessLog: []*als.AccessLog{
+								{
+									OutputDestination: &als.AccessLog_FileSink{
+										FileSink: &als.FileSink{
+											Path: path,
+											OutputFormat: &als.FileSink_JsonFormat{
+												JsonFormat: &types.Struct{
+													Fields: map[string]*types.Value{
+														"protocol": {
+															Kind: &types.Value_StringValue{
+																StringValue: "%PROTOCOL%",
+															},
+														},
+														"method": {
+															Kind: &types.Value_StringValue{
+																StringValue: "%REQ(:METHOD)%",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+					gatewaycli := testClients.GatewayClient
+					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+					up := tu.Upstream
+					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					TestUpstreamReachable()
+					Eventually(func() error {
+						var logsPresent = func(logs string) bool {
+							return strings.Contains(logs, `{"method":"POST","protocol":"HTTP/1.1"}`) ||
+								strings.Contains(logs, `{"protocol":"HTTP/1.1","method":"POST"}`)
+						}
+						return checkLogs(envoyInstance, logsPresent)
+					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
+				})
+			})
 		})
 	})
 })
@@ -261,8 +417,8 @@ func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *
 
 func getTrivialVirtualServiceForService(ns string, service core.ResourceRef, port uint32) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
-	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Service{
-		Service: &gloov1.ServiceDestination{
+	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Kube{
+		Kube: &gloov1.KubernetesServiceDestination{
 			Ref:  service,
 			Port: port,
 		},

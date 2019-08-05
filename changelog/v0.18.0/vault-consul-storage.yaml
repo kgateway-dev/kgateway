@@ -1,0 +1,10 @@
+changelog:
+  - type: FIX
+    description: fix issue with partial EDS where clusters were out of sync with endpoints
+    issueLink: https://github.com/solo-io/gloo/issues/899
+  - type: NEW_FEATURE
+    description: Enable running Gloo using Vault as a Secret backend and Consul as a configuration Backend.
+    issueLink: https://github.com/solo-io/gloo/issues/883
+  - type: BREAKING_CHANGE
+    description: Settings CRD has been refactored to reflect Consul changes.
+    issueLink: https://github.com/solo-io/gloo/issues/883

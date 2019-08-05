@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	mTranslatorSnapshotIn  = stats.Int64("translator.ingress.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mTranslatorSnapshotOut = stats.Int64("translator.ingress.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mTranslatorSnapshotIn     = stats.Int64("translator.ingress.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mTranslatorSnapshotOut    = stats.Int64("translator.ingress.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mTranslatorSnapshotMissed = stats.Int64("translator.ingress.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	translatorsnapshotInView = &view.View{
 		Name:        "translator.ingress.solo.io_snap_emitter/snap_in",
@@ -35,10 +36,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	translatorsnapshotMissedView = &view.View{
+		Name:        "translator.ingress.solo.io/snap_emitter/snap_missed",
+		Measure:     mTranslatorSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(translatorsnapshotInView, translatorsnapshotOutView)
+	view.Register(translatorsnapshotInView, translatorsnapshotOutView, translatorsnapshotMissedView)
 }
 
 type TranslatorEmitter interface {
@@ -116,12 +124,16 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 		namespace string
 	}
 	secretChan := make(chan secretListWithNamespace)
+
+	var initialSecretList gloo_solo_io.SecretList
 	/* Create channel for Upstream */
 	type upstreamListWithNamespace struct {
 		list      gloo_solo_io.UpstreamList
 		namespace string
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
+
+	var initialUpstreamList gloo_solo_io.UpstreamList
 	/* Create channel for Ingress */
 	type ingressListWithNamespace struct {
 		list      IngressList
@@ -129,8 +141,19 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	}
 	ingressChan := make(chan ingressListWithNamespace)
 
+	var initialIngressList IngressList
+
+	currentSnapshot := TranslatorSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Secret */
+		{
+			secrets, err := c.secret.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Secret list")
+			}
+			initialSecretList = append(initialSecretList, secrets...)
+		}
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Secret watch")
@@ -142,6 +165,13 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
 		}(namespace)
 		/* Setup namespaced watch for Upstream */
+		{
+			upstreams, err := c.upstream.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Upstream list")
+			}
+			initialUpstreamList = append(initialUpstreamList, upstreams...)
+		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
@@ -153,6 +183,13 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
 		}(namespace)
 		/* Setup namespaced watch for Ingress */
+		{
+			ingresses, err := c.ingress.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Ingress list")
+			}
+			initialIngressList = append(initialIngressList, ingresses...)
+		}
 		ingressNamespacesChan, ingressErrs, err := c.ingress.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Ingress watch")
@@ -192,21 +229,35 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Secrets */
+	currentSnapshot.Secrets = initialSecretList.Sort()
+	/* Initialize snapshot for Upstreams */
+	currentSnapshot.Upstreams = initialUpstreamList.Sort()
+	/* Initialize snapshot for Ingresses */
+	currentSnapshot.Ingresses = initialIngressList.Sort()
 
 	snapshots := make(chan *TranslatorSnapshot)
 	go func() {
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		originalSnapshot := TranslatorSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
+
 		sync := func() {
 			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
 
-			stats.Record(ctx, mTranslatorSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mTranslatorSnapshotOut.M(1))
+				originalSnapshot = currentSnapshot.Clone()
+			default:
+				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
+			}
 		}
 		secretsByNamespace := make(map[string]gloo_solo_io.SecretList)
 		upstreamsByNamespace := make(map[string]gloo_solo_io.UpstreamList)

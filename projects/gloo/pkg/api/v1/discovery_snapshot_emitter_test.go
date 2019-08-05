@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -34,14 +36,15 @@ var _ = Describe("V1Emitter", func() {
 		return
 	}
 	var (
-		namespace1     string
-		namespace2     string
-		name1, name2   = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
-		cfg            *rest.Config
-		kube           kubernetes.Interface
-		emitter        DiscoveryEmitter
-		upstreamClient UpstreamClient
-		secretClient   SecretClient
+		namespace1          string
+		namespace2          string
+		name1, name2        = "angela" + helpers.RandString(3), "bob" + helpers.RandString(3)
+		cfg                 *rest.Config
+		kube                kubernetes.Interface
+		emitter             DiscoveryEmitter
+		upstreamClient      UpstreamClient
+		kubeNamespaceClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient
+		secretClient        SecretClient
 	)
 
 	BeforeEach(func() {
@@ -61,6 +64,13 @@ var _ = Describe("V1Emitter", func() {
 
 		upstreamClient, err = NewUpstreamClient(upstreamClientFactory)
 		Expect(err).NotTo(HaveOccurred())
+		// KubeNamespace Constructor
+		kubeNamespaceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		kubeNamespaceClient, err = github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespaceClient(kubeNamespaceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
 		// Secret Constructor
 		secretClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
@@ -68,7 +78,7 @@ var _ = Describe("V1Emitter", func() {
 
 		secretClient, err = NewSecretClient(secretClientFactory)
 		Expect(err).NotTo(HaveOccurred())
-		emitter = NewDiscoveryEmitter(upstreamClient, secretClient)
+		emitter = NewDiscoveryEmitter(upstreamClient, kubeNamespaceClient, secretClient)
 	})
 	AfterEach(func() {
 		err := kubeutils.DeleteNamespacesInParallelBlocking(kube, namespace1, namespace2)
@@ -143,6 +153,63 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(nil, UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
+
+		/*
+			KubeNamespace
+		*/
+
+		assertSnapshotkubenamespaces := func(expectkubenamespaces github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList, unexpectkubenamespaces github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectkubenamespaces {
+						if _, err := snap.Kubenamespaces.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectkubenamespaces {
+						if _, err := snap.Kubenamespaces.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := kubeNamespaceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := kubeNamespaceClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		kubeNamespace1a, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeNamespace1b, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b}, nil)
+		kubeNamespace2a, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeNamespace2b, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b, kubeNamespace2a, kubeNamespace2b}, nil)
+
+		err = kubeNamespaceClient.Delete(kubeNamespace2a.GetMetadata().Namespace, kubeNamespace2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeNamespaceClient.Delete(kubeNamespace2b.GetMetadata().Namespace, kubeNamespace2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b}, github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace2a, kubeNamespace2b})
+
+		err = kubeNamespaceClient.Delete(kubeNamespace1a.GetMetadata().Namespace, kubeNamespace1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeNamespaceClient.Delete(kubeNamespace1b.GetMetadata().Namespace, kubeNamespace1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(nil, github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b, kubeNamespace2a, kubeNamespace2b})
 
 		/*
 			Secret
@@ -270,6 +337,63 @@ var _ = Describe("V1Emitter", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		assertSnapshotUpstreams(nil, UpstreamList{upstream1a, upstream1b, upstream2a, upstream2b})
+
+		/*
+			KubeNamespace
+		*/
+
+		assertSnapshotkubenamespaces := func(expectkubenamespaces github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList, unexpectkubenamespaces github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList) {
+		drain:
+			for {
+				select {
+				case snap = <-snapshots:
+					for _, expected := range expectkubenamespaces {
+						if _, err := snap.Kubenamespaces.Find(expected.GetMetadata().Ref().Strings()); err != nil {
+							continue drain
+						}
+					}
+					for _, unexpected := range unexpectkubenamespaces {
+						if _, err := snap.Kubenamespaces.Find(unexpected.GetMetadata().Ref().Strings()); err == nil {
+							continue drain
+						}
+					}
+					break drain
+				case err := <-errs:
+					Expect(err).NotTo(HaveOccurred())
+				case <-time.After(time.Second * 10):
+					nsList1, _ := kubeNamespaceClient.List(namespace1, clients.ListOpts{})
+					nsList2, _ := kubeNamespaceClient.List(namespace2, clients.ListOpts{})
+					combined := append(nsList1, nsList2...)
+					Fail("expected final snapshot before 10 seconds. expected " + log.Sprintf("%v", combined))
+				}
+			}
+		}
+		kubeNamespace1a, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace1, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeNamespace1b, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace2, name1), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b}, nil)
+		kubeNamespace2a, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace1, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		kubeNamespace2b, err := kubeNamespaceClient.Write(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespace(namespace2, name2), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b, kubeNamespace2a, kubeNamespace2b}, nil)
+
+		err = kubeNamespaceClient.Delete(kubeNamespace2a.GetMetadata().Namespace, kubeNamespace2a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeNamespaceClient.Delete(kubeNamespace2b.GetMetadata().Namespace, kubeNamespace2b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b}, github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace2a, kubeNamespace2b})
+
+		err = kubeNamespaceClient.Delete(kubeNamespace1a.GetMetadata().Namespace, kubeNamespace1a.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		err = kubeNamespaceClient.Delete(kubeNamespace1b.GetMetadata().Namespace, kubeNamespace1b.GetMetadata().Name, clients.DeleteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		assertSnapshotkubenamespaces(nil, github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList{kubeNamespace1a, kubeNamespace1b, kubeNamespace2a, kubeNamespace2b})
 
 		/*
 			Secret

@@ -24,7 +24,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// Upstream Spec for Kubernetes Upstreams
 // Kubernetes Upstreams represent a set of one or more addressable pods for a Kubernetes Service
 // the Gloo Kubernetes Upstream maps to a single service port. Because Kubernetes Services support multiple ports,
 // Gloo requires that a different upstream be created for each port
@@ -34,7 +33,7 @@ type UpstreamSpec struct {
 	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	// The namespace where the Service lives
 	ServiceNamespace string `protobuf:"bytes,2,opt,name=service_namespace,json=serviceNamespace,proto3" json:"service_namespace,omitempty"`
-	// The access port port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding
+	// The access port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding
 	// port on the pod for routing.
 	ServicePort uint32 `protobuf:"varint,3,opt,name=service_port,json=servicePort,proto3" json:"service_port,omitempty"`
 	// Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if

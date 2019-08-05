@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
@@ -21,9 +23,10 @@ var (
 	GlooCrdNames []string
 
 	// Set up during pre-install (for OS gloo, namespace only)
-	GlooPreInstallKinds []string
-	GlooInstallKinds    []string
-	ExpectedLabels      map[string]string
+	GlooPreInstallKinds     []string
+	GlooInstallKinds        []string
+	GlooGatewayUpgradeKinds []string
+	ExpectedLabels          map[string]string
 
 	KnativeCrdNames []string
 )
@@ -44,8 +47,10 @@ func init() {
 
 	GlooInstallKinds = append(GlooSystemKinds, GlooRbacKinds...)
 
+	GlooGatewayUpgradeKinds = append(GlooInstallKinds, "Job")
+
 	GlooCrdNames = []string{
-		"gateways.gateway.solo.io",
+		"gateways.gateway.solo.io.v2",
 		"proxies.gloo.solo.io",
 		"settings.gloo.solo.io",
 		"upstreams.gloo.solo.io",
@@ -76,6 +81,7 @@ type GlooInstallSpec struct {
 	HelmArchiveUri   string
 	ValueFileName    string
 	ExtraValues      map[string]string
+	ValueCallbacks   []install.ValuesCallback
 	ExcludeResources install.ResourceMatcherFunc
 }
 
@@ -112,11 +118,31 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 		helmChartArchiveUri = helmChartOverride
 	}
 
+	var extraValues map[string]string
+	if opts.Install.Upgrade {
+		extraValues = map[string]string{"gateway": "{upgrade: true}"}
+	}
+	var valueCallbacks []install.ValuesCallback
+	if opts.Install.Knative.InstallKnativeVersion != "" {
+		valueCallbacks = append(valueCallbacks, func(config *generate.Config) {
+			if config.Settings != nil &&
+				config.Settings.Integrations != nil &&
+				config.Settings.Integrations.Knative != nil &&
+				config.Settings.Integrations.Knative.Enabled != nil &&
+				*config.Settings.Integrations.Knative.Enabled {
+
+				config.Settings.Integrations.Knative.Version = &opts.Install.Knative.InstallKnativeVersion
+
+			}
+		})
+	}
+
 	return &GlooInstallSpec{
 		HelmArchiveUri:   helmChartArchiveUri,
 		ValueFileName:    valueFileName,
 		ProductName:      "gloo",
-		ExtraValues:      nil,
+		ExtraValues:      extraValues,
+		ValueCallbacks:   valueCallbacks,
 		ExcludeResources: nil,
 	}, nil
 }
@@ -140,10 +166,6 @@ func InstallGloo(opts *options.Options, spec GlooInstallSpec, client GlooKubeIns
 	}
 
 	if err := installer.DoPreInstall(); err != nil {
-		return err
-	}
-
-	if err := installer.DoKnativeInstall(); err != nil {
 		return err
 	}
 

@@ -1,11 +1,10 @@
 package get
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +19,7 @@ func Upstream(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			helpers.PrintUpstreams(upstreams, opts.Top.Output)
+			printers.PrintUpstreams(upstreams, opts.Top.Output)
 			return nil
 		},
 	}

@@ -3,15 +3,28 @@ package printers
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-// PrintTable prints virtual services using tables to io.Writer
+func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType) error {
+	if outputType == KUBE_YAML {
+		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
+	}
+	return cliutils.PrintList(outputType.String(), "", upstreams,
+		func(data interface{}, w io.Writer) error {
+			UpstreamTable(data.(v1.UpstreamList), w)
+			return nil
+		}, os.Stdout)
+}
+
+// PrintTable prints upstreams using tables to io.Writer
 func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Upstream", "type", "status", "details"})
@@ -19,9 +32,10 @@ func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
 	for _, us := range upstreams {
 		name := us.GetMetadata().Name
 		s := us.Status.State.String()
-		u := upstreamType(us)
 
+		u := upstreamType(us)
 		details := upstreamDetails(us)
+
 		if len(details) == 0 {
 			details = []string{""}
 		}
@@ -40,13 +54,19 @@ func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
 }
 
 func upstreamType(up *v1.Upstream) string {
+	if up.UpstreamSpec == nil {
+		return "Invalid"
+	}
+
 	switch up.UpstreamSpec.UpstreamType.(type) {
 	case *v1.UpstreamSpec_Aws:
-		return "AWS"
+		return "AWS Lambda"
 	case *v1.UpstreamSpec_Azure:
 		return "Azure"
 	case *v1.UpstreamSpec_Consul:
 		return "Consul"
+	case *v1.UpstreamSpec_AwsEc2:
+		return "AWS EC2"
 	case *v1.UpstreamSpec_Kube:
 		return "Kubernetes"
 	case *v1.UpstreamSpec_Static:
@@ -57,6 +77,10 @@ func upstreamType(up *v1.Upstream) string {
 }
 
 func upstreamDetails(up *v1.Upstream) []string {
+	if up.UpstreamSpec == nil {
+		return []string{"invalid: spec was nil"}
+	}
+
 	var details []string
 	add := func(s ...string) {
 		details = append(details, s...)

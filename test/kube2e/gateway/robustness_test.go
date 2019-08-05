@@ -5,6 +5,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -32,7 +34,7 @@ import (
 var _ = Describe("Robustness tests", func() {
 
 	const (
-		gatewayProxy = "gateway-proxy"
+		gatewayProxy = translator.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -158,8 +160,8 @@ var _ = Describe("Robustness tests", func() {
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
-										DestinationType: &gloov1.Destination_Service{
-											Service: &gloov1.ServiceDestination{
+										DestinationType: &gloov1.Destination_Kube{
+											Kube: &gloov1.KubernetesServiceDestination{
 												Ref: core.ResourceRef{
 													Namespace: appService.Namespace,
 													Name:      appService.Name,
@@ -179,7 +181,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to be accepted")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, "gateway-proxy", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
@@ -215,8 +217,8 @@ var _ = Describe("Robustness tests", func() {
 				RouteAction: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{
 						Single: &gloov1.Destination{
-							DestinationType: &gloov1.Destination_Service{
-								Service: &gloov1.ServiceDestination{
+							DestinationType: &gloov1.Destination_Kube{
+								Kube: &gloov1.KubernetesServiceDestination{
 									Ref: core.ResourceRef{
 										Namespace: namespace,
 										Name:      "non-existent-svc",
@@ -234,7 +236,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to be rejected")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, "gateway-proxy", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}

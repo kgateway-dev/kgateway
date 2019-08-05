@@ -7,6 +7,7 @@ import (
 
 type Opts struct {
 	ClusterIngressProxyAddress string
+	KnativeProxyAddress        string
 	WriteNamespace             string
 	WatchNamespaces            []string
 	Proxies                    factory.ResourceClientFactory
@@ -14,5 +15,6 @@ type Opts struct {
 	Secrets                    factory.ResourceClientFactory
 	WatchOpts                  clients.WatchOpts
 	EnableKnative              bool
+	KnativeVersion             string
 	DisableKubeIngress         bool
 }

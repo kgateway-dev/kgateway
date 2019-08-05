@@ -13,13 +13,14 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 
 /*
-@solo-kit:resource.short_name=vs
-@solo-kit:resource.plural_name=virtual_services
-@solo-kit:resource.resource_groups=api.gateway.solo.io
 A virtual service describes the set of routes to match for a set of domains.
 Domains must be unique across all virtual services within a gateway (i.e. no overlap between sets).
 */
 message VirtualService {
+
+    option (core.solo.io.resource).short_name = "vs";
+    option (core.solo.io.resource).plural_name = "virtual_services";
+
     gloo.solo.io.VirtualHost virtual_host = 1;
 
     // If provided, the Gateway will serve TLS/SSL traffic for this set of routes

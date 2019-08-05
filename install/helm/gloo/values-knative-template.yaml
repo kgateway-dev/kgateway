@@ -1,18 +1,31 @@
+namespace:
+  create: false
+rbac:
+  create: true
+crds:
+  create: true
+k8s:
+  clusterName: cluster.local
+
 settings:
   integrations:
     knative:
       enabled: true
-      installKnative: true
+      version: "0.7.0"
       proxy:
         image:
           repository: quay.io/solo-io/gloo-envoy-wrapper
-          pullPolicy: Always
+          pullPolicy: IfNotPresent
         httpPort: 80
         httpsPort: 443
         replicas: 1
+        stats: true
 
 gateway:
   enabled: false
+
+discovery:
+  fdsMode: whitelist
 
 ingress:
   # ingress proxy is disabled, but we still need the controller for knative
@@ -20,8 +33,5 @@ ingress:
   deployment:
     image:
       repository: quay.io/solo-io/ingress
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     replicas: 1
-
-k8s:
-  clusterName: cluster.local

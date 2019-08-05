@@ -1,3 +1,9 @@
+namespace:
+  create: false
+rbac:
+  create: true
+crds:
+  create: true
 k8s:
   clusterName: cluster.local
 
@@ -6,7 +12,7 @@ ingress:
   deployment:
     image:
       repository: quay.io/solo-io/ingress
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     replicas: 1
 
 
@@ -14,12 +20,14 @@ ingressProxy:
   deployment:
     image:
       repository: quay.io/solo-io/gloo-envoy-wrapper
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     httpPort: 80
     httpsPort: 443
     replicas: 1
+    stats: true
   configMap:
     data:
+  tracing:
 
 gateway:
   enabled: false

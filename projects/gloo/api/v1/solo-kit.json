@@ -4,6 +4,9 @@
   "name": "gloo.solo.io",
   "version": "v1",
   "docs_dir": "../docs/v1",
+  "imports": [
+    "github.com/solo-io/solo-kit/api/external/kubernetes"
+  ],
   "resource_groups": {
     "setup.gloo.solo.io": [
       {
@@ -37,10 +40,20 @@
         "package": "gloo.solo.io"
       }
     ],
+    "eds.gloo.solo.io": [
+      {
+        "name": "Upstream",
+        "package": "gloo.solo.io"
+      }
+    ],
     "discovery.gloo.solo.io": [
       {
         "name": "Upstream",
         "package": "gloo.solo.io"
+      },
+      {
+        "name": "KubeNamespace",
+        "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
       },
       {
         "name": "Secret",

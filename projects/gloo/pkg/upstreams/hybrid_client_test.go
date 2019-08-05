@@ -2,215 +2,158 @@ package upstreams_test
 
 import (
 	"context"
-	"sync"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
-var _ = Describe("HybridUpstreams", func() {
+var _ = Describe("Hybrid Upstream Client", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		svcClient      skkube.ServiceClient
-		baseUsClient   v1.UpstreamClient
-		hybridClient   v1.UpstreamClient
+		ctx    context.Context
+		cancel context.CancelFunc
+		ctrl   *gomock.Controller
+
+		svcClient        skkube.ServiceClient
+		baseUsClient     v1.UpstreamClient
+		mockConsulClient *consul.MockConsulClient
+
+		hybridClient v1.UpstreamClient
+
 		watchNamespace = "watched-ns"
 		err            error
 
-		existingFakeUpstreamName = upstreams.ServiceUpstreamNamePrefix + watchNamespace + "-svc-1-8081"
-
-		// Results in 5 upstreams being created, 2 real, 3 service-derived (one of which is in a different namespace)
+		// Results in 5 upstreams being created, 1 real, 4 service-derived (one of which is in a different namespace)
 		writeResources = func() {
 			opts := clients.WriteOpts{Ctx: ctx}
-			_, err = svcClient.Write(getService("svc-1", watchNamespace, []int32{8080, 8081}), opts)
-			Expect(err).NotTo(HaveOccurred())
-			time.Sleep(10 * time.Millisecond) // give the event some time to propagate
 
+			// Real upstream
 			_, err = baseUsClient.Write(getUpstream("us-1", watchNamespace, "svc-3", watchNamespace, 1234), opts)
 			Expect(err).NotTo(HaveOccurred())
-			time.Sleep(10 * time.Millisecond) // give the event some time to propagate
+
+			// Kubernetes services
+			_, err = svcClient.Write(getService("svc-1", watchNamespace, []int32{8080, 8081}), opts)
+			Expect(err).NotTo(HaveOccurred())
 
 			_, err = svcClient.Write(getService("svc-2", watchNamespace, []int32{9001}), opts)
 			Expect(err).NotTo(HaveOccurred())
-			time.Sleep(10 * time.Millisecond) // give the event some time to propagate
 
 			_, err = svcClient.Write(getService("svc-3", "other-namespace", []int32{9999}), opts)
 			Expect(err).NotTo(HaveOccurred())
-			time.Sleep(10 * time.Millisecond) // give the event some time to propagate
 		}
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
+		ctrl = gomock.NewController(T)
 
 		inMemoryFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		svcClient, err = skkube.NewServiceClient(inMemoryFactory)
-		Expect(err).NotTo(HaveOccurred())
-
 		baseUsClient, err = v1.NewUpstreamClient(inMemoryFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		hybridClient, err = upstreams.NewHybridUpstreamClient(baseUsClient, svcClient)
+		svcClient, err = skkube.NewServiceClient(inMemoryFactory)
+		Expect(err).NotTo(HaveOccurred())
+
+		mockConsulClient = consul.NewMockConsulClient(ctrl)
+		mockConsulClient.EXPECT().DataCenters().Return([]string{"dc1"}, nil).AnyTimes()
+		mockConsulClient.EXPECT().Services(gomock.Any()).Return(
+			map[string][]string{"svc-1": {}},
+			&api.QueryMeta{LastIndex: 100},
+			nil,
+		).AnyTimes()
+	})
+	JustBeforeEach(func() {
+		hybridClient, err = upstreams.NewHybridUpstreamClient(
+			baseUsClient,
+			svcClient,
+			consul.NewConsulWatcherFromClient(mockConsulClient),
+		)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		cancel()
+		if cancel != nil {
+			cancel()
+		}
+		ctrl.Finish()
 	})
 
-	Context("read operations", func() {
+	It("correctly lists real and service-derived upstreams", func() {
+		writeResources()
 
-		It("is able to look up a service-derived upstream", func() {
-			writeResources()
+		list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(list).To(HaveLen(5))
+	})
 
-			us, err := hybridClient.Read(watchNamespace, existingFakeUpstreamName, clients.ReadOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(us.UpstreamSpec.GetKube()).NotTo(BeNil())
-			Expect(us.UpstreamSpec.GetKube().ServiceName).To(Equal("svc-1"))
+	It("correctly aggregates watches on all underlying upstream sources", func() {
+		usChan, errChan, initErr := hybridClient.Watch(watchNamespace, clients.WatchOpts{Ctx: ctx})
+		Expect(initErr).NotTo(HaveOccurred())
+
+		writeResources()
+
+		Eventually(usChan, 500*time.Millisecond).Should(Receive(HaveLen(5)))
+		Consistently(errChan).Should(Not(Receive()))
+
+		cancel()
+		Eventually(usChan).Should(BeClosed())
+		Eventually(errChan).Should(BeClosed())
+	})
+
+	Context("Sleep client", func() {
+
+		BeforeEach(func() {
+			baseUsClient = sleepyClient{UpstreamClient: baseUsClient}
 		})
 
-		It("fails when looking up a non-existent service-derived upstream", func() {
+		It("correctly returns a full snapshot even if watch is delayed", func() {
 			writeResources()
 
-			_, err := hybridClient.Read(watchNamespace, upstreams.ServiceUpstreamNamePrefix+"svc-1-9999", clients.ReadOpts{Ctx: ctx})
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("correctly lists real and service-derived upstreams", func() {
-			writeResources()
-
-			list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(list).To(HaveLen(4))
-		})
-
-		It("correctly aggregates watches on real and service-derived upstreams", func() {
 			usChan, errChan, initErr := hybridClient.Watch(watchNamespace, clients.WatchOpts{Ctx: ctx})
 			Expect(initErr).NotTo(HaveOccurred())
 
-			// Helper to read from channels
-			consumer := newWatchConsumer()
-			consumer.collect(ctx, usChan, errChan)
+			Eventually(usChan, 500*time.Millisecond).Should(Receive(HaveLen(5)))
+			Consistently(errChan).Should(Not(Receive()))
 
-			writeResources()
-
-			Expect(consumer.getErrors()).To(HaveLen(0))
-			Expect(consumer.getUpstreams()).To(HaveLen(3))
-			Expect(consumer.getUpstreams()[0]).To(HaveLen(2))
-			Expect(consumer.getUpstreams()[1]).To(HaveLen(3))
-			Expect(consumer.getUpstreams()[2]).To(HaveLen(4))
-		})
-	})
-
-	Context("write operations", func() {
-
-		It("does not write service-derived upstreams", func() {
-			fakeUs := getUpstream(upstreams.ServiceUpstreamNamePrefix+"us-1", watchNamespace, "svc-3", watchNamespace, 1234)
-			_, err := hybridClient.Write(fakeUs, clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-
-			list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(list).To(HaveLen(0))
-		})
-
-		It("writes real upstreams", func() {
-			realUs := getUpstream("us-1", watchNamespace, "svc-3", watchNamespace, 1234)
-			_, err := hybridClient.Write(realUs, clients.WriteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-
-			list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(list).To(HaveLen(1))
-		})
-
-		It("does not delete service-derived upstreams", func() {
-			writeResources()
-
-			err := hybridClient.Delete(watchNamespace, existingFakeUpstreamName, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-
-			list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(list).To(HaveLen(4))
-		})
-
-		It("deletes real upstreams", func() {
-			writeResources()
-
-			err := hybridClient.Delete(watchNamespace, "us-1", clients.DeleteOpts{Ctx: ctx})
-			Expect(err).NotTo(HaveOccurred())
-
-			list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(list).To(HaveLen(3))
+			cancel()
+			Eventually(usChan).Should(BeClosed())
+			Eventually(errChan).Should(BeClosed())
 		})
 
 	})
 })
 
-type watchConsumer struct {
-	sync.Mutex
-	upstreamLists []v1.UpstreamList
-	errors        []error
+type sleepyClient struct {
+	v1.UpstreamClient
 }
 
-func newWatchConsumer() *watchConsumer {
-	return &watchConsumer{}
-}
+func (s sleepyClient) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
+	c, e, err := s.UpstreamClient.Watch(namespace, opts)
+	if err != nil {
+		return c, e, err
+	}
 
-func (c *watchConsumer) addUpstreams(upstreams v1.UpstreamList) {
-	c.Lock()
-	defer c.Unlock()
-	c.upstreamLists = append(c.upstreamLists, upstreams)
-}
+	var delayedC chan v1.UpstreamList
 
-func (c *watchConsumer) addError(err error) {
-	c.Lock()
-	defer c.Unlock()
-	c.errors = append(c.errors, err)
-}
-
-func (c *watchConsumer) getUpstreams() []v1.UpstreamList {
-	c.Lock()
-	defer c.Unlock()
-	return c.upstreamLists
-}
-
-func (c *watchConsumer) getErrors() []error {
-	c.Lock()
-	defer c.Unlock()
-	return c.errors
-}
-
-func (c *watchConsumer) collect(ctx context.Context, usChan <-chan v1.UpstreamList, errorChan <-chan error) *watchConsumer {
 	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case usList, ok := <-usChan:
-				if ok {
-					c.addUpstreams(usList)
-				}
-			case err, ok := <-errorChan:
-				if ok {
-					c.addError(err)
-				}
-			}
+		for e := range c {
+			time.Sleep(time.Second)
+			delayedC <- e
 		}
 	}()
-	return c
+
+	return delayedC, e, err
 }

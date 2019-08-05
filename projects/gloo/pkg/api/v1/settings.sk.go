@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"log"
 	"sort"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -44,11 +45,17 @@ func (r *Settings) Hash() uint64 {
 		r.Linkerd,
 		r.CircuitBreakers,
 		r.Knative,
+		r.Discovery,
+		r.Consul,
 		r.Extensions,
 		r.ConfigSource,
 		r.SecretSource,
 		r.ArtifactSource,
 	)
+}
+
+func (r *Settings) GroupVersionKind() schema.GroupVersionKind {
+	return SettingsGVK
 }
 
 type SettingsList []*Settings
@@ -132,8 +139,6 @@ func (list SettingsList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Settings{}
-
 // Kubernetes Adapter for Settings
 
 func (o *Settings) GetObjectKind() schema.ObjectKind {
@@ -145,11 +150,27 @@ func (o *Settings) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Settings)
 }
 
-var SettingsCrd = crd.NewCrd("gloo.solo.io",
-	"settings",
-	"gloo.solo.io",
-	"v1",
-	"Settings",
-	"st",
-	false,
-	&Settings{})
+var (
+	SettingsCrd = crd.NewCrd(
+		"settings",
+		SettingsGVK.Group,
+		SettingsGVK.Version,
+		SettingsGVK.Kind,
+		"st",
+		false,
+		&Settings{})
+)
+
+func init() {
+	if err := crd.AddCrd(SettingsCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}
+
+var (
+	SettingsGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Settings",
+	}
+)

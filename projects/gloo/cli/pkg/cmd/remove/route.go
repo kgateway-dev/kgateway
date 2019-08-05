@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
@@ -72,6 +73,6 @@ func removeRoute(opts *options.Options) error {
 		return errors.Wrapf(err, "writing updated vs")
 	}
 
-	helpers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
+	printers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
 	return nil
 }

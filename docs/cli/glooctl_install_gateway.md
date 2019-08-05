@@ -21,12 +21,14 @@ glooctl install gateway [flags]
   -f, --file string        Install Gloo from this Helm chart archive file rather than from a release
   -h, --help               help for gateway
   -n, --namespace string   namespace to install gloo into (default "gloo-system")
+  -u, --upgrade            Upgrade an existing v1 gateway installation to use v2 CRDs. Set this when upgrading from v0.17.x or earlier versions of gloo
 ```
 
 ### Options inherited from parent commands
 
 ```
   -i, --interactive   use interactive mode
+  -v, --verbose       If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### SEE ALSO

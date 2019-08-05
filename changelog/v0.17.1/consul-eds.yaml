@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  description: Added Consul endpoint discovery.
+  issueLink: https://github.com/solo-io/gloo/issues/803
+  resolvesIssue: false

@@ -25,14 +25,10 @@ func main() {
 func run() error {
 	errs := make(chan error)
 	go func() {
-		errs <- uds.Main()
+		errs <- uds.Main(nil)
 	}()
-
-	runFunctionDiscovery := os.Getenv("DISABLE_FDS") != "true"
-	if runFunctionDiscovery {
-		go func() {
-			errs <- fdssetup.Main()
-		}()
-	}
+	go func() {
+		errs <- fdssetup.Main(nil)
+	}()
 	return <-errs
 }

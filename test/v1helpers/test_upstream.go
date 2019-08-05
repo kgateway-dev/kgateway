@@ -19,6 +19,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -32,6 +33,20 @@ type ReceivedRequest struct {
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx)
 	return newTestUpstream(addr, backendPort, responses)
+}
+
+func NewTestGRPCUpstream(ctx context.Context, addr string) *TestUpstream {
+	srv := testgrpcservice.RunServer(ctx)
+	received := make(chan *ReceivedRequest, 100)
+	go func() {
+		defer GinkgoRecover()
+		for r := range srv.C {
+			received <- &ReceivedRequest{GRPCRequest: r}
+		}
+	}()
+
+	us := newTestUpstream(addr, srv.Port, received)
+	return us
 }
 
 type TestUpstream struct {
@@ -131,7 +146,18 @@ func runTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 	body := []byte("solo.io test")
 
-	EventuallyWithOffset(1, func() error {
+	ExpectHttpOK(body, rootca, envoyPort, "")
+
+	EventuallyWithOffset(1, tu.C, "5s", "0.2s").Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+		"Method": Equal("POST"),
+		"Body":   Equal(body),
+	}))))
+}
+
+func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string) {
+
+	var res *http.Response
+	EventuallyWithOffset(2, func() error {
 		// send a request with a body
 		var buf bytes.Buffer
 		buf.Write(body)
@@ -155,18 +181,22 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 			}
 		}
 
-		res, err := client.Post(fmt.Sprintf("%s://%s:%d/1", scheme, "localhost", envoyPort), "application/octet-stream", &buf)
+		var err error
+		res, err = client.Post(fmt.Sprintf("%s://%s:%d/1", scheme, "localhost", envoyPort), "application/octet-stream", &buf)
 		if err != nil {
 			return err
 		}
 		if res.StatusCode != http.StatusOK {
 			return fmt.Errorf("%v is not OK", res.StatusCode)
 		}
+
 		return nil
 	}, "10s", ".5s").Should(BeNil())
 
-	EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-		"Method": Equal("POST"),
-		"Body":   Equal(body),
-	}))))
+	if response != "" {
+		body, err := ioutil.ReadAll(res.Body)
+		ExpectWithOffset(2, err).NotTo(HaveOccurred())
+		defer res.Body.Close()
+		ExpectWithOffset(2, string(body)).To(Equal(response))
+	}
 }

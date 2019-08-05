@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 
 	. "github.com/onsi/ginkgo"
@@ -86,7 +88,7 @@ var _ = Describe("Happy path", func() {
 				},
 			}
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			err := envoyInstance.RunWithRole(ns+"~gateway-proxy", testClients.GlooPort)
+			err := envoyInstance.RunWithRole(ns+"~gateway-proxy-v2", testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			up = tu.Upstream
@@ -281,7 +283,7 @@ var _ = Describe("Happy path", func() {
 				},
 				Subsets: []kubev1.EndpointSubset{{
 					Addresses: []kubev1.EndpointAddress{{
-						IP:       getIpThatsNotLocalhost(),
+						IP:       getIpThatsNotLocalhost(envoyInstance),
 						Hostname: "localhost",
 					}},
 					Ports: []kubev1.EndpointPort{{
@@ -328,7 +330,7 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy"
+				role := namespace + "~gateway-proxy-v2"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -375,7 +377,7 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy"
+				role := namespace + "~gateway-proxy-v2"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -414,8 +416,8 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 		VirtualHosts[0].Routes[0].Action.(*gloov1.Route_RouteAction).RouteAction.
 		Destination.(*gloov1.RouteAction_Single).Single.DestinationType =
-		&gloov1.Destination_Service{
-			Service: &gloov1.ServiceDestination{
+		&gloov1.Destination_Kube{
+			Kube: &gloov1.KubernetesServiceDestination{
 				Ref:  service,
 				Port: svcPort,
 			},
@@ -426,7 +428,7 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "gateway-proxy",
+			Name:      translator.GatewayProxyName,
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{
@@ -459,7 +461,7 @@ func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	}
 }
 
-func getIpThatsNotLocalhost() string {
+func getIpThatsNotLocalhost(instance *services.EnvoyInstance) string {
 	// kubernetes endpoints doesn't like localhost, so we just give it some other local address
 	// from: k8s.io/kubernetes/pkg/apis/core/validation/validation.go
 	/*
@@ -469,6 +471,11 @@ func getIpThatsNotLocalhost() string {
 		        // addresses tend to be used for node-centric purposes (e.g. metadata
 		        // service).
 	*/
+
+	if instance.UseDocker {
+		return instance.LocalAddr()
+	}
+
 	ifaces, err := net.Interfaces()
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 

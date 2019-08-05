@@ -10,19 +10,20 @@ option (gogoproto.equal_all) = true;
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 
 /*
-@solo-kit:resource.short_name=gw
-@solo-kit:resource.plural_name=gateways
-@solo-kit:resource.resource_groups=api.gateway.solo.io
-
 A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
+
+Deprecated: see gateway.solo.io.v2.Gateway
 */
 message Gateway {
-    
+
+    option (core.solo.io.resource).short_name = "gw";
+    option (core.solo.io.resource).plural_name = "gateways";
     // if set to false, only use virtual services with no ssl configured.
     // if set to true, only use virtual services with ssl configured.
     bool ssl = 1;
@@ -38,7 +39,7 @@ message Gateway {
     uint32 bind_port = 4;
 
     // top level plugin configuration for all routes on the gateway
-    gloo.solo.io.ListenerPlugins plugins = 5;
+    gloo.solo.io.HttpListenerPlugins plugins = 5;
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation

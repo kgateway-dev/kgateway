@@ -9,12 +9,14 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
+	"github.com/solo-io/go-utils/installutils/helmchart"
 	"github.com/solo-io/go-utils/log"
 )
 
 var (
 	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
 	valuesOutput          = "install/helm/gloo/values.yaml"
+	docsOutput            = "docs/helm-values.md"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
 	ingressValuesTemplate = "install/helm/gloo/values-ingress-template.yaml"
@@ -22,7 +24,7 @@ var (
 	chartTemplate         = "install/helm/gloo/Chart-template.yaml"
 	chartOutput           = "install/helm/gloo/Chart.yaml"
 
-	ifNotPresent = "IfNotPresent"
+	always = "Always"
 )
 
 func main() {
@@ -78,6 +80,14 @@ func writeYaml(obj interface{}, path string) error {
 	return nil
 }
 
+func writeDocs(docs helmchart.HelmValues, path string) error {
+	err := ioutil.WriteFile(path, []byte(docs.ToMarkdown()), os.ModePerm)
+	if err != nil {
+		return errors.Wrapf(err, "failing writing helm values file")
+	}
+	return nil
+}
+
 func readGatewayConfig() (*generate.Config, error) {
 	var config generate.Config
 	if err := readYaml(valuesTemplate, &config); err != nil {
@@ -96,17 +106,19 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
+	cfg.Gateway.ConversionJob.Image.Tag = version
 
 	for _, v := range cfg.GatewayProxies {
-		v.Deployment.Image.Tag = version
+		v.PodTemplate.Image.Tag = version
 	}
 
 	if version == "dev" {
-		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.Gateway.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Gloo.Deployment.Image.PullPolicy = always
+		cfg.Discovery.Deployment.Image.PullPolicy = always
+		cfg.Gateway.Deployment.Image.PullPolicy = always
+		cfg.Gateway.ConversionJob.Image.PullPolicy = always
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.PullPolicy = ifNotPresent
+			v.PodTemplate.Image.PullPolicy = always
 		}
 	}
 
@@ -114,10 +126,15 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Gloo.Deployment.Image.Repository = replacePrefix(cfg.Gloo.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Discovery.Deployment.Image.Repository = replacePrefix(cfg.Discovery.Deployment.Image.Repository, repositoryPrefix)
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
+		cfg.Gateway.ConversionJob.Image.Repository = replacePrefix(cfg.Gateway.ConversionJob.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}
 
+	}
+
+	if err := writeDocs(helmchart.Doc(cfg), docsOutput); err != nil {
+		return err
 	}
 
 	return writeYaml(cfg, valuesOutput)
@@ -140,10 +157,10 @@ func generateKnativeValuesYaml(version, repositoryPrefix string) error {
 	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
 
 	if version == "dev" {
-		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.Ingress.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.Settings.Integrations.Knative.Proxy.Image.PullPolicy = ifNotPresent
+		cfg.Gloo.Deployment.Image.PullPolicy = always
+		cfg.Discovery.Deployment.Image.PullPolicy = always
+		cfg.Ingress.Deployment.Image.PullPolicy = always
+		cfg.Settings.Integrations.Knative.Proxy.Image.PullPolicy = always
 	}
 
 	if repositoryPrefix != "" {
@@ -155,7 +172,7 @@ func generateKnativeValuesYaml(version, repositoryPrefix string) error {
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}
 	}
 
@@ -179,10 +196,10 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 	cfg.IngressProxy.Deployment.Image.Tag = version
 
 	if version == "dev" {
-		cfg.Gloo.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.Discovery.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.Ingress.Deployment.Image.PullPolicy = ifNotPresent
-		cfg.IngressProxy.Deployment.Image.PullPolicy = ifNotPresent
+		cfg.Gloo.Deployment.Image.PullPolicy = always
+		cfg.Discovery.Deployment.Image.PullPolicy = always
+		cfg.Ingress.Deployment.Image.PullPolicy = always
+		cfg.IngressProxy.Deployment.Image.PullPolicy = always
 	}
 
 	if repositoryPrefix != "" {
@@ -194,7 +211,7 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 		// Also override for images that are not used in this option, so we don't have an inconsistent value file
 		cfg.Gateway.Deployment.Image.Repository = replacePrefix(cfg.Gateway.Deployment.Image.Repository, repositoryPrefix)
 		for _, v := range cfg.GatewayProxies {
-			v.Deployment.Image.Repository = replacePrefix(v.Deployment.Image.Repository, repositoryPrefix)
+			v.PodTemplate.Image.Repository = replacePrefix(v.PodTemplate.Image.Repository, repositoryPrefix)
 		}
 	}
 

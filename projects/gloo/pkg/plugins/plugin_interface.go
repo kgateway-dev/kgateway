@@ -8,7 +8,6 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 type InitParams struct {
@@ -26,8 +25,14 @@ type Params struct {
 	Snapshot *v1.ApiSnapshot
 }
 
-type RouteParams struct {
+type VirtualHostParams struct {
 	Params
+	Proxy    *v1.Proxy
+	Listener *v1.Listener
+}
+
+type RouteParams struct {
+	VirtualHostParams
 	VirtualHost *v1.VirtualHost
 }
 
@@ -54,6 +59,11 @@ type RouteActionPlugin interface {
 	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, inPlugins map[string]*RoutePlugin, out *envoyroute.RouteAction) error
 }
 
+type WeightedDestinationPlugin interface {
+	Plugin
+	ProcessWeightedDestination(params RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error
+}
+
 /*
 	Listener Plugins
 */
@@ -73,6 +83,12 @@ type StagedListenerFilter struct {
 	Stage          FilterStage
 }
 
+// Currently only supported for TCP listeners, plan to change this in the future
+type ListenerFilterChainPlugin interface {
+	Plugin
+	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]envoylistener.FilterChain, error)
+}
+
 type HttpFilterPlugin interface {
 	Plugin
 	HttpFilters(params Params, listener *v1.HttpListener) ([]StagedHttpFilter, error)
@@ -80,7 +96,7 @@ type HttpFilterPlugin interface {
 
 type VirtualHostPlugin interface {
 	Plugin
-	ProcessVirtualHost(params Params, in *v1.VirtualHost, out *envoyroute.VirtualHost) error
+	ProcessVirtualHost(params VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error
 }
 
 type StagedHttpFilter struct {
@@ -105,18 +121,4 @@ const (
 type ClusterGeneratorPlugin interface {
 	Plugin
 	GeneratedClusters(params Params) ([]*envoyapi.Cluster, error)
-}
-
-/*
-	Non-translator plugins
-	TODO(ilackarms): consider combining eds plugin and uds
-*/
-
-type EdsPlugin interface {
-	Plugin
-	RunEds(opts clients.WatchOpts) error
-	SubscribeUpstream(upstream *v1.Upstream) (<-chan []*v1.Endpoint, error)
-}
-
-type UdsPlugin interface {
 }

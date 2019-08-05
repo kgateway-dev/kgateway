@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Make Liveness probe work in read only file systems.
+    issueLink: https://github.com/solo-io/gloo/issues/917

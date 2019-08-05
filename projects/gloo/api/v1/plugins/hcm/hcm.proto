@@ -6,6 +6,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hc
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tracing/tracing.proto";
 
 option (gogoproto.equal_all) = true;
 
@@ -29,4 +30,6 @@ message HttpConnectionManagerSettings {
     // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
     bool accept_http_10 = 15;
     string default_host_for_http_10 = 16;
+
+    tracing.plugins.gloo.solo.io.ListenerTracingSettings tracing = 17;
 }

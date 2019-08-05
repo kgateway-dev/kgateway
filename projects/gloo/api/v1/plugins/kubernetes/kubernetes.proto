@@ -9,7 +9,6 @@ option (gogoproto.equal_all) = true;
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/subset_spec.proto";
 
-// Upstream Spec for Kubernetes Upstreams
 // Kubernetes Upstreams represent a set of one or more addressable pods for a Kubernetes Service
 // the Gloo Kubernetes Upstream maps to a single service port. Because Kubernetes Services support multiple ports,
 // Gloo requires that a different upstream be created for each port
@@ -19,7 +18,7 @@ message UpstreamSpec {
     string service_name = 1;
     // The namespace where the Service lives
     string service_namespace = 2;
-    // The access port port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding
+    // The access port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding
     // port on the pod for routing.
     uint32 service_port = 3;
     // Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if

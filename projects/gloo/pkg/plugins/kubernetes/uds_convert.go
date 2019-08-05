@@ -2,15 +2,16 @@ package kubernetes
 
 import (
 	"context"
-	"crypto/md5"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
+
+	sanitizer "github.com/solo-io/go-utils/kubeutils"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	grpcplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -118,9 +119,9 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 	return &v1.Upstream{
 		Metadata: coremeta,
 		UpstreamSpec: &v1.UpstreamSpec{
+			UseHttp2: UseHttp2(svc, port),
 			UpstreamType: &v1.UpstreamSpec_Kube{
 				Kube: &kubeplugin.UpstreamSpec{
-					ServiceSpec:      GetServiceSpec(svc, port),
 					ServiceName:      meta.Name,
 					ServiceNamespace: meta.Namespace,
 					ServicePort:      uint32(port.Port),
@@ -132,44 +133,38 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 	}
 }
 
-func GetServiceSpec(svc *kubev1.Service, port kubev1.ServicePort) *plugins.ServiceSpec {
-	grpcSpec := &plugins.ServiceSpec{
-		PluginType: &plugins.ServiceSpec_Grpc{
-			Grpc: &grpcplugin.ServiceSpec{},
-		},
-	}
+var http2PortNames = []string{
+	"grpc",
+	"h2",
+	"http2",
+}
 
+func UseHttp2(svc *kubev1.Service, port kubev1.ServicePort) bool {
 	if svc.Annotations != nil {
 		if svc.Annotations[GlooH2Annotation] == "true" {
-			return grpcSpec
+			return true
 		} else if svc.Annotations[GlooH2Annotation] == "false" {
-			return nil
+			return false
 		}
 	}
 
-	if strings.HasPrefix(port.Name, "grpc") || strings.HasPrefix(port.Name, "h2") {
-		return grpcSpec
+	for _, http2Name := range http2PortNames {
+		if strings.HasPrefix(port.Name, http2Name) {
+			return true
+		}
 	}
 
-	return nil
+	return false
 }
 
 func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
-	const maxLen = 63
 
 	var labelsTag string
 	if len(extraLabels) > 0 {
 		_, values := keysAndValues(extraLabels)
 		labelsTag = fmt.Sprintf("-%v", strings.Join(values, "-"))
 	}
-	name := fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort)
-	if len(name) > maxLen {
-		hash := md5.Sum([]byte(name))
-		hexhash := fmt.Sprintf("%x", hash)
-		name = name[:maxLen-len(hexhash)] + hexhash
-	}
-	name = strings.Replace(name, ".", "-", -1)
-	return name
+	return sanitizer.SanitizeNameV2(fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort))
 }
 
 // TODO: move to a utils package
@@ -238,25 +233,7 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	// copy labels; user may have written them over. cannot be auto-discovered
 	desiredSpec.Kube.Selector = originalSpec.Kube.Selector
 
-	// do not override ssl and subset config if none specified by discovery
-	if desired.UpstreamSpec.SslConfig == nil {
-		desired.UpstreamSpec.SslConfig = original.UpstreamSpec.SslConfig
-	}
-	if desired.UpstreamSpec.CircuitBreakers == nil {
-		desired.UpstreamSpec.CircuitBreakers = original.UpstreamSpec.CircuitBreakers
-	}
-	if desired.UpstreamSpec.LoadBalancerConfig == nil {
-		desired.UpstreamSpec.LoadBalancerConfig = original.UpstreamSpec.LoadBalancerConfig
-	}
-	if desired.UpstreamSpec.ConnectionConfig == nil {
-		desired.UpstreamSpec.ConnectionConfig = original.UpstreamSpec.ConnectionConfig
-	}
-
-	if desiredSubsetMutator, ok := desired.UpstreamSpec.UpstreamType.(v1.SubsetSpecMutator); ok {
-		if desiredSubsetMutator.GetSubsetSpec() == nil {
-			desiredSubsetMutator.SetSubsetSpec(original.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter).GetSubsetSpec())
-		}
-	}
+	utils.UpdateUpstreamSpec(original.UpstreamSpec, desired.UpstreamSpec)
 
 	if originalSpec.Equal(desiredSpec) {
 		return false, nil

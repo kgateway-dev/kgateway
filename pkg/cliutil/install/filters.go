@@ -175,18 +175,6 @@ func KnativeResourceFilterFunction(skipKnative bool) ManifestFilterFunc {
 	}
 }
 
-var ExcludeKnative = KnativeResourceFilterFunction(true)
-
-var ExcludeNonKnative ManifestFilterFunc = func(input []manifest.Manifest) (output []manifest.Manifest, err error) {
-	for _, man := range input {
-		if !strings.Contains(man.Name, "knative") {
-			continue
-		}
-		output = append(output, man)
-	}
-	return output, nil
-}
-
 var commentRegex = regexp.MustCompile("#.*")
 
 func IsEmptyManifest(manifest string) bool {

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
@@ -42,10 +44,10 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	options := clusterlock.Options{
-		IdPrefix: os.ExpandEnv("knative-${BUILD_ID}-"),
-	}
-	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), options)
+	RegisterFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
+	testHelper.Verbose = true
+
+	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
@@ -56,7 +58,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	defer locker.ReleaseLock()
-	err := testHelper.UninstallGloo()
+	err := testHelper.UninstallGlooAll()
 	Expect(err).NotTo(HaveOccurred())
 
 	// TODO go-utils should expose `glooctl uninstall --delete-namespace`

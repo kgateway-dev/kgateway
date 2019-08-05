@@ -1,32 +1,42 @@
 {{- if .Values.gateway.enabled }}
-{{- range $key, $spec := .Values.gatewayProxies }}
+{{- $isUpgrade := .Values.gateway.upgrade }}
+{{- range $name, $spec := .Values.gatewayProxies }}
 ---
 apiVersion: apps/v1
+{{- if $spec.kind.deployment}}
 kind: Deployment
+{{- else }}
+kind: DaemonSet
+{{- end}}
 metadata:
   labels:
     app: gloo
-    gloo: {{ $key }}
-  name: {{ $key }}
+    gloo: {{ $name | kebabcase }}
+  name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 spec:
-  replicas: {{ $spec.deployment.replicas }}
+  {{- if $spec.kind.deployment}}
+  replicas: {{ $spec.kind.deployment.replicas }}
+  {{- end}}
   selector:
     matchLabels:
-      gloo: {{ $key }}
+      gloo: {{ $name | kebabcase }}
   template:
     metadata:
       labels:
-        gloo: {{ $key }}
+        gloo: {{ $name | kebabcase }}
+        {{- if not $isUpgrade }}
+        gateway-proxy: live
+        {{- end }}
 {{ $annotationExist := false}}
-{{- if $spec.deployment.extraAnnotations }}
+{{- if $spec.podTemplate.extraAnnotations }}
 {{ $annotationExist = true}}
       annotations:
-      {{- range $key, $value := $spec.deployment.extraAnnotations }}
+      {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
 {{- end }}
-{{- if $spec.deployment.stats }}
+{{- if $spec.podTemplate.stats }}
 {{- if not $annotationExist }}
       annotations:
 {{- end}}
@@ -46,9 +56,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ $spec.deployment.image.repository }}:{{ $spec.deployment.image.tag }}
-        imagePullPolicy: {{ $spec.deployment.image.pullPolicy }}
-        name: gateway-proxy
+        image: {{ $spec.podTemplate.image.repository }}:{{ $spec.podTemplate.image.tag }}
+        imagePullPolicy: {{ $spec.podTemplate.image.pullPolicy }}
+        name: {{ $name | kebabcase }}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -58,23 +68,78 @@ spec:
             add:
             - NET_BIND_SERVICE
         ports:
-        - containerPort: {{ $spec.deployment.httpPort }}
+        - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
           protocol: TCP
-        - containerPort: {{ $spec.deployment.httpsPort }}
+          {{- if $spec.kind.daemonSet }}
+          {{- if $spec.kind.daemonSet.hostPort}}
+          hostPort: {{ $spec.podTemplate.httpPort }}
+          {{- end}}
+          {{- end}}
+        - containerPort: {{ $spec.podTemplate.httpsPort }}
           name: https
           protocol: TCP
-{{- with $spec.deployment.extraPorts }}
-{{toYaml  . | indent 8}}{{- end }}
+          {{- if  $spec.kind.daemonSet }}
+          {{- if $spec.kind.daemonSet.hostPort}}
+          hostPort: {{ $spec.podTemplate.httpsPort }}
+          {{- end}}
+          {{- end}}
+{{- with $spec.podTemplate.extraPorts }}
+{{toYaml . | indent 8}}{{- end }}
+{{- if $spec.podTemplate.resources }}
+        resources:
+{{ toYaml $spec.podTemplate.resources | indent 10}}
+{{- end}}
+{{- if $spec.podTemplate.probes }}
+        readinessProbe:
+          exec:
+            command:
+            - wget
+            - -O
+            - /dev/null
+            - localhost:19000/ready
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 10
+        livenessProbe:
+          exec:
+            command:
+            - wget
+            - -O
+            - /dev/null
+            - localhost:19000/server_info
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 10
+{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-      {{- if $spec.deployment.image.pullSecret }}
+      {{- if $spec.kind.daemonSet }}
+      {{- if $spec.kind.daemonSet.hostPort}}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end}}
+      {{- end}}
+      {{- if $spec.podTemplate.nodeName }}
+      nodeName: {{$spec.podTemplate.nodeName}}
+      {{- end }}
+      {{- if $spec.podTemplate.nodeSelector }}
+      nodeSelector:
+      {{- range $key, $value := $spec.podTemplate.nodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+      {{- if $spec.podTemplate.tolerations }}
+      tolerations:
+{{ toYaml $spec.podTemplate.tolerations | indent 6}}
+      {{- end }}
+      {{- if $spec.podTemplate.image.pullSecret }}
       imagePullSecrets:
-        - name: {{ $spec.deployment.image.pullSecret }}{{end}}
+        - name: {{ $spec.podTemplate.image.pullSecret }}{{end}}
       volumes:
       - configMap:
-          name: {{ $key }}-envoy-config
+          name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
 {{- end }}
 {{- end }}
