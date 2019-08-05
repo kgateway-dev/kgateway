@@ -27,6 +27,12 @@ rules:
 - apiGroups: ["networking.internal.knative.dev"]
   resources: ["clusteringresses/status"]
   verbs: ["update"]
+- apiGroups: ["networking.internal.knative.dev"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.internal.knative.dev"]
+  resources: ["ingresses/status"]
+  verbs: ["update"]
 {{- end -}}
 
 {{- end -}}

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
@@ -40,6 +42,8 @@ var _ = BeforeSuite(func() {
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
+
+	RegisterFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	testHelper.Verbose = true
 

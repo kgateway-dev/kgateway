@@ -1,4 +1,5 @@
 {{- if .Values.settings.integrations.knative.enabled }}
+{{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]" .Values.settings.integrations.knative.version ) }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -59,4 +60,5 @@ spec:
           name: clusteringress-envoy-config
         name: envoy-config
 
+{{- end }}
 {{- end }}

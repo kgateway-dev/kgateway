@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow using the release namespace as the namespace for both reading and writing
+    issueLink: https://github.com/solo-io/gloo/issues/949

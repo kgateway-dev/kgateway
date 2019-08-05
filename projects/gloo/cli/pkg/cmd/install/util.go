@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
@@ -79,6 +81,7 @@ type GlooInstallSpec struct {
 	HelmArchiveUri   string
 	ValueFileName    string
 	ExtraValues      map[string]string
+	ValueCallbacks   []install.ValuesCallback
 	ExcludeResources install.ResourceMatcherFunc
 }
 
@@ -119,12 +122,27 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 	if opts.Install.Upgrade {
 		extraValues = map[string]string{"gateway": "{upgrade: true}"}
 	}
+	var valueCallbacks []install.ValuesCallback
+	if opts.Install.Knative.InstallKnativeVersion != "" {
+		valueCallbacks = append(valueCallbacks, func(config *generate.Config) {
+			if config.Settings != nil &&
+				config.Settings.Integrations != nil &&
+				config.Settings.Integrations.Knative != nil &&
+				config.Settings.Integrations.Knative.Enabled != nil &&
+				*config.Settings.Integrations.Knative.Enabled {
+
+				config.Settings.Integrations.Knative.Version = &opts.Install.Knative.InstallKnativeVersion
+
+			}
+		})
+	}
 
 	return &GlooInstallSpec{
 		HelmArchiveUri:   helmChartArchiveUri,
 		ValueFileName:    valueFileName,
 		ProductName:      "gloo",
 		ExtraValues:      extraValues,
+		ValueCallbacks:   valueCallbacks,
 		ExcludeResources: nil,
 	}, nil
 }

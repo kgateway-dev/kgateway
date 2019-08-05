@@ -30,6 +30,10 @@ spec:
         - name: "ENABLE_KNATIVE_INGRESS"
           value: "true"
 {{- end }}
+{{- if .Values.settings.integrations.knative.version }}
+        - name: "KNATIVE_VERSION"
+          value: "{{.Values.settings.integrations.knative.version}}"
+{{- end }}
 
 {{- if not (.Values.ingress.enabled) }}
         - name: "DISABLE_KUBE_INGRESS"

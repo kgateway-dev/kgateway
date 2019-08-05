@@ -5,18 +5,24 @@ kind: Settings
 metadata:
   name: default
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
 spec:
   bindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
+{{- if .Values.settings.singleNamespace }}
+  discoveryNamespace: {{ .Release.Namespace }}
+{{- else }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
+{{- end }}
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
 {{- if .Values.settings.integrations.knative.enabled }}
   knative:
+{{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
     clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
+{{- else }}
+    knativeProxyAddress: "knative-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
+{{- end }}
 {{- end }}
 
 {{- if ne .Values.discovery.fdsMode "" }}
@@ -29,11 +35,16 @@ spec:
 {{- toYaml .Values.settings.extensions | nindent 4 }}
 {{- end }}
 
+{{- if .Values.settings.singleNamespace }}
+  watchNamespaces:
+  - {{ .Release.Namespace }}
+{{- else }}
 {{- with .Values.settings.watchNamespaces }}
   watchNamespaces:
   {{- range . }}
   - {{ . }}
   {{- end }}
+{{- end }}
 {{- end }}
 
 {{- end }}

@@ -1021,8 +1021,8 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "cb5c1810f2690efa0c434bc81aab3a1d45df497f"
-  version = "v0.7.0"
+  revision = "ce4ce706afb5d9c323d1c073746d64562a722f8f"
+  version = "v0.7.1"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
