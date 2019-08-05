@@ -117,7 +117,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:    region,
 						SecretRef: &secretRef,
-						RoleArns:  []string{roleArn},
+						RoleArn:   roleArn,
 						Filters: []*glooec2.TagFilter{
 							{
 								Spec: &glooec2.TagFilter_KvPair_{
