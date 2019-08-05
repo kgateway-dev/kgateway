@@ -2,8 +2,6 @@ package ec2
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -16,9 +14,9 @@ type CredentialSpec struct {
 	secretRef *core.ResourceRef
 	// region is the AWS region where our credentialMap live
 	region string
-	// roleArns are a list of AWS Roles (specified by their Amazon Resource Number (ARN)) which should be assumed when
+	// roleArn is an AWS Roles (specified by its Amazon Resource Number (ARN)) which should be assumed when
 	// querying for instances available to the upstream
-	roleArns []string
+	roleArn string
 }
 
 // https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#arn-syntax-ec2
@@ -26,8 +24,7 @@ const arnSegmentDelimiter = ":"
 
 func (cs *CredentialSpec) GetKey() CredentialKey {
 	// use a very conservative "hash" strategy to avoid having to depend on aws's arn specification
-	joinedArns := strings.Join(cs.roleArns, arnSegmentDelimiter)
-	return CredentialKey(fmt.Sprintf("%v-%v-%v", cs.secretRef.String(), cs.region, joinedArns))
+	return CredentialKey(fmt.Sprintf("%v-%v-%v", cs.secretRef.String(), cs.region, cs.roleArn))
 }
 
 func (cs *CredentialSpec) Region() string {
@@ -38,28 +35,23 @@ func (cs *CredentialSpec) SecretRef() *core.ResourceRef {
 	return cs.secretRef
 }
 
-func (cs *CredentialSpec) Arns() []string {
-	return cs.roleArns
+func (cs *CredentialSpec) Arn() string {
+	return cs.roleArn
 }
 
 func (cs *CredentialSpec) Clone() *CredentialSpec {
 	return &CredentialSpec{
 		secretRef: cs.secretRef,
 		region:    cs.region,
-		roleArns:  cs.roleArns,
+		roleArn:   cs.roleArn,
 	}
 }
 
 func NewCredentialSpecFromEc2UpstreamSpec(spec *glooec2.UpstreamSpec) *CredentialSpec {
-	var roleArns []string
-	for _, arn := range spec.RoleArns {
-		roleArns = append(roleArns, arn)
-	}
-	sort.Strings(roleArns)
 	return &CredentialSpec{
 		secretRef: spec.SecretRef,
 		region:    spec.Region,
-		roleArns:  roleArns,
+		roleArn:   spec.GetRoleArn(),
 	}
 }
 

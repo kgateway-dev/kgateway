@@ -41,15 +41,12 @@ func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error)
 			return nil, CreateSessionFromSecretError(err)
 		}
 	}
-	var configs []*aws.Config
-	for _, arn := range cred.Arns() {
-		// TODO: what does this do? will it use all of them?
-		// one of them? last one? first one?
-		cred := stscreds.NewCredentials(sess, arn)
-		configs = append(configs, &aws.Config{Credentials: cred})
+	if cred.Arn() != "" {
+		cred := stscreds.NewCredentials(sess, cred.Arn())
+		config := &aws.Config{Credentials: cred}
+		return ec2.New(sess, config), nil
 	}
-	svc := ec2.New(sess, configs...)
-	return svc, nil
+	return ec2.New(sess), nil
 }
 
 func GetInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Instance {

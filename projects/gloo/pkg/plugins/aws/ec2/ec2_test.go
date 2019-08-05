@@ -95,7 +95,7 @@ var _ = Describe("Plugin", func() {
 						AwsEc2: &glooec2.UpstreamSpec{
 							Region:    "us-east-1",
 							SecretRef: nil,
-							RoleArns:  nil,
+							RoleArn:   "",
 							Filters:   nil,
 							PublicIp:  false,
 							Port:      0,
@@ -128,7 +128,7 @@ var _ = Describe("Plugin", func() {
 						AwsEc2: &glooec2.UpstreamSpec{
 							Region:    "us-east-1",
 							SecretRef: nil,
-							RoleArns:  nil,
+							RoleArn:   "",
 							Filters:   nil,
 							PublicIp:  true,
 							Port:      77,
@@ -161,7 +161,7 @@ var _ = Describe("Plugin", func() {
 						AwsEc2: &glooec2.UpstreamSpec{
 							Region:    "us-east-1",
 							SecretRef: nil,
-							RoleArns:  nil,
+							RoleArn:   "",
 							Filters:   nil,
 							PublicIp:  false,
 							Port:      77,
@@ -193,7 +193,7 @@ var _ = Describe("Plugin", func() {
 						AwsEc2: &glooec2.UpstreamSpec{
 							Region:    "us-east-1",
 							SecretRef: nil,
-							RoleArns:  nil,
+							RoleArn:   "",
 							Filters:   nil,
 							PublicIp:  false,
 							Port:      77,

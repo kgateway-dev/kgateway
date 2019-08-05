@@ -163,7 +163,7 @@ func getMockListerResponses() mockListerResponses {
 	ec2Upstream1 := &glooec2.UpstreamSpec{
 		Region:    region1,
 		SecretRef: testSecretRef1,
-		RoleArns:  nil,
+		RoleArn:   "",
 	}
 	cred1 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream1)
 	resp[cred1.GetKey()] = []*ec2.Instance{{
@@ -179,7 +179,7 @@ func getMockListerResponses() mockListerResponses {
 	ec2Upstream2 := &glooec2.UpstreamSpec{
 		Region:    region1,
 		SecretRef: testSecretRef2,
-		RoleArns:  nil,
+		RoleArn:   "",
 	}
 	cred2 := NewCredentialSpecFromEc2UpstreamSpec(ec2Upstream2)
 	resp[cred2.GetKey()] = []*ec2.Instance{{
