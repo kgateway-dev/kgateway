@@ -25,7 +25,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
 		proxyClient, _ := v1.NewProxyClient(&factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
-		ingress := &v1alpha1.Ingress{Ingress: knative.Ingress{}}
+		ingress := &v1alpha1.Ingress{Ingress: knative.Ingress{ObjectMeta: v12.ObjectMeta{Generation: 1}}}
 		knativeClient := &mockCiClient{ci: toKube(ingress)}
 
 		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, make(chan error)).(*translatorSyncer)

@@ -1,9 +1,12 @@
 package translator
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
@@ -22,30 +25,19 @@ const (
 	proxyName     = "knative-proxy"
 )
 
-func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
+func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
 	ingresses := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
 	for _, ing := range snap.Ingresses {
 		ingresses[ing.GetMetadata().Ref()] = ing.Spec
 	}
-	return TranslateProxyFromSpecs(proxyName, namespace, ingresses, snap.Secrets)
+	return TranslateProxyFromSpecs(ctx, proxyName, namespace, ingresses, snap.Secrets)
 }
 
 // made public to be shared with the (soon to be deprecated) clusteringress controller
-func TranslateProxyFromSpecs(proxyName, proxyNamespace string, ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, secrets gloov1.SecretList) (*gloov1.Proxy, error) {
-	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, secrets)
+func TranslateProxyFromSpecs(ctx context.Context, proxyName, proxyNamespace string, ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, secrets gloov1.SecretList) (*gloov1.Proxy, error) {
+	virtualHostsHttp, virtualHostsHttps, sslConfigs, err := routingConfig(ctx, ingresses, secrets)
 	if err != nil {
 		return nil, errors.Wrapf(err, "computing virtual hosts")
-	}
-	var virtualHostsHttps []*gloov1.VirtualHost
-	var sslConfigs []*gloov1.SslConfig
-	for _, svh := range secureVirtualHosts {
-		virtualHostsHttps = append(virtualHostsHttps, svh.vh)
-		sslConfigs = append(sslConfigs, &gloov1.SslConfig{
-			SslSecrets: &gloov1.SslConfig_SecretRef{
-				SecretRef: &svh.secret,
-			},
-			SniDomains: svh.vh.Domains,
-		})
 	}
 	var listeners []*gloov1.Listener
 	if len(virtualHostsHttp) > 0 {
@@ -82,34 +74,39 @@ func TranslateProxyFromSpecs(proxyName, proxyNamespace string, ingresses map[cor
 	}, nil
 }
 
-type secureVirtualHost struct {
-	vh     *gloov1.VirtualHost
-	secret core.ResourceRef
-}
+func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []*gloov1.VirtualHost, []*gloov1.SslConfig, error) {
 
-func virtualHosts(ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
-	routesByHostHttp := make(map[string][]*gloov1.Route)
-	routesByHostHttps := make(map[string][]*gloov1.Route)
-	secretsByHost := make(map[string]*core.ResourceRef)
+	var virtualHostsHttp, virtualHostsHttps []*gloov1.VirtualHost
+	var sslConfigs []*gloov1.SslConfig
 	for ing, spec := range ingresses {
+
 		for _, tls := range spec.TLS {
 			secret, err := secrets.Find(tls.SecretNamespace, tls.SecretName)
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "invalid secret for knative ingress %v", ing.Name)
+				return nil, nil, nil, errors.Wrapf(err, "invalid secret for knative ingress %v", ing.Name)
 			}
 
 			ref := secret.Metadata.Ref()
-			for _, host := range tls.Hosts {
-				if existing, alreadySet := secretsByHost[host]; alreadySet {
-					if existing.Name != ref.Name || existing.Namespace != ref.Namespace {
-						log.Warnf("a TLS secret for host %v was redefined in knative ingress %v, ignoring", ing.Name)
-						continue
-					}
-				}
-				secretsByHost[host] = &ref
+
+			if tls.ServerCertificate != "" {
+				contextutils.LoggerFrom(ctx).Warn("Custom ServerCertificate filenames are not currently supported by Gloo")
+				continue
 			}
+
+			if tls.PrivateKey != "" {
+				contextutils.LoggerFrom(ctx).Warn("Custom PrivateKey filenames are not currently supported by Gloo")
+				continue
+			}
+
+			sslConfigs = append(sslConfigs, &gloov1.SslConfig{
+				SniDomains: tls.Hosts,
+				SslSecrets: &gloov1.SslConfig_SecretRef{
+					SecretRef: &ref,
+				},
+			})
 		}
 
+		var routes []*gloov1.Route
 		for i, rule := range spec.Rules {
 			if rule.HTTP == nil {
 				log.Warnf("rule %v in knative ingress %v is missing HTTP field", i, ing.Name)
@@ -139,7 +136,7 @@ func virtualHosts(ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, se
 
 				action, err := routeActionFromSplits(route.Splits)
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "")
+					return nil, nil, nil, errors.Wrapf(err, "")
 				}
 
 				route := &gloov1.Route{
@@ -157,52 +154,44 @@ func virtualHosts(ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, se
 						Retries:            retryPolicy,
 					},
 				}
-				for _, host := range rule.Hosts {
-					if _, useTls := secretsByHost[host]; useTls {
-						routesByHostHttps[host] = append(routesByHostHttps[host], route)
-					} else {
-						routesByHostHttp[host] = append(routesByHostHttp[host], route)
-					}
+				routes = append(routes, route)
+
+			}
+			useTls := len(spec.TLS) > 0
+
+			var hosts []string
+			for _, host := range rule.Hosts {
+				hosts = append(hosts, host)
+				if useTls {
+					hosts = append(hosts, fmt.Sprintf("%v:%v", host, bindPortHttps))
+				} else {
+					hosts = append(hosts, fmt.Sprintf("%v:%v", host, bindPortHttp))
 				}
 			}
+
+			if useTls {
+				virtualHostsHttps = append(virtualHostsHttps, &gloov1.VirtualHost{
+					Name:    ing.Key(),
+					Domains: hosts,
+					Routes:  routes,
+				})
+			} else {
+				virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
+					Name:    ing.Key(),
+					Domains: hosts,
+					Routes:  routes,
+				})
+			}
 		}
-	}
-
-	var virtualHostsHttp []*gloov1.VirtualHost
-	var virtualHostsHttps []secureVirtualHost
-
-	for host, routes := range routesByHostHttp {
-		sortByLongestPathName(routes)
-		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
-			Name:    host + "-http",
-			Domains: []string{host, fmt.Sprintf("%v:%v", host, bindPortHttp)},
-			Routes:  routes,
-		})
-	}
-
-	for host, routes := range routesByHostHttps {
-		sortByLongestPathName(routes)
-		secret, ok := secretsByHost[host]
-		if !ok {
-			return nil, nil, errors.Errorf("internal error: secret not found for host %v after processing knative ingresses", host)
-		}
-		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
-			vh: &gloov1.VirtualHost{
-				Name:    host + "-http",
-				Domains: []string{host, fmt.Sprintf("%v:%v", host, bindPortHttps)},
-				Routes:  routes,
-			},
-			secret: *secret,
-		})
 	}
 
 	sort.SliceStable(virtualHostsHttp, func(i, j int) bool {
 		return virtualHostsHttp[i].Name < virtualHostsHttp[j].Name
 	})
 	sort.SliceStable(virtualHostsHttps, func(i, j int) bool {
-		return virtualHostsHttps[i].vh.Name < virtualHostsHttps[j].vh.Name
+		return virtualHostsHttps[i].Name < virtualHostsHttps[j].Name
 	})
-	return virtualHostsHttp, virtualHostsHttps, nil
+	return virtualHostsHttp, virtualHostsHttps, sslConfigs, nil
 }
 
 func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov1.RouteAction, error) {
@@ -247,12 +236,6 @@ func serviceForSplit(split knativev1alpha1.IngressBackendSplit) *gloov1.Destinat
 			Port: uint32(split.ServicePort.IntValue()),
 		},
 	}
-}
-
-func sortByLongestPathName(routes []*gloov1.Route) {
-	sort.SliceStable(routes, func(i, j int) bool {
-		return routes[i].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex > routes[j].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex
-	})
 }
 
 func getHeaderManipulation(headersToAppend map[string]string) *headers.HeaderManipulation {
