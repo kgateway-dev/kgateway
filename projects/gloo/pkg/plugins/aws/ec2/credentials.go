@@ -60,7 +60,6 @@ func NewCredentialSpecFromEc2UpstreamSpec(spec *glooec2.UpstreamSpec) *Credentia
 	}
 }
 
-// key by the credential itself since all
 type CredentialKey struct {
 	secretRef string
 	region    string
