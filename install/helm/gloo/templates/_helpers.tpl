@@ -1,5 +1,5 @@
 {{/*
-Expand the name of the chart.
+Expand the name of a container image
 */}}
 {{- define "gloo.image" -}}
 {{ .registry }}/{{ .repository }}:{{ .tag }}
