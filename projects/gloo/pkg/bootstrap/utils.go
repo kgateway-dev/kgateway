@@ -89,14 +89,15 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 			if err != nil {
 				return nil, err
 			}
-			*cfg = c
-		}
 
-		if kube := settings.GetKubernetes(); kube != nil {
-			if rl := kube.GetRateLimits(); rl != nil {
-				(*cfg).QPS = rl.QPS
-				(*cfg).Burst = int(rl.Burst)
+			if kube := settings.GetKubernetes(); kube != nil {
+				if rl := kube.GetRateLimits(); rl != nil {
+					c.QPS = rl.QPS
+					c.Burst = int(rl.Burst)
+				}
 			}
+
+			*cfg = c
 		}
 
 		return &factory.KubeResourceClientFactory{

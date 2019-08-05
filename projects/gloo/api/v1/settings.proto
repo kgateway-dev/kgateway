@@ -239,11 +239,15 @@ message Settings {
 
     // Provides overrides for the default configuration parameters used to interact with Kubernetes.
     message KubernetesConfiguration {
+
         message RateLimits {
+            // The maximum QPS to the master from this client.
             float QPS = 1;
+            // Maximum burst for throttle.
             uint32 burst = 2;
         }
-        RateLimits rate_limits =1;
+        // Rate limits for the kuberentes clients
+        RateLimits rate_limits = 1;
     }
 
     // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
