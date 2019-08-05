@@ -37,9 +37,11 @@ func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v
 	var allEndpoints v1.EndpointList
 	for _, credGroup := range credGroups {
 		for _, upstream := range credGroup.upstreams {
-			instancesForUpstream := filterInstancesForUpstream(upstream, credGroup)
+			instancesForUpstream := filterInstancesForUpstream(ctx, upstream, credGroup)
 			for _, instance := range instancesForUpstream {
-				allEndpoints = append(allEndpoints, upstreamInstanceToEndpoint(ctx, writeNamespace, upstream, instance))
+				if endpoint := upstreamInstanceToEndpoint(ctx, writeNamespace, upstream, instance); endpoint != nil {
+					allEndpoints = append(allEndpoints, endpoint)
+				}
 			}
 		}
 	}
@@ -98,11 +100,13 @@ func getInstancesForCredentialGroups(ctx context.Context, lister Ec2InstanceList
 
 // applies filter logic equivalent to the tag filter logic used in AWS's DescribeInstances API
 // NOTE: assumes that upstreams are EC2 upstreams
-func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGroup) []*ec2.Instance {
+func filterInstancesForUpstream(ctx context.Context, upstream *v1.Upstream, credGroup *credentialGroup) []*ec2.Instance {
 	var instances []*ec2.Instance
+	logger := contextutils.LoggerFrom(ctx)
 	// sweep through each filter map, if all the upstream's filters are matched, add the corresponding instance to the list
 	for i, fm := range credGroup.filterMaps {
 		candidateInstance := credGroup.instances[i]
+		logger.Debugw("considering instance for upstream", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		matchesAll := true
 	ScanFilters: // label so that we can break out of the for loop rather than the switch
 		for _, filter := range upstream.UpstreamSpec.GetAwsEc2().Filters {
@@ -121,6 +125,9 @@ func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGrou
 		}
 		if matchesAll {
 			instances = append(instances, candidateInstance)
+			logger.Debugw("instance for upstream accepted", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
+		} else {
+			logger.Debugw("instance for upstream filtered out", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		}
 	}
 	return instances
@@ -129,8 +136,15 @@ func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGrou
 // NOTE: assumes that upstreams are EC2 upstreams
 func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
 	ipAddr := instance.PrivateIpAddress
-	if upstream.UpstreamSpec.GetAwsEc2().PublicIp {
+	if upstream.UpstreamSpec.GetAwsEc2().GetPublicIp() {
 		ipAddr = instance.PublicIpAddress
+	}
+	if ipAddr == nil {
+		contextutils.LoggerFrom(ctx).Warnw("no ip found for config",
+			zap.Any("upstreamRef", upstream.GetMetadata().Ref()),
+			zap.Any("instanceId", aws.StringValue(instance.InstanceId)),
+			zap.Any("upstream.usePublicIp", upstream.UpstreamSpec.GetAwsEc2().GetPublicIp()))
+		return nil
 	}
 	port := upstream.UpstreamSpec.GetAwsEc2().GetPort()
 	if port == 0 {
