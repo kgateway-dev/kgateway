@@ -56,7 +56,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ $spec.podTemplate.image.repository }}:{{ $spec.podTemplate.image.tag }}
+        image: {{ template "gloo.image" $spec.podTemplate.image }}
         imagePullPolicy: {{ $spec.podTemplate.image.pullPolicy }}
         name: {{ $name | kebabcase }}
         securityContext:
