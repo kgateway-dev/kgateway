@@ -23,7 +23,7 @@ spec:
       {{- end}}
     spec:
       containers:
-      - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
+      - image: {{template "gloo.image" .Values.discovery.deployment.image}}
         imagePullPolicy: {{ .Values.discovery.deployment.image.pullPolicy }}
         name: discovery
 {{- if .Values.discovery.deployment.resources }}

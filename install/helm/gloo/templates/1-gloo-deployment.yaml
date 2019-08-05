@@ -23,7 +23,7 @@ spec:
       {{- end}}
     spec:
       containers:
-      - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
+      - image: {{template "gloo.image" .Values.gloo.deployment.image}}
         imagePullPolicy: {{ .Values.gloo.deployment.image.pullPolicy }}
         name: gloo
 {{- if .Values.gloo.deployment.resources }}

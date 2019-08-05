@@ -34,7 +34,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: "{{ .Values.ingressProxy.deployment.image.repository }}:{{ .Values.ingressProxy.deployment.image.tag }}"
+        image: {{template "gloo.image" .Values.ingressProxy.deployment.image}}
         imagePullPolicy: {{ .Values.ingressProxy.deployment.image.pullPolicy }}
         name: ingress-proxy
 {{- if .Values.ingressProxy.deployment.resources }}
