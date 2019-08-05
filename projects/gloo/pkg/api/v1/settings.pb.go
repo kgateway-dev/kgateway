@@ -1165,6 +1165,7 @@ func (m *Settings_ConsulConfiguration_ServiceDiscoveryOptions) GetDataCenters() 
 
 // Provides overrides for the default configuration parameters used to interact with Kubernetes.
 type Settings_KubernetesConfiguration struct {
+	// Rate limits for the kuberentes clients
 	RateLimits           *Settings_KubernetesConfiguration_RateLimits `protobuf:"bytes,1,opt,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                     `json:"-"`
 	XXX_unrecognized     []byte                                       `json:"-"`
@@ -1203,7 +1204,9 @@ func (m *Settings_KubernetesConfiguration) GetRateLimits() *Settings_KubernetesC
 }
 
 type Settings_KubernetesConfiguration_RateLimits struct {
-	QPS                  float32  `protobuf:"fixed32,1,opt,name=QPS,proto3" json:"QPS,omitempty"`
+	// The maximum QPS to the master from this client.
+	QPS float32 `protobuf:"fixed32,1,opt,name=QPS,proto3" json:"QPS,omitempty"`
+	// Maximum burst for throttle.
 	Burst                uint32   `protobuf:"varint,2,opt,name=burst,proto3" json:"burst,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

@@ -344,7 +344,7 @@ Provides overrides for the default configuration parameters used to interact wit
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [.gloo.solo.io.Settings.KubernetesConfiguration.RateLimits](../settings.proto.sk#ratelimits) |  |  |
+| `rateLimits` | [.gloo.solo.io.Settings.KubernetesConfiguration.RateLimits](../settings.proto.sk#ratelimits) | Rate limits for the kuberentes clients |  |
 
 
 
@@ -362,8 +362,8 @@ Provides overrides for the default configuration parameters used to interact wit
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `qPS` | `float` |  |  |
-| `burst` | `int` |  |  |
+| `qPS` | `float` | The maximum QPS to the master from this client. |  |
+| `burst` | `int` | Maximum burst for throttle. |  |
 
 
 
