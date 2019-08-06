@@ -9,7 +9,7 @@ import (
 //set.StringVarP(&upstream.UpstreamType, "type", "t", "",
 //	"type of upstream. Available: "+strings.Join(options.UpstreamTypes, " | "))
 
-func AddUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options.InputUpstream) {
+func AddCreateUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options.InputUpstream) {
 	var addServiceSpecFlags bool
 
 	switch upstreamType {
@@ -22,6 +22,25 @@ func AddUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *options
 		set.StringVar(&upstream.Aws.Secret.Namespace, "aws-secret-namespace", defaults.GlooSystem,
 			"namespace where the AWS secret lives. See `glooctl create secret aws --help` "+
 				"for help creating secrets")
+	case options.UpstreamType_AwsEc2:
+		set.StringVar(&upstream.AwsEc2.Region, "aws-region", "us-east-1",
+			"region for AWS services this upstream utilize")
+		set.StringVar(&upstream.AwsEc2.Secret.Name, "aws-secret-name", "",
+			"name of a secret containing AWS credentials created with glooctl. See `glooctl create secret aws --help` "+
+				"for help creating secrets")
+		set.StringVar(&upstream.AwsEc2.Secret.Namespace, "aws-secret-namespace", defaults.GlooSystem,
+			"namespace where the AWS secret lives. See `glooctl create secret aws --help` "+
+				"for help creating secrets")
+		set.StringVar(&upstream.AwsEc2.Role, "aws-role-arn", "",
+			"Amazon Resource Number (ARN) of role that Gloo should assume on behalf of the upstream")
+		set.BoolVar(&upstream.AwsEc2.PublicIp, "public-ip", false,
+			"use instance's public IP address")
+		set.Uint32Var(&upstream.AwsEc2.Port, "ec2-port", 80,
+			"port to use to connect to the EC2 instance (default 80)")
+		set.StringSliceVar(&upstream.AwsEc2.KeyFilters, "tag-key-filters", nil,
+			"list of tag keys that must exist on EC2 instances associated with this upstream")
+		set.StringSliceVar(&upstream.AwsEc2.KeyValueFilters.Entries, "tag-key-value-filters", nil,
+			"list of tag keys and corresponding values that must exist on EC2 instances associated with this upstream")
 	case options.UpstreamType_Azure:
 		set.StringVar(&upstream.Azure.FunctionAppName, "azure-app-name", "",
 			"name of the Azure Functions app to associate with this upstream")

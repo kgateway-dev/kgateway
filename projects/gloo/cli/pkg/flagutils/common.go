@@ -1,12 +1,17 @@
 package flagutils
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/spf13/pflag"
 )
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 	set.VarP(outputType, "output", "o", "output format: (yaml, json, table, kube-yaml)")
+}
+
+func AddGetFlags(set *pflag.FlagSet, getOpts *options.Get) {
+	set.BoolVar(&getOpts.Wide, "wide", false, "if set, will fetch additional details")
 }
 
 func AddFileFlag(set *pflag.FlagSet, strptr *string) {

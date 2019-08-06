@@ -68,6 +68,9 @@ type Upgrade struct {
 
 type Get struct {
 	Selector InputMapStringString
+	// if true, will get extended information that might not be available without calling external services, such as
+	// AWS apis, or kubectl port-forwarded services
+	Wide bool
 }
 
 type Delete struct {
@@ -172,6 +175,7 @@ type InputVirtualService struct {
 
 const (
 	UpstreamType_Aws    = "aws"
+	UpstreamType_AwsEc2 = "ec2"
 	UpstreamType_Azure  = "azure"
 	UpstreamType_Consul = "consul"
 	UpstreamType_Kube   = "kube"
@@ -180,6 +184,7 @@ const (
 
 var UpstreamTypes = []string{
 	UpstreamType_Aws,
+	UpstreamType_AwsEc2,
 	UpstreamType_Azure,
 	UpstreamType_Consul,
 	UpstreamType_Kube,
@@ -189,6 +194,7 @@ var UpstreamTypes = []string{
 type InputUpstream struct {
 	UpstreamType string
 	Aws          InputAwsSpec
+	AwsEc2       InputAwsEc2Spec
 	Azure        InputAzureSpec
 	Consul       InputConsulSpec
 	Kube         InputKubeSpec
@@ -201,6 +207,16 @@ type InputUpstream struct {
 type InputAwsSpec struct {
 	Region string
 	Secret core.ResourceRef
+}
+
+type InputAwsEc2Spec struct {
+	Region          string
+	Secret          core.ResourceRef
+	Role            string
+	PublicIp        bool
+	Port            uint32
+	KeyFilters      []string
+	KeyValueFilters InputMapStringString
 }
 
 type InputAzureSpec struct {

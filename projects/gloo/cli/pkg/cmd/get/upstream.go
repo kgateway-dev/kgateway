@@ -20,12 +20,14 @@ func Upstream(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			xdsDump, err := xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace)
-			if err != nil {
-				return err
+			var xdsDump *xdsinspection.XdsDump
+			if opts.Get.Wide {
+				xdsDump, err = xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace)
+				if err != nil {
+					return err
+				}
 			}
-			printers.PrintUpstreams(upstreams, opts.Top.Output, xdsDump)
-			return nil
+			return printers.PrintUpstreams(upstreams, opts.Top.Output, xdsDump)
 		},
 	}
 	return cmd

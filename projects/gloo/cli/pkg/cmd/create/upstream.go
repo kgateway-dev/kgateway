@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -76,6 +78,14 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 				"Consul services can be added to Gloo manually via the CLI.",
 		),
 		createUpstreamSubcommand(opts,
+			options.UpstreamType_AwsEc2,
+			"Create an EC2 Upstream",
+			"EC2 Upstreams represent a collection of EC2 instance endpoints that match the specified tag filters. "+
+				"You can use private (default) or public IP addresses and and any port on the instance (default: 80)."+
+				"EC2 Upstreams require a valid set of AWS Credentials to be provided, either as an AWS secret, "+
+				"or in the environment. You can optionally provide a Role for Gloo to assume on behalf of this upstream.",
+		),
+		createUpstreamSubcommand(opts,
 			options.UpstreamType_Kube,
 			"Create a Kubernetes Upstream",
 			"Kubernetes Upstreams represent a collection of endpoints for Services registered with Kubernetes. "+
@@ -124,7 +134,7 @@ func createUpstreamSubcommand(opts *options.Options, upstreamType, short, long s
 			return createUpstream(opts)
 		},
 	}
-	flagutils.AddUpstreamFlags(cmd.PersistentFlags(), upstreamType, &opts.Create.InputUpstream)
+	flagutils.AddCreateUpstreamFlags(cmd.PersistentFlags(), upstreamType, &opts.Create.InputUpstream)
 	return cmd
 }
 
@@ -141,9 +151,7 @@ func createUpstream(opts *options.Options) error {
 		}
 	}
 
-	printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output, nil)
-
-	return nil
+	return printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output, nil)
 }
 
 func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
@@ -179,6 +187,48 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 				Region:    input.Aws.Region,
 				SecretRef: input.Aws.Secret,
 			},
+		}
+	case options.UpstreamType_AwsEc2:
+		if svcSpec != nil {
+			return nil, errors.Errorf("%v does not support service spec", input.UpstreamType)
+		}
+		ec2Spec := &ec2.UpstreamSpec{
+			Region:   input.AwsEc2.Region,
+			Port:     input.AwsEc2.Port,
+			PublicIp: input.AwsEc2.PublicIp,
+			RoleArn:  input.AwsEc2.Role,
+		}
+		if input.AwsEc2.Secret.Namespace != "" || input.AwsEc2.Secret.Name != "" {
+			if input.AwsEc2.Secret.Namespace == "" {
+				return nil, errors.Errorf("aws secret namespace must not be empty")
+			}
+			if input.AwsEc2.Secret.Name == "" {
+				return nil, errors.Errorf("aws secret name must not be empty")
+			}
+			ec2Spec.SecretRef = &input.AwsEc2.Secret
+		}
+		var filters []*ec2.TagFilter
+		for _, key := range input.AwsEc2.KeyFilters {
+			filters = append(filters, &ec2.TagFilter{
+				Spec: &ec2.TagFilter_Key{
+					Key: key,
+				},
+			})
+		}
+		kvMap := input.AwsEc2.KeyValueFilters.MustMap()
+		for k, v := range kvMap {
+			filters = append(filters, &ec2.TagFilter{
+				Spec: &ec2.TagFilter_KvPair_{
+					KvPair: &ec2.TagFilter_KvPair{
+						Key:   k,
+						Value: v,
+					},
+				},
+			})
+		}
+		ec2Spec.Filters = filters
+		spec.UpstreamType = &v1.UpstreamSpec_AwsEc2{
+			AwsEc2: ec2Spec,
 		}
 	case options.UpstreamType_Azure:
 		if svcSpec != nil {

@@ -11,7 +11,12 @@ import (
 
 func (xd *XdsDump) GetInstancesForUpstream(upstream core.ResourceRef) []string {
 	var out []string
+	if xd == nil {
+		out = append(out, "pass --wide flag for instance details")
+		return out
+	}
 	clusterName := translator.UpstreamToClusterName(upstream)
+	endpointCount := 0
 	for _, clusterEndpoints := range xd.Endpoints {
 		if clusterEndpoints.ClusterName == clusterName {
 			for _, lEp := range clusterEndpoints.Endpoints {
@@ -20,12 +25,16 @@ func (xd *XdsDump) GetInstancesForUpstream(upstream core.ResourceRef) []string {
 					if k, ok := ep.Metadata.FilterMetadata[translator.SoloAnnotations]; ok {
 						v, ok := k.Fields[ec2.InstanceIdAnnotationKey]
 						if ok {
+							endpointCount++
 							out = append(out, v.GetStringValue())
 						}
 					}
 				}
 			}
 		}
+	}
+	if endpointCount == 0 {
+		out = append(out, "no endpoints")
 	}
 	return out
 }
