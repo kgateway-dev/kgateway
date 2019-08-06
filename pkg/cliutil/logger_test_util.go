@@ -17,8 +17,7 @@ func RegisterGlooDebugLogPrintHandler() {
 }
 
 func printGlooDebugLogs() {
-	logsFile := GetLogsPath()
-	logs, _ := ioutil.ReadFile(logsFile)
+	logs, _ := ioutil.ReadFile(GetLogsPath())
 	fmt.Println("*** Gloo debug logs ***")
 	fmt.Println(string(logs))
 	fmt.Println("*** End Gloo debug logs ***")
