@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	kubev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -19,6 +20,11 @@ const (
 )
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
+
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{metav1.NamespaceAll}
+	}
+
 	ctx := contextutils.WithLogger(opts.Ctx, "kube-uds")
 	logger := contextutils.LoggerFrom(ctx)
 
