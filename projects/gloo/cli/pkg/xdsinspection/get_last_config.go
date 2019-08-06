@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"strconv"
 	"time"
+
+	"go.uber.org/zap"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -24,12 +25,13 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func GetGlooXdsDump(ctx context.Context, proxyName, namespace string) (*XdsDump, error) {
+func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
 	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
 	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
 		"deployment/gloo", xdsPort)
-	portFwd.Stdout = os.Stderr
-	portFwd.Stderr = os.Stderr
+	mergedPortForwardOutput := bytes.NewBuffer([]byte{})
+	portFwd.Stdout = mergedPortForwardOutput
+	portFwd.Stderr = mergedPortForwardOutput
 	if err := portFwd.Start(); err != nil {
 		return nil, errors.Wrapf(err, "failed to start port-forward")
 	}
@@ -65,10 +67,14 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string) (*XdsDump,
 		case <-ctx.Done():
 			return nil, errors.Errorf("cancelled")
 		case err := <-errs:
-			contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v", err.Error())
+			if verboseErrors {
+				contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v", err.Error())
+			}
 		case res := <-result:
 			return res, nil
 		case <-timer:
+			contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v",
+				zap.Any("cmdErrors", string(mergedPortForwardOutput.Bytes())))
 			return nil, errors.Errorf("timed out trying to connect to Envoy admin port")
 		}
 	}

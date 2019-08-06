@@ -22,7 +22,7 @@ func Upstream(opts *options.Options) *cobra.Command {
 			}
 			var xdsDump *xdsinspection.XdsDump
 			if opts.Get.Wide {
-				xdsDump, err = xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace)
+				xdsDump, err = xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, false)
 				if err != nil {
 					return err
 				}
