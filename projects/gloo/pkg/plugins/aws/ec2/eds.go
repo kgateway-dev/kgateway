@@ -110,7 +110,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	return endpointsChan, errs, nil
 }
 
-const defaultPort = 80
+const DefaultPort = 80
 
 // TODO[eds enhancement] - update the EDS interface to include a registration function which would ensure uniqueness among prefixes
 // ... also include a function to ensure that the endpoint name conforms to the spec (is unique, begins with expected prefix)

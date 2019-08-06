@@ -6,6 +6,8 @@ import (
 	"os"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
@@ -104,6 +106,12 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			add(fmt.Sprintf("- %v", functions[i]))
 		}
 	case *v1.UpstreamSpec_AwsEc2:
+		add(
+			fmt.Sprintf("role:           %v", usType.AwsEc2.RoleArn),
+			fmt.Sprintf("uses public ip: %v", usType.AwsEc2.PublicIp),
+			fmt.Sprintf("port:           %v", usType.AwsEc2.Port),
+		)
+		add(getEc2TagFiltersString(usType.AwsEc2.Filters)...)
 		instances := xdsDump.GetInstancesForUpstream(up.Metadata.Ref())
 		add(
 			"EC2 Instance Ids:",
@@ -204,4 +212,39 @@ func linesForServiceSpec(serviceSpec *plugins.ServiceSpec) []string {
 	}
 
 	return spec
+}
+
+func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
+	var out []string
+	add := func(s ...string) {
+		out = append(out, s...)
+	}
+
+	var kFilters []*ec2.TagFilter_Key
+	var kvFilters []*ec2.TagFilter_KvPair
+	for _, f := range filters {
+		switch x := f.Spec.(type) {
+		case *ec2.TagFilter_Key:
+			kFilters = append(kFilters, x)
+		case *ec2.TagFilter_KvPair_:
+			kvFilters = append(kvFilters, x.KvPair)
+		}
+	}
+	if len(kFilters) == 0 {
+		add(fmt.Sprintf("key filters: (none)"))
+	} else {
+		add(fmt.Sprintf("key filters:"))
+		for _, f := range kFilters {
+			add(fmt.Sprintf("- %v", f.Key))
+		}
+	}
+	if len(kvFilters) == 0 {
+		add(fmt.Sprintf("key-value filters: (none)"))
+	} else {
+		add(fmt.Sprintf("key-value filters:"))
+		for _, f := range kvFilters {
+			add(fmt.Sprintf("- %v: %v", f.Key, f.Value))
+		}
+	}
+	return out
 }

@@ -1,8 +1,6 @@
 package xdsinspection
 
 import (
-	"fmt"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -21,7 +19,6 @@ func (xd *XdsDump) GetInstancesForUpstream(upstream core.ResourceRef) []string {
 		if clusterEndpoints.ClusterName == clusterName {
 			for _, lEp := range clusterEndpoints.Endpoints {
 				for _, ep := range lEp.LbEndpoints {
-					fmt.Println(ep.Metadata.FilterMetadata)
 					if k, ok := ep.Metadata.FilterMetadata[translator.SoloAnnotations]; ok {
 						v, ok := k.Fields[ec2.InstanceIdAnnotationKey]
 						if ok {

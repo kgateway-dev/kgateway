@@ -3,6 +3,7 @@ package flagutils
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
 	"github.com/spf13/pflag"
 )
 
@@ -35,7 +36,7 @@ func AddCreateUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *o
 			"Amazon Resource Number (ARN) of role that Gloo should assume on behalf of the upstream")
 		set.BoolVar(&upstream.AwsEc2.PublicIp, "public-ip", false,
 			"use instance's public IP address")
-		set.Uint32Var(&upstream.AwsEc2.Port, "ec2-port", 80,
+		set.Uint32Var(&upstream.AwsEc2.Port, "ec2-port", ec2.DefaultPort,
 			"port to use to connect to the EC2 instance (default 80)")
 		set.StringSliceVar(&upstream.AwsEc2.KeyFilters, "tag-key-filters", nil,
 			"list of tag keys that must exist on EC2 instances associated with this upstream")
