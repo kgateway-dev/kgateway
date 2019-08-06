@@ -41,14 +41,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v cluster ingresses, %v secrets)", snap.Hash(),
+	logger.Infof("begin sync %v (%v knative ingresses, %v secrets)", snap.Hash(),
 		len(snap.Ingresses),
 		len(snap.Secrets),
 	)
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 
-	proxy, err := translateProxy(s.writeNamespace, snap)
+	proxy, err := translateProxy(ctx, s.writeNamespace, snap)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
 			"knative ingress proxy will not be updated.", snap.Hash(), err)
@@ -118,7 +118,7 @@ func (s *translatorSyncer) markIngressesReady(ctx context.Context, ingresses v1a
 	var updatedIngresses []*knativev1alpha1.Ingress
 	for _, wrappedCi := range ingresses {
 		ci := knativev1alpha1.Ingress(wrappedCi.Ingress)
-		if ci.Status.IsReady() {
+		if ci.Status.ObservedGeneration == ci.ObjectMeta.Generation {
 			continue
 		}
 		ci.Status.InitializeConditions()

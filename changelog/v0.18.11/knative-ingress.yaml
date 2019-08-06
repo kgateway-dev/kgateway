@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Knative Ingress Status is now updated whenever `generation` changes
+    issueLink: https://github.com/solo-io/gloo/issues/971
+
+  - type: NON_USER_FACING
+    description: Fix unit test flake in Knative
