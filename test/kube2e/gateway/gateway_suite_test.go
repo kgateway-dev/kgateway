@@ -16,7 +16,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/go-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
@@ -25,7 +24,7 @@ func TestGateway(t *testing.T) {
 	if testutils.AreTestsDisabled() {
 		return
 	}
-	cliutil.RegisterGlooDebugLogPrintHandlerAndClearLogs()
+	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Gateway Suite")

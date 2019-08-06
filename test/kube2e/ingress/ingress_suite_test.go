@@ -17,7 +17,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/cliutil"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -25,7 +24,7 @@ func TestIngress(t *testing.T) {
 	if testutils.AreTestsDisabled() {
 		return
 	}
-	cliutil.RegisterGlooDebugLogPrintHandlerAndClearLogs()
+	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Ingress Suite")

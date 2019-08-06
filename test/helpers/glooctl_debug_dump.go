@@ -1,14 +1,15 @@
-package cliutil
+package helpers
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/go-utils/testutils"
 	"io/ioutil"
 	"os"
 )
 
 func RegisterGlooDebugLogPrintHandlerAndClearLogs() {
-	_ = os.Remove(GetLogsPath())
+	_ = os.Remove(cliutil.GetLogsPath())
 	RegisterGlooDebugLogPrintHandler()
 }
 
@@ -17,7 +18,7 @@ func RegisterGlooDebugLogPrintHandler() {
 }
 
 func printGlooDebugLogs() {
-	logs, _ := ioutil.ReadFile(GetLogsPath())
+	logs, _ := ioutil.ReadFile(cliutil.GetLogsPath())
 	fmt.Println("*** Gloo debug logs ***")
 	fmt.Println(string(logs))
 	fmt.Println("*** End Gloo debug logs ***")
