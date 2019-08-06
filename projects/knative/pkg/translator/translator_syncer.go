@@ -123,9 +123,10 @@ func (s *translatorSyncer) markIngressesReady(ctx context.Context, ingresses v1a
 		}
 		ci.Status.InitializeConditions()
 		ci.Status.MarkNetworkConfigured()
-		ci.Status.MarkLoadBalancerReady([]knativev1alpha1.LoadBalancerIngressStatus{
+		lb := []knativev1alpha1.LoadBalancerIngressStatus{
 			{DomainInternal: s.proxyAddress},
-		})
+		}
+		ci.Status.MarkLoadBalancerReady(lb, lb, lb)
 		ci.Status.ObservedGeneration = ci.Generation
 		updatedIngresses = append(updatedIngresses, &ci)
 	}
