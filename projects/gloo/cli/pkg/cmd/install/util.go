@@ -124,7 +124,7 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 	}
 	var valueCallbacks []install.ValuesCallback
 	if opts.Install.Knative.InstallKnativeVersion != "" {
-		valueCallbacks = append(valueCallbacks, func(config *generate.Config) {
+		valueCallbacks = append(valueCallbacks, func(config *generate.HelmConfig) {
 			if config.Settings != nil &&
 				config.Settings.Integrations != nil &&
 				config.Settings.Integrations.Knative != nil &&

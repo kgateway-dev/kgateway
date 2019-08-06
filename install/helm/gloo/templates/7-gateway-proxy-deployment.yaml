@@ -1,6 +1,11 @@
 {{- if .Values.gateway.enabled }}
+{{- $global := .Values.global }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
+{{- $image := $spec.podTemplate.image }}
+{{- if $global }}
+{{- $image = mergeOverwrite $global.image $spec.podTemplate.image }}
+{{- end }}
 ---
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -56,8 +61,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ $spec.podTemplate.image.repository }}:{{ $spec.podTemplate.image.tag }}
-        imagePullPolicy: {{ $spec.podTemplate.image.pullPolicy }}
+        image: {{ template "gloo.image" $image }}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: {{ $name | kebabcase }}
         securityContext:
           readOnlyRootFilesystem: true
@@ -134,9 +139,9 @@ spec:
       tolerations:
 {{ toYaml $spec.podTemplate.tolerations | indent 6}}
       {{- end }}
-      {{- if $spec.podTemplate.image.pullSecret }}
+      {{- if $image.pullSecret }}
       imagePullSecrets:
-        - name: {{ $spec.podTemplate.image.pullSecret }}{{end}}
+        - name: {{ $image.pullSecret }}{{end}}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config

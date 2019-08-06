@@ -1,3 +1,7 @@
+{{- $image := .Values.gloo.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = mergeOverwrite .Values.global.image .Values.gloo.deployment.image }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,8 +27,8 @@ spec:
       {{- end}}
     spec:
       containers:
-      - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.gloo.deployment.image.pullPolicy }}
+      - image: {{template "gloo.image" $image }}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: gloo
 {{- if .Values.gloo.deployment.resources }}
         resources:
@@ -56,7 +60,7 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
-      {{- if .Values.gloo.deployment.image.pullSecret }}
+      {{- if $image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.gloo.deployment.image.pullSecret }}
+        - name: {{ $image.pullSecret }}
       {{- end}}
