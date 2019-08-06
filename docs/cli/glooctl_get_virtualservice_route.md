@@ -27,6 +27,7 @@ glooctl get virtualservice route [flags]
       --name string         name of the resource to read or write
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default kube-yaml)
+      --wide                if set, will fetch additional details
 ```
 
 ### SEE ALSO

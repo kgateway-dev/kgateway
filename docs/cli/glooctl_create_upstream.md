@@ -40,6 +40,7 @@ glooctl create upstream [flags]
 * [glooctl create upstream aws](../glooctl_create_upstream_aws)	 - Create an Aws Upstream
 * [glooctl create upstream azure](../glooctl_create_upstream_azure)	 - Create an Azure Upstream
 * [glooctl create upstream consul](../glooctl_create_upstream_consul)	 - Create a Consul Upstream
+* [glooctl create upstream ec2](../glooctl_create_upstream_ec2)	 - Create an EC2 Upstream
 * [glooctl create upstream kube](../glooctl_create_upstream_kube)	 - Create a Kubernetes Upstream
 * [glooctl create upstream static](../glooctl_create_upstream_static)	 - Create a Static Upstream
 
