@@ -106,8 +106,8 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 			})
 		}
 
-		var routes []*gloov1.Route
 		for i, rule := range spec.Rules {
+			var routes []*gloov1.Route
 			if rule.HTTP == nil {
 				log.Warnf("rule %v in knative ingress %v is missing HTTP field", i, ing.Name)
 				continue
