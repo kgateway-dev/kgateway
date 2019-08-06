@@ -11,16 +11,14 @@ ingress:
   enabled: true
   deployment:
     image:
-      repository: quay.io/solo-io/ingress
-      pullPolicy: IfNotPresent
+      repository: ingress
     replicas: 1
 
 
 ingressProxy:
   deployment:
     image:
-      repository: quay.io/solo-io/gloo-envoy-wrapper
-      pullPolicy: IfNotPresent
+      repository: gloo-envoy-wrapper
     httpPort: 80
     httpsPort: 443
     replicas: 1
@@ -31,3 +29,9 @@ ingressProxy:
 
 gateway:
   enabled: false
+
+global:
+  image:
+    registry: quay.io/solo-ioxs
+    pullPolicy: IfNotPresent
+

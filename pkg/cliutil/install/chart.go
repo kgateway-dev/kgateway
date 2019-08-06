@@ -43,7 +43,7 @@ func GetHelmArchive(chartArchiveUri string) (*chart.Chart, error) {
 }
 
 // use to overwrite / modify values file before passing to helm
-type ValuesCallback func(*generate.Config)
+type ValuesCallback func(config *generate.HelmConfig)
 
 // Searches for the value file with the given name in the chart and returns its raw content.
 // NOTE: this also sets the namespace.create attribute to 'true'.
@@ -63,7 +63,7 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, ex
 	}
 
 	// Convert value file content to struct
-	valueStruct := &generate.Config{}
+	valueStruct := &generate.HelmConfig{}
 	if err := yaml.Unmarshal([]byte(rawAdditionalValues), valueStruct); err != nil {
 		return nil, errors.Errorf("invalid format for value file [%s] in Helm chart archive", fileName)
 	}

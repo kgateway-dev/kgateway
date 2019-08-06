@@ -1,6 +1,8 @@
 package translator
 
 import (
+	"context"
+
 	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -12,10 +14,10 @@ const (
 	proxyName = "clusteringress-proxy"
 )
 
-func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
+func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
 	ingresses := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
 	for _, ing := range snap.Clusteringresses {
 		ingresses[ing.GetMetadata().Ref()] = ing.Spec
 	}
-	return translator.TranslateProxyFromSpecs(proxyName, namespace, ingresses, snap.Secrets)
+	return translator.TranslateProxyFromSpecs(ctx, proxyName, namespace, ingresses, snap.Secrets)
 }

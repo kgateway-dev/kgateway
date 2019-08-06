@@ -1,3 +1,7 @@
+{{- $image := .Values.gateway.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = mergeOverwrite .Values.global.image .Values.gateway.deployment.image }}
+{{- end }}
 {{- if .Values.gateway.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -24,8 +28,8 @@ spec:
       {{- end}}
     spec:
       containers:
-      - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.gateway.deployment.image.pullPolicy }}
+      - image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: gateway
 {{- if .Values.gateway.deployment.resources }}
         resources:

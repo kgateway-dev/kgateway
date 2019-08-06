@@ -17,3 +17,9 @@ ClusterRole
 -{{ .Release.Namespace }}
 {{- end -}}
 {{- end -}}
+{{/*
+Expand the name of a container image
+*/}}
+{{- define "gloo.image" -}}
+{{ .registry }}/{{ .repository }}:{{ .tag }}
+{{- end -}}

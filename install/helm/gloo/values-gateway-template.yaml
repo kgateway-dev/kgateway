@@ -21,8 +21,7 @@ settings:
 gloo:
   deployment:
     image:
-      repository: quay.io/solo-io/gloo
-      pullPolicy: IfNotPresent
+      repository: gloo
     xdsPort: 9977
     replicas: 1
     stats: true
@@ -30,8 +29,7 @@ gloo:
 discovery:
   deployment:
     image:
-      repository: quay.io/solo-io/discovery
-      pullPolicy: IfNotPresent
+      repository: discovery
     replicas: 1
     stats: true
 
@@ -40,14 +38,12 @@ gateway:
   upgrade: false
   deployment:
     image:
-      repository: quay.io/solo-io/gateway
-      pullPolicy: IfNotPresent
+      repository: gateway
     replicas: 1
     stats: true
   conversionJob:
     image:
-      repository: quay.io/solo-io/gateway-conversion
-      pullPolicy: IfNotPresent
+      repository: gateway-conversion
     restartPolicy: Never
 
 gatewayProxies:
@@ -58,8 +54,7 @@ gatewayProxies:
     podTemplate:
       probes: false
       image:
-        repository: quay.io/solo-io/gloo-envoy-wrapper
-        pullPolicy: IfNotPresent
+        repository: gloo-envoy-wrapper
       stats: true
       httpPort: 8080
       httpsPort: 8443
@@ -78,3 +73,8 @@ gatewayProxies:
 
 ingress:
   enabled: false
+
+global:
+  image:
+    registry: quay.io/solo-io
+    pullPolicy: IfNotPresent

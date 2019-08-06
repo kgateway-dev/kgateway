@@ -1,12 +1,12 @@
 package add
 
 import (
-	"fmt"
-	"os"
 	"sort"
 
+	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -57,47 +57,6 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 	return cmd
 }
 
-func selectOrCreateVirtualService(opts *options.Options) (*gatewayv1.VirtualService, error) {
-	vsClient := helpers.MustVirtualServiceClient()
-	if opts.Metadata.Name != "" {
-		if existing, err := vsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name,
-			clients.ReadOpts{Ctx: opts.Top.Ctx}); err == nil {
-			return existing, nil
-		}
-	}
-
-	for _, ns := range helpers.MustGetNamespaces() {
-		vss, err := vsClient.List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, vs := range vss {
-			for _, domain := range vs.VirtualHost.Domains {
-				if domain == "*" {
-					fmt.Printf("selected virtualservice %v for route\n", vs.Metadata.Name)
-					return vs, nil
-				}
-			}
-		}
-	}
-
-	if opts.Metadata.Name == "" {
-		opts.Metadata.Name = "default"
-	}
-	if opts.Metadata.Namespace == "" {
-		opts.Metadata.Namespace = defaults.GlooSystem
-	}
-
-	fmt.Fprintf(os.Stderr, "creating virtualservice %v with default domain *\n", opts.Metadata.Name)
-	return &gatewayv1.VirtualService{
-		Metadata: opts.Metadata,
-		VirtualHost: &v1.VirtualHost{
-			Domains: []string{"*"},
-		},
-	}, nil
-}
-
 func addRoute(opts *options.Options) error {
 	match, err := matcherFromInput(opts.Add.Route.Matcher)
 	if err != nil {
@@ -118,13 +77,17 @@ func addRoute(opts *options.Options) error {
 		RoutePlugins: plugins,
 	}
 
-	index := int(opts.Add.Route.InsertIndex)
-
-	virtualService, err := selectOrCreateVirtualService(opts)
+	vsRef := &core.ResourceRef{
+		Namespace: opts.Metadata.Namespace,
+		Name:      opts.Metadata.Name,
+	}
+	selector := selectionutils.NewVirtualServiceSelector(helpers.MustVirtualServiceClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
+	virtualService, err := selector.SelectOrCreate(opts.Top.Ctx, vsRef)
 	if err != nil {
 		return err
 	}
 
+	index := int(opts.Add.Route.InsertIndex)
 	virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, nil)
 	copy(virtualService.VirtualHost.Routes[index+1:], virtualService.VirtualHost.Routes[index:])
 	virtualService.VirtualHost.Routes[index] = v1Route
