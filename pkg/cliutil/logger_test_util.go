@@ -2,7 +2,7 @@ package cliutil
 
 import (
 	"fmt"
-	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/go-utils/testutils"
 	"io/ioutil"
 	"os"
 )
@@ -13,7 +13,7 @@ func RegisterGlooDebugLogPrintHandlerAndClearLogs() {
 }
 
 func RegisterGlooDebugLogPrintHandler() {
-	helpers.RegisterPreFailHandler(printGlooDebugLogs)
+	testutils.RegisterPreFailHandler(printGlooDebugLogs)
 }
 
 func printGlooDebugLogs() {
