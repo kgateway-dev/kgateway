@@ -241,9 +241,10 @@ message Settings {
     message KubernetesConfiguration {
 
         message RateLimits {
-            // The maximum QPS to the master from this client.
+            // The maximum queries-per-second Gloo can make to the Kubernetes API Server.
             float QPS = 1;
-            // Maximum burst for throttle.
+            // Maximum burst for throttle. When a steady state of QPS requests per second, 
+            // this is an additional number of allowed, to allow for short bursts.
             uint32 burst = 2;
         }
         // Rate limits for the kuberentes clients

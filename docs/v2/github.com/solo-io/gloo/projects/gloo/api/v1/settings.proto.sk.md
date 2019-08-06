@@ -362,8 +362,8 @@ Provides overrides for the default configuration parameters used to interact wit
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `qPS` | `float` | The maximum QPS to the master from this client. |  |
-| `burst` | `int` | Maximum burst for throttle. |  |
+| `qPS` | `float` | The maximum queries-per-second Gloo can make to the Kubernetes API Server. |  |
+| `burst` | `int` | Maximum burst for throttle. When a steady state of QPS requests per second, this is an additional number of allowed, to allow for short bursts. |  |
 
 
 

@@ -1204,9 +1204,10 @@ func (m *Settings_KubernetesConfiguration) GetRateLimits() *Settings_KubernetesC
 }
 
 type Settings_KubernetesConfiguration_RateLimits struct {
-	// The maximum QPS to the master from this client.
+	// The maximum queries-per-second Gloo can make to the Kubernetes API Server.
 	QPS float32 `protobuf:"fixed32,1,opt,name=QPS,proto3" json:"QPS,omitempty"`
-	// Maximum burst for throttle.
+	// Maximum burst for throttle. When a steady state of QPS requests per second,
+	// this is an additional number of allowed, to allow for short bursts.
 	Burst                uint32   `protobuf:"varint,2,opt,name=burst,proto3" json:"burst,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
