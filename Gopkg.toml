@@ -80,3 +80,7 @@
 [[override]]
   name = "github.com/go-openapi/spec"
   version = "0.19.2"
+
+[[constraint]]
+  name = "knative.dev/serving"
+  version = "v0.8.0"

@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 
-	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
+	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"

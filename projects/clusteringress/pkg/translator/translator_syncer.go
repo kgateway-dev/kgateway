@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
-	knativeclient "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+	knativeclient "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -123,9 +123,10 @@ func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, cluste
 		}
 		ci.Status.InitializeConditions()
 		ci.Status.MarkNetworkConfigured()
-		ci.Status.MarkLoadBalancerReady([]knativev1alpha1.LoadBalancerIngressStatus{
+		lb := []knativev1alpha1.LoadBalancerIngressStatus{
 			{DomainInternal: s.proxyAddress},
-		})
+		}
+		ci.Status.MarkLoadBalancerReady(lb, lb, lb)
 		ci.Status.ObservedGeneration = ci.Generation
 		updatedClusterIngresses = append(updatedClusterIngresses, &ci)
 	}

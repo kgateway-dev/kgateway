@@ -10,7 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
-	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
+	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"

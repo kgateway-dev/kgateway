@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	knativeclient "github.com/knative/serving/pkg/client/clientset/versioned"
-	knativeinformers "github.com/knative/serving/pkg/client/informers/externalversions"
-	knativelisters "github.com/knative/serving/pkg/client/listers/networking/v1alpha1"
+	knativeclient "knative.dev/serving/pkg/client/clientset/versioned"
+	knativeinformers "knative.dev/serving/pkg/client/informers/externalversions"
+	knativelisters "knative.dev/serving/pkg/client/listers/networking/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"
 )
 
