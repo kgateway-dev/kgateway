@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/selection"
+	"github.com/solo-io/gloo/pkg/utils/namespaceutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -100,14 +100,14 @@ func GetNamespaces() ([]string, error) {
 
 type namespaceLister struct{}
 
-var _ selection.NamespaceLister = namespaceLister{}
+var _ namespaceutils.NamespaceLister = namespaceLister{}
+
+func NewNamespaceLister() namespaceutils.NamespaceLister {
+	return namespaceLister{}
+}
 
 func (namespaceLister) List() ([]string, error) {
 	return GetNamespaces()
-}
-
-func NewNamespaceLister() selection.NamespaceLister {
-	return namespaceLister{}
 }
 
 func MustUpstreamClient() v1.UpstreamClient {

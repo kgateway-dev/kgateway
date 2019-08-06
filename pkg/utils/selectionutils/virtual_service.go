@@ -1,8 +1,9 @@
-package selection
+package selectionutils
 
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils/namespaceutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -12,25 +13,21 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:generate mockgen -destination mocks/mock_selection.go -package mocks github.com/solo-io/gloo/pkg/utils/selection VirtualServiceSelector,NamespaceLister
+//go:generate mockgen -destination mocks/mock_virtual_service.go -package mocks github.com/solo-io/gloo/pkg/utils/selectionutils VirtualServiceSelector
 
 type VirtualServiceSelector interface {
 	SelectOrCreate(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error)
 }
 
-type NamespaceLister interface {
-	List() ([]string, error)
-}
-
 type virtualServiceSelector struct {
 	client          gatewayv1.VirtualServiceClient
-	namespaceLister NamespaceLister
+	namespaceLister namespaceutils.NamespaceLister
 	podNamespace    string
 }
 
 var _ VirtualServiceSelector = &virtualServiceSelector{}
 
-func NewVirtualServiceSelector(client gatewayv1.VirtualServiceClient, namespaceLister NamespaceLister, podNamespace string) *virtualServiceSelector {
+func NewVirtualServiceSelector(client gatewayv1.VirtualServiceClient, namespaceLister namespaceutils.NamespaceLister, podNamespace string) *virtualServiceSelector {
 	return &virtualServiceSelector{
 		client:          client,
 		namespaceLister: namespaceLister,

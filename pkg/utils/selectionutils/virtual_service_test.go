@@ -1,4 +1,4 @@
-package selection_test
+package selectionutils_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/utils/selection"
-	"github.com/solo-io/gloo/pkg/utils/selection/mocks"
+	mock_ns "github.com/solo-io/gloo/pkg/utils/namespaceutils/mocks"
+	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	mock_gateway "github.com/solo-io/gloo/projects/gateway/pkg/mocks/mock_v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -21,8 +21,8 @@ import (
 var (
 	mockCtrl     *gomock.Controller
 	vsClient     *mock_gateway.MockVirtualServiceClient
-	nsLister     *mocks.MockNamespaceLister
-	selector     selection.VirtualServiceSelector
+	nsLister     *mock_ns.MockNamespaceLister
+	selector     selectionutils.VirtualServiceSelector
 	podNamespace = "pod-ns"
 	otherNs      = "ns"
 	metadata     = core.Metadata{
@@ -49,8 +49,8 @@ var _ = Describe("SelectorTest", func() {
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		vsClient = mock_gateway.NewMockVirtualServiceClient(mockCtrl)
-		nsLister = mocks.NewMockNamespaceLister(mockCtrl)
-		selector = selection.NewVirtualServiceSelector(vsClient, nsLister, podNamespace)
+		nsLister = mock_ns.NewMockNamespaceLister(mockCtrl)
+		selector = selectionutils.NewVirtualServiceSelector(vsClient, nsLister, podNamespace)
 	})
 
 	AfterEach(func() {

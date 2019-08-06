@@ -1,4 +1,4 @@
-package selection_test
+package selectionutils_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSelection(t *testing.T) {
+func TestSelectionUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Selection Suite")
+	RunSpecs(t, "Selection utils Suite")
 }

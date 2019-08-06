@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/solo-io/gloo/pkg/utils/selection"
+	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -82,7 +82,7 @@ func addRoute(opts *options.Options) error {
 		Namespace: opts.Metadata.Namespace,
 		Name:      opts.Metadata.Name,
 	}
-	selector := selection.NewVirtualServiceSelector(helpers.MustVirtualServiceClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
+	selector := selectionutils.NewVirtualServiceSelector(helpers.MustVirtualServiceClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
 	virtualService, err := selector.SelectOrCreate(context.TODO(), vsRef)
 	if err != nil {
 		return err
