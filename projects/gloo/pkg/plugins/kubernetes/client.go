@@ -12,13 +12,12 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubelisters "k8s.io/client-go/listers/core/v1"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 type KubePluginSharedFactory interface {
-	EndpointsLister() kubelisters.EndpointsLister
-	ServicesLister() kubelisters.ServiceLister
-	PodsLister() kubelisters.PodLister
+	EndpointsLister(ns string) kubelisters.EndpointsLister
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
 }
@@ -26,45 +25,40 @@ type KubePluginSharedFactory interface {
 type KubePluginListers struct {
 	initError error
 
-	endpointsLister kubelisters.EndpointsLister
-	servicesLister  kubelisters.ServiceLister
-	podsLister      kubelisters.PodLister
+	endpointsLister map[string]kubelisters.EndpointsLister
 
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
 }
 
-var kubePluginSharedFactory *KubePluginListers
-var kubePluginSharedFactoryOnce sync.Once
-
-// TODO(yuval-k): MUST MAKE SURE THAT THIS CLIENT DOESNT HAVE A CONTEXT THAT IS GOING TO EXPIRE!!
-func getInformerFactory(client kubernetes.Interface) *KubePluginListers {
-	kubePluginSharedFactoryOnce.Do(func() {
-		kubePluginSharedFactory = startInformerFactory(context.TODO(), client)
-	})
+func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) *KubePluginListers {
+	if len(watchNamespaces) == 0 {
+		watchNamespaces = []string{metav1.NamespaceAll}
+	}
+	kubePluginSharedFactory := startInformerFactory(ctx, client, watchNamespaces)
 	if kubePluginSharedFactory.initError != nil {
 		panic(kubePluginSharedFactory.initError)
 	}
 	return kubePluginSharedFactory
 }
 
-func startInformerFactory(ctx context.Context, client kubernetes.Interface) *KubePluginListers {
+func startInformerFactory(ctx context.Context, client kubernetes.Interface, watchNamespaces []string) *KubePluginListers {
 	resyncDuration := 12 * time.Hour
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(client, resyncDuration)
 
-	endpointInformer := kubeInformerFactory.Core().V1().Endpoints()
-	podsInformer := kubeInformerFactory.Core().V1().Pods()
-	servicesInformer := kubeInformerFactory.Core().V1().Services()
-
+	var informers []cache.SharedIndexInformer
 	k := &KubePluginListers{
-		endpointsLister: endpointInformer.Lister(),
-		servicesLister:  servicesInformer.Lister(),
-		podsLister:      podsInformer.Lister(),
+		endpointsLister: map[string]kubelisters.EndpointsLister{},
+	}
+	for _, nsToWatch := range watchNamespaces {
+		kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, resyncDuration, kubeinformers.WithNamespace(nsToWatch))
+		endpointInformer := kubeInformerFactory.Core().V1().Endpoints()
+		informers = append(informers, endpointInformer.Informer())
+		k.endpointsLister[nsToWatch] = endpointInformer.Lister()
 	}
 
 	kubeController := controller.NewController("kube-plugin-controller",
 		controller.NewLockingSyncHandler(k.updatedOccured),
-		endpointInformer.Informer(), podsInformer.Informer(), servicesInformer.Informer())
+		informers...)
 
 	stop := ctx.Done()
 	err := kubeController.Run(2, stop)
@@ -73,10 +67,12 @@ func startInformerFactory(ctx context.Context, client kubernetes.Interface) *Kub
 		return k
 	}
 
-	ok := cache.WaitForCacheSync(stop,
-		endpointInformer.Informer().HasSynced,
-		podsInformer.Informer().HasSynced,
-		servicesInformer.Informer().HasSynced)
+	var syncFuncs []cache.InformerSynced
+	for _, informer := range informers {
+		syncFuncs = append(syncFuncs, informer.HasSynced)
+	}
+
+	ok := cache.WaitForCacheSync(stop, syncFuncs...)
 	if !ok {
 		// if initError is non-nil, the kube resource client will panic
 		k.initError = errors.Errorf("waiting for kube pod, endpoints, services cache sync failed")
@@ -85,16 +81,8 @@ func startInformerFactory(ctx context.Context, client kubernetes.Interface) *Kub
 	return k
 }
 
-func (k *KubePluginListers) EndpointsLister() kubelisters.EndpointsLister {
-	return k.endpointsLister
-}
-
-func (k *KubePluginListers) ServicesLister() kubelisters.ServiceLister {
-	return k.servicesLister
-}
-
-func (k *KubePluginListers) PodsLister() kubelisters.PodLister {
-	return k.podsLister
+func (k *KubePluginListers) EndpointsLister(ns string) kubelisters.EndpointsLister {
+	return k.endpointsLister[ns]
 }
 
 func (k *KubePluginListers) Subscribe() <-chan struct{} {

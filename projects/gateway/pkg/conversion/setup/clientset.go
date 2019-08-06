@@ -29,7 +29,7 @@ func MustClientSet(ctx context.Context) ClientSet {
 		Crd:             gatewayv1.GatewayCrd,
 		Cfg:             kubecfg,
 		SharedCache:     kubeCache,
-		SkipCrdCreation: false,
+		SkipCrdCreation: true,
 	}
 	v1GatewayClient, err := gatewayv1.NewGatewayClient(v1GatewayClientFactory)
 	if err != nil {
@@ -44,7 +44,7 @@ func MustClientSet(ctx context.Context) ClientSet {
 		Crd:             gatewayv2.GatewayCrd,
 		Cfg:             kubecfg,
 		SharedCache:     kubeCache,
-		SkipCrdCreation: false,
+		SkipCrdCreation: true,
 	}
 	v2GatewayClient, err := gatewayv2.NewGatewayClient(v2GatewayClientFactory)
 	if err != nil {

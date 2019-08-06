@@ -3,7 +3,9 @@ package bootstrap
 import (
 	"context"
 	"path/filepath"
+	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	consulapi "github.com/hashicorp/consul/api"
@@ -127,7 +129,7 @@ func KubeServiceClientForSettings(ctx context.Context,
 	// We are running in kubernetes
 	switch settings.ConfigSource.(type) {
 	case *v1.Settings_KubernetesConfigSource:
-		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache); err != nil {
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.RefreshRate, settings.WatchNamespaces); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return service.NewServiceClient(*clientset, *kubeCoreCache), nil
@@ -167,7 +169,7 @@ func SecretFactoryForSettings(ctx context.Context,
 
 	switch source := settings.SecretSource.(type) {
 	case *v1.Settings_KubernetesSecretSource:
-		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache); err != nil {
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.RefreshRate, settings.WatchNamespaces); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return &factory.KubeSecretClientFactory{
@@ -212,7 +214,7 @@ func ArtifactFactoryForSettings(ctx context.Context,
 
 	switch source := settings.ArtifactSource.(type) {
 	case *v1.Settings_KubernetesArtifactSource:
-		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache); err != nil {
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.RefreshRate, settings.WatchNamespaces); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return &factory.KubeSecretClientFactory{
@@ -230,7 +232,8 @@ func ArtifactFactoryForSettings(ctx context.Context,
 func initializeForKube(ctx context.Context,
 	cfg **rest.Config,
 	clientset *kubernetes.Interface,
-	kubeCoreCache *cache.KubeCoreCache) error {
+	kubeCoreCache *cache.KubeCoreCache,
+	refreshRate *types.Duration, nsToWatch []string) error {
 	if cfg == nil {
 		c, err := kubeutils.GetConfig("", "")
 		if err != nil {
@@ -248,7 +251,13 @@ func initializeForKube(ctx context.Context,
 	}
 
 	if *kubeCoreCache == nil {
-		coreCache, err := cache.NewKubeCoreCache(ctx, *clientset)
+		duration := 12 * time.Hour
+		if refreshRate != nil {
+			if parsedDuration, err := types.DurationFromProto(refreshRate); err == nil {
+				duration = parsedDuration
+			}
+		}
+		coreCache, err := cache.NewKubeCoreCacheWithOptions(ctx, *clientset, duration, nsToWatch)
 		if err != nil {
 			return err
 		}

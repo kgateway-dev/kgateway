@@ -1085,6 +1085,17 @@
   version = "v0.0.3"
 
 [[projects]]
+  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
+  version = "v0.0.1"
+
+[[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -1409,7 +1420,7 @@
   version = "v0.9.13"
 
 [[projects]]
-  digest = "1:4ca8462fb2924c2ee71e9acd01eb7983301bb47ed9369bef3b851d0d05b49fdc"
+  digest = "1:d3899d697458d976cfddea163a71f7c49f2378f910340e6073af055b93675d22"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1470,8 +1481,7 @@
     "test/testutils",
   ]
   pruneopts = "UT"
-  revision = "235c090eeac040b276a40ef2a01fdbc98785f2b5"
-  version = "v0.10.7"
+  revision = "d78e79e3a59ec255fc6458737731474b88613516"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2543,6 +2553,7 @@
     "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",

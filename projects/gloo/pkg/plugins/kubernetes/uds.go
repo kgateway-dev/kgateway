@@ -19,38 +19,41 @@ const (
 )
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-	if p.kubeShareFactory == nil {
-		p.kubeShareFactory = getInformerFactory(p.kube)
-	}
 	ctx := contextutils.WithLogger(opts.Ctx, "kube-uds")
 	logger := contextutils.LoggerFrom(ctx)
 
 	logger.Infow("started", "watchns", watchNamespaces, "writens", writeNamespace)
 
-	watch := p.kubeShareFactory.Subscribe()
+	watch := p.kubeCoreCache.Subscribe()
 
 	opts = opts.WithDefaults()
 	upstreamsChan := make(chan v1.UpstreamList)
 	errs := make(chan error)
 	discoverUpstreams := func() {
-		services, err := p.kubeShareFactory.ServicesLister().List(labels.SelectorFromSet(opts.Selector))
-		if err != nil {
-			errs <- err
-			return
+		var serviceList []*kubev1.Service
+		var podList []*kubev1.Pod
+		for _, ns := range watchNamespaces {
+			services, err := p.kubeCoreCache.NamespacedServiceLister(ns).List(labels.SelectorFromSet(opts.Selector))
+			if err != nil {
+				errs <- err
+				return
+			}
+			serviceList = append(serviceList, services...)
+			pods, err := p.kubeCoreCache.NamespacedPodLister(ns).List(labels.SelectorFromSet(opts.Selector))
+			if err != nil {
+				errs <- err
+				return
+			}
+			podList = append(podList, pods...)
 		}
-		pods, err := p.kubeShareFactory.PodsLister().List(labels.SelectorFromSet(opts.Selector))
-		if err != nil {
-			errs <- err
-			return
-		}
-		upstreams := p.ConvertServices(ctx, watchNamespaces, services, pods, discOpts, writeNamespace)
+		upstreams := p.ConvertServices(ctx, watchNamespaces, serviceList, podList, discOpts, writeNamespace)
 		logger.Debugw("discovered services", "num", len(upstreams))
 		upstreamsChan <- upstreams
 	}
 
 	go func() {
 		defer logger.Info("ended")
-		defer p.kubeShareFactory.Unsubscribe(watch)
+		defer p.kubeCoreCache.Unsubscribe(watch)
 		defer close(upstreamsChan)
 		defer close(errs)
 		// watch should open up with an initial read
