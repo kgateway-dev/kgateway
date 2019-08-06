@@ -5,8 +5,8 @@ kind: Service
 metadata:
   labels:
     app: gloo
-    gloo: knative-proxy
-  name: knative-proxy
+    gloo: knative-internal-proxy
+  name: knative-internal-proxy
   namespace: {{ .Release.Namespace }}
 spec:
   ports:
@@ -17,7 +17,7 @@ spec:
     protocol: TCP
     name: https
   selector:
-    gloo: knative-proxy
-  type: LoadBalancer
+    gloo: knative-internal-proxy
+  type: ClusterIP
 {{- end }}
 {{- end }}

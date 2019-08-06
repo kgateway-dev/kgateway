@@ -1,0 +1,106 @@
+{{- if .Values.settings.integrations.knative.enabled }}
+{{- if (regexMatch "[0-9]+[.][8-9]+[.][0-9]" .Values.settings.integrations.knative.version ) }}
+
+# configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knative-envoy-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: knative-internal-proxy
+data:
+  envoy.yaml: |
+    node:
+      cluster: knative
+      id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
+      metadata:
+        # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
+        role: "{{ `{{.PodNamespace}}` }}~knative-internal-proxy"
+    static_resources:
+      clusters:
+      - name: xds_cluster
+        connect_timeout: 5.000s
+        load_assignment:
+          cluster_name: xds_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: gloo
+                    port_value: {{ .Values.gloo.deployment.xdsPort }}
+        http2_protocol_options: {}
+        upstream_connection_options:
+          tcp_keepalive: {}
+        type: STRICT_DNS
+{{- if .Values.settings.integrations.knative.proxy.stats }}
+      - name: admin_port_cluster
+        connect_timeout: 5.000s
+        type: STATIC
+        lb_policy: ROUND_ROBIN
+        load_assignment:
+          cluster_name: admin_port_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 19000
+
+      listeners:
+        - name: prometheus_listener
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: 8081
+          filter_chains:
+            - filters:
+                - name: envoy.http_connection_manager
+                  config:
+                    codec_type: auto
+                    stat_prefix: prometheus
+                    route_config:
+                      name: prometheus_route
+                      virtual_hosts:
+                        - name: prometheus_host
+                          domains:
+                            - "*"
+                          routes:
+                            - match:
+                                prefix: "/metrics"
+                                headers:
+                                - name: ":method"
+                                  exact_match: GET
+                              route:
+                                prefix_rewrite: "/stats/prometheus"
+                                cluster: admin_port_cluster
+                    http_filters:
+                      - name: envoy.router
+                        config: {}
+{{- end}}
+
+
+    dynamic_resources:
+      ads_config:
+        api_type: GRPC
+        grpc_services:
+        - envoy_grpc: {cluster_name: xds_cluster}
+      cds_config:
+        ads: {}
+      lds_config:
+        ads: {}
+    admin:
+      access_log_path: /dev/null
+      address:
+        socket_address:
+          address: 127.0.0.1
+          port_value: 19000
+{{- if .Values.settings.integrations.knative.proxy.tracing }}
+    tracing:
+{{ toYaml .Values.settings.integrations.knative.proxy.tracing | indent 6}}
+{{- end}} # if .Values.settings.integrations.knative.proxy.tracing
+{{- end }}
+{{- end }}

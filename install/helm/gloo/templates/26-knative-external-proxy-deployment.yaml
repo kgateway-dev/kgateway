@@ -6,18 +6,18 @@ kind: Deployment
 metadata:
   labels:
     app: gloo
-    gloo: knative-proxy
-  name: knative-proxy
+    gloo: knative-external-proxy
+  name: knative-external-proxy
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.settings.integrations.knative.proxy.replicas }}
   selector:
     matchLabels:
-      gloo: knative-proxy
+      gloo: knative-external-proxy
   template:
     metadata:
       labels:
-        gloo: knative-proxy
+        gloo: knative-external-proxy
     spec:
       containers:
       - args: ["--disable-hot-restart"]
@@ -32,7 +32,7 @@ spec:
               fieldPath: metadata.name
         image: {{ .Values.settings.integrations.knative.proxy.image.repository }}:{{ .Values.settings.integrations.knative.proxy.image.tag }}
         imagePullPolicy: {{ .Values.settings.integrations.knative.proxy.image.pullPolicy }}
-        name: knative-proxy
+        name: knative-external-proxy
 {{- if .Values.settings.integrations.knative.proxy.resources }}
         resources:
 {{ toYaml .Values.settings.integrations.knative.proxy.resources | indent 10}}
