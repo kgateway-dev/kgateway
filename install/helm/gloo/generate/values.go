@@ -4,6 +4,11 @@ import (
 	appsv1 "k8s.io/api/core/v1"
 )
 
+type HelmConfig struct {
+	Config
+	Global *Global `json:"global,omitempty"`
+}
+
 type Config struct {
 	Namespace      *Namespace              `json:"namespace,omitempty"`
 	Rbac           *Rbac                   `json:"rbac,omitempty"`
@@ -16,6 +21,10 @@ type Config struct {
 	Ingress        *Ingress                `json:"ingress,omitempty"`
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
+}
+
+type Global struct {
+	Image *Image `json:"image,omitempty"`
 }
 
 type Namespace struct {
@@ -32,20 +41,21 @@ type Crds struct {
 
 // Common
 type Image struct {
-	Tag        string `json:"tag"  desc:"tag for the container"`
-	Repository string `json:"repository"  desc:"image name (registry/repository) for the container."`
-	PullPolicy string `json:"pullPolicy"  desc:"image pull policy for the container"`
+	Tag        string `json:"tag,omitempty"  desc:"tag for the container"`
+	Repository string `json:"repository,omitempty"  desc:"image name (repository) for the container."`
+	Registry   string `json:"registry,omitempty" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
+	PullPolicy string `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
 	PullSecret string `json:"pullSecret,omitempty" desc:"image pull policy for the container "`
 }
 
 type ResourceAllocation struct {
-	Memory string `json:"memory" desc:"amount of memory"`
-	CPU    string `json:"cpu" desc:"amount of CPUs"`
+	Memory string `json:"memory,omitEmpty" desc:"amount of memory"`
+	CPU    string `json:"cpu,omitEmpty" desc:"amount of CPUs"`
 }
 
 type ResourceRequirements struct {
-	Limits   *ResourceAllocation `json:"limits" desc:"resource limits of this container"`
-	Requests *ResourceAllocation `json:"requests" desc:"resource requests of this container"`
+	Limits   *ResourceAllocation `json:"limits,omitEmpty" desc:"resource limits of this container"`
+	Requests *ResourceAllocation `json:"requests,omitEmpty" desc:"resource requests of this container"`
 }
 type PodSpec struct {
 	RestartPolicy string `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
@@ -57,23 +67,23 @@ type JobSpec struct {
 
 type DeploymentSpec struct {
 	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
-	Resources *ResourceRequirements `json:"resources" desc:"resources for the main pod in the deployment"`
+	Resources *ResourceRequirements `json:"resources,omitEmpty" desc:"resources for the main pod in the deployment"`
 }
 
 type Integrations struct {
-	Knative *Knative `json:"knative"`
+	Knative *Knative `json:"knative,omitEmpty"`
 }
 
 type Knative struct {
 	Enabled *bool         `json:"enabled" desc:"enabled knative components"`
-	Version *string       `json:"version", desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
+	Version *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
 	Proxy   *KnativeProxy `json:"proxy,omitempty"`
 }
 
 type KnativeProxy struct {
 	Image     *Image  `json:"image,omitempty"`
-	HttpPort  string  `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort string  `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	HttpPort  int  `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort int  `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
 	Tracing   *string `json:"tracing,omitempty" desc:"tracing configuration"`
 	*DeploymentSpec
 }
@@ -93,7 +103,7 @@ type Gloo struct {
 
 type GlooDeployment struct {
 	Image   *Image `json:"image,omitempty"`
-	XdsPort string `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	XdsPort int `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
 	*DeploymentSpec
 }
 
@@ -143,8 +153,8 @@ type DaemonSetSpec struct {
 
 type GatewayProxyPodTemplate struct {
 	Image            *Image                `json:"image,omitempty"`
-	HttpPort         string                `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
-	HttpsPort        string                `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
+	HttpPort         int                   `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
+	HttpsPort        int                   `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
 	ExtraPorts       []interface{}         `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
 	ExtraAnnotations map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
 	NodeName         string                `json:"nodeName,omitempty" desc:"name of node to run on"`
@@ -157,8 +167,8 @@ type GatewayProxyPodTemplate struct {
 
 type GatewayProxyService struct {
 	Type                  string            "json:\"type,omitempty\" desc:\"gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`\""
-	HttpPort              string            `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
-	HttpsPort             string            `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
+	HttpPort              int               `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
+	HttpsPort             int               `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
 	ClusterIP             string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
@@ -191,8 +201,8 @@ type IngressProxy struct {
 
 type IngressProxyDeployment struct {
 	Image            *Image            `json:"image,omitempty"`
-	HttpPort         string            `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
-	HttpsPort        string            `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
+	HttpPort         int            `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
+	HttpsPort        int            `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec
