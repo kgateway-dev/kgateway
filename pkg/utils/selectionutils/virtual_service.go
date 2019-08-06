@@ -3,7 +3,7 @@ package selectionutils
 import (
 	"context"
 
-	"github.com/solo-io/gloo/pkg/utils/namespaceutils"
+	"github.com/solo-io/gloo/pkg/listers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -21,13 +21,13 @@ type VirtualServiceSelector interface {
 
 type virtualServiceSelector struct {
 	client          gatewayv1.VirtualServiceClient
-	namespaceLister namespaceutils.NamespaceLister
+	namespaceLister listers.NamespaceLister
 	podNamespace    string
 }
 
 var _ VirtualServiceSelector = &virtualServiceSelector{}
 
-func NewVirtualServiceSelector(client gatewayv1.VirtualServiceClient, namespaceLister namespaceutils.NamespaceLister, podNamespace string) *virtualServiceSelector {
+func NewVirtualServiceSelector(client gatewayv1.VirtualServiceClient, namespaceLister listers.NamespaceLister, podNamespace string) *virtualServiceSelector {
 	return &virtualServiceSelector{
 		client:          client,
 		namespaceLister: namespaceLister,

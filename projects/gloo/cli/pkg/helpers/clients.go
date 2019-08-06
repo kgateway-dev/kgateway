@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/namespaceutils"
+	"github.com/solo-io/gloo/pkg/listers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -100,9 +100,9 @@ func GetNamespaces() ([]string, error) {
 
 type namespaceLister struct{}
 
-var _ namespaceutils.NamespaceLister = namespaceLister{}
+var _ listers.NamespaceLister = namespaceLister{}
 
-func NewNamespaceLister() namespaceutils.NamespaceLister {
+func NewNamespaceLister() listers.NamespaceLister {
 	return namespaceLister{}
 }
 

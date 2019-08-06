@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	mock_ns "github.com/solo-io/gloo/pkg/utils/namespaceutils/mocks"
+	mock_listers "github.com/solo-io/gloo/pkg/listers/mocks"
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	mock_gateway "github.com/solo-io/gloo/projects/gateway/pkg/mocks/mock_v1"
@@ -21,7 +21,7 @@ import (
 var (
 	mockCtrl     *gomock.Controller
 	vsClient     *mock_gateway.MockVirtualServiceClient
-	nsLister     *mock_ns.MockNamespaceLister
+	nsLister     *mock_listers.MockNamespaceLister
 	selector     selectionutils.VirtualServiceSelector
 	podNamespace = "pod-ns"
 	otherNs      = "ns"
@@ -49,7 +49,7 @@ var _ = Describe("SelectorTest", func() {
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		vsClient = mock_gateway.NewMockVirtualServiceClient(mockCtrl)
-		nsLister = mock_ns.NewMockNamespaceLister(mockCtrl)
+		nsLister = mock_listers.NewMockNamespaceLister(mockCtrl)
 		selector = selectionutils.NewVirtualServiceSelector(vsClient, nsLister, podNamespace)
 	})
 
