@@ -88,8 +88,8 @@ func writeDocs(docs helmchart.HelmValues, path string) error {
 	return nil
 }
 
-func readGatewayConfig() (*generate.Config, error) {
-	var config generate.Config
+func readGatewayConfig() (*generate.HelmConfig, error) {
+	var config generate.HelmConfig
 	if err := readYaml(valuesTemplate, &config); err != nil {
 		return nil, err
 	}
