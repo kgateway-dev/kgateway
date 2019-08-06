@@ -1,7 +1,6 @@
 package add
 
 import (
-	"context"
 	"sort"
 
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
@@ -83,7 +82,7 @@ func addRoute(opts *options.Options) error {
 		Name:      opts.Metadata.Name,
 	}
 	selector := selectionutils.NewVirtualServiceSelector(helpers.MustVirtualServiceClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
-	virtualService, err := selector.SelectOrCreate(context.TODO(), vsRef)
+	virtualService, err := selector.SelectOrCreate(opts.Top.Ctx, vsRef)
 	if err != nil {
 		return err
 	}
