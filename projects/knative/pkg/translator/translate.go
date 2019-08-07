@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
+	"knative.dev/serving/pkg/network"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -161,7 +163,7 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 			useTls := len(spec.TLS) > 0
 
 			var hosts []string
-			for _, host := range rule.Hosts {
+			for _, host := range expandHosts(rule.Hosts) {
 				hosts = append(hosts, host)
 				if useTls {
 					hosts = append(hosts, fmt.Sprintf("%v:%v", host, bindPortHttps))
@@ -248,4 +250,25 @@ func getHeaderManipulation(headersToAppend map[string]string) *headers.HeaderMan
 	return &headers.HeaderManipulation{
 		RequestHeadersToAdd: headersToAdd,
 	}
+}
+
+// trim kube dns suffixes
+// undocumented requirement
+// see https://github.com/knative/serving/blob/master/pkg/reconciler/ingress/resources/virtual_service.go#L281
+func expandHosts(hosts []string) []string {
+	var expanded []string
+	allowedSuffixes := []string{
+		"",
+		"." + network.GetClusterDomainName(),
+		".svc." + network.GetClusterDomainName(),
+	}
+	for _, h := range hosts {
+		for _, suffix := range allowedSuffixes {
+			if strings.HasSuffix(h, suffix) {
+				expanded = append(expanded, strings.TrimSuffix(h, suffix))
+			}
+		}
+	}
+
+	return expanded
 }

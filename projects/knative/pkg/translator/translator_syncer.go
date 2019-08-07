@@ -108,14 +108,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	g := &errgroup.Group{}
 	g.Go(func() error {
-		if err := s.propagateProxyStatus(ctx, externalProxy, snap.Ingresses); err != nil {
+		if err := s.propagateProxyStatus(ctx, externalProxy, externalIngresses); err != nil {
 			return errors.Wrapf(err, "failed to propagate external proxy status "+
 				"to ingress objects")
 		}
 		return nil
 	})
 	g.Go(func() error {
-		if err := s.propagateProxyStatus(ctx, internalProxy, snap.Ingresses); err != nil {
+		if err := s.propagateProxyStatus(ctx, internalProxy, internalIngresses); err != nil {
 			return errors.Wrapf(err, "failed to propagate internal proxy status "+
 				"to ingress objects")
 		}
