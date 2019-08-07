@@ -32,6 +32,6 @@ gateway:
 
 global:
   image:
-    registry: quay.io/solo-ioxs
+    registry: quay.io/solo-io
     pullPolicy: IfNotPresent
 

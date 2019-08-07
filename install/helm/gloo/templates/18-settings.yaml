@@ -21,7 +21,7 @@ spec:
 {{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
     clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
 {{- else }}
-    knativePublicProxyAddress: "knative-external-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
+    knativeExternalProxyAddress: "knative-external-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
     knativeInternalProxyAddress: "knative-internal-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
 {{- end }}
 {{- end }}

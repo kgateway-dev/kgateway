@@ -5,7 +5,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: knative-envoy-config
+  name: knative-internal-proxy-config
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo

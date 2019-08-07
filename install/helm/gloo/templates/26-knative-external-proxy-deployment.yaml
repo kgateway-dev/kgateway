@@ -60,7 +60,7 @@ spec:
           name: envoy-config
       volumes:
       - configMap:
-          name: knative-envoy-config
+          name: knative-external-proxy-config
         name: envoy-config
 
 {{- end }}

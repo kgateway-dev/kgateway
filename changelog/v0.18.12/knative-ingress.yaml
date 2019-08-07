@@ -11,3 +11,9 @@ changelog:
     dependencyTag: v0.8.0
     description: Update knative to version 0.8.0.
     issueLink: https://github.com/solo-io/gloo/issues/981
+  - type: FIX
+    description: fix typo in ingress proxy deployment
+    issueLink: https://github.com/solo-io/gloo/issues/986
+  - type: FIX
+    description: fix typo in values-ingress template
+    issueLink: https://github.com/solo-io/gloo/issues/987
