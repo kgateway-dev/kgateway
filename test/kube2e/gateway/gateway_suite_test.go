@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,7 +52,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
-	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute)
+	values, err := ioutil.TempFile("", "*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+	values.Write([]byte("rbac:\n  namespaced: true\n"))
+	values.Close()
+
+	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values.Name()))
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -61,7 +67,7 @@ var _ = AfterSuite(func() {
 	}
 
 	if testHelper != nil {
-		err := testHelper.UninstallGlooAll()
+		err := testHelper.UninstallGloo()
 		Expect(err).NotTo(HaveOccurred())
 
 		// TODO go-utils should expose `glooctl uninstall --delete-namespace`

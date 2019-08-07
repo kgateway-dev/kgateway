@@ -34,6 +34,7 @@ type Install struct {
 	Upgrade           bool
 	Namespace         string
 	HelmChartOverride string
+	HelmChartValues   string
 	Knative           Knative
 }
 
