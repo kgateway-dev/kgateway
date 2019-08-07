@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"knative.dev/serving/pkg/network"
+
 	clusteringressclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
 
 	clusteringressv1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
@@ -41,10 +43,10 @@ import (
 	knativeclientset "knative.dev/serving/pkg/client/clientset/versioned"
 )
 
-const defaultClusterIngressProxyAddress = "clusteringress-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
+var defaultClusterIngressProxyAddress = "clusteringress-proxy." + gloodefaults.GlooSystem + ".svc" + network.GetClusterDomainName()
 
-const defaultKnativeExternalProxyAddress = "knative-external-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
-const defaultKnativeInternalProxyAddress = "knative-internal-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
+var defaultKnativeExternalProxyAddress = "knative-external-proxy." + gloodefaults.GlooSystem + ".svc" + network.GetClusterDomainName()
+var defaultKnativeInternalProxyAddress = "knative-internal-proxy." + gloodefaults.GlooSystem + ".svc" + network.GetClusterDomainName()
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
