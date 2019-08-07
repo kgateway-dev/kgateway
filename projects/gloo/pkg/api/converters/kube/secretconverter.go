@@ -6,6 +6,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 
 	kubev1 "k8s.io/api/core/v1"
@@ -123,6 +124,13 @@ func (t *AwsSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.
 	secretKey, hasSecretKey := secret.Data[AwsSecretKeyName]
 	if hasAccessKey && hasSecretKey {
 		return &v1.Secret{
+			Metadata: skcore.Metadata{
+				Name:        secret.Name,
+				Namespace:   secret.Namespace,
+				Cluster:     secret.ClusterName,
+				Labels:      secret.Labels,
+				Annotations: secret.Annotations,
+			},
 			Kind: &v1.Secret_Aws{
 				Aws: &v1.AwsSecret{
 					AccessKey: string(accessKey),
