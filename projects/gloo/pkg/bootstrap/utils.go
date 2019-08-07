@@ -176,10 +176,11 @@ func SecretFactoryForSettings(ctx context.Context,
 		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
+		converterChain := kubeconverters.NewSecretConverterChain(new(kubeconverters.TLSSecretConverter))
 		return &factory.KubeSecretClientFactory{
 			Clientset:       *clientset,
 			Cache:           *kubeCoreCache,
-			SecretConverter: new(kubeconverters.TLSSecretConverter),
+			SecretConverter: converterChain,
 		}, nil
 	case *v1.Settings_VaultSecretSource:
 		rootKey := source.VaultSecretSource.GetRootKey()

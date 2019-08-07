@@ -16,7 +16,46 @@ const (
 	annotationValue = "kube-tls"
 )
 
+type SecretConverterChain struct {
+	converters []kubesecret.SecretConverter
+}
+
+var _ kubesecret.SecretConverter = &SecretConverterChain{}
+
+func NewSecretConverterChain(converters ...kubesecret.SecretConverter) *SecretConverterChain {
+	return &SecretConverterChain{converters: converters}
+}
+func (t *SecretConverterChain) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+	for _, converter := range t.converters {
+		resource, err := converter.FromKubeSecret(ctx, rc, secret)
+		if err != nil {
+			return nil, err
+		}
+		if resource != nil {
+			return resource, nil
+		}
+	}
+	// any unmatched secrets will be handled by subsequent converters
+	return nil, nil
+}
+
+func (t *SecretConverterChain) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+	for _, converter := range t.converters {
+		kubeSecret, err := converter.ToKubeSecret(ctx, rc, resource)
+		if err != nil {
+			return nil, err
+		}
+		if kubeSecret != nil {
+			return kubeSecret, nil
+		}
+	}
+	// any unmatched secrets will be handled by subsequent converters
+	return nil, nil
+}
+
 type TLSSecretConverter struct{}
+
+var _ kubesecret.SecretConverter = &TLSSecretConverter{}
 
 func (t *TLSSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
 
@@ -38,13 +77,8 @@ func (t *TLSSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.
 		return glooSecret, nil
 	}
 
-	// this is temporary until https://github.com/solo-io/solo-kit/pull/110 is merged
-	// then we can just return nil all the time
-	if rc == nil {
-		return nil, nil
-	}
-
-	return rc.FromKubeSecret(secret)
+	// any unmatched secrets will be handled by subsequent converters
+	return nil, nil
 }
 
 func (t *TLSSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
@@ -72,12 +106,23 @@ func (t *TLSSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.Re
 		}
 	}
 
-	// this is temporary until https://github.com/solo-io/solo-kit/pull/110 is merged
-	// then we can just return nil all the time
-	if rc == nil {
-		return nil, nil
-	}
+	// any unmatched secrets will be handled by subsequent converters
+	return nil, nil
+}
 
-	return rc.ToKubeSecret(ctx, resource)
+type AwsSecretConverter struct{}
 
+var _ kubesecret.SecretConverter = &AwsSecretConverter{}
+
+func (t *AwsSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+
+	// TODO(mitchdraft)
+
+	// any unmatched secrets will be handled by subsequent converters
+	return nil, nil
+}
+
+func (t *AwsSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+	// allow the default handler to manage this
+	return nil, nil
 }
