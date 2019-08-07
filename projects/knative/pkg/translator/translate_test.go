@@ -161,9 +161,8 @@ var _ = Describe("Translate", func() {
 			Ingresses: v1alpha12.IngressList{ingressRes, ingressResTls},
 			Secrets:   gloov1.SecretList{secret},
 		}
-		proxy, errs := translateProxy(context.TODO(), namespace, snap)
+		proxy, errs := translateProxy(context.TODO(), "test", namespace, snap.Ingresses, snap.Secrets)
 		Expect(errs).NotTo(HaveOccurred())
-		Expect(proxy.Metadata.Name).To(Equal("knative-proxy"))
 		Expect(proxy.Listeners).To(HaveLen(2))
 		Expect(proxy.Listeners[0].Name).To(Equal("http"))
 		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(80)))
@@ -178,7 +177,7 @@ var _ = Describe("Translate", func() {
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
 								&gloov1.VirtualHost{
-									Name: "example.ing",
+									Name: "example.ing-0",
 									Domains: []string{
 										"petes.com",
 										"petes.com:80",
@@ -253,7 +252,7 @@ var _ = Describe("Translate", func() {
 									CorsPolicy:         (*gloov1.CorsPolicy)(nil),
 								},
 								&gloov1.VirtualHost{
-									Name: "example.ing",
+									Name: "example.ing-1",
 									Domains: []string{
 										"pog.com",
 										"pog.com:80",
@@ -263,68 +262,6 @@ var _ = Describe("Translate", func() {
 										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
-											Matcher: &gloov1.Matcher{
-												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: "/",
-												},
-											},
-											Action: &gloov1.Route_RouteAction{
-												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Multi{
-														Multi: &gloov1.MultiDestination{
-															Destinations: []*gloov1.WeightedDestination{
-																&gloov1.WeightedDestination{
-																	Destination: &gloov1.Destination{
-																		DestinationType: &gloov1.Destination_Kube{
-																			Kube: &gloov1.KubernetesServiceDestination{
-																				Ref: core.ResourceRef{
-																					Name:      "peteszah-service",
-																					Namespace: "peteszah-service-namespace",
-																				},
-																				Port: 0x00000050,
-																			},
-																		},
-																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
-																		Subset:          (*gloov1.Subset)(nil),
-																	},
-																	Weight:                    0x00000064,
-																	WeighedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
-																	XXX_NoUnkeyedLiteral:      struct{}{},
-																	XXX_sizecache:             0,
-																},
-															},
-														},
-													},
-												},
-											},
-											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
-												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
-												Timeout:         durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       "",
-													NumRetries:    0x0000000e,
-													PerTryTimeout: durptr(1000),
-												},
-												Extensions: (*gloov1.Extensions)(nil),
-												Tracing:    (*tracing.RouteTracingSettings)(nil),
-												Shadowing:  (*shadowing.RouteShadowing)(nil),
-												HeaderManipulation: &headers.HeaderManipulation{
-													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														&headers.HeaderValueOption{
-															Header: &headers.HeaderValue{
-																Key:   "add",
-																Value: "me",
-															},
-															Append: (*types.BoolValue)(nil),
-														},
-													},
-												},
-												HostRewrite: (*hostrewrite.HostRewrite)(nil),
-											},
-										},
 										&gloov1.Route{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
@@ -406,7 +343,7 @@ var _ = Describe("Translate", func() {
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
 								&gloov1.VirtualHost{
-									Name: "example.ing-tls",
+									Name: "example.ing-tls-0",
 									Domains: []string{
 										"petes.com",
 										"petes.com:443",
@@ -508,7 +445,7 @@ var _ = Describe("Translate", func() {
 				ReportedBy: "",
 			},
 			Metadata: core.Metadata{
-				Name:            "knative-proxy",
+				Name:            "test",
 				Namespace:       "example",
 				Cluster:         "",
 				ResourceVersion: "",

@@ -16,17 +16,20 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	v1alpha12 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+	v1alpha13 "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 )
 
 var _ = Describe("TranslatorSyncer", func() {
 	It("propagates successful proxy status to the ingresses it was created from", func() {
-		proxyAddress := "proxy-address"
+		proxyAddressExternal := "proxy-external-address"
+		proxyAddressInternal := "proxy-internal-address"
 		namespace := "write-namespace"
 		proxyClient, _ := v1.NewProxyClient(&factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		ingress := &v1alpha1.Ingress{Ingress: knative.Ingress{ObjectMeta: v12.ObjectMeta{Generation: 1}}}
 		knativeClient := &mockCiClient{ci: toKube(ingress)}
 
-		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, make(chan error)).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error)).(*translatorSyncer)
 		proxy := &v1.Proxy{Metadata: core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 

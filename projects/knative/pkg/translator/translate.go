@@ -4,33 +4,34 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
+
+	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
-	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 const (
 	bindPortHttp  = 80
 	bindPortHttps = 443
-	proxyName     = "knative-proxy"
 )
 
-func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
-	ingresses := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
-	for _, ing := range snap.Ingresses {
-		ingresses[ing.GetMetadata().Ref()] = ing.Spec
+func translateProxy(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList, secrets gloov1.SecretList) (*gloov1.Proxy, error) {
+	ingressSpecsByRef := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
+	for _, ing := range ingresses {
+		ingressSpecsByRef[ing.GetMetadata().Ref()] = ing.Spec
 	}
-	return TranslateProxyFromSpecs(ctx, proxyName, namespace, ingresses, snap.Secrets)
+	return TranslateProxyFromSpecs(ctx, proxyName, proxyNamespace, ingressSpecsByRef, secrets)
 }
 
 // made public to be shared with the (soon to be deprecated) clusteringress controller
@@ -169,18 +170,16 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 				}
 			}
 
+			vh := &gloov1.VirtualHost{
+				Name:    ing.Key() + "-" + strconv.Itoa(i),
+				Domains: hosts,
+				Routes:  routes,
+			}
+
 			if useTls {
-				virtualHostsHttps = append(virtualHostsHttps, &gloov1.VirtualHost{
-					Name:    ing.Key(),
-					Domains: hosts,
-					Routes:  routes,
-				})
+				virtualHostsHttps = append(virtualHostsHttps, vh)
 			} else {
-				virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
-					Name:    ing.Key(),
-					Domains: hosts,
-					Routes:  routes,
-				})
+				virtualHostsHttp = append(virtualHostsHttp, vh)
 			}
 		}
 	}

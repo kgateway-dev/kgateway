@@ -38,10 +38,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	knativeclientset "knative.dev/serving/pkg/client/clientset/versioned"
 )
 
 const defaultClusterIngressProxyAddress = "clusteringress-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
-const defaultKnativeProxyAddress = "knative-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
+
+const defaultKnativeExternalProxyAddress = "knative-external-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
+const defaultKnativeInternalProxyAddress = "knative-internal-proxy." + gloodefaults.GlooSystem + ".svc.cluster.local"
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
@@ -102,19 +105,25 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		clusterIngressProxyAddress = settings.Knative.ClusterIngressProxyAddress
 	}
 
-	knativeProxyAddress := defaultKnativeProxyAddress
-	if settings.Knative != nil && settings.Knative.KnativeProxyAddress != "" {
-		knativeProxyAddress = settings.Knative.KnativeProxyAddress
+	knativeExternalProxyAddress := defaultKnativeExternalProxyAddress
+	if settings.Knative != nil && settings.Knative.KnativeExternalProxyAddress != "" {
+		knativeExternalProxyAddress = settings.Knative.KnativeExternalProxyAddress
+	}
+
+	knativeInternalProxyAddress := defaultKnativeInternalProxyAddress
+	if settings.Knative != nil && settings.Knative.KnativeInternalProxyAddress != "" {
+		knativeInternalProxyAddress = settings.Knative.KnativeInternalProxyAddress
 	}
 
 	opts := Opts{
-		ClusterIngressProxyAddress: clusterIngressProxyAddress,
-		KnativeProxyAddress:        knativeProxyAddress,
-		WriteNamespace:             writeNamespace,
-		WatchNamespaces:            watchNamespaces,
-		Proxies:                    proxyFactory,
-		Upstreams:                  upstreamFactory,
-		Secrets:                    secretFactory,
+		ClusterIngressProxyAddress:  clusterIngressProxyAddress,
+		KnativeExternalProxyAddress: knativeExternalProxyAddress,
+		KnativeInternalProxyAddress: knativeInternalProxyAddress,
+		WriteNamespace:              writeNamespace,
+		WatchNamespaces:             watchNamespaces,
+		Proxies:                     proxyFactory,
+		Upstreams:                   upstreamFactory,
+		Secrets:                     secretFactory,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
@@ -239,7 +248,8 @@ func RunIngress(opts Opts) error {
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
 			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(secretClient, ingressClient)
 			knativeTranslatorSync := knativetranslator.NewSyncer(
-				opts.KnativeProxyAddress,
+				opts.KnativeExternalProxyAddress,
+				opts.KnativeInternalProxyAddress,
 				opts.WriteNamespace,
 				proxyClient,
 				knative.NetworkingV1alpha1(),

@@ -23,8 +23,13 @@ func (p *Ingress) Equal(that interface{}) bool {
 }
 
 func (p *Ingress) Clone() *Ingress {
-	ci := v1alpha1.Ingress(*p)
-	copy := ci.DeepCopy()
-	newCi := Ingress(*copy)
-	return &newCi
+	ing := v1alpha1.Ingress(*p)
+	copy := ing.DeepCopy()
+	newIng := Ingress(*copy)
+	return &newIng
+}
+
+func (p *Ingress) IsPublic() bool {
+	ing := v1alpha1.Ingress(*p)
+	return ing.IsPublic()
 }

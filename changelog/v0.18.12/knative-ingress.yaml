@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    description: Knative routes fixed for presence of multiple knative ingress
+    issueLink: https://github.com/solo-io/gloo/issues/979
+  - type: NEW_FEATURE
+    description: Knative Install deploys public and private proxy
+    issueLink: https://github.com/solo-io/gloo/issues/980
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: knative.dev
+    dependencyRepo: serving
+    dependencyTag: v0.8.0
+    description: Update knative to version 0.8.0.
+    issueLink: https://github.com/solo-io/gloo/issues/981

@@ -6,15 +6,16 @@ import (
 )
 
 type Opts struct {
-	ClusterIngressProxyAddress string
-	KnativeProxyAddress        string
-	WriteNamespace             string
-	WatchNamespaces            []string
-	Proxies                    factory.ResourceClientFactory
-	Upstreams                  factory.ResourceClientFactory
-	Secrets                    factory.ResourceClientFactory
-	WatchOpts                  clients.WatchOpts
-	EnableKnative              bool
-	KnativeVersion             string
-	DisableKubeIngress         bool
+	ClusterIngressProxyAddress  string
+	KnativeExternalProxyAddress string
+	KnativeInternalProxyAddress string
+	WriteNamespace              string
+	WatchNamespaces             []string
+	Proxies                     factory.ResourceClientFactory
+	Upstreams                   factory.ResourceClientFactory
+	Secrets                     factory.ResourceClientFactory
+	WatchOpts                   clients.WatchOpts
+	EnableKnative               bool
+	KnativeVersion              string
+	DisableKubeIngress          bool
 }
