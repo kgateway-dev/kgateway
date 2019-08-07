@@ -16,7 +16,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/gogo/protobuf/types"
-	knativeclientset "knative.dev/serving/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/pkg/utils"
 	clusteringressv1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	clusteringresstranslator "github.com/solo-io/gloo/projects/clusteringress/pkg/translator"

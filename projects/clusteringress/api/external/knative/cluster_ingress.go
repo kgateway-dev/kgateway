@@ -3,9 +3,9 @@ package knative
 import (
 	"reflect"
 
-	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 type ClusterIngress v1alpha1.ClusterIngress

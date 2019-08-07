@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
-	knativeclient "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -14,6 +12,8 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+	knativeclient "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 )
 
 type translatorSyncer struct {

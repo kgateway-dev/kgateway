@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	v1alpha12 "knative.dev/serving/pkg/apis/networking/v1alpha1"
-	v1alpha13 "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

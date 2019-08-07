@@ -14,7 +14,6 @@ import (
 	"github.com/solo-io/gloo/projects/knative/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 
-	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -26,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 var _ = Describe("Translate", func() {
