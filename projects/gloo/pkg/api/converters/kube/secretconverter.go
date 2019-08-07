@@ -25,6 +25,7 @@ var _ kubesecret.SecretConverter = &SecretConverterChain{}
 func NewSecretConverterChain(converters ...kubesecret.SecretConverter) *SecretConverterChain {
 	return &SecretConverterChain{converters: converters}
 }
+
 func (t *SecretConverterChain) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
 	for _, converter := range t.converters {
 		resource, err := converter.FromKubeSecret(ctx, rc, secret)
@@ -58,10 +59,8 @@ type TLSSecretConverter struct{}
 var _ kubesecret.SecretConverter = &TLSSecretConverter{}
 
 func (t *TLSSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
-
 	if secret.Type == kubev1.SecretTypeTLS {
 		glooSecret := &v1.Secret{
-
 			Kind: &v1.Secret_Tls{
 				Tls: &v1.TlsSecret{
 					PrivateKey: string(secret.Data[kubev1.TLSPrivateKeyKey]),
@@ -76,13 +75,11 @@ func (t *TLSSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.
 		glooSecret.Metadata.Annotations[annotationKey] = annotationValue
 		return glooSecret, nil
 	}
-
 	// any unmatched secrets will be handled by subsequent converters
 	return nil, nil
 }
 
 func (t *TLSSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
-
 	if glooSecret, ok := resource.(*v1.Secret); ok {
 		if tlsGlooSecret, ok := glooSecret.Kind.(*v1.Secret_Tls); ok {
 			if glooSecret.Metadata.Annotations != nil {
@@ -105,7 +102,6 @@ func (t *TLSSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.Re
 			}
 		}
 	}
-
 	// any unmatched secrets will be handled by subsequent converters
 	return nil, nil
 }
@@ -114,10 +110,24 @@ type AwsSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &AwsSecretConverter{}
 
+const (
+	AwsAccessKeyName = "aws_access_key_id"
+	AwsSecretKeyName = "aws_secret_access_key"
+)
+
 func (t *AwsSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
-
-	// TODO(mitchdraft)
-
+	accessKey, hasAccessKey := secret.Data[AwsAccessKeyName]
+	secretKey, hasSecretKey := secret.Data[AwsSecretKeyName]
+	if hasAccessKey && hasSecretKey {
+		return &v1.Secret{
+			Kind: &v1.Secret_Aws{
+				Aws: &v1.AwsSecret{
+					AccessKey: string(accessKey),
+					SecretKey: string(secretKey),
+				},
+			},
+		}, nil
+	}
 	// any unmatched secrets will be handled by subsequent converters
 	return nil, nil
 }
