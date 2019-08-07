@@ -16,10 +16,7 @@ import (
 
 func TestHelm(t *testing.T) {
 	RegisterFailHandler(Fail)
-	testutils.RegisterPreFailHandler(
-		func() {
-			testutils.PrintTrimmedStack()
-		})
+	testutils.RegisterPreFailHandler(testutils.PrintTrimmedStack)
 	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Helm Suite")
 }

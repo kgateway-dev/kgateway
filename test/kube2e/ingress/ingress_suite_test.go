@@ -24,6 +24,7 @@ func TestIngress(t *testing.T) {
 	if testutils.AreTestsDisabled() {
 		return
 	}
+	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Ingress Suite")
