@@ -2657,6 +2657,7 @@
     "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "knative.dev/serving/pkg/client/informers/externalversions",
     "knative.dev/serving/pkg/client/listers/networking/v1alpha1",
+    "knative.dev/serving/pkg/network",
     "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
