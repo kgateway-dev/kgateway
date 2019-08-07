@@ -3,3 +3,7 @@ changelog:
     description: something useful here
     issueLink: https://github.com/solo-io/gloo/issues/751
     resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.10.9
