@@ -1,5 +1,9 @@
 {{- if .Values.gateway.enabled }}
 {{- if .Values.gateway.upgrade }}
+{{- $image := .Values.gateway.conversionJob.image }}
+{{- if .Values.global  }}
+{{- $image = mergeOverwrite .Values.global.image .Values.gateway.conversionJob.image }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -15,8 +19,8 @@ spec:
         gloo: gateway
     spec:
       containers:
-        - image: "{{ .Values.gateway.conversionJob.image.repository }}:{{ .Values.gateway.conversionJob.image.tag }}"
-          imagePullPolicy: {{ .Values.gateway.conversionJob.image.pullPolicy }}
+        - image: {{template "gloo.image" $image}}
+          imagePullPolicy: {{ $image.pullPolicy }}
           name: gateway-conversion
           env:
             - name: POD_NAMESPACE

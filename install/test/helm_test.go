@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -211,6 +212,15 @@ var _ = Describe("Helm Test", func() {
 					}
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
+
+				It("can overwrite the container image information", func() {
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = fmt.Sprintf("gcr.io/solo-public/gloo-envoy-wrapper:%s", version)
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy = "Always"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.image.pullPolicy=Always --set gatewayProxies.gatewayProxyV2.podTemplate.image.registry=gcr.io/solo-public"
+					prepareMakefile(helmFlags)
+
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
 			})
 		})
 		Context("control plane deployments", func() {
@@ -292,6 +302,27 @@ var _ = Describe("Helm Test", func() {
 					}
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
 				})
+
+				It("can overwrite the container image information", func() {
+					container := GetContainerSpec("gcr.io/solo-public", "gloo", version, GetPodNamespaceEnvVar())
+					container.PullPolicy = "Always"
+					rb := ResourceBuilder{
+						Namespace:  namespace,
+						Name:       "gloo",
+						Labels:     labels,
+						Containers: []ContainerSpec{container},
+					}
+					deploy := rb.GetDeploymentAppsv1()
+					updateDeployment(deploy)
+					deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
+						{Name: "grpc", ContainerPort: 9977, Protocol: "TCP"},
+					}
+
+					glooDeployment = deploy
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.image.pullPolicy=Always --set gloo.deployment.image.registry=gcr.io/solo-public"
+					prepareMakefile(helmFlags)
+
+				})
 			})
 
 			Context("gateway deployment", func() {
@@ -350,6 +381,24 @@ var _ = Describe("Helm Test", func() {
 					}
 					testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 				})
+
+				It("can overwrite the container image information", func() {
+					container := GetContainerSpec("gcr.io/solo-public", "gateway", version, GetPodNamespaceEnvVar())
+					container.PullPolicy = "Always"
+					rb := ResourceBuilder{
+						Namespace:  namespace,
+						Name:       "gateway",
+						Labels:     labels,
+						Containers: []ContainerSpec{container},
+					}
+					deploy := rb.GetDeploymentAppsv1()
+					updateDeployment(deploy)
+
+					gatewayDeployment = deploy
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gateway.deployment.image.pullPolicy=Always --set gateway.deployment.image.registry=gcr.io/solo-public"
+					prepareMakefile(helmFlags)
+
+				})
 			})
 
 			Context("discovery deployment", func() {
@@ -407,6 +456,24 @@ var _ = Describe("Helm Test", func() {
 						},
 					}
 					testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+				})
+
+				It("can overwrite the container image information", func() {
+					container := GetContainerSpec("gcr.io/solo-public", "discovery", version, GetPodNamespaceEnvVar())
+					container.PullPolicy = "Always"
+					rb := ResourceBuilder{
+						Namespace:  namespace,
+						Name:       "discovery",
+						Labels:     labels,
+						Containers: []ContainerSpec{container},
+					}
+					deploy := rb.GetDeploymentAppsv1()
+					updateDeployment(deploy)
+
+					discoveryDeployment = deploy
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.image.pullPolicy=Always --set discovery.deployment.image.registry=gcr.io/solo-public"
+					prepareMakefile(helmFlags)
+
 				})
 			})
 
@@ -474,6 +541,7 @@ var _ = Describe("Helm Test", func() {
 				testManifest.ExpectConfigMapWithYamlData(proxy)
 			})
 		})
+
 	})
 })
 

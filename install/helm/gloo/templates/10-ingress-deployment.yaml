@@ -1,4 +1,8 @@
 {{- if or (.Values.ingress.enabled) (.Values.settings.integrations.knative.enabled) }}
+{{- $image := .Values.ingress.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = mergeOverwrite .Values.global.image .Values.ingress.deployment.image }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,8 +22,8 @@ spec:
         gloo: ingress
     spec:
       containers:
-      - image: "{{ .Values.ingress.deployment.image.repository }}:{{ .Values.ingress.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.ingress.deployment.image.pullPolicy }}
+      - image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress
         env:
         - name: POD_NAMESPACE
