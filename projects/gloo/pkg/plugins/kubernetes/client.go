@@ -62,7 +62,7 @@ func startInformerFactory(ctx context.Context, client kubernetes.Interface, watc
 
 	stop := ctx.Done()
 	err := kubeController.Run(2, stop)
-	if err != nil {
+	if err != nil && ctx.Err() == nil {
 		k.initError = errors.Wrapf(err, "could not start shared informer factory")
 		return k
 	}
@@ -73,7 +73,7 @@ func startInformerFactory(ctx context.Context, client kubernetes.Interface, watc
 	}
 
 	ok := cache.WaitForCacheSync(stop, syncFuncs...)
-	if !ok {
+	if !ok && ctx.Err() == nil {
 		// if initError is non-nil, the kube resource client will panic
 		k.initError = errors.Errorf("waiting for kube pod, endpoints, services cache sync failed")
 	}

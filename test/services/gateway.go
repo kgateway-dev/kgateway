@@ -14,6 +14,7 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"context"
 	"sync/atomic"
@@ -35,6 +36,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
+	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
@@ -116,10 +118,16 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.ControlPlane.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 	if !runOptions.WhatToRun.DisableFds {
-		go fds_syncer.RunFDS(glooOpts)
+		go func() {
+			defer GinkgoRecover()
+			fds_syncer.RunFDS(glooOpts)
+		}()
 	}
 	if !runOptions.WhatToRun.DisableUds {
-		go uds_syncer.RunUDS(glooOpts)
+		go func() {
+			defer GinkgoRecover()
+			uds_syncer.RunUDS(glooOpts)
+		}()
 	}
 
 	testClients := getTestClients(runOptions.Cache, glooOpts.KubeServiceClient)
@@ -192,6 +200,12 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
+	var kubeCoreCache corecache.KubeCoreCache
+	if runOptions.KubeClient != nil {
+		var err error
+		kubeCoreCache, err = cache.NewKubeCoreCacheWithOptions(ctx, runOptions.KubeClient, time.Hour, runOptions.NsToWatch)
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	return bootstrap.Opts{
 		WriteNamespace:    runOptions.NsToWrite,
@@ -212,6 +226,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			Port: 8081,
 		},
 		KubeClient:    runOptions.KubeClient,
+		KubeCoreCache: kubeCoreCache,
 		DevMode:       true,
 		ConsulWatcher: runOptions.ConsulClient,
 	}

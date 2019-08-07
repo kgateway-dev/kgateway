@@ -31,6 +31,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	}
 	// TODO(yuval-k): is there a case where we'll want namespace all in here?
 	kubeFactory := getInformerFactory(opts.Ctx, p.kube, namespaces)
+	// this can take a bit of time some make sure we are still in business
+	if opts.Ctx.Err() != nil {
+		return nil, nil, opts.Ctx.Err()
+	}
 	opts = opts.WithDefaults()
 
 	return newEndpointsWatcher(p.kube, p.kubeCoreCache, namespaces, kubeFactory, upstreamsToTrack).watch(writeNamespace, opts)
