@@ -106,6 +106,9 @@ func (t *TLSSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.Re
 	return nil, nil
 }
 
+// The purpose of this implementation of the SecretConverter interface is to provide a way for the user to specify AWS
+// secrets without having to use an annotation to identify the secret as a AWS secret. Instead of an annotation, this
+// converter looks for the two required fields.
 type AwsSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &AwsSecretConverter{}
