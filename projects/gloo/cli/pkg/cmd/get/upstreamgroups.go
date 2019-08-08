@@ -19,7 +19,7 @@ func UpstreamGroup(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_ = printers.PrintUpstreamGroups(upstreamGroups, opts.Top.Output, opts.Create.DryRun)
+			_ = printers.PrintUpstreamGroups(upstreamGroups, opts.Top.Output)
 			return nil
 		},
 	}

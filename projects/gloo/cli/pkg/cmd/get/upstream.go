@@ -19,7 +19,7 @@ func Upstream(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_ = printers.PrintUpstreams(upstreams, opts.Top.Output, opts.Create.DryRun)
+			_ = printers.PrintUpstreams(upstreams, opts.Top.Output)
 			return nil
 		},
 	}

@@ -80,6 +80,6 @@ func createAzureSecret(ctx context.Context, meta core.Metadata, input options.Az
 
 	}
 
-	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType, dryRun)
+	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 	return nil
 }

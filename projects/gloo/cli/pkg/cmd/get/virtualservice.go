@@ -21,7 +21,7 @@ func VirtualService(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_ = printers.PrintVirtualServices(virtualServices, opts.Top.Output, opts.Create.DryRun)
+			_ = printers.PrintVirtualServices(virtualServices, opts.Top.Output)
 			return nil
 		},
 	}
@@ -51,7 +51,7 @@ func Routes(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return errors.Errorf("virtualservice id provided was incorrect")
 			}
-			_ = printers.PrintRoutes(vs.VirtualHost.Routes, opts.Top.Output, opts.Create.DryRun)
+			_ = printers.PrintRoutes(vs.VirtualHost.Routes, opts.Top.Output)
 			return nil
 		},
 	}

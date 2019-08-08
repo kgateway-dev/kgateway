@@ -97,6 +97,6 @@ func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsS
 
 	}
 
-	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType, dryRun)
+	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 	return nil
 }

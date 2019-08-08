@@ -63,7 +63,7 @@ func createVirtualService(opts *options.Options) error {
 		}
 	}
 
-	_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output, opts.Create.DryRun)
+	_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output)
 
 	return nil
 }

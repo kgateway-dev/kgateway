@@ -13,8 +13,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, dryRun bool) error {
-	outputType = OutputTypeForMode(outputType, dryRun)
+func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType) error {
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
 	}

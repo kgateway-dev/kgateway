@@ -102,7 +102,7 @@ func addRoute(opts *options.Options) error {
 		}
 	}
 
-	_ = printers.PrintVirtualServices(gatewayv1.VirtualServiceList{virtualService}, opts.Top.Output, opts.Create.DryRun)
+	_ = printers.PrintVirtualServices(gatewayv1.VirtualServiceList{virtualService}, opts.Top.Output)
 	return nil
 }
 

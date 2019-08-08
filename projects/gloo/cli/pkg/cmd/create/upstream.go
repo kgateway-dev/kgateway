@@ -141,7 +141,7 @@ func createUpstream(opts *options.Options) error {
 		}
 	}
 
-	_ = printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output, opts.Create.DryRun)
+	_ = printers.PrintUpstreams(v1.UpstreamList{us}, opts.Top.Output)
 
 	return nil
 }

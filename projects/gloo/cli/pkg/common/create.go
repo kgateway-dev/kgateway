@@ -23,13 +23,13 @@ func CreateAndPrintObject(yml []byte, outputType printers.OutputType, dryRun boo
 		if err != nil {
 			return errors.Wrapf(err, "saving Upstream to storage")
 		}
-		_ = printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType, dryRun)
+		_ = printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType)
 	case *v1.VirtualService:
 		vs, err := helpers.MustVirtualServiceClient().Write(res, clients.WriteOpts{})
 		if err != nil {
 			return errors.Wrapf(err, "saving VirtualService to storage")
 		}
-		_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, outputType, dryRun)
+		_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, outputType)
 	default:
 		return errors.Errorf("cli error: unimplemented resource type %v", resource)
 	}

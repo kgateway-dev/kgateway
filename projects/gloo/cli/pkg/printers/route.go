@@ -27,8 +27,7 @@ var routeActionType = struct {
 	emptyAction:    "empty_action",
 }
 
-func PrintRoutes(routes []*gloov1.Route, outputType OutputType, dryRun bool) error {
-	outputType = OutputTypeForMode(outputType, dryRun)
+func PrintRoutes(routes []*gloov1.Route, outputType OutputType) error {
 	return cliutils.PrintList(outputType.String(), "", routes,
 		func(data interface{}, w io.Writer) error {
 			RouteTable(data.([]*gloov1.Route), w)
