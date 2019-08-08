@@ -3,6 +3,8 @@ package secret
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
 	"github.com/pkg/errors"
@@ -58,7 +60,7 @@ func AzureSecretArgsInteractive(meta *core.Metadata, input *options.AzureSecret)
 	return nil
 }
 
-func createAzureSecret(ctx context.Context, meta core.Metadata, input options.AzureSecret, dryRun bool, outputType printers.OutputType) error {
+func createAzureSecret(ctx context.Context, meta core.Metadata, input options.AzureSecret, dryRun bool, outputType types.OutputType) error {
 	if input.ApiKeys.Entries == nil {
 		return errors.Errorf("must provide azure api keys")
 	}

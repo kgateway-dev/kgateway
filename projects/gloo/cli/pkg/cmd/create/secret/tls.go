@@ -3,6 +3,8 @@ package secret
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
@@ -68,7 +70,7 @@ func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) err
 	return nil
 }
 
-func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun bool, outputType printers.OutputType) error {
+func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun bool, outputType types.OutputType) error {
 
 	// read the values
 

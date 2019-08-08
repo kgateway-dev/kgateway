@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -68,7 +70,7 @@ func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) err
 	return nil
 }
 
-func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, dryRun bool, outputType printers.OutputType) error {
+func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, dryRun bool, outputType types.OutputType) error {
 	if input.AccessKey == "" || input.SecretKey == "" {
 		fmt.Printf("access key or secret key not provided, reading credentials from ~/.aws/credentials")
 		creds := credentials.NewSharedCredentials("", "")
