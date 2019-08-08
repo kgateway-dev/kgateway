@@ -2,9 +2,11 @@ package test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -23,6 +25,7 @@ var _ = Describe("Helm Test", func() {
 			labels        map[string]string
 			selector      map[string]string
 			getPullPolicy func() v1.PullPolicy
+			manifestYaml  string
 		)
 
 		BeforeEach(func() {
@@ -34,13 +37,26 @@ var _ = Describe("Helm Test", func() {
 				version = version[1:]
 				getPullPolicy = func() v1.PullPolicy { return v1.PullIfNotPresent }
 			}
+			manifestYaml = ""
+		})
+
+		AfterEach(func() {
+			if manifestYaml != "" {
+				os.Remove(manifestYaml)
+			}
 		})
 
 		prepareMakefile := func(helmFlags string) {
 			makefileSerializer.Lock()
 			defer makefileSerializer.Unlock()
-			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags)
-			testManifest = NewTestManifest("../gloo-gateway.yaml")
+
+			f, err := ioutil.TempFile("", "*.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			f.Close()
+			manifestYaml = f.Name()
+
+			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags, "OUTPUT_YAML="+manifestYaml)
+			testManifest = NewTestManifest(manifestYaml)
 		}
 
 		Context("gateway", func() {
