@@ -150,7 +150,6 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['build-test-assets']
   env:
-    - 'DOCKER_CONFIG=/workspace/docker-config'
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
     - 'BUILD_ID=$BUILD_ID'
