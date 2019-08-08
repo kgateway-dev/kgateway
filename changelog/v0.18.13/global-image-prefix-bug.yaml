@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Fix value merging and copy paste errors in global image prefix.
+  issueLink: https://github.com/solo-io/gloo/issues/988
