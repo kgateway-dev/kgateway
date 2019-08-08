@@ -6,12 +6,13 @@ import (
 	"path"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/kubeutils"
-	"github.com/solo-io/solo-kit/test/helpers"
 	"go.uber.org/zap"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/manifest"
