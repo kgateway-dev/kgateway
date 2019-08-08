@@ -6,6 +6,8 @@ import (
 	"os"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
@@ -17,8 +19,8 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump) error {
-	if outputType == KUBE_YAML {
+func PrintUpstreams(upstreams v1.UpstreamList, outputType types.OutputType, xdsDump *xdsinspection.XdsDump) error {
+	if outputType == types.KUBE_YAML {
 		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
 	}
 	return cliutils.PrintList(outputType.String(), "", upstreams,

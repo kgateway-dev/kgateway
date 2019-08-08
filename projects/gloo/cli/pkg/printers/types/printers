@@ -1,4 +1,4 @@
-package printers
+package types
 
 import (
 	"encoding/json"

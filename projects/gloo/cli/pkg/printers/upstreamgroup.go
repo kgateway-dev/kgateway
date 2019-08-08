@@ -5,13 +5,15 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
+
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
 )
 
-func PrintUpstreamGroups(upstreamGroups v1.UpstreamGroupList, outputType OutputType) error {
-	if outputType == KUBE_YAML {
+func PrintUpstreamGroups(upstreamGroups v1.UpstreamGroupList, outputType types.OutputType) error {
+	if outputType == types.KUBE_YAML {
 		return PrintKubeCrdList(upstreamGroups.AsInputResources(), v1.UpstreamGroupCrd)
 	}
 	return cliutils.PrintList(outputType.String(), "", upstreamGroups,

@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
+
 	"github.com/ghodss/yaml"
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -16,8 +18,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func PrintSecrets(secrets v1.SecretList, outputType OutputType) error {
-	if outputType == KUBE_YAML || outputType == YAML {
+func PrintSecrets(secrets v1.SecretList, outputType types.OutputType) error {
+	if outputType == types.KUBE_YAML || outputType == types.YAML {
 		return printKubeSecretList(context.TODO(), secrets.AsResources())
 	}
 	return cliutils.PrintList(outputType.String(), "", secrets,

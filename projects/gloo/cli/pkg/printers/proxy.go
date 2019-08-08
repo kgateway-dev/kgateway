@@ -6,13 +6,15 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
+
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
 )
 
-func PrintProxies(proxies v1.ProxyList, outputType OutputType) error {
-	if outputType == KUBE_YAML {
+func PrintProxies(proxies v1.ProxyList, outputType types.OutputType) error {
+	if outputType == types.KUBE_YAML {
 		return PrintKubeCrdList(proxies.AsInputResources(), v1.ProxyCrd)
 	}
 	return cliutils.PrintList(outputType.String(), "", proxies,

@@ -3,7 +3,7 @@ package options
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -24,7 +24,7 @@ type Options struct {
 type Top struct {
 	Interactive bool
 	File        string
-	Output      printers.OutputType
+	Output      printTypes.OutputType
 	Ctx         context.Context
 	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
 }
