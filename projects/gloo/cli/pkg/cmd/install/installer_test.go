@@ -1,7 +1,6 @@
 package install_test
 
 import (
-	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -44,14 +43,12 @@ func (i *MockInstallClient) CheckKnativeInstallation() (bool, bool, error) {
 var _ = Describe("Install", func() {
 
 	var (
-		file      string
 		installer install.GlooStagedInstaller
 		opts      options.Options
 		validator MockInstallClient
 	)
 
 	BeforeEach(func() {
-		file = filepath.Join(RootDir, "_test/gloo-test-unit-testing.tgz")
 		opts.Install.Namespace = "gloo-system"
 		opts.Install.HelmChartOverride = file
 	})

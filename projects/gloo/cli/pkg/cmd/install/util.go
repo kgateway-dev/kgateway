@@ -121,7 +121,7 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 
 	var extraValues map[string]interface{}
 	if opts.Install.Upgrade {
-		extraValues = map[string]interface{}{"gateway": "{upgrade: true}"}
+		extraValues = map[string]interface{}{"gateway": map[string]interface{}{"upgrade": true}}
 	}
 	var valueCallbacks []install.ValuesCallback
 	if opts.Install.Knative.InstallKnativeVersion != "" {
