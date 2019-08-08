@@ -9,18 +9,18 @@ kind: Deployment
 metadata:
   labels:
     app: gloo
-    gloo: knative-proxy
-  name: knative-proxy
+    gloo: knative-internal-proxy
+  name: knative-internal-proxy
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.settings.integrations.knative.proxy.replicas }}
   selector:
     matchLabels:
-      gloo: knative-proxy
+      gloo: knative-internal-proxy
   template:
     metadata:
       labels:
-        gloo: knative-proxy
+        gloo: knative-internal-proxy
     spec:
       containers:
       - args: ["--disable-hot-restart"]
@@ -35,7 +35,7 @@ spec:
               fieldPath: metadata.name
         image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
-        name: knative-proxy
+        name: knative-internal-proxy
 {{- if .Values.settings.integrations.knative.proxy.resources }}
         resources:
 {{ toYaml .Values.settings.integrations.knative.proxy.resources | indent 10}}
@@ -60,7 +60,7 @@ spec:
           name: envoy-config
       volumes:
       - configMap:
-          name: knative-envoy-config
+          name: knative-internal-proxy-config
         name: envoy-config
 
 {{- end }}

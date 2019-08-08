@@ -65,7 +65,7 @@ message Settings {
     // Enable automatic linkerd upstream header addition for easier routing to linkerd services
     bool linkerd = 17;
 
-    // USe Kubernetes CRDs as storage.
+    // Use Kubernetes CRDs as storage.
     message KubernetesCrds {
     }
 
@@ -138,10 +138,15 @@ message Settings {
         // Use if running Knative Version 0.7.X or less
         string cluster_ingress_proxy_address = 1;
 
-        // Address of the knative proxy.
-        // If empty, it will default to knative-proxy.$POD_NAMESPACE.svc.cluster.local.
+        // Address of the externally-facing knative proxy.
+        // If empty, it will default to knative-external-proxy.$POD_NAMESPACE.svc.cluster.local.
         // Use if running Knative Version 0.8.X or higher
-        string knative_proxy_address = 2;
+        string knative_external_proxy_address = 2;
+
+        // Address of the internally-facing knative proxy.
+        // If empty, it will default to knative-internal-proxy.$POD_NAMESPACE.svc.cluster.local.
+        // Use if running Knative Version 0.8.X or higher
+        string knative_internal_proxy_address = 3;
     }
 
     // Configuration options for the Clusteringress Controller (for Knative).
@@ -235,6 +240,24 @@ message Settings {
 
     // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
     ConsulConfiguration consul = 20;
+
+
+    // Provides overrides for the default configuration parameters used to interact with Kubernetes.
+    message KubernetesConfiguration {
+
+        message RateLimits {
+            // The maximum queries-per-second Gloo can make to the Kubernetes API Server.
+            float QPS = 1;
+            // Maximum burst for throttle. When a steady state of QPS requests per second, 
+            // this is an additional number of allowed, to allow for short bursts.
+            uint32 burst = 2;
+        }
+        // Rate limits for the kuberentes clients
+        RateLimits rate_limits = 1;
+    }
+
+    // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
+    KubernetesConfiguration kubernetes = 22;
 
     // Settings for extensions
     Extensions extensions = 16;

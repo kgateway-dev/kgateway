@@ -1,0 +1,23 @@
+{{- if .Values.settings.integrations.knative.enabled }}
+{{- if (regexMatch "[0-9]+[.][8-9]+[.][0-9]" .Values.settings.integrations.knative.version ) }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gloo
+    gloo: knative-external-proxy
+  name: knative-external-proxy
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - port: {{ .Values.settings.integrations.knative.proxy.httpPort }}
+    protocol: TCP
+    name: http
+  - port: {{ .Values.settings.integrations.knative.proxy.httpsPort }}
+    protocol: TCP
+    name: https
+  selector:
+    gloo: knative-external-proxy
+  type: LoadBalancer
+{{- end }}
+{{- end }}

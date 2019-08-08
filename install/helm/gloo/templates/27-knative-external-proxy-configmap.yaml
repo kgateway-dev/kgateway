@@ -5,11 +5,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: knative-envoy-config
+  name: knative-external-proxy-config
   namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
-    gloo: knative-proxy
+    gloo: knative-external-proxy
 data:
   envoy.yaml: |
     node:
@@ -17,7 +17,7 @@ data:
       id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
         # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
-        role: "{{ `{{.PodNamespace}}` }}~knative-proxy"
+        role: "{{ `{{.PodNamespace}}` }}~knative-external-proxy"
     static_resources:
       clusters:
       - name: xds_cluster

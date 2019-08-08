@@ -82,8 +82,8 @@ type Knative struct {
 
 type KnativeProxy struct {
 	Image     *Image  `json:"image,omitempty"`
-	HttpPort  int  `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort int  `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	HttpPort  int     `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
 	Tracing   *string `json:"tracing,omitempty" desc:"tracing configuration"`
 	*DeploymentSpec
 }
@@ -103,7 +103,7 @@ type Gloo struct {
 
 type GlooDeployment struct {
 	Image   *Image `json:"image,omitempty"`
-	XdsPort int `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	XdsPort int    `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
 	*DeploymentSpec
 }
 
@@ -201,8 +201,8 @@ type IngressProxy struct {
 
 type IngressProxyDeployment struct {
 	Image            *Image            `json:"image,omitempty"`
-	HttpPort         int            `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
-	HttpsPort        int            `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
+	HttpPort         int               `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
+	HttpsPort        int               `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec

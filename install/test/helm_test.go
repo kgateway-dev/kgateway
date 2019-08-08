@@ -318,7 +318,6 @@ var _ = Describe("Helm Test", func() {
 						{Name: "grpc", ContainerPort: 9977, Protocol: "TCP"},
 					}
 
-
 					glooDeployment = deploy
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.image.pullPolicy=Always --set gloo.deployment.image.registry=gcr.io/solo-public"
 					prepareMakefile(helmFlags)

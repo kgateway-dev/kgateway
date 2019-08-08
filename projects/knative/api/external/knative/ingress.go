@@ -3,9 +3,9 @@ package knative
 import (
 	"reflect"
 
-	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 type Ingress v1alpha1.Ingress
@@ -23,8 +23,13 @@ func (p *Ingress) Equal(that interface{}) bool {
 }
 
 func (p *Ingress) Clone() *Ingress {
-	ci := v1alpha1.Ingress(*p)
-	copy := ci.DeepCopy()
-	newCi := Ingress(*copy)
-	return &newCi
+	ing := v1alpha1.Ingress(*p)
+	copy := ing.DeepCopy()
+	newIng := Ingress(*copy)
+	return &newIng
+}
+
+func (p *Ingress) IsPublic() bool {
+	ing := v1alpha1.Ingress(*p)
+	return ing.IsPublic()
 }

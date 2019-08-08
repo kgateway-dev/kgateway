@@ -4,33 +4,36 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
+
+	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
+	"knative.dev/serving/pkg/network"
 
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
-	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 const (
 	bindPortHttp  = 80
 	bindPortHttps = 443
-	proxyName     = "knative-proxy"
 )
 
-func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
-	ingresses := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
-	for _, ing := range snap.Ingresses {
-		ingresses[ing.GetMetadata().Ref()] = ing.Spec
+func translateProxy(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList, secrets gloov1.SecretList) (*gloov1.Proxy, error) {
+	ingressSpecsByRef := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
+	for _, ing := range ingresses {
+		ingressSpecsByRef[ing.GetMetadata().Ref()] = ing.Spec
 	}
-	return TranslateProxyFromSpecs(ctx, proxyName, namespace, ingresses, snap.Secrets)
+	return TranslateProxyFromSpecs(ctx, proxyName, proxyNamespace, ingressSpecsByRef, secrets)
 }
 
 // made public to be shared with the (soon to be deprecated) clusteringress controller
@@ -106,8 +109,8 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 			})
 		}
 
-		var routes []*gloov1.Route
 		for i, rule := range spec.Rules {
+			var routes []*gloov1.Route
 			if rule.HTTP == nil {
 				log.Warnf("rule %v in knative ingress %v is missing HTTP field", i, ing.Name)
 				continue
@@ -160,7 +163,7 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 			useTls := len(spec.TLS) > 0
 
 			var hosts []string
-			for _, host := range rule.Hosts {
+			for _, host := range expandHosts(rule.Hosts) {
 				hosts = append(hosts, host)
 				if useTls {
 					hosts = append(hosts, fmt.Sprintf("%v:%v", host, bindPortHttps))
@@ -169,18 +172,16 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 				}
 			}
 
+			vh := &gloov1.VirtualHost{
+				Name:    ing.Key() + "-" + strconv.Itoa(i),
+				Domains: hosts,
+				Routes:  routes,
+			}
+
 			if useTls {
-				virtualHostsHttps = append(virtualHostsHttps, &gloov1.VirtualHost{
-					Name:    ing.Key(),
-					Domains: hosts,
-					Routes:  routes,
-				})
+				virtualHostsHttps = append(virtualHostsHttps, vh)
 			} else {
-				virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
-					Name:    ing.Key(),
-					Domains: hosts,
-					Routes:  routes,
-				})
+				virtualHostsHttp = append(virtualHostsHttp, vh)
 			}
 		}
 	}
@@ -249,4 +250,25 @@ func getHeaderManipulation(headersToAppend map[string]string) *headers.HeaderMan
 	return &headers.HeaderManipulation{
 		RequestHeadersToAdd: headersToAdd,
 	}
+}
+
+// trim kube dns suffixes
+// undocumented requirement
+// see https://github.com/knative/serving/blob/master/pkg/reconciler/ingress/resources/virtual_service.go#L281
+func expandHosts(hosts []string) []string {
+	var expanded []string
+	allowedSuffixes := []string{
+		"",
+		"." + network.GetClusterDomainName(),
+		".svc." + network.GetClusterDomainName(),
+	}
+	for _, h := range hosts {
+		for _, suffix := range allowedSuffixes {
+			if strings.HasSuffix(h, suffix) {
+				expanded = append(expanded, strings.TrimSuffix(h, suffix))
+			}
+		}
+	}
+
+	return expanded
 }

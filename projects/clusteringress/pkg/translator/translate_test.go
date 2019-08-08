@@ -14,7 +14,6 @@ import (
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 
-	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
@@ -26,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 var _ = Describe("Translate", func() {
@@ -178,7 +178,7 @@ var _ = Describe("Translate", func() {
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
 								&gloov1.VirtualHost{
-									Name: "example.ing",
+									Name: "example.ing-0",
 									Domains: []string{
 										"petes.com",
 										"petes.com:80",
@@ -275,7 +275,7 @@ var _ = Describe("Translate", func() {
 									XXX_sizecache:        0,
 								},
 								&gloov1.VirtualHost{
-									Name: "example.ing",
+									Name: "example.ing-1",
 									Domains: []string{
 										"pog.com",
 										"pog.com:80",
@@ -285,88 +285,6 @@ var _ = Describe("Translate", func() {
 										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
-											Matcher: &gloov1.Matcher{
-												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: "/",
-												},
-											},
-											Action: &gloov1.Route_RouteAction{
-												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Multi{
-														Multi: &gloov1.MultiDestination{
-															Destinations: []*gloov1.WeightedDestination{
-																&gloov1.WeightedDestination{
-																	Destination: &gloov1.Destination{
-																		DestinationType: &gloov1.Destination_Kube{
-																			Kube: &gloov1.KubernetesServiceDestination{
-																				Ref: core.ResourceRef{
-																					Name:      "peteszah-service",
-																					Namespace: "peteszah-service-namespace",
-																				},
-																				Port:                 0x00000050,
-																				XXX_NoUnkeyedLiteral: struct{}{},
-																				XXX_sizecache:        0,
-																			},
-																		},
-																		DestinationSpec:      (*gloov1.DestinationSpec)(nil),
-																		Subset:               (*gloov1.Subset)(nil),
-																		XXX_NoUnkeyedLiteral: struct{}{},
-																		XXX_sizecache:        0,
-																	},
-																	Weight:                    0x00000064,
-																	WeighedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
-																	XXX_NoUnkeyedLiteral:      struct{}{},
-																	XXX_sizecache:             0,
-																},
-															},
-															XXX_NoUnkeyedLiteral: struct{}{},
-															XXX_sizecache:        0,
-														},
-													},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_sizecache:        0,
-												},
-											},
-											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
-												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
-												Timeout:         durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:              "",
-													NumRetries:           0x0000000e,
-													PerTryTimeout:        durptr(1000),
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_sizecache:        0,
-												},
-												Extensions: (*gloov1.Extensions)(nil),
-												Tracing:    (*tracing.RouteTracingSettings)(nil),
-												Shadowing:  (*shadowing.RouteShadowing)(nil),
-												HeaderManipulation: &headers.HeaderManipulation{
-													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														&headers.HeaderValueOption{
-															Header: &headers.HeaderValue{
-																Key:                  "add",
-																Value:                "me",
-																XXX_NoUnkeyedLiteral: struct{}{},
-																XXX_sizecache:        0,
-															},
-															Append:               (*types.BoolValue)(nil),
-															XXX_NoUnkeyedLiteral: struct{}{},
-															XXX_sizecache:        0,
-														},
-													},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_sizecache:        0,
-												},
-												HostRewrite:          (*hostrewrite.HostRewrite)(nil),
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_sizecache:        0,
-											},
-											XXX_NoUnkeyedLiteral: struct{}{},
-											XXX_sizecache:        0,
-										},
 										&gloov1.Route{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
@@ -474,7 +392,7 @@ var _ = Describe("Translate", func() {
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
 								&gloov1.VirtualHost{
-									Name: "example.ing-tls",
+									Name: "example.ing-tls-0",
 									Domains: []string{
 										"petes.com",
 										"petes.com:443",
