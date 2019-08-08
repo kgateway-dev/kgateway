@@ -1,6 +1,6 @@
 changelog:
   - type: NEW_FEATURE
-    description: something useful here
+    description: Allow using roles with gloo instead of cluster roles. This makes single namespace install more isolated.
     issueLink: https://github.com/solo-io/gloo/issues/751
     resolvesIssue: false
   - type: DEPENDENCY_BUMP
