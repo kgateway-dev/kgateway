@@ -81,7 +81,7 @@ type GlooInstallSpec struct {
 	HelmArchiveUri    string
 	ValueFileName     string
 	UserValueFileName string
-	ExtraValues       map[string]string
+	ExtraValues       map[string]interface{}
 	ValueCallbacks    []install.ValuesCallback
 	ExcludeResources  install.ResourceMatcherFunc
 }
@@ -119,9 +119,9 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 		helmChartArchiveUri = helmChartOverride
 	}
 
-	var extraValues map[string]string
+	var extraValues map[string]interface{}
 	if opts.Install.Upgrade {
-		extraValues = map[string]string{"gateway": "{upgrade: true}"}
+		extraValues = map[string]interface{}{"gateway": "{upgrade: true}"}
 	}
 	var valueCallbacks []install.ValuesCallback
 	if opts.Install.Knative.InstallKnativeVersion != "" {

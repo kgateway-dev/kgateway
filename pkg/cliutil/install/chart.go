@@ -47,7 +47,7 @@ type ValuesCallback func(config *generate.HelmConfig)
 
 // Searches for the value file with the given name in the chart and returns its raw content.
 // NOTE: this also sets the namespace.create attribute to 'true'.
-func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, userValuesFileName string, extraValues map[string]string, valueOptions ...ValuesCallback) (*chart.Config, error) {
+func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, userValuesFileName string, extraValues chartutil.Values, valueOptions ...ValuesCallback) (*chart.Config, error) {
 	rawAdditionalValues := "{}"
 	if fileName != "" {
 		var found bool
@@ -89,9 +89,7 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, us
 	}
 
 	if extraValues != nil {
-		for k, v := range extraValues {
-			values[k] = v
-		}
+		values.MergeInto(extraValues)
 	}
 
 	if userValuesFileName != "" {
