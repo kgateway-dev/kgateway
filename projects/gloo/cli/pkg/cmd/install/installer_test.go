@@ -1,8 +1,8 @@
 package install_test
 
 import (
+	"context"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,7 +30,7 @@ func (i *MockInstallClient) KubectlApply(manifest []byte) error {
 	return nil
 }
 
-func (i *MockInstallClient) WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
+func (i *MockInstallClient) WaitForCrdsToBeRegistered(_ context.Context, crds []string) error {
 	Expect(i.waited).To(BeFalse())
 	i.waited = true
 	Expect(crds).To(ConsistOf(i.expectedCrds))
