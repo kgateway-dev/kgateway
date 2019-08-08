@@ -120,7 +120,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'HELM_HOME=/root/.helm'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['-r', '-failFast', '-race', '-p']
+  args: ['-r', '-failFast', '-race']
   waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-zone']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
@@ -167,7 +167,7 @@ steps:
     - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
     - 'RUN_KUBE2E_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['-r', 'test/kube2e', '-failFast', '-p']
+  args: ['-r', 'test/kube2e', '-failFast']
   waitFor: ['build-test-assets', 'set-zone']
   id: 'regression-tests'
 - name: gcr.io/cloud-builders/gcloud
