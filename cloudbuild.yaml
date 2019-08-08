@@ -101,6 +101,11 @@ steps:
   waitFor: ['-']
   id: 'grab-ginkgo-container'
 
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-a']
+  id: 'set-zone'
+  waitFor: ['-']
+
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -152,10 +157,6 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['compile']
   id: 'build-test-assets'
-- name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-a']
-  id: 'set-zone'
-  waitFor: ['-']
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
