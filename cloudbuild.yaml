@@ -93,6 +93,7 @@ steps:
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'fetch-helm'
+  waitFor: ['dep']
 # Docker related setup
 # grab this container immediately in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
@@ -114,8 +115,8 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'HELM_HOME=/root/.helm'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['-r', '-failFast', '-race']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen']
+  args: ['-r', '-failFast', '-race', '-p']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-zone']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
@@ -125,7 +126,7 @@ steps:
   args: ['-c', 'docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD']
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
-  waitFor: ['test']
+  waitFor: ['-']
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['docker']
   env:
@@ -135,7 +136,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['docker-login']
+  waitFor: ['docker-login', 'dep']
   id: 'compile'
 
 # Run regression tests
@@ -154,20 +155,38 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-zone'
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
-  id: 'get-credentials'
+  waitFor: ['-']
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
     - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
+    - 'RUN_KUBE2E_TESTS=1'
+    - LOCAL=true
+  dir: './gopath/src/github.com/solo-io/gloo'
+  args: ['-r', 'test/kube2e', '-failFast', '-p']
+  waitFor: ['build-test-assets', 'set-zone']
+  id: 'regression-tests'
+- name: gcr.io/cloud-builders/gcloud
+  env:
+    - 'KUBECONFIG=/workspace/kube-e2e'
+  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
+  id: 'get-credentials'
+  waitFor: ['set-zone']
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
+  env:
+    - 'KUBECONFIG=/workspace/kube-e2e'
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GOPATH=/workspace/gopath'
+    - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
     - 'CLOUDSDK_CONTAINER_CLUSTER=kube2e-tests'
     - 'RUN_KUBE2E_TESTS=1'
+    - 'CLUSTER_LOCK_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', 'test/kube2e', '-failFast']
-  waitFor: ['build-test-assets', 'test', 'get-credentials']
-  id: 'regression-tests'
+  waitFor: ['build-test-assets', 'get-credentials']
+  id: 'regression-tests-cluster-lock'
 
 # 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
 # 2) Publish helm chart
@@ -181,7 +200,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN']
   id: 'release'
-  waitFor: ['test', 'regression-tests']
+  # wait for everithing else to compelete. waitFor: ['test', 'regression-tests']
 # Sync helm chart data back to google storage bucket
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['save-helm']

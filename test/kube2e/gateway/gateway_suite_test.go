@@ -11,6 +11,7 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/go-utils/testutils"
@@ -23,6 +24,11 @@ import (
 
 func TestGateway(t *testing.T) {
 	if testutils.AreTestsDisabled() {
+		return
+	}
+	if os.Getenv("CLUSTER_LOCK_TESTS") == "1" {
+		log.Warnf("This test does not require using a cluster lock. cluster lock is enabled so this test is disabled. " +
+			"To enable, unset CLUSTER_LOCK_TESTS in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
@@ -41,6 +47,7 @@ var _ = BeforeSuite(func() {
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
+		defaults.InstallNamespace = "gateway_test"
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/avast/retry-go"
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -17,9 +19,11 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/go-utils/testutils"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
+	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"github.com/solo-io/go-utils/testutils/helper"
 
 	"k8s.io/client-go/kubernetes"
@@ -33,6 +37,7 @@ import (
 	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
 
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/test/setup"
@@ -67,7 +72,61 @@ var _ = Describe("Kube2e: gateway", func() {
 		upstreamClient       gloov1.UpstreamClient
 		proxyClient          gloov1.ProxyClient
 		serviceClient        skkube.ServiceClient
+
+		testInstance int
+		randomNumber int64
+
+		values *os.File
 	)
+
+	var _ = BeforeEach(func() {
+		randomNumber = time.Now().Unix() % 1000
+		testInstance += 1
+		cwd, err := os.Getwd()
+		Expect(err).NotTo(HaveOccurred())
+
+		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
+			// TODO: include build id?
+			defaults.InstallNamespace = "gateway_test-" + fmt.Sprintf("%d-%d-%d", randomNumber, GinkgoParallelNode(), testInstance)
+			return defaults
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		RegisterFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
+		testHelper.Verbose = true
+
+		locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
+
+		values, err = ioutil.TempFile("", "*.yaml")
+		Expect(err).NotTo(HaveOccurred())
+		values.Write([]byte("rbac:\n  namespaced: true\n"))
+		values.Close()
+
+		err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values.Name()))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	var _ = AfterEach(func() {
+		if locker != nil {
+			defer locker.ReleaseLock()
+		}
+		os.Remove(values.Name())
+		if testHelper != nil {
+			err := testHelper.UninstallGloo()
+			Expect(err).NotTo(HaveOccurred())
+
+			// TODO go-utils should expose `glooctl uninstall --delete-namespace`
+			_ = testutils.Kubectl("delete", "namespace", testHelper.InstallNamespace)
+
+			Eventually(func() error {
+				return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
+			}, "60s", "1s").Should(HaveOccurred())
+		}
+	})
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
