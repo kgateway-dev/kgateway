@@ -544,7 +544,7 @@ var _ = Describe("Helm Test", func() {
 			})
 		})
 
-		FDescribe("merge ingress and gateway", func() {
+		Describe("merge ingress and gateway", func() {
 
 			// helper for passing a values file
 			prepareMakefileFromValuesFile := func(valuesFile string) {
@@ -555,12 +555,6 @@ var _ = Describe("Helm Test", func() {
 
 			It("merges the config correctly", func() {
 				prepareMakefileFromValuesFile("install/test/merge_ingress_values.yaml")
-				cmRb := ResourceBuilder{
-					Namespace: namespace,
-					Name:      "gloo",
-				}
-				dep := cmRb.GetDeployment()
-				fmt.Println(dep)
 				testManifest.ExpectDeploymentAppsV1(mergedIngressDeployment)
 			})
 
@@ -593,8 +587,6 @@ var mergedIngressDeployment = &appsv1.Deployment{
 					"gloo": "gloo"},
 			},
 			Spec: v1.PodSpec{
-				Volumes:        nil,
-				InitContainers: nil,
 				Containers: []v1.Container{
 					{
 						Name: "gloo",
@@ -615,7 +607,7 @@ var mergedIngressDeployment = &appsv1.Deployment{
 						Resources: v1.ResourceRequirements{
 							Limits: nil,
 							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("256Mi"), // 256M
+								v1.ResourceMemory: resource.MustParse("256Mi"),
 								v1.ResourceCPU:    resource.MustParse("500m"),
 							},
 						},
