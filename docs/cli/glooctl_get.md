@@ -10,6 +10,10 @@ Display one or a list of Gloo resources
 
 Display one or a list of Gloo resources
 
+```
+glooctl get [flags]
+```
+
 ### Options
 
 ```

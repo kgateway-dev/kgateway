@@ -1,6 +1,6 @@
 changelog:
   - type: BREAKING_CHANGE
-    description: Glooctl entrypoint function receives an array of options-harmonization functions.
+    description: "Glooctl implementation change: internal entrypoint function receives an array of pre-run functions."
     issueLink: https://github.com/solo-io/gloo/issues/1005
   - type: NON_USER_FACING
     description: "Restore default glooctl get output to -o table."
