@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
-	knativeclient "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
@@ -14,27 +14,36 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+	knativeclient "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 )
 
 type translatorSyncer struct {
-	proxyAddress    string
-	writeNamespace  string
-	writeErrs       chan error
-	proxyClient     gloov1.ProxyClient
-	proxyReconciler gloov1.ProxyReconciler
-	ingressClient   knativeclient.IngressesGetter
+	externalProxyAddress string
+	internalProxyAddress string
+	writeNamespace       string
+	writeErrs            chan error
+	proxyClient          gloov1.ProxyClient
+	proxyReconciler      gloov1.ProxyReconciler
+	ingressClient        knativeclient.IngressesGetter
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		proxyAddress:    proxyAddress,
-		writeNamespace:  writeNamespace,
-		writeErrs:       writeErrs,
-		proxyClient:     proxyClient,
-		ingressClient:   ingressClient,
-		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		externalProxyAddress: externalProxyAddress,
+		internalProxyAddress: internalProxyAddress,
+		writeNamespace:       writeNamespace,
+		writeErrs:            writeErrs,
+		proxyClient:          proxyClient,
+		ingressClient:        ingressClient,
+		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
 	}
 }
+
+const (
+	externalProxyName = "knative-external-proxy"
+	internalProxyName = "knative-internal-proxy"
+)
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
@@ -48,22 +57,46 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 
-	proxy, err := translateProxy(ctx, s.writeNamespace, snap)
+	// split ingresses by their visibility, create a proxy for each
+	var externalIngresses, internalIngresses v1alpha1.IngressList
+
+	for _, ing := range snap.Ingresses {
+		if ing.IsPublic() {
+			externalIngresses = append(externalIngresses, ing)
+		} else {
+			internalIngresses = append(internalIngresses, ing)
+		}
+	}
+
+	externalProxy, err := translateProxy(ctx, externalProxyName, s.writeNamespace, externalIngresses, snap.Secrets)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"knative ingress proxy will not be updated.", snap.Hash(), err)
+			"knative ingress externalProxy will not be updated.", snap.Hash(), err)
+		return err
+	}
+
+	internalProxy, err := translateProxy(ctx, internalProxyName, s.writeNamespace, internalIngresses, snap.Secrets)
+	if err != nil {
+		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
+			"knative ingress externalProxy will not be updated.", snap.Hash(), err)
 		return err
 	}
 
 	labels := map[string]string{
-		"created_by": "knative",
+		"created_by": "gloo-knative-translator",
 	}
 
 	var desiredResources gloov1.ProxyList
-	if proxy != nil {
-		logger.Infof("creating proxy %v", proxy.Metadata.Ref())
-		proxy.Metadata.Labels = labels
-		desiredResources = gloov1.ProxyList{proxy}
+	if externalProxy != nil {
+		logger.Infof("creating external proxy %v", externalProxy.Metadata.Ref())
+		externalProxy.Metadata.Labels = labels
+		desiredResources = append(desiredResources, externalProxy)
+	}
+
+	if internalProxy != nil {
+		logger.Infof("creating internal proxy %v", internalProxy.Metadata.Ref())
+		internalProxy.Metadata.Labels = labels
+		desiredResources = append(desiredResources, internalProxy)
 	}
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, utils.TransitionFunction, clients.ListOpts{
@@ -73,10 +106,21 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		return err
 	}
 
-	if err := s.propagateProxyStatus(ctx, proxy, snap.Ingresses); err != nil {
-		return errors.Wrapf(err, "failed to propagate proxy status "+
-			"to ingress objects")
-	}
+	g := &errgroup.Group{}
+	g.Go(func() error {
+		if err := s.propagateProxyStatus(ctx, externalProxy, externalIngresses); err != nil {
+			return errors.Wrapf(err, "failed to propagate external proxy status "+
+				"to ingress objects")
+		}
+		return nil
+	})
+	g.Go(func() error {
+		if err := s.propagateProxyStatus(ctx, internalProxy, internalIngresses); err != nil {
+			return errors.Wrapf(err, "failed to propagate internal proxy status "+
+				"to ingress objects")
+		}
+		return nil
+	})
 
 	return nil
 }
@@ -123,9 +167,13 @@ func (s *translatorSyncer) markIngressesReady(ctx context.Context, ingresses v1a
 		}
 		ci.Status.InitializeConditions()
 		ci.Status.MarkNetworkConfigured()
-		ci.Status.MarkLoadBalancerReady([]knativev1alpha1.LoadBalancerIngressStatus{
-			{DomainInternal: s.proxyAddress},
-		})
+		externalLbStatus := []knativev1alpha1.LoadBalancerIngressStatus{
+			{DomainInternal: s.externalProxyAddress},
+		}
+		internalLbStatus := []knativev1alpha1.LoadBalancerIngressStatus{
+			{DomainInternal: s.internalProxyAddress},
+		}
+		ci.Status.MarkLoadBalancerReady(externalLbStatus, externalLbStatus, internalLbStatus)
 		ci.Status.ObservedGeneration = ci.Generation
 		updatedIngresses = append(updatedIngresses, &ci)
 	}

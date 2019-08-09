@@ -98,7 +98,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
 # TODO(EItanya): make mockgen work for gloo
-SUBDIRS:=projects test
+SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
 	go generate ./...
 	(rm docs/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go)

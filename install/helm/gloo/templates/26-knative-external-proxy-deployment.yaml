@@ -1,26 +1,26 @@
 {{- if .Values.settings.integrations.knative.enabled }}
-{{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]" .Values.settings.integrations.knative.version ) }}
+{{- if (regexMatch "[0-9]+[.][8-9]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
 {{- $image := .Values.settings.integrations.knative.proxy.image }}
 {{- if .Values.global  }}
-{{- $image = merge .Values.settings.integrations.knative.proxy.image .Values.global.image }}
+{{- $image = merge .Values.settings.integrations.knative.proxy.image .Values.global.image  }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: gloo
-    gloo: clusteringress-proxy
-  name: clusteringress-proxy
+    gloo: knative-external-proxy
+  name: knative-external-proxy
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.settings.integrations.knative.proxy.replicas }}
   selector:
     matchLabels:
-      gloo: clusteringress-proxy
+      gloo: knative-external-proxy
   template:
     metadata:
       labels:
-        gloo: clusteringress-proxy
+        gloo: knative-external-proxy
     spec:
       containers:
       - args: ["--disable-hot-restart"]
@@ -35,7 +35,7 @@ spec:
               fieldPath: metadata.name
         image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
-        name: clusteringress-proxy
+        name: knative-external-proxy
 {{- if .Values.settings.integrations.knative.proxy.resources }}
         resources:
 {{ toYaml .Values.settings.integrations.knative.proxy.resources | indent 10}}
@@ -60,7 +60,7 @@ spec:
           name: envoy-config
       volumes:
       - configMap:
-          name: clusteringress-envoy-config
+          name: knative-external-proxy-config
         name: envoy-config
 
 {{- end }}
