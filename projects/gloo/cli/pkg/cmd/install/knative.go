@@ -175,7 +175,7 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	outputManifests := []string{servingManifest}
 
 	if build {
-		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, knativeVersion)
+		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, opts.InstallKnativeBuildVersion)
 		buildManifest, err := getManifestForInstallation(buildReleaseUrl)
 		if err != nil {
 			return "", err
@@ -184,7 +184,7 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	}
 
 	if eventing {
-		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, knativeVersion)
+		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, opts.InstallKnativeEventingVersion)
 		eventingManifest, err := getManifestForInstallation(eventingReleaseUrl)
 		if err != nil {
 			return "", err

@@ -14,16 +14,21 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 }
 
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
-	set.StringVar(&install.InstallKnativeVersion, "install-knative-version", "0.7.0",
-		"Version of Knative to install, when --install-knative is set to `true`")
+	set.StringVar(&install.InstallKnativeVersion, "install-knative-version", "0.8.0",
+		"Version of Knative Serving to install, when --install-knative is set to `true`. This version"+
+			" will also be used to install Knative Monitoring, --install-monitoring is set")
 	set.BoolVarP(&install.InstallKnative, "install-knative", "k", true,
 		"Bundle Knative-Serving with your Gloo installation")
 	set.BoolVarP(&install.SkipGlooInstall, "skip-installing-gloo", "g", false,
 		"Skip installing Gloo. Only Knative components will be installed")
 	set.BoolVarP(&install.InstallKnativeEventing, "install-eventing", "e", false,
 		"Bundle Knative-Eventing with your Gloo installation. Requires install-knative to be true")
+	set.StringVar(&install.InstallKnativeEventingVersion, "install-eventing-version", "0.7.0",
+		"Version of Knative Eventing to install, when --install-eventing is set to `true`")
 	set.BoolVarP(&install.InstallKnativeBuild, "install-build", "b", false,
 		"Bundle Knative-Build with your Gloo installation. Requires install-knative to be true")
+	set.StringVar(&install.InstallKnativeBuildVersion, "install-build-version", "0.7.0",
+		"Version of Knative Build to install, when --install-build is set to `true`")
 	set.BoolVarP(&install.InstallKnativeMonitoring, "install-monitoring", "m", false,
 		"Bundle Knative-Monitoring with your Gloo installation. Requires install-knative to be true")
 }

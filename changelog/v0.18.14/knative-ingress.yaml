@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Knative Install defaults to knative-serving 0.8.0
+    issueLink: https://github.com/solo-io/gloo/issues/1006
