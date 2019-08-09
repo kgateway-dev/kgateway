@@ -1287,7 +1287,7 @@ var _ = Describe("Translator", func() {
 				Expect(fc.TlsContext.GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
 
-				By("checking first second chain")
+				By("checking second filter chain")
 				fc = listener.GetFilterChains()[1]
 				Expect(fc.TlsContext).NotTo(BeNil())
 				cert = fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
