@@ -1,4 +1,4 @@
 changelog:
   - type: NEW_FEATURE
-    description: Allow virtual service with different domains share the same certificate
+    description: Allow virtual service with different domains to share the same certificate
     issueLink: https://github.com/solo-io/gloo/pull/1004
