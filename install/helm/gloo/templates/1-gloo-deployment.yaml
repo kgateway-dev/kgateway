@@ -26,6 +26,7 @@ spec:
         prometheus.io/scrape: "true"
       {{- end}}
     spec:
+      serviceAccountName: gloo
       containers:
       - image: {{template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
