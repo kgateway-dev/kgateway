@@ -33,7 +33,7 @@ func awsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := AwsSecretArgsInteractive(&opts.Metadata, input); err != nil {
+				if err := AwsSecretArgsInteractive(input); err != nil {
 					return err
 				}
 			}
@@ -57,7 +57,7 @@ const (
 	awsPromptSecretKey = "Enter AWS Secret Key (leave empty to read credentials from ~/.aws/credentials): "
 )
 
-func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) error {
+func AwsSecretArgsInteractive(input *options.AwsSecret) error {
 	if err := cliutil.GetStringInput(awsPromptAccessKey, &input.AccessKey); err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsS
 
 	}
 
-	printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
+	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 
 	return nil
 }

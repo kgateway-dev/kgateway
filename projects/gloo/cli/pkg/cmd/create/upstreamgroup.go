@@ -70,7 +70,7 @@ func createUpstreamGroup(opts *options.Options) error {
 		}
 	}
 
-	printers.PrintUpstreamGroups(v1.UpstreamGroupList{ug}, opts.Top.Output)
+	_ = printers.PrintUpstreamGroups(v1.UpstreamGroupList{ug}, opts.Top.Output)
 
 	return nil
 }

@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errors"
@@ -56,6 +57,10 @@ var _ = Describe("Robustness tests", func() {
 
 		err error
 	)
+
+	var _ = BeforeEach(StartTestHelper)
+
+	var _ = AfterEach(TearDownTestHelper)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -207,6 +212,11 @@ var _ = Describe("Robustness tests", func() {
 		By("add an invalid route to the virtual service")
 		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
+
+		Expect(virtualService).To(MatchFields(IgnoreExtras, Fields{
+			"VirtualHost": Not(BeNil()),
+		}))
+
 		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gloov1.Route{
 			Matcher: &gloov1.Matcher{
 				PathSpecifier: &gloov1.Matcher_Prefix{

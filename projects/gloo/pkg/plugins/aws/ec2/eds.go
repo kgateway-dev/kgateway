@@ -9,8 +9,6 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -36,9 +34,25 @@ type edsWatcher struct {
 	refreshRate       time.Duration
 	writeNamespace    string
 	ec2InstanceLister Ec2InstanceLister
+	secretNamespaces  []string
 }
 
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
+	nsSet := map[string]bool{}
+
+	// TODO(yuval-k): is there a case where we'll want namespace all in here?
+	for _, upstream := range upstreams {
+		if secretRef := upstream.GetUpstreamSpec().GetAwsEc2().GetSecretRef(); secretRef != nil {
+			// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below
+			// instead:
+			// nsSet[upstream.GetMetadata().Namespace] = true
+			nsSet[secretRef.Namespace] = true
+		}
+	}
+	var namespaces []string
+	for ns := range nsSet {
+		namespaces = append(namespaces, ns)
+	}
 	return &edsWatcher{
 		upstreams:         upstreams,
 		watchContext:      watchCtx,
@@ -46,6 +60,7 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 		refreshRate:       getRefreshRate(parentRefreshRate),
 		writeNamespace:    writeNamespace,
 		ec2InstanceLister: NewEc2InstanceLister(),
+		secretNamespaces:  namespaces,
 	}
 }
 
@@ -66,12 +81,16 @@ func getRefreshRate(parentRefreshRate time.Duration) time.Duration {
 }
 
 func (c *edsWatcher) updateEndpointsList(endpointsChan chan v1.EndpointList, errs chan error) {
-	tmpTODOAllNamespaces := metav1.NamespaceAll
-	secrets, err := c.secretClient.List(tmpTODOAllNamespaces, clients.ListOpts{Ctx: c.watchContext})
-	if err != nil {
-		errs <- err
-		return
+	var secrets v1.SecretList
+	for _, ns := range c.secretNamespaces {
+		nsSecrets, err := c.secretClient.List(ns, clients.ListOpts{Ctx: c.watchContext})
+		if err != nil {
+			errs <- err
+			return
+		}
+		secrets = append(secrets, nsSecrets...)
 	}
+
 	allEndpoints, err := getLatestEndpoints(c.watchContext, c.ec2InstanceLister, secrets, c.writeNamespace, c.upstreams)
 	if err != nil {
 		errs <- err
