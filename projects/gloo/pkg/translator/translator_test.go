@@ -1080,7 +1080,7 @@ var _ = Describe("Translator", func() {
 				Expect(fc.TlsContext).NotTo(BeNil())
 			})
 
-			It("should not merge 2 ssl config if they are different same", func() {
+			It("should not merge 2 ssl config if they are different", func() {
 				prep([]*v1.SslConfig{
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
