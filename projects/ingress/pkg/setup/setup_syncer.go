@@ -98,8 +98,13 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
 
-	disableKubeIngress := os.Getenv("DISABLE_KUBE_INGRESS") == "true" || os.Getenv("DISABLE_KUBE_INGRESS") == "1"
-	enableKnative := os.Getenv("ENABLE_KNATIVE_INGRESS") == "true" || os.Getenv("ENABLE_KNATIVE_INGRESS") == "1"
+	envTrue := func(name string) bool {
+		return os.Getenv(name) == "true" || os.Getenv(name) == "1"
+	}
+
+	disableKubeIngress := envTrue("DISABLE_KUBE_INGRESS")
+	requireIngressClass := envTrue("REQUIRE_INGRESS_CLASS")
+	enableKnative := envTrue("ENABLE_KNATIVE_INGRESS")
 	knativeVersion := os.Getenv("KNATIVE_VERSION")
 
 	clusterIngressProxyAddress := defaultClusterIngressProxyAddress
@@ -130,9 +135,10 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
-		EnableKnative:      enableKnative,
-		KnativeVersion:     knativeVersion,
-		DisableKubeIngress: disableKubeIngress,
+		EnableKnative:       enableKnative,
+		KnativeVersion:      knativeVersion,
+		DisableKubeIngress:  disableKubeIngress,
+		RequireIngressClass: requireIngressClass,
 	}
 
 	return RunIngress(opts)
@@ -183,7 +189,7 @@ func RunIngress(opts Opts) error {
 		ingressClient := v1.NewIngressClientWithBase(baseIngressClient)
 
 		translatorEmitter := v1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
-		translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs)
+		translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs, opts.RequireIngressClass)
 		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {
