@@ -167,14 +167,14 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		sort.Strings(tmp)
 		key = key + ";" + strings.Join(tmp, ",")
 
-		if cfg, ok := mergedSslSecrets[key]; ok {
-			cfg.SslSecrets = sslConfig.SslSecrets
-			cfg.VerifySubjectAltName = sslConfig.VerifySubjectAltName
-			if len(cfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
+		if matchingCfg, ok := mergedSslSecrets[key]; ok {
+			matchingCfg.SslSecrets = sslConfig.SslSecrets
+			matchingCfg.VerifySubjectAltName = sslConfig.VerifySubjectAltName
+			if len(matchingCfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
 				// if either of the configs match on everything; then match on everything
-				cfg.SniDomains = nil
+				matchingCfg.SniDomains = nil
 			} else {
-				cfg.SniDomains = append(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
+				matchingCfg.SniDomains = append(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
 			}
 		} else {
 			copy := *sslConfig
