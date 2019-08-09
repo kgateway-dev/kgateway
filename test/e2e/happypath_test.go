@@ -322,7 +322,7 @@ var _ = Describe("Happy path", func() {
 				writeNamespace = namespace
 				ro := &services.RunOptions{
 					NsToWrite: writeNamespace,
-					NsToWatch: []string{"default", namespace},
+					NsToWatch: []string{namespace},
 					WhatToRun: services.What{
 						DisableGateway: true,
 					},
