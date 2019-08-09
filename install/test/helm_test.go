@@ -553,9 +553,126 @@ var _ = Describe("Helm Test", func() {
 				prepareMakefile(helmFlags)
 			}
 
-			It("merges the config correctly", func() {
+			It("merges the config correctly, allow override of ingress without altering gloo", func() {
+				var glooDeploymentPostMerge = &appsv1.Deployment{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Deployment",
+						APIVersion: "apps/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "gloo",
+						Namespace: "gloo-system",
+						Labels: map[string]string{
+							"app": "gloo", "gloo": "gloo"},
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: pointer.Int32Ptr(1),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gloo": "gloo"},
+						},
+						Template: v1.PodTemplateSpec{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"gloo": "gloo"},
+							},
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "gloo",
+										// Note: this was NOT overwritten
+										Image: "quay.io/solo-io/gloo:dev",
+										Ports: []v1.ContainerPort{
+											{Name: "grpc", HostPort: 0, ContainerPort: 9977, Protocol: "TCP", HostIP: ""},
+										},
+										Env: []v1.EnvVar{
+											{
+												Name: "POD_NAMESPACE",
+												ValueFrom: &v1.EnvVarSource{
+													FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
+												},
+											},
+										},
+										Resources: v1.ResourceRequirements{
+											Limits: nil,
+											Requests: v1.ResourceList{
+												v1.ResourceMemory: resource.MustParse("256Mi"),
+												v1.ResourceCPU:    resource.MustParse("500m"),
+											},
+										},
+										ImagePullPolicy: "Always",
+										SecurityContext: &v1.SecurityContext{
+											Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
+											RunAsUser:                pointer.Int64Ptr(10101),
+											RunAsNonRoot:             pointer.BoolPtr(true),
+											ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+											AllowPrivilegeEscalation: pointer.BoolPtr(false),
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				var ingressDeploymentPostMerge = &appsv1.Deployment{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Deployment",
+						APIVersion: "apps/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ingress",
+						Namespace: "gloo-system",
+						Labels: map[string]string{
+							"app": "gloo", "gloo": "ingress"},
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: pointer.Int32Ptr(1),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gloo": "ingress"},
+						},
+						Template: v1.PodTemplateSpec{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"gloo": "ingress"},
+							},
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "ingress",
+										// Note: this WAS overwritten
+										Image: "docker.io/ilackarms/ingress:test-ilackarms",
+										Env: []v1.EnvVar{
+											{
+												Name: "POD_NAMESPACE",
+												ValueFrom: &v1.EnvVarSource{
+													FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
+												},
+											},
+											{
+												Name:  "ENABLE_KNATIVE_INGRESS",
+												Value: "true",
+											},
+											{
+												Name:  "KNATIVE_VERSION",
+												Value: "0.8.0",
+											},
+											{
+												Name:  "DISABLE_KUBE_INGRESS",
+												Value: "true",
+											},
+										},
+										Resources: v1.ResourceRequirements{
+											Limits: nil,
+										},
+										ImagePullPolicy: "Always",
+									},
+								},
+							},
+						},
+					},
+				}
 				prepareMakefileFromValuesFile("install/test/merge_ingress_values.yaml")
-				testManifest.ExpectDeploymentAppsV1(mergedIngressDeployment)
+				testManifest.ExpectDeploymentAppsV1(glooDeploymentPostMerge)
+				testManifest.ExpectDeploymentAppsV1(ingressDeploymentPostMerge)
 			})
 
 		})
@@ -564,67 +681,6 @@ var _ = Describe("Helm Test", func() {
 })
 
 // These are large, so get them out of the way to help readability of test coverage
-
-var mergedIngressDeployment = &appsv1.Deployment{
-	TypeMeta: metav1.TypeMeta{
-		Kind:       "Deployment",
-		APIVersion: "apps/v1",
-	},
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "gloo",
-		Namespace: "gloo-system",
-		Labels: map[string]string{
-			"app": "gloo", "gloo": "gloo"},
-	},
-	Spec: appsv1.DeploymentSpec{
-		Replicas: pointer.Int32Ptr(1),
-		Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
-			"gloo": "gloo"},
-		},
-		Template: v1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: map[string]string{
-					"gloo": "gloo"},
-			},
-			Spec: v1.PodSpec{
-				Containers: []v1.Container{
-					{
-						Name: "gloo",
-						// expecting ilackarms?
-						//Image:      "gcr.io/solo-gloo-knative-e2e/gloo:test-ilackarms",
-						Image: "quay.io/solo-io/gloo:dev",
-						Ports: []v1.ContainerPort{
-							{Name: "grpc", HostPort: 0, ContainerPort: 9977, Protocol: "TCP", HostIP: ""},
-						},
-						Env: []v1.EnvVar{
-							{
-								Name: "POD_NAMESPACE",
-								ValueFrom: &v1.EnvVarSource{
-									FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
-								},
-							},
-						},
-						Resources: v1.ResourceRequirements{
-							Limits: nil,
-							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("256Mi"),
-								v1.ResourceCPU:    resource.MustParse("500m"),
-							},
-						},
-						ImagePullPolicy: "Always",
-						SecurityContext: &v1.SecurityContext{
-							Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
-							RunAsUser:                pointer.Int64Ptr(10101),
-							RunAsNonRoot:             pointer.BoolPtr(true),
-							ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-							AllowPrivilegeEscalation: pointer.BoolPtr(false),
-						},
-					},
-				},
-			},
-		},
-	},
-}
 
 var confWithoutTracing = `
 node:
