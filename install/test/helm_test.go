@@ -611,7 +611,7 @@ var _ = Describe("Helm Test", func() {
 				role := cmRb.GetClusterRole()
 				testManifest.ExpectClusterRole(role)
 			})
-			It("should generate roles instread of cluster roles", func() {
+			It("should generate roles instead of cluster roles", func() {
 				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
 				prepareMakefile(helmFlags)
 				cmRb := ResourceBuilder{
@@ -650,7 +650,7 @@ var _ = Describe("Helm Test", func() {
 				roleBinding := cmRb.GetClusterRoleBinding()
 				testManifest.ExpectClusterRoleBinding(roleBinding)
 			})
-			It("should generate roles binding instread of cluster roles binding", func() {
+			It("should generate roles binding instead of cluster roles binding", func() {
 				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
 				prepareMakefile(helmFlags)
 				cmRb := ResourceBuilder{

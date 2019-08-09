@@ -107,7 +107,7 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 			Crd:                resourceCrd,
 			Cfg:                *cfg,
 			SharedCache:        kubeCache,
-			SkipCrdCreation:    settingsutil.SkipCrdCreation(),
+			SkipCrdCreation:    settingsutil.GetSkipCrdCreation(),
 			NamespaceWhitelist: settings.WatchNamespaces,
 		}, nil
 	case *v1.Settings_ConsulKvSource:

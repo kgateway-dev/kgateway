@@ -93,7 +93,7 @@ func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 		Cfg:                cfg,
 		SharedCache:        kube.NewKubeCache(ctx),
 		NamespaceWhitelist: []string{setupNamespace},
-		SkipCrdCreation:    settingsutil.SkipCrdCreation(),
+		SkipCrdCreation:    settingsutil.GetSkipCrdCreation(),
 	})
 }
 
