@@ -39,7 +39,7 @@ func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
 	apiExts := helpers.MustApiExtsClient()
 	logger := contextutils.LoggerFrom(ctx)
 	for _, crdName := range crds {
-		logger.Infow("waiting for crd to be registered", zap.Any("crd", crdName))
+		logger.Infow("waiting for crd to be registered", zap.String("crd", crdName))
 		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
 			return errors.Wrapf(err, "waiting for crd %v to become registered", crdName)
 		}

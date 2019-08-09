@@ -132,10 +132,10 @@ func (d *UpstreamDiscovery) Resync(ctx context.Context) error {
 			Selector: selector,
 		}); err != nil {
 			logger.Errorw("failed reconciling upstreams",
-				zap.Any("discovered_by", udsName), zap.Any("upstreams", len(desiredUpstreams)), zap.Error(err))
+				zap.Any("discovered_by", udsName), zap.Int("upstreams", len(desiredUpstreams)), zap.Error(err))
 			return err
 		}
-		logger.Infow("reconciled upstreams", zap.Any("discovered_by", udsName), zap.Any("upstreams", len(desiredUpstreams)))
+		logger.Infow("reconciled upstreams", zap.String("discovered_by", udsName), zap.Int("upstreams", len(desiredUpstreams)))
 	}
 	return nil
 }
