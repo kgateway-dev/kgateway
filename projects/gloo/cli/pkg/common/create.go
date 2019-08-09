@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-func CreateAndPrintObject(yml []byte, outputType printers.OutputType, dryRun bool) error {
+func CreateAndPrintObject(yml []byte, outputType printers.OutputType) error {
 	resource, err := resourceFromYaml(yml)
 	if err != nil {
 		return errors.Wrapf(err, "parsing resource from yaml")
