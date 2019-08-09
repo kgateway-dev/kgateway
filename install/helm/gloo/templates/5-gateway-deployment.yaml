@@ -1,6 +1,6 @@
 {{- $image := .Values.gateway.deployment.image }}
 {{- if .Values.global  }}
-{{- $image = mergeOverwrite .Values.global.image .Values.gateway.deployment.image }}
+{{- $image = merge .Values.gateway.deployment.image .Values.global.image }}
 {{- end }}
 {{- if .Values.gateway.enabled }}
 apiVersion: apps/v1
