@@ -1032,6 +1032,17 @@
   version = "v0.0.3"
 
 [[projects]]
+  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
+  version = "v0.0.1"
+
+[[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -1316,7 +1327,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:98ad610b782ba3cb4a2be50cf9a42d77a9c4a07c723672ab838fe13ef12f0027"
+  digest = "1:9ff54606b7fb1538ec5ac1c8d5766f3c3c1b44c1ab39a0701e42b6916183ecce"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1346,7 +1357,6 @@
     "testutils/clusterlock",
     "testutils/exec",
     "testutils/helper",
-    "testutils/kube",
     "versionutils",
     "versionutils/kubeapi",
     "vfsutils",
@@ -1356,7 +1366,7 @@
   version = "v0.9.17"
 
 [[projects]]
-  digest = "1:45bac689e07018b73b4216bd6f8d32d6bbc7c5b11c31087c2fe8ea9de00bc720"
+  digest = "1:e0e5788b6672163059d05c398e23d8ede53c30a3a22b21555db2328c19a3786c"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1413,8 +1423,6 @@
     "pkg/utils/protoutils",
     "test/helpers",
     "test/setup",
-    "test/tests/typed",
-    "test/testutils",
   ]
   pruneopts = "UT"
   revision = "4ef904331926cde8633da4b108ecdc8447e59b70"
@@ -2541,6 +2549,7 @@
     "github.com/jhump/protoreflect/grpcreflect",
     "github.com/k0kubun/pp",
     "github.com/keybase/go-ps",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
@@ -2605,8 +2614,6 @@
     "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
-    "github.com/solo-io/solo-kit/test/tests/typed",
-    "github.com/solo-io/solo-kit/test/testutils",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "go.opencensus.io/stats",
@@ -2626,7 +2633,6 @@
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/api/rbac/v1",
-    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
@@ -2653,6 +2659,7 @@
     "k8s.io/helm/pkg/tiller",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
+    "k8s.io/utils/pointer",
     "knative.dev/serving/pkg/apis/networking/v1alpha1",
     "knative.dev/serving/pkg/client/clientset/versioned",
     "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
