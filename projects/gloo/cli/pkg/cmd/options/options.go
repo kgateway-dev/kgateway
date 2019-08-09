@@ -38,12 +38,14 @@ type Install struct {
 }
 
 type Knative struct {
-	InstallKnativeVersion    string `json:"version"`
-	InstallKnative           bool   `json:"-"`
-	SkipGlooInstall          bool   `json:"-"`
-	InstallKnativeBuild      bool   `json:"build"`
-	InstallKnativeMonitoring bool   `json:"monitoring"`
-	InstallKnativeEventing   bool   `json:"eventing"`
+	InstallKnativeVersion         string `json:"version"`
+	InstallKnative                bool   `json:"-"`
+	SkipGlooInstall               bool   `json:"-"`
+	InstallKnativeBuild           bool   `json:"build"`
+	InstallKnativeBuildVersion    string `json:"buildVersion"`
+	InstallKnativeMonitoring      bool   `json:"monitoring"`
+	InstallKnativeEventing        bool   `json:"eventing"`
+	InstallKnativeEventingVersion string `json:"eventingVersion"`
 }
 
 type Uninstall struct {
