@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 
+	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/go-utils/contextutils"
@@ -29,7 +30,7 @@ func MustClientSet(ctx context.Context) ClientSet {
 		Crd:             gatewayv1.GatewayCrd,
 		Cfg:             kubecfg,
 		SharedCache:     kubeCache,
-		SkipCrdCreation: false,
+		SkipCrdCreation: settingsutil.GetSkipCrdCreation(),
 	}
 	v1GatewayClient, err := gatewayv1.NewGatewayClient(v1GatewayClientFactory)
 	if err != nil {
@@ -44,7 +45,7 @@ func MustClientSet(ctx context.Context) ClientSet {
 		Crd:             gatewayv2.GatewayCrd,
 		Cfg:             kubecfg,
 		SharedCache:     kubeCache,
-		SkipCrdCreation: false,
+		SkipCrdCreation: settingsutil.GetSkipCrdCreation(),
 	}
 	v2GatewayClient, err := gatewayv2.NewGatewayClient(v2GatewayClientFactory)
 	if err != nil {

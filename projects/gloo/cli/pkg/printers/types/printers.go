@@ -10,10 +10,10 @@ import (
 type OutputType int
 
 const (
-	KUBE_YAML OutputType = iota
+	TABLE OutputType = iota
 	YAML
 	JSON
-	TABLE
+	KUBE_YAML
 )
 
 var (

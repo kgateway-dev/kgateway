@@ -2,7 +2,7 @@
 {{- if .Values.gateway.upgrade }}
 {{- $image := .Values.gateway.conversionJob.image }}
 {{- if .Values.global  }}
-{{- $image = mergeOverwrite .Values.global.image .Values.gateway.conversionJob.image }}
+  {{- $image = merge .Values.gateway.conversionJob.image .Values.global.image }}
 {{- end }}
 apiVersion: batch/v1
 kind: Job

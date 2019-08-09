@@ -1,7 +1,7 @@
 {{- if .Values.ingress.enabled }}
 {{- $image := .Values.gateway.deployment.image }}
 {{- if .Values.global  }}
-{{- $image = mergeOverwrite .Values.global.image .Values.ingressProxy.deployment.image }}
+  {{- $image = merge .Values.ingressProxy.deployment.image .Values.global.image }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment

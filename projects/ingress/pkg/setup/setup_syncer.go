@@ -212,7 +212,6 @@ func RunIngress(opts Opts) error {
 	logger := contextutils.LoggerFrom(opts.WatchOpts.Ctx)
 
 	if opts.EnableKnative {
-		logger.Infof("starting Ingress with KNative (ClusterIngress) support enabled")
 		knative, err := knativeclientset.NewForConfig(cfg)
 		if err != nil {
 			return errors.Wrapf(err, "creating knative clientset")
@@ -221,6 +220,7 @@ func RunIngress(opts Opts) error {
 		// if the version of the target knative is < 0.8.0 (or version not provided), use clusteringress
 		// else, use the new knative ingress object
 		if pre080knativeVersion(opts.KnativeVersion) {
+			logger.Infof("starting Ingress with KNative (ClusterIngress) support enabled")
 			knativeCache, err := clusteringressclient.NewClusterIngreessCache(opts.WatchOpts.Ctx, knative)
 			if err != nil {
 				return errors.Wrapf(err, "creating knative cache")
@@ -242,6 +242,7 @@ func RunIngress(opts Opts) error {
 			}
 			go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, clusterIngTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
 		} else {
+			logger.Infof("starting Ingress with KNative (Ingress) support enabled")
 			knativeCache, err := knativeclient.NewIngressCache(opts.WatchOpts.Ctx, knative)
 			if err != nil {
 				return errors.Wrapf(err, "creating knative cache")

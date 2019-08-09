@@ -2,12 +2,17 @@ package test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
+	"k8s.io/utils/pointer"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -22,6 +27,7 @@ var _ = Describe("Helm Test", func() {
 			labels        map[string]string
 			selector      map[string]string
 			getPullPolicy func() v1.PullPolicy
+			manifestYaml  string
 		)
 
 		BeforeEach(func() {
@@ -33,13 +39,26 @@ var _ = Describe("Helm Test", func() {
 				version = version[1:]
 				getPullPolicy = func() v1.PullPolicy { return v1.PullIfNotPresent }
 			}
+			manifestYaml = ""
+		})
+
+		AfterEach(func() {
+			if manifestYaml != "" {
+				os.Remove(manifestYaml)
+			}
 		})
 
 		prepareMakefile := func(helmFlags string) {
 			makefileSerializer.Lock()
 			defer makefileSerializer.Unlock()
-			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags)
-			testManifest = NewTestManifest("../gloo-gateway.yaml")
+
+			f, err := ioutil.TempFile("", "*.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			f.Close()
+			manifestYaml = f.Name()
+
+			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags, "OUTPUT_YAML="+manifestYaml)
+			testManifest = NewTestManifest(manifestYaml)
 		}
 
 		Context("gateway", func() {
@@ -540,6 +559,255 @@ var _ = Describe("Helm Test", func() {
 				proxy := cmRb.GetConfigMap()
 				testManifest.ExpectConfigMapWithYamlData(proxy)
 			})
+		})
+
+		Context("roles", func() {
+			var (
+				rules []rbacv1.PolicyRule
+			)
+			BeforeEach(func() {
+				rules = []rbacv1.PolicyRule{
+					{
+						APIGroups: []string{""},
+						Resources: []string{"pods", "services", "secrets", "endpoints", "configmaps"},
+						Verbs:     []string{"get", "list", "watch"},
+					},
+					{
+						APIGroups: []string{""},
+						Resources: []string{"namespaces"},
+						Verbs:     []string{"get", "list", "watch"},
+					},
+					{
+						APIGroups: []string{"apiextensions.k8s.io"},
+						Resources: []string{"customresourcedefinitions"},
+						Verbs:     []string{"get", "create", "update"},
+					},
+					{
+						APIGroups: []string{"gloo.solo.io"},
+						Resources: []string{"settings", "upstreams", "upstreamgroups", "proxies", "virtualservices"},
+						Verbs:     []string{"*"},
+					},
+					{
+						APIGroups: []string{"gateway.solo.io"},
+						Resources: []string{"virtualservices", "gateways"},
+						Verbs:     []string{"*"},
+					},
+					{
+						APIGroups: []string{"gateway.solo.io.v2"},
+						Resources: []string{"gateways"},
+						Verbs:     []string{"*"},
+					},
+				}
+			})
+			It("should generate cluster roles", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Name: "gloo-role-gateway",
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					Rules: rules,
+				}
+				role := cmRb.GetClusterRole()
+				testManifest.ExpectClusterRole(role)
+			})
+			It("should generate roles instead of cluster roles", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      "gloo-role-gateway",
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					Rules: rules,
+				}
+				role := cmRb.GetRole()
+				testManifest.ExpectRole(role)
+			})
+
+			It("should generate cluster roles binding", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Name: "gloo-role-binding-gateway-" + namespace,
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					RoleRef: rbacv1.RoleRef{
+						APIGroup: "rbac.authorization.k8s.io",
+						Kind:     "ClusterRole",
+						Name:     "gloo-role-gateway",
+					},
+					Subjects: []rbacv1.Subject{{
+						Kind:      "ServiceAccount",
+						Name:      "default",
+						Namespace: namespace,
+					}},
+				}
+				roleBinding := cmRb.GetClusterRoleBinding()
+				testManifest.ExpectClusterRoleBinding(roleBinding)
+			})
+			It("should generate roles binding instead of cluster roles binding", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      "gloo-role-binding-gateway",
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					RoleRef: rbacv1.RoleRef{
+						APIGroup: "rbac.authorization.k8s.io",
+						Kind:     "Role",
+						Name:     "gloo-role-gateway",
+					},
+					Subjects: []rbacv1.Subject{{
+						Kind:      "ServiceAccount",
+						Name:      "default",
+						Namespace: namespace,
+					}},
+				}
+				roleBinding := cmRb.GetRoleBinding()
+				testManifest.ExpectRoleBinding(roleBinding)
+			})
+		})
+		Describe("merge ingress and gateway", func() {
+
+			// helper for passing a values file
+			prepareMakefileFromValuesFile := func(valuesFile string) {
+				helmFlags := "--namespace " + namespace +
+					" -f " + valuesFile
+				prepareMakefile(helmFlags)
+			}
+
+			It("merges the config correctly, allow override of ingress without altering gloo", func() {
+				var glooDeploymentPostMerge = &appsv1.Deployment{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Deployment",
+						APIVersion: "apps/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "gloo",
+						Namespace: "gloo-system",
+						Labels: map[string]string{
+							"app": "gloo", "gloo": "gloo"},
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: pointer.Int32Ptr(1),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gloo": "gloo"},
+						},
+						Template: v1.PodTemplateSpec{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"gloo": "gloo"},
+							},
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "gloo",
+										// Note: this was NOT overwritten
+										Image: "quay.io/solo-io/gloo:dev",
+										Ports: []v1.ContainerPort{
+											{Name: "grpc", HostPort: 0, ContainerPort: 9977, Protocol: "TCP", HostIP: ""},
+										},
+										Env: []v1.EnvVar{
+											{
+												Name: "POD_NAMESPACE",
+												ValueFrom: &v1.EnvVarSource{
+													FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
+												},
+											},
+										},
+										Resources: v1.ResourceRequirements{
+											Limits: nil,
+											Requests: v1.ResourceList{
+												v1.ResourceMemory: resource.MustParse("256Mi"),
+												v1.ResourceCPU:    resource.MustParse("500m"),
+											},
+										},
+										ImagePullPolicy: "Always",
+										SecurityContext: &v1.SecurityContext{
+											Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
+											RunAsUser:                pointer.Int64Ptr(10101),
+											RunAsNonRoot:             pointer.BoolPtr(true),
+											ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+											AllowPrivilegeEscalation: pointer.BoolPtr(false),
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				var ingressDeploymentPostMerge = &appsv1.Deployment{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Deployment",
+						APIVersion: "apps/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ingress",
+						Namespace: "gloo-system",
+						Labels: map[string]string{
+							"app": "gloo", "gloo": "ingress"},
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: pointer.Int32Ptr(1),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gloo": "ingress"},
+						},
+						Template: v1.PodTemplateSpec{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"gloo": "ingress"},
+							},
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "ingress",
+										// Note: this WAS overwritten
+										Image: "docker.io/ilackarms/ingress:test-ilackarms",
+										Env: []v1.EnvVar{
+											{
+												Name: "POD_NAMESPACE",
+												ValueFrom: &v1.EnvVarSource{
+													FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
+												},
+											},
+											{
+												Name:  "ENABLE_KNATIVE_INGRESS",
+												Value: "true",
+											},
+											{
+												Name:  "KNATIVE_VERSION",
+												Value: "0.8.0",
+											},
+											{
+												Name:  "DISABLE_KUBE_INGRESS",
+												Value: "true",
+											},
+										},
+										Resources: v1.ResourceRequirements{
+											Limits: nil,
+										},
+										ImagePullPolicy: "Always",
+									},
+								},
+							},
+						},
+					},
+				}
+				prepareMakefileFromValuesFile("install/test/merge_ingress_values.yaml")
+				testManifest.ExpectDeploymentAppsV1(glooDeploymentPostMerge)
+				testManifest.ExpectDeploymentAppsV1(ingressDeploymentPostMerge)
+			})
+
 		})
 
 	})

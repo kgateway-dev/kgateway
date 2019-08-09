@@ -24,7 +24,6 @@ steps:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GIT_SSH_CONFIG=FALSE'
   id: 'dep'
-  waitFor: ['download-untar-dep-cache']
 
 # Run some basic checks on the repo
 # 1) check formatting of go files
@@ -93,12 +92,19 @@ steps:
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'fetch-helm'
+  waitFor: ['dep']
 # Docker related setup
 # grab this container immediately in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   entrypoint: ls
   waitFor: ['-']
   id: 'grab-ginkgo-container'
+
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-a']
+  id: 'set-zone'
+  # run after dep so it doesn't move our settings
+  waitFor: ['dep']
 
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
@@ -107,7 +113,7 @@ steps:
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
@@ -115,17 +121,19 @@ steps:
   - 'HELM_HOME=/root/.helm'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', '-failFast', '-race']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-zone']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
 # Build and tag docker images
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
+  env:
+    - 'DOCKER_CONFIG=/workspace/docker-config'
   args: ['-c', 'docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD']
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
-  waitFor: ['test']
+  waitFor: ['dep']
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['docker']
   env:
@@ -135,7 +143,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['docker-login']
+  waitFor: ['dep', 'check-code-and-docs-gen']
   id: 'compile'
 
 # Run regression tests
@@ -149,31 +157,46 @@ steps:
     - 'HELM_HOME=/root/.helm'
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['compile']
+  waitFor: ['compile', 'docker-login']
   id: 'build-test-assets'
-- name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-a']
-  id: 'set-zone'
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
-  id: 'get-credentials'
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
     - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=kube2e-tests'
+    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
     - 'RUN_KUBE2E_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', 'test/kube2e', '-failFast']
-  waitFor: ['build-test-assets', 'test', 'get-credentials']
+  waitFor: ['build-test-assets', 'set-zone']
   id: 'regression-tests'
+- name: gcr.io/cloud-builders/gcloud
+  env:
+    - 'KUBECONFIG=/workspace/kube-e2e'
+  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
+  id: 'get-credentials'
+  # wait for dep so our kube config is not moved.
+  waitFor: ['set-zone', 'dep']
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
+  env:
+    - 'KUBECONFIG=/workspace/kube-e2e'
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GOPATH=/workspace/gopath'
+    - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+    - 'CLOUDSDK_CONTAINER_CLUSTER=kube2e-tests'
+    - 'RUN_KUBE2E_TESTS=1'
+    - 'CLUSTER_LOCK_TESTS=1'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  args: ['-r', 'test/kube2e', '-failFast']
+  waitFor: ['build-test-assets', 'get-credentials']
+  id: 'regression-tests-cluster-lock'
 
 # 1) Run make targets to push docker images, compile manifests, produce release artifacts, deploy docs
 # 2) Publish helm chart
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['docker-push', 'manifest', 'upload-github-release-assets', 'push-docs']
   env:
+    - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
@@ -181,8 +204,9 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN']
   id: 'release'
-  waitFor: ['test', 'regression-tests']
-# Sync helm chart data back to google storage bucket
+  # wait for everything else to compelete.
+
+  # Sync helm chart data back to google storage bucket
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['save-helm']
   env:

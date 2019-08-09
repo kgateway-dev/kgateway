@@ -1,7 +1,7 @@
 {{- if or (.Values.ingress.enabled) (.Values.settings.integrations.knative.enabled) }}
 {{- $image := .Values.ingress.deployment.image }}
 {{- if .Values.global  }}
-{{- $image = mergeOverwrite .Values.global.image .Values.ingress.deployment.image }}
+  {{- $image = merge .Values.ingress.deployment.image .Values.global.image }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment

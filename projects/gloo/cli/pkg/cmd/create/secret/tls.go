@@ -29,7 +29,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := TlsSecretArgsInteractive(&opts.Metadata, input); err != nil {
+				if err := TlsSecretArgsInteractive(input); err != nil {
 					return err
 				}
 			}
@@ -56,7 +56,7 @@ const (
 	tlsPromptCertChain  = "filename of certchain for secret"
 )
 
-func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) error {
+func TlsSecretArgsInteractive(input *options.TlsSecret) error {
 	if err := cliutil.GetStringInput("filename of rootca for secret (optional)", &input.RootCaFilename); err != nil {
 		return err
 	}
@@ -99,6 +99,6 @@ func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsS
 
 	}
 
-	printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
+	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 	return nil
 }

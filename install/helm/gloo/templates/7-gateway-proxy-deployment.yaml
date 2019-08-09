@@ -4,7 +4,7 @@
 {{- range $name, $spec := .Values.gatewayProxies }}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
-{{- $image = mergeOverwrite $global.image $spec.podTemplate.image }}
+  {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
 ---
 apiVersion: apps/v1

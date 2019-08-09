@@ -3,8 +3,6 @@ package main
 import (
 	"io/ioutil"
 	"os"
-	"path"
-	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -28,25 +26,28 @@ var (
 )
 
 func main() {
-	var version, repoPrefixOverride = "", ""
+	var version, repoPrefixOverride, globalPullPolicy string
 	if len(os.Args) < 2 {
 		panic("Must provide version as argument")
 	} else {
 		version = os.Args[1]
 
-		if len(os.Args) == 3 {
+		if len(os.Args) >= 3 {
 			repoPrefixOverride = os.Args[2]
 		}
-
+		if len(os.Args) >= 4 {
+			globalPullPolicy = os.Args[3]
+		}
 	}
+
 	log.Printf("Generating helm files.")
-	if err := generateGatewayValuesYaml(version, repoPrefixOverride); err != nil {
+	if err := generateGatewayValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
-	if err := generateKnativeValuesYaml(version, repoPrefixOverride); err != nil {
+	if err := generateKnativeValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
 		log.Fatalf("generating values-knative.yaml failed!: %v", err)
 	}
-	if err := generateIngressValuesYaml(version, repoPrefixOverride); err != nil {
+	if err := generateIngressValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
 		log.Fatalf("generating values-ingress.yaml failed!: %v", err)
 	}
 	if err := generateChartYaml(version); err != nil {
@@ -97,7 +98,7 @@ func readGatewayConfig() (*generate.HelmConfig, error) {
 }
 
 // install with gateway only
-func generateGatewayValuesYaml(version, repositoryPrefix string) error {
+func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
 	cfg, err := readGatewayConfig()
 	if err != nil {
 		return err
@@ -126,6 +127,10 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 		cfg.Global.Image.Registry = repositoryPrefix
 	}
 
+	if globalPullPolicy != "" {
+		cfg.Global.Image.PullPolicy = globalPullPolicy
+	}
+
 	if err := writeDocs(helmchart.Doc(cfg), docsOutput); err != nil {
 		return err
 	}
@@ -134,7 +139,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix string) error {
 }
 
 // install with knative only
-func generateKnativeValuesYaml(version, repositoryPrefix string) error {
+func generateKnativeValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
 	cfg, err := readGatewayConfig()
 	if err != nil {
 		return err
@@ -160,11 +165,15 @@ func generateKnativeValuesYaml(version, repositoryPrefix string) error {
 		cfg.Global.Image.Registry = repositoryPrefix
 	}
 
+	if globalPullPolicy != "" {
+		cfg.Global.Image.PullPolicy = globalPullPolicy
+	}
+
 	return writeYaml(&cfg, knativeValuesOutput)
 }
 
 // install with ingress only
-func generateIngressValuesYaml(version, repositoryPrefix string) error {
+func generateIngressValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
 	cfg, err := readGatewayConfig()
 	if err != nil {
 		return err
@@ -190,6 +199,10 @@ func generateIngressValuesYaml(version, repositoryPrefix string) error {
 		cfg.Global.Image.Registry = repositoryPrefix
 	}
 
+	if globalPullPolicy != "" {
+		cfg.Global.Image.PullPolicy = globalPullPolicy
+	}
+
 	return writeYaml(&cfg, ingressValuesOutput)
 }
 
@@ -202,11 +215,4 @@ func generateChartYaml(version string) error {
 	chart.Version = version
 
 	return writeYaml(&chart, chartOutput)
-}
-
-// We want to turn "quay.io/solo-io/gloo" into "<newPrefix>/gloo".
-func replacePrefix(repository, newPrefix string) string {
-	// Remove trailing slash, if present
-	newPrefix = strings.TrimSuffix(newPrefix, "/")
-	return strings.Join([]string{newPrefix, path.Base(repository)}, "/")
 }

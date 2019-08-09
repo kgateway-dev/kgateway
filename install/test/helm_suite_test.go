@@ -1,8 +1,6 @@
 package test
 
 import (
-	"bytes"
-	"fmt"
 	"os/exec"
 	"sync"
 	"testing"
@@ -36,17 +34,9 @@ func MustMake(dir string, args ...string) {
 	makeCmd := exec.Command("make", args...)
 	makeCmd.Dir = dir
 
-	var b bytes.Buffer
-	var be bytes.Buffer
-	makeCmd.Stdout = &b
-	makeCmd.Stderr = &be
+	makeCmd.Stdout = GinkgoWriter
+	makeCmd.Stderr = GinkgoWriter
 	err := makeCmd.Run()
 
-	if err != nil {
-		fmt.Printf(b.String())
-		fmt.Println("\nstderr:")
-		fmt.Printf(be.String())
-		fmt.Println()
-	}
 	Expect(err).NotTo(HaveOccurred())
 }
