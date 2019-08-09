@@ -20,15 +20,21 @@ import (
 )
 
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
-	var namespaces []string
-	for _, us := range upstreamsToTrack {
-		svcNs := us.GetUpstreamSpec().GetKube().GetServiceNamespace()
+	nsSet := map[string]bool{}
+
+	for _, upstream := range upstreamsToTrack {
+		svcNs := upstream.GetUpstreamSpec().GetKube().GetServiceNamespace()
 		// only care about kube upstreams
 		if svcNs == "" {
 			continue
 		}
-		namespaces = append(namespaces, svcNs)
+		nsSet[svcNs] = true
 	}
+	var namespaces []string
+	for ns := range nsSet {
+		namespaces = append(namespaces, ns)
+	}
+
 	// TODO(yuval-k): is there a case where we'll want namespace all in here?
 	kubeFactory := getInformerFactory(opts.Ctx, p.kube, namespaces)
 	// this can take a bit of time some make sure we are still in business
