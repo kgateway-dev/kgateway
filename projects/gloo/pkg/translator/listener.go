@@ -147,7 +147,7 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 
 	var result []*v1.SslConfig
 
-	mergedSslSecrets := map[string]v1.SslConfig{}
+	mergedSslSecrets := map[string]*v1.SslConfig{}
 
 	for _, sslConfig := range sslConfigs {
 
@@ -176,14 +176,12 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 			} else {
 				cfg.SniDomains = append(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
 			}
-			mergedSslSecrets[key] = cfg
 		} else {
-			mergedSslSecrets[key] = *sslConfig
+			copy := *sslConfig
+			ptrToCopy := &copy
+			mergedSslSecrets[key] = ptrToCopy
+			result = append(result, ptrToCopy)
 		}
-	}
-
-	for _, sslConfig := range mergedSslSecrets {
-		result = append(result, &sslConfig)
 	}
 
 	return result

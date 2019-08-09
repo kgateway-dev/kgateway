@@ -1062,127 +1062,241 @@ var _ = Describe("Translator", func() {
 			Expect(found).To(BeTrue())
 			listener = val.ResourceProto().(*envoyapi.Listener)
 		}
+		Context("files", func() {
 
-		It("should translte ssl correctly", func() {
-			prep([]*v1.SslConfig{
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert",
-							TlsKey:  "key",
+			It("should translate ssl correctly", func() {
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+							},
 						},
 					},
-				},
-			})
-			Expect(listener.GetFilterChains()).To(HaveLen(1))
-			fc := listener.GetFilterChains()[0]
-			Expect(fc.TlsContext).NotTo(BeNil())
-		})
-
-		It("should not merge 2 ssl config if they are different same", func() {
-			prep([]*v1.SslConfig{
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert1",
-							TlsKey:  "key1",
-						},
-					},
-				},
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert2",
-							TlsKey:  "key2",
-						},
-					},
-				},
+				})
+				Expect(listener.GetFilterChains()).To(HaveLen(1))
+				fc := listener.GetFilterChains()[0]
+				Expect(fc.TlsContext).NotTo(BeNil())
 			})
 
-			Expect(listener.GetFilterChains()).To(HaveLen(2))
-		})
-		It("should merge 2 ssl config if they are the same", func() {
-			prep([]*v1.SslConfig{
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert",
-							TlsKey:  "key",
+			It("should not merge 2 ssl config if they are different same", func() {
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert1",
+								TlsKey:  "key1",
+							},
 						},
 					},
-				},
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert",
-							TlsKey:  "key",
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert2",
+								TlsKey:  "key2",
+							},
 						},
 					},
-				},
+				})
+
+				Expect(listener.GetFilterChains()).To(HaveLen(2))
 			})
+			It("should merge 2 ssl config if they are the same", func() {
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+							},
+						},
+					},
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+							},
+						},
+					},
+				})
 
-			Expect(listener.GetFilterChains()).To(HaveLen(1))
-			fc := listener.GetFilterChains()[0]
-			Expect(fc.TlsContext).NotTo(BeNil())
-		})
-		It("should combine sni matches", func() {
-			prep([]*v1.SslConfig{
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert",
-							TlsKey:  "key",
-						},
-					},
-					SniDomains: []string{"a.com"},
-				},
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert",
-							TlsKey:  "key",
-						},
-					},
-					SniDomains: []string{"b.com"},
-				},
+				Expect(listener.GetFilterChains()).To(HaveLen(1))
+				fc := listener.GetFilterChains()[0]
+				Expect(fc.TlsContext).NotTo(BeNil())
 			})
-
-			Expect(listener.GetFilterChains()).To(HaveLen(1))
-			fc := listener.GetFilterChains()[0]
-			Expect(fc.TlsContext).NotTo(BeNil())
-			cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
-			Expect(cert.GetCertificateChain().GetFilename()).To(Equal("cert"))
-			Expect(cert.GetPrivateKey().GetFilename()).To(Equal("key"))
-			Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
-		})
-		It("should combine 1 has and 1 doesnt sni", func() {
-
-			prep([]*v1.SslConfig{
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert",
-							TlsKey:  "key",
+			It("should combine sni matches", func() {
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+							},
 						},
+						SniDomains: []string{"a.com"},
 					},
-				},
-				{
-					SslSecrets: &v1.SslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: "cert",
-							TlsKey:  "key",
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+							},
 						},
+						SniDomains: []string{"b.com"},
 					},
-					SniDomains: []string{"b.com"},
-				},
+				})
+
+				Expect(listener.GetFilterChains()).To(HaveLen(1))
+				fc := listener.GetFilterChains()[0]
+				Expect(fc.TlsContext).NotTo(BeNil())
+				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetFilename()).To(Equal("cert"))
+				Expect(cert.GetPrivateKey().GetFilename()).To(Equal("key"))
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
 			})
+			It("should combine 1 has and 1 doesnt sni", func() {
 
-			Expect(listener.GetFilterChains()).To(HaveLen(1))
-			fc := listener.GetFilterChains()[0]
-			Expect(fc.TlsContext).NotTo(BeNil())
-			Expect(fc.FilterChainMatch.ServerNames).To(BeEmpty())
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+							},
+						},
+					},
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+							},
+						},
+						SniDomains: []string{"b.com"},
+					},
+				})
+
+				Expect(listener.GetFilterChains()).To(HaveLen(1))
+				fc := listener.GetFilterChains()[0]
+				Expect(fc.TlsContext).NotTo(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(BeEmpty())
+			})
 		})
+		Context("secret refs", func() {
+			It("should combine sni matches ", func() {
 
+				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo",
+						Namespace: "solo.io",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain",
+							PrivateKey: "key",
+						},
+					},
+				})
+
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"a.com"},
+					},
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"b.com"},
+					},
+				})
+
+				Expect(listener.GetFilterChains()).To(HaveLen(1))
+				fc := listener.GetFilterChains()[0]
+				Expect(fc.TlsContext).NotTo(BeNil())
+				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
+			})
+			It("should not combine when not matching", func() {
+
+				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo",
+						Namespace: "solo.io",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain",
+							PrivateKey: "key",
+						},
+					},
+				}, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo2",
+						Namespace: "solo.io",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain1",
+							PrivateKey: "key2",
+							RootCa:     "rootca3",
+						},
+					},
+				})
+
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"a.com"},
+					},
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo2",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"b.com"},
+					},
+				})
+
+				Expect(listener.GetFilterChains()).To(HaveLen(2))
+				By("checking first filter chain")
+				fc := listener.GetFilterChains()[0]
+				Expect(fc.TlsContext).NotTo(BeNil())
+				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
+				Expect(fc.TlsContext.GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
+
+				By("checking first second chain")
+				fc = listener.GetFilterChains()[1]
+				Expect(fc.TlsContext).NotTo(BeNil())
+				cert = fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key2"))
+				Expect(fc.TlsContext.GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca3"))
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"b.com"}))
+			})
+		})
 	})
 
 })
