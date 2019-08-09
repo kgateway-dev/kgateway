@@ -204,7 +204,8 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN']
   id: 'release'
-  # wait for everithing else to compelete. waitFor: ['test', 'regression-tests']
+  # wait for everything else to compelete.
+
 # Sync helm chart data back to google storage bucket
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['save-helm']
