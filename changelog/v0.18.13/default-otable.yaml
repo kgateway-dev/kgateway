@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: "Restore default glooctl get output to -o table."
-    issueLink: https://github.com/solo-io/gloo/pull/1001
