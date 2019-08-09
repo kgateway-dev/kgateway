@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/utils/pointer"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	appsv1 "k8s.io/api/apps/v1"
@@ -542,10 +544,99 @@ var _ = Describe("Helm Test", func() {
 			})
 		})
 
+		FDescribe("merge ingress and gateway", func() {
+
+			// helper for passing a values file
+			prepareMakefileFromValuesFile := func(valuesFile string) {
+				helmFlags := "--namespace " + namespace +
+					" -f " + valuesFile
+				prepareMakefile(helmFlags)
+			}
+
+			It("merges the config correctly", func() {
+				prepareMakefileFromValuesFile("install/test/merge_ingress_values.yaml")
+				cmRb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      "gloo",
+				}
+				dep := cmRb.GetDeployment()
+				fmt.Println(dep)
+				testManifest.ExpectDeploymentAppsV1(d2)
+			})
+
+		})
+
 	})
 })
 
 // These are large, so get them out of the way to help readability of test coverage
+
+var d2 = &appsv1.Deployment{
+	TypeMeta: metav1.TypeMeta{
+		Kind:       "Deployment",
+		APIVersion: "apps/v1",
+	},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "gloo",
+		Namespace: "gloo-system",
+		Labels: map[string]string{
+			"app": "gloo", "gloo": "gloo"},
+	},
+	Spec: appsv1.DeploymentSpec{
+		Replicas: pointer.Int32Ptr(1),
+		Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+			"gloo": "gloo"},
+		},
+		Template: v1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					"gloo": "gloo"},
+			},
+			Spec: v1.PodSpec{
+				Volumes:        nil,
+				InitContainers: nil,
+				Containers: []v1.Container{
+					{
+						Name: "gloo",
+						// expecting ilackarms?
+						//Image:      "gcr.io/solo-gloo-knative-e2e/gloo:test-ilackarms",
+						Image: "quay.io/solo-io/gloo:dev",
+						Ports: []v1.ContainerPort{
+							{Name: "grpc", HostPort: 0, ContainerPort: 9977, Protocol: "TCP", HostIP: ""},
+						},
+						Env: []v1.EnvVar{
+							{
+								Name:  "POD_NAMESPACE",
+								Value: "",
+								ValueFrom: &v1.EnvVarSource{
+									FieldRef:         &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
+									ResourceFieldRef: nil,
+									ConfigMapKeyRef:  nil,
+									SecretKeyRef:     nil,
+								},
+							},
+						},
+						Resources: v1.ResourceRequirements{
+							Limits: nil,
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: resource.MustParse("256Mi"), // 256M
+								v1.ResourceCPU:    resource.MustParse("500m"),
+							},
+						},
+						ImagePullPolicy: "Always",
+						SecurityContext: &v1.SecurityContext{
+							Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
+							RunAsUser:                pointer.Int64Ptr(10101),
+							RunAsNonRoot:             pointer.BoolPtr(true),
+							ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+							AllowPrivilegeEscalation: pointer.BoolPtr(false),
+						},
+					},
+				},
+			},
+		},
+	},
+}
 
 var confWithoutTracing = `
 node:
