@@ -29,7 +29,7 @@ func azureCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := AzureSecretArgsInteractive(&opts.Metadata, input); err != nil {
+				if err := AzureSecretArgsInteractive(input); err != nil {
 					return err
 				}
 			}
@@ -49,7 +49,7 @@ func azureCmd(opts *options.Options) *cobra.Command {
 
 const azurePromptApiKeys = "Enter API key entry (key=value)"
 
-func AzureSecretArgsInteractive(meta *core.Metadata, input *options.AzureSecret) error {
+func AzureSecretArgsInteractive(input *options.AzureSecret) error {
 
 	if err := cliutil.GetStringSliceInput(azurePromptApiKeys, &input.ApiKeys.Entries); err != nil {
 		return err
@@ -80,6 +80,6 @@ func createAzureSecret(ctx context.Context, meta core.Metadata, input options.Az
 
 	}
 
-	printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
+	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 	return nil
 }

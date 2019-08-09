@@ -14,7 +14,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/gogo/protobuf/proto"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -148,10 +147,23 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 
 	ExpectHttpOK(body, rootca, envoyPort, "")
 
-	EventuallyWithOffset(1, tu.C, "5s", "0.2s").Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-		"Method": Equal("POST"),
-		"Body":   Equal(body),
-	}))))
+	timeout := time.After(5 * time.Second)
+	var receivedRequest *ReceivedRequest
+	for {
+		select {
+		case <-timeout:
+			if receivedRequest != nil {
+				fmt.Fprintf(GinkgoWriter, "last received request: %v", *receivedRequest)
+			}
+			Fail("timeout testing upstream reachability")
+		case receivedRequest = <-tu.C:
+			if receivedRequest.Method == "POST" &&
+				bytes.Equal(receivedRequest.Body, body) {
+				return
+			}
+		}
+	}
+
 }
 
 func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string) {

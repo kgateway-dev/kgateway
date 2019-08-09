@@ -2,14 +2,17 @@ package test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -24,6 +27,7 @@ var _ = Describe("Helm Test", func() {
 			labels        map[string]string
 			selector      map[string]string
 			getPullPolicy func() v1.PullPolicy
+			manifestYaml  string
 		)
 
 		BeforeEach(func() {
@@ -35,13 +39,26 @@ var _ = Describe("Helm Test", func() {
 				version = version[1:]
 				getPullPolicy = func() v1.PullPolicy { return v1.PullIfNotPresent }
 			}
+			manifestYaml = ""
+		})
+
+		AfterEach(func() {
+			if manifestYaml != "" {
+				os.Remove(manifestYaml)
+			}
 		})
 
 		prepareMakefile := func(helmFlags string) {
 			makefileSerializer.Lock()
 			defer makefileSerializer.Unlock()
-			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags)
-			testManifest = NewTestManifest("../gloo-gateway.yaml")
+
+			f, err := ioutil.TempFile("", "*.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			f.Close()
+			manifestYaml = f.Name()
+
+			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags, "OUTPUT_YAML="+manifestYaml)
+			testManifest = NewTestManifest(manifestYaml)
 		}
 
 		Context("gateway", func() {
@@ -544,6 +561,122 @@ var _ = Describe("Helm Test", func() {
 			})
 		})
 
+		Context("roles", func() {
+			var (
+				rules []rbacv1.PolicyRule
+			)
+			BeforeEach(func() {
+				rules = []rbacv1.PolicyRule{
+					{
+						APIGroups: []string{""},
+						Resources: []string{"pods", "services", "secrets", "endpoints", "configmaps"},
+						Verbs:     []string{"get", "list", "watch"},
+					},
+					{
+						APIGroups: []string{""},
+						Resources: []string{"namespaces"},
+						Verbs:     []string{"get", "list", "watch"},
+					},
+					{
+						APIGroups: []string{"apiextensions.k8s.io"},
+						Resources: []string{"customresourcedefinitions"},
+						Verbs:     []string{"get", "create", "update"},
+					},
+					{
+						APIGroups: []string{"gloo.solo.io"},
+						Resources: []string{"settings", "upstreams", "upstreamgroups", "proxies", "virtualservices"},
+						Verbs:     []string{"*"},
+					},
+					{
+						APIGroups: []string{"gateway.solo.io"},
+						Resources: []string{"virtualservices", "gateways"},
+						Verbs:     []string{"*"},
+					},
+					{
+						APIGroups: []string{"gateway.solo.io.v2"},
+						Resources: []string{"gateways"},
+						Verbs:     []string{"*"},
+					},
+				}
+			})
+			It("should generate cluster roles", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Name: "gloo-role-gateway",
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					Rules: rules,
+				}
+				role := cmRb.GetClusterRole()
+				testManifest.ExpectClusterRole(role)
+			})
+			It("should generate roles instead of cluster roles", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      "gloo-role-gateway",
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					Rules: rules,
+				}
+				role := cmRb.GetRole()
+				testManifest.ExpectRole(role)
+			})
+
+			It("should generate cluster roles binding", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Name: "gloo-role-binding-gateway-" + namespace,
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					RoleRef: rbacv1.RoleRef{
+						APIGroup: "rbac.authorization.k8s.io",
+						Kind:     "ClusterRole",
+						Name:     "gloo-role-gateway",
+					},
+					Subjects: []rbacv1.Subject{{
+						Kind:      "ServiceAccount",
+						Name:      "default",
+						Namespace: namespace,
+					}},
+				}
+				roleBinding := cmRb.GetClusterRoleBinding()
+				testManifest.ExpectClusterRoleBinding(roleBinding)
+			})
+			It("should generate roles binding instead of cluster roles binding", func() {
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
+				prepareMakefile(helmFlags)
+				cmRb := ResourceBuilder{
+					Namespace: namespace,
+					Name:      "gloo-role-binding-gateway",
+					Labels: map[string]string{
+						"app":  "gloo",
+						"gloo": "rbac",
+					},
+					RoleRef: rbacv1.RoleRef{
+						APIGroup: "rbac.authorization.k8s.io",
+						Kind:     "Role",
+						Name:     "gloo-role-gateway",
+					},
+					Subjects: []rbacv1.Subject{{
+						Kind:      "ServiceAccount",
+						Name:      "default",
+						Namespace: namespace,
+					}},
+				}
+				roleBinding := cmRb.GetRoleBinding()
+				testManifest.ExpectRoleBinding(roleBinding)
+			})
+		})
 		Describe("merge ingress and gateway", func() {
 
 			// helper for passing a values file

@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/gogo/protobuf/types"
+	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
 	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	check "github.com/solo-io/go-checkpoint"
@@ -46,7 +47,7 @@ func Main(opts SetupOpts) error {
 	}
 	ctx = contextutils.WithLogger(ctx, loggingPrefix)
 
-	settingsClient, err := kubeOrFileSettingsClient(ctx, setupDir)
+	settingsClient, err := kubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func Main(opts SetupOpts) error {
 	return nil
 }
 
-func kubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.SettingsClient, error) {
+func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
 	if settingsDir != "" {
 		return v1.NewSettingsClient(&factory.FileResourceClientFactory{
 			RootDir: settingsDir,
@@ -88,9 +89,11 @@ func kubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.Setti
 		return nil, err
 	}
 	return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
-		Crd:         v1.SettingsCrd,
-		Cfg:         cfg,
-		SharedCache: kube.NewKubeCache(ctx),
+		Crd:                v1.SettingsCrd,
+		Cfg:                cfg,
+		SharedCache:        kube.NewKubeCache(ctx),
+		NamespaceWhitelist: []string{setupNamespace},
+		SkipCrdCreation:    settingsutil.GetSkipCrdCreation(),
 	})
 }
 

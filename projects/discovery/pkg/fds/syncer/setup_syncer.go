@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/aws"
@@ -46,13 +45,8 @@ func RunFDS(opts bootstrap.Opts) error {
 	}
 
 	var nsClient skkube.KubeNamespaceClient
-	if opts.KubeClient != nil {
-
-		kubeCache, err := kubecache.NewKubeCoreCache(opts.WatchOpts.Ctx, opts.KubeClient)
-		if err != nil {
-			return err
-		}
-		nsClient = namespace.NewNamespaceClient(opts.KubeClient, kubeCache)
+	if opts.KubeClient != nil && opts.KubeCoreCache.NamespaceLister() != nil {
+		nsClient = namespace.NewNamespaceClient(opts.KubeClient, opts.KubeCoreCache)
 	} else {
 		nsClient = &FakeKubeNamespaceWatcher{}
 	}
