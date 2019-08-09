@@ -16,10 +16,12 @@ import (
 
 var _ = Describe("Knative", func() {
 	knativeInstallOpts := options.Knative{
-		InstallKnativeVersion:    "0.7.0",
-		InstallKnativeBuild:      true,
-		InstallKnativeEventing:   true,
-		InstallKnativeMonitoring: true,
+		InstallKnativeVersion:         "0.8.0",
+		InstallKnativeEventingVersion: "0.7.0",
+		InstallKnativeBuildVersion:    "0.7.0",
+		InstallKnativeBuild:           true,
+		InstallKnativeEventing:        true,
+		InstallKnativeMonitoring:      true,
 	}
 	Context("RenderKnativeManifests", func() {
 		It("renders manifests for each knative component", func() {

@@ -451,7 +451,7 @@ gloo-envoy-wrapper-docker-test: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	go run install/helm/gloo/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX)
+	go run install/helm/gloo/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
 	helm repo index $(TEST_ASSET_DIR)
 
