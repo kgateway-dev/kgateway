@@ -153,7 +153,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 		select {
 		case <-timeout:
 			if receivedRequest != nil {
-				fmt.Fprintf(GinkgoWriter, "last recieved request: %v", *receivedRequest)
+				fmt.Fprintf(GinkgoWriter, "last received request: %v", *receivedRequest)
 			}
 			Fail("timeout testing upstream reachability")
 		case receivedRequest = <-tu.C:
