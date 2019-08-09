@@ -365,8 +365,9 @@ var _ = Describe("Happy path", func() {
 		Context("all namespaces", func() {
 			BeforeEach(func() {
 				namespace = "gloo-e2e-" + helpers.RandString(8)
+				prepNamespace()
 
-				writeNamespace = defaults.GlooSystem
+				writeNamespace = namespace
 				ro := &services.RunOptions{
 					NsToWrite: writeNamespace,
 					NsToWatch: []string{},
@@ -381,7 +382,6 @@ var _ = Describe("Happy path", func() {
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
-				prepNamespace()
 			})
 
 			It("watch all namespaces", func() {
