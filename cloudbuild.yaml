@@ -113,7 +113,7 @@ steps:
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
@@ -164,7 +164,7 @@ steps:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
     - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster'
+    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
     - 'RUN_KUBE2E_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   args: ['-r', 'test/kube2e', '-failFast']
