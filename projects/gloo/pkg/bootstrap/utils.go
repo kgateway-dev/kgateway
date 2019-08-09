@@ -10,6 +10,7 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -101,13 +102,12 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 
 			*cfg = c
 		}
-		skipCrdCreation := len(settings.WatchNamespaces) != 0
 
 		return &factory.KubeResourceClientFactory{
 			Crd:                resourceCrd,
 			Cfg:                *cfg,
 			SharedCache:        kubeCache,
-			SkipCrdCreation:    skipCrdCreation,
+			SkipCrdCreation:    settingsutil.SkipCrdCreation(),
 			NamespaceWhitelist: settings.WatchNamespaces,
 		}, nil
 	case *v1.Settings_ConsulKvSource:
