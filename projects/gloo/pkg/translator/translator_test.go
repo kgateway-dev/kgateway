@@ -1156,7 +1156,7 @@ var _ = Describe("Translator", func() {
 				Expect(cert.GetPrivateKey().GetFilename()).To(Equal("key"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
 			})
-			It("should combine 1 has and 1 doesnt sni", func() {
+			It("should combine 1 that has and 1 that doesn't have sni", func() {
 
 				prep([]*v1.SslConfig{
 					{
