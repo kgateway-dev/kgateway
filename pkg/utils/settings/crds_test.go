@@ -17,7 +17,7 @@ var _ = Describe("Crds", func() {
 		os.Setenv("AUTO_CREATE_CRDS", "1")
 		Expect(SkipCrdCreation()).To(BeFalse())
 	})
-	
+
 	It("shoud skip crd creation", func() {
 		Expect(SkipCrdCreation()).To(BeTrue())
 	})
