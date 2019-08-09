@@ -24,7 +24,6 @@ import (
 var versionTemplate = `{{with .Name}}{{printf "%s community edition " .}}{{end}}{{printf "version %s" .Version}}
 `
 
-// TODO PREMERGE: pass preRunFuncs for harmonizing config, will be a []func(*options.Options) error
 func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 
 	app := &cobra.Command{
@@ -88,7 +87,6 @@ func GlooCli(version string) *cobra.Command {
 	return App(version, opts, preRunFuncs, optionsFunc)
 }
 
-// TODO move to cliutils
 type PreRunFunc func(*options.Options) error
 
 func HarmonizeDryRunAndOutputFormat(opts *options.Options) error {
