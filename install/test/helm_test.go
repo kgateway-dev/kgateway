@@ -561,7 +561,7 @@ var _ = Describe("Helm Test", func() {
 				}
 				dep := cmRb.GetDeployment()
 				fmt.Println(dep)
-				testManifest.ExpectDeploymentAppsV1(d2)
+				testManifest.ExpectDeploymentAppsV1(mergedIngressDeployment)
 			})
 
 		})
@@ -571,7 +571,7 @@ var _ = Describe("Helm Test", func() {
 
 // These are large, so get them out of the way to help readability of test coverage
 
-var d2 = &appsv1.Deployment{
+var mergedIngressDeployment = &appsv1.Deployment{
 	TypeMeta: metav1.TypeMeta{
 		Kind:       "Deployment",
 		APIVersion: "apps/v1",
@@ -606,13 +606,9 @@ var d2 = &appsv1.Deployment{
 						},
 						Env: []v1.EnvVar{
 							{
-								Name:  "POD_NAMESPACE",
-								Value: "",
+								Name: "POD_NAMESPACE",
 								ValueFrom: &v1.EnvVarSource{
-									FieldRef:         &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
-									ResourceFieldRef: nil,
-									ConfigMapKeyRef:  nil,
-									SecretKeyRef:     nil,
+									FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 								},
 							},
 						},
