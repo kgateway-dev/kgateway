@@ -1,4 +1,4 @@
 changelog:
   - type: BREAKING_CHANGE
-    description: Glooctl entrypoint function recieves an array of options-harmonization functions.
+    description: Glooctl entrypoint function receives an array of options-harmonization functions.
     issueLink: https://github.com/solo-io/gloo/issues/1005
