@@ -1028,6 +1028,160 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	Context("Ssl", func() {
+
+		var (
+			listener *envoyapi.Listener
+		)
+
+		prep := func(s []*v1.SslConfig) {
+
+			httpListener := &v1.Listener{
+				Name:        "http-listener",
+				BindAddress: "127.0.0.1",
+				BindPort:    80,
+				ListenerType: &v1.Listener_HttpListener{
+					HttpListener: &v1.HttpListener{
+						VirtualHosts: []*v1.VirtualHost{{
+							Name:    "virt1",
+							Domains: []string{"*"},
+							Routes:  routes,
+						}},
+					},
+				},
+				SslConfigurations: s,
+			}
+			proxy.Listeners = []*v1.Listener{
+				httpListener,
+			}
+			translate()
+
+			listeners := snapshot.GetResources(xds.ListenerType).Items
+			Expect(listeners).To(HaveLen(1))
+			val, found := listeners["http-listener"]
+			Expect(found).To(BeTrue())
+			listener = val.ResourceProto().(*envoyapi.Listener)
+		}
+
+		It("should translte ssl correctly", func() {
+			prep([]*v1.SslConfig{
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert",
+							TlsKey:  "key",
+						},
+					},
+				},
+			})
+			Expect(listener.GetFilterChains()).To(HaveLen(1))
+			fc := listener.GetFilterChains()[0]
+			Expect(fc.TlsContext).NotTo(BeNil())
+		})
+
+		It("should not merge 2 ssl config if they are different same", func() {
+			prep([]*v1.SslConfig{
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert1",
+							TlsKey:  "key1",
+						},
+					},
+				},
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert2",
+							TlsKey:  "key2",
+						},
+					},
+				},
+			})
+
+			Expect(listener.GetFilterChains()).To(HaveLen(2))
+		})
+		It("should merge 2 ssl config if they are the same", func() {
+			prep([]*v1.SslConfig{
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert",
+							TlsKey:  "key",
+						},
+					},
+				},
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert",
+							TlsKey:  "key",
+						},
+					},
+				},
+			})
+
+			Expect(listener.GetFilterChains()).To(HaveLen(1))
+			fc := listener.GetFilterChains()[0]
+			Expect(fc.TlsContext).NotTo(BeNil())
+		})
+		It("should combine sni matches", func() {
+			prep([]*v1.SslConfig{
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert",
+							TlsKey:  "key",
+						},
+					},
+					SniDomains: []string{"a.com"},
+				},
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert",
+							TlsKey:  "key",
+						},
+					},
+					SniDomains: []string{"b.com"},
+				},
+			})
+
+			Expect(listener.GetFilterChains()).To(HaveLen(1))
+			fc := listener.GetFilterChains()[0]
+			Expect(fc.TlsContext).NotTo(BeNil())
+			Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
+		})
+		It("should combine 1 has and 1 doesnt sni", func() {
+
+			prep([]*v1.SslConfig{
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert",
+							TlsKey:  "key",
+						},
+					},
+				},
+				{
+					SslSecrets: &v1.SslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: "cert",
+							TlsKey:  "key",
+						},
+					},
+					SniDomains: []string{"b.com"},
+				},
+			})
+
+			Expect(listener.GetFilterChains()).To(HaveLen(1))
+			fc := listener.GetFilterChains()[0]
+			Expect(fc.TlsContext).NotTo(BeNil())
+			Expect(fc.FilterChainMatch.ServerNames).To(BeEmpty())
+		})
+
+	})
+
 })
 
 func sv(s string) *types.Value {

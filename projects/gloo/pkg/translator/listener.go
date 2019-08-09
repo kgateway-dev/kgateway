@@ -2,6 +2,7 @@ package translator
 
 import (
 	"sort"
+	"strings"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -125,7 +126,7 @@ func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, list
 
 	var secureFilterChains []envoylistener.FilterChain
 
-	for _, sslConfig := range listener.SslConfigurations {
+	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
 		// get secrets
 		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
@@ -136,6 +137,56 @@ func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, list
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
+}
+
+func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
+	// we can merge ssl config if:
+	// they have the same SslSecrets and VerifySubjectAltName
+	// combine SNI information.
+	// return merged result
+
+	var result []*v1.SslConfig
+
+	mergedSslSecrets := map[string]v1.SslConfig{}
+
+	for _, sslConfig := range sslConfigs {
+
+		key := ""
+		switch sslCfg := sslConfig.SslSecrets.(type) {
+		case *v1.SslConfig_SecretRef:
+			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetName()
+		case *v1.SslConfig_SslFiles:
+			key = sslCfg.SslFiles.GetTlsCert() + "," + sslCfg.SslFiles.GetTlsKey() + "," + sslCfg.SslFiles.GetRootCa()
+		default:
+			result = append(result, sslConfig)
+			continue
+		}
+
+		tmp := make([]string, len(sslConfig.VerifySubjectAltName))
+		copy(tmp, sslConfig.VerifySubjectAltName)
+		sort.Strings(tmp)
+		key = key + ";" + strings.Join(tmp, ",")
+
+		if cfg, ok := mergedSslSecrets[key]; ok {
+			cfg.SslSecrets = sslConfig.SslSecrets
+			cfg.VerifySubjectAltName = sslConfig.VerifySubjectAltName
+			if len(cfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
+				// if either of the configs match on everything; then match on everything
+				cfg.SniDomains = nil
+			} else {
+				cfg.SniDomains = append(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
+			}
+			mergedSslSecrets[key] = cfg
+		} else {
+			mergedSslSecrets[key] = *sslConfig
+		}
+	}
+
+	for _, sslConfig := range mergedSslSecrets {
+		result = append(result, &sslConfig)
+	}
+
+	return result
 }
 
 func validateListenerPorts(proxy *v1.Proxy, report reportFunc) {
