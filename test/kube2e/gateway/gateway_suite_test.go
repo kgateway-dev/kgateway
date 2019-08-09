@@ -60,9 +60,9 @@ func StartTestHelper() {
 	RegisterFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
-	values, err := ioutil.TempFile("", "*.yaml")
+	values, err = ioutil.TempFile("", "*.yaml")
 	Expect(err).NotTo(HaveOccurred())
-	values.Write([]byte("rbac:\n  namespaced: true\n"))
+	values.Write([]byte("rbac:\n  namespaced: true\nsettings:\n  singleNamespace: true\n  create: true\n"))
 	values.Close()
 
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values.Name()))
@@ -71,7 +71,9 @@ func StartTestHelper() {
 }
 
 func TearDownTestHelper() {
-	os.Remove(values.Name())
+	if values != nil {
+		os.Remove(values.Name())
+	}
 	if testHelper != nil {
 		err := testHelper.UninstallGloo()
 		Expect(err).NotTo(HaveOccurred())
