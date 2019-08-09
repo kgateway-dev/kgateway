@@ -1,5 +1,5 @@
 changelog:
-  - type: BREAKING_CHANGE
+  - type: NON_USER_FACING
     description: "Glooctl implementation change: internal entrypoint function receives an array of pre-run functions."
     issueLink: https://github.com/solo-io/gloo/issues/1005
   - type: NON_USER_FACING
