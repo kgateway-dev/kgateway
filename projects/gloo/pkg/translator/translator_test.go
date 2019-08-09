@@ -1150,6 +1150,8 @@ var _ = Describe("Translator", func() {
 			Expect(listener.GetFilterChains()).To(HaveLen(1))
 			fc := listener.GetFilterChains()[0]
 			Expect(fc.TlsContext).NotTo(BeNil())
+			Expect(fc.TlsContext.TlsCert).To(Equal("cert"))
+			Expect(fc.TlsContext.TlsKey).To(Equal("key"))
 			Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
 		})
 		It("should combine 1 has and 1 doesnt sni", func() {
