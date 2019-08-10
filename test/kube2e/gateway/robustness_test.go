@@ -139,7 +139,7 @@ var _ = Describe("Robustness tests", func() {
 		}
 	})
 
-	It("updates Envoy endpoints even if proxy is rejected", func() {
+	FIt("updates Envoy endpoints even if proxy is rejected", func() {
 
 		By("create a deployment and a matching service")
 		appDeployment, appService, err = createDeploymentAndService(kubeClient, namespace, appName)
@@ -212,10 +212,6 @@ var _ = Describe("Robustness tests", func() {
 		By("add an invalid route to the virtual service")
 		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-
-		Expect(virtualService).To(MatchFields(IgnoreExtras, Fields{
-			"VirtualHost": Not(BeNil()),
-		}))
 
 		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gloov1.Route{
 			Matcher: &gloov1.Matcher{
