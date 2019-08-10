@@ -96,48 +96,6 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		err = kubeClient.AppsV1().Deployments(appDeployment.Namespace).Delete(appDeployment.Name, &metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
-		Expect(err).NotTo(HaveOccurred())
-
-		err = kubeClient.CoreV1().Services(appService.Namespace).Delete(appService.Name, &metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
-		Expect(err).NotTo(HaveOccurred())
-
-		err = virtualServiceClient.Delete(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-		Expect(err).NotTo(HaveOccurred())
-
-		Eventually(func() error {
-			appPods, err := kubeClient.CoreV1().Pods(appDeployment.Namespace).List(
-				metav1.ListOptions{LabelSelector: labels.SelectorFromSet(appDeployment.Spec.Selector.MatchLabels).String()})
-			if err != nil {
-				return err
-			}
-			appSvc, err := kubeClient.CoreV1().Services(appService.Namespace).List(
-				metav1.ListOptions{LabelSelector: labels.SelectorFromSet(appService.Spec.Selector).String()})
-			if err != nil {
-				return err
-			}
-			vsList, err := virtualServiceClient.List(virtualService.Metadata.Namespace, clients.ListOpts{Ctx: ctx})
-			if err != nil {
-				return err
-			}
-			// After we remove the virtual service, the proxy should be removed as well by the gateway controller
-			proxyList, err := proxyClient.List(namespace, clients.ListOpts{Ctx: ctx})
-			if err != nil {
-				return err
-			}
-
-			if len(appPods.Items)+len(appSvc.Items)+len(vsList)+len(proxyList) == 0 {
-				return nil
-			}
-			return errors.Errorf("expected all test resources to have been deleted but found: "+
-				"%d pods, %d services, %d virtual services, %d proxies", len(appPods.Items), len(appSvc.Items), len(vsList), len(proxyList))
-		}, time.Minute, time.Second).Should(BeNil())
-		if cancel != nil {
-			cancel()
-		}
-	})
-
 	It("updates Envoy endpoints even if proxy is rejected", func() {
 
 		By("create a deployment and a matching service")
