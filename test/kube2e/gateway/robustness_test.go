@@ -96,6 +96,10 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	AfterEach(func() {
+		cancel()
+	})
+
 	It("updates Envoy endpoints even if proxy is rejected", func() {
 
 		By("create a deployment and a matching service")
