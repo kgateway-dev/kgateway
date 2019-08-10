@@ -1,50 +1,95 @@
 {{- if .Values.rbac.create }}
 
 {{- if .Values.gateway.enabled }}
+
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-role-gateway
+    name: kube-resoruce-watcher
 {{- if .Values.rbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
-  labels:
-      app: gloo
-      gloo: rbac
+    labels:
+        app: gloo
+        gloo: rbac
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
-  verbs: ["get", "list", "watch"]
+  verbs: ["*"]
 - apiGroups: [""]
   resources: ["namespaces"]
   verbs: ["get", "list", "watch"]
-- apiGroups: ["apiextensions.k8s.io"]
-  resources: ["customresourcedefinitions"]
-  verbs: ["get", "create", "update"]
-- apiGroups: ["gloo.solo.io"]
-  resources: ["settings", "upstreams","upstreamgroups", "proxies","virtualservices"]
-  verbs: ["*"]
-- apiGroups: ["gateway.solo.io"]
-  resources: ["virtualservices", "gateways"]
-  verbs: ["*"]
-- apiGroups: ["gateway.solo.io.v2"]
-  resources: ["gateways"]
-  verbs: ["*"]
----
+
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-role-gateway-crds
+    name: kube-crd-creator
 {{- if .Values.rbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
-  labels:
-    app: gloo
-    gloo: rbac
+    labels:
+        app: gloo
+        gloo: rbac
 rules:
 - apiGroups: ["apiextensions.k8s.io"]
   resources: ["customresourcedefinitions"]
-  verbs: ["get", "create"]
+  verbs: ["get", "create", "update"]
+
+kind: {{ include "gloo.role" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: gloo-resource-reader
+{{- if .Values.rbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+    labels:
+        app: gloo
+        gloo: rbac
+rules:
+- apiGroups: ["gloo.solo.io"]
+  resources: ["settings", "upstreams","upstreamgroups", "proxies"]
+  # update is needed for status updates
+  verbs: ["get", "update"]
+
+
+kind: {{ include "gloo.role" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: gloo-resource-mutator
+{{- if .Values.rbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+    labels:
+        app: gloo
+        gloo: rbac
+rules:
+- apiGroups: ["gloo.solo.io"]
+  resources: ["proxies"]
+  verbs: ["*"]
+
+kind: {{ include "gloo.role" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: gateway-resource-reader
+{{- if .Values.rbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+    labels:
+        app: gloo
+        gloo: rbac
+rules:
+- apiGroups: ["gateway.solo.io"]
+  resources: ["virtualservices"]
+  # update is needed for status updates
+  verbs: ["get", "update"]
+- apiGroups: ["gateway.solo.io"]
+  resources: ["virtualservices", "gateways"]
+  # update is needed for status updates, create for creating the default ones.
+  verbs: ["get", "create", "update"]
+- apiGroups: ["gateway.solo.io.v2"]
+  resources: ["gateways"]
+  # update is needed for status updates
+  verbs: ["get", "create", "update"]
 
 {{- end -}}
 {{- end -}}
