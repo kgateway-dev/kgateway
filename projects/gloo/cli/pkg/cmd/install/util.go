@@ -77,12 +77,13 @@ func init() {
 }
 
 type GlooInstallSpec struct {
-	ProductName      string // gloo or glooe
-	HelmArchiveUri   string
-	ValueFileName    string
-	ExtraValues      map[string]string
-	ValueCallbacks   []install.ValuesCallback
-	ExcludeResources install.ResourceMatcherFunc
+	ProductName       string // gloo or glooe
+	HelmArchiveUri    string
+	ValueFileName     string
+	UserValueFileName string
+	ExtraValues       map[string]interface{}
+	ValueCallbacks    []install.ValuesCallback
+	ExcludeResources  install.ResourceMatcherFunc
 }
 
 // Entry point for all three GLoo installation commands
@@ -118,9 +119,9 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 		helmChartArchiveUri = helmChartOverride
 	}
 
-	var extraValues map[string]string
+	var extraValues map[string]interface{}
 	if opts.Install.Upgrade {
-		extraValues = map[string]string{"gateway": "{upgrade: true}"}
+		extraValues = map[string]interface{}{"gateway": map[string]interface{}{"upgrade": true}}
 	}
 	var valueCallbacks []install.ValuesCallback
 	if opts.Install.Knative.InstallKnativeVersion != "" {
@@ -138,12 +139,13 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 	}
 
 	return &GlooInstallSpec{
-		HelmArchiveUri:   helmChartArchiveUri,
-		ValueFileName:    valueFileName,
-		ProductName:      "gloo",
-		ExtraValues:      extraValues,
-		ValueCallbacks:   valueCallbacks,
-		ExcludeResources: nil,
+		HelmArchiveUri:    helmChartArchiveUri,
+		ValueFileName:     valueFileName,
+		UserValueFileName: opts.Install.HelmChartValues,
+		ProductName:       "gloo",
+		ExtraValues:       extraValues,
+		ValueCallbacks:    valueCallbacks,
+		ExcludeResources:  nil,
 	}, nil
 }
 

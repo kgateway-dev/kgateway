@@ -1,14 +1,19 @@
 package install
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strings"
-	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/kubeutils"
+	"go.uber.org/zap"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/manifest"
 	"k8s.io/helm/pkg/proto/hapi/chart"
@@ -17,7 +22,7 @@ import (
 
 type GlooKubeInstallClient interface {
 	KubectlApply(manifest []byte) error
-	WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error
+	WaitForCrdsToBeRegistered(ctx context.Context, crds []string) error
 }
 
 type DefaultGlooKubeInstallClient struct{}
@@ -26,37 +31,26 @@ func (i *DefaultGlooKubeInstallClient) KubectlApply(manifest []byte) error {
 	return install.KubectlApply(manifest)
 }
 
-func (i *DefaultGlooKubeInstallClient) WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
-	return waitForCrdsToBeRegistered(crds, timeout, interval)
+func (i *DefaultGlooKubeInstallClient) WaitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
+	return waitForCrdsToBeRegistered(ctx, crds)
 }
-func waitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
-	if len(crds) == 0 {
-		return nil
-	}
 
-	// TODO: think about improving
-	// Just pick the last crd in the list an wait for it to be created. It is reasonable to assume that by the time we
-	// get to applying the manifest the other ones will be ready as well.
-	crdName := crds[len(crds)-1]
-
-	elapsed := time.Duration(0)
-	for {
-		select {
-		case <-time.After(interval):
-			if err := install.Kubectl(nil, "get", crdName); err == nil {
-				return nil
-			}
-			elapsed += interval
-			if elapsed > timeout {
-				return errors.Errorf("failed to confirm crd registration after %v", timeout)
-			}
+func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
+	apiExts := helpers.MustApiExtsClient()
+	logger := contextutils.LoggerFrom(ctx)
+	for _, crdName := range crds {
+		logger.Infow("waiting for crd to be registered", zap.String("crd", crdName))
+		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
+			return errors.Wrapf(err, "waiting for crd %v to become registered", crdName)
 		}
 	}
+
+	return nil
 }
 
 type ManifestInstaller interface {
 	InstallManifest(manifest []byte) error
-	InstallCrds(crdNames []string, manifest []byte) error
+	InstallCrds(ctx context.Context, crdNames []string, manifest []byte) error
 }
 
 type GlooKubeManifestInstaller struct {
@@ -73,11 +67,11 @@ func (i *GlooKubeManifestInstaller) InstallManifest(manifest []byte) error {
 	return nil
 }
 
-func (i *GlooKubeManifestInstaller) InstallCrds(crdNames []string, manifest []byte) error {
+func (i *GlooKubeManifestInstaller) InstallCrds(ctx context.Context, crdNames []string, manifest []byte) error {
 	if err := i.InstallManifest(manifest); err != nil {
 		return err
 	}
-	if err := i.GlooKubeInstallClient.WaitForCrdsToBeRegistered(crdNames, time.Second*5, time.Millisecond*500); err != nil {
+	if err := i.GlooKubeInstallClient.WaitForCrdsToBeRegistered(ctx, crdNames); err != nil {
 		return errors.Wrapf(err, "waiting for crds to be registered")
 	}
 	return nil
@@ -96,7 +90,7 @@ func (i *DryRunManifestInstaller) InstallManifest(manifest []byte) error {
 	return nil
 }
 
-func (i *DryRunManifestInstaller) InstallCrds(crdNames []string, manifest []byte) error {
+func (i *DryRunManifestInstaller) InstallCrds(ctx context.Context, crdNames []string, manifest []byte) error {
 	return i.InstallManifest(manifest)
 }
 
@@ -118,6 +112,7 @@ type DefaultGlooStagedInstaller struct {
 	excludeResources  install.ResourceMatcherFunc
 	manifestInstaller ManifestInstaller
 	dryRun            bool
+	ctx               context.Context
 }
 
 func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client GlooKubeInstallClient) (GlooStagedInstaller, error) {
@@ -130,7 +125,7 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		return nil, errors.Wrapf(err, "retrieving gloo helm chart archive")
 	}
 
-	values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.ExtraValues, spec.ValueCallbacks...)
+	values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.UserValueFileName, spec.ExtraValues, spec.ValueCallbacks...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving value file: %s", spec.ValueFileName)
 	}
@@ -159,6 +154,7 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		excludeResources:  spec.ExcludeResources,
 		manifestInstaller: manifestInstaller,
 		dryRun:            opts.Install.DryRun,
+		ctx:               opts.Top.Ctx,
 	}, nil
 }
 
@@ -185,7 +181,7 @@ func (i *DefaultGlooStagedInstaller) DoCrdInstall() error {
 		fmt.Printf("Installing CRDs...\n")
 	}
 
-	return i.manifestInstaller.InstallCrds(crdNames, crdManifestBytes)
+	return i.manifestInstaller.InstallCrds(i.ctx, crdNames, crdManifestBytes)
 }
 
 func (i *DefaultGlooStagedInstaller) DoPreInstall() error {

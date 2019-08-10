@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   labels:
     istio-injection: enabled
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: knative-serving
 
 ---
@@ -12,23 +12,16 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    networking.knative.dev/certificate-provider: cert-manager
-    serving.knative.dev/controller: "true"
-    serving.knative.dev/release: "v0.7.0"
-  name: knative-serving-certmanager
+    autoscaling.knative.dev/metric-provider: custom-metrics
+    serving.knative.dev/release: "v0.8.0"
+  name: custom-metrics-server-resources
 rules:
 - apiGroups:
-  - certmanager.k8s.io
+  - custom.metrics.k8s.io
   resources:
-  - certificates
+  - '*'
   verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-  - patch
-  - watch
+  - '*'
 
 ---
 
@@ -36,12 +29,14 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    autoscaling.knative.dev/metric-provider: custom-metrics
-    serving.knative.dev/release: "v0.7.0"
-  name: custom-metrics-server-resources
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    serving.knative.dev/release: "v0.8.0"
+  name: knative-serving-namespaced-admin
 rules:
 - apiGroups:
-  - custom.metrics.k8s.io
+  - serving.knative.dev
+  - networking.internal.knative.dev
+  - autoscaling.internal.knative.dev
   resources:
   - '*'
   verbs:
@@ -57,7 +52,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: knative-serving-admin
 rules: []
 ---
@@ -67,7 +62,7 @@ kind: ClusterRole
 metadata:
   labels:
     serving.knative.dev/controller: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: knative-serving-core
 rules:
 - apiGroups:
@@ -180,7 +175,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: controller
   namespace: knative-serving
 
@@ -191,7 +186,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     autoscaling.knative.dev/metric-provider: custom-metrics
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: custom-metrics:system:auth-delegator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -209,7 +204,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     autoscaling.knative.dev/metric-provider: custom-metrics
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: hpa-controller-custom-metrics
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -226,7 +221,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: knative-serving-controller-admin
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -244,7 +239,7 @@ kind: RoleBinding
 metadata:
   labels:
     autoscaling.knative.dev/metric-provider: custom-metrics
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: custom-metrics-auth-reader
   namespace: kube-system
 roleRef:
@@ -263,7 +258,7 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: certificates.networking.internal.knative.dev
 spec:
   additionalPrinterColumns:
@@ -276,7 +271,6 @@ spec:
   group: networking.internal.knative.dev
   names:
     categories:
-    - all
     - knative-internal
     - networking
     kind: Certificate
@@ -296,7 +290,7 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: clusteringresses.networking.internal.knative.dev
 spec:
   additionalPrinterColumns:
@@ -309,7 +303,6 @@ spec:
   group: networking.internal.knative.dev
   names:
     categories:
-    - all
     - knative-internal
     - networking
     kind: ClusterIngress
@@ -318,53 +311,10 @@ spec:
   scope: Cluster
   subresources:
     status: {}
-  version: v1alpha1
-
----
-
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  labels:
-    knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
-  name: configurations.serving.knative.dev
-spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.latestCreatedRevisionName
-    name: LatestCreated
-    type: string
-  - JSONPath: .status.latestReadyRevisionName
-    name: LatestReady
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-    name: Reason
-    type: string
-  group: serving.knative.dev
-  names:
-    categories:
-    - all
-    - knative
-    - serving
-    kind: Configuration
-    plural: configurations
-    shortNames:
-    - config
-    - cfg
-    singular: configuration
-  scope: Namespaced
-  subresources:
-    status: {}
   versions:
   - name: v1alpha1
     served: true
     storage: true
-  - name: v1beta1
-    served: true
-    storage: false
 
 ---
 
@@ -378,7 +328,6 @@ spec:
   group: caching.internal.knative.dev
   names:
     categories:
-    - all
     - knative-internal
     - caching
     kind: Image
@@ -398,7 +347,7 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: ingresses.networking.internal.knative.dev
 spec:
   additionalPrinterColumns:
@@ -411,7 +360,6 @@ spec:
   group: networking.internal.knative.dev
   names:
     categories:
-    - all
     - knative-internal
     - networking
     kind: Ingress
@@ -419,6 +367,39 @@ spec:
     shortNames:
     - ing
     singular: ingress
+  scope: Namespaced
+  subresources:
+    status: {}
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    knative.dev/crd-install: "true"
+    serving.knative.dev/release: "v0.8.0"
+  name: metrics.autoscaling.internal.knative.dev
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
+  group: autoscaling.internal.knative.dev
+  names:
+    categories:
+    - knative-internal
+    - autoscaling
+    kind: Metric
+    plural: metrics
+    singular: metric
   scope: Namespaced
   subresources:
     status: {}
@@ -431,7 +412,7 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: podautoscalers.autoscaling.internal.knative.dev
 spec:
   additionalPrinterColumns:
@@ -444,63 +425,21 @@ spec:
   group: autoscaling.internal.knative.dev
   names:
     categories:
-    - all
     - knative-internal
     - autoscaling
     kind: PodAutoscaler
     plural: podautoscalers
     shortNames:
     - kpa
+    - pa
     singular: podautoscaler
   scope: Namespaced
   subresources:
     status: {}
-  version: v1alpha1
-
----
-
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  labels:
-    knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
-  name: revisions.serving.knative.dev
-spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.serviceName
-    name: Service Name
-    type: string
-  - JSONPath: .metadata.labels['serving\.knative\.dev/configurationGeneration']
-    name: Generation
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-    name: Reason
-    type: string
-  group: serving.knative.dev
-  names:
-    categories:
-    - all
-    - knative
-    - serving
-    kind: Revision
-    plural: revisions
-    shortNames:
-    - rev
-    singular: revision
-  scope: Namespaced
-  subresources:
-    status: {}
   versions:
   - name: v1alpha1
     served: true
     storage: true
-  - name: v1beta1
-    served: true
-    storage: false
 
 ---
 
@@ -509,98 +448,7 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
-  name: routes.serving.knative.dev
-spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.url
-    name: URL
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-    name: Reason
-    type: string
-  group: serving.knative.dev
-  names:
-    categories:
-    - all
-    - knative
-    - serving
-    kind: Route
-    plural: routes
-    shortNames:
-    - rt
-    singular: route
-  scope: Namespaced
-  subresources:
-    status: {}
-  versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-  - name: v1beta1
-    served: true
-    storage: false
-
----
-
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  labels:
-    knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
-  name: services.serving.knative.dev
-spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.url
-    name: URL
-    type: string
-  - JSONPath: .status.latestCreatedRevisionName
-    name: LatestCreated
-    type: string
-  - JSONPath: .status.latestReadyRevisionName
-    name: LatestReady
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-    name: Reason
-    type: string
-  group: serving.knative.dev
-  names:
-    categories:
-    - all
-    - knative
-    - serving
-    kind: Service
-    plural: services
-    shortNames:
-    - kservice
-    - ksvc
-    singular: service
-  scope: Namespaced
-  subresources:
-    status: {}
-  versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-  - name: v1beta1
-    served: true
-    storage: false
-
----
-
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  labels:
-    knative.dev/crd-install: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: serverlessservices.networking.internal.knative.dev
 spec:
   additionalPrinterColumns:
@@ -622,7 +470,6 @@ spec:
   group: networking.internal.knative.dev
   names:
     categories:
-    - all
     - knative-internal
     - networking
     kind: ServerlessService
@@ -633,7 +480,10 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
-  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 
@@ -642,7 +492,7 @@ kind: Service
 metadata:
   labels:
     app: activator
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: activator-service
   namespace: knative-serving
 spec:
@@ -670,7 +520,7 @@ kind: Service
 metadata:
   labels:
     app: controller
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: controller
   namespace: knative-serving
 spec:
@@ -689,7 +539,7 @@ kind: Service
 metadata:
   labels:
     role: webhook
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: webhook
   namespace: knative-serving
 spec:
@@ -705,11 +555,11 @@ apiVersion: caching.internal.knative.dev/v1alpha1
 kind: Image
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: queue-proxy
   namespace: knative-serving
 spec:
-  image: gcr.io/knative-releases/github.com/knative/serving/cmd/queue@sha256:e007c0a78c541600466f88954deee65c517246a23345bfba45a7f212d09b8f3b
+  image: gcr.io/knative-releases/knative.dev/serving/cmd/queue@sha256:e0654305370cf3bbbd0f56f97789c92cf5215f752b70902eba5d5fc0e88c5aca
 
 ---
 
@@ -717,7 +567,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: activator
   namespace: knative-serving
 spec:
@@ -733,7 +583,7 @@ spec:
       labels:
         app: activator
         role: activator
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
       - args:
@@ -754,7 +604,7 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: knative.dev/serving
-        image: gcr.io/knative-releases/github.com/knative/serving/cmd/activator@sha256:57fe5f1a8b1d12f29fe9e3a904b00c7219e5ce5825d94f33339db929e92257db
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/activator@sha256:88d864eb3c47881cf7ac058479d1c735cc3cf4f07a11aad0621cd36dcd9ae3c6
         livenessProbe:
           httpGet:
             httpHeaders:
@@ -779,26 +629,85 @@ spec:
             port: 8012
         resources:
           limits:
-            cpu: 200m
+            cpu: 1000m
             memory: 600Mi
           requests:
-            cpu: 20m
+            cpu: 300m
             memory: 60Mi
         securityContext:
           allowPrivilegeEscalation: false
-        volumeMounts:
-        - mountPath: /etc/config-logging
-          name: config-logging
-        - mountPath: /etc/config-observability
-          name: config-observability
       serviceAccountName: controller
-      volumes:
-      - configMap:
-          name: config-logging
-        name: config-logging
-      - configMap:
-          name: config-observability
-        name: config-observability
+      terminationGracePeriodSeconds: 300
+---
+
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: activator
+  namespace: knative-serving
+spec:
+  maxReplicas: 20
+  metrics:
+  - resource:
+      name: cpu
+      targetAverageUtilization: 100
+    type: Resource
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: activator
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    autoscaling.knative.dev/autoscaler-provider: hpa
+    serving.knative.dev/release: "v0.8.0"
+  name: autoscaler-hpa
+  namespace: knative-serving
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaler-hpa
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: autoscaler-hpa
+        serving.knative.dev/release: "v0.8.0"
+    spec:
+      containers:
+      - env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: knative.dev/serving
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/autoscaler-hpa@sha256:a7801c3cf4edecfa51b7bd2068f97941f6714f7922cb4806245377c2b336b723
+        name: autoscaler-hpa
+        ports:
+        - containerPort: 9090
+          name: metrics
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1000Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+      serviceAccountName: controller
 
 ---
 
@@ -807,7 +716,7 @@ kind: Service
 metadata:
   labels:
     app: autoscaler
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: autoscaler
   namespace: knative-serving
 spec:
@@ -833,7 +742,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: autoscaler
   namespace: knative-serving
 spec:
@@ -846,9 +755,10 @@ spec:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         sidecar.istio.io/inject: "true"
+        traffic.sidecar.istio.io/includeInboundPorts: 8080,9090
       labels:
         app: autoscaler
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
       - args:
@@ -865,7 +775,7 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: knative.dev/serving
-        image: gcr.io/knative-releases/github.com/knative/serving/cmd/autoscaler@sha256:2c2370df2751741348e1cc456f31425cb2455c377ddb45d3f6c17e743fd63d78
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/autoscaler@sha256:aeaacec4feedee309293ac21da13e71a05a2ad84b1d5fcc01ffecfa6cfbb2870
         livenessProbe:
           httpGet:
             httpHeaders:
@@ -897,24 +807,7 @@ spec:
             memory: 40Mi
         securityContext:
           allowPrivilegeEscalation: false
-        volumeMounts:
-        - mountPath: /etc/config-autoscaler
-          name: config-autoscaler
-        - mountPath: /etc/config-logging
-          name: config-logging
-        - mountPath: /etc/config-observability
-          name: config-observability
       serviceAccountName: controller
-      volumes:
-      - configMap:
-          name: config-autoscaler
-        name: config-autoscaler
-      - configMap:
-          name: config-logging
-        name: config-logging
-      - configMap:
-          name: config-observability
-        name: config-observability
 
 ---
 
@@ -941,26 +834,34 @@ data:
     # target percentage is how much of that maximum to use in a stable
     # state. E.g. if a Revision specifies ContainerConcurrency of 10, then
     # the Autoscaler will try to maintain 7 concurrent connections per pod
-    # on average. A value of 70 is chosen because the Autoscaler panics
-    # when concurrency exceeds 2x the desired set point. So we will panic
-    # before we reach the limit.
+    # on average.
+    # Note: this limit will be applied to container concurrency set at every
+    # level (ConfigMap, Revision Spec or Annotation).
     # For legacy and backwards compatibility reasons, this value also accepts
     # fractional values in (0, 1] interval (i.e. 0.7 ⇒ 70%).
     # Thus minimal percentage value must be greater than 1.0, or it will be
     # treated as a fraction.
-    # TODO(#2016): Set to 70%.
-    container-concurrency-target-percentage: "100"
+    container-concurrency-target-percentage: "70"
 
     # The container concurrency target default is what the Autoscaler will
     # try to maintain when the Revision specifies unlimited concurrency.
     # Even when specifying unlimited concurrency, the autoscaler will
     # horizontally scale the application based on this target concurrency.
-    #
-    # A value of 100 is chosen because it's enough to allow vertical pod
-    # autoscaling to tune resource requests. E.g. maintaining 1 concurrent
-    # "hello world" request doesn't consume enough resources to allow VPA
-    # to achieve efficient resource usage (VPA CPU minimum is 300m).
     container-concurrency-target-default: "100"
+
+    # The target burst capacity specifies the size of burst in concurrent
+    # requests that the system operator expects the system will receive.
+    # Autoscaler will try to protect the system from queueing by introducing
+    # Activator in the request path if the current spare capacity of the
+    # service is less than this setting.
+    # If this setting is 0, then Activator will be in the request path only
+    # when the revision is scaled to 0.
+    # If this setting is > 0 and container-concurrency-target-percentage is
+    # 100% or 1.0, then activator will always be in the request path.
+    # -1 denotes unlimited target-burst-capacity and activator will always
+    # be in the request path.
+    # Other negative values are invalid.
+    target-burst-capacity: "0"
 
     # When operating in a stable mode, the autoscaler operates on the
     # average concurrency over the stable window.
@@ -986,7 +887,7 @@ data:
     # Max scale up rate limits the rate at which the autoscaler will
     # increase pod count. It is the maximum ratio of desired pods versus
     # observed pods.
-    max-scale-up-rate: "10"
+    max-scale-up-rate: "1000.0"
 
     # Scale to zero feature flag
     enable-scale-to-zero: "true"
@@ -1002,50 +903,8 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-autoscaler
-  namespace: knative-serving
-
----
-
-apiVersion: v1
-data:
-  _example: |
-    ################################
-    #                              #
-    #    EXAMPLE CONFIGURATION     #
-    #                              #
-    ################################
-
-    # This block is not actually functional configuration,
-    # but serves to illustrate the available configuration
-    # options and document them in a way that is accessible
-    # to users that `kubectl edit` this config map.
-    #
-    # These sample configuration options may be copied out of
-    # this block and unindented to actually change the configuration.
-
-    # IssuerRef is a reference to the issuer for this certificate.
-    # IssuerRef should be either `ClusterIssuer` or `Issuer`.
-    # Please refer `IssuerRef` in https://github.com/jetstack/cert-manager/blob/master/pkg/apis/certmanager/v1alpha1/types_certificate.go
-    # for more details about IssuerRef configuration.
-    issuerRef: |
-      kind: ClusterIssuer
-      name: letsencrypt-issuer
-
-    # solverConfig defines the configuration for the ACME certificate provider.
-    # The solverConfig should be either dns01 or http01.
-    # Please refer `SolverConfig` in https://github.com/jetstack/cert-manager/blob/master/pkg/apis/certmanager/v1alpha1/types_certificate.go
-    # for more details about ACME configuration.
-    solverConfig: |
-      dns01:
-        provider: cloud-dns-provider
-kind: ConfigMap
-metadata:
-  labels:
-    networking.knative.dev/certificate-provider: cert-manager
-    serving.knative.dev/release: "v0.7.0"
-  name: config-certmanager
   namespace: knative-serving
 
 ---
@@ -1108,7 +967,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-defaults
   namespace: knative-serving
 
@@ -1134,11 +993,11 @@ data:
 
     # List of repositories for which tag to digest resolving should be skipped
     registriesSkippingTagResolving: "ko.local,dev.local"
-  queueSidecarImage: gcr.io/knative-releases/github.com/knative/serving/cmd/queue@sha256:e007c0a78c541600466f88954deee65c517246a23345bfba45a7f212d09b8f3b
+  queueSidecarImage: gcr.io/knative-releases/knative.dev/serving/cmd/queue@sha256:e0654305370cf3bbbd0f56f97789c92cf5215f752b70902eba5d5fc0e88c5aca
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-deployment
   namespace: knative-serving
 
@@ -1185,7 +1044,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-domain
   namespace: knative-serving
 
@@ -1225,7 +1084,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-gc
   namespace: knative-serving
 
@@ -1284,7 +1143,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-logging
   namespace: knative-serving
 
@@ -1356,6 +1215,17 @@ data:
     # undefined behavior.
     clusteringress.class: "istio.ingress.networking.knative.dev"
 
+    # certificate.class specifies the default Certificate class
+    # to use when not dictated by Route annotation.
+    #
+    # If not specified, will use the Cert-Manager Certificate.
+    #
+    # Note that changing the Certificate class of an existing Route
+    # will result in undefined behavior.  Therefore it is best to only
+    # update this value during the setup of Knative, to avoid getting
+    # undefined behavior.
+    certificate.class: "cert-manager.certificate.networking.internal.knative.dev"
+
     # domainTemplate specifies the golang text template string to use
     # when constructing the Knative service's DNS name. The default
     # value is "{{.Name}}.{{.Namespace}}.{{.Domain}}". And those three
@@ -1397,7 +1267,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-network
   namespace: knative-serving
 
@@ -1431,7 +1301,7 @@ data:
     # This value is what you might use the the Knative monitoring bundle, and provides
     # access to Kibana after setting up kubectl proxy.
     logging.revision-url-template: |
-      http://localhost:8001/api/v1/namespaces/knative-monitoring/services/kibana-logging/proxy/app/kibana#/discover?_a=(query:(match:(kubernetes.labels.knative-dev%2FrevisionUID:(query:'${REVISION_UID}',type:phrase))))
+      http://localhost:8001/api/v1/namespaces/knative-monitoring/services/kibana-logging/proxy/app/kibana#/discover?_a=(query:(match:(kubernetes.labels.serving-knative-dev%2FrevisionUID:(query:'${REVISION_UID}',type:phrase))))
 
     # If non-empty, this enables queue proxy writing request logs to stdout.
     # The value determines the shape of the request logs and it must be a valid go text/template.
@@ -1486,7 +1356,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-observability
   namespace: knative-serving
 
@@ -1525,7 +1395,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: config-tracing
   namespace: knative-serving
 
@@ -1535,7 +1405,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: controller
   namespace: knative-serving
 spec:
@@ -1549,7 +1419,7 @@ spec:
         sidecar.istio.io/inject: "false"
       labels:
         app: controller
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
       - env:
@@ -1563,7 +1433,7 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: knative.dev/serving
-        image: gcr.io/knative-releases/github.com/knative/serving/cmd/controller@sha256:016c95f2d94be89683d1ddb7ea959667fd2d899087a4145a31d26b5d6f0bb38f
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/controller@sha256:3b096e55fa907cff53d37dadc5d20c29cea9bb18ed9e921a588fee17beb937df
         name: controller
         ports:
         - containerPort: 9090
@@ -1577,14 +1447,7 @@ spec:
             memory: 100Mi
         securityContext:
           allowPrivilegeEscalation: false
-        volumeMounts:
-        - mountPath: /etc/config-logging
-          name: config-logging
       serviceAccountName: controller
-      volumes:
-      - configMap:
-          name: config-logging
-        name: config-logging
 
 ---
 
@@ -1593,7 +1456,7 @@ kind: APIService
 metadata:
   labels:
     autoscaling.knative.dev/metric-provider: custom-metrics
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: v1beta1.custom.metrics.k8s.io
 spec:
   group: custom.metrics.k8s.io
@@ -1611,64 +1474,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    networking.knative.dev/certificate-provider: cert-manager
-    serving.knative.dev/release: "v0.7.0"
-  name: networking-certmanager
-  namespace: knative-serving
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: networking-certmanager
-  template:
-    metadata:
-      annotations:
-        sidecar.istio.io/inject: "false"
-      labels:
-        app: networking-certmanager
-    spec:
-      containers:
-      - env:
-        - name: SYSTEM_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: CONFIG_LOGGING_NAME
-          value: config-logging
-        - name: CONFIG_OBSERVABILITY_NAME
-          value: config-observability
-        - name: METRICS_DOMAIN
-          value: knative.dev/serving
-        image: gcr.io/knative-releases/github.com/knative/serving/cmd/networking/certmanager@sha256:c757629165393f778d5c0e8b611c9c4857b24f0c748d985d3a080d0161a85248
-        name: networking-certmanager
-        ports:
-        - containerPort: 9090
-          name: metrics
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1000Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-        volumeMounts:
-        - mountPath: /etc/config-logging
-          name: config-logging
-      serviceAccountName: controller
-      volumes:
-      - configMap:
-          name: config-logging
-        name: config-logging
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: webhook
   namespace: knative-serving
 spec:
@@ -1685,7 +1491,7 @@ spec:
       labels:
         app: webhook
         role: webhook
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
       - env:
@@ -1695,8 +1501,15 @@ spec:
               fieldPath: metadata.namespace
         - name: CONFIG_LOGGING_NAME
           value: config-logging
-        image: gcr.io/knative-releases/github.com/knative/serving/cmd/webhook@sha256:d9918d40492e0b20b48576ff6182e2ab896e50dfd2313cb471419be98f821b9c
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: knative.dev/serving
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/webhook@sha256:c2076674618933df53e90cf9ddd17f5ddbad513b8c95e955e45e37be7ca9e0e8
         name: webhook
+        ports:
+        - containerPort: 9090
+          name: metrics-port
         resources:
           limits:
             cpu: 200m
@@ -1706,14 +1519,180 @@ spec:
             memory: 20Mi
         securityContext:
           allowPrivilegeEscalation: false
-        volumeMounts:
-        - mountPath: /etc/config-logging
-          name: config-logging
       serviceAccountName: controller
-      volumes:
-      - configMap:
-          name: config-logging
-        name: config-logging
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    knative.dev/crd-install: "true"
+    serving.knative.dev/release: "v0.8.0"
+  name: configurations.serving.knative.dev
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.latestCreatedRevisionName
+    name: LatestCreated
+    type: string
+  - JSONPath: .status.latestReadyRevisionName
+    name: LatestReady
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
+  group: serving.knative.dev
+  names:
+    categories:
+    - all
+    - knative
+    - serving
+    kind: Configuration
+    plural: configurations
+    shortNames:
+    - config
+    - cfg
+    singular: configuration
+  scope: Namespaced
+  subresources:
+    status: {}
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    knative.dev/crd-install: "true"
+    serving.knative.dev/release: "v0.8.0"
+  name: revisions.serving.knative.dev
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .metadata.labels['serving\.knative\.dev/configuration']
+    name: Config Name
+    type: string
+  - JSONPath: .status.serviceName
+    name: K8s Service Name
+    type: string
+  - JSONPath: .metadata.labels['serving\.knative\.dev/configurationGeneration']
+    name: Generation
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
+  group: serving.knative.dev
+  names:
+    categories:
+    - all
+    - knative
+    - serving
+    kind: Revision
+    plural: revisions
+    shortNames:
+    - rev
+    singular: revision
+  scope: Namespaced
+  subresources:
+    status: {}
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    knative.dev/crd-install: "true"
+    serving.knative.dev/release: "v0.8.0"
+  name: routes.serving.knative.dev
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.url
+    name: URL
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
+  group: serving.knative.dev
+  names:
+    categories:
+    - all
+    - knative
+    - serving
+    kind: Route
+    plural: routes
+    shortNames:
+    - rt
+    singular: route
+  scope: Namespaced
+  subresources:
+    status: {}
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    knative.dev/crd-install: "true"
+    serving.knative.dev/release: "v0.8.0"
+  name: services.serving.knative.dev
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.url
+    name: URL
+    type: string
+  - JSONPath: .status.latestCreatedRevisionName
+    name: LatestCreated
+    type: string
+  - JSONPath: .status.latestReadyRevisionName
+    name: LatestReady
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
+  group: serving.knative.dev
+  names:
+    categories:
+    - all
+    - knative
+    - serving
+    kind: Service
+    plural: services
+    shortNames:
+    - kservice
+    - ksvc
+    singular: service
+  scope: Namespaced
+  subresources:
+    status: {}
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 apiVersion: v1
@@ -4572,7 +4551,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: knative-monitoring
 
 ---
@@ -4874,8 +4853,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    addonmanager.kubernetes.io/mode: Reconcile
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: fluentd-ds-config
   namespace: knative-monitoring
 
@@ -4885,10 +4863,8 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    addonmanager.kubernetes.io/mode: Reconcile
     app: fluentd-ds
-    kubernetes.io/cluster-service: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: fluentd-ds
   namespace: knative-monitoring
 ---
@@ -4897,10 +4873,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    addonmanager.kubernetes.io/mode: Reconcile
     app: fluentd-ds
-    kubernetes.io/cluster-service: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: fluentd-ds
 rules:
 - apiGroups:
@@ -4918,10 +4892,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    addonmanager.kubernetes.io/mode: Reconcile
     app: fluentd-ds
-    kubernetes.io/cluster-service: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: fluentd-ds
 roleRef:
   apiGroup: ""
@@ -4939,7 +4911,7 @@ kind: Service
 metadata:
   labels:
     app: fluentd-ds
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: fluentd-ds
   namespace: knative-monitoring
 spec:
@@ -4960,10 +4932,8 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
-    addonmanager.kubernetes.io/mode: Reconcile
     app: fluentd-ds
-    kubernetes.io/cluster-service: "true"
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
     version: v2.0.4
   name: fluentd-ds
   namespace: knative-monitoring
@@ -4978,8 +4948,7 @@ spec:
         scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
         app: fluentd-ds
-        kubernetes.io/cluster-service: "true"
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
         version: v2.0.4
     spec:
       containers:
@@ -12185,7 +12154,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: grafana-dashboard-definition-knative-efficiency
   namespace: knative-monitoring
 
@@ -12798,7 +12767,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: grafana-dashboard-definition-knative-reconciler
   namespace: knative-monitoring
 
@@ -12806,402 +12775,1074 @@ metadata:
 
 apiVersion: v1
 data:
-  scaling-dashboard.json: "{  \n   \"__inputs\":[  \n      {  \n         \"name\":\"prometheus\",\n
-    \        \"label\":\"prometheus\",\n         \"description\":\"\",\n         \"type\":\"datasource\",\n
-    \        \"pluginId\":\"prometheus\",\n         \"pluginName\":\"Prometheus\"\n
-    \     }\n   ],\n   \"__requires\":[  \n      {  \n         \"type\":\"grafana\",\n
-    \        \"id\":\"grafana\",\n         \"name\":\"Grafana\",\n         \"version\":\"5.0.3\"\n
-    \     },\n      {  \n         \"id\":\"graph\",\n         \"name\":\"Graph\",\n
-    \        \"type\":\"panel\",\n         \"version\":\"5.0.0\"\n      },\n      {
-    \ \n         \"type\":\"datasource\",\n         \"id\":\"prometheus\",\n         \"name\":\"Prometheus\",\n
-    \        \"version\":\"5.0.0\"\n      }\n   ],\n   \"annotations\":{  \n      \"list\":[
-    \ \n         {  \n            \"builtIn\":1,\n            \"datasource\":\"--
-    Grafana --\",\n            \"enable\":true,\n            \"hide\":true,\n            \"iconColor\":\"rgba(0,
-    211, 255, 1)\",\n            \"name\":\"Annotations & Alerts\",\n            \"type\":\"dashboard\"\n
-    \        }\n      ]\n   },\n   \"description\":\"Knative Serving - Scaling Debugging\",\n
-    \  \"editable\":false,\n   \"gnetId\":null,\n   \"graphTooltip\":0,\n   \"id\":null,\n
-    \  \"iteration\":1527886043818,\n   \"links\":[  \n\n   ],\n   \"panels\":[  \n
-    \     {  \n\n         \"collapsed\":true,\n         \"gridPos\":{  \n            \"h\":1,\n
-    \           \"w\":24,\n            \"x\":0,\n            \"y\":0\n         },\n
-    \        \"id\":14,\n         \"panels\":[  \n            {  \n               \"aliasColors\":{
-    \ \n\n               },\n               \"bars\":false,\n               \"dashLength\":10,\n
-    \              \"dashes\":false,\n               \"datasource\":\"prometheus\",\n
-    \              \"fill\":1,\n               \"gridPos\":{  \n                  \"h\":11,\n
-    \                 \"w\":24,\n                  \"x\":0,\n                  \"y\":1\n
-    \              },\n               \"id\":2,\n               \"legend\":{  \n                  \"avg\":false,\n
-    \                 \"current\":false,\n                  \"max\":false,\n                  \"min\":false,\n
-    \                 \"show\":true,\n                  \"total\":false,\n                  \"values\":false\n
-    \              },\n               \"lines\":true,\n               \"linewidth\":1,\n
-    \              \"links\":[  \n\n               ],\n               \"nullPointMode\":\"null\",\n
-    \              \"percentage\":false,\n               \"pointradius\":5,\n               \"points\":false,\n
-    \              \"renderer\":\"flot\",\n               \"seriesOverrides\":[  \n\n
-    \              ],\n               \"spaceLength\":10,\n               \"stack\":false,\n
-    \              \"steppedLine\":true,\n               \"targets\":[  \n                  {
-    \ \n                     \"expr\":\"sum(autoscaler_actual_pods{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"})\",\n
-    \                    \"format\":\"time_series\",\n                     \"interval\":\"1s\",\n
-    \                    \"intervalFactor\":1,\n                     \"legendFormat\":\"Actual
-    Pods\",\n                     \"refId\":\"A\"\n                  },\n                  {
-    \ \n                     \"expr\":\"sum(autoscaler_requested_pods{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"})\",\n
-    \                    \"format\":\"time_series\",\n                     \"interval\":\"1s\",\n
-    \                    \"intervalFactor\":1,\n                     \"legendFormat\":\"Requested
-    Pods\",\n                     \"refId\":\"C\"\n                  }\n               ],\n
-    \              \"thresholds\":[  \n\n               ],\n               \"timeFrom\":null,\n
-    \              \"timeShift\":null,\n               \"title\":\"Revision Pod Counts\",\n
-    \              \"tooltip\":{  \n                  \"shared\":true,\n                  \"sort\":0,\n
-    \                 \"value_type\":\"individual\"\n               },\n               \"type\":\"graph\",\n
-    \              \"xaxis\":{  \n                  \"buckets\":null,\n                  \"mode\":\"time\",\n
-    \                 \"name\":null,\n                  \"show\":true,\n                  \"values\":[
-    \ \n\n                  ]\n               },\n               \"yaxes\":[  \n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":true\n                  },\n                  {
-    \ \n                     \"decimals\":null,\n                     \"format\":\"short\",\n
-    \                    \"label\":\"Concurrency\",\n                     \"logBase\":1,\n
-    \                    \"max\":\"1\",\n                     \"min\":null,\n                     \"show\":false\n
-    \                 }\n               ]\n            }\n         ],\n         \"title\":\"Revision
-    Pod Counts\",\n         \"type\":\"row\"\n      },\n      {  \n         \"collapsed\":true,\n
-    \        \"gridPos\":{  \n            \"h\":1,\n            \"w\":24,\n            \"x\":0,\n
-    \           \"y\":1\n         },\n         \"id\":18,\n         \"panels\":[  \n
-    \           {  \n               \"aliasColors\":{  \n\n               },\n               \"bars\":false,\n
-    \              \"dashLength\":10,\n               \"dashes\":false,\n               \"datasource\":\"prometheus\",\n
-    \              \"fill\":1,\n               \"gridPos\":{  \n                  \"h\":9,\n
-    \                 \"w\":12,\n                  \"x\":0,\n                  \"y\":13\n
-    \              },\n               \"id\":4,\n               \"legend\":{  \n                  \"avg\":false,\n
-    \                 \"current\":false,\n                  \"max\":false,\n                  \"min\":false,\n
-    \                 \"show\":true,\n                  \"total\":false,\n                  \"values\":false\n
-    \              },\n               \"lines\":true,\n               \"linewidth\":1,\n
-    \              \"links\":[  \n\n               ],\n               \"nullPointMode\":\"null\",\n
-    \              \"percentage\":false,\n               \"pointradius\":5,\n               \"points\":false,\n
-    \              \"renderer\":\"flot\",\n               \"seriesOverrides\":[  \n\n
-    \              ],\n               \"spaceLength\":10,\n               \"stack\":false,\n
-    \              \"steppedLine\":false,\n               \"targets\":[  \n                  {
-    \ \n                     \"expr\":\"sum(kube_pod_container_resource_requests_cpu_cores{namespace=\\\"$namespace\\\",
-    pod=~\\\"$revision-deployment-.*\\\"})\",\n                     \"format\":\"time_series\",\n
-    \                    \"interval\":\"\",\n                     \"intervalFactor\":1,\n
-    \                    \"legendFormat\":\"Cores requested\",\n                     \"refId\":\"A\"\n
-    \                 },\n                  {  \n                     \"expr\":\"sum(rate(container_cpu_usage_seconds_total{namespace=\\\"$namespace\\\",
-    pod_name=~\\\"$revision-deployment-.*\\\"}[1m]))\",\n                     \"format\":\"time_series\",\n
-    \                    \"intervalFactor\":1,\n                     \"legendFormat\":\"Cores
-    used\",\n                     \"refId\":\"B\"\n                  },\n                  {
-    \ \n                     \"expr\":\"sum(kube_pod_container_resource_limits_cpu_cores{namespace=\\\"$namespace\\\",
-    pod=~\\\"$revision-deployment-.*\\\"})\",\n                     \"format\":\"time_series\",\n
-    \                    \"intervalFactor\":1,\n                     \"legendFormat\":\"Core
-    limit\",\n                     \"refId\":\"C\"\n                  }\n               ],\n
-    \              \"thresholds\":[  \n\n               ],\n               \"timeFrom\":null,\n
-    \              \"timeShift\":null,\n               \"title\":\"Revision CPU Usage\",\n
-    \              \"tooltip\":{  \n                  \"shared\":true,\n                  \"sort\":2,\n
-    \                 \"value_type\":\"individual\"\n               },\n               \"type\":\"graph\",\n
-    \              \"xaxis\":{  \n                  \"buckets\":null,\n                  \"mode\":\"time\",\n
-    \                 \"name\":null,\n                  \"show\":true,\n                  \"values\":[
-    \ \n\n                  ]\n               },\n               \"yaxes\":[  \n                  {
-    \ \n                     \"decimals\":null,\n                     \"format\":\"short\",\n
-    \                    \"label\":null,\n                     \"logBase\":1,\n                     \"max\":null,\n
-    \                    \"min\":null,\n                     \"show\":true\n                  },\n
-    \                 {  \n                     \"format\":\"short\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":false\n                  }\n               ]\n            },\n
-    \           {  \n               \"aliasColors\":{  \n\n               },\n               \"bars\":false,\n
-    \              \"dashLength\":10,\n               \"dashes\":false,\n               \"datasource\":\"prometheus\",\n
-    \              \"fill\":1,\n               \"gridPos\":{  \n                  \"h\":9,\n
-    \                 \"w\":12,\n                  \"x\":12,\n                  \"y\":13\n
-    \              },\n               \"id\":6,\n               \"legend\":{  \n                  \"avg\":false,\n
-    \                 \"current\":false,\n                  \"max\":false,\n                  \"min\":false,\n
-    \                 \"show\":true,\n                  \"total\":false,\n                  \"values\":false\n
-    \              },\n               \"lines\":true,\n               \"linewidth\":1,\n
-    \              \"links\":[  \n\n               ],\n               \"nullPointMode\":\"null\",\n
-    \              \"percentage\":false,\n               \"pointradius\":5,\n               \"points\":false,\n
-    \              \"renderer\":\"flot\",\n               \"seriesOverrides\":[  \n\n
-    \              ],\n               \"spaceLength\":10,\n               \"stack\":false,\n
-    \              \"steppedLine\":false,\n               \"targets\":[  \n                  {
-    \ \n                     \"expr\":\"sum(kube_pod_container_resource_requests_memory_bytes{namespace=\\\"$namespace\\\",
-    pod=~\\\"$revision-deployment-.*\\\"})\",\n                     \"format\":\"time_series\",\n
-    \                    \"interval\":\"\",\n                     \"intervalFactor\":1,\n
-    \                    \"legendFormat\":\"Memory requested\",\n                     \"refId\":\"A\"\n
-    \                 },\n                  {  \n                     \"expr\":\"sum(container_memory_usage_bytes{namespace=\\\"$namespace\\\",
-    pod_name=~\\\"$revision-deployment-.*\\\"})\",\n                     \"format\":\"time_series\",\n
-    \                    \"hide\":false,\n                     \"intervalFactor\":1,\n
-    \                    \"legendFormat\":\"Memory used\",\n                     \"refId\":\"B\"\n
-    \                 },\n                  {  \n                     \"expr\":\"sum(kube_pod_container_resource_limits_memory_bytes{namespace=\\\"$namespace\\\",
-    pod=~\\\"$revision-deployment-.*\\\"})\",\n                     \"format\":\"time_series\",\n
-    \                    \"intervalFactor\":1,\n                     \"refId\":\"C\"\n
-    \                 }\n               ],\n               \"thresholds\":[  \n\n
-    \              ],\n               \"timeFrom\":null,\n               \"timeShift\":null,\n
-    \              \"title\":\"Pod Memory Usage\",\n               \"tooltip\":{  \n
-    \                 \"shared\":true,\n                  \"sort\":2,\n                  \"value_type\":\"individual\"\n
-    \              },\n               \"type\":\"graph\",\n               \"xaxis\":{
-    \ \n                  \"buckets\":null,\n                  \"mode\":\"time\",\n
-    \                 \"name\":null,\n                  \"show\":true,\n                  \"values\":[
-    \ \n\n                  ]\n               },\n               \"yaxes\":[  \n                  {
-    \ \n                     \"format\":\"decbytes\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":true\n                  },\n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":false\n                  }\n               ]\n            }\n
-    \        ],\n         \"title\":\"Resource Usages\",\n         \"type\":\"row\"\n
-    \     },\n      {  \n         \"collapsed\":true,\n         \"gridPos\":{  \n
-    \           \"h\":1,\n            \"w\":24,\n            \"x\":0,\n            \"y\":2\n
-    \        },\n         \"id\":16,\n         \"panels\":[  \n            {  \n               \"aliasColors\":{
-    \ \n\n               },\n               \"bars\":false,\n               \"dashLength\":10,\n
-    \              \"dashes\":false,\n               \"datasource\":\"prometheus\",\n
-    \              \"fill\":1,\n               \"gridPos\":{  \n                  \"h\":10,\n
-    \                 \"w\":24,\n                  \"x\":0,\n                  \"y\":3\n
-    \              },\n               \"id\":10,\n               \"legend\":{  \n
-    \                 \"avg\":false,\n                  \"current\":false,\n                  \"max\":false,\n
-    \                 \"min\":false,\n                  \"show\":true,\n                  \"total\":false,\n
-    \                 \"values\":false\n               },\n               \"lines\":true,\n
-    \              \"linewidth\":1,\n               \"links\":[  \n\n               ],\n
-    \              \"nullPointMode\":\"null\",\n               \"percentage\":false,\n
-    \              \"pointradius\":5,\n               \"points\":false,\n               \"renderer\":\"flot\",\n
-    \              \"seriesOverrides\":[  \n\n               ],\n               \"spaceLength\":10,\n
-    \              \"stack\":false,\n               \"steppedLine\":true,\n               \"targets\":[
-    \ \n                  {  \n                     \"expr\":\"sum(autoscaler_desired_pods{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"}) \",\n
-    \                    \"format\":\"time_series\",\n                     \"intervalFactor\":1,\n
-    \                    \"legendFormat\":\"Desired Pods\",\n                     \"refId\":\"A\"\n
-    \                 },\n                  {  \n                     \"expr\":\"sum(autoscaler_observed_pods{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"})\",\n
-    \                    \"format\":\"time_series\",\n                     \"intervalFactor\":1,\n
-    \                    \"legendFormat\":\"Observed Pods\",\n                     \"refId\":\"B\"\n
-    \                 }\n               ],\n               \"thresholds\":[  \n\n
-    \              ],\n               \"timeFrom\":null,\n               \"timeShift\":null,\n
-    \              \"title\":\"Pod Counts\",\n               \"tooltip\":{  \n                  \"shared\":true,\n
-    \                 \"sort\":0,\n                  \"value_type\":\"individual\"\n
-    \              },\n               \"type\":\"graph\",\n               \"xaxis\":{
-    \ \n                  \"buckets\":null,\n                  \"mode\":\"time\",\n
-    \                 \"name\":null,\n                  \"show\":true,\n                  \"values\":[
-    \ \n\n                  ]\n               },\n               \"yaxes\":[  \n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":true\n                  },\n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":true\n                  }\n               ]\n            },\n
-    \           {  \n               \"aliasColors\":{  \n\n               },\n               \"bars\":false,\n
-    \              \"dashLength\":10,\n               \"dashes\":false,\n               \"datasource\":\"prometheus\",\n
-    \              \"fill\":1,\n               \"gridPos\":{  \n                  \"h\":9,\n
-    \                 \"w\":24,\n                  \"x\":0,\n                  \"y\":13\n
-    \              },\n               \"id\":8,\n               \"legend\":{  \n                  \"avg\":false,\n
-    \                 \"current\":false,\n                  \"max\":false,\n                  \"min\":false,\n
-    \                 \"show\":true,\n                  \"total\":false,\n                  \"values\":false\n
-    \              },\n               \"lines\":true,\n               \"linewidth\":1,\n
-    \              \"links\":[  \n\n               ],\n               \"nullPointMode\":\"null\",\n
-    \              \"percentage\":false,\n               \"pointradius\":5,\n               \"points\":false,\n
-    \              \"renderer\":\"flot\",\n               \"seriesOverrides\":[  \n
-    \                 {  \n                     \"alias\":\"Panic Mode\",\n                     \"color\":\"#ea6460\",\n
-    \                    \"dashes\":true,\n                     \"fill\":2,\n                     \"linewidth\":2,\n
-    \                    \"steppedLine\":true,\n                     \"yaxis\":2\n
-    \                 },\n                  {  \n                     \"alias\":\"Target
-    Concurrency Per Pod\",\n                     \"color\":\"#0a50a1\",\n                     \"dashes\":true,\n
-    \                    \"steppedLine\":false\n                  }\n               ],\n
-    \              \"spaceLength\":10,\n               \"stack\":false,\n               \"steppedLine\":true,\n
-    \              \"targets\":[  \n                  {  \n                     \"expr\":\"sum(autoscaler_stable_request_concurrency{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"})\",\n
-    \                    \"format\":\"time_series\",\n                     \"interval\":\"1s\",\n
-    \                    \"intervalFactor\":1,\n                     \"legendFormat\":\"60
-    Second Average Concurrency\",\n                     \"refId\":\"A\"\n                  },\n
-    \                 {  \n                     \"expr\":\"sum(autoscaler_panic_request_concurrency{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"})\",\n
-    \                    \"format\":\"time_series\",\n                     \"interval\":\"1s\",\n
-    \                    \"intervalFactor\":1,\n                     \"legendFormat\":\"6
-    Second Average Panic Concurrency\",\n                     \"refId\":\"B\"\n                  },\n
-    \                 {  \n                     \"expr\":\"sum(autoscaler_target_concurrency_per_pod{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"})\",\n
-    \                    \"format\":\"time_series\",\n                     \"intervalFactor\":1,\n
-    \                    \"legendFormat\":\"60 Second Target Concurrency\",\n                     \"refId\":\"C\"\n
-    \                 }\n               ],\n               \"thresholds\":[  \n\n
-    \              ],\n               \"timeFrom\":null,\n               \"timeShift\":null,\n
-    \              \"title\":\"Observed Concurrency\",\n               \"tooltip\":{
-    \ \n                  \"shared\":true,\n                  \"sort\":0,\n                  \"value_type\":\"individual\"\n
-    \              },\n               \"type\":\"graph\",\n               \"xaxis\":{
-    \ \n                  \"buckets\":null,\n                  \"mode\":\"time\",\n
-    \                 \"name\":null,\n                  \"show\":true,\n                  \"values\":[
-    \ \n\n                  ]\n               },\n               \"yaxes\":[  \n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":\"\",\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":true\n                  },\n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":\"\",\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":false\n                  }\n               ]\n            },\n
-    \           {  \n               \"aliasColors\":{  \n\n               },\n               \"bars\":false,\n
-    \              \"dashLength\":10,\n               \"dashes\":false,\n               \"datasource\":\"prometheus\",\n
-    \              \"decimals\":null,\n               \"fill\":1,\n               \"gridPos\":{
-    \ \n                  \"h\":9,\n                  \"w\":24,\n                  \"x\":0,\n
-    \                 \"y\":22\n               },\n               \"id\":12,\n               \"legend\":{
-    \ \n                  \"avg\":false,\n                  \"current\":false,\n                  \"hideZero\":false,\n
-    \                 \"max\":false,\n                  \"min\":false,\n                  \"show\":false,\n
-    \                 \"total\":false,\n                  \"values\":false\n               },\n
-    \              \"lines\":true,\n               \"linewidth\":1,\n               \"links\":[
-    \ \n\n               ],\n               \"nullPointMode\":\"null\",\n               \"percentage\":false,\n
-    \              \"pointradius\":5,\n               \"points\":false,\n               \"renderer\":\"flot\",\n
-    \              \"seriesOverrides\":[  \n                  {  \n                     \"alias\":\"Panic
-    Mode\",\n                     \"color\":\"#e24d42\",\n                     \"linewidth\":2,\n
-    \                    \"yaxis\":2\n                  }\n               ],\n               \"spaceLength\":10,\n
-    \              \"stack\":false,\n               \"steppedLine\":true,\n               \"targets\":[
-    \ \n                  {  \n                     \"expr\":\"sum(autoscaler_panic_mode{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\", revision_name=\\\"$revision\\\"} )\",\n
-    \                    \"format\":\"time_series\",\n                     \"intervalFactor\":1,\n
-    \                    \"legendFormat\":\"Panic Mode\",\n                     \"refId\":\"A\"\n
-    \                 }\n               ],\n               \"thresholds\":[  \n\n
-    \              ],\n               \"timeFrom\":null,\n               \"timeShift\":null,\n
-    \              \"title\":\"Panic Mode\",\n               \"tooltip\":{  \n                  \"shared\":true,\n
-    \                 \"sort\":0,\n                  \"value_type\":\"individual\"\n
-    \              },\n               \"type\":\"graph\",\n               \"xaxis\":{
-    \ \n                  \"buckets\":null,\n                  \"mode\":\"time\",\n
-    \                 \"name\":null,\n                  \"show\":true,\n                  \"values\":[
-    \ \n\n                  ]\n               },\n               \"yaxes\":[  \n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":\"1.0\",\n                     \"min\":\"0\",\n
-    \                    \"show\":true\n                  },\n                  {
-    \ \n                     \"format\":\"short\",\n                     \"label\":null,\n
-    \                    \"logBase\":1,\n                     \"max\":null,\n                     \"min\":null,\n
-    \                    \"show\":false\n                  }\n               ]\n            }\n
-    \        ],\n         \"title\":\"Autoscaler Metrics\",\n         \"type\":\"row\"\n
-    \     },\n      {  \n         \"collapsed\":true,\n         \"gridPos\":{  \n
-    \           \"h\":1,\n            \"w\":24,\n            \"x\":0,\n            \"y\":3\n
-    \        },\n         \"id\":20,\n         \"panels\":[  \n                     {
-    \ \n                        \"aliasColors\":{  \n\n                        },\n
-    \                       \"bars\":false,\n                        \"dashLength\":10,\n
-    \                       \"dashes\":false,\n                        \"datasource\":\"prometheus\",\n
-    \                       \"fill\":1,\n                        \"gridPos\":{  \n
-    \                          \"h\":10,\n                           \"w\":24,\n                           \"x\":0,\n
-    \                          \"y\":12\n                        },\n                        \"id\":24,\n
-    \                       \"legend\":{  \n                           \"avg\":false,\n
-    \                          \"current\":false,\n                           \"max\":false,\n
-    \                          \"min\":false,\n                           \"show\":true,\n
-    \                          \"total\":false,\n                           \"values\":false\n
-    \                       },\n                        \"lines\":true,\n                        \"linewidth\":1,\n
-    \                       \"links\":[  \n\n                        ],\n                        \"nullPointMode\":\"null\",\n
-    \                       \"percentage\":false,\n                        \"pointradius\":5,\n
-    \                       \"points\":false,\n                        \"renderer\":\"flot\",\n
-    \                       \"seriesOverrides\":[  \n\n                        ],\n
-    \                       \"spaceLength\":10,\n                        \"stack\":false,\n
-    \                       \"steppedLine\":false,\n                        \"targets\":[
-    \ \n                           {  \n                              \"expr\":\"round(sum(increase(activator_request_count{namespace_name=\\\"$namespace\\\",
-    configuration_name=~\\\"$configuration\\\",revision_name=~\\\"$revision\\\"}[1m]))
-    by (response_code))\",\n                              \"format\":\"time_series\",\n
-    \                             \"intervalFactor\":1,\n                              \"legendFormat\":\"{{
-    response_code }}\",\n                              \"refId\":\"A\"\n                           }\n
-    \                       ],\n                        \"thresholds\":[  \n\n                        ],\n
-    \                       \"timeFrom\":null,\n                        \"timeShift\":null,\n
-    \                       \"title\":\"Request Count in last minute by Response Code\",\n
-    \                       \"tooltip\":{  \n                           \"shared\":true,\n
-    \                          \"sort\":0,\n                           \"value_type\":\"individual\"\n
-    \                       },\n                        \"type\":\"graph\",\n                        \"xaxis\":{
-    \ \n                           \"buckets\":null,\n                           \"mode\":\"time\",\n
-    \                          \"name\":null,\n                           \"show\":true,\n
-    \                          \"values\":[  \n\n                           ]\n                        },\n
-    \                       \"yaxes\":[  \n                           {  \n                              \"format\":\"none\",\n
-    \                             \"label\":null,\n                              \"logBase\":1,\n
-    \                             \"max\":null,\n                              \"min\":\"0\",\n
-    \                             \"show\":true\n                           },\n                           {
-    \ \n                              \"format\":\"short\",\n                              \"label\":null,\n
-    \                             \"logBase\":1,\n                              \"max\":null,\n
-    \                             \"min\":null,\n                              \"show\":true\n
-    \                          }\n                        ]\n                     },\n
-    \                    {  \n                        \"aliasColors\":{  \n\n                        },\n
-    \                       \"bars\":false,\n                        \"dashLength\":10,\n
-    \                       \"dashes\":false,\n                        \"datasource\":\"prometheus\",\n
-    \                       \"fill\":1,\n                        \"gridPos\":{  \n
-    \                          \"h\":10,\n                           \"w\":24,\n                           \"x\":0,\n
-    \                          \"y\":32\n                        },\n                        \"id\":28,\n
-    \                       \"legend\":{  \n                           \"avg\":true,\n
-    \                          \"current\":false,\n                           \"max\":false,\n
-    \                          \"min\":false,\n                           \"show\":true,\n
-    \                          \"total\":false,\n                           \"values\":true\n
-    \                       },\n                        \"lines\":true,\n                        \"linewidth\":1,\n
-    \                       \"links\":[  \n\n                        ],\n                        \"nullPointMode\":\"null\",\n
-    \                       \"percentage\":false,\n                        \"pointradius\":5,\n
-    \                       \"points\":false,\n                        \"renderer\":\"flot\",\n
-    \                       \"seriesOverrides\":[  \n\n                        ],\n
-    \                       \"spaceLength\":10,\n                        \"stack\":false,\n
-    \                       \"steppedLine\":false,\n                        \"targets\":[
-    \ \n                           {  \n                              \"expr\":\"label_replace(histogram_quantile(0.50,
-    sum(rate(activator_request_latencies_bucket{namespace_name=\\\"$namespace\\\",
-    configuration_name=~\\\"$configuration\\\",revision_name=~\\\"$revision\\\"}[1m]))
-    by (revision_name, le)), \\\"revision_name\\\", \\\"$2\\\", \\\"revision_name\\\",
-    \\\"$configuration(-+)(.*)\\\")\",\n                              \"format\":\"time_series\",\n
-    \                             \"intervalFactor\":1,\n                              \"legendFormat\":\"{{
-    revision_name }} (p50)\",\n                              \"refId\":\"A\"\n                           },\n
-    \                          {  \n                              \"expr\":\"label_replace(histogram_quantile(0.90,
-    sum(rate(activator_request_latencies_bucket{namespace_name=\\\"$namespace\\\",
-    configuration_name=~\\\"$configuration\\\",revision_name=~\\\"$revision\\\"}[1m]))
-    by (revision_name, le)), \\\"revision_name\\\", \\\"$2\\\", \\\"revision_name\\\",
-    \\\"$configuration(-+)(.*)\\\")\",\n                              \"format\":\"time_series\",\n
-    \                             \"intervalFactor\":1,\n                              \"legendFormat\":\"{{
-    revision_name }} (p90)\",\n                              \"refId\":\"B\"\n                           },\n
-    \                          {  \n                              \"expr\":\"label_replace(histogram_quantile(0.95,
-    sum(rate(activator_request_latencies_bucket{namespace_name=\\\"$namespace\\\",
-    configuration_name=~\\\"$configuration\\\",revision_name=~\\\"$revision\\\"}[1m]))
-    by (revision_name, le)), \\\"revision_name\\\", \\\"$2\\\", \\\"revision_name\\\",
-    \\\"$configuration(-+)(.*)\\\")\",\n                              \"format\":\"time_series\",\n
-    \                             \"intervalFactor\":1,\n                              \"legendFormat\":\"{{
-    revision_name }} (p95)\",\n                              \"refId\":\"C\"\n                           },\n
-    \                          {  \n                              \"expr\":\"label_replace(histogram_quantile(0.99,
-    sum(rate(activator_request_latencies_bucket{namespace_name=\\\"$namespace\\\",
-    configuration_name=~\\\"$configuration\\\",revision_name=~\\\"$revision\\\"}[1m]))
-    by (revision_name, le)), \\\"revision_name\\\", \\\"$2\\\", \\\"revision_name\\\",
-    \\\"$configuration(-+)(.*)\\\")\",\n                              \"format\":\"time_series\",\n
-    \                             \"intervalFactor\":1,\n                              \"legendFormat\":\"{{
-    revision_name }} (p99)\",\n                              \"refId\":\"D\"\n                           }\n
-    \                       ],\n                        \"thresholds\":[  \n\n                        ],\n
-    \                       \"timeFrom\":null,\n                        \"timeShift\":null,\n
-    \                       \"title\":\"Response Time in last minute\",\n                        \"tooltip\":{
-    \ \n                           \"shared\":true,\n                           \"sort\":0,\n
-    \                          \"value_type\":\"individual\"\n                        },\n
-    \                       \"type\":\"graph\",\n                        \"xaxis\":{
-    \ \n                           \"buckets\":null,\n                           \"mode\":\"time\",\n
-    \                          \"name\":null,\n                           \"show\":true,\n
-    \                          \"values\":[  \n\n                           ]\n                        },\n
-    \                       \"yaxes\":[  \n                           {  \n                              \"format\":\"ms\",\n
-    \                             \"label\":null,\n                              \"logBase\":1,\n
-    \                             \"max\":null,\n                              \"min\":null,\n
-    \                             \"show\":true\n                           },\n                           {
-    \ \n                              \"format\":\"short\",\n                              \"label\":null,\n
-    \                             \"logBase\":1,\n                              \"max\":null,\n
-    \                             \"min\":null,\n                              \"show\":true\n
-    \                          }\n                         ]\n                       }
-    \    \n         ],\n         \"title\":\"Activator Metrics\",\n         \"type\":\"row\"\n
-    \     }\n   ],\n   \"refresh\":false,\n   \"schemaVersion\":16,\n   \"style\":\"dark\",\n
-    \  \"tags\":[  \n\n   ],\n   \"templating\":{  \n      \"list\":[  \n         {
-    \ \n            \"allValue\":null,\n            \"current\":{  \n\n            },\n
-    \           \"datasource\":\"prometheus\",\n            \"hide\":0,\n            \"includeAll\":false,\n
-    \           \"label\":\"Namespace\",\n            \"multi\":false,\n            \"name\":\"namespace\",\n
-    \           \"options\":[  \n\n            ],\n            \"query\":\"label_values(autoscaler_desired_pods,
-    namespace_name)\",\n            \"refresh\":1,\n            \"regex\":\"\",\n
-    \           \"sort\":1,\n            \"tagValuesQuery\":\"\",\n            \"tags\":[
-    \ \n\n            ],\n            \"tagsQuery\":\"\",\n            \"type\":\"query\",\n
-    \           \"useTags\":false\n         },\n         {  \n            \"allValue\":null,\n
-    \           \"current\":{  \n\n            },\n            \"datasource\":\"prometheus\",\n
-    \           \"hide\":0,\n            \"includeAll\":false,\n            \"label\":\"Configuration\",\n
-    \           \"multi\":false,\n            \"name\":\"configuration\",\n            \"options\":[
-    \ \n\n            ],\n            \"query\":\"label_values(autoscaler_desired_pods{namespace_name=\\\"$namespace\\\"},
-    configuration_name)\",\n            \"refresh\":1,\n            \"regex\":\"\",\n
-    \           \"sort\":1,\n            \"tagValuesQuery\":\"\",\n            \"tags\":[
-    \ \n\n            ],\n            \"tagsQuery\":\"\",\n            \"type\":\"query\",\n
-    \           \"useTags\":false\n         },\n         {  \n            \"allValue\":null,\n
-    \           \"current\":{  \n\n            },\n            \"datasource\":\"prometheus\",\n
-    \           \"hide\":0,\n            \"includeAll\":false,\n            \"label\":\"Revision\",\n
-    \           \"multi\":false,\n            \"name\":\"revision\",\n            \"options\":[
-    \ \n\n            ],\n            \"query\":\"label_values(autoscaler_desired_pods{namespace_name=\\\"$namespace\\\",
-    configuration_name=\\\"$configuration\\\"}, revision_name)\",\n            \"refresh\":1,\n
-    \           \"regex\":\"\",\n            \"sort\":2,\n            \"tagValuesQuery\":\"\",\n
-    \           \"tags\":[  \n\n            ],\n            \"tagsQuery\":\"\",\n
-    \           \"type\":\"query\",\n            \"useTags\":false\n         }\n      ]\n
-    \  },\n   \"time\":{  \n      \"from\":\"now-15m\",\n      \"to\":\"now\"\n   },\n
-    \  \"timepicker\":{  \n      \"refresh_intervals\":[  \n         \"5s\",\n         \"10s\",\n
-    \        \"30s\",\n         \"1m\",\n         \"5m\",\n         \"15m\",\n         \"30m\",\n
-    \        \"1h\",\n         \"2h\",\n         \"1d\"\n      ],\n      \"time_options\":[
-    \ \n         \"5m\",\n         \"15m\",\n         \"1h\",\n         \"6h\",\n
-    \        \"12h\",\n         \"24h\",\n         \"2d\",\n         \"7d\",\n         \"30d\"\n
-    \     ]\n   },\n   \"timezone\":\"\",\n   \"title\":\"Knative Serving - Scaling
-    Debugging\",\n   \"uid\":\"u_-9SIMiz\",\n   \"version\":2\n}\n"
+  scaling-dashboard.json: |
+    {
+       "__inputs": [
+          {
+             "name": "prometheus",
+             "label": "prometheus",
+             "description": "",
+             "type": "datasource",
+             "pluginId": "prometheus",
+             "pluginName": "Prometheus"
+          }
+       ],
+       "__requires": [
+          {
+             "type": "grafana",
+             "id": "grafana",
+             "name": "Grafana",
+             "version": "5.0.3"
+          },
+          {
+             "type": "panel",
+             "id": "graph",
+             "name": "Graph",
+             "version": "5.0.0"
+          },
+          {
+             "type": "datasource",
+             "id": "prometheus",
+             "name": "Prometheus",
+             "version": "5.0.0"
+          }
+       ],
+       "annotations": {
+          "list": [
+             {
+             "builtIn": 1,
+             "datasource": "-- Grafana --",
+             "enable": true,
+             "hide": true,
+             "iconColor": "rgba(0, 211, 255, 1)",
+             "name": "Annotations & Alerts",
+             "type": "dashboard"
+             }
+          ]
+       },
+       "description": "Knative Serving - Scaling Debugging",
+       "editable": true,
+       "gnetId": null,
+       "graphTooltip": 0,
+       "id": null,
+       "iteration": 1564079739384,
+       "links": [],
+       "panels": [
+          {
+             "collapsed": true,
+             "gridPos": {
+             "h": 1,
+             "w": 24,
+             "x": 0,
+             "y": 0
+             },
+             "id": 14,
+             "panels": [
+             {
+                "aliasColors": {},
+                "bars": false,
+                "dashLength": 10,
+                "dashes": false,
+                "datasource": "prometheus",
+                "fill": 1,
+                "gridPos": {
+                   "h": 11,
+                   "w": 24,
+                   "x": 0,
+                   "y": 1
+                },
+                "id": 2,
+                "legend": {
+                   "avg": false,
+                   "current": false,
+                   "max": false,
+                   "min": false,
+                   "show": true,
+                   "total": false,
+                   "values": false
+                },
+                "lines": true,
+                "linewidth": 1,
+                "links": [],
+                "nullPointMode": "null",
+                "percentage": false,
+                "pointradius": 5,
+                "points": false,
+                "renderer": "flot",
+                "seriesOverrides": [],
+                "spaceLength": 10,
+                "stack": false,
+                "steppedLine": true,
+                "targets": [
+                   {
+                   "expr": "sum(autoscaler_actual_pods{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                   "format": "time_series",
+                   "interval": "1s",
+                   "intervalFactor": 1,
+                   "legendFormat": "Actual Pods",
+                   "refId": "A"
+                   },
+                   {
+                   "expr": "sum(autoscaler_requested_pods{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                   "format": "time_series",
+                   "interval": "1s",
+                   "intervalFactor": 1,
+                   "legendFormat": "Requested Pods",
+                   "refId": "C"
+                   }
+                ],
+                "thresholds": [],
+                "timeFrom": null,
+                "timeShift": null,
+                "title": "Revision Pod Counts",
+                "tooltip": {
+                   "shared": true,
+                   "sort": 0,
+                   "value_type": "individual"
+                },
+                "type": "graph",
+                "xaxis": {
+                   "buckets": null,
+                   "mode": "time",
+                   "name": null,
+                   "show": true,
+                   "values": []
+                },
+                "yaxes": [
+                   {
+                   "format": "short",
+                   "label": null,
+                   "logBase": 1,
+                   "max": null,
+                   "min": null,
+                   "show": true
+                   },
+                   {
+                   "decimals": null,
+                   "format": "short",
+                   "label": "Concurrency",
+                   "logBase": 1,
+                   "max": "1",
+                   "min": null,
+                   "show": false
+                   }
+                ]
+             }
+             ],
+             "title": "Revision Pod Counts",
+             "type": "row"
+          },
+          {
+             "collapsed": true,
+             "gridPos": {
+             "h": 1,
+             "w": 24,
+             "x": 0,
+             "y": 1
+             },
+             "id": 18,
+             "panels": [
+             {
+                "aliasColors": {},
+                "bars": false,
+                "dashLength": 10,
+                "dashes": false,
+                "datasource": "prometheus",
+                "fill": 1,
+                "gridPos": {
+                   "h": 9,
+                   "w": 12,
+                   "x": 0,
+                   "y": 13
+                },
+                "id": 4,
+                "legend": {
+                   "avg": false,
+                   "current": false,
+                   "max": false,
+                   "min": false,
+                   "show": true,
+                   "total": false,
+                   "values": false
+                },
+                "lines": true,
+                "linewidth": 1,
+                "links": [],
+                "nullPointMode": "null",
+                "percentage": false,
+                "pointradius": 5,
+                "points": false,
+                "renderer": "flot",
+                "seriesOverrides": [],
+                "spaceLength": 10,
+                "stack": false,
+                "steppedLine": false,
+                "targets": [
+                   {
+                   "expr": "sum(kube_pod_container_resource_requests_cpu_cores{namespace=\"$namespace\", pod=~\"$revision-deployment-.*\"})",
+                   "format": "time_series",
+                   "interval": "",
+                   "intervalFactor": 1,
+                   "legendFormat": "Cores requested",
+                   "refId": "A"
+                   },
+                   {
+                   "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", pod_name=~\"$revision-deployment-.*\"}[1m]))",
+                   "format": "time_series",
+                   "intervalFactor": 1,
+                   "legendFormat": "Cores used",
+                   "refId": "B"
+                   },
+                   {
+                   "expr": "sum(kube_pod_container_resource_limits_cpu_cores{namespace=\"$namespace\", pod=~\"$revision-deployment-.*\"})",
+                   "format": "time_series",
+                   "intervalFactor": 1,
+                   "legendFormat": "Core limit",
+                   "refId": "C"
+                   }
+                ],
+                "thresholds": [],
+                "timeFrom": null,
+                "timeShift": null,
+                "title": "Revision CPU Usage",
+                "tooltip": {
+                   "shared": true,
+                   "sort": 2,
+                   "value_type": "individual"
+                },
+                "type": "graph",
+                "xaxis": {
+                   "buckets": null,
+                   "mode": "time",
+                   "name": null,
+                   "show": true,
+                   "values": []
+                },
+                "yaxes": [
+                   {
+                   "decimals": null,
+                   "format": "short",
+                   "label": null,
+                   "logBase": 1,
+                   "max": null,
+                   "min": null,
+                   "show": true
+                   },
+                   {
+                   "format": "short",
+                   "label": null,
+                   "logBase": 1,
+                   "max": null,
+                   "min": null,
+                   "show": false
+                   }
+                ]
+             },
+             {
+                "aliasColors": {},
+                "bars": false,
+                "dashLength": 10,
+                "dashes": false,
+                "datasource": "prometheus",
+                "fill": 1,
+                "gridPos": {
+                   "h": 9,
+                   "w": 12,
+                   "x": 12,
+                   "y": 13
+                },
+                "id": 6,
+                "legend": {
+                   "avg": false,
+                   "current": false,
+                   "max": false,
+                   "min": false,
+                   "show": true,
+                   "total": false,
+                   "values": false
+                },
+                "lines": true,
+                "linewidth": 1,
+                "links": [],
+                "nullPointMode": "null",
+                "percentage": false,
+                "pointradius": 5,
+                "points": false,
+                "renderer": "flot",
+                "seriesOverrides": [],
+                "spaceLength": 10,
+                "stack": false,
+                "steppedLine": false,
+                "targets": [
+                   {
+                   "expr": "sum(kube_pod_container_resource_requests_memory_bytes{namespace=\"$namespace\", pod=~\"$revision-deployment-.*\"})",
+                   "format": "time_series",
+                   "interval": "",
+                   "intervalFactor": 1,
+                   "legendFormat": "Memory requested",
+                   "refId": "A"
+                   },
+                   {
+                   "expr": "sum(container_memory_usage_bytes{namespace=\"$namespace\", pod_name=~\"$revision-deployment-.*\"})",
+                   "format": "time_series",
+                   "hide": false,
+                   "intervalFactor": 1,
+                   "legendFormat": "Memory used",
+                   "refId": "B"
+                   },
+                   {
+                   "expr": "sum(kube_pod_container_resource_limits_memory_bytes{namespace=\"$namespace\", pod=~\"$revision-deployment-.*\"})",
+                   "format": "time_series",
+                   "intervalFactor": 1,
+                   "refId": "C"
+                   }
+                ],
+                "thresholds": [],
+                "timeFrom": null,
+                "timeShift": null,
+                "title": "Pod Memory Usage",
+                "tooltip": {
+                   "shared": true,
+                   "sort": 2,
+                   "value_type": "individual"
+                },
+                "type": "graph",
+                "xaxis": {
+                   "buckets": null,
+                   "mode": "time",
+                   "name": null,
+                   "show": true,
+                   "values": []
+                },
+                "yaxes": [
+                   {
+                   "format": "decbytes",
+                   "label": null,
+                   "logBase": 1,
+                   "max": null,
+                   "min": null,
+                   "show": true
+                   },
+                   {
+                   "format": "short",
+                   "label": null,
+                   "logBase": 1,
+                   "max": null,
+                   "min": null,
+                   "show": false
+                   }
+                ]
+             }
+             ],
+             "title": "Resource Usages",
+             "type": "row"
+          },
+          {
+             "collapsed": false,
+             "gridPos": {
+             "h": 1,
+             "w": 24,
+             "x": 0,
+             "y": 2
+             },
+             "id": 16,
+             "panels": [],
+             "title": "Autoscaler Metrics",
+             "type": "row"
+          },
+          {
+             "aliasColors": {},
+             "bars": false,
+             "dashLength": 10,
+             "dashes": false,
+             "datasource": "prometheus",
+             "fill": 1,
+             "gridPos": {
+             "h": 10,
+             "w": 24,
+             "x": 0,
+             "y": 3
+             },
+             "id": 10,
+             "legend": {
+             "avg": false,
+             "current": false,
+             "max": false,
+             "min": false,
+             "show": true,
+             "total": false,
+             "values": false
+             },
+             "lines": true,
+             "linewidth": 1,
+             "links": [],
+             "nullPointMode": "null",
+             "percentage": false,
+             "pointradius": 5,
+             "points": false,
+             "renderer": "flot",
+             "seriesOverrides": [],
+             "spaceLength": 10,
+             "stack": false,
+             "steppedLine": true,
+             "targets": [
+             {
+                "expr": "sum(autoscaler_desired_pods{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"}) ",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "Desired Pods",
+                "refId": "A"
+             },
+             {
+                "expr": "sum(autoscaler_observed_pods{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "Observed Pods",
+                "refId": "B"
+             }
+             ],
+             "thresholds": [],
+             "timeFrom": null,
+             "timeShift": null,
+             "title": "Pod Counts",
+             "tooltip": {
+             "shared": true,
+             "sort": 0,
+             "value_type": "individual"
+             },
+             "type": "graph",
+             "xaxis": {
+             "buckets": null,
+             "mode": "time",
+             "name": null,
+             "show": true,
+             "values": []
+             },
+             "yaxes": [
+             {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+             },
+             {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+             }
+             ]
+          },
+          {
+             "aliasColors": {},
+             "bars": false,
+             "dashLength": 10,
+             "dashes": false,
+             "datasource": "prometheus",
+             "fill": 1,
+             "gridPos": {
+             "h": 9,
+             "w": 24,
+             "x": 0,
+             "y": 13
+             },
+             "id": 8,
+             "legend": {
+             "avg": false,
+             "current": false,
+             "max": false,
+             "min": false,
+             "show": true,
+             "total": false,
+             "values": false
+             },
+             "lines": true,
+             "linewidth": 1,
+             "links": [],
+             "nullPointMode": "null",
+             "percentage": false,
+             "pointradius": 5,
+             "points": false,
+             "renderer": "flot",
+             "seriesOverrides": [
+             {
+                "alias": "Panic Mode",
+                "color": "#ea6460",
+                "dashes": true,
+                "fill": 2,
+                "linewidth": 2,
+                "steppedLine": true,
+                "yaxis": 2
+             },
+             {
+                "alias": "Target Concurrency Per Pod",
+                "color": "#0a50a1",
+                "dashes": true,
+                "steppedLine": false
+             }
+             ],
+             "spaceLength": 10,
+             "stack": false,
+             "steppedLine": true,
+             "targets": [
+             {
+                "expr": "sum(autoscaler_stable_request_concurrency{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                "format": "time_series",
+                "interval": "1s",
+                "intervalFactor": 1,
+                "legendFormat": "Average Concurrency",
+                "refId": "A"
+             },
+             {
+                "expr": "sum(autoscaler_panic_request_concurrency{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                "format": "time_series",
+                "interval": "1s",
+                "intervalFactor": 1,
+                "legendFormat": "Average Panic Concurrency",
+                "refId": "B"
+             },
+             {
+                "expr": "sum(autoscaler_target_concurrency_per_pod{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "Target Concurrency",
+                "refId": "C"
+             },
+             {
+                "expr": "sum(autoscaler_excess_burst_capacity{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "Excess Burst Capacity",
+                "refId": "D"
+             }
+             ],
+             "thresholds": [],
+             "timeFrom": null,
+             "timeShift": null,
+             "title": "Observed Concurrency",
+             "tooltip": {
+             "shared": true,
+             "sort": 0,
+             "value_type": "individual"
+             },
+             "type": "graph",
+             "xaxis": {
+             "buckets": null,
+             "mode": "time",
+             "name": null,
+             "show": true,
+             "values": []
+             },
+             "yaxes": [
+             {
+                "format": "short",
+                "label": "",
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+             },
+             {
+                "format": "short",
+                "label": "",
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": false
+             }
+             ]
+          },
+          {
+             "aliasColors": {},
+             "bars": false,
+             "dashLength": 10,
+             "dashes": false,
+             "datasource": "prometheus",
+             "decimals": null,
+             "fill": 1,
+             "gridPos": {
+             "h": 9,
+             "w": 24,
+             "x": 0,
+             "y": 22
+             },
+             "id": 12,
+             "legend": {
+             "avg": false,
+             "current": false,
+             "hideZero": false,
+             "max": false,
+             "min": false,
+             "show": false,
+             "total": false,
+             "values": false
+             },
+             "lines": true,
+             "linewidth": 1,
+             "links": [],
+             "nullPointMode": "null",
+             "percentage": false,
+             "pointradius": 5,
+             "points": false,
+             "renderer": "flot",
+             "seriesOverrides": [
+             {
+                "alias": "Panic Mode",
+                "color": "#e24d42",
+                "linewidth": 2,
+                "yaxis": 2
+             }
+             ],
+             "spaceLength": 10,
+             "stack": false,
+             "steppedLine": true,
+             "targets": [
+             {
+                "expr": "sum(autoscaler_panic_mode{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"} )",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "Panic Mode",
+                "refId": "A"
+             }
+             ],
+             "thresholds": [],
+             "timeFrom": null,
+             "timeShift": null,
+             "title": "Panic Mode",
+             "tooltip": {
+             "shared": true,
+             "sort": 0,
+             "value_type": "individual"
+             },
+             "type": "graph",
+             "xaxis": {
+             "buckets": null,
+             "mode": "time",
+             "name": null,
+             "show": true,
+             "values": []
+             },
+             "yaxes": [
+             {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": "1.0",
+                "min": "0",
+                "show": true
+             },
+             {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": false
+             }
+             ]
+          },
+          {
+             "collapsed": false,
+             "gridPos": {
+             "h": 1,
+             "w": 24,
+             "x": 0,
+             "y": 31
+             },
+             "id": 20,
+             "panels": [],
+             "title": "Activator Metrics",
+             "type": "row"
+          },
+          {
+             "aliasColors": {},
+             "bars": false,
+             "dashLength": 10,
+             "dashes": false,
+             "datasource": "prometheus",
+             "fill": 1,
+             "gridPos": {
+             "h": 10,
+             "w": 24,
+             "x": 0,
+             "y": 32
+             },
+             "id": 24,
+             "legend": {
+             "avg": false,
+             "current": false,
+             "max": false,
+             "min": false,
+             "show": true,
+             "total": false,
+             "values": false
+             },
+             "lines": true,
+             "linewidth": 1,
+             "links": [],
+             "nullPointMode": "null",
+             "percentage": false,
+             "pointradius": 5,
+             "points": false,
+             "renderer": "flot",
+             "seriesOverrides": [],
+             "spaceLength": 10,
+             "stack": false,
+             "steppedLine": false,
+             "targets": [
+             {
+                "expr": "round(sum(increase(activator_request_count{namespace_name=\"$namespace\", configuration_name=~\"$configuration\",revision_name=~\"$revision\"}[1m])) by (response_code))",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "{{ response_code }}",
+                "refId": "A"
+             }
+             ],
+             "thresholds": [],
+             "timeFrom": null,
+             "timeShift": null,
+             "title": "Request Count in last minute by Response Code",
+             "tooltip": {
+             "shared": true,
+             "sort": 0,
+             "value_type": "individual"
+             },
+             "type": "graph",
+             "xaxis": {
+             "buckets": null,
+             "mode": "time",
+             "name": null,
+             "show": true,
+             "values": []
+             },
+             "yaxes": [
+             {
+                "format": "none",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": "0",
+                "show": true
+             },
+             {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+             }
+             ]
+          },
+          {
+             "aliasColors": {},
+             "bars": false,
+             "dashLength": 10,
+             "dashes": false,
+             "datasource": "prometheus",
+             "fill": 1,
+             "gridPos": {
+             "h": 10,
+             "w": 24,
+             "x": 0,
+             "y": 42
+             },
+             "id": 28,
+             "legend": {
+             "avg": true,
+             "current": false,
+             "max": false,
+             "min": false,
+             "show": true,
+             "total": false,
+             "values": true
+             },
+             "lines": true,
+             "linewidth": 1,
+             "links": [],
+             "nullPointMode": "null",
+             "percentage": false,
+             "pointradius": 5,
+             "points": false,
+             "renderer": "flot",
+             "seriesOverrides": [],
+             "spaceLength": 10,
+             "stack": false,
+             "steppedLine": false,
+             "targets": [
+             {
+                "expr": "label_replace(histogram_quantile(0.50, sum(rate(activator_request_latencies_bucket{namespace_name=\"$namespace\", configuration_name=~\"$configuration\",revision_name=~\"$revision\"}[1m])) by (revision_name, le)), \"revision_name\", \"$2\", \"revision_name\", \"$configuration(-+)(.*)\")",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "{{ revision_name }} (p50)",
+                "refId": "A"
+             },
+             {
+                "expr": "label_replace(histogram_quantile(0.90, sum(rate(activator_request_latencies_bucket{namespace_name=\"$namespace\", configuration_name=~\"$configuration\",revision_name=~\"$revision\"}[1m])) by (revision_name, le)), \"revision_name\", \"$2\", \"revision_name\", \"$configuration(-+)(.*)\")",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "{{ revision_name }} (p90)",
+                "refId": "B"
+             },
+             {
+                "expr": "label_replace(histogram_quantile(0.95, sum(rate(activator_request_latencies_bucket{namespace_name=\"$namespace\", configuration_name=~\"$configuration\",revision_name=~\"$revision\"}[1m])) by (revision_name, le)), \"revision_name\", \"$2\", \"revision_name\", \"$configuration(-+)(.*)\")",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "{{ revision_name }} (p95)",
+                "refId": "C"
+             },
+             {
+                "expr": "label_replace(histogram_quantile(0.99, sum(rate(activator_request_latencies_bucket{namespace_name=\"$namespace\", configuration_name=~\"$configuration\",revision_name=~\"$revision\"}[1m])) by (revision_name, le)), \"revision_name\", \"$2\", \"revision_name\", \"$configuration(-+)(.*)\")",
+                "format": "time_series",
+                "intervalFactor": 1,
+                "legendFormat": "{{ revision_name }} (p99)",
+                "refId": "D"
+             }
+             ],
+             "thresholds": [],
+             "timeFrom": null,
+             "timeShift": null,
+             "title": "Response Time in last minute",
+             "tooltip": {
+             "shared": true,
+             "sort": 0,
+             "value_type": "individual"
+             },
+             "type": "graph",
+             "xaxis": {
+             "buckets": null,
+             "mode": "time",
+             "name": null,
+             "show": true,
+             "values": []
+             },
+             "yaxes": [
+             {
+                "format": "ms",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+             },
+             {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+             }
+             ]
+          },
+          {
+             "aliasColors": {},
+             "bars": false,
+             "dashLength": 10,
+             "dashes": false,
+             "datasource": "prometheus",
+             "fill": 1,
+             "gridPos": {
+             "h": 9,
+             "w": 24,
+             "x": 0,
+             "y": 52
+             },
+             "id": 29,
+             "legend": {
+             "avg": false,
+             "current": false,
+             "max": false,
+             "min": false,
+             "show": true,
+             "total": false,
+             "values": false
+             },
+             "lines": true,
+             "linewidth": 1,
+             "links": [],
+             "nullPointMode": "null",
+             "percentage": false,
+             "pointradius": 5,
+             "points": false,
+             "renderer": "flot",
+             "seriesOverrides": [
+             {
+                "alias": "Panic Mode",
+                "color": "#ea6460",
+                "dashes": true,
+                "fill": 2,
+                "linewidth": 2,
+                "steppedLine": true,
+                "yaxis": 2
+             },
+             {
+                "alias": "Target Concurrency Per Pod",
+                "color": "#0a50a1",
+                "dashes": true,
+                "steppedLine": false
+             }
+             ],
+             "spaceLength": 10,
+             "stack": false,
+             "steppedLine": true,
+             "targets": [
+             {
+                "expr": "sum(activator_request_concurrency{namespace_name=\"$namespace\", configuration_name=\"$configuration\", revision_name=\"$revision\"})",
+                "format": "time_series",
+                "interval": "1s",
+                "intervalFactor": 1,
+                "legendFormat": "Request Concurrency",
+                "refId": "A"
+             }
+             ],
+             "thresholds": [],
+             "timeFrom": null,
+             "timeShift": null,
+             "title": "Request Concurrency",
+             "tooltip": {
+             "shared": true,
+             "sort": 0,
+             "value_type": "individual"
+             },
+             "type": "graph",
+             "xaxis": {
+             "buckets": null,
+             "mode": "time",
+             "name": null,
+             "show": true,
+             "values": []
+             },
+             "yaxes": [
+             {
+                "format": "short",
+                "label": "",
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": true
+             },
+             {
+                "format": "short",
+                "label": "",
+                "logBase": 1,
+                "max": null,
+                "min": null,
+                "show": false
+             }
+             ]
+          }
+       ],
+       "refresh": false,
+       "schemaVersion": 16,
+       "style": "dark",
+       "tags": [],
+       "templating": {
+          "list": [
+             {
+             "allValue": null,
+             "current": {},
+             "datasource": "prometheus",
+             "hide": 0,
+             "includeAll": false,
+             "label": "Namespace",
+             "multi": false,
+             "name": "namespace",
+             "options": [],
+             "query": "label_values(autoscaler_desired_pods, namespace_name)",
+             "refresh": 1,
+             "regex": "",
+             "sort": 1,
+             "tagValuesQuery": "",
+             "tags": [],
+             "tagsQuery": "",
+             "type": "query",
+             "useTags": false
+             },
+             {
+             "allValue": null,
+             "current": {},
+             "datasource": "prometheus",
+             "hide": 0,
+             "includeAll": false,
+             "label": "Configuration",
+             "multi": false,
+             "name": "configuration",
+             "options": [],
+             "query": "label_values(autoscaler_desired_pods{namespace_name=\"$namespace\"}, configuration_name)",
+             "refresh": 1,
+             "regex": "",
+             "sort": 1,
+             "tagValuesQuery": "",
+             "tags": [],
+             "tagsQuery": "",
+             "type": "query",
+             "useTags": false
+             },
+             {
+             "allValue": null,
+             "current": {},
+             "datasource": "prometheus",
+             "hide": 0,
+             "includeAll": false,
+             "label": "Revision",
+             "multi": false,
+             "name": "revision",
+             "options": [],
+             "query": "label_values(autoscaler_desired_pods{namespace_name=\"$namespace\", configuration_name=\"$configuration\"}, revision_name)",
+             "refresh": 1,
+             "regex": "",
+             "sort": 2,
+             "tagValuesQuery": "",
+             "tags": [],
+             "tagsQuery": "",
+             "type": "query",
+             "useTags": false
+             }
+          ]
+       },
+       "time": {
+          "from": "now-15m",
+          "to": "now"
+       },
+       "timepicker": {
+          "refresh_intervals": [
+             "5s",
+             "10s",
+             "30s",
+             "1m",
+             "5m",
+             "15m",
+             "30m",
+             "1h",
+             "2h",
+             "1d"
+          ],
+          "time_options": [
+             "5m",
+             "15m",
+             "1h",
+             "6h",
+             "12h",
+             "24h",
+             "2d",
+             "7d",
+             "30d"
+          ]
+       },
+       "timezone": "",
+       "title": "Knative Serving - Scaling Debugging",
+       "uid": "u_-9SIMiz",
+       "version": 2
+       }
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: scaling-config
   namespace: knative-monitoring
 
@@ -14386,7 +15027,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: grafana-dashboard-definition-knative
   namespace: knative-monitoring
 
@@ -14406,7 +15047,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: grafana-datasources
   namespace: knative-monitoring
 ---
@@ -14513,7 +15154,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: grafana-dashboards
   namespace: knative-monitoring
 ---
@@ -14523,7 +15164,7 @@ kind: Service
 metadata:
   labels:
     app: grafana
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: grafana
   namespace: knative-monitoring
 spec:
@@ -14540,7 +15181,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: grafana
   namespace: knative-monitoring
 spec:
@@ -14552,7 +15193,7 @@ spec:
     metadata:
       labels:
         app: grafana
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
       - image: quay.io/coreos/monitoring-grafana:5.0.3
@@ -14709,6 +15350,24 @@ data:
       - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_port_name]
         action: keep
         regex: knative-serving;activator;metrics-port
+      # Rename metadata labels to be reader friendly
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: service
+    # Webhook pods
+    - job_name: webhook
+      scrape_interval: 3s
+      scrape_timeout: 3s
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      # Scrape only the the targets matching the following metadata
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_role, __meta_kubernetes_pod_container_port_name]
+        action: keep
+        regex: knative-serving;webhook;metrics-port
       # Rename metadata labels to be reader friendly
       - source_labels: [__meta_kubernetes_namespace]
         target_label: namespace
@@ -15014,11 +15673,37 @@ data:
         target_label: pod
       - source_labels: [__meta_kubernetes_service_name]
         target_label: service
+
+    - job_name: kubernetes-service-endpoints
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - action: keep
+        regex: true
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_scrape
+      - action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        source_labels:
+        - __address__
+        - __meta_kubernetes_service_annotation_prometheus_io_port
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: kubernetes_namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_service_name
+        target_label: kubernetes_name
 kind: ConfigMap
 metadata:
   labels:
     name: prometheus-scrape-config
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-scrape-config
   namespace: knative-monitoring
 
@@ -15029,7 +15714,7 @@ kind: Service
 metadata:
   labels:
     app: kube-controller-manager
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: kube-controller-manager
   namespace: knative-monitoring
 spec:
@@ -15050,7 +15735,7 @@ kind: Service
 metadata:
   labels:
     app: prometheus
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system-discovery
   namespace: knative-monitoring
 spec:
@@ -15070,7 +15755,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: knative-monitoring
 ---
@@ -15079,7 +15764,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: default
 rules:
@@ -15106,7 +15791,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: knative-monitoring
 rules:
@@ -15133,7 +15818,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: kube-system
 rules:
@@ -15153,7 +15838,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: istio-system
 rules:
@@ -15181,7 +15866,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: knative-monitoring
 rules:
@@ -15214,7 +15899,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: default
 roleRef:
@@ -15231,7 +15916,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: knative-monitoring
 roleRef:
@@ -15248,7 +15933,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: kube-system
 roleRef:
@@ -15265,7 +15950,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: istio-system
 roleRef:
@@ -15282,7 +15967,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -15298,7 +15983,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system-np
   namespace: knative-monitoring
 spec:
@@ -15314,7 +15999,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: prometheus-system
   namespace: knative-monitoring
 spec:
@@ -15328,7 +16013,7 @@ spec:
     metadata:
       labels:
         app: prometheus
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
       - args:
@@ -15389,7 +16074,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: zipkin
   namespace: istio-system
 spec:
@@ -15404,7 +16089,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    serving.knative.dev/release: "v0.7.0"
+    serving.knative.dev/release: "v0.8.0"
   name: zipkin
   namespace: istio-system
 spec:
@@ -15418,7 +16103,7 @@ spec:
         sidecar.istio.io/inject: "false"
       labels:
         app: zipkin
-        serving.knative.dev/release: "v0.7.0"
+        serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
       - env:

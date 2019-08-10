@@ -428,5 +428,6 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		UpstreamGroups:    upstreamGroupFactory,
 		Secrets:           secretFactory,
 		Artifacts:         artifactFactory,
+		KubeCoreCache:     kubeCoreCache,
 	}, nil
 }

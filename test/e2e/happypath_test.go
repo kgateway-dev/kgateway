@@ -257,7 +257,11 @@ var _ = Describe("Happy path", func() {
 				namespace = "gloo-e2e-" + helpers.RandString(8)
 			}
 
-			err := setup.SetupKubeForTest(namespace)
+			_, err := kubeClient.CoreV1().Namespaces().Create(&kubev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: namespace,
+				},
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			svc, err = kubeClient.CoreV1().Services(namespace).Create(&kubev1.Service{
@@ -322,7 +326,7 @@ var _ = Describe("Happy path", func() {
 				writeNamespace = namespace
 				ro := &services.RunOptions{
 					NsToWrite: writeNamespace,
-					NsToWatch: []string{"default", namespace},
+					NsToWatch: []string{namespace},
 					WhatToRun: services.What{
 						DisableGateway: true,
 					},
@@ -365,8 +369,9 @@ var _ = Describe("Happy path", func() {
 		Context("all namespaces", func() {
 			BeforeEach(func() {
 				namespace = "gloo-e2e-" + helpers.RandString(8)
+				prepNamespace()
 
-				writeNamespace = defaults.GlooSystem
+				writeNamespace = namespace
 				ro := &services.RunOptions{
 					NsToWrite: writeNamespace,
 					NsToWatch: []string{},
@@ -381,7 +386,6 @@ var _ = Describe("Happy path", func() {
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
-				prepNamespace()
 			})
 
 			It("watch all namespaces", func() {

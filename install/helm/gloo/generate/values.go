@@ -32,7 +32,8 @@ type Namespace struct {
 }
 
 type Rbac struct {
-	Create bool `json:"create" desc:"create rbac rules for the gloo-system service account"`
+	Create     bool `json:"create" desc:"create rbac rules for the gloo-system service account"`
+	Namespaced bool `json:"Namespaced desc:"use Roles instead of ClusterRoles"`
 }
 
 type Crds struct {
@@ -184,8 +185,9 @@ type GatewayProxyConfigMap struct {
 }
 
 type Ingress struct {
-	Enabled    *bool              `json:"enabled"`
-	Deployment *IngressDeployment `json:"deployment,omitempty"`
+	Enabled             *bool              `json:"enabled"`
+	Deployment          *IngressDeployment `json:"deployment,omitempty"`
+	RequireIngressClass *bool              `json:"requireIngressClass,omitempty" desc:"only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''"`
 }
 
 type IngressDeployment struct {

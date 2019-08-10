@@ -10,13 +10,17 @@ Display one or a list of Gloo resources
 
 Display one or a list of Gloo resources
 
+```
+glooctl get [flags]
+```
+
 ### Options
 
 ```
   -h, --help                help for get
       --name string         name of the resource to read or write
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default kube-yaml)
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default table)
 ```
 
 ### Options inherited from parent commands

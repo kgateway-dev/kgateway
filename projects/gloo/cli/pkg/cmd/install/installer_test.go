@@ -1,8 +1,7 @@
 package install_test
 
 import (
-	"path/filepath"
-	"time"
+	"context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,7 +29,7 @@ func (i *MockInstallClient) KubectlApply(manifest []byte) error {
 	return nil
 }
 
-func (i *MockInstallClient) WaitForCrdsToBeRegistered(crds []string, timeout, interval time.Duration) error {
+func (i *MockInstallClient) WaitForCrdsToBeRegistered(_ context.Context, crds []string) error {
 	Expect(i.waited).To(BeFalse())
 	i.waited = true
 	Expect(crds).To(ConsistOf(i.expectedCrds))
@@ -44,14 +43,12 @@ func (i *MockInstallClient) CheckKnativeInstallation() (bool, bool, error) {
 var _ = Describe("Install", func() {
 
 	var (
-		file      string
 		installer install.GlooStagedInstaller
 		opts      options.Options
 		validator MockInstallClient
 	)
 
 	BeforeEach(func() {
-		file = filepath.Join(RootDir, "_test/gloo-test-unit-testing.tgz")
 		opts.Install.Namespace = "gloo-system"
 		opts.Install.HelmChartOverride = file
 	})

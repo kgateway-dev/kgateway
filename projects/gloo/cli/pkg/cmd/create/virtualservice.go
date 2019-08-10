@@ -40,7 +40,7 @@ func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) 
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return createVirtualService(opts, args)
+			return createVirtualService(opts)
 		},
 	}
 	pflags := cmd.PersistentFlags()
@@ -49,7 +49,7 @@ func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) 
 	return cmd
 }
 
-func createVirtualService(opts *options.Options, args []string) error {
+func createVirtualService(opts *options.Options) error {
 	vs, err := VirtualServiceFromOpts(opts.Metadata, opts.Create.VirtualService)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 		}
 	}
 
-	printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output)
+	_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output)
 
 	return nil
 }

@@ -11,20 +11,22 @@ import (
 )
 
 type translatorSyncer struct {
-	writeNamespace  string
-	writeErrs       chan error
-	proxyClient     gloov1.ProxyClient
-	ingressClient   v1.IngressClient
-	proxyReconciler gloov1.ProxyReconciler
+	writeNamespace      string
+	writeErrs           chan error
+	proxyClient         gloov1.ProxyClient
+	ingressClient       v1.IngressClient
+	proxyReconciler     gloov1.ProxyReconciler
+	requireIngressClass bool
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		writeNamespace:  writeNamespace,
-		writeErrs:       writeErrs,
-		proxyClient:     proxyClient,
-		ingressClient:   ingressClient,
-		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		writeNamespace:      writeNamespace,
+		writeErrs:           writeErrs,
+		proxyClient:         proxyClient,
+		ingressClient:       ingressClient,
+		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient),
+		requireIngressClass: requireIngressClass,
 	}
 }
 
@@ -38,7 +40,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 
-	proxy, err := translateProxy(s.writeNamespace, snap)
+	proxy, err := translateProxy(s.writeNamespace, snap, s.requireIngressClass)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
 			"ingress proxy will not be updated.", snap.Hash(), err)

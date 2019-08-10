@@ -8,7 +8,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,13 +49,15 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Install.Knative.InstallKnative {
-				installed, _, err := checkKnativeInstallation()
-				if err != nil {
-					return errors.Wrapf(err, "checking for existing knative installation")
-				}
-				if installed {
-					return errors.Errorf("knative-serving namespace found. please " +
-						"uninstall the previous version of knative, or re-run this command with --install-knative=false")
+				if !opts.Install.DryRun {
+					installed, _, err := checkKnativeInstallation()
+					if err != nil {
+						return errors.Wrapf(err, "checking for existing knative installation")
+					}
+					if installed {
+						return errors.Errorf("knative-serving namespace found. please " +
+							"uninstall the previous version of knative, or re-run this command with --install-knative=false")
+					}
 				}
 
 				if err := installKnativeServing(opts); err != nil {
@@ -112,7 +113,7 @@ func installKnativeServing(opts *options.Options) error {
 		return errors.Wrapf(err, "installing knative crds with kubectl apply")
 	}
 
-	if err := waitForCrdsToBeRegistered(knativeCrdNames, time.Second*5, time.Millisecond*500); err != nil {
+	if err := waitForCrdsToBeRegistered(opts.Top.Ctx, knativeCrdNames); err != nil {
 		return errors.Wrapf(err, "waiting for knative CRDs to be registered")
 	}
 
@@ -174,7 +175,7 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	outputManifests := []string{servingManifest}
 
 	if build {
-		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, knativeVersion)
+		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, opts.InstallKnativeBuildVersion)
 		buildManifest, err := getManifestForInstallation(buildReleaseUrl)
 		if err != nil {
 			return "", err
@@ -183,7 +184,7 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	}
 
 	if eventing {
-		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, knativeVersion)
+		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, opts.InstallKnativeEventingVersion)
 		eventingManifest, err := getManifestForInstallation(eventingReleaseUrl)
 		if err != nil {
 			return "", err

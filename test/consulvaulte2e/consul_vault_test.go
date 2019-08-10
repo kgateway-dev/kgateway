@@ -248,7 +248,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 				return 0, err
 			}
 			return proxy.Status.State, nil
-		}, "10s", "0.2s").Should(Equal(core.Status_Accepted))
+		}, "15s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
 			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]

@@ -10,6 +10,7 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/go-utils/testutils"
@@ -22,6 +23,11 @@ import (
 
 func TestIngress(t *testing.T) {
 	if testutils.AreTestsDisabled() {
+		return
+	}
+	if os.Getenv("CLUSTER_LOCK_TESTS") != "1" {
+		log.Warnf("This test requires using a cluster lock and is disabled by default. " +
+			"To enable, set CLUSTER_LOCK_TESTS=1 in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
@@ -44,8 +50,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	RegisterFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
-
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
 	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
