@@ -35,10 +35,19 @@ var _ = Describe("StatusSyncer", func() {
 			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		}
 		namespace = helpers.RandString(8)
-		err := setup.SetupKubeForTest(namespace)
-		Expect(err).NotTo(HaveOccurred())
+		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
+
+		kube, err := kubernetes.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		_, err = kube.CoreV1().Namespaces().Create(&kubev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace)
