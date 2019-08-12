@@ -35,7 +35,7 @@ glooctl create upstream ec2 [flags]
   -i, --interactive         use interactive mode
       --name string         name of the resource to read or write
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default kube-yaml)
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default table)
 ```
 
 ### SEE ALSO
