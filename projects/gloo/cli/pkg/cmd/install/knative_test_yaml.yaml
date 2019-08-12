@@ -17,11 +17,11 @@ metadata:
   name: custom-metrics-server-resources
 rules:
 - apiGroups:
-    - custom.metrics.k8s.io
+  - custom.metrics.k8s.io
   resources:
-    - '*'
+  - '*'
   verbs:
-    - '*'
+  - '*'
 
 ---
 
@@ -34,9 +34,9 @@ metadata:
   name: knative-serving-namespaced-admin
 rules:
 - apiGroups:
-    - serving.knative.dev
-    - networking.internal.knative.dev
-    - autoscaling.internal.knative.dev
+  - serving.knative.dev
+  - networking.internal.knative.dev
+  - autoscaling.internal.knative.dev
   resources:
   - '*'
   verbs:
@@ -371,9 +371,9 @@ spec:
   subresources:
     status: {}
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 
@@ -425,13 +425,13 @@ spec:
   group: autoscaling.internal.knative.dev
   names:
     categories:
-      - knative-internal
-      - autoscaling
+    - knative-internal
+    - autoscaling
     kind: PodAutoscaler
     plural: podautoscalers
     shortNames:
-      - kpa
-      - pa
+    - kpa
+    - pa
     singular: podautoscaler
   scope: Namespaced
   subresources:
@@ -481,9 +481,9 @@ spec:
   subresources:
     status: {}
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 
@@ -648,10 +648,10 @@ metadata:
 spec:
   maxReplicas: 20
   metrics:
-    - resource:
-        name: cpu
-        targetAverageUtilization: 100
-      type: Resource
+  - resource:
+      name: cpu
+      targetAverageUtilization: 100
+    type: Resource
   minReplicas: 1
   scaleTargetRef:
     apiVersion: apps/v1
@@ -682,31 +682,31 @@ spec:
         serving.knative.dev/release: "v0.8.0"
     spec:
       containers:
-        - env:
-            - name: SYSTEM_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: CONFIG_LOGGING_NAME
-              value: config-logging
-            - name: CONFIG_OBSERVABILITY_NAME
-              value: config-observability
-            - name: METRICS_DOMAIN
-              value: knative.dev/serving
-          image: gcr.io/knative-releases/knative.dev/serving/cmd/autoscaler-hpa@sha256:a7801c3cf4edecfa51b7bd2068f97941f6714f7922cb4806245377c2b336b723
-          name: autoscaler-hpa
-          ports:
-            - containerPort: 9090
-              name: metrics
-          resources:
-            limits:
-              cpu: 1000m
-              memory: 1000Mi
-            requests:
-              cpu: 100m
-              memory: 100Mi
-          securityContext:
-            allowPrivilegeEscalation: false
+      - env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: knative.dev/serving
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/autoscaler-hpa@sha256:a7801c3cf4edecfa51b7bd2068f97941f6714f7922cb4806245377c2b336b723
+        name: autoscaler-hpa
+        ports:
+        - containerPort: 9090
+          name: metrics
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1000Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        securityContext:
+          allowPrivilegeEscalation: false
       serviceAccountName: controller
 
 ---
@@ -1532,37 +1532,37 @@ metadata:
   name: configurations.serving.knative.dev
 spec:
   additionalPrinterColumns:
-    - JSONPath: .status.latestCreatedRevisionName
-      name: LatestCreated
-      type: string
-    - JSONPath: .status.latestReadyRevisionName
-      name: LatestReady
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].status
-      name: Ready
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-      name: Reason
-      type: string
+  - JSONPath: .status.latestCreatedRevisionName
+    name: LatestCreated
+    type: string
+  - JSONPath: .status.latestReadyRevisionName
+    name: LatestReady
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
   group: serving.knative.dev
   names:
     categories:
-      - all
-      - knative
-      - serving
+    - all
+    - knative
+    - serving
     kind: Configuration
     plural: configurations
     shortNames:
-      - config
-      - cfg
+    - config
+    - cfg
     singular: configuration
   scope: Namespaced
   subresources:
     status: {}
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 
@@ -1575,39 +1575,39 @@ metadata:
   name: revisions.serving.knative.dev
 spec:
   additionalPrinterColumns:
-    - JSONPath: .metadata.labels['serving\.knative\.dev/configuration']
-      name: Config Name
-      type: string
-    - JSONPath: .status.serviceName
-      name: K8s Service Name
-      type: string
-    - JSONPath: .metadata.labels['serving\.knative\.dev/configurationGeneration']
-      name: Generation
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].status
-      name: Ready
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-      name: Reason
-      type: string
+  - JSONPath: .metadata.labels['serving\.knative\.dev/configuration']
+    name: Config Name
+    type: string
+  - JSONPath: .status.serviceName
+    name: K8s Service Name
+    type: string
+  - JSONPath: .metadata.labels['serving\.knative\.dev/configurationGeneration']
+    name: Generation
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
   group: serving.knative.dev
   names:
     categories:
-      - all
-      - knative
-      - serving
+    - all
+    - knative
+    - serving
     kind: Revision
     plural: revisions
     shortNames:
-      - rev
+    - rev
     singular: revision
   scope: Namespaced
   subresources:
     status: {}
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 
@@ -1620,33 +1620,33 @@ metadata:
   name: routes.serving.knative.dev
 spec:
   additionalPrinterColumns:
-    - JSONPath: .status.url
-      name: URL
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].status
-      name: Ready
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-      name: Reason
-      type: string
+  - JSONPath: .status.url
+    name: URL
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
   group: serving.knative.dev
   names:
     categories:
-      - all
-      - knative
-      - serving
+    - all
+    - knative
+    - serving
     kind: Route
     plural: routes
     shortNames:
-      - rt
+    - rt
     singular: route
   scope: Namespaced
   subresources:
     status: {}
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 
@@ -1659,40 +1659,40 @@ metadata:
   name: services.serving.knative.dev
 spec:
   additionalPrinterColumns:
-    - JSONPath: .status.url
-      name: URL
-      type: string
-    - JSONPath: .status.latestCreatedRevisionName
-      name: LatestCreated
-      type: string
-    - JSONPath: .status.latestReadyRevisionName
-      name: LatestReady
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].status
-      name: Ready
-      type: string
-    - JSONPath: .status.conditions[?(@.type=='Ready')].reason
-      name: Reason
-      type: string
+  - JSONPath: .status.url
+    name: URL
+    type: string
+  - JSONPath: .status.latestCreatedRevisionName
+    name: LatestCreated
+    type: string
+  - JSONPath: .status.latestReadyRevisionName
+    name: LatestReady
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=='Ready')].reason
+    name: Reason
+    type: string
   group: serving.knative.dev
   names:
     categories:
-      - all
-      - knative
-      - serving
+    - all
+    - knative
+    - serving
     kind: Service
     plural: services
     shortNames:
-      - kservice
-      - ksvc
+    - kservice
+    - ksvc
     singular: service
   scope: Namespaced
   subresources:
     status: {}
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 
 ---
 apiVersion: v1
