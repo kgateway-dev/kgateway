@@ -1,11 +1,11 @@
 package flagutils
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/spf13/pflag"
 )
 
-func AddOutputFlag(set *pflag.FlagSet, outputType *types.OutputType) {
+func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 	set.VarP(outputType, "output", "o", "output format: (yaml, json, table, kube-yaml, wide)")
 }
 

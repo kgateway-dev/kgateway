@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/gogo/protobuf/types"
-	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -28,7 +27,7 @@ var routeActionType = struct {
 	emptyAction:    "empty_action",
 }
 
-func PrintRoutes(routes []*gloov1.Route, outputType printTypes.OutputType) error {
+func PrintRoutes(routes []*gloov1.Route, outputType OutputType) error {
 	return cliutils.PrintList(outputType.String(), "", routes,
 		func(data interface{}, w io.Writer) error {
 			RouteTable(data.([]*gloov1.Route), w)

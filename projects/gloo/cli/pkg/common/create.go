@@ -5,7 +5,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/protoutils"
@@ -13,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-func CreateAndPrintObject(yml []byte, outputType types.OutputType) error {
+func CreateAndPrintObject(yml []byte, outputType printers.OutputType) error {
 	resource, err := resourceFromYaml(yml)
 	if err != nil {
 		return errors.Wrapf(err, "parsing resource from yaml")

@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
-
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -16,8 +14,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType types.OutputType) error {
-	if outputType == types.KUBE_YAML {
+func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType OutputType) error {
+	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(virtualServices.AsInputResources(), v1.VirtualServiceCrd)
 	}
 	return cliutils.PrintList(outputType.String(), "", virtualServices,
