@@ -191,7 +191,7 @@ var _ = Describe("Kubernetes", func() {
 			eds, errs, err := plug.WatchEndpoints(
 				"",
 				v1.UpstreamList{makeUpstream("a"), makeUpstream("b"), makeUpstream("c")},
-				clients.WatchOpts{Ctx: context.TODO()})
+				clients.WatchOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(eds, time.Second).Should(Receive(HaveLen(6)))
