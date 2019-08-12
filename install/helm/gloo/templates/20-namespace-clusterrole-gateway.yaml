@@ -1,13 +1,12 @@
 {{- if .Values.rbac.create }}
-
 {{- if .Values.gateway.enabled }}
-
+---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: kube-resoruce-watcher
+    name: kube-resource-watcher
 {{- if .Values.rbac.namespaced }}
-  namespace: {{ .Release.Namespace }}
+    namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
@@ -19,13 +18,13 @@ rules:
 - apiGroups: [""]
   resources: ["namespaces"]
   verbs: ["get", "list", "watch"]
-
+---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: kube-crd-creator
 {{- if .Values.rbac.namespaced }}
-  namespace: {{ .Release.Namespace }}
+    namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
@@ -34,13 +33,13 @@ rules:
 - apiGroups: ["apiextensions.k8s.io"]
   resources: ["customresourcedefinitions"]
   verbs: ["get", "create", "update"]
-
+---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gloo-resource-reader
 {{- if .Values.rbac.namespaced }}
-  namespace: {{ .Release.Namespace }}
+    namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
@@ -50,14 +49,13 @@ rules:
   resources: ["settings", "upstreams","upstreamgroups", "proxies"]
   # update is needed for status updates
   verbs: ["get", "update"]
-
-
+---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gloo-resource-mutator
 {{- if .Values.rbac.namespaced }}
-  namespace: {{ .Release.Namespace }}
+    namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
@@ -66,13 +64,13 @@ rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["proxies"]
   verbs: ["*"]
-
+---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gateway-resource-reader
 {{- if .Values.rbac.namespaced }}
-  namespace: {{ .Release.Namespace }}
+    namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
@@ -83,7 +81,7 @@ rules:
   # update is needed for status updates
   verbs: ["get", "update"]
 - apiGroups: ["gateway.solo.io"]
-  resources: ["virtualservices", "gateways"]
+  resources: ["gateways"]
   # update is needed for status updates, create for creating the default ones.
   verbs: ["get", "create", "update"]
 - apiGroups: ["gateway.solo.io.v2"]

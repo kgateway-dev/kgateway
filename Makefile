@@ -332,13 +332,13 @@ update-helm-chart:
 HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
 
 install/gloo-gateway.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) | tee $@ $(OUTPUT_YAML)
+	helm template install/helm/gloo $(HELMFLAGS) | tee $@ $(OUTPUT_YAML) > /dev/null
 
 install/gloo-knative.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-knative.yaml | tee $@ $(OUTPUT_YAML)
+	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-knative.yaml | tee $@ $(OUTPUT_YAML) > /dev/null
 
 install/gloo-ingress.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-ingress.yaml | tee $@ $(OUTPUT_YAML)
+	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-ingress.yaml | tee $@ $(OUTPUT_YAML) > /dev/null
 
 .PHONY: render-yaml
 render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml

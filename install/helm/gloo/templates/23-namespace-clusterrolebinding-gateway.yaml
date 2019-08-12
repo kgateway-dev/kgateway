@@ -1,9 +1,10 @@
 {{- if .Values.rbac.create }}
 {{- if .Values.gateway.enabled }}
+---
 kind: {{ include "gloo.role" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: kube-resoruce-watcher-binding-{{ .Release.Namespace }}
+  name: kube-resource-watcher-binding{{ include "gloo.rolebindingsuffix" . }}
 {{- if .Values.rbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -18,15 +19,14 @@ subjects:
   name: discovery
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: ClusterRole
-  name: kube-resoruce-watcher
+  kind: {{ include "gloo.role" . }}
+  name: kube-resource-watcher
   apiGroup: rbac.authorization.k8s.io
-
-
+---
 kind: {{ include "gloo.role" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-reader-binding-{{ .Release.Namespace }}
+  name: gloo-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
 {{- if .Values.rbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -38,15 +38,14 @@ subjects:
   name: gloo
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: ClusterRole
+  kind: {{ include "gloo.role" . }}
   name: gloo-resource-reader
   apiGroup: rbac.authorization.k8s.io
-
-
+---
 kind: {{ include "gloo.role" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-mutator-binding-{{ .Release.Namespace }}
+  name: gloo-resource-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
 {{- if .Values.rbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -58,15 +57,14 @@ subjects:
   name: gateway
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: ClusterRole
+  kind: {{ include "gloo.role" . }}
   name: gloo-resource-mutator
   apiGroup: rbac.authorization.k8s.io
-
-
+---
 kind: {{ include "gloo.role" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gateway-resource-reader-binding-{{ .Release.Namespace }}
+  name: gateway-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
 {{- if .Values.rbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -78,7 +76,7 @@ subjects:
   name: gateway
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: ClusterRole
+  kind: {{ include "gloo.role" . }}
   name: gateway-resource-reader
   apiGroup: rbac.authorization.k8s.io
 {{- end -}}
