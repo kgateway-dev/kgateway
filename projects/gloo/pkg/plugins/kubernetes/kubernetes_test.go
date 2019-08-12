@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -53,9 +54,14 @@ var _ = Describe("Kubernetes", func() {
 				"tacos": "burritos",
 				"pizza": "frenchfries",
 			}
+
+			ctx    context.Context
+			cancel context.CancelFunc
 		)
 
 		BeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.Background())
+			ctx = settingsutil.WithSettings(ctx, &v1.Settings{})
 			svcNamespace = helpers.RandString(8)
 			kubeClient = fake.NewSimpleClientset()
 			var err error
@@ -137,6 +143,9 @@ var _ = Describe("Kubernetes", func() {
 		})
 		AfterEach(func() {
 			setup.TeardownKube(svcNamespace)
+			if cancel != nil {
+				cancel()
+			}
 		})
 
 		// TODO: why is this not working?
