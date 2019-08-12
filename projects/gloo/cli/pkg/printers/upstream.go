@@ -7,12 +7,9 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers/types"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/olekukonko/tablewriter"
@@ -114,7 +111,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			fmt.Sprintf("port:           %v", usType.AwsEc2.Port),
 		)
 		add(getEc2TagFiltersString(usType.AwsEc2.Filters)...)
-		instances := xdsDump.GetInstancesForUpstream(up.Metadata.Ref())
+		instances := xdsDump.GetEc2InstancesForUpstream(up.Metadata.Ref())
 		add(
 			"EC2 Instance Ids:",
 		)

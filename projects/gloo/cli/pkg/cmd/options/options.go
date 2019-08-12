@@ -71,9 +71,6 @@ type Upgrade struct {
 
 type Get struct {
 	Selector InputMapStringString
-	// if true, will get extended information that might not be available without calling external services, such as
-	// AWS apis, or kubectl port-forwarded services
-	Wide bool
 }
 
 type Delete struct {

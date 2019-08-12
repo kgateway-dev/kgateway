@@ -7,10 +7,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func (xd *XdsDump) GetInstancesForUpstream(upstream core.ResourceRef) []string {
+func (xd *XdsDump) GetEc2InstancesForUpstream(upstream core.ResourceRef) []string {
 	var out []string
 	if xd == nil {
-		out = append(out, "pass --wide flag for instance details")
+		out = append(out, "use -o wide for instance details")
 		return out
 	}
 	clusterName := translator.UpstreamToClusterName(upstream)

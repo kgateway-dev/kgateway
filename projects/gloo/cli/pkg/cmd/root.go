@@ -92,8 +92,8 @@ type PreRunFunc func(*options.Options) error
 func HarmonizeDryRunAndOutputFormat(opts *options.Options) error {
 	// in order to allow table output by default, and meaningful dry runs we need to override the output default
 	// enforcing this in the PersistentPreRun saves us from having to do so in any new printers or output types
-	if opts.Create.DryRun && opts.Top.Output == types.TABLE {
-		opts.Top.Output = types.KUBE_YAML
+	if opts.Create.DryRun && !opts.Top.Output.IsDryRunnable() {
+		opts.Top.Output = types.DryRunFallbackOutputType
 	}
 	return nil
 }

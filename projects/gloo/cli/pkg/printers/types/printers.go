@@ -1,8 +1,12 @@
 package types
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/go-utils/errors"
 )
@@ -14,24 +18,55 @@ const (
 	YAML
 	JSON
 	KUBE_YAML
+	WIDE
 )
+
+const DryRunFallbackOutputType = KUBE_YAML
+
+type outputTypeProperties struct {
+	outputType OutputType
+	// the first entry will be the default
+	names []string
+	// if the type is a table output, it does not support dry run
+	isTable bool
+}
+
+var typeProperties = []outputTypeProperties{
+	{TABLE, []string{"table"}, true},
+	{YAML, []string{"yaml", "yml"}, false},
+	{JSON, []string{"json"}, false},
+	{KUBE_YAML, []string{"kube-yaml"}, false},
+	{WIDE, []string{"wide"}, true},
+}
 
 var (
-	_OutputTypeToValue = map[string]OutputType{
-		"yaml":      YAML,
-		"yml":       YAML,
-		"kube-yaml": KUBE_YAML,
-		"json":      JSON,
-		"table":     TABLE,
-	}
+	_OutputTypeToValue = map[string]OutputType{}
+	//"yaml":      YAML,
+	//"yml":       YAML,
 
-	_OutputValueToType = map[OutputType]string{
-		YAML:      "yaml",
-		KUBE_YAML: "kube-yaml",
-		JSON:      "json",
-		TABLE:     "table",
-	}
+	_OutputValueToType = map[OutputType]string{}
+	// YAML:      "yaml",
+
+	_OutputValueToIsTable = map[OutputType]bool{}
+	// YAML:      false,
 )
+
+func init() {
+	for _, tp := range typeProperties {
+		if len(tp.names) == 0 {
+			// this should not happen, check just in case new types are added incorrectly
+			contextutils.LoggerFrom(context.TODO()).Fatalw("initialization of invalid output type",
+				zap.Any("outputType", tp.outputType))
+		}
+		for nameIndex, name := range tp.names {
+			if nameIndex == 0 {
+				_OutputTypeToValue[name] = tp.outputType
+			}
+			_OutputValueToType[tp.outputType] = name
+		}
+		_OutputValueToIsTable[tp.outputType] = tp.isTable
+	}
+}
 
 func (o *OutputType) String() string {
 	return _OutputValueToType[*o]
@@ -72,4 +107,12 @@ func (o *OutputType) UnmarshalJSON(data []byte) error {
 	}
 	*o = v
 	return nil
+}
+
+func (o *OutputType) IsTable() bool {
+	return _OutputValueToIsTable[*o]
+}
+
+func (o *OutputType) IsDryRunnable() bool {
+	return !_OutputValueToIsTable[*o]
 }

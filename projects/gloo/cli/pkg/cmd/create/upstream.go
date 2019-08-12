@@ -198,6 +198,8 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			PublicIp: input.AwsEc2.PublicIp,
 			RoleArn:  input.AwsEc2.Role,
 		}
+		// a secret ref is optional for EC2 upstreams (will use environment defaults if not specified)
+		// however if any part of the spec is provided ensure that the full spec is provided
 		if input.AwsEc2.Secret.Namespace != "" || input.AwsEc2.Secret.Name != "" {
 			if input.AwsEc2.Secret.Namespace == "" {
 				return nil, errors.Errorf("aws secret namespace must not be empty")
