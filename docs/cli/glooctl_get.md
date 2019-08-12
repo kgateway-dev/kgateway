@@ -20,8 +20,7 @@ glooctl get [flags]
   -h, --help                help for get
       --name string         name of the resource to read or write
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default table)
-      --wide                if set, will fetch additional details
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default table)
 ```
 
 ### Options inherited from parent commands
