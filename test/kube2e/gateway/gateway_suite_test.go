@@ -57,7 +57,7 @@ func StartTestHelper() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	RegisterFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
 	values, err = ioutil.TempFile("", "*.yaml")
@@ -67,7 +67,6 @@ func StartTestHelper() {
 
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values.Name()))
 	Expect(err).NotTo(HaveOccurred())
-
 }
 
 func TearDownTestHelper() {

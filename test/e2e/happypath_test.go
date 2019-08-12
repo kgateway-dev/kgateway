@@ -257,7 +257,11 @@ var _ = Describe("Happy path", func() {
 				namespace = "gloo-e2e-" + helpers.RandString(8)
 			}
 
-			err := setup.SetupKubeForTest(namespace)
+			_, err := kubeClient.CoreV1().Namespaces().Create(&kubev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: namespace,
+				},
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			svc, err = kubeClient.CoreV1().Services(namespace).Create(&kubev1.Service{

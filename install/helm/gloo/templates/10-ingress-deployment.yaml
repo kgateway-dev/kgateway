@@ -42,6 +42,12 @@ spec:
 {{- if not (.Values.ingress.enabled) }}
         - name: "DISABLE_KUBE_INGRESS"
           value: "true"
+{{- else }}
+
+  {{- if .Values.ingress.requireIngressClass }}
+        - name: "REQUIRE_INGRESS_CLASS"
+          value: "true"
+  {{- end }}
 {{- end }}
 
 

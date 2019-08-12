@@ -185,8 +185,9 @@ type GatewayProxyConfigMap struct {
 }
 
 type Ingress struct {
-	Enabled    *bool              `json:"enabled"`
-	Deployment *IngressDeployment `json:"deployment,omitempty"`
+	Enabled             *bool              `json:"enabled"`
+	Deployment          *IngressDeployment `json:"deployment,omitempty"`
+	RequireIngressClass *bool              `json:"requireIngressClass,omitempty" desc:"only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''"`
 }
 
 type IngressDeployment struct {

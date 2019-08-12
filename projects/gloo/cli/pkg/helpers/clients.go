@@ -9,6 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/listers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes/fake"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -329,4 +330,20 @@ func getKubernetesConfig(timeout time.Duration) (*rest.Config, error) {
 	}
 	config.Timeout = timeout
 	return config, nil
+}
+
+func MustApiExtsClient() apiexts.Interface {
+	client, err := ApiExtsClient()
+	if err != nil {
+		log.Fatalf("failed to create api exts client: %v", err)
+	}
+	return client
+}
+
+func ApiExtsClient() (apiexts.Interface, error) {
+	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	return apiexts.NewForConfig(cfg)
 }

@@ -33,8 +33,8 @@ func KubeDump(namespaces ...string) (string, error) {
 	return b.String(), nil
 }
 
-func KubeDumpOnFail(out io.Writer, namespaces ...string) func(string, ...int) {
-	return func(_ string, _ ...int) {
+func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
+	return func() {
 		dump, err := KubeDump(namespaces...)
 		if err != nil {
 			fmt.Fprintf(out, "getting dump failed: %v", err)
