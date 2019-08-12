@@ -9,9 +9,11 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
+	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDS API
@@ -38,20 +40,24 @@ type edsWatcher struct {
 }
 
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
-	nsSet := map[string]bool{}
-
-	// TODO(yuval-k): is there a case where we'll want namespace all in here?
-	for _, upstream := range upstreams {
-		if secretRef := upstream.GetUpstreamSpec().GetAwsEc2().GetSecretRef(); secretRef != nil {
-			// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below
-			// instead:
-			// nsSet[upstream.GetMetadata().Namespace] = true
-			nsSet[secretRef.Namespace] = true
-		}
-	}
 	var namespaces []string
-	for ns := range nsSet {
-		namespaces = append(namespaces, ns)
+
+	if settingsutil.IsAllNamespaces(settingsutil.FromContext(watchCtx)) {
+		namespaces = []string{metav1.NamespaceAll}
+	} else {
+		nsSet := map[string]bool{}
+		// TODO(yuval-k): is there a case where we'll want namespace all in here?
+		for _, upstream := range upstreams {
+			if secretRef := upstream.GetUpstreamSpec().GetAwsEc2().GetSecretRef(); secretRef != nil {
+				// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below
+				// instead:
+				// nsSet[upstream.GetMetadata().Namespace] = true
+				nsSet[secretRef.Namespace] = true
+			}
+		}
+		for ns := range nsSet {
+			namespaces = append(namespaces, ns)
+		}
 	}
 	return &edsWatcher{
 		upstreams:         upstreams,
