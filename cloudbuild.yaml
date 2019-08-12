@@ -129,7 +129,7 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   env:
-    - 'DOCKER_CONFIG=/workspace/docker-config'
+  - 'DOCKER_CONFIG=/workspace/docker-config'
   args: ['-c', 'docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD']
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
@@ -196,7 +196,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['docker-push', 'manifest', 'upload-github-release-assets', 'push-docs']
   env:
-    - 'DOCKER_CONFIG=/workspace/docker-config'
+  - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
@@ -206,7 +206,7 @@ steps:
   id: 'release'
   # wait for everything else to compelete.
 
-  # Sync helm chart data back to google storage bucket
+# Sync helm chart data back to google storage bucket
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['save-helm']
   env:
