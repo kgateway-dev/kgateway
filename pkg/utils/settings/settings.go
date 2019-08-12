@@ -27,5 +27,12 @@ func IsAllNamespaces(s *v1.Settings) bool {
 	if s == nil {
 		return false
 	}
-	return len(s.WatchNamespaces) == 0
+	switch {
+	case len(s.WatchNamespaces) == 0:
+		return true
+	case len(s.WatchNamespaces) == 1 && s.WatchNamespaces[0] == "":
+		return true
+	default:
+		return false
+	}
 }
