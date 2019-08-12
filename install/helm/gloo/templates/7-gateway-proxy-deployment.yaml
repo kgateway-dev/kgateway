@@ -118,8 +118,13 @@ spec:
           failureThreshold: 10
 {{- end}}
         volumeMounts:
-        - mountPath: /etc/envoy
-          name: envoy-config
+        - name: envoy-config
+          mountPath: /etc/envoy
+{{- if $spec.extraContainersHelper }}
+        - name: shared-data
+          mountPath: /usr/share/shared-data
+{{- include $spec.extraContainersHelper . | nindent 6 }}
+{{- end }}
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
       hostNetwork: true
@@ -143,8 +148,12 @@ spec:
       imagePullSecrets:
         - name: {{ $image.pullSecret }}{{end}}
       volumes:
-      - configMap:
+      - name: envoy-config
+        configMap:
           name: {{ $name | kebabcase }}-envoy-config
-        name: envoy-config
+      {{- if $spec.extraContainersHelper }}
+      - name: shared-data
+        emptyDir: {}
+      {{- end }}
 {{- end }}
 {{- end }}

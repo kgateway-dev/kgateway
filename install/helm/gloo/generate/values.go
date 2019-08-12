@@ -136,11 +136,12 @@ type GatewayConversionJob struct {
 }
 
 type GatewayProxy struct {
-	Kind        *GatewayProxyKind        `json:"kind,omitempty"`
-	PodTemplate *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
-	ConfigMap   *GatewayProxyConfigMap   `json:"configMap,omitempty"`
-	Service     *GatewayProxyService     `json:"service,omitempty"`
-	Tracing     *Tracing                 `json:"tracing,omitempty"`
+	Kind                  *GatewayProxyKind        `json:"kind,omitempty"`
+	PodTemplate           *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
+	ConfigMap             *GatewayProxyConfigMap   `json:"configMap,omitempty"`
+	Service               *GatewayProxyService     `json:"service,omitempty"`
+	Tracing               *Tracing                 `json:"tracing,omitempty"`
+	ExtraContainersHelper string                   `json:"extraContainersHelper,omitempty"`
 }
 
 type GatewayProxyKind struct {
