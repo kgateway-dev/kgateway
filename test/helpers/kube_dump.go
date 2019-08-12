@@ -12,14 +12,14 @@ import (
 var dumpCommands = func(namespace string) []string {
 	return []string{
 		fmt.Sprintf("echo PODS FROM %s && kubectl get pod -n %s", namespace, namespace),
-		fmt.Sprintf("for i in $(kubectl get pod -n %s); do echo LOGS FROM %s.$i kubectl logs -n %s $i; done", namespace, namespace, namespace),
+		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo LOGS FROM %s.$i $(kubectl logs -n %s $i); done", namespace, namespace, namespace),
 	}
 }
 
 // dump all data from the kube cluster
 func KubeDump(namespaces ...string) (string, error) {
 	b := &bytes.Buffer{}
-	b.WriteString("Complete Kubernetes Dump")
+	b.WriteString("Complete Kubernetes Dump\n")
 	for _, ns := range namespaces {
 		for _, command := range dumpCommands(ns) {
 			cmd := exec.Command("bash", "-c", command)
