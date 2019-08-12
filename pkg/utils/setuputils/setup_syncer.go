@@ -3,7 +3,7 @@ package setuputils
 import (
 	"context"
 
-	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"

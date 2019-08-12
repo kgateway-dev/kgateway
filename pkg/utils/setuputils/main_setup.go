@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/gogo/protobuf/types"
-	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	check "github.com/solo-io/go-checkpoint"
