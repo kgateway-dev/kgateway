@@ -1,4 +1,4 @@
-package settings
+package settingsutil
 
 import (
 	"context"
@@ -23,14 +23,18 @@ func FromContext(ctx context.Context) *v1.Settings {
 	return nil
 }
 
-func IsAllNamespaces(s *v1.Settings) bool {
+func IsAllNamespacesFromSettings(s *v1.Settings) bool {
 	if s == nil {
 		return false
 	}
+	return IsAllNamespaces(IsAllNamespaces)
+}
+
+func IsAllNamespaces(watchNs []string)) bool {
 	switch {
-	case len(s.WatchNamespaces) == 0:
+	case len(watchNs) == 0:
 		return true
-	case len(s.WatchNamespaces) == 1 && s.WatchNamespaces[0] == "":
+	case len(watchNs) == 1 && watchNs[0] == "":
 		return true
 	default:
 		return false

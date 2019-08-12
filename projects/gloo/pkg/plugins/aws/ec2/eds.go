@@ -9,7 +9,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -42,11 +42,12 @@ type edsWatcher struct {
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
 	var namespaces []string
 
-	if settingsutil.IsAllNamespaces(settingsutil.FromContext(watchCtx)) {
+	// We either watch all namespaces, or create individual watchers for each namespace we watch
+	settings := settingsutil.FromContext(watchCtx)
+	if settingsutil.IsAllNamespacesFromSettings(settings) {
 		namespaces = []string{metav1.NamespaceAll}
 	} else {
 		nsSet := map[string]bool{}
-		// TODO(yuval-k): is there a case where we'll want namespace all in here?
 		for _, upstream := range upstreams {
 			if secretRef := upstream.GetUpstreamSpec().GetAwsEc2().GetSecretRef(); secretRef != nil {
 				// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below

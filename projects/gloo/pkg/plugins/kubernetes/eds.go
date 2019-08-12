@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/mitchellh/hashstructure"
-	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
@@ -24,7 +24,8 @@ import (
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	var namespaces []string
 
-	if settingsutil.IsAllNamespaces(settingsutil.FromContext(opts.Ctx)) {
+	settings := settingsutil.FromContext(opts.Ctx)
+	if settingsutil.IsAllNamespacesFromSettings(settings) {
 		namespaces = []string{metav1.NamespaceAll}
 	} else {
 		nsSet := map[string]bool{}
@@ -41,7 +42,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		}
 	}
 
-	// TODO(yuval-k): is there a case where we'll want namespace all in here?
 	kubeFactory := getInformerFactory(opts.Ctx, p.kube, namespaces)
 	// this can take a bit of time some make sure we are still in business
 	if opts.Ctx.Err() != nil {

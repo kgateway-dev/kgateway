@@ -1,4 +1,4 @@
-package settings_test
+package settingsutil_test
 
 import (
 	"os"
