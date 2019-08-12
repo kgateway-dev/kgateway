@@ -53,7 +53,7 @@ var _ = Describe("Helm Test", func() {
 			defer makefileSerializer.Unlock()
 
 			f, err := ioutil.TempFile("", "*.yaml")
-			Expect(err).NotTo(HaveOccurred())
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 			f.Close()
 			manifestYaml = f.Name()
 
@@ -173,7 +173,7 @@ var _ = Describe("Helm Test", func() {
 						ReadOnlyRootFilesystem:   &truez,
 						AllowPrivilegeEscalation: &falsez,
 					}
-
+					deploy.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
 					gatewayProxyDeployment = deploy
 				})
 
@@ -295,6 +295,7 @@ var _ = Describe("Helm Test", func() {
 							v1.ResourceCPU:    resource.MustParse("500m"),
 						},
 					}
+					deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 					glooDeployment = deploy
 				})
 
@@ -336,6 +337,7 @@ var _ = Describe("Helm Test", func() {
 					deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 						{Name: "grpc", ContainerPort: 9977, Protocol: "TCP"},
 					}
+					deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 
 					glooDeployment = deploy
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.image.pullPolicy=Always --set gloo.deployment.image.registry=gcr.io/solo-public"
@@ -366,6 +368,7 @@ var _ = Describe("Helm Test", func() {
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
+					deploy.Spec.Template.Spec.ServiceAccountName = "gateway"
 					gatewayDeployment = deploy
 				})
 
@@ -442,6 +445,7 @@ var _ = Describe("Helm Test", func() {
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
+					deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
 					discoveryDeployment = deploy
 				})
 
@@ -490,6 +494,7 @@ var _ = Describe("Helm Test", func() {
 					updateDeployment(deploy)
 
 					discoveryDeployment = deploy
+					deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.image.pullPolicy=Always --set discovery.deployment.image.registry=gcr.io/solo-public"
 					prepareMakefile(helmFlags)
 
@@ -898,6 +903,7 @@ dynamic_resources:
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
+    rate_limit_settings: {}
   cds_config:
     ads: {}
   lds_config:
@@ -995,6 +1001,7 @@ dynamic_resources:
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
+    rate_limit_settings: {}
   cds_config:
     ads: {}
   lds_config:

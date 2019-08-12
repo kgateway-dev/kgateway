@@ -38,5 +38,5 @@ func MustMake(dir string, args ...string) {
 	makeCmd.Stderr = GinkgoWriter
 	err := makeCmd.Run()
 
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
