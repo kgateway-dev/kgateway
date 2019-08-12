@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow Gloo gateway to be configured with sidecar containers via a provided helm helper
+    issueLink: https://github.com/solo-io/gloo/issues/871
+    resolvesIssue: false
