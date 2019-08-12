@@ -44,7 +44,8 @@ var _ = Describe("Helm Test", func() {
 
 		AfterEach(func() {
 			if manifestYaml != "" {
-				os.Remove(manifestYaml)
+				err := os.Remove(manifestYaml)
+				Expect(err).ToNot(HaveOccurred())
 			}
 		})
 
@@ -54,7 +55,8 @@ var _ = Describe("Helm Test", func() {
 
 			f, err := ioutil.TempFile("", "*.yaml")
 			Expect(err).NotTo(HaveOccurred())
-			f.Close()
+			err = f.Close()
+			Expect(err).ToNot(HaveOccurred())
 			manifestYaml = f.Name()
 
 			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags, "OUTPUT_YAML="+manifestYaml)
@@ -238,6 +240,36 @@ var _ = Describe("Helm Test", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.image.pullPolicy=Always --set gatewayProxies.gatewayProxyV2.podTemplate.image.registry=gcr.io/solo-public"
 					prepareMakefile(helmFlags)
 
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
+
+				It("can add extra sidecar containers to the gateway deployment", func() {
+					gatewayProxyDeployment.Spec.Template.Spec.Containers = append(
+						gatewayProxyDeployment.Spec.Template.Spec.Containers,
+						v1.Container{
+							Name:  "nginx",
+							Image: "nginx:1.7.9",
+							Ports: []v1.ContainerPort{{ContainerPort: 80}},
+						})
+
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts,
+						v1.VolumeMount{
+							Name:      "shared-data",
+							MountPath: "/usr/share/shared-data",
+						})
+
+					gatewayProxyDeployment.Spec.Template.Spec.Volumes = append(
+						gatewayProxyDeployment.Spec.Template.Spec.Volumes,
+						v1.Volume{
+							Name: "shared-data",
+							VolumeSource: v1.VolumeSource{
+								EmptyDir: &v1.EmptyDirVolumeSource{},
+							},
+						})
+
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.extraContainersHelper=gloo.testcontainer"
+					prepareMakefile(helmFlags)
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 			})
