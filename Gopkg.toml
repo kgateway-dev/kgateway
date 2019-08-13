@@ -89,3 +89,8 @@
 [[override]]
   name = "golang.org/x/net"
   revision = "aaf60122140d3fcf75376d319f0554393160eb50"
+
+[[override]]
+  name = "k8s.io/klog"
+  revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
+  source = "github.com/stefanprodan/klog"
