@@ -37,6 +37,7 @@ func init() {
 	GlooSystemKinds = []string{
 		"Deployment",
 		"Service",
+		"ServiceAccount",
 		"ConfigMap",
 	}
 
