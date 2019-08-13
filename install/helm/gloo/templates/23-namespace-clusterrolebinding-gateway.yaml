@@ -11,6 +11,8 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": "pre-install"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -33,6 +35,8 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": "pre-install"
 subjects:
 - kind: ServiceAccount
   name: discovery
@@ -52,6 +56,8 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": "pre-install"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -71,6 +77,8 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": "pre-install"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -96,6 +104,8 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": "pre-install"
 subjects:
 - kind: ServiceAccount
   name: gateway
@@ -115,6 +125,8 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": "pre-install"
 subjects:
 - kind: ServiceAccount
   name: gateway
