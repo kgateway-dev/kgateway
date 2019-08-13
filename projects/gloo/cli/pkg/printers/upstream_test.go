@@ -10,7 +10,7 @@ var _ = Describe("UpstreamTable", func() {
 	It("handles malformed upstream (nil spec)", func() {
 		Expect(func() {
 			us := &v1.Upstream{}
-			UpstreamTable([]*v1.Upstream{us}, GinkgoWriter)
+			UpstreamTable(nil, []*v1.Upstream{us}, GinkgoWriter)
 		}).NotTo(Panic())
 	})
 })

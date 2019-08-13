@@ -148,7 +148,7 @@ func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upst
 	}
 	port := upstream.UpstreamSpec.GetAwsEc2().GetPort()
 	if port == 0 {
-		port = defaultPort
+		port = DefaultPort
 	}
 	ref := upstream.Metadata.Ref()
 	// for easier debugging, add the instance id to the xds output

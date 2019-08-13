@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Ensure Knative CRDs are installed and registered before applying manifests in knative install.
+    issueLink: https://github.com/solo-io/gloo/issues/996

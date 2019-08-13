@@ -30,7 +30,7 @@ glooctl create upstream static [flags]
   -i, --interactive         use interactive mode
       --name string         name of the resource to read or write
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default table)
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default table)
 ```
 
 ### SEE ALSO

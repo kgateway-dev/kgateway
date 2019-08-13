@@ -3,7 +3,7 @@ package options
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -24,7 +24,7 @@ type Options struct {
 type Top struct {
 	Interactive bool
 	File        string
-	Output      printers.OutputType
+	Output      printTypes.OutputType
 	Ctx         context.Context
 	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
 }
@@ -175,6 +175,7 @@ type InputVirtualService struct {
 
 const (
 	UpstreamType_Aws    = "aws"
+	UpstreamType_AwsEc2 = "ec2"
 	UpstreamType_Azure  = "azure"
 	UpstreamType_Consul = "consul"
 	UpstreamType_Kube   = "kube"
@@ -183,6 +184,7 @@ const (
 
 var UpstreamTypes = []string{
 	UpstreamType_Aws,
+	UpstreamType_AwsEc2,
 	UpstreamType_Azure,
 	UpstreamType_Consul,
 	UpstreamType_Kube,
@@ -192,6 +194,7 @@ var UpstreamTypes = []string{
 type InputUpstream struct {
 	UpstreamType string
 	Aws          InputAwsSpec
+	AwsEc2       InputAwsEc2Spec
 	Azure        InputAzureSpec
 	Consul       InputConsulSpec
 	Kube         InputKubeSpec
@@ -204,6 +207,16 @@ type InputUpstream struct {
 type InputAwsSpec struct {
 	Region string
 	Secret core.ResourceRef
+}
+
+type InputAwsEc2Spec struct {
+	Region          string
+	Secret          core.ResourceRef
+	Role            string
+	PublicIp        bool
+	Port            uint32
+	KeyFilters      []string
+	KeyValueFilters InputMapStringString
 }
 
 type InputAzureSpec struct {

@@ -20,7 +20,7 @@ glooctl route sort [flags]
 
 ```
   -h, --help                help for sort
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default table)
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default table)
 ```
 
 ### Options inherited from parent commands

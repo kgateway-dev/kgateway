@@ -3,8 +3,6 @@ package cmd
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/remove"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/route"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
@@ -13,6 +11,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/get"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/remove"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/route"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/upgrade"
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -92,8 +92,8 @@ type PreRunFunc func(*options.Options) error
 func HarmonizeDryRunAndOutputFormat(opts *options.Options) error {
 	// in order to allow table output by default, and meaningful dry runs we need to override the output default
 	// enforcing this in the PersistentPreRun saves us from having to do so in any new printers or output types
-	if opts.Create.DryRun && opts.Top.Output == printers.TABLE {
-		opts.Top.Output = printers.KUBE_YAML
+	if opts.Create.DryRun && !opts.Top.Output.IsDryRunnable() {
+		opts.Top.Output = printers.DryRunFallbackOutputType
 	}
 	return nil
 }

@@ -9,9 +9,11 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDS API
@@ -38,20 +40,25 @@ type edsWatcher struct {
 }
 
 func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstreams v1.UpstreamList, secretClient v1.SecretClient, parentRefreshRate time.Duration) *edsWatcher {
-	nsSet := map[string]bool{}
-
-	// TODO(yuval-k): is there a case where we'll want namespace all in here?
-	for _, upstream := range upstreams {
-		if secretRef := upstream.GetUpstreamSpec().GetAwsEc2().GetSecretRef(); secretRef != nil {
-			// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below
-			// instead:
-			// nsSet[upstream.GetMetadata().Namespace] = true
-			nsSet[secretRef.Namespace] = true
-		}
-	}
 	var namespaces []string
-	for ns := range nsSet {
-		namespaces = append(namespaces, ns)
+
+	// We either watch all namespaces, or create individual watchers for each namespace we watch
+	settings := settingsutil.FromContext(watchCtx)
+	if settingsutil.IsAllNamespacesFromSettings(settings) {
+		namespaces = []string{metav1.NamespaceAll}
+	} else {
+		nsSet := map[string]bool{}
+		for _, upstream := range upstreams {
+			if secretRef := upstream.GetUpstreamSpec().GetAwsEc2().GetSecretRef(); secretRef != nil {
+				// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below
+				// instead:
+				// nsSet[upstream.GetMetadata().Namespace] = true
+				nsSet[secretRef.Namespace] = true
+			}
+		}
+		for ns := range nsSet {
+			namespaces = append(namespaces, ns)
+		}
 	}
 	return &edsWatcher{
 		upstreams:         upstreams,
@@ -129,7 +136,7 @@ func (c *edsWatcher) poll() (<-chan v1.EndpointList, <-chan error, error) {
 	return endpointsChan, errs, nil
 }
 
-const defaultPort = 80
+const DefaultPort = 80
 
 // TODO[eds enhancement] - update the EDS interface to include a registration function which would ensure uniqueness among prefixes
 // ... also include a function to ensure that the endpoint name conforms to the spec (is unique, begins with expected prefix)

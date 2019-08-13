@@ -39,6 +39,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -103,6 +104,12 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if runOptions.Cache == nil {
 		runOptions.Cache = memory.NewInMemoryResourceCache()
 	}
+
+	settings := &gloov1.Settings{
+		WatchNamespaces:    runOptions.NsToWatch,
+		DiscoveryNamespace: runOptions.NsToWrite,
+	}
+	ctx = settingsutil.WithSettings(ctx, settings)
 
 	glooOpts := defaultGlooOpts(ctx, runOptions)
 

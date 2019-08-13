@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mitchellh/hashstructure"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
@@ -15,27 +16,32 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	kubev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 )
 
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
-	nsSet := map[string]bool{}
-
-	for _, upstream := range upstreamsToTrack {
-		svcNs := upstream.GetUpstreamSpec().GetKube().GetServiceNamespace()
-		// only care about kube upstreams
-		if svcNs == "" {
-			continue
-		}
-		nsSet[svcNs] = true
-	}
 	var namespaces []string
-	for ns := range nsSet {
-		namespaces = append(namespaces, ns)
+
+	settings := settingsutil.FromContext(opts.Ctx)
+	if settingsutil.IsAllNamespacesFromSettings(settings) {
+		namespaces = []string{metav1.NamespaceAll}
+	} else {
+		nsSet := map[string]bool{}
+		for _, upstream := range upstreamsToTrack {
+			svcNs := upstream.GetUpstreamSpec().GetKube().GetServiceNamespace()
+			// only care about kube upstreams
+			if svcNs == "" {
+				continue
+			}
+			nsSet[svcNs] = true
+		}
+		for ns := range nsSet {
+			namespaces = append(namespaces, ns)
+		}
 	}
 
-	// TODO(yuval-k): is there a case where we'll want namespace all in here?
 	kubeFactory := getInformerFactory(opts.Ctx, p.kube, namespaces)
 	// this can take a bit of time some make sure we are still in business
 	if opts.Ctx.Err() != nil {
