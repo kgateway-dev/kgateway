@@ -31,7 +31,7 @@ glooctl create upstream [flags]
   -i, --interactive         use interactive mode
       --name string         name of the resource to read or write
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default table)
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default table)
 ```
 
 ### SEE ALSO
@@ -40,6 +40,7 @@ glooctl create upstream [flags]
 * [glooctl create upstream aws](../glooctl_create_upstream_aws)	 - Create an Aws Upstream
 * [glooctl create upstream azure](../glooctl_create_upstream_azure)	 - Create an Azure Upstream
 * [glooctl create upstream consul](../glooctl_create_upstream_consul)	 - Create a Consul Upstream
+* [glooctl create upstream ec2](../glooctl_create_upstream_ec2)	 - Create an EC2 Upstream
 * [glooctl create upstream kube](../glooctl_create_upstream_kube)	 - Create a Kubernetes Upstream
 * [glooctl create upstream static](../glooctl_create_upstream_static)	 - Create a Static Upstream
 

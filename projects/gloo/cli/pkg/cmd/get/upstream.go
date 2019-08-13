@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
 	"github.com/spf13/cobra"
 )
 
@@ -19,8 +20,14 @@ func Upstream(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_ = printers.PrintUpstreams(upstreams, opts.Top.Output)
-			return nil
+			var xdsDump *xdsinspection.XdsDump
+			if opts.Top.Output == printers.WIDE {
+				xdsDump, err = xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, false)
+				if err != nil {
+					return err
+				}
+			}
+			return printers.PrintUpstreams(upstreams, opts.Top.Output, xdsDump)
 		},
 	}
 	return cmd

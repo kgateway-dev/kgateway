@@ -23,7 +23,7 @@ glooctl remove route [flags]
 ```
   -h, --help                help for route
   -x, --index uint32        remove the route with this index in the virtual service route list
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml) (default table)
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default table)
 ```
 
 ### Options inherited from parent commands

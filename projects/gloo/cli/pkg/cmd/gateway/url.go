@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ func urlCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 		Short: "print the http endpoint for a proxy",
 		Long:  "Use this command to view the HTTP URL of a Proxy reachable from outside the cluster. You can connect to this address from a host on the same network (such as the host machine, in the case of minikube/minishift).",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ingressHost, err := cliutil.GetIngressHost(&opts.Proxy, opts.Metadata.Namespace)
+			ingressHost, err := cliutil.GetIngressHost(opts.Proxy.Name, opts.Metadata.Namespace, opts.Proxy.Port, opts.Proxy.LocalCluster)
 			if err != nil {
 				return err
 			}
@@ -41,7 +42,7 @@ func addressCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 		Short: "print the socket address for a proxy",
 		Long:  "Use this command to view the address (host:port) of a Proxy reachable from outside the cluster. You can connect to this address from a host on the same network (such as the host machine, in the case of minikube/minishift).",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ingressHost, err := cliutil.GetIngressHost(&opts.Proxy, opts.Metadata.Namespace)
+			ingressHost, err := cliutil.GetIngressHost(opts.Proxy.Name, opts.Metadata.Namespace, opts.Proxy.Port, opts.Proxy.LocalCluster)
 			if err != nil {
 				return err
 			}

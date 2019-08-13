@@ -1,4 +1,4 @@
-package settings_test
+package settingsutil_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/pkg/utils/settings"
+	. "github.com/solo-io/gloo/pkg/utils/settingsutil"
 )
 
 var _ = Describe("Crds", func() {

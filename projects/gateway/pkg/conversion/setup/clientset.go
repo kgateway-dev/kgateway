@@ -3,7 +3,7 @@ package setup
 import (
 	"context"
 
-	settingsutil "github.com/solo-io/gloo/pkg/utils/settings"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/go-utils/contextutils"
