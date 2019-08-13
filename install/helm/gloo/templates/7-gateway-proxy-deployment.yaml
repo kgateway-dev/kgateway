@@ -1,4 +1,5 @@
 {{- if .Values.gateway.enabled }}
+{{- $topScope := . }}
 {{- $global := .Values.global }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
@@ -123,7 +124,7 @@ spec:
 {{- if $spec.extraContainersHelper }}
         - name: shared-data
           mountPath: /usr/share/shared-data
-{{- include $spec.extraContainersHelper . | nindent 6 }}
+{{- include $spec.extraContainersHelper $topScope | nindent 6 }}
 {{- end }}
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
