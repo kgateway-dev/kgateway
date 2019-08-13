@@ -22,6 +22,22 @@ rules:
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
+    name: gloo-upstream-mutator
+{{- if .Values.rbac.namespaced }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+    labels:
+        app: gloo
+        gloo: rbac
+rules:
+- apiGroups: ["gloo.solo.io"]
+  resources: ["upstreams"]
+  # update is needed for status updates
+  verbs: ["get", "list", "watch", "create", "update", "delete"]
+---
+kind: {{ include "gloo.role" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
     name: kube-crd-creator
 {{- if .Values.rbac.namespaced }}
     namespace: {{ .Release.Namespace }}
@@ -48,7 +64,7 @@ rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["settings", "upstreams","upstreamgroups", "proxies"]
   # update is needed for status updates
-  verbs: ["get", "update"]
+  verbs: ["get", "list", "watch", "update"]
 ---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -63,7 +79,7 @@ metadata:
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["proxies"]
-  verbs: ["*"]
+  verbs: ["get", "list", "watch","create","update","delete"]
 ---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -79,15 +95,15 @@ rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices"]
   # update is needed for status updates
-  verbs: ["get", "update"]
+  verbs: ["get", "list", "watch", "update"]
 - apiGroups: ["gateway.solo.io"]
   resources: ["gateways"]
   # update is needed for status updates, create for creating the default ones.
-  verbs: ["get", "create", "update"]
+  verbs: ["get", "list", "watch", "create", "update"]
 - apiGroups: ["gateway.solo.io.v2"]
   resources: ["gateways"]
   # update is needed for status updates
-  verbs: ["get", "create", "update"]
+  verbs: ["get", "list", "watch", "create", "update"]
 
 {{- end -}}
 {{- end -}}
