@@ -13,6 +13,7 @@ metadata:
         gloo: rbac
     annotations:
       "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
@@ -33,6 +34,7 @@ metadata:
         gloo: rbac
     annotations:
       "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["upstreams"]
@@ -51,6 +53,7 @@ metadata:
         gloo: rbac
     annotations:
       "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["apiextensions.k8s.io"]
   resources: ["customresourcedefinitions"]
@@ -68,6 +71,7 @@ metadata:
         gloo: rbac
     annotations:
       "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["upstreams","upstreamgroups", "proxies"]
@@ -86,6 +90,7 @@ metadata:
         gloo: rbac
     annotations:
       "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["settings"]
@@ -104,6 +109,7 @@ metadata:
         gloo: rbac
     annotations:
       "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["proxies"]
@@ -121,6 +127,7 @@ metadata:
         gloo: rbac
     annotations:
       "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices"]

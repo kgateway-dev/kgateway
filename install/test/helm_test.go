@@ -16,18 +16,33 @@ import (
 	. "github.com/solo-io/go-utils/manifesttestutils"
 )
 
+func GetPodNamespaceStats() v1.EnvVar {
+	return v1.EnvVar{
+		Name:  "START_STATS_SERVER",
+		Value: "true",
+	}
+}
+
 var _ = Describe("Helm Test", func() {
 
 	Describe("gateway proxy extra annotations and crds", func() {
 		var (
-			labels       map[string]string
-			selector     map[string]string
-			testManifest TestManifest
+			labels           map[string]string
+			selector         map[string]string
+			testManifest     TestManifest
+			statsAnnotations map[string]string
 		)
 
 		prepareMakefile := func(helmFlags string) {
 			testManifest = renderManifest(helmFlags)
 		}
+		BeforeEach(func() {
+			statsAnnotations = map[string]string{
+				"prometheus.io/path":   "/metrics",
+				"prometheus.io/port":   "9091",
+				"prometheus.io/scrape": "true",
+			}
+		})
 
 		Context("gateway", func() {
 			BeforeEach(func() {
@@ -243,13 +258,14 @@ var _ = Describe("Helm Test", func() {
 					selector = map[string]string{
 						"gloo": "gloo",
 					}
-					container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar())
+					container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gloo",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gloo",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -267,7 +283,7 @@ var _ = Describe("Helm Test", func() {
 					glooDeployment = deploy
 				})
 
-				It("has a creates a deployment", func() {
+				It("should create a deployment", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
 					prepareMakefile(helmFlags)
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
@@ -292,13 +308,14 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can overwrite the container image information", func() {
-					container := GetContainerSpec("gcr.io/solo-public", "gloo", version, GetPodNamespaceEnvVar())
+					container := GetContainerSpec("gcr.io/solo-public", "gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 					container.PullPolicy = "Always"
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gloo",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gloo",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -326,13 +343,14 @@ var _ = Describe("Helm Test", func() {
 					selector = map[string]string{
 						"gloo": "gateway",
 					}
-					container := GetQuayContainerSpec("gateway", version, GetPodNamespaceEnvVar())
+					container := GetQuayContainerSpec("gateway", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gateway-v2",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gateway-v2",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -373,13 +391,14 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can overwrite the container image information", func() {
-					container := GetContainerSpec("gcr.io/solo-public", "gateway", version, GetPodNamespaceEnvVar())
+					container := GetContainerSpec("gcr.io/solo-public", "gateway", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 					container.PullPolicy = "Always"
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gateway",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gateway",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -403,13 +422,14 @@ var _ = Describe("Helm Test", func() {
 					selector = map[string]string{
 						"gloo": "discovery",
 					}
-					container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar())
+					container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "discovery",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "discovery",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -450,13 +470,14 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can overwrite the container image information", func() {
-					container := GetContainerSpec("gcr.io/solo-public", "discovery", version, GetPodNamespaceEnvVar())
+					container := GetContainerSpec("gcr.io/solo-public", "discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 					container.PullPolicy = "Always"
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "discovery",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "discovery",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -564,6 +585,7 @@ var _ = Describe("Helm Test", func() {
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
 									"gloo": "gloo"},
+								Annotations: statsAnnotations,
 							},
 							Spec: v1.PodSpec{
 								ServiceAccountName: "gloo",
@@ -581,6 +603,10 @@ var _ = Describe("Helm Test", func() {
 												ValueFrom: &v1.EnvVarSource{
 													FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 												},
+											},
+											{
+												Name:  "START_STATS_SERVER",
+												Value: "true",
 											},
 										},
 										Resources: v1.ResourceRequirements{

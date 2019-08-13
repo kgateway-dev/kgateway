@@ -25,6 +25,7 @@ var _ = Describe("SVC Accnt Test", func() {
 			Labels: map[string]string{
 				"app": "gloo",
 			},
+			Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "5"},
 		}
 	})
 

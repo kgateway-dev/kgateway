@@ -13,6 +13,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -37,6 +38,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: discovery
@@ -58,6 +60,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -79,6 +82,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -106,6 +110,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway
@@ -127,6 +132,7 @@ metadata:
     gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway

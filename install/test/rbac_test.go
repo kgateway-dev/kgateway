@@ -25,6 +25,7 @@ var _ = Describe("RBAC Test", func() {
 					"app":  "gloo",
 					"gloo": "rbac",
 				},
+				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{""},
@@ -61,6 +62,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -78,6 +80,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding"
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
 				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
 			})
@@ -92,6 +95,7 @@ var _ = Describe("RBAC Test", func() {
 					"app":  "gloo",
 					"gloo": "rbac",
 				},
+				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{"gloo.solo.io"},
@@ -119,6 +123,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -136,6 +141,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding"
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
 				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
 			})
@@ -150,6 +156,7 @@ var _ = Describe("RBAC Test", func() {
 					"app":  "gloo",
 					"gloo": "rbac",
 				},
+				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{"gloo.solo.io"},
@@ -177,6 +184,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -194,6 +202,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding"
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
 				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
 			})
@@ -208,6 +217,7 @@ var _ = Describe("RBAC Test", func() {
 					"app":  "gloo",
 					"gloo": "rbac",
 				},
+				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{"gloo.solo.io"},
@@ -243,6 +253,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -260,6 +271,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding"
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
 				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
 			})
@@ -274,6 +286,7 @@ var _ = Describe("RBAC Test", func() {
 					"app":  "gloo",
 					"gloo": "rbac",
 				},
+				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{"gloo.solo.io"},
@@ -301,6 +314,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -318,6 +332,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding"
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
 				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
 			})
@@ -332,6 +347,7 @@ var _ = Describe("RBAC Test", func() {
 					"app":  "gloo",
 					"gloo": "rbac",
 				},
+				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{"gateway.solo.io"},
@@ -367,6 +383,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -384,6 +401,7 @@ var _ = Describe("RBAC Test", func() {
 
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding"
+				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
 				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
 			})
