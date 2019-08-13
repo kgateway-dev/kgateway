@@ -62,9 +62,25 @@ metadata:
         gloo: rbac
 rules:
 - apiGroups: ["gloo.solo.io"]
-  resources: ["settings", "upstreams","upstreamgroups", "proxies"]
+  resources: ["upstreams","upstreamgroups", "proxies"]
   # update is needed for status updates
   verbs: ["get", "list", "watch", "update"]
+---
+kind: {{ include "gloo.role" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: settings-user
+{{- if .Values.rbac.namespaced }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+    labels:
+        app: gloo
+        gloo: rbac
+rules:
+- apiGroups: ["gloo.solo.io"]
+  resources: ["settings"]
+  # update is needed for status updates
+  verbs: ["get", "list", "watch", "create"]
 ---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -79,7 +95,7 @@ metadata:
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["proxies"]
-  verbs: ["get", "list", "watch","create","update","delete"]
+  verbs: ["get", "list", "watch", "create", "update", "delete"]
 ---
 kind: {{ include "gloo.role" . }}
 apiVersion: rbac.authorization.k8s.io/v1

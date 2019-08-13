@@ -84,6 +84,64 @@ var _ = Describe("RBAC Test", func() {
 		})
 	})
 
+	Context("gloo-upstream-mutator", func() {
+		BeforeEach(func() {
+			resourceBuilder = ResourceBuilder{
+				Name: "gloo-upstream-mutator",
+				Labels: map[string]string{
+					"app":  "gloo",
+					"gloo": "rbac",
+				},
+				Rules: []rbacv1.PolicyRule{
+					{
+						APIGroups: []string{"gloo.solo.io"},
+						Resources: []string{"upstreams"},
+						Verbs:     []string{"get", "list", "watch", "create", "update", "delete"},
+					},
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: "rbac.authorization.k8s.io",
+					Kind:     "ClusterRole",
+					Name:     "gloo-upstream-mutator",
+				},
+				Subjects: []rbacv1.Subject{{
+					Kind:      "ServiceAccount",
+					Name:      "discovery",
+					Namespace: namespace,
+				}},
+			}
+		})
+		Context("cluster scope", func() {
+			It("role", func() {
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
+				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
+			})
+
+			It("role binding", func() {
+				resourceBuilder.Name += "-binding-" + namespace
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
+				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
+			})
+		})
+		Context("namespace scope", func() {
+			BeforeEach(func() {
+				resourceBuilder.RoleRef.Kind = "Role"
+				resourceBuilder.Namespace = namespace
+			})
+
+			It("role", func() {
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
+				testManifest.ExpectRole(resourceBuilder.GetRole())
+			})
+
+			It("role binding", func() {
+				resourceBuilder.Name += "-binding"
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
+				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
+			})
+		})
+	})
+
 	Context("gloo-resource-reader", func() {
 		BeforeEach(func() {
 			resourceBuilder = ResourceBuilder{
@@ -95,8 +153,8 @@ var _ = Describe("RBAC Test", func() {
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{"gloo.solo.io"},
-						Resources: []string{"settings", "upstreams", "upstreamgroups", "proxies"},
-						Verbs:     []string{"get", "update"},
+						Resources: []string{"upstreams", "upstreamgroups", "proxies"},
+						Verbs:     []string{"get", "list", "watch", "update"},
 					},
 				},
 				RoleRef: rbacv1.RoleRef{
@@ -107,6 +165,72 @@ var _ = Describe("RBAC Test", func() {
 				Subjects: []rbacv1.Subject{{
 					Kind:      "ServiceAccount",
 					Name:      "gloo",
+					Namespace: namespace,
+				}},
+			}
+		})
+		Context("cluster scope", func() {
+			It("role", func() {
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
+				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
+			})
+
+			It("role binding", func() {
+				resourceBuilder.Name += "-binding-" + namespace
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false")
+				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
+			})
+		})
+		Context("namespace scope", func() {
+			BeforeEach(func() {
+				resourceBuilder.RoleRef.Kind = "Role"
+				resourceBuilder.Namespace = namespace
+			})
+
+			It("role", func() {
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
+				testManifest.ExpectRole(resourceBuilder.GetRole())
+			})
+
+			It("role binding", func() {
+				resourceBuilder.Name += "-binding"
+				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true")
+				testManifest.ExpectRoleBinding(resourceBuilder.GetRoleBinding())
+			})
+		})
+	})
+
+	Context("settings-user", func() {
+		BeforeEach(func() {
+			resourceBuilder = ResourceBuilder{
+				Name: "settings-user",
+				Labels: map[string]string{
+					"app":  "gloo",
+					"gloo": "rbac",
+				},
+				Rules: []rbacv1.PolicyRule{
+					{
+						APIGroups: []string{"gloo.solo.io"},
+						Resources: []string{"settings"},
+						Verbs:     []string{"get", "list", "watch", "create"},
+					},
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: "rbac.authorization.k8s.io",
+					Kind:     "ClusterRole",
+					Name:     "settings-user",
+				},
+				Subjects: []rbacv1.Subject{{
+					Kind:      "ServiceAccount",
+					Name:      "gloo",
+					Namespace: namespace,
+				}, {
+					Kind:      "ServiceAccount",
+					Name:      "gateway",
+					Namespace: namespace,
+				}, {
+					Kind:      "ServiceAccount",
+					Name:      "discovery",
 					Namespace: namespace,
 				}},
 			}
@@ -154,7 +278,7 @@ var _ = Describe("RBAC Test", func() {
 					{
 						APIGroups: []string{"gloo.solo.io"},
 						Resources: []string{"proxies"},
-						Verbs:     []string{"*"},
+						Verbs:     []string{"get", "list", "watch", "create", "update", "delete"},
 					},
 				},
 				RoleRef: rbacv1.RoleRef{
@@ -212,15 +336,15 @@ var _ = Describe("RBAC Test", func() {
 					{
 						APIGroups: []string{"gateway.solo.io"},
 						Resources: []string{"virtualservices"},
-						Verbs:     []string{"get", "update"},
+						Verbs:     []string{"get", "list", "watch", "update"},
 					}, {
 						APIGroups: []string{"gateway.solo.io"},
 						Resources: []string{"gateways"},
-						Verbs:     []string{"get", "create", "update"},
+						Verbs:     []string{"get", "list", "watch", "create", "update"},
 					}, {
 						APIGroups: []string{"gateway.solo.io.v2"},
 						Resources: []string{"gateways"},
-						Verbs:     []string{"get", "create", "update"},
+						Verbs:     []string{"get", "list", "watch", "create", "update"},
 					},
 				},
 				RoleRef: rbacv1.RoleRef{

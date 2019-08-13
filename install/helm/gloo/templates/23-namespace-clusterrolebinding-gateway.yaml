@@ -64,6 +64,31 @@ roleRef:
 kind: {{ include "gloo.role" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
+  name: settings-user-binding{{ include "gloo.rolebindingsuffix" . }}
+{{- if .Values.rbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
+subjects:
+- kind: ServiceAccount
+  name: gloo
+  namespace: {{ .Release.Namespace }}
+- kind: ServiceAccount
+  name: gateway
+  namespace: {{ .Release.Namespace }}
+- kind: ServiceAccount
+  name: discovery
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: {{ include "gloo.role" . }}
+  name: settings-user
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: {{ include "gloo.role" . }}Binding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
   name: gloo-resource-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
 {{- if .Values.rbac.namespaced }}
   namespace: {{ .Release.Namespace }}
