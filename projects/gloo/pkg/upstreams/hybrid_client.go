@@ -143,7 +143,6 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	upstreamsOut := make(chan v1.UpstreamList)
 
 	go func() {
-		previous := &hybridUpstreamSnapshot{upstreamsBySource: map[string]v1.UpstreamList{}}
 		var previousHash uint64
 
 		syncFunc := func() {
@@ -151,7 +150,6 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 			if currentHash == previousHash {
 				return
 			}
-			previous = current.clone()
 			toSend := current.clone()
 
 			select {
