@@ -147,7 +147,9 @@ message VirtualHost {
     // Some configuration here can be overridden by Route Plugins.
     VirtualHostPlugins virtual_host_plugins = 4;
 
-    // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+    // Defines a CORS policy for the virtual host
+    // If a CORS policy is also defined on the route matched by the request, the policies are merged.
+    // DEPRECATED set cors policy through the Virtual Host Plugin
     CorsPolicy cors_policy = 5;
 }
 
@@ -428,6 +430,7 @@ message DirectResponseAction {
 }
 
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+// DEPRECATED set cors policy through the Virtual Host Plugin
 message CorsPolicy {
     // Specifies the origins that will be allowed to make CORS requests.
     //
