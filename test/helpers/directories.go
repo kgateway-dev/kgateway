@@ -2,11 +2,12 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/onsi/gomega"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/onsi/gomega"
 )
 
 func GlooDir() string {
@@ -41,7 +42,7 @@ func GetCallerDirectory(skip ...int) (string, error) {
 }
 
 // returns absolute path to the currently executing directory
-func MustReadFile(name string) ([]byte) {
+func MustReadFile(name string) []byte {
 	dir, err := GetCallerDirectory(1)
 	Must(err)
 	b, err := ioutil.ReadFile(filepath.Join(dir, name))

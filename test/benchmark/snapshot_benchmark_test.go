@@ -4,14 +4,15 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"hash"
+	"hash/fnv"
+	"strconv"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/protoutils"
-	"hash"
-	"hash/fnv"
-	"strconv"
 )
 
 var _ = Describe("SnapshotBenchmark", func() {

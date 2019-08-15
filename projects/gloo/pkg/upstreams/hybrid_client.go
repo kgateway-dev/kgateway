@@ -145,7 +145,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 
 		syncFunc := func() {
 			currentHash := current.hash()
-			if  currentHash == previousHash {
+			if currentHash == previousHash {
 				return
 			}
 			previousHash = currentHash
