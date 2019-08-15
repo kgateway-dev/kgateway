@@ -242,11 +242,11 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
-		originalSnapshot := DiscoverySnapshot{}
 		timer := time.NewTicker(time.Second * 1)
-
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
@@ -254,7 +254,7 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			select {
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mDiscoverySnapshotOut.M(1))
-				originalSnapshot = currentSnapshot.Clone()
+				previousHash = currentHash
 			default:
 				stats.Record(ctx, mDiscoverySnapshotMissed.M(1))
 			}
