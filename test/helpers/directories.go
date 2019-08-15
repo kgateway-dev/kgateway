@@ -1,8 +1,12 @@
 package helpers
 
 import (
+	"fmt"
+	"github.com/onsi/gomega"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func GlooDir() string {
@@ -19,4 +23,32 @@ func GlooInstallDir() string {
 
 func GlooHelmChartDir() string {
 	return filepath.Join(GlooInstallDir(), "helm", "gloo")
+}
+
+// returns absolute path to the currently executing directory
+func GetCallerDirectory(skip ...int) (string, error) {
+	s := 1
+	if len(skip) > 0 {
+		s = skip[0] + 1
+	}
+	_, callerFile, _, ok := runtime.Caller(s)
+	if !ok {
+		return "", fmt.Errorf("failed to get runtime.Caller")
+	}
+	callerDir := filepath.Dir(callerFile)
+
+	return filepath.Abs(callerDir)
+}
+
+// returns absolute path to the currently executing directory
+func MustReadFile(name string) ([]byte) {
+	dir, err := GetCallerDirectory(1)
+	Must(err)
+	b, err := ioutil.ReadFile(filepath.Join(dir, name))
+	Must(err)
+	return b
+}
+
+func Must(err error) {
+	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
 }
