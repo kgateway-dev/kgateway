@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Update envoy to 1.11.1
+    issueLink: https://github.com/solo-io/gloo/pull/1028
