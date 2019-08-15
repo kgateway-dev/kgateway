@@ -11,16 +11,16 @@ import (
 
 var dumpCommands = func(namespace string) []string {
 	return []string{
-		fmt.Sprintf("echo PODS FROM %s && $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name)", namespace, namespace),
-		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo STATUS FOR %s.$i $(kubectl pod -n %s $i -o go-template=\"{{range .status.containerStatuses}}{{.state}}{{end}}\"); done", namespace, namespace, namespace),
-		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo LOGS FROM %s.$i $(kubectl logs -n %s $i --all-containers); done", namespace, namespace, namespace),
+		fmt.Sprintf("echo PODS FROM %s: && kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name", namespace, namespace),
+		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo STATUS FOR %s.$i: $(kubectl get pod -n %s $i -o go-template=\"{{range .status.containerStatuses}}{{.state}}{{end}}\"); done", namespace, namespace, namespace),
+		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo LOGS FROM %s.$i: $(kubectl logs -n %s $i --all-containers); done", namespace, namespace, namespace),
 	}
 }
 
 // dump all data from the kube cluster
 func KubeDump(namespaces ...string) (string, error) {
 	b := &bytes.Buffer{}
-	b.WriteString("Complete Kubernetes Dump\n")
+	b.WriteString("** Begin Kubernetes Dump ** \n")
 	for _, ns := range namespaces {
 		for _, command := range dumpCommands(ns) {
 			cmd := exec.Command("bash", "-c", command)
@@ -31,6 +31,7 @@ func KubeDump(namespaces ...string) (string, error) {
 			}
 		}
 	}
+	b.WriteString("** End Kubernetes Dump ** \n")
 	return b.String(), nil
 }
 
@@ -38,7 +39,7 @@ func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
 		dump, err := KubeDump(namespaces...)
 		if err != nil {
-			fmt.Fprintf(out, "getting dump failed: %v", err)
+			fmt.Fprintf(out, "getting kube dump failed: %v", err)
 		}
 		fmt.Fprintf(out, dump)
 	}
