@@ -9,7 +9,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-    gloo: {{ $name | kebabcase }}
+    gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |
@@ -21,8 +22,10 @@ data:
         role: "{{ `{{.PodNamespace}}` }}~{{ $name | kebabcase }}"
     static_resources:
 
-{{- if $spec.podTemplate.stats }}
+{{- if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig) }}
       listeners:
+{{- end }} # if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig)
+{{- if $spec.podTemplate.stats }}
         - name: prometheus_listener
           address:
             socket_address:
@@ -51,8 +54,8 @@ data:
                             - match:
                                 prefix: "/metrics"
                                 headers:
-                                - name: ":method"
-                                  exact_match: GET
+                                  - name: ":method"
+                                    exact_match: GET
                               route:
                                 prefix_rewrite: "/stats/prometheus"
                                 cluster: admin_port_cluster
@@ -60,6 +63,50 @@ data:
                       - name: envoy.router
                         config: {}
 {{- end}} # if $spec.podTemplate.stats
+{{- if $spec.podTemplate.readConfig }}
+        - name: read_config_listener
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: 8082
+          filter_chains:
+            - filters:
+                - name: envoy.http_connection_manager
+                  config:
+                    codec_type: auto
+                    stat_prefix: read_config
+                    route_config:
+                      name: read_config_route
+                      virtual_hosts:
+                        - name: read_config_host
+                          domains:
+                            - "*"
+                          routes:
+                            - match:
+                                path: "/ready"
+                                headers:
+                                  - name: ":method"
+                                    exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                            - match:
+                                prefix: "/stats"
+                                headers:
+                                  - name: ":method"
+                                    exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                            - match:
+                                 prefix: "/config_dump"
+                                 headers:
+                                   - name: ":method"
+                                     exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                    http_filters:
+                      - name: envoy.router
+                        config: {}
+{{- end}} # if $spec.podTemplate.readConfig
       clusters:
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
@@ -83,7 +130,7 @@ data:
 {{- end}} # if $spec.tracing.cluster
 {{- end}} # if $spec.tracing
 
-{{- if $spec.podTemplate.stats }}
+{{- if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig) }}
       - name: admin_port_cluster
         connect_timeout: 5.000s
         type: STATIC
@@ -97,7 +144,7 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}} # if $spec.podTemplate.stats
+{{- end}} # if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig)
 
 {{- if $spec.tracing -}}
 {{- if $spec.tracing.provider }}

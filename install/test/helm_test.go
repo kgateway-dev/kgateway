@@ -64,11 +64,13 @@ var _ = Describe("Helm Test", func() {
 		Context("gateway", func() {
 			BeforeEach(func() {
 				labels = map[string]string{
-					"gloo": translator.GatewayProxyName,
-					"app":  "gloo",
+					"app":              "gloo",
+					"gloo":             "gateway-proxy",
+					"gateway-proxy-id": "gateway-proxy-v2",
 				}
 				selector = map[string]string{
-					"gateway-proxy": "live",
+					"gateway-proxy":    "live",
+					"gateway-proxy-id": "gateway-proxy-v2",
 				}
 			})
 
@@ -108,11 +110,13 @@ var _ = Describe("Helm Test", func() {
 
 				BeforeEach(func() {
 					selector = map[string]string{
-						"gloo": "gateway-proxy-v2",
+						"gloo":             "gateway-proxy",
+						"gateway-proxy-id": "gateway-proxy-v2",
 					}
 					podLabels := map[string]string{
-						"gloo":          "gateway-proxy-v2",
-						"gateway-proxy": "live",
+						"gloo":             "gateway-proxy",
+						"gateway-proxy":    "live",
+						"gateway-proxy-id": "gateway-proxy-v2",
 					}
 					podname := v1.EnvVar{
 						Name: "POD_NAME",
@@ -236,6 +240,18 @@ var _ = Describe("Helm Test", func() {
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = fmt.Sprintf("gcr.io/solo-public/gloo-envoy-wrapper:%s", version)
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy = "Always"
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.image.pullPolicy=Always --set gatewayProxies.gatewayProxyV2.podTemplate.image.registry=gcr.io/solo-public"
+					prepareMakefile(helmFlags)
+
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
+
+				It("adds readConfig annotations", func() {
+					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-stats"] = "/stats"
+					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-ready"] = "/ready"
+					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-config_dump"] = "/config_dump"
+					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-port"] = "8082"
+
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.readConfig=true"
 					prepareMakefile(helmFlags)
 
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
@@ -498,67 +514,88 @@ var _ = Describe("Helm Test", func() {
 
 		})
 
-		Describe("gateway proxy - tracing config", func() {
+		Describe("configmaps", func() {
 			var (
-				glooConfigMapName = "gateway-proxy-v2-envoy-config"
+				gatewayProxyConfigMapName = "gateway-proxy-v2-envoy-config"
 			)
 
 			labels := map[string]string{
-				"gloo": translator.GatewayProxyName,
-				"app":  "gloo",
+				"gloo":             "gateway-proxy",
+				"app":              "gloo",
+				"gateway-proxy-id": "gateway-proxy-v2",
 			}
 
-			// helper for passing a values file
-			prepareMakefileFromValuesFile := func(valuesFile string) {
-				helmFlags := "--namespace " + namespace +
-					" --set namespace.create=true" +
-					" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test" +
-					" --values " + valuesFile
-				prepareMakefile(helmFlags)
-			}
-
-			It("has a proxy without tracing", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
-				prepareMakefile(helmFlags)
-				proxySpec := make(map[string]string)
-				proxySpec["envoy.yaml"] = confWithoutTracing
-				cmRb := ResourceBuilder{
-					Namespace: namespace,
-					Name:      glooConfigMapName,
-					Labels:    labels,
-					Data:      proxySpec,
+			Describe("gateway proxy - tracing config", func() {
+				// helper for passing a values file
+				prepareMakefileFromValuesFile := func(valuesFile string) {
+					helmFlags := "--namespace " + namespace +
+						" --set namespace.create=true" +
+						" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test" +
+						" --values " + valuesFile
+					prepareMakefile(helmFlags)
 				}
-				proxy := cmRb.GetConfigMap()
-				testManifest.ExpectConfigMapWithYamlData(proxy)
+
+				It("has a proxy without tracing", func() {
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
+					prepareMakefile(helmFlags)
+					proxySpec := make(map[string]string)
+					proxySpec["envoy.yaml"] = confWithoutTracing
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      proxySpec,
+					}
+					proxy := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(proxy)
+				})
+
+				It("has a proxy with tracing provider", func() {
+					prepareMakefileFromValuesFile("install/test/val_tracing_provider.yaml")
+					proxySpec := make(map[string]string)
+					proxySpec["envoy.yaml"] = confWithTracingProvider
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      proxySpec,
+					}
+					proxy := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(proxy)
+				})
+
+				It("has a proxy with tracing provider and cluster", func() {
+					prepareMakefileFromValuesFile("install/test/val_tracing_provider_cluster.yaml")
+					proxySpec := make(map[string]string)
+					proxySpec["envoy.yaml"] = confWithTracingProviderCluster
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      proxySpec,
+					}
+					proxy := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(proxy)
+				})
 			})
 
-			It("has a proxy with tracing provider", func() {
-				prepareMakefileFromValuesFile("install/test/val_tracing_provider.yaml")
-				proxySpec := make(map[string]string)
-				proxySpec["envoy.yaml"] = confWithTracingProvider
-				cmRb := ResourceBuilder{
-					Namespace: namespace,
-					Name:      glooConfigMapName,
-					Labels:    labels,
-					Data:      proxySpec,
-				}
-				proxy := cmRb.GetConfigMap()
-				testManifest.ExpectConfigMapWithYamlData(proxy)
+			Describe("gateway proxy -- readConfig config", func() {
+				It("has a listener for reading a subset of the admin api", func() {
+					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.podTemplate.readConfig=true"
+					prepareMakefile(helmFlags)
+					proxySpec := make(map[string]string)
+					proxySpec["envoy.yaml"] = confWithReadConfig
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      proxySpec,
+					}
+					proxy := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(proxy)
+				})
 			})
 
-			It("has a proxy with tracing provider and cluster", func() {
-				prepareMakefileFromValuesFile("install/test/val_tracing_provider_cluster.yaml")
-				proxySpec := make(map[string]string)
-				proxySpec["envoy.yaml"] = confWithTracingProviderCluster
-				cmRb := ResourceBuilder{
-					Namespace: namespace,
-					Name:      glooConfigMapName,
-					Labels:    labels,
-					Data:      proxySpec,
-				}
-				proxy := cmRb.GetConfigMap()
-				testManifest.ExpectConfigMapWithYamlData(proxy)
-			})
 		})
 
 		Context("roles", func() {
@@ -1108,6 +1145,140 @@ dynamic_resources:
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
+  cds_config:
+    ads: {}
+  lds_config:
+    ads: {}
+admin:
+  access_log_path: /dev/null
+  address:
+    socket_address:
+      address: 127.0.0.1
+      port_value: 19000 # if (empty $spec.configMap.data) ## allows full custom # range $name, $spec := .Values.gatewayProxies# if .Values.gateway.enabled`
+
+var confWithReadConfig = `
+node:
+  cluster: gateway
+  id: "{{.PodName}}.{{.PodNamespace}}"
+  metadata:
+    # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
+    role: "{{.PodNamespace}}~gateway-proxy-v2"
+static_resources:
+  listeners:
+    - name: prometheus_listener
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8081
+      filter_chains:
+        - filters:
+            - name: envoy.http_connection_manager
+              config:
+                codec_type: auto
+                stat_prefix: prometheus
+                route_config:
+                  name: prometheus_route
+                  virtual_hosts:
+                    - name: prometheus_host
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            path: "/ready"
+                            headers:
+                            - name: ":method"
+                              exact_match: GET
+                          route:
+                            cluster: admin_port_cluster
+                        - match:
+                            prefix: "/metrics"
+                            headers:
+                            - name: ":method"
+                              exact_match: GET
+                          route:
+                            prefix_rewrite: "/stats/prometheus"
+                            cluster: admin_port_cluster
+                http_filters:
+                  - name: envoy.router
+                    config: {} # if $spec.podTemplate.stats # if $spec.tracing
+    - name: read_config_listener
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8082
+      filter_chains:
+        - filters:
+          - name: envoy.http_connection_manager
+            config:
+              codec_type: auto
+              stat_prefix: read_config
+              route_config:
+                name: read_config_route
+                virtual_hosts:
+                - name: read_config_host
+                  domains:
+                  - "*"
+                  routes:
+                  - match:
+                      path: "/ready"
+                      headers:
+                        - name: ":method"
+                          exact_match: GET
+                    route:
+                      cluster: admin_port_cluster
+                  - match:
+                      prefix: "/stats"
+                      headers:
+                        - name: ":method"
+                          exact_match: GET
+                    route:
+                      cluster: admin_port_cluster
+                  - match:
+                      prefix: "/config_dump"
+                      headers:
+                        - name: ":method"
+                          exact_match: GET
+                    route:
+                      cluster: admin_port_cluster
+              http_filters:
+                - name: envoy.router
+                  config: {}
+  clusters:
+  - name: gloo.gloo-system.svc.cluster.local:9977
+    alt_stat_name: xds_cluster
+    connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9977
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9977
+    http2_protocol_options: {}
+    upstream_connection_options:
+      tcp_keepalive: {}
+    type: STRICT_DNS
+  - name: admin_port_cluster
+    connect_timeout: 5.000s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: admin_port_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 19000 # if $spec.podTemplate.stats
+dynamic_resources:
+  ads_config:
+    api_type: GRPC
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
+    rate_limit_settings: {}
   cds_config:
     ads: {}
   lds_config:

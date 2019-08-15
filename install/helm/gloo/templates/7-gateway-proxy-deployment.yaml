@@ -16,7 +16,8 @@ kind: DaemonSet
 metadata:
   labels:
     app: gloo
-    gloo: {{ $name | kebabcase }}
+    gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 spec:
@@ -25,11 +26,13 @@ spec:
   {{- end}}
   selector:
     matchLabels:
-      gloo: {{ $name | kebabcase }}
+      gloo: gateway-proxy
+      gateway-proxy-id: {{ $name | kebabcase }}
   template:
     metadata:
       labels:
-        gloo: {{ $name | kebabcase }}
+        gloo: gateway-proxy
+        gateway-proxy-id: {{ $name | kebabcase }}
         {{- if not $isUpgrade }}
         gateway-proxy: live
         {{- end }}
@@ -43,11 +46,21 @@ spec:
 {{- end }}
 {{- if $spec.podTemplate.stats }}
 {{- if not $annotationExist }}
+{{- $annotationExist = true}}
       annotations:
 {{- end}}
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
+{{- end}}
+{{- if $spec.podTemplate.readConfig }}
+{{- if not $annotationExist }}
+      annotations:
+{{- end}}
+        readconfig-stats: /stats
+        readconfig-ready: /ready
+        readconfig-config_dump: /config_dump
+        readconfig-port: "8082"
 {{- end}}
     spec:
       containers:
