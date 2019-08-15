@@ -3,6 +3,8 @@
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
+  labels:
+    app: gloo
   name: default
   namespace: {{ .Release.Namespace }}
 spec:
