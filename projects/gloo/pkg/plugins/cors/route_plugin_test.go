@@ -3,6 +3,10 @@ package cors
 import (
 	"strings"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -49,6 +53,7 @@ var _ = Describe("Route Plugin", func() {
 				ExposeHeaders:    exposeHeaders1,
 				MaxAge:           maxAge1,
 				AllowCredentials: allowCredentials1,
+				DisableForRoute:  true,
 			})
 			outRoute := &envoyroute.Route{
 				Action: &envoyroute.Route_Route{
@@ -63,6 +68,15 @@ var _ = Describe("Route Plugin", func() {
 				ExposeHeaders:    strings.Join(exposeHeaders1, ","),
 				MaxAge:           maxAge1,
 				AllowCredentials: &types.BoolValue{Value: allowCredentials1},
+				EnabledSpecifier: &envoyroute.CorsPolicy_FilterEnabled{
+					FilterEnabled: &envoycore.RuntimeFractionalPercent{
+						DefaultValue: &envoy_type.FractionalPercent{
+							Numerator:   0,
+							Denominator: envoy_type.FractionalPercent_HUNDRED,
+						},
+						RuntimeKey: runtimeKey,
+					},
+				},
 			}
 
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)

@@ -36,6 +36,7 @@ CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 "exposeHeaders": []string
 "maxAge": string
 "allowCredentials": bool
+"disableForRoute": bool
 
 ```
 
@@ -48,6 +49,7 @@ CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 | `exposeHeaders` | `[]string` | Specifies the content for the *access-control-expose-headers* header. |  |
 | `maxAge` | `string` | Specifies the content for the *access-control-max-age* header. |  |
 | `allowCredentials` | `bool` | Specifies whether the resource allows credentials. |  |
+| `disableForRoute` | `bool` | Optional, only applies to route-specific CORS Policies, defaults to false. If set, the CORS Policy (specified on the virtual host) will be disabled for this route. |  |
 
 
 

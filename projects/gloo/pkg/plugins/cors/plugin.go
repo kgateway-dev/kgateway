@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
@@ -40,17 +46,25 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
 	corsPlugin := in.VirtualHostPlugins.GetCors()
-	if corsPlugin == nil && in.CorsPolicy == nil {
+
+	// remove this block when deprecated v1.CorsPolicy API is removed
+	if in.CorsPolicy != nil {
+		if corsPlugin != nil {
+			return InvalidDualSpecError
+		}
+		out.Cors = &envoyroute.CorsPolicy{}
+		return p.translateCommonUserCorsConfig(convertDeprecatedCorsPolicy(in.CorsPolicy), out.Cors)
+	}
+
+	if corsPlugin == nil {
 		return nil
 	}
-	if corsPlugin != nil && in.CorsPolicy != nil {
-		return InvalidDualSpecError
+	if corsPlugin.DisableForRoute {
+		contextutils.LoggerFrom(params.Ctx).Warnw("invalid virtual host cors policy: DisableForRoute only pertains to cors policies on routes",
+			zap.Any("virtual host", in.Name))
 	}
 	out.Cors = &envoyroute.CorsPolicy{}
-	if in.CorsPolicy != nil {
-		return p.translateUserCorsConfig(convertDeprecatedCorsPolicy(in.CorsPolicy), out.Cors)
-	}
-	return p.translateUserCorsConfig(corsPlugin, out.Cors)
+	return p.translateCommonUserCorsConfig(corsPlugin, out.Cors)
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
@@ -72,10 +86,14 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outRa = out.GetRoute()
 	}
 	outRa.Cors = &envoyroute.CorsPolicy{}
-	return p.translateUserCorsConfig(in.RoutePlugins.Cors, outRa.Cors)
+	if err := p.translateCommonUserCorsConfig(in.RoutePlugins.Cors, outRa.Cors); err != nil {
+		return err
+	}
+	p.translateRouteSpecificCorsConfig(in.RoutePlugins.Cors, outRa.Cors)
+	return nil
 }
 
-func (p *plugin) translateUserCorsConfig(in *cors.CorsPolicy, out *envoyroute.CorsPolicy) error {
+func (p *plugin) translateCommonUserCorsConfig(in *cors.CorsPolicy, out *envoyroute.CorsPolicy) error {
 	if len(in.AllowOrigin) == 0 && len(in.AllowOriginRegex) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
 	}
@@ -89,6 +107,23 @@ func (p *plugin) translateUserCorsConfig(in *cors.CorsPolicy, out *envoyroute.Co
 		out.AllowCredentials = &types.BoolValue{Value: in.AllowCredentials}
 	}
 	return nil
+}
+
+// not expecting this to be used
+const runtimeKey = "gloo.routeplugin.cors"
+
+func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoyroute.CorsPolicy) {
+	if in.DisableForRoute {
+		out.EnabledSpecifier = &envoyroute.CorsPolicy_FilterEnabled{
+			FilterEnabled: &core.RuntimeFractionalPercent{
+				DefaultValue: &envoy_type.FractionalPercent{
+					Numerator:   0,
+					Denominator: envoy_type.FractionalPercent_HUNDRED,
+				},
+				RuntimeKey: runtimeKey,
+			},
+		}
+	}
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {

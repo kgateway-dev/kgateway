@@ -217,6 +217,22 @@ var _ = Describe("VirtualHost Plugin", func() {
 			}
 			Expect(out).To(Equal(envoy1empty))
 		})
+		It("should process virtual hosts - ignore route filter disabled spec", func() {
+			out := &envoyroute.VirtualHost{}
+			inRoute := &v1.VirtualHost{
+				VirtualHostPlugins: &v1.VirtualHostPlugins{
+					Cors: &cors.CorsPolicy{
+						DisableForRoute: true,
+					},
+				},
+			}
+			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, inRoute, out)
+			Expect(err).To(HaveOccurred())
+			envoy1empty := &envoyroute.VirtualHost{
+				Cors: &envoyroute.CorsPolicy{},
+			}
+			Expect(out).To(Equal(envoy1empty))
+		})
 		It("should process virtual hosts - null specification", func() {
 			out := &envoyroute.VirtualHost{}
 			gloo1null := &v1.VirtualHost{
