@@ -113,14 +113,22 @@ var _ = Describe("VirtualHost Plugin with Deprecated CorsPolicy", func() {
 			out := &envoyroute.VirtualHost{}
 			gloo1null := &v1.VirtualHost{
 				VirtualHostPlugins: &v1.VirtualHostPlugins{
-					Cors: &cors.CorsPolicy{},
+					Cors: &cors.CorsPolicy{
+						AllowOrigin: []string{"new-style.dev"},
+					},
 				},
 				CorsPolicy: &v1.CorsPolicy{
-					AllowOrigin: allowOrigin1,
+					AllowOrigin: []string{"old-style.com"},
+				},
+			}
+			expected := &envoyroute.VirtualHost{
+				Cors: &envoyroute.CorsPolicy{
+					AllowOrigin: []string{"new-style.dev"},
 				},
 			}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1null, out)
-			Expect(err).To(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(Equal(expected))
 		})
 	})
 })

@@ -28,8 +28,7 @@ var _ plugins.HttpFilterPlugin = new(plugin)
 var _ plugins.RoutePlugin = new(plugin)
 
 var (
-	InvalidDualSpecError    = errors.New("invalid cors spec: must specify one of VirtualHostPlugins.Cors or CorsPolicy (deprecated) - both were provided")
-	InvalidRouteActionError = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
+	InvalidRouteActionError = errors.New("cannot use cors plugin on non-Route_Route route actions")
 )
 
 const (
@@ -49,11 +48,15 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 
 	// remove this block when deprecated v1.CorsPolicy API is removed
 	if in.CorsPolicy != nil {
-		if corsPlugin != nil {
-			return InvalidDualSpecError
+		if corsPlugin == nil {
+			out.Cors = &envoyroute.CorsPolicy{}
+			return p.translateCommonUserCorsConfig(convertDeprecatedCorsPolicy(in.CorsPolicy), out.Cors)
+		} else {
+			contextutils.LoggerFrom(params.Ctx).Warnw("multiple CorsPolicies specified. Ignoring deprecated"+
+				" CorsPolicy field and using VirtualHostPlugins.Cors spec",
+				zap.Any("virtual host", in.Name))
+			// fallthrough and use the virtual host plugin spec instead of the deprecated field
 		}
-		out.Cors = &envoyroute.CorsPolicy{}
-		return p.translateCommonUserCorsConfig(convertDeprecatedCorsPolicy(in.CorsPolicy), out.Cors)
 	}
 
 	if corsPlugin == nil {
