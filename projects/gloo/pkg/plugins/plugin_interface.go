@@ -54,9 +54,11 @@ type RoutePlugin interface {
 	ProcessRoute(params RouteParams, in *v1.Route, out *envoyroute.Route) error
 }
 
+// note: any route action plugin can be implemented as a route plugin
+// suggestion: if your plugin requires configuration from a RoutePlugin field, implement the RoutePlugin interface
 type RouteActionPlugin interface {
 	Plugin
-	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, inPlugins map[string]*RoutePlugin, out *envoyroute.RouteAction) error
+	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, out *envoyroute.RouteAction) error
 }
 
 type WeightedDestinationPlugin interface {

@@ -181,7 +181,7 @@ func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in
 			if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
 				continue
 			}
-			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), nil, out.GetRoute()); err != nil {
+			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), out.GetRoute()); err != nil {
 				report(err, "plugin error on ProcessRouteAction")
 			}
 		}
