@@ -243,7 +243,7 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
-				It("can add extra sidecar containers to the gateway deployment", func() {
+				It("can add extra sidecar containers to the gateway-proxy deployment", func() {
 					gatewayProxyDeployment.Spec.Template.Spec.Containers = append(
 						gatewayProxyDeployment.Spec.Template.Spec.Containers,
 						v1.Container{
