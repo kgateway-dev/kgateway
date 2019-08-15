@@ -39,9 +39,6 @@ func ExecuteCliOut(command *cobra.Command, args string) (string, error) {
 	os.Stdout = w
 	os.Stderr = w
 
-	command.SetArgs(strings.Split(args, " "))
-	err = command.Execute()
-
 	outC := make(chan string)
 
 	// copy the output in a separate goroutine so printing can't block indefinitely
@@ -50,6 +47,9 @@ func ExecuteCliOut(command *cobra.Command, args string) (string, error) {
 		io.Copy(&buf, r)
 		outC <- buf.String()
 	}()
+
+	command.SetArgs(strings.Split(args, " "))
+	err = command.Execute()
 
 	// back to normal state
 	w.Close()

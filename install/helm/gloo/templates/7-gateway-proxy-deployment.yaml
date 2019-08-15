@@ -1,4 +1,5 @@
 {{- if .Values.gateway.enabled }}
+{{- $topScope := . }}
 {{- $global := .Values.global }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
@@ -63,6 +64,7 @@ spec:
         readconfig-port: "8082"
 {{- end}}
     spec:
+      serviceAccountName: gateway-proxy
       containers:
       - args: ["--disable-hot-restart"]
         env:
@@ -133,6 +135,11 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $spec.extraContainersHelper }}
+        - mountPath: /usr/share/shared-data
+          name: shared-data
+{{- include $spec.extraContainersHelper $topScope | nindent 6 }}
+{{- end }}
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
       hostNetwork: true
@@ -159,5 +166,9 @@ spec:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
+      {{- if $spec.extraContainersHelper }}
+      - name: shared-data
+        emptyDir: {}
+      {{- end }}
 {{- end }}
 {{- end }}

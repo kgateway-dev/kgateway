@@ -37,6 +37,7 @@ func init() {
 	GlooSystemKinds = []string{
 		"Deployment",
 		"Service",
+		"ServiceAccount",
 		"ConfigMap",
 	}
 
@@ -44,8 +45,9 @@ func init() {
 		"ClusterRole",
 		"ClusterRoleBinding",
 	}
-
-	GlooInstallKinds = append(GlooSystemKinds, GlooRbacKinds...)
+	GlooPreInstallKinds = append(GlooPreInstallKinds, "ServiceAccount")
+	GlooPreInstallKinds = append(GlooPreInstallKinds, GlooRbacKinds...)
+	GlooInstallKinds = GlooSystemKinds
 
 	GlooGatewayUpgradeKinds = append(GlooInstallKinds, "Job")
 

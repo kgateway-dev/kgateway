@@ -4,7 +4,7 @@ Expand the name of the chart.
 */}}
 
 
-{{- define "gloo.role" -}}
+{{- define "gloo.roleKind" -}}
 {{- if .Values.rbac.namespaced -}}
 Role
 {{- else -}}

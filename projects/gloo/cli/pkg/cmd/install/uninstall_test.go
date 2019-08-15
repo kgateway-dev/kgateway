@@ -60,6 +60,7 @@ var _ = Describe("Uninstall", func() {
 		cli := NewMockKubectl(
 			"delete Deployment -l app=gloo -n gloo-system",
 			"delete Service -l app=gloo -n gloo-system",
+			"delete ServiceAccount -l app=gloo -n gloo-system",
 			"delete ConfigMap -l app=gloo -n gloo-system")
 		uninstall(cli)
 	})
@@ -69,6 +70,7 @@ var _ = Describe("Uninstall", func() {
 		cli := NewMockKubectl(
 			"delete Deployment -l app=gloo -n foo",
 			"delete Service -l app=gloo -n foo",
+			"delete ServiceAccount -l app=gloo -n foo",
 			"delete ConfigMap -l app=gloo -n foo")
 		uninstall(cli)
 	})
@@ -78,6 +80,7 @@ var _ = Describe("Uninstall", func() {
 		cli := NewMockKubectl(
 			"delete Deployment -l app=gloo -n gloo-system",
 			"delete Service -l app=gloo -n gloo-system",
+			"delete ServiceAccount -l app=gloo -n gloo-system",
 			"delete ConfigMap -l app=gloo -n gloo-system",
 			deleteCrds)
 		uninstall(cli)
@@ -88,6 +91,7 @@ var _ = Describe("Uninstall", func() {
 		cli := NewMockKubectl(
 			"delete Deployment -l app=gloo -n foo",
 			"delete Service -l app=gloo -n foo",
+			"delete ServiceAccount -l app=gloo -n foo",
 			"delete ConfigMap -l app=gloo -n foo",
 			deleteCrds)
 		uninstall(cli)

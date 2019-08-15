@@ -2,17 +2,13 @@ package test
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -20,46 +16,33 @@ import (
 	. "github.com/solo-io/go-utils/manifesttestutils"
 )
 
+func GetPodNamespaceStats() v1.EnvVar {
+	return v1.EnvVar{
+		Name:  "START_STATS_SERVER",
+		Value: "true",
+	}
+}
+
 var _ = Describe("Helm Test", func() {
 
 	Describe("gateway proxy extra annotations and crds", func() {
 		var (
-			labels        map[string]string
-			selector      map[string]string
-			getPullPolicy func() v1.PullPolicy
-			manifestYaml  string
+			labels           map[string]string
+			selector         map[string]string
+			testManifest     TestManifest
+			statsAnnotations map[string]string
 		)
 
-		BeforeEach(func() {
-			version = os.Getenv("TAGGED_VERSION")
-			if version == "" {
-				version = "dev"
-				getPullPolicy = func() v1.PullPolicy { return v1.PullAlways }
-			} else {
-				version = version[1:]
-				getPullPolicy = func() v1.PullPolicy { return v1.PullIfNotPresent }
-			}
-			manifestYaml = ""
-		})
-
-		AfterEach(func() {
-			if manifestYaml != "" {
-				os.Remove(manifestYaml)
-			}
-		})
-
 		prepareMakefile := func(helmFlags string) {
-			makefileSerializer.Lock()
-			defer makefileSerializer.Unlock()
-
-			f, err := ioutil.TempFile("", "*.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			f.Close()
-			manifestYaml = f.Name()
-
-			MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags, "OUTPUT_YAML="+manifestYaml)
-			testManifest = NewTestManifest(manifestYaml)
+			testManifest = renderManifest(helmFlags)
 		}
+		BeforeEach(func() {
+			statsAnnotations = map[string]string{
+				"prometheus.io/path":   "/metrics",
+				"prometheus.io/port":   "9091",
+				"prometheus.io/scrape": "true",
+			}
+		})
 
 		Context("gateway", func() {
 			BeforeEach(func() {
@@ -156,7 +139,7 @@ var _ = Describe("Helm Test", func() {
 							},
 						},
 					}}
-					deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = getPullPolicy()
+					deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = pullPolicy
 					deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 						{Name: "http", ContainerPort: 8080, Protocol: "TCP"},
 						{Name: "https", ContainerPort: 8443, Protocol: "TCP"},
@@ -177,7 +160,7 @@ var _ = Describe("Helm Test", func() {
 						ReadOnlyRootFilesystem:   &truez,
 						AllowPrivilegeEscalation: &falsez,
 					}
-
+					deploy.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
 					gatewayProxyDeployment = deploy
 				})
 
@@ -253,7 +236,36 @@ var _ = Describe("Helm Test", func() {
 
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.readConfig=true"
 					prepareMakefile(helmFlags)
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
 
+				It("can add extra sidecar containers to the gateway-proxy deployment", func() {
+					gatewayProxyDeployment.Spec.Template.Spec.Containers = append(
+						gatewayProxyDeployment.Spec.Template.Spec.Containers,
+						v1.Container{
+							Name:  "nginx",
+							Image: "nginx:1.7.9",
+							Ports: []v1.ContainerPort{{ContainerPort: 80}},
+						})
+
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts,
+						v1.VolumeMount{
+							Name:      "shared-data",
+							MountPath: "/usr/share/shared-data",
+						})
+
+					gatewayProxyDeployment.Spec.Template.Spec.Volumes = append(
+						gatewayProxyDeployment.Spec.Template.Spec.Volumes,
+						v1.Volume{
+							Name: "shared-data",
+							VolumeSource: v1.VolumeSource{
+								EmptyDir: &v1.EmptyDirVolumeSource{},
+							},
+						})
+
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.extraContainersHelper=gloo.testcontainer"
+					prepareMakefile(helmFlags)
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 			})
@@ -277,7 +289,7 @@ var _ = Describe("Helm Test", func() {
 					ReadOnlyRootFilesystem:   &truez,
 					AllowPrivilegeEscalation: &falsez,
 				}
-				deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = getPullPolicy()
+				deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = pullPolicy
 			}
 			Context("gloo deployment", func() {
 				var (
@@ -291,13 +303,14 @@ var _ = Describe("Helm Test", func() {
 					selector = map[string]string{
 						"gloo": "gloo",
 					}
-					container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar())
+					container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gloo",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gloo",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -311,10 +324,11 @@ var _ = Describe("Helm Test", func() {
 							v1.ResourceCPU:    resource.MustParse("500m"),
 						},
 					}
+					deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 					glooDeployment = deploy
 				})
 
-				It("has a creates a deployment", func() {
+				It("should create a deployment", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
 					prepareMakefile(helmFlags)
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
@@ -339,19 +353,21 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can overwrite the container image information", func() {
-					container := GetContainerSpec("gcr.io/solo-public", "gloo", version, GetPodNamespaceEnvVar())
+					container := GetContainerSpec("gcr.io/solo-public", "gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 					container.PullPolicy = "Always"
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gloo",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gloo",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
 					deploy.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 						{Name: "grpc", ContainerPort: 9977, Protocol: "TCP"},
 					}
+					deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 
 					glooDeployment = deploy
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.image.pullPolicy=Always --set gloo.deployment.image.registry=gcr.io/solo-public"
@@ -372,16 +388,18 @@ var _ = Describe("Helm Test", func() {
 					selector = map[string]string{
 						"gloo": "gateway",
 					}
-					container := GetQuayContainerSpec("gateway", version, GetPodNamespaceEnvVar())
+					container := GetQuayContainerSpec("gateway", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gateway-v2",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gateway-v2",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
+					deploy.Spec.Template.Spec.ServiceAccountName = "gateway"
 					gatewayDeployment = deploy
 				})
 
@@ -418,13 +436,14 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can overwrite the container image information", func() {
-					container := GetContainerSpec("gcr.io/solo-public", "gateway", version, GetPodNamespaceEnvVar())
+					container := GetContainerSpec("gcr.io/solo-public", "gateway", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 					container.PullPolicy = "Always"
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "gateway",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "gateway",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
@@ -448,16 +467,18 @@ var _ = Describe("Helm Test", func() {
 					selector = map[string]string{
 						"gloo": "discovery",
 					}
-					container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar())
+					container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "discovery",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "discovery",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
+					deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
 					discoveryDeployment = deploy
 				})
 
@@ -494,18 +515,20 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can overwrite the container image information", func() {
-					container := GetContainerSpec("gcr.io/solo-public", "discovery", version, GetPodNamespaceEnvVar())
+					container := GetContainerSpec("gcr.io/solo-public", "discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 					container.PullPolicy = "Always"
 					rb := ResourceBuilder{
-						Namespace:  namespace,
-						Name:       "discovery",
-						Labels:     labels,
-						Containers: []ContainerSpec{container},
+						Namespace:   namespace,
+						Name:        "discovery",
+						Labels:      labels,
+						Annotations: statsAnnotations,
+						Containers:  []ContainerSpec{container},
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
 
 					discoveryDeployment = deploy
+					deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.image.pullPolicy=Always --set discovery.deployment.image.registry=gcr.io/solo-public"
 					prepareMakefile(helmFlags)
 
@@ -598,122 +621,6 @@ var _ = Describe("Helm Test", func() {
 
 		})
 
-		Context("roles", func() {
-			var (
-				rules []rbacv1.PolicyRule
-			)
-			BeforeEach(func() {
-				rules = []rbacv1.PolicyRule{
-					{
-						APIGroups: []string{""},
-						Resources: []string{"pods", "services", "secrets", "endpoints", "configmaps"},
-						Verbs:     []string{"get", "list", "watch"},
-					},
-					{
-						APIGroups: []string{""},
-						Resources: []string{"namespaces"},
-						Verbs:     []string{"get", "list", "watch"},
-					},
-					{
-						APIGroups: []string{"apiextensions.k8s.io"},
-						Resources: []string{"customresourcedefinitions"},
-						Verbs:     []string{"get", "create", "update"},
-					},
-					{
-						APIGroups: []string{"gloo.solo.io"},
-						Resources: []string{"settings", "upstreams", "upstreamgroups", "proxies", "virtualservices"},
-						Verbs:     []string{"*"},
-					},
-					{
-						APIGroups: []string{"gateway.solo.io"},
-						Resources: []string{"virtualservices", "gateways"},
-						Verbs:     []string{"*"},
-					},
-					{
-						APIGroups: []string{"gateway.solo.io.v2"},
-						Resources: []string{"gateways"},
-						Verbs:     []string{"*"},
-					},
-				}
-			})
-			It("should generate cluster roles", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false"
-				prepareMakefile(helmFlags)
-				cmRb := ResourceBuilder{
-					Name: "gloo-role-gateway",
-					Labels: map[string]string{
-						"app":  "gloo",
-						"gloo": "rbac",
-					},
-					Rules: rules,
-				}
-				role := cmRb.GetClusterRole()
-				testManifest.ExpectClusterRole(role)
-			})
-			It("should generate roles instead of cluster roles", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
-				prepareMakefile(helmFlags)
-				cmRb := ResourceBuilder{
-					Namespace: namespace,
-					Name:      "gloo-role-gateway",
-					Labels: map[string]string{
-						"app":  "gloo",
-						"gloo": "rbac",
-					},
-					Rules: rules,
-				}
-				role := cmRb.GetRole()
-				testManifest.ExpectRole(role)
-			})
-
-			It("should generate cluster roles binding", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=false"
-				prepareMakefile(helmFlags)
-				cmRb := ResourceBuilder{
-					Name: "gloo-role-binding-gateway-" + namespace,
-					Labels: map[string]string{
-						"app":  "gloo",
-						"gloo": "rbac",
-					},
-					RoleRef: rbacv1.RoleRef{
-						APIGroup: "rbac.authorization.k8s.io",
-						Kind:     "ClusterRole",
-						Name:     "gloo-role-gateway",
-					},
-					Subjects: []rbacv1.Subject{{
-						Kind:      "ServiceAccount",
-						Name:      "default",
-						Namespace: namespace,
-					}},
-				}
-				roleBinding := cmRb.GetClusterRoleBinding()
-				testManifest.ExpectClusterRoleBinding(roleBinding)
-			})
-			It("should generate roles binding instead of cluster roles binding", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true --set rbac.namespaced=true"
-				prepareMakefile(helmFlags)
-				cmRb := ResourceBuilder{
-					Namespace: namespace,
-					Name:      "gloo-role-binding-gateway",
-					Labels: map[string]string{
-						"app":  "gloo",
-						"gloo": "rbac",
-					},
-					RoleRef: rbacv1.RoleRef{
-						APIGroup: "rbac.authorization.k8s.io",
-						Kind:     "Role",
-						Name:     "gloo-role-gateway",
-					},
-					Subjects: []rbacv1.Subject{{
-						Kind:      "ServiceAccount",
-						Name:      "default",
-						Namespace: namespace,
-					}},
-				}
-				roleBinding := cmRb.GetRoleBinding()
-				testManifest.ExpectRoleBinding(roleBinding)
-			})
-		})
 		Describe("merge ingress and gateway", func() {
 
 			// helper for passing a values file
@@ -744,8 +651,10 @@ var _ = Describe("Helm Test", func() {
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
 									"gloo": "gloo"},
+								Annotations: statsAnnotations,
 							},
 							Spec: v1.PodSpec{
+								ServiceAccountName: "gloo",
 								Containers: []v1.Container{
 									{
 										Name: "gloo",
@@ -760,6 +669,10 @@ var _ = Describe("Helm Test", func() {
 												ValueFrom: &v1.EnvVarSource{
 													FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 												},
+											},
+											{
+												Name:  "START_STATS_SERVER",
+												Value: "true",
 											},
 										},
 										Resources: v1.ResourceRequirements{
@@ -935,6 +848,7 @@ dynamic_resources:
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
+    rate_limit_settings: {}
   cds_config:
     ads: {}
   lds_config:
@@ -1032,6 +946,7 @@ dynamic_resources:
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
+    rate_limit_settings: {}
   cds_config:
     ads: {}
   lds_config:
@@ -1145,6 +1060,7 @@ dynamic_resources:
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
+    rate_limit_settings: {}
   cds_config:
     ads: {}
   lds_config:
