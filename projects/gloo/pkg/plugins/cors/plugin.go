@@ -1,6 +1,7 @@
 package cors
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -17,6 +19,12 @@ type plugin struct {
 
 var _ plugins.Plugin = new(plugin)
 var _ plugins.HttpFilterPlugin = new(plugin)
+var _ plugins.RoutePlugin = new(plugin)
+
+var (
+	InvalidDualSpecError    = errors.New("invalid cors spec: must specify one of VirtualHostPlugins.Cors or CorsPolicy (deprecated) - both were provided")
+	InvalidRouteActionError = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
+)
 
 func NewPlugin() *plugin {
 	return &plugin{}
@@ -27,14 +35,59 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	if in.CorsPolicy == nil {
+	corsPlugin := in.VirtualHostPlugins.GetCors()
+	if corsPlugin == nil && in.CorsPolicy == nil {
 		return nil
 	}
+	if corsPlugin != nil && in.CorsPolicy != nil {
+		return InvalidDualSpecError
+	}
 	out.Cors = &envoyroute.CorsPolicy{}
-	return p.translateUserCorsConfig(in.CorsPolicy, out.Cors)
+	if in.CorsPolicy != nil {
+		return p.translateUserCorsConfig(convertDeprectedCorsPolicy(in.CorsPolicy), out.Cors)
+	}
+	return p.translateUserCorsConfig(corsPlugin, out.Cors)
 }
 
-func (p *plugin) translateUserCorsConfig(in *v1.CorsPolicy, out *envoyroute.CorsPolicy) error {
+func convertDeprectedCorsPolicy(in *v1.CorsPolicy) *cors.CorsPolicy {
+	out := &cors.CorsPolicy{}
+	if in == nil {
+		return out
+	}
+	out.AllowCredentials = in.AllowCredentials
+	out.AllowHeaders = in.AllowHeaders
+	out.AllowOrigin = in.AllowOrigin
+	out.AllowOriginRegex = in.AllowOriginRegex
+	out.AllowMethods = in.AllowMethods
+	out.AllowHeaders = in.AllowHeaders
+	out.ExposeHeaders = in.ExposeHeaders
+	out.MaxAge = in.MaxAge
+	out.AllowCredentials = in.AllowCredentials
+	return out
+}
+
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+	corsPlugin := in.RoutePlugins.GetCors()
+	if corsPlugin == nil {
+		return nil
+	}
+	// the cors plugin should only be used on routes that are of type envoyroute.Route_Route
+	if out.Action != nil && out.GetRoute() == nil {
+		return InvalidRouteActionError
+	}
+	// we have already ensured that the output route action is either nil or of the proper type
+	// if it is nil, we initialize it prior to transforming it
+	outRa := out.GetRoute()
+	if outRa == nil {
+		out.Action = &envoyroute.Route_Route{
+			Route: &envoyroute.RouteAction{},
+		}
+		outRa = out.GetRoute()
+	}
+	return p.translateUserCorsConfig(in.RoutePlugins.Cors, outRa.Cors)
+}
+
+func (p *plugin) translateUserCorsConfig(in *cors.CorsPolicy, out *envoyroute.CorsPolicy) error {
 	if len(in.AllowOrigin) == 0 && len(in.AllowOriginRegex) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
 	}
