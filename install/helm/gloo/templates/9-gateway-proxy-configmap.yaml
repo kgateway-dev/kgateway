@@ -54,8 +54,8 @@ data:
                             - match:
                                 prefix: "/metrics"
                                 headers:
-                                  - name: ":method"
-                                    exact_match: GET
+                                - name: ":method"
+                                  exact_match: GET
                               route:
                                 prefix_rewrite: "/stats/prometheus"
                                 cluster: admin_port_cluster
