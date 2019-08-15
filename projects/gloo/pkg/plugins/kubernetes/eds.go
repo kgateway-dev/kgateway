@@ -3,10 +3,10 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"sort"
 	"strings"
 
-	"github.com/mitchellh/hashstructure"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
@@ -247,7 +247,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 		// sort refs for idempotency
 		sort.Slice(refs, func(i, j int) bool { return refs[i].Key() < refs[j].Key() })
 
-		hash, _ := hashstructure.Hash(addr, nil)
+		hash := fnv.New64().Sum([]byte(fmt.Sprintf("%+v", addr)))
 		dnsname := strings.Map(func(r rune) rune {
 			if '0' <= r && r <= '9' {
 				return r

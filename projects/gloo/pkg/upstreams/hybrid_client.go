@@ -2,6 +2,7 @@ package upstreams
 
 import (
 	"context"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -140,10 +141,14 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 
 	go func() {
 		previous := &hybridUpstreamSnapshot{upstreamsBySource: map[string]v1.UpstreamList{}}
+		var previousHash uint64
+
 		syncFunc := func() {
-			if current.hash() == previous.hash() {
+			currentHash := current.hash()
+			if  currentHash == previousHash {
 				return
 			}
+			previousHash = currentHash
 			previous = current.clone()
 			toSend := current.clone()
 			upstreamsOut <- toSend.toList()
@@ -151,6 +156,8 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 
 		// First time - sync the current state
 		syncFunc()
+		timer := time.NewTicker(time.Second * 1)
+		var needsSync bool
 
 		for {
 			select {
@@ -162,8 +169,13 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 				return
 			case upstreamWithSource, ok := <-collectUpstreamsChan:
 				if ok {
+					needsSync = true
 					current.setUpstreams(upstreamWithSource.source, upstreamWithSource.upstreams)
+				}
+			case <-timer.C:
+				if needsSync {
 					syncFunc()
+					needsSync = false
 				}
 			}
 		}
