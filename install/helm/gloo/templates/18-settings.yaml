@@ -9,10 +9,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   bindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
-{{- if .Values.settings.singleNamespace }}
-  discoveryNamespace: {{ .Release.Namespace }}
-{{- else }}
+{{- if .Values.settings.writeNamespace }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
+{{- else }}
+  discoveryNamespace: {{ .Release.Namespace }}
 {{- end }}
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
