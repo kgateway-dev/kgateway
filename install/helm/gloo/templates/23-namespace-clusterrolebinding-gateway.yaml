@@ -1,7 +1,7 @@
 {{- if .Values.rbac.create }}
 {{- if .Values.gateway.enabled }}
 ---
-kind: {{ include "gloo.role" . }}Binding
+kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-resource-watcher-binding{{ include "gloo.rolebindingsuffix" . }}
@@ -22,11 +22,11 @@ subjects:
   name: discovery
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.role" . }}
+  kind: {{ include "gloo.roleKind" . }}
   name: kube-resource-watcher
   apiGroup: rbac.authorization.k8s.io
 ---
-kind: {{ include "gloo.role" . }}Binding
+kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-upstream-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
@@ -44,11 +44,11 @@ subjects:
   name: discovery
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.role" . }}
+  kind: {{ include "gloo.roleKind" . }}
   name: gloo-upstream-mutator
   apiGroup: rbac.authorization.k8s.io
 ---
-kind: {{ include "gloo.role" . }}Binding
+kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
@@ -66,11 +66,11 @@ subjects:
   name: gloo
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.role" . }}
+  kind: {{ include "gloo.roleKind" . }}
   name: gloo-resource-reader
   apiGroup: rbac.authorization.k8s.io
 ---
-kind: {{ include "gloo.role" . }}Binding
+kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: settings-user-binding{{ include "gloo.rolebindingsuffix" . }}
@@ -94,11 +94,11 @@ subjects:
   name: discovery
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.role" . }}
+  kind: {{ include "gloo.roleKind" . }}
   name: settings-user
   apiGroup: rbac.authorization.k8s.io
 ---
-kind: {{ include "gloo.role" . }}Binding
+kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-resource-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
@@ -116,11 +116,11 @@ subjects:
   name: gateway
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.role" . }}
+  kind: {{ include "gloo.roleKind" . }}
   name: gloo-resource-mutator
   apiGroup: rbac.authorization.k8s.io
 ---
-kind: {{ include "gloo.role" . }}Binding
+kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gateway-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
@@ -138,7 +138,7 @@ subjects:
   name: gateway
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.role" . }}
+  kind: {{ include "gloo.roleKind" . }}
   name: gateway-resource-reader
   apiGroup: rbac.authorization.k8s.io
 {{- end -}}
