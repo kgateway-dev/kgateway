@@ -26,6 +26,10 @@ var (
 	InvalidRouteActionError = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
 )
 
+const (
+	pluginStage = plugins.PostInAuth
+)
+
 func NewPlugin() *plugin {
 	return &plugin{}
 }
@@ -44,26 +48,9 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	}
 	out.Cors = &envoyroute.CorsPolicy{}
 	if in.CorsPolicy != nil {
-		return p.translateUserCorsConfig(convertDeprectedCorsPolicy(in.CorsPolicy), out.Cors)
+		return p.translateUserCorsConfig(convertDeprecatedCorsPolicy(in.CorsPolicy), out.Cors)
 	}
 	return p.translateUserCorsConfig(corsPlugin, out.Cors)
-}
-
-func convertDeprectedCorsPolicy(in *v1.CorsPolicy) *cors.CorsPolicy {
-	out := &cors.CorsPolicy{}
-	if in == nil {
-		return out
-	}
-	out.AllowCredentials = in.AllowCredentials
-	out.AllowHeaders = in.AllowHeaders
-	out.AllowOrigin = in.AllowOrigin
-	out.AllowOriginRegex = in.AllowOriginRegex
-	out.AllowMethods = in.AllowMethods
-	out.AllowHeaders = in.AllowHeaders
-	out.ExposeHeaders = in.ExposeHeaders
-	out.MaxAge = in.MaxAge
-	out.AllowCredentials = in.AllowCredentials
-	return out
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
@@ -84,6 +71,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		}
 		outRa = out.GetRoute()
 	}
+	outRa.Cors = &envoyroute.CorsPolicy{}
 	return p.translateUserCorsConfig(in.RoutePlugins.Cors, outRa.Cors)
 }
 
@@ -103,11 +91,6 @@ func (p *plugin) translateUserCorsConfig(in *cors.CorsPolicy, out *envoyroute.Co
 	return nil
 }
 
-const (
-	// filter info
-	pluginStage = plugins.PostInAuth
-)
-
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
 		{
@@ -115,4 +98,21 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 			Stage:      pluginStage,
 		},
 	}, nil
+}
+
+func convertDeprecatedCorsPolicy(in *v1.CorsPolicy) *cors.CorsPolicy {
+	out := &cors.CorsPolicy{}
+	if in == nil {
+		return out
+	}
+	out.AllowCredentials = in.AllowCredentials
+	out.AllowHeaders = in.AllowHeaders
+	out.AllowOrigin = in.AllowOrigin
+	out.AllowOriginRegex = in.AllowOriginRegex
+	out.AllowMethods = in.AllowMethods
+	out.AllowHeaders = in.AllowHeaders
+	out.ExposeHeaders = in.ExposeHeaders
+	out.MaxAge = in.MaxAge
+	out.AllowCredentials = in.AllowCredentials
+	return out
 }

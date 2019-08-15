@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-var _ = Describe("Plugin", func() {
+var _ = Describe("VirtualHost Plugin", func() {
 	var (
 		params plugins.VirtualHostParams
 		plugin plugins.Plugin
@@ -71,12 +71,12 @@ var _ = Describe("Plugin", func() {
 		})
 		It("should process virtual hosts - minimal specification", func() {
 			out := &envoyroute.VirtualHost{}
-			gloo1min := &v1.VirtualHost{
+			inRoute := &v1.VirtualHost{
 				CorsPolicy: &v1.CorsPolicy{
 					AllowOrigin: allowOrigin1,
 				},
 			}
-			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1min, out)
+			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, inRoute, out)
 			Expect(err).NotTo(HaveOccurred())
 			envoy1min := &envoyroute.VirtualHost{
 				Cors: &envoyroute.CorsPolicy{
@@ -87,10 +87,10 @@ var _ = Describe("Plugin", func() {
 		})
 		It("should process virtual hosts - empty specification", func() {
 			out := &envoyroute.VirtualHost{}
-			gloo1empty := &v1.VirtualHost{
+			inRoute := &v1.VirtualHost{
 				CorsPolicy: &v1.CorsPolicy{},
 			}
-			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1empty, out)
+			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, inRoute, out)
 			Expect(err).To(HaveOccurred())
 			envoy1empty := &envoyroute.VirtualHost{
 				Cors: &envoyroute.CorsPolicy{},
@@ -108,5 +108,4 @@ var _ = Describe("Plugin", func() {
 			Expect(out).To(Equal(envoy1null))
 		})
 	})
-
 })
