@@ -5,9 +5,10 @@
 package mock_kubernetes
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/client-go/listers/core/v1"
-	reflect "reflect"
 )
 
 // MockKubePluginSharedFactory is a mock of KubePluginSharedFactory interface
