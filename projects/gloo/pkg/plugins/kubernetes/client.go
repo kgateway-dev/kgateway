@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+//go:generate mockgen -destination ./mocks/kubesharedfactory_mock.go github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes KubePluginSharedFactory
 type KubePluginSharedFactory interface {
 	EndpointsLister(ns string) kubelisters.EndpointsLister
 	Subscribe() <-chan struct{}
