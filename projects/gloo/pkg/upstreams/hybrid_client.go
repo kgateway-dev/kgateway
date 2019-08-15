@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
@@ -100,7 +103,7 @@ type upstreamsWithSource struct {
 
 func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	ctx := opts.Ctx
+	ctx := contextutils.WithLogger(opts.Ctx, "hybrid upstream client")
 	var (
 		eg                   = errgroup.Group{}
 		collectErrsChan      = make(chan error)
@@ -148,10 +151,16 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 			if currentHash == previousHash {
 				return
 			}
-			previousHash = currentHash
 			previous = current.clone()
 			toSend := current.clone()
-			upstreamsOut <- toSend.toList()
+
+			select {
+			case upstreamsOut <- toSend.toList():
+				previousHash = currentHash
+			default:
+				contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
+					"channel (must be full), retrying in 1s", zap.Uint64("list hash", currentHash))
+			}
 		}
 
 		// First time - sync the current state
