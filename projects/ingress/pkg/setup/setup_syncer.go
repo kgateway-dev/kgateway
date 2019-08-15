@@ -269,7 +269,7 @@ func RunIngress(opts Opts) error {
 			if err != nil {
 				return err
 			}
-			go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, knativeTranslatorEventLoopErrs, "cluster_ingress_translator_event_loop")
+			go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, knativeTranslatorEventLoopErrs, "knative_ingress_translator_event_loop")
 		}
 	}
 
