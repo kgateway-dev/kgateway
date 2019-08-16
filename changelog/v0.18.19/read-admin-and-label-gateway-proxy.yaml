@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Support Knative Ingress' TLS configuration to support default keys for ServerCertificate and PrivateKey
+    issueLink: https://github.com/solo-io/gloo/issues/1040

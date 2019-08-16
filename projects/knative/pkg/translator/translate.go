@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 	"knative.dev/serving/pkg/network"
 
@@ -91,12 +93,12 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 
 			ref := secret.Metadata.Ref()
 
-			if tls.ServerCertificate != "" {
+			if tls.ServerCertificate != "" && tls.ServerCertificate != v1.TLSCertKey {
 				contextutils.LoggerFrom(ctx).Warn("Custom ServerCertificate filenames are not currently supported by Gloo")
 				continue
 			}
 
-			if tls.PrivateKey != "" {
+			if tls.PrivateKey != "" && tls.PrivateKey != v1.TLSPrivateKeyKey {
 				contextutils.LoggerFrom(ctx).Warn("Custom PrivateKey filenames are not currently supported by Gloo")
 				continue
 			}
