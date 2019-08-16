@@ -45,7 +45,7 @@ spec:
         {{ $key }}: {{ $value | quote }}
       {{- end }}
 {{- end }}
-{{- if $spec.podTemplate.stats }}
+{{- if $spec.stats }}
 {{- if not $annotationExist }}
 {{- $annotationExist = true}}
       annotations:
@@ -54,7 +54,7 @@ spec:
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
 {{- end}}
-{{- if $spec.podTemplate.readConfig }}
+{{- if $spec.readConfig }}
 {{- if not $annotationExist }}
       annotations:
 {{- end}}

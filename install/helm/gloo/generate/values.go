@@ -146,6 +146,8 @@ type GatewayProxy struct {
 	Service               *GatewayProxyService     `json:"service,omitempty"`
 	Tracing               *Tracing                 `json:"tracing,omitempty"`
 	ExtraContainersHelper string                   `json:"extraContainersHelper,omitempty"`
+	Stats                 bool                     `json:"stats" desc:"enable prometheus stats"`
+	ReadConfig            bool                     `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 }
 
 type GatewayProxyKind struct {
@@ -165,8 +167,6 @@ type GatewayProxyPodTemplate struct {
 	ExtraAnnotations map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
 	NodeName         string                `json:"nodeName,omitempty" desc:"name of node to run on"`
 	NodeSelector     map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Stats            bool                  `json:"stats" desc:"enable prometheus stats"`
-	ReadConfig       bool                  `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
 	Probes           bool                  `json:"probes" desc:"enable liveness and readiness probes"`
 	Resources        *ResourceRequirements `json:"resources"`

@@ -22,10 +22,10 @@ data:
         role: "{{ `{{.PodNamespace}}` }}~{{ $name | kebabcase }}"
     static_resources:
 
-{{- if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig) }}
+{{- if or ($spec.stats) ($spec.readConfig) }}
       listeners:
-{{- end }} # if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig)
-{{- if $spec.podTemplate.stats }}
+{{- end }} # if or ($spec.stats) ($spec.readConfig)
+{{- if $spec.stats }}
         - name: prometheus_listener
           address:
             socket_address:
@@ -62,8 +62,8 @@ data:
                     http_filters:
                       - name: envoy.router
                         config: {}
-{{- end}} # if $spec.podTemplate.stats
-{{- if $spec.podTemplate.readConfig }}
+{{- end}} # if $spec.stats
+{{- if $spec.readConfig }}
         - name: read_config_listener
           address:
             socket_address:
@@ -106,7 +106,7 @@ data:
                     http_filters:
                       - name: envoy.router
                         config: {}
-{{- end}} # if $spec.podTemplate.readConfig
+{{- end}} # if $spec.readConfig
       clusters:
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
@@ -130,7 +130,7 @@ data:
 {{- end}} # if $spec.tracing.cluster
 {{- end}} # if $spec.tracing
 
-{{- if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig) }}
+{{- if or ($spec.stats) ($spec.readConfig) }}
       - name: admin_port_cluster
         connect_timeout: 5.000s
         type: STATIC
@@ -144,7 +144,7 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}} # if or ($spec.podTemplate.stats) ($spec.podTemplate.readConfig)
+{{- end}} # if or ($spec.stats) ($spec.readConfig)
 
 {{- if $spec.tracing -}}
 {{- if $spec.tracing.provider }}

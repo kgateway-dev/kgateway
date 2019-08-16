@@ -234,7 +234,7 @@ var _ = Describe("Helm Test", func() {
 					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-config_dump"] = "/config_dump"
 					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-port"] = "8082"
 
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.readConfig=true"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.readConfig=true"
 					prepareMakefile(helmFlags)
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
@@ -604,7 +604,7 @@ var _ = Describe("Helm Test", func() {
 
 			Describe("gateway proxy -- readConfig config", func() {
 				It("has a listener for reading a subset of the admin api", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.podTemplate.readConfig=true"
+					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.readConfig=true"
 					prepareMakefile(helmFlags)
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = confWithReadConfig
@@ -809,7 +809,7 @@ static_resources:
                             cluster: admin_port_cluster
                 http_filters:
                   - name: envoy.router
-                    config: {} # if $spec.podTemplate.stats # if $spec.tracing
+                    config: {} # if $spec.stats # if $spec.tracing
 
 
   clusters:
@@ -841,7 +841,7 @@ static_resources:
             address:
               socket_address:
                 address: 127.0.0.1
-                port_value: 19000 # if $spec.podTemplate.stats
+                port_value: 19000 # if $spec.stats
 
 dynamic_resources:
   ads_config:
@@ -905,7 +905,7 @@ static_resources:
                             cluster: admin_port_cluster
                 http_filters:
                   - name: envoy.router
-                    config: {} # if $spec.podTemplate.stats
+                    config: {} # if $spec.stats
   clusters:
   - name: gloo.gloo-system.svc.cluster.local:9977
     alt_stat_name: xds_cluster
@@ -935,7 +935,7 @@ static_resources:
             address:
               socket_address:
                 address: 127.0.0.1
-                port_value: 19000 # if $spec.podTemplate.stats
+                port_value: 19000 # if $spec.stats
 tracing:
   http:
     another: line
@@ -1003,7 +1003,7 @@ static_resources:
                             cluster: admin_port_cluster
                 http_filters:
                   - name: envoy.router
-                    config: {} # if $spec.podTemplate.stats
+                    config: {} # if $spec.stats
   clusters:
   - name: gloo.gloo-system.svc.cluster.local:9977
     alt_stat_name: xds_cluster
@@ -1047,7 +1047,7 @@ static_resources:
             address:
               socket_address:
                 address: 127.0.0.1
-                port_value: 19000 # if $spec.podTemplate.stats
+                port_value: 19000 # if $spec.stats
 tracing:
   http:
     typed_config:
@@ -1116,7 +1116,7 @@ static_resources:
                             cluster: admin_port_cluster
                 http_filters:
                   - name: envoy.router
-                    config: {} # if $spec.podTemplate.stats # if $spec.tracing
+                    config: {} # if $spec.stats # if $spec.tracing
     - name: read_config_listener
       address:
         socket_address:
@@ -1188,7 +1188,7 @@ static_resources:
             address:
               socket_address:
                 address: 127.0.0.1
-                port_value: 19000 # if $spec.podTemplate.stats
+                port_value: 19000 # if $spec.stats
 dynamic_resources:
   ads_config:
     api_type: GRPC

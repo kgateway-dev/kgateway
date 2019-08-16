@@ -46,6 +46,7 @@ gateway:
 
 gatewayProxies:
   gatewayProxyV2:
+    stats: true
     kind:
        deployment:
          replicas: 1
@@ -53,7 +54,6 @@ gatewayProxies:
       probes: false
       image:
         repository: gloo-envoy-wrapper
-      stats: true
       httpPort: 8080
       httpsPort: 8443
     service:
