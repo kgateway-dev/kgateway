@@ -529,7 +529,9 @@ type VirtualHost struct {
 	// Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host.
 	// Some configuration here can be overridden by Route Plugins.
 	VirtualHostPlugins *VirtualHostPlugins `protobuf:"bytes,4,opt,name=virtual_host_plugins,json=virtualHostPlugins,proto3" json:"virtual_host_plugins,omitempty"`
-	// CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+	// Defines a CORS policy for the virtual host
+	// If a CORS policy is also defined on the route matched by the request, the policies are merged.
+	// DEPRECATED set cors policy through the Virtual Host Plugin
 	CorsPolicy           *CorsPolicy `protobuf:"bytes,5,opt,name=cors_policy,json=corsPolicy,proto3" json:"cors_policy,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
@@ -2000,6 +2002,7 @@ func (m *DirectResponseAction) GetBody() string {
 }
 
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+// DEPRECATED set cors policy through the Virtual Host Plugin
 type CorsPolicy struct {
 	// Specifies the origins that will be allowed to make CORS requests.
 	//

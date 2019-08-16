@@ -102,6 +102,7 @@ to be usable by Gloo.
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "stats": .stats.plugins.gloo.solo.io.Stats
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
+"cors": .cors.plugins.gloo.solo.io.CorsPolicy
 
 ```
 
@@ -111,6 +112,7 @@ to be usable by Gloo.
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host |  |
+| `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. |  |
 
 
 
@@ -135,6 +137,7 @@ to be usable by Gloo.
 "shadowing": .shadowing.plugins.gloo.solo.io.RouteShadowing
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "hostRewrite": .hostrewrite.plugins.gloo.solo.io.HostRewrite
+"cors": .cors.plugins.gloo.solo.io.CorsPolicy
 
 ```
 
@@ -150,6 +153,7 @@ to be usable by Gloo.
 | `shadowing` | [.shadowing.plugins.gloo.solo.io.RouteShadowing](../plugins/shadowing/shadowing.proto.sk#routeshadowing) | Specifies traffic shadowing configuration for the route. See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy |  |
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on this Route |  |
 | `hostRewrite` | [.hostrewrite.plugins.gloo.solo.io.HostRewrite](../plugins/hostrewrite/hostrewrite.proto.sk#hostrewrite) | Rewrite the Host header for requests matched on this route |  |
+| `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |  |
 
 
 

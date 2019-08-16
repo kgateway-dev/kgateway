@@ -2,6 +2,10 @@ package upstreams
 
 import (
 	"context"
+	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -99,7 +103,7 @@ type upstreamsWithSource struct {
 
 func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
 	opts = opts.WithDefaults()
-	ctx := opts.Ctx
+	ctx := contextutils.WithLogger(opts.Ctx, "hybrid upstream client")
 	var (
 		eg                   = errgroup.Group{}
 		collectErrsChan      = make(chan error)
@@ -139,18 +143,28 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 	upstreamsOut := make(chan v1.UpstreamList)
 
 	go func() {
-		previous := &hybridUpstreamSnapshot{upstreamsBySource: map[string]v1.UpstreamList{}}
+		var previousHash uint64
+
 		syncFunc := func() {
-			if current.hash() == previous.hash() {
+			currentHash := current.hash()
+			if currentHash == previousHash {
 				return
 			}
-			previous = current.clone()
 			toSend := current.clone()
-			upstreamsOut <- toSend.toList()
+
+			select {
+			case upstreamsOut <- toSend.toList():
+				previousHash = currentHash
+			default:
+				contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
+					"channel (must be full), retrying in 1s", zap.Uint64("list hash", currentHash))
+			}
 		}
 
 		// First time - sync the current state
 		syncFunc()
+		timer := time.NewTicker(time.Second * 1)
+		var needsSync bool
 
 		for {
 			select {
@@ -162,8 +176,13 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 				return
 			case upstreamWithSource, ok := <-collectUpstreamsChan:
 				if ok {
+					needsSync = true
 					current.setUpstreams(upstreamWithSource.source, upstreamWithSource.upstreams)
+				}
+			case <-timer.C:
+				if needsSync {
 					syncFunc()
+					needsSync = false
 				}
 			}
 		}

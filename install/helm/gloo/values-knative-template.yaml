@@ -8,6 +8,7 @@ k8s:
   clusterName: cluster.local
 
 settings:
+  create: true
   integrations:
     knative:
       enabled: true

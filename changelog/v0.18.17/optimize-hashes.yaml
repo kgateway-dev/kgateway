@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    description: "Optimization: reduce number of calls to reflection-based hash functions"
+
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.10.10
+    description: Update solo-kit to version 0.10.10.
+    issueLink: https://github.com/solo-io/gloo/issues/706

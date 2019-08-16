@@ -76,6 +76,17 @@ var _ = Describe("Install", func() {
 		}
 	}
 
+	withSettings := func(kinds []string) []string {
+		// default knative values create Settings
+		kindsWithSettings := make([]string, len(kinds))
+		for _, kind := range kinds {
+			kindsWithSettings = append(kindsWithSettings, kind)
+		}
+		kindsWithSettings = append(kindsWithSettings, "Settings")
+
+		return kindsWithSettings
+	}
+
 	Context("Gateway with default values", func() {
 		BeforeEach(func() {
 			spec, err := install.GetInstallSpec(&opts, constants.GatewayValuesFileName)
@@ -232,7 +243,8 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			expectKinds(validator.resources, install.GlooInstallKinds)
+
+			expectKinds(validator.resources, withSettings(install.GlooInstallKinds))
 			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
@@ -275,7 +287,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			expectKinds(validator.resources, install.GlooInstallKinds)
+			expectKinds(validator.resources, withSettings(install.GlooInstallKinds))
 			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
@@ -317,7 +329,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			expectKinds(validator.resources, install.GlooInstallKinds)
+			expectKinds(validator.resources, withSettings(install.GlooInstallKinds))
 			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
