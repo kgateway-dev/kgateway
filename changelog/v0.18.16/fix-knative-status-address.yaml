@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix default address being configured on knative lb status
+    issueLink: https://github.com/solo-io/gloo/issues/1017

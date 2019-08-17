@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow configuring the QPS and burst settings for kube clients
+    issueLink: https://github.com/solo-io/gloo/pull/970

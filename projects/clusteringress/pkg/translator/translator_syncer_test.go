@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	v1alpha12 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
@@ -17,6 +16,7 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	v1alpha12 "knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 var _ = Describe("TranslatorSyncer", func() {
@@ -24,7 +24,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
 		proxyClient, _ := v1.NewProxyClient(&factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
-		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{}}
+		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
+			ObjectMeta: v12.ObjectMeta{Generation: 1},
+		}}
 		knativeClient := &mockCiClient{ci: toKube(clusterIngress)}
 
 		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, make(chan error)).(*translatorSyncer)
@@ -43,7 +45,8 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.propagateProxyStatus(context.TODO(), proxy, v1alpha1.ClusterIngressList{clusterIngress})
 		Expect(err).NotTo(HaveOccurred())
 
-		ci, err := knativeClient.Get(clusterIngress.Name, v12.GetOptions{})
+		var ci *v1alpha12.ClusterIngress
+		ci, err = knativeClient.Get(clusterIngress.Name, v12.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(ci.Status.IsReady()).To(BeTrue())

@@ -17,15 +17,19 @@ spec:
       - st
   scope: Namespaced
   version: v1
+  versions:
+    - name: v1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: gateways.gateway.solo.io
+  name: gateways.gateway.solo.io.v2
   annotations:
     "helm.sh/hook": crd-install
 spec:
-  group: gateway.solo.io
+  group: gateway.solo.io.v2
   names:
     kind: Gateway
     listKind: GatewayList
@@ -34,7 +38,11 @@ spec:
       - gw
     singular: gateway
   scope: Namespaced
-  version: v1
+  version: v2
+  versions:
+    - name: v2
+      storage: true
+      served: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -53,6 +61,10 @@ spec:
     singular: virtualservice
   scope: Namespaced
   version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -71,6 +83,10 @@ spec:
     singular: proxy
   scope: Namespaced
   version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -89,6 +105,10 @@ spec:
     singular: upstream
   scope: Namespaced
   version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -107,5 +127,9 @@ spec:
     singular: upstreamgroup
   scope: Namespaced
   version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
 ---
 {{- end}}

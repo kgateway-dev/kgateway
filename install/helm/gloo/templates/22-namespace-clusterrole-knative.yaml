@@ -8,6 +8,9 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+    annotations:
+      "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
@@ -26,6 +29,12 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups: ["networking.internal.knative.dev"]
   resources: ["clusteringresses/status"]
+  verbs: ["update"]
+- apiGroups: ["networking.internal.knative.dev"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.internal.knative.dev"]
+  resources: ["ingresses/status"]
   verbs: ["update"]
 {{- end -}}
 

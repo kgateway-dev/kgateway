@@ -1,12 +1,19 @@
 package translator
 
 import (
+	"context"
 	"time"
+
+	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 
-	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
@@ -18,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
 var _ = Describe("Translate", func() {
@@ -153,482 +161,380 @@ var _ = Describe("Translate", func() {
 			Clusteringresses: v1alpha12.ClusterIngressList{ingressRes, ingressResTls},
 			Secrets:          gloov1.SecretList{secret},
 		}
-		proxy, errs := translateProxy(namespace, snap)
+		proxy, errs := translateProxy(context.TODO(), namespace, snap)
 		Expect(errs).NotTo(HaveOccurred())
 		Expect(proxy.Metadata.Name).To(Equal("clusteringress-proxy"))
 		Expect(proxy.Listeners).To(HaveLen(2))
 		Expect(proxy.Listeners[0].Name).To(Equal("http"))
 		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(80)))
 
-		//utter.Dump(proxy)
 		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
-				{
-					Name:        string("http"),
-					BindAddress: string("::"),
-					BindPort:    uint32(0x50),
+				&gloov1.Listener{
+					Name:        "http",
+					BindAddress: "::",
+					BindPort:    0x00000050,
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
-								{
-									Name: string("champ.net-http"),
+								&gloov1.VirtualHost{
+									Name: "example.ing-0",
 									Domains: []string{
-										string("champ.net"),
-										string("champ.net:80"),
+										"petes.com",
+										"petes.com:80",
+										"zah.net",
+										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
-										{
+										&gloov1.Route{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: string("/hay"),
+													Regex: "/",
 												},
-												Headers:         []*gloov1.HeaderMatcher(nil),
-												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
-												Methods:         []string(nil),
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																&gloov1.WeightedDestination{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref: core.ResourceRef{
+																					Name:      "peteszah-service",
+																					Namespace: "peteszah-service-namespace",
+																				},
+																				Port:                 0x00000050,
+																				XXX_NoUnkeyedLiteral: struct{}{},
+																				XXX_sizecache:        0,
+																			},
+																		},
+																		DestinationSpec:      (*gloov1.DestinationSpec)(nil),
+																		Subset:               (*gloov1.Subset)(nil),
+																		XXX_NoUnkeyedLiteral: struct{}{},
+																		XXX_sizecache:        0,
+																	},
+																	Weight:                    0x00000064,
+																	WeighedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
+																	XXX_NoUnkeyedLiteral:      struct{}{},
+																	XXX_sizecache:             0,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												Transformations: (*transformation.RouteTransformations)(nil),
+												Faults:          (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												Timeout:         durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:              "",
+													NumRetries:           0x0000000e,
+													PerTryTimeout:        durptr(1000),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
+												},
+												Extensions: (*gloov1.Extensions)(nil),
+												Tracing:    (*tracing.RouteTracingSettings)(nil),
+												Shadowing:  (*shadowing.RouteShadowing)(nil),
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														&headers.HeaderValueOption{
+															Header: &headers.HeaderValue{
+																Key:                  "add",
+																Value:                "me",
+																XXX_NoUnkeyedLiteral: struct{}{},
+																XXX_sizecache:        0,
 															},
+															Append:               (*types.BoolValue)(nil),
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
-												Faults:        (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
-												Timeout:       durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       string(""),
-													NumRetries:    uint32(0xe),
-													PerTryTimeout: durptr(1000),
-												},
+												HostRewrite:          (*hostrewrite.HostRewrite)(nil),
+												XXX_NoUnkeyedLiteral: struct{}{},
+												XXX_sizecache:        0,
 											},
+											XXX_NoUnkeyedLiteral: struct{}{},
+											XXX_sizecache:        0,
 										},
 									},
+									VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
+									CorsPolicy:           (*gloov1.CorsPolicy)(nil),
+									XXX_NoUnkeyedLiteral: struct{}{},
+									XXX_sizecache:        0,
 								},
-								{
-									Name: string("petes.com-http"),
+								&gloov1.VirtualHost{
+									Name: "example.ing-1",
 									Domains: []string{
-										string("petes.com"),
-										string("petes.com:80"),
+										"pog.com",
+										"pog.com:80",
+										"champ.net",
+										"champ.net:80",
+										"zah.net",
+										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
-										{
+										&gloov1.Route{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: string("/"),
+													Regex: "/hay",
 												},
-												Headers:         []*gloov1.HeaderMatcher(nil),
-												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
-												Methods:         []string(nil),
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																&gloov1.WeightedDestination{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref: core.ResourceRef{
+																					Name:      "peteszah-service",
+																					Namespace: "peteszah-service-namespace",
+																				},
+																				Port:                 0x00000050,
+																				XXX_NoUnkeyedLiteral: struct{}{},
+																				XXX_sizecache:        0,
+																			},
+																		},
+																		DestinationSpec:      (*gloov1.DestinationSpec)(nil),
+																		Subset:               (*gloov1.Subset)(nil),
+																		XXX_NoUnkeyedLiteral: struct{}{},
+																		XXX_sizecache:        0,
+																	},
+																	Weight:                    0x00000064,
+																	WeighedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
+																	XXX_NoUnkeyedLiteral:      struct{}{},
+																	XXX_sizecache:             0,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												Transformations: (*transformation.RouteTransformations)(nil),
+												Faults:          (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												Timeout:         durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:              "",
+													NumRetries:           0x0000000e,
+													PerTryTimeout:        durptr(1000),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
+												},
+												Extensions: (*gloov1.Extensions)(nil),
+												Tracing:    (*tracing.RouteTracingSettings)(nil),
+												Shadowing:  (*shadowing.RouteShadowing)(nil),
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														&headers.HeaderValueOption{
+															Header: &headers.HeaderValue{
+																Key:                  "add",
+																Value:                "me",
+																XXX_NoUnkeyedLiteral: struct{}{},
+																XXX_sizecache:        0,
 															},
+															Append:               (*types.BoolValue)(nil),
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
-												Faults:        (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
-												Timeout:       durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       string(""),
-													NumRetries:    uint32(0xe),
-													PerTryTimeout: durptr(1000),
-												},
+												HostRewrite:          (*hostrewrite.HostRewrite)(nil),
+												XXX_NoUnkeyedLiteral: struct{}{},
+												XXX_sizecache:        0,
 											},
+											XXX_NoUnkeyedLiteral: struct{}{},
+											XXX_sizecache:        0,
 										},
 									},
-								},
-								{
-									Name: string("pog.com-http"),
-									Domains: []string{
-										string("pog.com"),
-										string("pog.com:80"),
-									},
-									Routes: []*gloov1.Route{
-										{
-											Matcher: &gloov1.Matcher{
-												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: string("/hay"),
-												},
-												Headers:         []*gloov1.HeaderMatcher(nil),
-												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
-												Methods:         []string(nil),
-											},
-											Action: &gloov1.Route_RouteAction{
-												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
-																},
-															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
-														},
-													},
-												},
-											},
-											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
-															},
-														},
-													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
-												},
-												Faults:        (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
-												Timeout:       durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       string(""),
-													NumRetries:    uint32(0xe),
-													PerTryTimeout: durptr(1000),
-												},
-											},
-										},
-									},
-								},
-								{
-									Name: string("zah.net-http"),
-									Domains: []string{
-										string("zah.net"),
-										string("zah.net:80"),
-									},
-									Routes: []*gloov1.Route{
-										{
-											Matcher: &gloov1.Matcher{
-												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: string("/hay"),
-												},
-												Headers:         []*gloov1.HeaderMatcher(nil),
-												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
-												Methods:         []string(nil),
-											},
-											Action: &gloov1.Route_RouteAction{
-												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
-																},
-															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
-														},
-													},
-												},
-											},
-											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
-															},
-														},
-													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
-												},
-												Faults:        (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
-												Timeout:       durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       string(""),
-													NumRetries:    uint32(0xe),
-													PerTryTimeout: durptr(1000),
-												},
-											},
-										},
-										{
-											Matcher: &gloov1.Matcher{
-												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: string("/"),
-												},
-												Headers:         []*gloov1.HeaderMatcher(nil),
-												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
-												Methods:         []string(nil),
-											},
-											Action: &gloov1.Route_RouteAction{
-												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
-																},
-															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
-														},
-													},
-												},
-											},
-											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
-															},
-														},
-													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
-												},
-												Faults:        (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
-												Timeout:       durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       string(""),
-													NumRetries:    uint32(0xe),
-													PerTryTimeout: durptr(1000),
-												},
-											},
-										},
-										{
-											Matcher: &gloov1.Matcher{
-												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: string("/"),
-												},
-												Headers:         []*gloov1.HeaderMatcher(nil),
-												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
-												Methods:         []string(nil),
-											},
-											Action: &gloov1.Route_RouteAction{
-												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
-																},
-															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
-														},
-													},
-												},
-											},
-											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
-															},
-														},
-													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
-												},
-												Faults:        (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
-												Timeout:       durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       string(""),
-													NumRetries:    uint32(0xe),
-													PerTryTimeout: durptr(1000),
-												},
-											},
-										},
-									},
+									VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
+									CorsPolicy:           (*gloov1.CorsPolicy)(nil),
+									XXX_NoUnkeyedLiteral: struct{}{},
+									XXX_sizecache:        0,
 								},
 							},
+							ListenerPlugins:      (*gloov1.HttpListenerPlugins)(nil),
+							XXX_NoUnkeyedLiteral: struct{}{},
+							XXX_sizecache:        0,
 						},
 					},
-					SslConfigurations: []*gloov1.SslConfig(nil),
+					UseProxyProto:        (*types.BoolValue)(nil),
+					Plugins:              (*gloov1.ListenerPlugins)(nil),
+					XXX_NoUnkeyedLiteral: struct{}{},
+					XXX_sizecache:        0,
 				},
-				{
-					Name:        string("https"),
-					BindAddress: string("::"),
-					BindPort:    uint32(0x1bb),
+				&gloov1.Listener{
+					Name:        "https",
+					BindAddress: "::",
+					BindPort:    0x000001bb,
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
-								{
-									Name: string("petes.com-http"),
+								&gloov1.VirtualHost{
+									Name: "example.ing-tls-0",
 									Domains: []string{
-										string("petes.com"),
-										string("petes.com:443"),
+										"petes.com",
+										"petes.com:443",
+										"zah.net",
+										"zah.net:443",
 									},
 									Routes: []*gloov1.Route{
-										{
+										&gloov1.Route{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
-													Regex: string("/"),
+													Regex: "/",
 												},
-												Headers:         []*gloov1.HeaderMatcher(nil),
-												QueryParameters: []*gloov1.QueryParameterMatcher(nil),
-												Methods:         []string(nil),
 											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
-													Destination: &gloov1.RouteAction_Single{
-														Single: &gloov1.Destination{
-															DestinationType: &gloov1.Destination_Kube{
-																Kube: &gloov1.KubernetesServiceDestination{
-																	Ref:  core.ResourceRef{Name: serviceName, Namespace: serviceNamespace},
-																	Port: uint32(servicePort),
+													Destination: &gloov1.RouteAction_Multi{
+														Multi: &gloov1.MultiDestination{
+															Destinations: []*gloov1.WeightedDestination{
+																&gloov1.WeightedDestination{
+																	Destination: &gloov1.Destination{
+																		DestinationType: &gloov1.Destination_Kube{
+																			Kube: &gloov1.KubernetesServiceDestination{
+																				Ref: core.ResourceRef{
+																					Name:      "peteszah-service",
+																					Namespace: "peteszah-service-namespace",
+																				},
+																				Port:                 0x00000050,
+																				XXX_NoUnkeyedLiteral: struct{}{},
+																				XXX_sizecache:        0,
+																			},
+																		},
+																		DestinationSpec:      (*gloov1.DestinationSpec)(nil),
+																		Subset:               (*gloov1.Subset)(nil),
+																		XXX_NoUnkeyedLiteral: struct{}{},
+																		XXX_sizecache:        0,
+																	},
+																	Weight:                    0x00000064,
+																	WeighedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
+																	XXX_NoUnkeyedLiteral:      struct{}{},
+																	XXX_sizecache:             0,
 																},
 															},
-															DestinationSpec: (*gloov1.DestinationSpec)(nil),
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: &transformation.RouteTransformations{
-													RequestTransformation: &transformation.Transformation{
-														TransformationType: &transformation.Transformation_TransformationTemplate{
-															TransformationTemplate: &transformation.TransformationTemplate{
-																AdvancedTemplates: false,
-																Extractors:        map[string]*transformation.Extraction(nil),
-																Headers: map[string]*transformation.InjaTemplate{
-																	string("add"): {
-																		Text: string("me"),
-																	},
-																},
-																BodyTransformation: &transformation.TransformationTemplate_Passthrough{
-																	Passthrough: &transformation.Passthrough{},
-																},
+												Transformations: (*transformation.RouteTransformations)(nil),
+												Faults:          (*faultinjection.RouteFaults)(nil),
+												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												Timeout:         durptr(1),
+												Retries: &retries.RetryPolicy{
+													RetryOn:              "",
+													NumRetries:           0x0000000e,
+													PerTryTimeout:        durptr(1000),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
+												},
+												Extensions: (*gloov1.Extensions)(nil),
+												Tracing:    (*tracing.RouteTracingSettings)(nil),
+												Shadowing:  (*shadowing.RouteShadowing)(nil),
+												HeaderManipulation: &headers.HeaderManipulation{
+													RequestHeadersToAdd: []*headers.HeaderValueOption{
+														&headers.HeaderValueOption{
+															Header: &headers.HeaderValue{
+																Key:                  "add",
+																Value:                "me",
+																XXX_NoUnkeyedLiteral: struct{}{},
+																XXX_sizecache:        0,
 															},
+															Append:               (*types.BoolValue)(nil),
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
-													ResponseTransformation: (*transformation.Transformation)(nil),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
-												Faults:        (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite: (*transformation.PrefixRewrite)(nil),
-												Timeout:       durptr(1),
-												Retries: &retries.RetryPolicy{
-													RetryOn:       string(""),
-													NumRetries:    uint32(0xe),
-													PerTryTimeout: durptr(1000),
-												},
+												HostRewrite:          (*hostrewrite.HostRewrite)(nil),
+												XXX_NoUnkeyedLiteral: struct{}{},
+												XXX_sizecache:        0,
 											},
+											XXX_NoUnkeyedLiteral: struct{}{},
+											XXX_sizecache:        0,
 										},
 									},
+									VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
+									CorsPolicy:           (*gloov1.CorsPolicy)(nil),
+									XXX_NoUnkeyedLiteral: struct{}{},
+									XXX_sizecache:        0,
 								},
 							},
+							ListenerPlugins:      (*gloov1.HttpListenerPlugins)(nil),
+							XXX_NoUnkeyedLiteral: struct{}{},
+							XXX_sizecache:        0,
 						},
 					},
 					SslConfigurations: []*gloov1.SslConfig{
-						{
+						&gloov1.SslConfig{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
-									Name:      string("areallygreatsecret"),
-									Namespace: string("example"),
+									Name:      "areallygreatsecret",
+									Namespace: "example",
 								},
 							},
 							SniDomains: []string{
-								string("petes.com"),
-								string("petes.com:443"),
+								"petes.com",
 							},
+							Parameters:           (*gloov1.SslParameters)(nil),
+							XXX_NoUnkeyedLiteral: struct{}{},
+							XXX_sizecache:        0,
 						},
 					},
+					UseProxyProto:        (*types.BoolValue)(nil),
+					Plugins:              (*gloov1.ListenerPlugins)(nil),
+					XXX_NoUnkeyedLiteral: struct{}{},
+					XXX_sizecache:        0,
 				},
 			},
-			Metadata: core.Metadata{
-				Name:      string("clusteringress-proxy"),
-				Namespace: string("example"),
+			Status: core.Status{
+				State:                0,
+				Reason:               "",
+				ReportedBy:           "",
+				XXX_NoUnkeyedLiteral: struct{}{},
+				XXX_sizecache:        0,
 			},
+			Metadata: core.Metadata{
+				Name:                 "clusteringress-proxy",
+				Namespace:            "example",
+				Cluster:              "",
+				ResourceVersion:      "",
+				XXX_NoUnkeyedLiteral: struct{}{},
+				XXX_sizecache:        0,
+			},
+			XXX_NoUnkeyedLiteral: struct{}{},
+			XXX_sizecache:        0,
 		}
+
 		Expect(proxy).To(Equal(expected))
 	})
 })

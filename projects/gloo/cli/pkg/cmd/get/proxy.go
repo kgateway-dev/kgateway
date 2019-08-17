@@ -4,7 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ func Proxy(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			helpers.PrintProxies(proxyList, opts.Top.Output)
+			printers.PrintProxies(proxyList, opts.Top.Output)
 			return nil
 		},
 	}

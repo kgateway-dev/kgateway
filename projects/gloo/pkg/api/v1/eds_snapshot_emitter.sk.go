@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	mEdsSnapshotIn  = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mEdsSnapshotOut = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mEdsSnapshotIn     = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mEdsSnapshotOut    = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mEdsSnapshotMissed = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	edssnapshotInView = &view.View{
 		Name:        "eds.gloo.solo.io_snap_emitter/snap_in",
@@ -33,10 +34,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	edssnapshotMissedView = &view.View{
+		Name:        "eds.gloo.solo.io/snap_emitter/snap_missed",
+		Measure:     mEdsSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(edssnapshotInView, edssnapshotOutView)
+	view.Register(edssnapshotInView, edssnapshotOutView, edssnapshotMissedView)
 }
 
 type EdsEmitter interface {
@@ -95,8 +103,19 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
 
+	var initialUpstreamList UpstreamList
+
+	currentSnapshot := EdsSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Upstream */
+		{
+			upstreams, err := c.upstream.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Upstream list")
+			}
+			initialUpstreamList = append(initialUpstreamList, upstreams...)
+		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
@@ -124,21 +143,31 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Upstreams */
+	currentSnapshot.Upstreams = initialUpstreamList.Sort()
 
 	snapshots := make(chan *EdsSnapshot)
 	go func() {
-		originalSnapshot := EdsSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		timer := time.NewTicker(time.Second * 1)
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
-			stats.Record(ctx, mEdsSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mEdsSnapshotOut.M(1))
+				previousHash = currentHash
+			default:
+				stats.Record(ctx, mEdsSnapshotMissed.M(1))
+			}
 		}
 		upstreamsByNamespace := make(map[string]UpstreamList)
 

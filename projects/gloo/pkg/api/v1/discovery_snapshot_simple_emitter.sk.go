@@ -47,16 +47,18 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 	go errutils.AggregateErrs(ctx, errs, watchErrs, "discovery-emitter")
 
 	go func() {
-		originalSnapshot := DiscoverySnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
+		currentSnapshot := DiscoverySnapshot{}
 		timer := time.NewTicker(time.Second * 1)
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
+			previousHash = currentHash
+
 			stats.Record(ctx, mDiscoverySnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}

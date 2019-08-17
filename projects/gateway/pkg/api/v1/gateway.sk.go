@@ -46,6 +46,10 @@ func (r *Gateway) Hash() uint64 {
 	)
 }
 
+func (r *Gateway) GroupVersionKind() schema.GroupVersionKind {
+	return GatewayGVK
+}
+
 type GatewayList []*Gateway
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -127,8 +131,6 @@ func (list GatewayList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Gateway{}
-
 // Kubernetes Adapter for Gateway
 
 func (o *Gateway) GetObjectKind() schema.ObjectKind {
@@ -141,11 +143,6 @@ func (o *Gateway) DeepCopyObject() runtime.Object {
 }
 
 var (
-	GatewayGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gateway.solo.io",
-		Kind:    "Gateway",
-	}
 	GatewayCrd = crd.NewCrd(
 		"gateways",
 		GatewayGVK.Group,
@@ -161,3 +158,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	GatewayGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gateway.solo.io",
+		Kind:    "Gateway",
+	}
+)

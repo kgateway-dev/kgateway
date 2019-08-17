@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Expose a subset of read-only envoy admin apis.
+  - type: FIX
+    description: Make the gateway proxy service selectors more specific.
+    issueLink: https://github.com/solo-io/gloo/issues/1029

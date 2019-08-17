@@ -213,10 +213,10 @@ func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoy
 	}
 
 	newSnapshot := xds.NewSnapshotFromResources(
-		// Set endpoints calculated during this sync
+		// Set endpoints and clusters calculated during this sync
 		current.GetResources(xds.EndpointType),
+		current.GetResources(xds.ClusterType),
 		// Keep other resources from previous snapshot
-		previous.GetResources(xds.ClusterType),
 		previous.GetResources(xds.RouteType),
 		previous.GetResources(xds.ListenerType),
 	)

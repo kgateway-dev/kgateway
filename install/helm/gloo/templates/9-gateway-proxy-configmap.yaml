@@ -9,7 +9,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-    gloo: {{ $name | kebabcase }}
+    gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |
@@ -21,8 +22,10 @@ data:
         role: "{{ `{{.PodNamespace}}` }}~{{ $name | kebabcase }}"
     static_resources:
 
-{{- if $spec.podTemplate.stats }}
+{{- if or ($spec.stats) ($spec.readConfig) }}
       listeners:
+{{- end }} # if or ($spec.stats) ($spec.readConfig)
+{{- if $spec.stats }}
         - name: prometheus_listener
           address:
             socket_address:
@@ -42,6 +45,13 @@ data:
                             - "*"
                           routes:
                             - match:
+                                path: "/ready"
+                                headers:
+                                - name: ":method"
+                                  exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                            - match:
                                 prefix: "/metrics"
                                 headers:
                                 - name: ":method"
@@ -52,13 +62,51 @@ data:
                     http_filters:
                       - name: envoy.router
                         config: {}
-{{- end}} # if $spec.podTemplate.stats
-{{- if $spec.tracing }}
-      tracing:
-{{ toYaml $spec.tracing | indent 8}}
-{{- end}} # if $spec.tracing
-
-
+{{- end}} # if $spec.stats
+{{- if $spec.readConfig }}
+        - name: read_config_listener
+          address:
+            socket_address:
+              address: 0.0.0.0
+              port_value: 8082
+          filter_chains:
+            - filters:
+                - name: envoy.http_connection_manager
+                  config:
+                    codec_type: auto
+                    stat_prefix: read_config
+                    route_config:
+                      name: read_config_route
+                      virtual_hosts:
+                        - name: read_config_host
+                          domains:
+                            - "*"
+                          routes:
+                            - match:
+                                path: "/ready"
+                                headers:
+                                  - name: ":method"
+                                    exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                            - match:
+                                prefix: "/stats"
+                                headers:
+                                  - name: ":method"
+                                    exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                            - match:
+                                 prefix: "/config_dump"
+                                 headers:
+                                   - name: ":method"
+                                     exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
+                    http_filters:
+                      - name: envoy.router
+                        config: {}
+{{- end}} # if $spec.readConfig
       clusters:
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
@@ -77,8 +125,13 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
+{{- if $spec.tracing -}}
+{{- if $spec.tracing.cluster}}
+{{ toYaml $spec.tracing.cluster | indent 6}}
+{{- end}} # if $spec.tracing.cluster
+{{- end}} # if $spec.tracing
 
-{{- if $spec.podTemplate.stats }}
+{{- if or ($spec.stats) ($spec.readConfig) }}
       - name: admin_port_cluster
         connect_timeout: 5.000s
         type: STATIC
@@ -92,11 +145,19 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}} # if $spec.podTemplate.stats
+{{- end}} # if or ($spec.stats) ($spec.readConfig)
 
+{{- if $spec.tracing -}}
+{{- if $spec.tracing.provider }}
+    tracing:
+      http:
+{{ toYaml $spec.tracing.provider | indent 8}}
+{{- end}} # if $spec.tracing.provider
+{{- end}} # if $spec.tracing
     dynamic_resources:
       ads_config:
         api_type: GRPC
+        rate_limit_settings: {}
         grpc_services:
         - envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}}
       cds_config:

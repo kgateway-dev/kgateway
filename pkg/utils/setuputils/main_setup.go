@@ -3,10 +3,14 @@ package setuputils
 import (
 	"context"
 	"flag"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	check "github.com/solo-io/go-checkpoint"
@@ -24,22 +28,26 @@ type SetupOpts struct {
 	LoggingPrefix string
 	SetupFunc     SetupFunc
 	ExitOnError   bool
+	CustomCtx     context.Context
 }
 
 var once sync.Once
 
 func Main(opts SetupOpts) error {
-	start := time.Now()
 	loggingPrefix := opts.LoggingPrefix
-	check.CallCheck(loggingPrefix, version.Version, start)
+	check.NewUsageClient().Start(loggingPrefix, version.Version)
 	// prevent panic if multiple flag.Parse called concurrently
 	once.Do(func() {
 		flag.Parse()
 	})
 
-	ctx := contextutils.WithLogger(context.Background(), loggingPrefix)
+	ctx := opts.CustomCtx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = contextutils.WithLogger(ctx, loggingPrefix)
 
-	settingsClient, err := KubeOrFileSettingsClient(ctx, setupDir)
+	settingsClient, err := kubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
 		return err
 	}
@@ -70,19 +78,22 @@ func Main(opts SetupOpts) error {
 	return nil
 }
 
-// TODO (ilackarms): instead of using an heuristic here, read from a CLI flag
-// first attempt to use kube crd, otherwise fall back to file
-func KubeOrFileSettingsClient(ctx context.Context, settingsDir string) (v1.SettingsClient, error) {
-	cfg, err := kubeutils.GetConfig("", "")
-	if err == nil {
-		return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
-			Crd:         v1.SettingsCrd,
-			Cfg:         cfg,
-			SharedCache: kube.NewKubeCache(ctx),
+func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
+	if settingsDir != "" {
+		return v1.NewSettingsClient(&factory.FileResourceClientFactory{
+			RootDir: settingsDir,
 		})
 	}
-	return v1.NewSettingsClient(&factory.FileResourceClientFactory{
-		RootDir: settingsDir,
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, err
+	}
+	return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
+		Crd:                v1.SettingsCrd,
+		Cfg:                cfg,
+		SharedCache:        kube.NewKubeCache(ctx),
+		NamespaceWhitelist: []string{setupNamespace},
+		SkipCrdCreation:    settingsutil.GetSkipCrdCreation(),
 	})
 }
 
@@ -98,7 +109,7 @@ func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) 
 		SecretSource: &v1.Settings_KubernetesSecretSource{
 			KubernetesSecretSource: &v1.Settings_KubernetesSecrets{},
 		},
-		BindAddr:           "0.0.0.0:9977",
+		BindAddr:           fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort),
 		RefreshRate:        types.DurationProto(time.Minute),
 		DevMode:            true,
 		DiscoveryNamespace: defaultNamespace,

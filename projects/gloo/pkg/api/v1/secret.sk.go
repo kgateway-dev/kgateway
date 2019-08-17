@@ -37,6 +37,10 @@ func (r *Secret) Hash() uint64 {
 	)
 }
 
+func (r *Secret) GroupVersionKind() schema.GroupVersionKind {
+	return SecretGVK
+}
+
 type SecretList []*Secret
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -110,8 +114,6 @@ func (list SecretList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Secret{}
-
 // Kubernetes Adapter for Secret
 
 func (o *Secret) GetObjectKind() schema.ObjectKind {
@@ -124,11 +126,6 @@ func (o *Secret) DeepCopyObject() runtime.Object {
 }
 
 var (
-	SecretGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gloo.solo.io",
-		Kind:    "Secret",
-	}
 	SecretCrd = crd.NewCrd(
 		"secrets",
 		SecretGVK.Group,
@@ -144,3 +141,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	SecretGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Secret",
+	}
+)

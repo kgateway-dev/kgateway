@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/go-utils/errors"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
@@ -105,7 +107,14 @@ var _ = Describe("Hybrid Upstream Client", func() {
 
 		writeResources()
 
-		Eventually(usChan, 500*time.Millisecond).Should(Receive(HaveLen(5)))
+		Eventually(func() (v1.UpstreamList, error) {
+			select {
+			case list := <-usChan:
+				return list, nil
+			case <-time.After(500 * time.Millisecond):
+				return nil, errors.Errorf("timed out waiting for next upstream list")
+			}
+		}, "3s").Should(HaveLen(5))
 		Consistently(errChan).Should(Not(Receive()))
 
 		cancel()
@@ -125,7 +134,15 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			usChan, errChan, initErr := hybridClient.Watch(watchNamespace, clients.WatchOpts{Ctx: ctx})
 			Expect(initErr).NotTo(HaveOccurred())
 
-			Eventually(usChan, 500*time.Millisecond).Should(Receive(HaveLen(5)))
+			Eventually(func() (v1.UpstreamList, error) {
+				select {
+				case list := <-usChan:
+					return list, nil
+				case <-time.After(500 * time.Millisecond):
+					return nil, errors.Errorf("timed out waiting for next upstream list")
+				}
+			}, "3s").Should(HaveLen(5))
+
 			Consistently(errChan).Should(Not(Receive()))
 
 			cancel()

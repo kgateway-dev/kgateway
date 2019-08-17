@@ -3,6 +3,7 @@ package options
 import (
 	"context"
 
+	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -23,25 +24,29 @@ type Options struct {
 type Top struct {
 	Interactive bool
 	File        string
-	Output      string
+	Output      printTypes.OutputType
 	Ctx         context.Context
 	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
 }
 
 type Install struct {
 	DryRun            bool
+	Upgrade           bool
 	Namespace         string
 	HelmChartOverride string
+	HelmChartValues   string
 	Knative           Knative
 }
 
 type Knative struct {
-	InstallKnativeVersion    string `json:"version"`
-	InstallKnative           bool   `json:"-"`
-	SkipGlooInstall          bool   `json:"-"`
-	InstallKnativeBuild      bool   `json:"build"`
-	InstallKnativeMonitoring bool   `json:"monitoring"`
-	InstallKnativeEventing   bool   `json:"eventing"`
+	InstallKnativeVersion         string `json:"version"`
+	InstallKnative                bool   `json:"-"`
+	SkipGlooInstall               bool   `json:"-"`
+	InstallKnativeBuild           bool   `json:"build"`
+	InstallKnativeBuildVersion    string `json:"buildVersion"`
+	InstallKnativeMonitoring      bool   `json:"monitoring"`
+	InstallKnativeEventing        bool   `json:"eventing"`
+	InstallKnativeEventingVersion string `json:"eventingVersion"`
 }
 
 type Uninstall struct {
@@ -74,10 +79,11 @@ type Delete struct {
 }
 
 type Create struct {
-	VirtualService InputVirtualService
-	InputUpstream  InputUpstream
-	InputSecret    Secret
-	DryRun         bool // print resource as a kubernetes style yaml and exit without writing to storage
+	VirtualService     InputVirtualService
+	InputUpstream      InputUpstream
+	InputUpstreamGroup InputUpstreamGroup
+	InputSecret        Secret
+	DryRun             bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type RouteMatchers struct {
@@ -114,6 +120,10 @@ type RoutePlugins struct {
 
 type PrefixRewrite struct {
 	Value *string
+}
+
+type InputUpstreamGroup struct {
+	WeightedDestinations InputMapStringString
 }
 
 func (p *PrefixRewrite) String() string {
@@ -165,6 +175,7 @@ type InputVirtualService struct {
 
 const (
 	UpstreamType_Aws    = "aws"
+	UpstreamType_AwsEc2 = "ec2"
 	UpstreamType_Azure  = "azure"
 	UpstreamType_Consul = "consul"
 	UpstreamType_Kube   = "kube"
@@ -173,6 +184,7 @@ const (
 
 var UpstreamTypes = []string{
 	UpstreamType_Aws,
+	UpstreamType_AwsEc2,
 	UpstreamType_Azure,
 	UpstreamType_Consul,
 	UpstreamType_Kube,
@@ -182,6 +194,7 @@ var UpstreamTypes = []string{
 type InputUpstream struct {
 	UpstreamType string
 	Aws          InputAwsSpec
+	AwsEc2       InputAwsEc2Spec
 	Azure        InputAzureSpec
 	Consul       InputConsulSpec
 	Kube         InputKubeSpec
@@ -194,6 +207,16 @@ type InputUpstream struct {
 type InputAwsSpec struct {
 	Region string
 	Secret core.ResourceRef
+}
+
+type InputAwsEc2Spec struct {
+	Region          string
+	Secret          core.ResourceRef
+	Role            string
+	PublicIp        bool
+	Port            uint32
+	KeyFilters      []string
+	KeyValueFilters InputMapStringString
 }
 
 type InputAzureSpec struct {

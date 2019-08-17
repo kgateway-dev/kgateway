@@ -9,12 +9,12 @@ import (
 var _ = Describe("Conversions", func() {
 
 	It("correctly generates the name for the fake upstream", func() {
-		Expect(fakeUpstreamName("my-consul-service")).To(Equal(upstreamNamePrefix + "my-consul-service"))
+		Expect(fakeUpstreamName("my-consul-service")).To(Equal(UpstreamNamePrefix + "my-consul-service"))
 	})
 
 	It("correctly detects upstreams derived from Kubernetes services", func() {
-		Expect(IsConsulUpstream(upstreamNamePrefix + "my-service")).To(BeTrue())
-		Expect(IsConsulUpstream("my-" + upstreamNamePrefix + "service")).To(BeFalse())
+		Expect(IsConsulUpstream(UpstreamNamePrefix + "my-service")).To(BeTrue())
+		Expect(IsConsulUpstream("my-" + UpstreamNamePrefix + "service")).To(BeFalse())
 		Expect(IsConsulUpstream("consul:my-service-8080")).To(BeFalse())
 	})
 
@@ -29,13 +29,13 @@ var _ = Describe("Conversions", func() {
 
 		Expect(usList).To(HaveLen(2))
 
-		Expect(usList[0].Metadata.Name).To(Equal(upstreamNamePrefix + "svc-1"))
+		Expect(usList[0].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1"))
 		Expect(usList[0].Metadata.Namespace).To(Equal(defaults.GlooSystem))
 		Expect(usList[0].UpstreamSpec.GetConsul()).NotTo(BeNil())
 		Expect(usList[0].UpstreamSpec.GetConsul().ServiceName).To(Equal("svc-1"))
 		Expect(usList[0].UpstreamSpec.GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
 
-		Expect(usList[1].Metadata.Name).To(Equal(upstreamNamePrefix + "svc-2"))
+		Expect(usList[1].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-2"))
 		Expect(usList[1].Metadata.Namespace).To(Equal(defaults.GlooSystem))
 		Expect(usList[1].UpstreamSpec.GetConsul()).NotTo(BeNil())
 		Expect(usList[1].UpstreamSpec.GetConsul().ServiceName).To(Equal("svc-2"))

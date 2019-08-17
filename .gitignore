@@ -9,3 +9,6 @@ themes
 install/gloo.yaml
 
 cloudbuild-local*.yaml
+
+.DS_Store
+docs/helm-values.md

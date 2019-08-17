@@ -10,9 +10,9 @@ import (
 func (t *translator) verifyUpstreamGroups(params plugins.Params, resourceErrs reporter.ResourceErrors) {
 
 	upstreams := params.Snapshot.Upstreams
-	UpstreamGroups := params.Snapshot.UpstreamGroups
+	upstreamGroups := params.Snapshot.UpstreamGroups
 
-	for _, ug := range UpstreamGroups {
+	for _, ug := range upstreamGroups {
 		for i, dest := range ug.Destinations {
 			if dest.Destination == nil {
 				resourceErrs.AddError(ug, errors.Errorf("destination # %d: destination is nil", i+1))

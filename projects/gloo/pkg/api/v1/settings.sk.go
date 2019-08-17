@@ -47,11 +47,16 @@ func (r *Settings) Hash() uint64 {
 		r.Knative,
 		r.Discovery,
 		r.Consul,
+		r.Kubernetes,
 		r.Extensions,
 		r.ConfigSource,
 		r.SecretSource,
 		r.ArtifactSource,
 	)
+}
+
+func (r *Settings) GroupVersionKind() schema.GroupVersionKind {
+	return SettingsGVK
 }
 
 type SettingsList []*Settings
@@ -135,8 +140,6 @@ func (list SettingsList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Settings{}
-
 // Kubernetes Adapter for Settings
 
 func (o *Settings) GetObjectKind() schema.ObjectKind {
@@ -149,11 +152,6 @@ func (o *Settings) DeepCopyObject() runtime.Object {
 }
 
 var (
-	SettingsGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gloo.solo.io",
-		Kind:    "Settings",
-	}
 	SettingsCrd = crd.NewCrd(
 		"settings",
 		SettingsGVK.Group,
@@ -169,3 +167,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	SettingsGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Settings",
+	}
+)

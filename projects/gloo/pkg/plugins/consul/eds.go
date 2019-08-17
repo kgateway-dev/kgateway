@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/solo-io/go-utils/kubeutils"
+
 	"github.com/solo-io/gloo/projects/gloo/constants"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -219,7 +221,9 @@ func buildEndpointName(service *consulapi.CatalogService) string {
 	if service.ServiceID != "" {
 		parts = append(parts, service.ServiceID)
 	}
-	return strings.Join(parts, "-")
+	unsanitizedName := strings.Join(parts, "-")
+	unsanitizedName = strings.ReplaceAll(unsanitizedName, "_", "")
+	return kubeutils.SanitizeNameV2(unsanitizedName)
 }
 
 // The labels will be used by to match the endpoint to the subsets of the cluster represented by the upstream.

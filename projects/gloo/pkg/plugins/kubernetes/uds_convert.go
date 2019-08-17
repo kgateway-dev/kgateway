@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
+
 	sanitizer "github.com/solo-io/go-utils/kubeutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -231,25 +233,7 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	// copy labels; user may have written them over. cannot be auto-discovered
 	desiredSpec.Kube.Selector = originalSpec.Kube.Selector
 
-	// do not override ssl and subset config if none specified by discovery
-	if desired.UpstreamSpec.SslConfig == nil {
-		desired.UpstreamSpec.SslConfig = original.UpstreamSpec.SslConfig
-	}
-	if desired.UpstreamSpec.CircuitBreakers == nil {
-		desired.UpstreamSpec.CircuitBreakers = original.UpstreamSpec.CircuitBreakers
-	}
-	if desired.UpstreamSpec.LoadBalancerConfig == nil {
-		desired.UpstreamSpec.LoadBalancerConfig = original.UpstreamSpec.LoadBalancerConfig
-	}
-	if desired.UpstreamSpec.ConnectionConfig == nil {
-		desired.UpstreamSpec.ConnectionConfig = original.UpstreamSpec.ConnectionConfig
-	}
-
-	if desiredSubsetMutator, ok := desired.UpstreamSpec.UpstreamType.(v1.SubsetSpecMutator); ok {
-		if desiredSubsetMutator.GetSubsetSpec() == nil {
-			desiredSubsetMutator.SetSubsetSpec(original.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter).GetSubsetSpec())
-		}
-	}
+	utils.UpdateUpstreamSpec(original.UpstreamSpec, desired.UpstreamSpec)
 
 	if originalSpec.Equal(desiredSpec) {
 		return false, nil

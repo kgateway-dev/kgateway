@@ -15,14 +15,11 @@ settings:
       enabled: false
   # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
   watchNamespaces: []
-  # the namespace that Gloo should write discovery data (Upstreams)
-  writeNamespace: "gloo-system"
 
 gloo:
   deployment:
     image:
-      repository: quay.io/solo-io/gloo
-      pullPolicy: Always
+      repository: gloo
     xdsPort: 9977
     replicas: 1
     stats: true
@@ -30,30 +27,33 @@ gloo:
 discovery:
   deployment:
     image:
-      repository: quay.io/solo-io/discovery
-      pullPolicy: Always
+      repository: discovery
     replicas: 1
     stats: true
 
 gateway:
   enabled: true
+  upgrade: false
   deployment:
     image:
-      repository: quay.io/solo-io/gateway
-      pullPolicy: Always
+      repository: gateway
     replicas: 1
     stats: true
+  conversionJob:
+    image:
+      repository: gateway-conversion
+    restartPolicy: Never
 
 gatewayProxies:
-  gatewayProxy:
+  gatewayProxyV2:
+    stats: true
     kind:
        deployment:
          replicas: 1
     podTemplate:
+      probes: false
       image:
-        repository: quay.io/solo-io/gloo-envoy-wrapper
-        pullPolicy: Always
-      stats: true
+        repository: gloo-envoy-wrapper
       httpPort: 8080
       httpsPort: 8443
     service:
@@ -71,3 +71,8 @@ gatewayProxies:
 
 ingress:
   enabled: false
+
+global:
+  image:
+    registry: quay.io/solo-io
+    pullPolicy: IfNotPresent

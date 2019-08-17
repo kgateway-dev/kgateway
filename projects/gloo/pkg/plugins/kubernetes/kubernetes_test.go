@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -39,9 +41,10 @@ var _ = Describe("Kubernetes", func() {
 
 	Context("kubernetes", func() {
 		var (
-			svcNamespace string
-			svcName      = "i-love-writing-tests"
-			kubeClient   kubernetes.Interface
+			svcNamespace  string
+			svcName       = "i-love-writing-tests"
+			kubeClient    kubernetes.Interface
+			kubeCoreCache kubecache.KubeCoreCache
 
 			baseLabels = map[string]string{
 				"tacos": "burritos",
@@ -51,11 +54,20 @@ var _ = Describe("Kubernetes", func() {
 				"tacos": "burritos",
 				"pizza": "frenchfries",
 			}
+
+			ctx    context.Context
+			cancel context.CancelFunc
 		)
 
 		BeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.Background())
+			ctx = settingsutil.WithSettings(ctx, &v1.Settings{})
 			svcNamespace = helpers.RandString(8)
 			kubeClient = fake.NewSimpleClientset()
+			var err error
+			kubeCoreCache, err = kubecache.NewKubeCoreCache(context.TODO(), kubeClient)
+			Expect(err).NotTo(HaveOccurred())
+
 			// create a service
 			// create 2 pods for that service
 			// one with extra labels, one without
@@ -131,11 +143,14 @@ var _ = Describe("Kubernetes", func() {
 		})
 		AfterEach(func() {
 			setup.TeardownKube(svcNamespace)
+			if cancel != nil {
+				cancel()
+			}
 		})
 
 		// TODO: why is this not working?
 		PIt("uses json keys when serializing", func() {
-			plug := kubeplugin.NewPlugin(kubeClient).(discovery.DiscoveryPlugin)
+			plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
 			upstreams, errs, err := plug.DiscoverUpstreams([]string{svcNamespace}, svcNamespace, clients.WatchOpts{
 				Ctx:         context.TODO(),
 				RefreshRate: time.Second,
@@ -172,11 +187,11 @@ var _ = Describe("Kubernetes", func() {
 					},
 				}
 			}
-			plug := kubeplugin.NewPlugin(kubeClient).(discovery.DiscoveryPlugin)
+			plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
 			eds, errs, err := plug.WatchEndpoints(
 				"",
 				v1.UpstreamList{makeUpstream("a"), makeUpstream("b"), makeUpstream("c")},
-				clients.WatchOpts{})
+				clients.WatchOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(eds, time.Second).Should(Receive(HaveLen(6)))

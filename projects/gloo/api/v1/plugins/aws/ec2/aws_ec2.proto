@@ -31,10 +31,12 @@ message UpstreamSpec {
     // in conjunction with a list of Roles, specified by their Amazon Resource Number (ARN).
     core.solo.io.ResourceRef secret_ref = 2;
 
-    // Optional, list of Amazon Resource Numbers (ARNs) referring to IAM Roles that should be assumed when the Upstream
+    // Optional, Amazon Resource Number (ARN) referring to IAM Role that should be assumed when the Upstream
     // queries for eligible EC2 instances.
-    // If provided, Gloo will create an EC2 API client with the provided roles. If not provided, Gloo will not assume
-    // any roles.
+    // If provided, Gloo will create an EC2 API client with the provided role. If not provided, Gloo will not assume
+    // a role.
+    string role_arn = 7;
+    // deprecated: use role_arn. If you do use this field, only the first element will be read
     repeated string role_arns = 6;
 
     // List of tag filters for selecting instances

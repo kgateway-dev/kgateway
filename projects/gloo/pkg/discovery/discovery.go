@@ -116,6 +116,7 @@ func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (cha
 func (d *UpstreamDiscovery) Resync(ctx context.Context) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
+	logger := contextutils.LoggerFrom(ctx)
 	for uds, desiredUpstreams := range d.latestDesiredUpstreams {
 		udsName := strings.Replace(reflect.TypeOf(uds).String(), "*", "", -1)
 		udsName = strings.Replace(udsName, ".", "", -1)
@@ -125,12 +126,16 @@ func (d *UpstreamDiscovery) Resync(ctx context.Context) error {
 		for k, v := range d.extraSelectorLabels {
 			selector[k] = v
 		}
+		logger.Debugw("reconciling upstream details", zap.Any("upstreams", desiredUpstreams))
 		if err := d.upstreamReconciler.Reconcile(d.writeNamespace, desiredUpstreams, uds.UpdateUpstream, clients.ListOpts{
 			Ctx:      ctx,
 			Selector: selector,
 		}); err != nil {
+			logger.Errorw("failed reconciling upstreams",
+				zap.Any("discovered_by", udsName), zap.Int("upstreams", len(desiredUpstreams)), zap.Error(err))
 			return err
 		}
+		logger.Infow("reconciled upstreams", zap.String("discovered_by", udsName), zap.Int("upstreams", len(desiredUpstreams)))
 	}
 	return nil
 }

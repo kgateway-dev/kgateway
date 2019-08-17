@@ -95,7 +95,7 @@ var _ = Describe("Plugin", func() {
 						AwsEc2: &glooec2.UpstreamSpec{
 							Region:    "us-east-1",
 							SecretRef: nil,
-							RoleArns:  nil,
+							RoleArn:   "",
 							Filters:   nil,
 							PublicIp:  false,
 							Port:      0,
@@ -108,6 +108,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 				&ec2.Instance{
+					InstanceId:       aws.String("id1"),
 					PublicIpAddress:  aws.String(pubIp),
 					PrivateIpAddress: aws.String(privateIp),
 				},
@@ -115,7 +116,11 @@ var _ = Describe("Plugin", func() {
 					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
 					Address:   privateIp,
 					Port:      80,
-					Metadata:  core.Metadata{Name: "ec2-name-ex1-namespace-default--5-5-5-5", Namespace: writeNamespace},
+					Metadata: core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
+						Namespace:   writeNamespace,
+						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
+					},
 				}),
 			Entry("should use proper port and ip when specified", &v1.Upstream{
 				UpstreamSpec: &v1.UpstreamSpec{
@@ -123,7 +128,7 @@ var _ = Describe("Plugin", func() {
 						AwsEc2: &glooec2.UpstreamSpec{
 							Region:    "us-east-1",
 							SecretRef: nil,
-							RoleArns:  nil,
+							RoleArn:   "",
 							Filters:   nil,
 							PublicIp:  true,
 							Port:      77,
@@ -136,6 +141,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 				&ec2.Instance{
+					InstanceId:       aws.String("id1"),
 					PublicIpAddress:  aws.String(pubIp),
 					PrivateIpAddress: aws.String(privateIp),
 				},
@@ -143,8 +149,66 @@ var _ = Describe("Plugin", func() {
 					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
 					Address:   pubIp,
 					Port:      77,
-					Metadata:  core.Metadata{Name: "ec2-name-ex1-namespace-default--1-2-3-4", Namespace: writeNamespace},
+					Metadata: core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default--1-2-3-4",
+						Namespace:   writeNamespace,
+						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
+					},
 				}),
-		)
+			Entry("should accept instances with private ip only", &v1.Upstream{
+				UpstreamSpec: &v1.UpstreamSpec{
+					UpstreamType: &v1.UpstreamSpec_AwsEc2{
+						AwsEc2: &glooec2.UpstreamSpec{
+							Region:    "us-east-1",
+							SecretRef: nil,
+							RoleArn:   "",
+							Filters:   nil,
+							PublicIp:  false,
+							Port:      77,
+						},
+					},
+				},
+				Metadata: core.Metadata{
+					Name:      "ex1",
+					Namespace: "default",
+				},
+			},
+				&ec2.Instance{
+					InstanceId:       aws.String("id1"),
+					PrivateIpAddress: aws.String(privateIp),
+				},
+				&v1.Endpoint{
+					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
+					Address:   privateIp,
+					Port:      77,
+					Metadata: core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
+						Namespace:   writeNamespace,
+						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
+					},
+				}),
+			Entry("should return nil if no ips are available for the given config", &v1.Upstream{
+				UpstreamSpec: &v1.UpstreamSpec{
+					UpstreamType: &v1.UpstreamSpec_AwsEc2{
+						AwsEc2: &glooec2.UpstreamSpec{
+							Region:    "us-east-1",
+							SecretRef: nil,
+							RoleArn:   "",
+							Filters:   nil,
+							PublicIp:  false,
+							Port:      77,
+						},
+					},
+				},
+				Metadata: core.Metadata{
+					Name:      "ex1",
+					Namespace: "default",
+				},
+			},
+				&ec2.Instance{
+					InstanceId: aws.String("id1"),
+				},
+				nil,
+			))
 	})
 })

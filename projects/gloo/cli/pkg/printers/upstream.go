@@ -3,16 +3,31 @@ package printers
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-// PrintTable prints virtual services using tables to io.Writer
-func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
+func PrintUpstreams(upstreams v1.UpstreamList, outputType OutputType, xdsDump *xdsinspection.XdsDump) error {
+	if outputType == KUBE_YAML {
+		return PrintKubeCrdList(upstreams.AsInputResources(), v1.UpstreamCrd)
+	}
+	return cliutils.PrintList(outputType.String(), "", upstreams,
+		func(data interface{}, w io.Writer) error {
+			UpstreamTable(xdsDump, data.(v1.UpstreamList), w)
+			return nil
+		}, os.Stdout)
+}
+
+// PrintTable prints upstreams using tables to io.Writer
+func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Upstream", "type", "status", "details"})
 
@@ -21,7 +36,7 @@ func UpstreamTable(upstreams []*v1.Upstream, w io.Writer) {
 		s := us.Status.State.String()
 
 		u := upstreamType(us)
-		details := upstreamDetails(us)
+		details := upstreamDetails(us, xdsDump)
 
 		if len(details) == 0 {
 			details = []string{""}
@@ -63,7 +78,7 @@ func upstreamType(up *v1.Upstream) string {
 	}
 }
 
-func upstreamDetails(up *v1.Upstream) []string {
+func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 	if up.UpstreamSpec == nil {
 		return []string{"invalid: spec was nil"}
 	}
@@ -88,6 +103,20 @@ func upstreamDetails(up *v1.Upstream) []string {
 			}
 			add(fmt.Sprintf("- %v", functions[i]))
 		}
+	case *v1.UpstreamSpec_AwsEc2:
+		add(
+			fmt.Sprintf("role:           %v", usType.AwsEc2.RoleArn),
+			fmt.Sprintf("uses public ip: %v", usType.AwsEc2.PublicIp),
+			fmt.Sprintf("port:           %v", usType.AwsEc2.Port),
+		)
+		add(getEc2TagFiltersString(usType.AwsEc2.Filters)...)
+		instances := xdsDump.GetEc2InstancesForUpstream(up.Metadata.Ref())
+		add(
+			"EC2 Instance Ids:",
+		)
+		add(
+			instances...,
+		)
 	case *v1.UpstreamSpec_Azure:
 		var functions []string
 		for _, fn := range usType.Azure.Functions {
@@ -181,4 +210,39 @@ func linesForServiceSpec(serviceSpec *plugins.ServiceSpec) []string {
 	}
 
 	return spec
+}
+
+func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
+	var out []string
+	add := func(s ...string) {
+		out = append(out, s...)
+	}
+
+	var kFilters []*ec2.TagFilter_Key
+	var kvFilters []*ec2.TagFilter_KvPair
+	for _, f := range filters {
+		switch x := f.Spec.(type) {
+		case *ec2.TagFilter_Key:
+			kFilters = append(kFilters, x)
+		case *ec2.TagFilter_KvPair_:
+			kvFilters = append(kvFilters, x.KvPair)
+		}
+	}
+	if len(kFilters) == 0 {
+		add(fmt.Sprintf("key filters: (none)"))
+	} else {
+		add(fmt.Sprintf("key filters:"))
+		for _, f := range kFilters {
+			add(fmt.Sprintf("- %v", f.Key))
+		}
+	}
+	if len(kvFilters) == 0 {
+		add(fmt.Sprintf("key-value filters: (none)"))
+	} else {
+		add(fmt.Sprintf("key-value filters:"))
+		for _, f := range kvFilters {
+			add(fmt.Sprintf("- %v: %v", f.Key, f.Value))
+		}
+	}
+	return out
 }

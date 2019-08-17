@@ -10,15 +10,16 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-)
 
-import (
 	ec2api "github.com/aws/aws-sdk-go/service/ec2"
+
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
+
 	. "github.com/onsi/gomega"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -84,7 +85,7 @@ var _ = Describe("", func() {
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:    region,
 						SecretRef: &secretRef,
-						RoleArns:  []string{roleArn},
+						RoleArn:   roleArn,
 						Filters:   filters,
 						PublicIp:  false,
 						Port:      80,
@@ -98,7 +99,7 @@ var _ = Describe("", func() {
 				UpstreamType: &v1.UpstreamSpec_AwsEc2{
 					AwsEc2: &glooec2.UpstreamSpec{
 						Region:   region,
-						RoleArns: []string{roleArn},
+						RoleArn:  roleArn,
 						Filters:  filters,
 						PublicIp: false,
 						Port:     80,

@@ -19,7 +19,7 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		Use:     constants.UPSTREAM_COMMAND.Use,
 		Aliases: constants.UPSTREAM_COMMAND.Aliases,
 		Short:   "delete an upstream",
-		Long:    "usage: glooctl get upstream [NAME] [--namespace=namespace]",
+		Long:    "usage: glooctl delete upstream [NAME] [--namespace=namespace]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := common.GetName(args, opts)
 			if err := helpers.MustUpstreamClient().Delete(opts.Metadata.Namespace, name,

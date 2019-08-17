@@ -1,7 +1,7 @@
 package install
 
 import (
-	"fmt"
+	"io/ioutil"
 	"log"
 	"strings"
 
@@ -42,9 +42,12 @@ func GetHelmArchive(chartArchiveUri string) (*chart.Chart, error) {
 	return helmChart, err
 }
 
+// use to overwrite / modify values file before passing to helm
+type ValuesCallback func(config *generate.HelmConfig)
+
 // Searches for the value file with the given name in the chart and returns its raw content.
 // NOTE: this also sets the namespace.create attribute to 'true'.
-func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, extraValues map[string]string) (*chart.Config, error) {
+func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, userValuesFileName string, extraValues chartutil.Values, valueOptions ...ValuesCallback) (*chart.Config, error) {
 	rawAdditionalValues := "{}"
 	if fileName != "" {
 		var found bool
@@ -52,6 +55,7 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, ex
 			if valueFile.TypeUrl == fileName {
 				rawAdditionalValues = string(valueFile.Value)
 				found = true
+				break
 			}
 		}
 		if !found {
@@ -60,7 +64,7 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, ex
 	}
 
 	// Convert value file content to struct
-	valueStruct := &generate.Config{}
+	valueStruct := &generate.HelmConfig{}
 	if err := yaml.Unmarshal([]byte(rawAdditionalValues), valueStruct); err != nil {
 		return nil, errors.Errorf("invalid format for value file [%s] in Helm chart archive", fileName)
 	}
@@ -69,16 +73,40 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, ex
 	// (`helm install --namespace=<namespace_name>` creates the given namespace)
 	valueStruct.Namespace = &generate.Namespace{Create: true}
 
+	for _, opt := range valueOptions {
+		opt(valueStruct)
+	}
+
 	valueBytes, err := yaml.Marshal(valueStruct)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed marshaling value file struct")
 	}
 
-	valuesString := string(valueBytes)
+	// unmarshal to helm values so we can merge
+	values, err := chartutil.ReadValues(valueBytes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed reading values")
+	}
+
 	if extraValues != nil {
-		for k, v := range extraValues {
-			valuesString = fmt.Sprintf("%s: %s\n%s", k, v, valuesString)
+		values.MergeInto(extraValues)
+	}
+
+	if userValuesFileName != "" {
+		uservalues, err := ioutil.ReadFile(userValuesFileName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed reading user values "+userValuesFileName)
 		}
+		userValues, err := chartutil.ReadValues(uservalues)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed parsing user values")
+		}
+		values.MergeInto(userValues)
+	}
+
+	valuesString, err := values.YAML()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed values struct")
 	}
 
 	// NOTE: config.Values is never used by helm
@@ -86,7 +114,7 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, ex
 }
 
 func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
-	return GetValuesFromFileIncludingExtra(helmChart, fileName, nil)
+	return GetValuesFromFileIncludingExtra(helmChart, fileName, "", nil)
 }
 
 // Renders the content of the given Helm chart archive:

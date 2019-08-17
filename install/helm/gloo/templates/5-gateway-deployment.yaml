@@ -1,3 +1,7 @@
+{{- $image := .Values.gateway.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gateway.deployment.image .Values.global.image }}
+{{- end }}
 {{- if .Values.gateway.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -5,7 +9,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
-  name: gateway
+  name: gateway-v2
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gateway.deployment.replicas }}
@@ -23,10 +27,16 @@ spec:
         prometheus.io/scrape: "true"
       {{- end}}
     spec:
+      serviceAccountName: gateway
       containers:
-      - image: "{{ .Values.gateway.deployment.image.repository }}:{{ .Values.gateway.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.gateway.deployment.image.pullPolicy }}
+      - image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: gateway
+{{- if .Values.gateway.deployment.resources }}
+        resources:
+{{ toYaml .Values.gateway.deployment.resources | indent 10}}
+{{- end}}
+
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false

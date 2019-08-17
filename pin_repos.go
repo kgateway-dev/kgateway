@@ -1,8 +1,8 @@
 package main
 
 import (
-	version "github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/go-utils/log"
+	version "github.com/solo-io/go-utils/versionutils"
 )
 
 func main() {

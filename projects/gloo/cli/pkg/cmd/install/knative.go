@@ -8,7 +8,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,8 +28,6 @@ import (
 const (
 	installedByUsAnnotationKey = "gloo.solo.io/glooctl_install_info"
 
-	knativeCrdSelector = "knative.dev/crd-install=true"
-
 	servingReleaseUrlTemplate    = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
 	buildReleaseUrlTemplate      = "https://github.com/knative/build/releases/download/v%v/build.yaml"
 	eventingReleaseUrlTemplate   = "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
@@ -50,13 +47,15 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Install.Knative.InstallKnative {
-				installed, _, err := checkKnativeInstallation()
-				if err != nil {
-					return errors.Wrapf(err, "checking for existing knative installation")
-				}
-				if installed {
-					return errors.Errorf("knative-serving namespace found. please " +
-						"uninstall the previous version of knative, or re-run this command with --install-knative=false")
+				if !opts.Install.DryRun {
+					installed, _, err := checkKnativeInstallation()
+					if err != nil {
+						return errors.Wrapf(err, "checking for existing knative installation")
+					}
+					if installed {
+						return errors.Errorf("knative-serving namespace found. please " +
+							"uninstall the previous version of knative, or re-run this command with --install-knative=false")
+					}
 				}
 
 				if err := installKnativeServing(opts); err != nil {
@@ -100,19 +99,18 @@ func installKnativeServing(opts *options.Options) error {
 		return nil
 	}
 
-	knativeCrdNames, err := getCrdNames(manifests)
+	knativeCrdNames, knativeCrdManifests, err := getCrdManifests(manifests)
 	if err != nil {
 		return err
 	}
 
-	// install crds first by using selector
-	// https://knative.dev/docs/install/knative-with-any-k8s/
+	// install crds first
 	fmt.Fprintln(os.Stderr, "installing Knative CRDs...")
-	if err := install.KubectlApply([]byte(manifests), "--selector", knativeCrdSelector); err != nil {
+	if err := install.KubectlApply([]byte(knativeCrdManifests)); err != nil {
 		return errors.Wrapf(err, "installing knative crds with kubectl apply")
 	}
 
-	if err := waitForCrdsToBeRegistered(knativeCrdNames, time.Second*5, time.Millisecond*500); err != nil {
+	if err := waitForCrdsToBeRegistered(opts.Top.Ctx, knativeCrdNames); err != nil {
 		return errors.Wrapf(err, "waiting for knative CRDs to be registered")
 	}
 
@@ -174,7 +172,7 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	outputManifests := []string{servingManifest}
 
 	if build {
-		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, knativeVersion)
+		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, opts.InstallKnativeBuildVersion)
 		buildManifest, err := getManifestForInstallation(buildReleaseUrl)
 		if err != nil {
 			return "", err
@@ -183,7 +181,7 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 	}
 
 	if eventing {
-		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, knativeVersion)
+		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, opts.InstallKnativeEventingVersion)
 		eventingManifest, err := getManifestForInstallation(eventingReleaseUrl)
 		if err != nil {
 			return "", err
@@ -331,14 +329,14 @@ func isEmptyYamlSnippet(objYaml string) bool {
 	return removeSpaces == ""
 }
 
-func getCrdNames(manifests string) ([]string, error) {
+func getCrdManifests(manifests string) ([]string, string, error) {
 	// parse runtime.Objects from the input yaml
 	objects, err := parseUnstructured(manifests)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	var crdNames []string
+	var crdNames, crdManifests []string
 
 	for _, object := range objects {
 		// objects parsed by UnstructuredJSONScheme can only be of
@@ -346,10 +344,11 @@ func getCrdNames(manifests string) ([]string, error) {
 		if unstructuredObj, ok := object.obj.(*unstructured.Unstructured); ok {
 			if gvk := unstructuredObj.GroupVersionKind(); gvk.Kind == "CustomResourceDefinition" && gvk.Group == "apiextensions.k8s.io" {
 				crdNames = append(crdNames, unstructuredObj.GetName())
+				crdManifests = append(crdManifests, object.yaml)
 			}
 		}
 	}
 
 	// re-join the objects into a single manifest
-	return crdNames, nil
+	return crdNames, strings.Join(crdManifests, yamlJoiner), nil
 }

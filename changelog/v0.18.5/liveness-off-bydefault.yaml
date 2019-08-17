@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Introduce probs again, but set them to off by default.
+    issueLink: https://github.com/solo-io/gloo/issues/924
+    resolvesIssue: false

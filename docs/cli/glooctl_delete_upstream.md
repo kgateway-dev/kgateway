@@ -8,7 +8,7 @@ delete an upstream
 
 ### Synopsis
 
-usage: glooctl get upstream [NAME] [--namespace=namespace]
+usage: glooctl delete upstream [NAME] [--namespace=namespace]
 
 ```
 glooctl delete upstream [flags]

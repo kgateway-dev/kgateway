@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add command for getting xds snapshot
+    issueLink: https://github.com/solo-io/gloo/issues/938
