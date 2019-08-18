@@ -112,7 +112,7 @@ type GlooDeployment struct {
 
 type Discovery struct {
 	Deployment *DiscoveryDeployment `json:"deployment,omitempty"`
-	FdsMode    string               `json:"fdsMode" desc:"mode for function discovery (blacklist\whitelist). See more info in the settings docs"`
+	FdsMode    string               `json:"fdsMode" desc:"mode for function discovery (blacklist or whitelist). See more info in the settings docs"`
 }
 
 type DiscoveryDeployment struct {
@@ -123,9 +123,10 @@ type DiscoveryDeployment struct {
 
 type Gateway struct {
 	Enabled       *bool                 `json:"enabled" desc:"enable Gloo API Gateway features"`
-	Upgrade       *bool                 `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a "live" label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
+	Upgrade       *bool                 `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
 	Deployment    *GatewayDeployment    `json:"deployment,omitempty"`
 	ConversionJob *GatewayConversionJob `json:"conversionJob,omitempty"`
+	UpdateValues  bool                  `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 }
 
 type GatewayDeployment struct {
@@ -182,8 +183,8 @@ type GatewayProxyService struct {
 }
 
 type Tracing struct {
-	Provider string `json:"provider",omitempty`
-	Cluster  string `json:"cluster",omitempty`
+	Provider string `json:"provider,omitempty"`
+	Cluster  string `json:"cluster,omitempty"`
 }
 
 type GatewayProxyConfigMap struct {
