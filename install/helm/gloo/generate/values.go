@@ -113,6 +113,7 @@ type GlooDeployment struct {
 type Discovery struct {
 	Deployment *DiscoveryDeployment `json:"deployment,omitempty"`
 	FdsMode    string               `json:"fdsMode" desc:"mode for function discovery (blacklist\whitelist). See more info in the settings docs"`
+	Enabled    *bool                `json:"enabled" desc:"enable Discovery features"`
 }
 
 type DiscoveryDeployment struct {

@@ -25,6 +25,7 @@ gloo:
     stats: true
 
 discovery:
+  enabled: true
   deployment:
     image:
       repository: discovery

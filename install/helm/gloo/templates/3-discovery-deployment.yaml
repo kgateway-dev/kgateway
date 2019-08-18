@@ -1,3 +1,4 @@
+{{- if .Values.discovery.enabled }}
 {{- $image := .Values.discovery.deployment.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.discovery.deployment.image .Values.global.image }}
@@ -52,3 +53,4 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
+{{- end }}
