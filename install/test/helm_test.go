@@ -829,6 +829,7 @@ static_resources:
     upstream_connection_options:
       tcp_keepalive: {}
     type: STRICT_DNS
+    respect_dns_ttl: true
   - name: admin_port_cluster
     connect_timeout: 5.000s
     type: STATIC
@@ -922,7 +923,8 @@ static_resources:
     http2_protocol_options: {}
     upstream_connection_options:
       tcp_keepalive: {}
-    type: STRICT_DNS # if $spec.tracing.cluster # if $spec.tracing
+    type: STRICT_DNS
+    respect_dns_ttl: true # if $spec.tracing.cluster # if $spec.tracing
   - name: admin_port_cluster
     connect_timeout: 5.000s
     type: STATIC
@@ -1021,6 +1023,7 @@ static_resources:
     upstream_connection_options:
       tcp_keepalive: {}
     type: STRICT_DNS
+    respect_dns_ttl: true
   - connect_timeout: 1s
     lb_policy: round_robin
     load_assignment:
@@ -1033,7 +1036,8 @@ static_resources:
                 address: zipkin
                 port_value: 1234
     name: zipkin
-    type: strict_dns
+    type: STRICT_DNS
+    respect_dns_ttl: true
    # if $spec.tracing.cluster # if $spec.tracing
   - name: admin_port_cluster
     connect_timeout: 5.000s
@@ -1176,6 +1180,7 @@ static_resources:
     upstream_connection_options:
       tcp_keepalive: {}
     type: STRICT_DNS
+    respect_dns_ttl: true
   - name: admin_port_cluster
     connect_timeout: 5.000s
     type: STATIC

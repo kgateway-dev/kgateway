@@ -124,6 +124,7 @@ data:
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
+        respect_dns_ttl: true
 {{- if $spec.tracing -}}
 {{- if $spec.tracing.cluster}}
 {{ toYaml $spec.tracing.cluster | indent 6}}
