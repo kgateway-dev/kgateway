@@ -197,6 +197,39 @@ func ProxyClient() (v1.ProxyClient, error) {
 	return proxyClient, nil
 }
 
+func MustGatewayClient() gatewayv1.GatewayClient {
+	client, err := GatewayClient()
+	if err != nil {
+		log.Fatalf("failed to create proxy client: %v", err)
+	}
+	return client
+}
+
+func GatewayClient() (gatewayv1.GatewayClient, error) {
+	memoryResourceClient := getMemoryClients()
+	if memoryResourceClient != nil {
+		return gatewayv1.NewGatewayClient(memoryResourceClient)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache(context.TODO())
+	gatewayClient, err := gatewayv1.NewGatewayClient(&factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.GatewayCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating gateway client")
+	}
+	if err := gatewayClient.Register(); err != nil {
+		return nil, err
+	}
+	return gatewayClient, nil
+}
+
 func MustVirtualServiceClient() gatewayv1.VirtualServiceClient {
 	client, err := VirtualServiceClient()
 	if err != nil {
@@ -299,7 +332,11 @@ func secretClient() (v1.SecretClient, error) {
 }
 
 func GetKubernetesClient() (*kubernetes.Clientset, error) {
-	config, err := getKubernetesConfig(0)
+	return GetKubernetesClientWithTimeout(0)
+}
+
+func GetKubernetesClientWithTimeout(timeout time.Duration) (*kubernetes.Clientset, error) {
+	config, err := getKubernetesConfig(timeout)
 	if err != nil {
 		return nil, err
 	}
