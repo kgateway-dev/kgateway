@@ -103,6 +103,7 @@ to be usable by Gloo.
 "stats": .stats.plugins.gloo.solo.io.Stats
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
+"defaultHashPolicy": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
 
 ```
 
@@ -113,6 +114,7 @@ to be usable by Gloo.
 | `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. |  |
+| `defaultHashPolicy` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | Optional, if set, routes to hashing load balancer upstreams will use this hash policy, unless a policy has been set on the route or on the upstream Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service |  |
 
 
 
@@ -138,6 +140,7 @@ to be usable by Gloo.
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "hostRewrite": .hostrewrite.plugins.gloo.solo.io.HostRewrite
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
+"lbHash": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
 
 ```
 
@@ -154,6 +157,7 @@ to be usable by Gloo.
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on this Route |  |
 | `hostRewrite` | [.hostrewrite.plugins.gloo.solo.io.HostRewrite](../plugins/hostrewrite/hostrewrite.proto.sk#hostrewrite) | Rewrite the Host header for requests matched on this route |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |  |
+| `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service |  |
 
 
 

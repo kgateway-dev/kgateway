@@ -2,6 +2,8 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/lbhash/lbhash.proto";
+
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -39,6 +41,11 @@ message LoadBalancerConfig {
         // Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered to further
         // constrain resource use.
         uint64 maximum_ring_size = 2;
+
+        // Optional, if set, routes to this upstream will use this hash policy, unless a policy has been set on the route
+        // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
+        // - route, upstream, virtual service
+        lbhash.plugins.gloo.solo.io.RouteActionHashConfig default_hash_policy = 12;
     }
 
     message RingHash {

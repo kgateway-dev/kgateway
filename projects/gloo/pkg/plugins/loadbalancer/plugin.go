@@ -6,10 +6,19 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/errors"
 )
 
 type Plugin struct{}
+
+var (
+	InvalidRouteTypeError = func(e error) error {
+		return errors.Wrapf(e, "cannot use lbhash plugin on non-Route_Route route actions")
+	}
+)
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
@@ -20,8 +29,52 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	// TODO(yuval-k): add ring hash config
+	lbPlugin := in.RoutePlugins.GetLbHash()
+	if lbPlugin == nil {
+		return nil
+	}
+	if err := utils.EnsureRouteAction(out); err != nil {
+		return InvalidRouteTypeError(err)
+	}
+	outRa := out.GetRoute()
+	outRa.HashPolicy = getHashPoliciesFromSpec(lbPlugin.HashPolicies)
 	return nil
+}
+
+func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoyroute.RouteAction_HashPolicy {
+	if len(spec) == 0 {
+		return nil
+	}
+	var policies []*envoyroute.RouteAction_HashPolicy
+	for _, s := range spec {
+		policy := &envoyroute.RouteAction_HashPolicy{
+			Terminal: s.Terminal,
+		}
+		switch keyType := s.KeyType.(type) {
+		case *lbhash.HashPolicy_Header:
+			policy.PolicySpecifier = &envoyroute.RouteAction_HashPolicy_Header_{
+				Header: &envoyroute.RouteAction_HashPolicy_Header{
+					HeaderName: keyType.Header,
+				},
+			}
+		case *lbhash.HashPolicy_Cookie:
+			policy.PolicySpecifier = &envoyroute.RouteAction_HashPolicy_Cookie_{
+				Cookie: &envoyroute.RouteAction_HashPolicy_Cookie{
+					Name: keyType.Cookie.Name,
+					Ttl:  keyType.Cookie.Ttl,
+					Path: keyType.Cookie.Path,
+				},
+			}
+		case *lbhash.HashPolicy_SourceIp:
+			policy.PolicySpecifier = &envoyroute.RouteAction_HashPolicy_ConnectionProperties_{
+				ConnectionProperties: &envoyroute.RouteAction_HashPolicy_ConnectionProperties{
+					SourceIp: keyType.SourceIp,
+				},
+			}
+		}
+		policies = append(policies, policy)
+	}
+	return policies
 }
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
