@@ -45,7 +45,8 @@ message LoadBalancerConfig {
         // Optional, if set, routes to this upstream will use this hash policy, unless a policy has been set on the route
         // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
         // - route, upstream, virtual service
-        lbhash.plugins.gloo.solo.io.RouteActionHashConfig default_hash_policy = 12;
+        // CONSIDERATION
+        //        lbhash.plugins.gloo.solo.io.RouteActionHashConfig default_hash_policy = 12;
     }
 
     message RingHash {

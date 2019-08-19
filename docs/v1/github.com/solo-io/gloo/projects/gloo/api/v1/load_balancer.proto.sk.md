@@ -115,7 +115,6 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 ```yaml
 "minimumRingSize": int
 "maximumRingSize": int
-"defaultHashPolicy": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
 
 ```
 
@@ -123,7 +122,6 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 | ----- | ---- | ----------- |----------- | 
 | `minimumRingSize` | `int` | Minimum hash ring size. The larger the ring is (that is, the more hashes there are for each provided host) the better the request distribution will reflect the desired weights. Defaults to 1024 entries, and limited to 8M entries. |  |
 | `maximumRingSize` | `int` | Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered to further constrain resource use. |  |
-| `defaultHashPolicy` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | Optional, if set, routes to this upstream will use this hash policy, unless a policy has been set on the route Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service |  |
 
 
 

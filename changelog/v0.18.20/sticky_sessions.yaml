@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Enable session affinity through Envoy's hashing load balancers.
+    issueLink: https://github.com/solo-io/gloo/issues/935

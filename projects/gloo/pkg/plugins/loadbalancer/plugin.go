@@ -4,13 +4,16 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/errors"
 )
+
+var _ plugins.Plugin = new(Plugin)
+var _ plugins.RoutePlugin = new(Plugin)
 
 type Plugin struct{}
 
@@ -144,3 +147,36 @@ func setRingHashLbConfig(out *envoyapi.Cluster, userConfig *v1.LoadBalancerConfi
 	}
 	out.LbConfig = cfg
 }
+
+// CONSIDERATION - convenience defaults
+//func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
+//	if in.VirtualHostPlugins.GetDefaultHashPolicy() == nil {
+//		return nil
+//	}
+//	var routesToUpdateIndices []int
+//	var configsToApply []*lbhash.RouteActionHashConfig
+//	for i, route := in.Routes {
+//		if lbConfig := shouldUpdateRoute(route, params.Snapshot.Upstreams); lbConfig != nil  {
+//			routesToUpdateIndices = append(routesToUpdateIndices, i)
+//		}
+//	}
+//	return nil
+//}
+//
+//func shouldUpdateRoute(route *v1.Route) *lbhash.RouteActionHashConfig {
+//	if route.Action == nil || route.GetRouteAction() == nil {
+//		return nil
+//	}
+//	if route.GetRoutePlugins().GetLbHash() != nil {
+//		return nil
+//	}
+//	if hashConfig := isHashedLbUpstreamWithDefault(route.GetRouteAction()); hashConfig != nil {
+//		return hashConfig
+//	}
+//	return nil
+//}
+//
+////func isHashedLbUpstreamWithDefault(routeAction *v1.RouteAction) *lbhash.RouteActionHashConfig {
+////	upRef, err := upstreams.DestinationToUpstreamRef(routeAction.Destination)
+////
+////}
