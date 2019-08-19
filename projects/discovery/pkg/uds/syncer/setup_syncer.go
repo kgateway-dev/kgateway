@@ -9,7 +9,9 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
 func RunUDS(opts bootstrap.Opts) error {
@@ -32,11 +34,20 @@ func RunUDS(opts bootstrap.Opts) error {
 		return err
 	}
 
-	kubeCache, err := cache.NewKubeCoreCache(opts.WatchOpts.Ctx, opts.KubeClient)
-	if err != nil {
-		return err
+	var nsClient kubernetes.KubeNamespaceClient
+	if opts.KubeClient != nil && opts.KubeCoreCache.NamespaceLister() != nil {
+		nsClient = namespace.NewNamespaceClient(opts.KubeClient, opts.KubeCoreCache)
+	} else {
+		// initialize an empty namespace client
+		// in the future we can extend the concept of namespaces to
+		// its own resource type which users can manage via another storage backend
+		nsClient, err = kubernetes.NewKubeNamespaceClient(&factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		})
+		if err != nil {
+			return err
+		}
 	}
-	nsClient := namespace.NewNamespaceClient(opts.KubeClient, kubeCache)
 
 	emit := make(chan struct{})
 	emitter := v1.NewDiscoveryEmitterWithEmit(upstreamClient, nsClient, secretClient, emit)

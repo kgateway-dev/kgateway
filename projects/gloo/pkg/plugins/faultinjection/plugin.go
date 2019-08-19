@@ -4,9 +4,9 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoyfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/proto"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -59,7 +59,7 @@ func toEnvoyAbort(abort *fault.RouteAbort) *envoyfault.FaultAbort {
 	if abort == nil {
 		return nil
 	}
-	percentage := toEnvoyPercentage(abort.Percentage)
+	percentage := common.ToEnvoyPercentage(abort.Percentage)
 	errorType := &envoyfault.FaultAbort_HttpStatus{
 		HttpStatus: uint32(abort.HttpStatus),
 	}
@@ -69,18 +69,11 @@ func toEnvoyAbort(abort *fault.RouteAbort) *envoyfault.FaultAbort {
 	}
 }
 
-func toEnvoyPercentage(percentage float32) *envoytype.FractionalPercent {
-	return &envoytype.FractionalPercent{
-		Numerator:   uint32(percentage * 10000),
-		Denominator: envoytype.FractionalPercent_MILLION,
-	}
-}
-
 func toEnvoyDelay(delay *fault.RouteDelay) *v2.FaultDelay {
 	if delay == nil {
 		return nil
 	}
-	percentage := toEnvoyPercentage(delay.Percentage)
+	percentage := common.ToEnvoyPercentage(delay.Percentage)
 	delaySpec := &v2.FaultDelay_FixedDelay{
 		FixedDelay: delay.FixedDelay,
 	}

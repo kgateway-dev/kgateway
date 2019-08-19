@@ -10,6 +10,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -18,9 +19,9 @@ var _ discovery.DiscoveryPlugin = new(plugin)
 type plugin struct {
 	kube kubernetes.Interface
 
-	kubeShareFactory KubePluginSharedFactory
-
 	UpstreamConverter UpstreamConverter
+
+	kubeCoreCache corecache.KubeCoreCache
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -32,10 +33,11 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("tcp://%v.%v.svc.cluster.local:%v", kubeSpec.Kube.ServiceName, kubeSpec.Kube.ServiceNamespace, kubeSpec.Kube.ServicePort))
 }
 
-func NewPlugin(kube kubernetes.Interface) plugins.Plugin {
+func NewPlugin(kube kubernetes.Interface, kubeCoreCache corecache.KubeCoreCache) plugins.Plugin {
 	return &plugin{
 		kube:              kube,
 		UpstreamConverter: DefaultUpstreamConverter(),
+		kubeCoreCache:     kubeCoreCache,
 	}
 }
 

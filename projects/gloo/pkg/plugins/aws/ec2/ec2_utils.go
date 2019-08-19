@@ -3,6 +3,8 @@ package ec2
 import (
 	"fmt"
 
+	"github.com/solo-io/go-utils/errors"
+
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -15,27 +17,36 @@ import (
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 )
 
-func getEc2SessionForCredentials(awsRegion string, secretRef core.ResourceRef, secrets v1.SecretList) (*session.Session, error) {
+func getEc2SessionForCredentials(regionConfig *aws.Config, secretRef core.ResourceRef, secrets v1.SecretList) (*session.Session, error) {
 	return aws2.GetAwsSession(
 		secretRef,
 		secrets,
-		&aws.Config{
-			Region: aws.String(awsRegion),
-		})
+		regionConfig,
+	)
 }
 
 func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error) {
-	sess, err := getEc2SessionForCredentials(cred.Region(), cred.SecretRef(), secrets)
-	if err != nil {
-		return nil, err
+	var sess *session.Session
+	var err error
+	regionConfig := &aws.Config{Region: aws.String(cred.Region())}
+	secretRef := cred.SecretRef()
+	if secretRef == nil {
+		sess, err = session.NewSession(regionConfig)
+		if err != nil {
+			return nil, CreateSessionFromEnvError(err)
+		}
+	} else {
+		sess, err = getEc2SessionForCredentials(regionConfig, *secretRef, secrets)
+		if err != nil {
+			return nil, CreateSessionFromSecretError(err)
+		}
 	}
-	var configs []*aws.Config
-	for _, arn := range cred.Arns() {
-		cred := stscreds.NewCredentials(sess, arn)
-		configs = append(configs, &aws.Config{Credentials: cred})
+	if cred.Arn() != "" {
+		cred := stscreds.NewCredentials(sess, cred.Arn())
+		config := &aws.Config{Credentials: cred}
+		return ec2.New(sess, config), nil
 	}
-	svc := ec2.New(sess, configs...)
-	return svc, nil
+	return ec2.New(sess), nil
 }
 
 func GetInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Instance {
@@ -52,10 +63,13 @@ func GetInstancesFromDescription(desc *ec2.DescribeInstancesOutput) []*ec2.Insta
 
 // this filter function defines what gloo considers a valid EC2 instance
 func validInstance(instance *ec2.Instance) bool {
-	if instance.PublicIpAddress == nil {
-		return false
+	if instance.PublicIpAddress != nil {
+		return true
 	}
-	return true
+	if instance.PrivateIpAddress != nil {
+		return true
+	}
+	return false
 }
 
 // generate an ec2 filter spec for a given upstream.
@@ -114,3 +128,13 @@ func tagFiltersKey(tagName string) *ec2.Filter {
 		Values: []*string{aws.String(tagName)},
 	}
 }
+
+var (
+	CreateSessionFromEnvError = func(err error) error {
+		return errors.Wrapf(err, "unable to create a session with credentials taken from env")
+	}
+
+	CreateSessionFromSecretError = func(err error) error {
+		return errors.Wrapf(err, "unable to create a session with credentials taken from secret ref")
+	}
+)

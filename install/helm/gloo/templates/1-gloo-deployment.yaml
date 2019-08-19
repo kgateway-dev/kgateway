@@ -1,3 +1,7 @@
+{{- $image := .Values.gloo.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gloo.deployment.image .Values.global.image }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,14 +26,20 @@ spec:
         prometheus.io/scrape: "true"
       {{- end}}
     spec:
+      serviceAccountName: gloo
       containers:
-      - image: "{{ .Values.gloo.deployment.image.repository }}:{{ .Values.gloo.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.gloo.deployment.image.pullPolicy }}
+      - image: {{template "gloo.image" $image }}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: gloo
+{{- if .Values.gloo.deployment.resources }}
+        resources:
+{{ toYaml .Values.gloo.deployment.resources | indent 10}}
+{{- else}}
         resources:
           requests:
             cpu: 500m
             memory: 256Mi
+{{- end}}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -51,7 +61,7 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
-      {{- if .Values.gloo.deployment.image.pullSecret }}
+      {{- if $image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.gloo.deployment.image.pullSecret }}
+        - name: {{ $image.pullSecret }}
       {{- end}}

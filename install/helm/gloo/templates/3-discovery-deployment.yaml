@@ -1,3 +1,8 @@
+{{- if .Values.discovery.enabled }}
+{{- $image := .Values.discovery.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.discovery.deployment.image .Values.global.image }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,10 +27,15 @@ spec:
         prometheus.io/scrape: "true"
       {{- end}}
     spec:
+      serviceAccountName: discovery
       containers:
-      - image: "{{ .Values.discovery.deployment.image.repository }}:{{ .Values.discovery.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.discovery.deployment.image.pullPolicy }}
+      - image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: discovery
+{{- if .Values.discovery.deployment.resources }}
+        resources:
+{{ toYaml .Values.discovery.deployment.resources | indent 10}}
+{{- end}}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -43,3 +53,4 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
+{{- end }}

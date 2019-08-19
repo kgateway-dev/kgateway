@@ -13,6 +13,11 @@ var (
 		Aliases: []string{"u", "us", "upstreams"},
 	}
 
+	UPSTREAM_GROUP_COMMAND = cobra.Command{
+		Use:     "upstreamgroup",
+		Aliases: []string{"ug", "ugs", "upstreamgroups"},
+	}
+
 	PROXY_COMMAND = cobra.Command{
 		Use:     "proxy",
 		Aliases: []string{"p", "proxies"},

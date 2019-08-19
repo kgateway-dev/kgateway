@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Parse xds config to get EC2 content.
+    issueLink: https://github.com/solo-io/gloo/issues/954

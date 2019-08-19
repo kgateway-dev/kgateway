@@ -6,7 +6,8 @@ kind: Service
 metadata:
   labels:
     app: gloo
-    gloo: {{ $name | kebabcase }}
+    gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
@@ -26,7 +27,8 @@ spec:
     protocol: TCP
     name: https
   selector:
-    gloo: {{ $name | kebabcase }}
+    gateway-proxy-id: {{ $name | kebabcase }}
+    gateway-proxy: live
   type: {{ $spec.service.type }}
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}
@@ -35,4 +37,4 @@ spec:
   loadBalancerIP: {{ $spec.service.loadBalancerIP }}
   {{- end }}
 {{- end }}
-{{- end }}
+{{ end }}

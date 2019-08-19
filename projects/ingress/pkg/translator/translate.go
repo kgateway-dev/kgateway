@@ -14,7 +14,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 )
 
-func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
+func translateProxy(namespace string, snap *v1.TranslatorSnapshot, requireIngressClass bool) (*gloov1.Proxy, error) {
 	var ingresses []*v1beta1.Ingress
 	for _, ig := range snap.Ingresses {
 		kubeIngress, err := ingress.ToKube(ig)
@@ -26,7 +26,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Prox
 	upstreams := snap.Upstreams
 	secrets := snap.Secrets
 
-	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, secrets)
+	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, secrets, requireIngressClass)
 	if err != nil {
 		return nil, errors.Wrapf(err, "computing virtual hosts")
 	}
@@ -108,13 +108,13 @@ type secureVirtualHost struct {
 	secret core.ResourceRef
 }
 
-func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
+func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, secrets gloov1.SecretList, requireIngressClass bool) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
 	routesByHostHttp := make(map[string][]*gloov1.Route)
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)
 	var defaultBackend *v1beta1.IngressBackend
 	for _, ing := range ingresses {
-		if !isOurIngress(ing) {
+		if requireIngressClass && !isOurIngress(ing) {
 			continue
 		}
 		spec := ing.Spec
@@ -193,7 +193,6 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 	var virtualHostsHttp []*gloov1.VirtualHost
 	var virtualHostsHttps []secureVirtualHost
 
-	// TODO (ilackarms): support for VirtualHostPlugins on ingress?
 	for host, routes := range routesByHostHttp {
 		sortByLongestPathName(routes)
 		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{

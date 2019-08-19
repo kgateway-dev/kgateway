@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Set all kube2e tests to use the same lock to avoid overwriting CRDs
+  issueLink: https://github.com/solo-io/gloo/issues/912

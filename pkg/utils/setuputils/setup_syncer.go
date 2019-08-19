@@ -3,6 +3,7 @@ package setuputils
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -35,5 +36,6 @@ func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 	if err != nil {
 		return errors.Wrapf(err, "finding bootstrap configuration")
 	}
+	ctx = settingsutil.WithSettings(ctx, settings)
 	return s.setupFunc(ctx, kube.NewKubeCache(ctx), s.inMemoryCache, settings)
 }

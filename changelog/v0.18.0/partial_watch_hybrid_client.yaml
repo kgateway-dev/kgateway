@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix an unlikely edge case where a client might emit an incomplete list of upstreams.
+    issueLink: https://github.com/solo-io/gloo/pull/886

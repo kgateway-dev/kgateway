@@ -2,16 +2,16 @@ package translator
 
 import (
 	"sort"
+	"strings"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -22,14 +22,30 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 		translatorReport(err, "listener."+format, args...)
 	}
 	validateListenerPorts(proxy, report)
-
-	listenerFilters := t.computeListenerFilters(params, listener, report)
-	if len(listenerFilters) == 0 {
-		// nothing to do, return nil
-		return nil
+	var filterChains []envoylistener.FilterChain
+	switch listener.GetListenerType().(type) {
+	case *v1.Listener_HttpListener:
+		// run the http filter chain plugins and listener plugins
+		listenerFilters := t.computeListenerFilters(params, listener, report)
+		if len(listenerFilters) == 0 {
+			return nil
+		}
+		filterChains = t.computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, report)
+	case *v1.Listener_TcpListener:
+		// run the tcp filter chain plugins
+		for _, plug := range t.plugins {
+			listenerPlugin, ok := plug.(plugins.ListenerFilterChainPlugin)
+			if !ok {
+				continue
+			}
+			result, err := listenerPlugin.ProcessListenerFilterChain(params, listener)
+			if err != nil {
+				report(err, "plugin error on listener filter chain")
+				continue
+			}
+			filterChains = append(filterChains, result...)
+		}
 	}
-
-	filterChains := computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, report)
 
 	out := &envoyapi.Listener{
 		Name: listener.Name,
@@ -79,10 +95,10 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 		}
 	}
 
-	// add the http connection manager if listener is HTTP and has >= 1 virtual hosts
+	// return if listener type != http || no virtual hosts
 	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
 	if !ok || len(httpListener.HttpListener.VirtualHosts) == 0 {
-		return sortListenerFilters(listenerFilters)
+		return nil
 	}
 
 	// add the http connection manager filter after all the InAuth Listener Filters
@@ -93,13 +109,12 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 		Stage:          plugins.PostInAuth,
 	})
 
-	// sort filters by stage
 	return sortListenerFilters(listenerFilters)
 }
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, report reportFunc) []envoylistener.FilterChain {
+func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, report reportFunc) []envoylistener.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfigurations) == 0 {
@@ -111,10 +126,9 @@ func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listene
 
 	var secureFilterChains []envoylistener.FilterChain
 
-	sslCfgTranslator := utils.NewSslConfigTranslator(snap.Secrets)
-	for _, sslConfig := range listener.SslConfigurations {
+	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
 		// get secrets
-		downstreamConfig, err := sslCfgTranslator.ResolveDownstreamSslConfig(sslConfig)
+		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
 			report(err, "invalid secrets for listener %v", listener.Name)
 			continue
@@ -123,6 +137,54 @@ func computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listene
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
+}
+
+func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
+	// we can merge ssl config if:
+	// they have the same SslSecrets and VerifySubjectAltName
+	// combine SNI information.
+	// return merged result
+
+	var result []*v1.SslConfig
+
+	mergedSslSecrets := map[string]*v1.SslConfig{}
+
+	for _, sslConfig := range sslConfigs {
+
+		key := ""
+		switch sslCfg := sslConfig.SslSecrets.(type) {
+		case *v1.SslConfig_SecretRef:
+			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetName()
+		case *v1.SslConfig_SslFiles:
+			key = sslCfg.SslFiles.GetTlsCert() + "," + sslCfg.SslFiles.GetTlsKey() + "," + sslCfg.SslFiles.GetRootCa()
+		default:
+			result = append(result, sslConfig)
+			continue
+		}
+
+		tmp := make([]string, len(sslConfig.VerifySubjectAltName))
+		copy(tmp, sslConfig.VerifySubjectAltName)
+		sort.Strings(tmp)
+		key = key + ";" + strings.Join(tmp, ",")
+
+		if matchingCfg, ok := mergedSslSecrets[key]; ok {
+			matchingCfg.SslSecrets = sslConfig.SslSecrets
+			matchingCfg.VerifySubjectAltName = sslConfig.VerifySubjectAltName
+			if len(matchingCfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
+				// if either of the configs match on everything; then match on everything
+				matchingCfg.SniDomains = nil
+			} else {
+				matchingCfg.SniDomains = append(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
+			}
+		} else {
+			copy := *sslConfig
+			ptrToCopy := &copy
+			mergedSslSecrets[key] = ptrToCopy
+			result = append(result, ptrToCopy)
+		}
+	}
+
+	return result
 }
 
 func validateListenerPorts(proxy *v1.Proxy, report reportFunc) {

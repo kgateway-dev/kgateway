@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Use IfNotPresent image pull policy for release images, and Always for dev images.
+    issueLink: https://github.com/solo-io/gloo/issues/942

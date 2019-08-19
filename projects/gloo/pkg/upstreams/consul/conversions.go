@@ -12,10 +12,10 @@ import (
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
 )
 
-const upstreamNamePrefix = "consul-svc:"
+const UpstreamNamePrefix = "consul-svc:"
 
 func IsConsulUpstream(upstreamName string) bool {
-	return strings.HasPrefix(upstreamName, upstreamNamePrefix)
+	return strings.HasPrefix(upstreamName, UpstreamNamePrefix)
 }
 
 func DestinationToUpstreamRef(consulDest *v1.ConsulServiceDestination) *core.ResourceRef {
@@ -26,7 +26,7 @@ func DestinationToUpstreamRef(consulDest *v1.ConsulServiceDestination) *core.Res
 }
 
 func fakeUpstreamName(consulSvcName string) string {
-	return upstreamNamePrefix + consulSvcName
+	return UpstreamNamePrefix + consulSvcName
 }
 
 // Creates an upstream for each service in the map

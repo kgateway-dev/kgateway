@@ -54,6 +54,29 @@ func GetUpstreams(name string, opts *options.Options) (gloov1.UpstreamList, erro
 	return list, nil
 }
 
+func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroupList, error) {
+	var list gloov1.UpstreamGroupList
+
+	ugsClient := helpers.MustUpstreamGroupClient()
+	if name == "" {
+		ugs, err := ugsClient.List(opts.Metadata.Namespace,
+			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, ugs...)
+	} else {
+		ugs, err := ugsClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		if err != nil {
+			return nil, err
+		}
+		opts.Metadata.Name = name
+		list = append(list, ugs)
+	}
+
+	return list, nil
+}
+
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	var list gloov1.ProxyList
 

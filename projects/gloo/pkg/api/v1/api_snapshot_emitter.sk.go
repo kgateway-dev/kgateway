@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	mApiSnapshotIn  = stats.Int64("api.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mApiSnapshotOut = stats.Int64("api.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotIn     = stats.Int64("api.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
+	mApiSnapshotOut    = stats.Int64("api.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotMissed = stats.Int64("api.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
 
 	apisnapshotInView = &view.View{
 		Name:        "api.gloo.solo.io_snap_emitter/snap_in",
@@ -33,10 +34,17 @@ var (
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+	apisnapshotMissedView = &view.View{
+		Name:        "api.gloo.solo.io/snap_emitter/snap_missed",
+		Measure:     mApiSnapshotMissed,
+		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	}
 )
 
 func init() {
-	view.Register(apisnapshotInView, apisnapshotOutView)
+	view.Register(apisnapshotInView, apisnapshotOutView, apisnapshotMissedView)
 }
 
 type ApiEmitter interface {
@@ -144,30 +152,40 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		namespace string
 	}
 	artifactChan := make(chan artifactListWithNamespace)
+
+	var initialArtifactList ArtifactList
 	/* Create channel for Endpoint */
 	type endpointListWithNamespace struct {
 		list      EndpointList
 		namespace string
 	}
 	endpointChan := make(chan endpointListWithNamespace)
+
+	var initialEndpointList EndpointList
 	/* Create channel for Proxy */
 	type proxyListWithNamespace struct {
 		list      ProxyList
 		namespace string
 	}
 	proxyChan := make(chan proxyListWithNamespace)
+
+	var initialProxyList ProxyList
 	/* Create channel for UpstreamGroup */
 	type upstreamGroupListWithNamespace struct {
 		list      UpstreamGroupList
 		namespace string
 	}
 	upstreamGroupChan := make(chan upstreamGroupListWithNamespace)
+
+	var initialUpstreamGroupList UpstreamGroupList
 	/* Create channel for Secret */
 	type secretListWithNamespace struct {
 		list      SecretList
 		namespace string
 	}
 	secretChan := make(chan secretListWithNamespace)
+
+	var initialSecretList SecretList
 	/* Create channel for Upstream */
 	type upstreamListWithNamespace struct {
 		list      UpstreamList
@@ -175,8 +193,19 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	}
 	upstreamChan := make(chan upstreamListWithNamespace)
 
+	var initialUpstreamList UpstreamList
+
+	currentSnapshot := ApiSnapshot{}
+
 	for _, namespace := range watchNamespaces {
 		/* Setup namespaced watch for Artifact */
+		{
+			artifacts, err := c.artifact.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Artifact list")
+			}
+			initialArtifactList = append(initialArtifactList, artifacts...)
+		}
 		artifactNamespacesChan, artifactErrs, err := c.artifact.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Artifact watch")
@@ -188,6 +217,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			errutils.AggregateErrs(ctx, errs, artifactErrs, namespace+"-artifacts")
 		}(namespace)
 		/* Setup namespaced watch for Endpoint */
+		{
+			endpoints, err := c.endpoint.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Endpoint list")
+			}
+			initialEndpointList = append(initialEndpointList, endpoints...)
+		}
 		endpointNamespacesChan, endpointErrs, err := c.endpoint.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Endpoint watch")
@@ -199,6 +235,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			errutils.AggregateErrs(ctx, errs, endpointErrs, namespace+"-endpoints")
 		}(namespace)
 		/* Setup namespaced watch for Proxy */
+		{
+			proxies, err := c.proxy.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Proxy list")
+			}
+			initialProxyList = append(initialProxyList, proxies...)
+		}
 		proxyNamespacesChan, proxyErrs, err := c.proxy.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Proxy watch")
@@ -210,6 +253,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			errutils.AggregateErrs(ctx, errs, proxyErrs, namespace+"-proxies")
 		}(namespace)
 		/* Setup namespaced watch for UpstreamGroup */
+		{
+			upstreamGroups, err := c.upstreamGroup.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial UpstreamGroup list")
+			}
+			initialUpstreamGroupList = append(initialUpstreamGroupList, upstreamGroups...)
+		}
 		upstreamGroupNamespacesChan, upstreamGroupErrs, err := c.upstreamGroup.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting UpstreamGroup watch")
@@ -221,6 +271,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			errutils.AggregateErrs(ctx, errs, upstreamGroupErrs, namespace+"-upstreamGroups")
 		}(namespace)
 		/* Setup namespaced watch for Secret */
+		{
+			secrets, err := c.secret.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Secret list")
+			}
+			initialSecretList = append(initialSecretList, secrets...)
+		}
 		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Secret watch")
@@ -232,6 +289,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
 		}(namespace)
 		/* Setup namespaced watch for Upstream */
+		{
+			upstreams, err := c.upstream.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial Upstream list")
+			}
+			initialUpstreamList = append(initialUpstreamList, upstreams...)
+		}
 		upstreamNamespacesChan, upstreamErrs, err := c.upstream.Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "starting Upstream watch")
@@ -289,21 +353,41 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			}
 		}(namespace)
 	}
+	/* Initialize snapshot for Artifacts */
+	currentSnapshot.Artifacts = initialArtifactList.Sort()
+	/* Initialize snapshot for Endpoints */
+	currentSnapshot.Endpoints = initialEndpointList.Sort()
+	/* Initialize snapshot for Proxies */
+	currentSnapshot.Proxies = initialProxyList.Sort()
+	/* Initialize snapshot for UpstreamGroups */
+	currentSnapshot.UpstreamGroups = initialUpstreamGroupList.Sort()
+	/* Initialize snapshot for Secrets */
+	currentSnapshot.Secrets = initialSecretList.Sort()
+	/* Initialize snapshot for Upstreams */
+	currentSnapshot.Upstreams = initialUpstreamList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
-		originalSnapshot := ApiSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
+		// sent initial snapshot to kick off the watch
+		initialSnapshot := currentSnapshot.Clone()
+		snapshots <- &initialSnapshot
+
 		timer := time.NewTicker(time.Second * 1)
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
-			stats.Record(ctx, mApiSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
-			snapshots <- &sentSnapshot
+			select {
+			case snapshots <- &sentSnapshot:
+				stats.Record(ctx, mApiSnapshotOut.M(1))
+				previousHash = currentHash
+			default:
+				stats.Record(ctx, mApiSnapshotMissed.M(1))
+			}
 		}
 		artifactsByNamespace := make(map[string]ArtifactList)
 		endpointsByNamespace := make(map[string]EndpointList)

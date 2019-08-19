@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
@@ -31,10 +33,15 @@ var _ = Describe("Regression", func() {
 	var (
 		app    *cobra.Command
 		output *bytes.Buffer
+		opts   *options.Options
 	)
 
 	BeforeEach(func() {
-		app = cmd.App("0.1.0")
+		opts = &options.Options{}
+		preRunFuncs := []cmd.PreRunFunc{
+			cmd.HarmonizeDryRunAndOutputFormat,
+		}
+		app = cmd.App("0.1.0", opts, preRunFuncs)
 		output = &bytes.Buffer{}
 		app.SetOutput(output)
 	})

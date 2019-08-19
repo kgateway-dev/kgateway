@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/go-utils/errors"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
@@ -74,7 +76,8 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			&api.QueryMeta{LastIndex: 100},
 			nil,
 		).AnyTimes()
-
+	})
+	JustBeforeEach(func() {
 		hybridClient, err = upstreams.NewHybridUpstreamClient(
 			baseUsClient,
 			svcClient,
@@ -104,11 +107,70 @@ var _ = Describe("Hybrid Upstream Client", func() {
 
 		writeResources()
 
-		Eventually(usChan, 500*time.Millisecond).Should(Receive(HaveLen(5)))
+		Eventually(func() (v1.UpstreamList, error) {
+			select {
+			case list := <-usChan:
+				return list, nil
+			case <-time.After(500 * time.Millisecond):
+				return nil, errors.Errorf("timed out waiting for next upstream list")
+			}
+		}, "3s").Should(HaveLen(5))
 		Consistently(errChan).Should(Not(Receive()))
 
 		cancel()
 		Eventually(usChan).Should(BeClosed())
 		Eventually(errChan).Should(BeClosed())
 	})
+
+	Context("Sleep client", func() {
+
+		BeforeEach(func() {
+			baseUsClient = sleepyClient{UpstreamClient: baseUsClient}
+		})
+
+		It("correctly returns a full snapshot even if watch is delayed", func() {
+			writeResources()
+
+			usChan, errChan, initErr := hybridClient.Watch(watchNamespace, clients.WatchOpts{Ctx: ctx})
+			Expect(initErr).NotTo(HaveOccurred())
+
+			Eventually(func() (v1.UpstreamList, error) {
+				select {
+				case list := <-usChan:
+					return list, nil
+				case <-time.After(500 * time.Millisecond):
+					return nil, errors.Errorf("timed out waiting for next upstream list")
+				}
+			}, "3s").Should(HaveLen(5))
+
+			Consistently(errChan).Should(Not(Receive()))
+
+			cancel()
+			Eventually(usChan).Should(BeClosed())
+			Eventually(errChan).Should(BeClosed())
+		})
+
+	})
 })
+
+type sleepyClient struct {
+	v1.UpstreamClient
+}
+
+func (s sleepyClient) Watch(namespace string, opts clients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
+	c, e, err := s.UpstreamClient.Watch(namespace, opts)
+	if err != nil {
+		return c, e, err
+	}
+
+	var delayedC chan v1.UpstreamList
+
+	go func() {
+		for e := range c {
+			time.Sleep(time.Second)
+			delayedC <- e
+		}
+	}()
+
+	return delayedC, e, err
+}

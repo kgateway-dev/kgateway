@@ -37,6 +37,7 @@ message Settings {
     oneof config_source {
         KubernetesCrds kubernetes_config_source = 4;
         Directory directory_config_source = 5;
+        ConsulKv consul_kv_source = 21;
     };
 
     // Determines where Gloo will read/write secrets from/to.
@@ -64,7 +65,7 @@ message Settings {
     // Enable automatic linkerd upstream header addition for easier routing to linkerd services
     bool linkerd = 17;
 
-    // USe Kubernetes CRDs as storage.
+    // Use Kubernetes CRDs as storage.
     message KubernetesCrds {
     }
 
@@ -74,6 +75,48 @@ message Settings {
 
     // Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
     message VaultSecrets {
+        // the Token used to authenticate to Vault
+        string token = 1;
+
+        // address is the address of the Vault server. This should be a complete
+        // URL such as "http://vault.example.com".
+        string address = 2;
+
+        // caCert is the path to a PEM-encoded CA cert file to use to verify the
+        // Vault server SSL certificate.
+        string ca_cert = 3;
+
+        // caPath is the path to a directory of PEM-encoded CA cert files to verify
+        // the Vault server SSL certificate.
+        string ca_path = 4;
+
+        // clientCert is the path to the certificate for Vault communication
+        string client_cert = 5;
+
+        // clientKey is the path to the private key for Vault communication
+        string client_key = 6;
+
+        // tlsServerName, if set, is used to set the SNI host when connecting via
+        // TLS.
+        string tls_server_name = 7;
+
+        // Insecure enables or disables SSL verification
+        google.protobuf.BoolValue insecure = 8;
+
+        // all keys stored in Vault will begin with this Vault
+        // this can be used to run multiple instances of Gloo against the same Consul cluster
+        // defaults to `gloo`
+        string root_key = 9;
+    }
+
+    // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
+    // Configuration options for connecting to Consul can be configured in the Settings' root
+    // `consul` field
+    message ConsulKv {
+        // all keys stored in Consul will begin with this prefix
+        // this can be used to run multiple instances of Gloo against the same Consul cluster
+        // defaults to `gloo`
+        string root_key = 1;
     }
 
     // Use Kubernetes ConfigMaps as storage.
@@ -92,7 +135,18 @@ message Settings {
     message KnativeOptions {
         // Address of the clusteringress proxy.
         // If empty, it will default to clusteringress-proxy.$POD_NAMESPACE.svc.cluster.local.
+        // Use if running Knative Version 0.7.X or less
         string cluster_ingress_proxy_address = 1;
+
+        // Address of the externally-facing knative proxy.
+        // If empty, it will default to knative-external-proxy.$POD_NAMESPACE.svc.cluster.local.
+        // Use if running Knative Version 0.8.X or higher
+        string knative_external_proxy_address = 2;
+
+        // Address of the internally-facing knative proxy.
+        // If empty, it will default to knative-internal-proxy.$POD_NAMESPACE.svc.cluster.local.
+        // Use if running Knative Version 0.8.X or higher
+        string knative_internal_proxy_address = 3;
     }
 
     // Configuration options for the Clusteringress Controller (for Knative).
@@ -132,19 +186,78 @@ message Settings {
 
         // The address of the Consul server.
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
-        google.protobuf.StringValue address = 1;
+        string address = 1;
 
-        // Use this parameter to restrict the data centers that will be considered when discovering and routing to
-        // services. If not provided, Gloo will use all available data centers.
-        repeated string data_centers = 2;
+        // Datacenter to use. If not provided, the default agent datacenter is used.
+        string datacenter = 2;
+
+        // Username to use for HTTP Basic Authentication
+        string username = 3;
+
+        // Password to use for HTTP Basic Authentication
+        string password = 4;
+
+        // Token is used to provide a per-request ACL token
+        // which overrides the agent's default token.
+        string token = 5;
+
+        // caFile is the optional path to the CA certificate used for Consul
+        // communication, defaults to the system bundle if not specified.
+        string ca_file = 6;
+
+        // caPath is the optional path to a directory of CA certificates to use for
+        // Consul communication, defaults to the system bundle if not specified.
+        string ca_path = 7;
+
+        // CertFile is the optional path to the certificate for Consul
+        // communication. If this is set then you need to also set KeyFile.
+        string cert_file = 8;
+
+        // KeyFile is the optional path to the private key for Consul communication.
+        // If this is set then you need to also set CertFile.
+        string key_file = 9;
+
+        // InsecureSkipVerify if set to true will disable TLS host verification.
+        google.protobuf.BoolValue insecure_skip_verify = 10;
 
         // WaitTime limits how long a watches for Consul resources will block.
         // If not provided, the agent default values will be used.
-        google.protobuf.Duration wait_time = 3;
+        google.protobuf.Duration wait_time = 11;
+
+        // service discovery options for Consul
+        message ServiceDiscoveryOptions {
+            // Use this parameter to restrict the data centers that will be considered when discovering and routing to
+            // services. If not provided, Gloo will use all available data centers.
+            repeated string data_centers = 1;
+        }
+
+        // Enable Service Discovery via Consul with this field
+        // set to empty struct `{}` to enable with defaults
+        ServiceDiscoveryOptions service_discovery = 12;
+
+
     }
 
     // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
     ConsulConfiguration consul = 20;
+
+
+    // Provides overrides for the default configuration parameters used to interact with Kubernetes.
+    message KubernetesConfiguration {
+
+        message RateLimits {
+            // The maximum queries-per-second Gloo can make to the Kubernetes API Server.
+            float QPS = 1;
+            // Maximum burst for throttle. When a steady state of QPS requests per second, 
+            // this is an additional number of allowed, to allow for short bursts.
+            uint32 burst = 2;
+        }
+        // Rate limits for the kuberentes clients
+        RateLimits rate_limits = 1;
+    }
+
+    // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
+    KubernetesConfiguration kubernetes = 22;
 
     // Settings for extensions
     Extensions extensions = 16;

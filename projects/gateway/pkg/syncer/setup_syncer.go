@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,35 +26,31 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	var (
 		cfg *rest.Config
 	)
-	proxyFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		inMemoryCache,
-		kubeCache,
-		gloov1.ProxyCrd,
-		&cfg,
-	)
+
+	consulClient, err := bootstrap.ConsulClientForSettings(settings)
 	if err != nil {
 		return err
 	}
 
-	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(
+	params := bootstrap.NewConfigFactoryParams(
 		settings,
 		inMemoryCache,
 		kubeCache,
-		v1.VirtualServiceCrd,
 		&cfg,
+		consulClient,
 	)
+
+	proxyFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.ProxyCrd)
 	if err != nil {
 		return err
 	}
 
-	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(
-		settings,
-		inMemoryCache,
-		kubeCache,
-		v1.GatewayCrd,
-		&cfg,
-	)
+	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.VirtualServiceCrd)
+	if err != nil {
+		return err
+	}
+
+	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v2.GatewayCrd)
 	if err != nil {
 		return err
 	}
@@ -89,7 +86,7 @@ func RunGateway(opts Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 
-	gatewayClient, err := v1.NewGatewayClient(opts.Gateways)
+	gatewayClient, err := v2.NewGatewayClient(opts.Gateways)
 	if err != nil {
 		return err
 	}
@@ -113,7 +110,7 @@ func RunGateway(opts Opts) error {
 		return err
 	}
 
-	for _, gw := range []*v1.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
+	for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
 		if _, err := gatewayClient.Write(gw, clients.WriteOpts{
 			Ctx: opts.WatchOpts.Ctx,
 		}); err != nil && !errors.IsExist(err) {
@@ -121,7 +118,7 @@ func RunGateway(opts Opts) error {
 		}
 	}
 
-	emitter := v1.NewApiEmitter(virtualServiceClient, gatewayClient)
+	emitter := v2.NewApiEmitter(virtualServiceClient, gatewayClient)
 
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient())
 	writeErrs := make(chan error)
@@ -130,7 +127,7 @@ func RunGateway(opts Opts) error {
 
 	sync := NewTranslatorSyncer(opts.WriteNamespace, proxyClient, gatewayClient, virtualServiceClient, rpt, prop)
 
-	eventLoop := v1.NewApiEventLoop(emitter, sync)
+	eventLoop := v2.NewApiEventLoop(emitter, sync)
 	eventLoopErrs, err := eventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 	if err != nil {
 		return err
@@ -145,7 +142,6 @@ func RunGateway(opts Opts) error {
 			case err := <-writeErrs:
 				logger.Errorf("error: %v", err)
 			case <-opts.WatchOpts.Ctx.Done():
-				close(writeErrs)
 				return
 			}
 		}

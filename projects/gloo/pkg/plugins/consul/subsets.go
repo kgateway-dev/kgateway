@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func (p *plugin) ProcessRouteAction(params plugins.RouteParams, inAction *v1.RouteAction, inPlugins map[string]*plugins.RoutePlugin, out *envoyroute.RouteAction) error {
+func (p *plugin) ProcessRouteAction(params plugins.RouteParams, inAction *v1.RouteAction, out *envoyroute.RouteAction) error {
 	switch dest := inAction.Destination.(type) {
 	case *v1.RouteAction_Single:
 

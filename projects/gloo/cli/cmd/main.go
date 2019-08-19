@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"time"
 
 	"github.com/solo-io/gloo/pkg/version"
 
@@ -11,9 +10,7 @@ import (
 )
 
 func main() {
-	start := time.Now()
-	defer check.CallCheck("glooctl", version.Version, start)
-
+	check.NewUsageClient().Start("glooctl", version.Version)
 	app := cmd.GlooCli(version.Version)
 	if err := app.Execute(); err != nil {
 		//fmt.Println(err)

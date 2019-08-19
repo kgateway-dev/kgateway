@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
+	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -32,9 +33,17 @@ var _ = Describe("ResourceClient", func() {
 
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
-		err := setup.SetupKubeForTest(namespace)
-		Expect(err).NotTo(HaveOccurred())
+		var err error
 		cfg, err = kubeutils.GetConfig("", "")
+		Expect(err).NotTo(HaveOccurred())
+
+		kube, err := kubernetes.NewForConfig(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		_, err = kube.CoreV1().Namespaces().Create(&kubev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		})
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {

@@ -15,6 +15,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+
 /*
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
 Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
@@ -65,15 +66,43 @@ message Listener {
         // The HTTP Listener is currently the only supported listener type.
         // It contains configuration options for Gloo's HTTP-level features including request-based routing
         HttpListener http_listener = 4;
+
+        // The HTTP Listener is currently the only supported listener type.
+        // It contains configuration options for GLoo's HTTP-level features including request-based routing
+        TcpListener tcp_listener = 5;
     }
 
     // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.
     // Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
-    // must match a domain in virtual host.
-    repeated SslConfig ssl_configurations = 5;
+    repeated SslConfig ssl_configurations = 6;
 
     // Enable ProxyProtocol support for this listener
-    google.protobuf.BoolValue use_proxy_proto = 6;
+    google.protobuf.BoolValue use_proxy_proto = 7;
+
+    // top level plugins
+    ListenerPlugins plugins = 8;
+
+}
+
+message TcpListener {
+    // List of filter chains to match on for this listener
+    repeated TcpHost tcp_hosts = 1;
+    // Plugins contains top-level plugin configuration to be applied to a listener
+    // Listener config is applied to traffic for the given listener.
+    // Some configuration here can be overridden in
+    // Virtual Host Plugin configuration or Route Plugin configuration
+    TcpListenerPlugins plugins = 8;
+}
+
+message TcpHost {
+    // the logical name of the tcp host. names must be unique for each tcp host within a listener
+    string name = 1;
+    // Name of the destinations the gateway can route to.
+    // Note: the destination spec and subsets are not supported in this context and will be ignored.
+    RouteAction destination = 2;
+    // If provided, the Gateway will serve TLS/SSL traffic for this set of routes
+    gloo.solo.io.SslConfig ssl_config = 3;
+    //matcher
 }
 
 // Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
@@ -84,10 +113,9 @@ message HttpListener {
     // at least one virtual host must be specified for this listener to be active (else connections will be refused)
     // the set of domains for each virtual host must be unique, or the config will be considered invalid
     repeated VirtualHost virtual_hosts = 1;
-
-    // Plugins contains top-level plugin configuration to be applied to a listener
-    // Listener config is applied to all HTTP traffic that
-    // connects to this listener. Some configuration here can be overridden in
+    // Listener Plugins contains top-level plugin configuration to be applied to a listener
+    // Listener config is applied to traffic for the given listener.
+    // Some configuration here can be overridden in
     // Virtual Host Plugin configuration or Route Plugin configuration
     HttpListenerPlugins listener_plugins = 2;
 }
@@ -119,7 +147,9 @@ message VirtualHost {
     // Some configuration here can be overridden by Route Plugins.
     VirtualHostPlugins virtual_host_plugins = 4;
 
-    // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+    // Defines a CORS policy for the virtual host
+    // If a CORS policy is also defined on the route matched by the request, the policies are merged.
+    // DEPRECATED set cors policy through the Virtual Host Plugin
     CorsPolicy cors_policy = 5;
 }
 
@@ -261,6 +291,9 @@ message Destination {
         ConsulServiceDestination consul = 12;
     }
 
+
+    // Note: When in the context of a TCP gateway the below 2 fields will be ignored
+
     // Some upstreams utilize plugins which require or permit additional configuration on routes targeting them.
     // gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the
     // destination config. If the destination config is required for the upstream and not provided by the user,
@@ -331,6 +364,9 @@ message WeightedDestination {
     // Weight must be greater than zero
     // Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route
     uint32 weight = 2;
+
+    // Apply configuration to traffic that is sent to this weighted destination
+    WeightedDestinationPlugins weighed_destination_plugins = 3;
 }
 
 // Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
@@ -394,6 +430,7 @@ message DirectResponseAction {
 }
 
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
+// DEPRECATED set cors policy through the Virtual Host Plugin
 message CorsPolicy {
     // Specifies the origins that will be allowed to make CORS requests.
     //

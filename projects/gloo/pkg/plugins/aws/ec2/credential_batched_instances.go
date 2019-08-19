@@ -4,12 +4,17 @@ import (
 	"context"
 	"strings"
 
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
+
+const InstanceIdAnnotationKey = "instanceId"
 
 // In order to minimize calls to the AWS API, we group calls by credentials and apply tag filters locally.
 // This function groups upstreams by credentials, calls the AWS API, maps the instances to upstreams, and returns the
@@ -32,9 +37,11 @@ func getLatestEndpoints(ctx context.Context, lister Ec2InstanceLister, secrets v
 	var allEndpoints v1.EndpointList
 	for _, credGroup := range credGroups {
 		for _, upstream := range credGroup.upstreams {
-			instancesForUpstream := filterInstancesForUpstream(upstream, credGroup)
+			instancesForUpstream := filterInstancesForUpstream(ctx, upstream, credGroup)
 			for _, instance := range instancesForUpstream {
-				allEndpoints = append(allEndpoints, upstreamInstanceToEndpoint(writeNamespace, upstream, instance))
+				if endpoint := upstreamInstanceToEndpoint(ctx, writeNamespace, upstream, instance); endpoint != nil {
+					allEndpoints = append(allEndpoints, endpoint)
+				}
 			}
 		}
 	}
@@ -93,11 +100,13 @@ func getInstancesForCredentialGroups(ctx context.Context, lister Ec2InstanceList
 
 // applies filter logic equivalent to the tag filter logic used in AWS's DescribeInstances API
 // NOTE: assumes that upstreams are EC2 upstreams
-func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGroup) []*ec2.Instance {
+func filterInstancesForUpstream(ctx context.Context, upstream *v1.Upstream, credGroup *credentialGroup) []*ec2.Instance {
 	var instances []*ec2.Instance
+	logger := contextutils.LoggerFrom(ctx)
 	// sweep through each filter map, if all the upstream's filters are matched, add the corresponding instance to the list
 	for i, fm := range credGroup.filterMaps {
 		candidateInstance := credGroup.instances[i]
+		logger.Debugw("considering instance for upstream", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		matchesAll := true
 	ScanFilters: // label so that we can break out of the for loop rather than the switch
 		for _, filter := range upstream.UpstreamSpec.GetAwsEc2().Filters {
@@ -116,31 +125,50 @@ func filterInstancesForUpstream(upstream *v1.Upstream, credGroup *credentialGrou
 		}
 		if matchesAll {
 			instances = append(instances, candidateInstance)
+			logger.Debugw("instance for upstream accepted", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
+		} else {
+			logger.Debugw("instance for upstream filtered out", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		}
 	}
 	return instances
 }
 
 // NOTE: assumes that upstreams are EC2 upstreams
-func upstreamInstanceToEndpoint(writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
+func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
 	ipAddr := instance.PrivateIpAddress
-	if upstream.UpstreamSpec.GetAwsEc2().PublicIp {
+	if upstream.UpstreamSpec.GetAwsEc2().GetPublicIp() {
 		ipAddr = instance.PublicIpAddress
+	}
+	if ipAddr == nil {
+		contextutils.LoggerFrom(ctx).Warnw("no ip found for config",
+			zap.Any("upstreamRef", upstream.GetMetadata().Ref()),
+			zap.Any("instanceId", aws.StringValue(instance.InstanceId)),
+			zap.Any("upstream.usePublicIp", upstream.UpstreamSpec.GetAwsEc2().GetPublicIp()))
+		return nil
 	}
 	port := upstream.UpstreamSpec.GetAwsEc2().GetPort()
 	if port == 0 {
-		port = defaultPort
+		port = DefaultPort
 	}
 	ref := upstream.Metadata.Ref()
-	return &v1.Endpoint{
+	// for easier debugging, add the instance id to the xds output
+	instanceInfo := make(map[string]string)
+	instanceInfo[InstanceIdAnnotationKey] = aws.StringValue(instance.InstanceId)
+	endpoint := v1.Endpoint{
 		Upstreams: []*core.ResourceRef{&ref},
 		Address:   aws.StringValue(ipAddr),
-		Port:      upstream.UpstreamSpec.GetAwsEc2().GetPort(),
+		Port:      port,
 		Metadata: core.Metadata{
-			Name:      generateName(ref, aws.StringValue(ipAddr)),
-			Namespace: writeNamespace,
+			Name:        generateName(ref, aws.StringValue(ipAddr)),
+			Namespace:   writeNamespace,
+			Annotations: instanceInfo,
 		},
 	}
+	contextutils.LoggerFrom(ctx).Debugw("instance from upstream",
+		zap.Any("upstream", upstream),
+		zap.Any("instance", instance),
+		zap.Any("endpoint", endpoint))
+	return &endpoint
 }
 
 // a FilterMap is created for each EC2 instance so we can efficiently filter the instances associated with a given

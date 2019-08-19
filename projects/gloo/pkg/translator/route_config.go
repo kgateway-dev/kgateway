@@ -21,9 +21,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+var (
+	NoDestinationSpecifiedError = errors.New("must specify at least one weighted destination for multi destination routes")
+)
+
 type reportFunc func(error error, format string, args ...interface{})
 
 func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, routeCfgName string, reportFn reportFunc) *envoyapi.RouteConfiguration {
+	if listener.GetHttpListener() == nil {
+		return nil
+	}
 	report := func(err error, format string, args ...interface{}) {
 		reportFn(err, "route_config."+format, args...)
 	}
@@ -32,7 +39,7 @@ func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, 
 	virtualHosts := t.computeVirtualHosts(params, proxy, listener, report)
 
 	// validate ssl config if the listener specifies any
-	if err := validateListenerSslConfig(listener, params.Snapshot.Secrets); err != nil {
+	if err := validateListenerSslConfig(params, listener); err != nil {
 		report(err, "invalid listener %v", listener.Name)
 	}
 
@@ -45,7 +52,7 @@ func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, 
 func (t *translator) computeVirtualHosts(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, report reportFunc) []envoyroute.VirtualHost {
 	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
 	if !ok {
-		panic("non-HTTP listeners are not currently supported in Gloo")
+		return nil
 	}
 	virtualHosts := httpListener.HttpListener.VirtualHosts
 	if err := validateVirtualHostDomains(virtualHosts); err != nil {
@@ -146,14 +153,14 @@ func setMatch(in *v1.Route, report reportFunc, out *envoyroute.Route) {
 func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in *v1.Route, out *envoyroute.Route) {
 	switch action := in.Action.(type) {
 	case *v1.Route_RouteAction:
-		if err := validateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
+		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
 			report(err, "invalid route")
 		}
 
 		out.Action = &envoyroute.Route_Route{
 			Route: &envoyroute.RouteAction{},
 		}
-		if err := setRouteAction(params.Params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route); err != nil {
+		if err := t.setRouteAction(params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route, report); err != nil {
 			report(err, "translator error on route")
 		}
 
@@ -174,7 +181,7 @@ func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in
 			if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
 				continue
 			}
-			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), nil, out.GetRoute()); err != nil {
+			if err := routePlugin.ProcessRouteAction(params, in.GetRouteAction(), out.GetRoute()); err != nil {
 				report(err, "plugin error on ProcessRouteAction")
 			}
 		}
@@ -210,7 +217,7 @@ func (t *translator) setAction(params plugins.RouteParams, report reportFunc, in
 	}
 }
 
-func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.RouteAction) error {
+func (t *translator) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoyroute.RouteAction, report reportFunc) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
@@ -223,9 +230,9 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 
 		out.MetadataMatch = getSubsetMatch(dest.Single)
 
-		return checkThatSubsetMatchesUpstream(params, dest.Single)
+		return checkThatSubsetMatchesUpstream(params.Params, dest.Single)
 	case *v1.RouteAction_Multi:
-		return setWeightedClusters(params, dest.Multi, out)
+		return t.setWeightedClusters(params, dest.Multi, out, report)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
@@ -235,14 +242,14 @@ func setRouteAction(params plugins.Params, in *v1.RouteAction, out *envoyroute.R
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.Destinations,
 		}
-		return setWeightedClusters(params, md, out)
+		return t.setWeightedClusters(params, md, out, report)
 	}
 	return errors.Errorf("unknown upstream destination type")
 }
 
-func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, out *envoyroute.RouteAction) error {
+func (t *translator) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoyroute.RouteAction, report reportFunc) error {
 	if len(multiDest.Destinations) == 0 {
-		return errors.Errorf("must specify at least one weighted destination for multi destination routes")
+		return NoDestinationSpecifiedError
 	}
 
 	clusterSpecifier := &envoyroute.RouteAction_WeightedClusters{
@@ -258,13 +265,27 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 		}
 
 		totalWeight += weightedDest.Weight
-		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, &envoyroute.WeightedCluster_ClusterWeight{
+
+		weightedCluster := &envoyroute.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(*usRef),
 			Weight:        &types.UInt32Value{Value: weightedDest.Weight},
 			MetadataMatch: getSubsetMatch(weightedDest.Destination),
-		})
+		}
 
-		if err = checkThatSubsetMatchesUpstream(params, weightedDest.Destination); err != nil {
+		// run the plugins for Weighted Destinations
+		for _, plug := range t.plugins {
+			weightedDestinationPlugin, ok := plug.(plugins.WeightedDestinationPlugin)
+			if !ok {
+				continue
+			}
+			if err := weightedDestinationPlugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
+				report(err, "plugin error on ProcessRoute")
+			}
+		}
+
+		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, weightedCluster)
+
+		if err = checkThatSubsetMatchesUpstream(params.Params, weightedDest.Destination); err != nil {
 			return err
 		}
 	}
@@ -443,7 +464,7 @@ func validateVirtualHostDomains(virtualHosts []*v1.VirtualHost) error {
 	return domainErrors
 }
 
-func validateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) error {
+func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
 	switch dest := action.Destination.(type) {
@@ -490,10 +511,10 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 	return err
 }
 
-func validateListenerSslConfig(listener *v1.Listener, secrets []*v1.Secret) error {
-	sslCfgTranslator := utils.NewSslConfigTranslator(secrets)
+func validateListenerSslConfig(params plugins.Params, listener *v1.Listener) error {
+	sslCfgTranslator := utils.NewSslConfigTranslator()
 	for _, ssl := range listener.SslConfigurations {
-		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(ssl); err != nil {
+		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(params.Snapshot.Secrets, ssl); err != nil {
 			return err
 		}
 	}

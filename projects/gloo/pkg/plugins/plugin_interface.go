@@ -54,9 +54,16 @@ type RoutePlugin interface {
 	ProcessRoute(params RouteParams, in *v1.Route, out *envoyroute.Route) error
 }
 
+// note: any route action plugin can be implemented as a route plugin
+// suggestion: if your plugin requires configuration from a RoutePlugin field, implement the RoutePlugin interface
 type RouteActionPlugin interface {
 	Plugin
-	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, inPlugins map[string]*RoutePlugin, out *envoyroute.RouteAction) error
+	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, out *envoyroute.RouteAction) error
+}
+
+type WeightedDestinationPlugin interface {
+	Plugin
+	ProcessWeightedDestination(params RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error
 }
 
 /*
@@ -76,6 +83,12 @@ type ListenerFilterPlugin interface {
 type StagedListenerFilter struct {
 	ListenerFilter envoylistener.Filter
 	Stage          FilterStage
+}
+
+// Currently only supported for TCP listeners, plan to change this in the future
+type ListenerFilterChainPlugin interface {
+	Plugin
+	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]envoylistener.FilterChain, error)
 }
 
 type HttpFilterPlugin interface {

@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Clean up output logic and formatting for glooctl get and dry-run.
+  issueLink: https://github.com/solo-io/gloo/issues/904

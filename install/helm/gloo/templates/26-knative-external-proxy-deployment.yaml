@@ -1,0 +1,67 @@
+{{- if .Values.settings.integrations.knative.enabled }}
+{{- if (regexMatch "[0-9]+[.][8-9]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
+{{- $image := .Values.settings.integrations.knative.proxy.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.settings.integrations.knative.proxy.image .Values.global.image  }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: knative-external-proxy
+  name: knative-external-proxy
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.settings.integrations.knative.proxy.replicas }}
+  selector:
+    matchLabels:
+      gloo: knative-external-proxy
+  template:
+    metadata:
+      labels:
+        gloo: knative-external-proxy
+    spec:
+      containers:
+      - args: ["--disable-hot-restart"]
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
+        name: knative-external-proxy
+{{- if .Values.settings.integrations.knative.proxy.resources }}
+        resources:
+{{ toYaml .Values.settings.integrations.knative.proxy.resources | indent 10}}
+{{- end}}
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_BIND_SERVICE
+        ports:
+        - containerPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
+          name: http
+          protocol: TCP
+        - containerPort: {{ .Values.settings.integrations.knative.proxy.httpsPort }}
+          name: https
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-config
+      volumes:
+      - configMap:
+          name: knative-external-proxy-config
+        name: envoy-config
+
+{{- end }}
+{{- end }}

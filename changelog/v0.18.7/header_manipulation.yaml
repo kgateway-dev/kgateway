@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add Header Manipulation Features Plugin
+    issueLink: https://github.com/solo-io/gloo/issues/936
+  - type: NEW_FEATURE
+    description: Add Host Rewrite Plugin
+    issueLink: https://github.com/solo-io/gloo/issues/936
