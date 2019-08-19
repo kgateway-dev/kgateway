@@ -60,8 +60,34 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			}
 		case *v1.LoadBalancerConfig_Random_:
 			out.LbPolicy = envoyapi.Cluster_RANDOM
+		case *v1.LoadBalancerConfig_RingHash_:
+			out.LbPolicy = envoyapi.Cluster_RING_HASH
+			setRingHashLbConfig(out, lbtype.RingHash.RingHashConfig)
+		case *v1.LoadBalancerConfig_Maglev_:
+			out.LbPolicy = envoyapi.Cluster_MAGLEV
+			setRingHashLbConfig(out, lbtype.Maglev.RingHashConfig)
 		}
 	}
 
 	return nil
+}
+
+// RING_HASH and MAGLEV load balancers use the same RingHashConfig
+func setRingHashLbConfig(out *envoyapi.Cluster, userConfig *v1.LoadBalancerConfig_RingHashConfig) {
+	cfg := &envoyapi.Cluster_RingHashLbConfig_{
+		RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{},
+	}
+	if userConfig != nil {
+		if userConfig.MinimumRingSize != 0 {
+			cfg.RingHashLbConfig.MinimumRingSize = &types.UInt64Value{
+				Value: userConfig.MinimumRingSize,
+			}
+		}
+		if userConfig.MaximumRingSize != 0 {
+			cfg.RingHashLbConfig.MaximumRingSize = &types.UInt64Value{
+				Value: userConfig.MaximumRingSize,
+			}
+		}
+	}
+	out.LbConfig = cfg
 }

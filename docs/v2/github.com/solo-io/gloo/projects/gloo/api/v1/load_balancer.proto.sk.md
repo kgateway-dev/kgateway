@@ -15,6 +15,9 @@ weight: 5
 - [RoundRobin](#roundrobin)
 - [LeastRequest](#leastrequest)
 - [Random](#random)
+- [RingHashConfig](#ringhashconfig)
+- [RingHash](#ringhash)
+- [Maglev](#maglev)
   
 
 
@@ -38,6 +41,8 @@ endpoints.
 "roundRobin": .gloo.solo.io.LoadBalancerConfig.RoundRobin
 "leastRequest": .gloo.solo.io.LoadBalancerConfig.LeastRequest
 "random": .gloo.solo.io.LoadBalancerConfig.Random
+"ringHash": .gloo.solo.io.LoadBalancerConfig.RingHash
+"maglev": .gloo.solo.io.LoadBalancerConfig.Maglev
 
 ```
 
@@ -48,6 +53,8 @@ endpoints.
 | `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk#roundrobin) | Use round robin for load balancing. |  |
 | `leastRequest` | [.gloo.solo.io.LoadBalancerConfig.LeastRequest](../load_balancer.proto.sk#leastrequest) | Use least request for load balancing. |  |
 | `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk#random) | Use random for load balancing. |  |
+| `ringHash` | [.gloo.solo.io.LoadBalancerConfig.RingHash](../load_balancer.proto.sk#ringhash) | Use ring hash for load balancing. |  |
+| `maglev` | [.gloo.solo.io.LoadBalancerConfig.Maglev](../load_balancer.proto.sk#maglev) | Use maglev for load balancing. |  |
 
 
 
@@ -95,6 +102,60 @@ endpoints.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+
+
+
+
+---
+### RingHashConfig
+
+ 
+Customizes the parameters used in the hashing algorithm to refine performance or resource usage.
+
+```yaml
+"minimumRingSize": int
+"maximumRingSize": int
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `minimumRingSize` | `int` | Minimum hash ring size. The larger the ring is (that is, the more hashes there are for each provided host) the better the request distribution will reflect the desired weights. Defaults to 1024 entries, and limited to 8M entries. |  |
+| `maximumRingSize` | `int` | Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered to further constrain resource use. |  |
+
+
+
+
+---
+### RingHash
+
+
+
+```yaml
+"ringHashConfig": .gloo.solo.io.LoadBalancerConfig.RingHashConfig
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `ringHashConfig` | [.gloo.solo.io.LoadBalancerConfig.RingHashConfig](../load_balancer.proto.sk#ringhashconfig) | Optional, customizes the parameters used in the hashing algorithm |  |
+
+
+
+
+---
+### Maglev
+
+
+
+```yaml
+"ringHashConfig": .gloo.solo.io.LoadBalancerConfig.RingHashConfig
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `ringHashConfig` | [.gloo.solo.io.LoadBalancerConfig.RingHashConfig](../load_balancer.proto.sk#ringhashconfig) | Optional, customizes the parameters used in the hashing algorithm |  |
 
 
 

@@ -48,18 +48,16 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 	go errutils.AggregateErrs(ctx, errs, watchErrs, "translator-emitter")
 
 	go func() {
-		currentSnapshot := TranslatorSnapshot{}
+		originalSnapshot := TranslatorSnapshot{}
+		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
-		var previousHash uint64
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
-			if previousHash == currentHash {
+			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
 
-			previousHash = currentHash
-
 			stats.Record(ctx, mTranslatorSnapshotOut.M(1))
+			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}

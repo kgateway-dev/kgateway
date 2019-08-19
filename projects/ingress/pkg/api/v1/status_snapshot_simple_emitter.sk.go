@@ -45,18 +45,16 @@ func (c *statusSimpleEmitter) Snapshots(ctx context.Context) (<-chan *StatusSnap
 	go errutils.AggregateErrs(ctx, errs, watchErrs, "status-emitter")
 
 	go func() {
-		currentSnapshot := StatusSnapshot{}
+		originalSnapshot := StatusSnapshot{}
+		currentSnapshot := originalSnapshot.Clone()
 		timer := time.NewTicker(time.Second * 1)
-		var previousHash uint64
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
-			if previousHash == currentHash {
+			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
 
-			previousHash = currentHash
-
 			stats.Record(ctx, mStatusSnapshotOut.M(1))
+			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
