@@ -107,4 +107,73 @@ var _ = Describe("Plugin", func() {
 		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_ROUND_ROBIN))
 	})
 
+	It("should set lb policy ring hash - basic config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_RingHash_{
+				RingHash: &v1.LoadBalancerConfig_RingHash{},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
+	})
+
+	It("should set lb policy ring hash - full config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_RingHash_{
+				RingHash: &v1.LoadBalancerConfig_RingHash{
+					RingHashConfig: &v1.LoadBalancerConfig_RingHashConfig{
+						MinimumRingSize: 100,
+						MaximumRingSize: 200,
+					},
+				},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
+		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
+			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
+				MinimumRingSize: &types.UInt64Value{Value: 100},
+				MaximumRingSize: &types.UInt64Value{Value: 200},
+				HashFunction:    envoyapi.Cluster_RingHashLbConfig_XX_HASH,
+			},
+		}))
+	})
+
+	It("should set lb policy maglev - basic config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_Maglev_{
+				Maglev: &v1.LoadBalancerConfig_Maglev{},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+	})
+
+	// maglev is a drop in replacement for ring hash, uses same config
+	It("should set lb policy maglev - full config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_Maglev_{
+				Maglev: &v1.LoadBalancerConfig_Maglev{
+					RingHashConfig: &v1.LoadBalancerConfig_RingHashConfig{
+						MinimumRingSize: 100,
+						MaximumRingSize: 200,
+					},
+				},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
+			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
+				MinimumRingSize: &types.UInt64Value{Value: 100},
+				MaximumRingSize: &types.UInt64Value{Value: 200},
+				HashFunction:    envoyapi.Cluster_RingHashLbConfig_XX_HASH,
+			},
+		}))
+	})
+
 })
