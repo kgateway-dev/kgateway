@@ -45,16 +45,18 @@ func (c *edsSimpleEmitter) Snapshots(ctx context.Context) (<-chan *EdsSnapshot, 
 	go errutils.AggregateErrs(ctx, errs, watchErrs, "eds-emitter")
 
 	go func() {
-		originalSnapshot := EdsSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
+		currentSnapshot := EdsSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
+			previousHash = currentHash
+
 			stats.Record(ctx, mEdsSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}
