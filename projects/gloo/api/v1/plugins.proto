@@ -73,12 +73,6 @@ message VirtualHostPlugins {
     // Defines a CORS policy for the virtual host
     // If a CORS policy is also defined on the route matched by the request, the policies are merged.
     cors.plugins.gloo.solo.io.CorsPolicy cors = 3;
-    // Optional, if set, routes to hashing load balancer upstreams will use this hash policy, unless a policy has been
-    // set on the route or on the upstream
-    // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
-    // - route, upstream, virtual service
-    // CONSIDERATION
-    //    lbhash.plugins.gloo.solo.io.RouteActionHashConfig default_hash_policy = 12;
 }
 
 // Plugin-specific configuration that lives on routes
