@@ -3,7 +3,10 @@ package loadbalancer_test
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -176,4 +179,136 @@ var _ = Describe("Plugin", func() {
 		}))
 	})
 
+	Context("route plugin", func() {
+		var (
+			routeParams plugins.RouteParams
+			route       *v1.Route
+			outRoute    *envoyroute.Route
+		)
+		BeforeEach(func() {
+			outRoute = new(envoyroute.Route)
+
+			routeParams = plugins.RouteParams{}
+			route = &v1.Route{}
+
+		})
+
+		// positive cases
+		It("configures routes - basic config", func() {
+			route.RoutePlugins = &v1.RoutePlugins{
+				LbHash: &lbhash.RouteActionHashConfig{
+					HashPolicies: []*lbhash.HashPolicy{{
+						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
+						Terminal: false,
+					},
+					},
+				},
+			}
+			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoyroute.RouteAction_HashPolicy{{
+				PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
+					Header: &envoyroute.RouteAction_HashPolicy_Header{
+						HeaderName: "origin",
+					},
+				},
+				Terminal: false,
+			}}))
+		})
+		It("configures routes - all types", func() {
+			ttlDur := time.Second
+			route.RoutePlugins = &v1.RoutePlugins{
+				LbHash: &lbhash.RouteActionHashConfig{
+					HashPolicies: []*lbhash.HashPolicy{
+						{
+							// users may choose to add a specialty terminal header such as this
+							KeyType:  &lbhash.HashPolicy_Header{Header: "x-test-affinity"},
+							Terminal: true,
+						},
+						{
+							KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
+							Terminal: false,
+						},
+						{
+							KeyType:  &lbhash.HashPolicy_SourceIp{SourceIp: true},
+							Terminal: false,
+						},
+						{
+							KeyType: &lbhash.HashPolicy_Cookie{Cookie: &lbhash.Cookie{
+								Name: "gloo",
+								Ttl:  &ttlDur,
+								Path: "/abc",
+							}},
+							Terminal: false,
+						},
+					},
+				},
+			}
+			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoyroute.RouteAction_HashPolicy{
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
+						Header: &envoyroute.RouteAction_HashPolicy_Header{
+							HeaderName: "x-test-affinity",
+						},
+					},
+					Terminal: true,
+				},
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
+						Header: &envoyroute.RouteAction_HashPolicy_Header{
+							HeaderName: "origin",
+						},
+					},
+					Terminal: false,
+				},
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_ConnectionProperties_{
+						ConnectionProperties: &envoyroute.RouteAction_HashPolicy_ConnectionProperties{
+							SourceIp: true,
+						},
+					},
+					Terminal: false,
+				},
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroute.RouteAction_HashPolicy_Cookie{
+							Name: "gloo",
+							Ttl:  &ttlDur,
+							Path: "/abc",
+						},
+					},
+					Terminal: false,
+				},
+			}))
+		})
+		// negative cases
+		It("skips non-route-action routes", func() {
+			outRoute.Action = &envoyroute.Route_Redirect{}
+			route.Action = &v1.Route_RedirectAction{}
+			// the following represents a misconfigured route
+			route.RoutePlugins = &v1.RoutePlugins{
+				LbHash: &lbhash.RouteActionHashConfig{
+					HashPolicies: []*lbhash.HashPolicy{{
+						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
+						Terminal: false,
+					},
+					},
+				},
+			}
+			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).To(HaveOccurred())
+			Expect(outRoute.GetRoute()).To(BeNil())
+		})
+		It("skips routes that do not feature the plugin", func() {
+			outRoute.Action = &envoyroute.Route_Route{
+				Route: &envoyroute.RouteAction{},
+			}
+			route.RoutePlugins = &v1.RoutePlugins{}
+			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outRoute.GetRoute().HashPolicy).To(BeNil())
+		})
+	})
 })
