@@ -284,7 +284,7 @@ func renderNamespaceName(namespace, name string) string {
 // Checks whether the cluster that the kubeconfig points at is available
 // The timeout for the kubernetes client is set to a low value to notify the user of the failure
 func checkConnection() error {
-	client, err := helpers.GetKubernetesClientWithTimeout(time.Second)
+	client, err := helpers.GetKubernetesClientWithTimeout(5 * time.Second)
 	if err != nil {
 		return errors.Wrapf(err, "Could not get kubernetes client")
 	}
