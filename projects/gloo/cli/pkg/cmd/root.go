@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"

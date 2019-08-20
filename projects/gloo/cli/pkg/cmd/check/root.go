@@ -2,6 +2,9 @@ package check
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -15,8 +18,6 @@ import (
 	"github.com/spf13/cobra"
 	v13 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"time"
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
