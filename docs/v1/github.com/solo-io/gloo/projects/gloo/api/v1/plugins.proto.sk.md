@@ -40,12 +40,14 @@ to be usable by Gloo.
 
 ```yaml
 "accessLoggingService": .als.plugins.gloo.solo.io.AccessLoggingService
+"extensions": .gloo.solo.io.Extensions
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 
 
 

@@ -45,6 +45,7 @@ import "google/protobuf/duration.proto";
 // to be usable by Gloo.
 message ListenerPlugins {
     als.plugins.gloo.solo.io.AccessLoggingService access_logging_service = 1;
+    Extensions extensions = 2;
 }
 
 // Plugin-specific configuration that lives on http listeners

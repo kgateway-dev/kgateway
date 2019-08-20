@@ -199,11 +199,11 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 		initialSnapshot := currentSnapshot.Clone()
 		snapshots <- &initialSnapshot
 
+		originalSnapshot := TranslatorSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
-		var previousHash uint64
+
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
-			if previousHash == currentHash {
+			if originalSnapshot.Hash() == currentSnapshot.Hash() {
 				return
 			}
 
@@ -211,7 +211,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			select {
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mTranslatorSnapshotOut.M(1))
-				previousHash = currentHash
+				originalSnapshot = currentSnapshot.Clone()
 			default:
 				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
 			}
