@@ -1,0 +1,62 @@
+package pipe_test
+
+import (
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1pipe "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/pipe"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/pipe"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+)
+
+var _ = Describe("Plugin", func() {
+
+	var (
+		p            *Plugin
+		params       plugins.Params
+		upstream     *v1.Upstream
+		upstreamSpec *v1pipe.UpstreamSpec
+		out          *envoyapi.Cluster
+	)
+
+	BeforeEach(func() {
+		p = NewPlugin()
+		out = new(envoyapi.Cluster)
+		out.Name = "foo"
+
+		p.Init(plugins.InitParams{})
+		upstreamSpec = &v1pipe.UpstreamSpec{
+			Path: "/foo",
+		}
+		upstream = &v1.Upstream{
+			Metadata: core.Metadata{
+				Name:      "extauth-server",
+				Namespace: "default",
+			},
+			UpstreamSpec: &v1.UpstreamSpec{
+				UpstreamType: &v1.UpstreamSpec_Pipe{
+					Pipe: upstreamSpec,
+				},
+			},
+		}
+	})
+
+	It("should translate upstream", func() {
+		err := p.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.GetType()).To(Equal(envoyapi.Cluster_STATIC))
+		Expect(out.GetLoadAssignment().GetClusterName()).To(Equal(out.Name))
+		addr := out.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetPipe().GetPath()
+		Expect(addr).To(Equal("/foo"))
+	})
+
+	It("should error with no path", func() {
+		upstreamSpec.Path = ""
+		err := p.ProcessUpstream(params, upstream, out)
+		Expect(err).To(MatchError("no path provided"))
+	})
+
+})

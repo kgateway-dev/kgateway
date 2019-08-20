@@ -27,8 +27,8 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	envoyFactory.Clean()
-	consulFactory.Clean()
+	_ = envoyFactory.Clean()
+	_ = consulFactory.Clean()
 })
 
 func TestE2e(t *testing.T) {
@@ -38,6 +38,5 @@ func TestE2e(t *testing.T) {
 
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
-	// RegisterFailHandler(Fail)
 	RunSpecs(t, "E2e Suite")
 }

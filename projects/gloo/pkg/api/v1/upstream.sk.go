@@ -42,6 +42,10 @@ func (r *Upstream) Hash() uint64 {
 	)
 }
 
+func (r *Upstream) GroupVersionKind() schema.GroupVersionKind {
+	return UpstreamGVK
+}
+
 type UpstreamList []*Upstream
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -123,8 +127,6 @@ func (list UpstreamList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Upstream{}
-
 // Kubernetes Adapter for Upstream
 
 func (o *Upstream) GetObjectKind() schema.ObjectKind {
@@ -137,11 +139,6 @@ func (o *Upstream) DeepCopyObject() runtime.Object {
 }
 
 var (
-	UpstreamGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gloo.solo.io",
-		Kind:    "Upstream",
-	}
 	UpstreamCrd = crd.NewCrd(
 		"upstreams",
 		UpstreamGVK.Group,
@@ -157,3 +154,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	UpstreamGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Upstream",
+	}
+)

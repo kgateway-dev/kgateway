@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Use fine grained RBAC permissions for each component
+    issueLink: https://github.com/solo-io/gloo/issues/250

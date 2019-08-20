@@ -10,13 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/go-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 // Get the resource identified by the given URI.
@@ -51,7 +51,7 @@ func GetResource(uri string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-func GetIngressHost(opts *options.Proxy, namespace string) (string, error) {
+func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bool) (string, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "getting kube rest config")
@@ -60,33 +60,33 @@ func GetIngressHost(opts *options.Proxy, namespace string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "starting kube client")
 	}
-	svc, err := kube.CoreV1().Services(namespace).Get(opts.Name, metav1.GetOptions{})
+	svc, err := kube.CoreV1().Services(proxyNamespace).Get(proxyName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
 			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'",
-			opts.Name, namespace)
+			proxyName, proxyNamespace)
 	}
 	var svcPort *v1.ServicePort
 	switch len(svc.Spec.Ports) {
 	case 0:
-		return "", errors.Errorf("service %v is missing ports", opts.Name)
+		return "", errors.Errorf("service %v is missing ports", proxyName)
 	case 1:
 		svcPort = &svc.Spec.Ports[0]
 	default:
 		for _, p := range svc.Spec.Ports {
-			if p.Name == opts.Port {
+			if p.Name == proxyPort {
 				svcPort = &p
 				break
 			}
 		}
 		if svcPort == nil {
-			return "", errors.Errorf("named port %v not found on service %v", opts.Port, opts.Name)
+			return "", errors.Errorf("named port %v not found on service %v", proxyPort, proxyName)
 		}
 	}
 
 	var host, port string
 	// gateway-proxy is an externally load-balanced service
-	if len(svc.Status.LoadBalancer.Ingress) == 0 || opts.LocalCluster {
+	if len(svc.Status.LoadBalancer.Ingress) == 0 || localCluster {
 		// assume nodeport on kubernetes
 		// TODO: support more types of NodePort services
 		host, err = getNodeIp(svc, kube)

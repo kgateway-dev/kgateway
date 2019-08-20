@@ -1,11 +1,14 @@
 package test
 
 import (
-	"bytes"
-	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"sync"
 	"testing"
+
+	"github.com/solo-io/go-utils/testutils"
+	v1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,7 +16,19 @@ import (
 )
 
 func TestHelm(t *testing.T) {
+
+	version = os.Getenv("TAGGED_VERSION")
+	if version == "" {
+		version = "dev"
+		pullPolicy = v1.PullAlways
+	} else {
+		version = version[1:]
+		pullPolicy = v1.PullIfNotPresent
+	}
+
 	RegisterFailHandler(Fail)
+	testutils.RegisterPreFailHandler(testutils.PrintTrimmedStack)
+	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Helm Suite")
 }
 
@@ -22,40 +37,40 @@ const (
 )
 
 var (
-	version      string
-	testManifest TestManifest
+	version string
+	// use a mutex to prevent these tests from running in parallel
+	makefileSerializer sync.Mutex
+	pullPolicy         v1.PullPolicy
+	manifests          = map[string]TestManifest{}
 )
 
 func MustMake(dir string, args ...string) {
-	make := exec.Command("make", args...)
-	make.Dir = dir
+	makeCmd := exec.Command("make", args...)
+	makeCmd.Dir = dir
 
-	var b bytes.Buffer
-	var be bytes.Buffer
-	make.Stdout = &b
-	make.Stderr = &be
-	err := make.Run()
+	makeCmd.Stdout = GinkgoWriter
+	makeCmd.Stderr = GinkgoWriter
+	err := makeCmd.Run()
 
-	if err != nil {
-		fmt.Printf(b.String())
-		fmt.Println("\nstderr:")
-		fmt.Printf(be.String())
-		fmt.Println()
-	}
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
-var _ = SynchronizedBeforeSuite(
-	func() []byte {
-		MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS=--namespace "+namespace+" --set namespace.create=true --set gatewayProxies.gateway-proxy.service.extraAnnotations.test=test")
-		return nil
-	},
-	func(_ []byte) {
-		testManifest = NewTestManifest("../gloo-gateway.yaml")
-		version = os.Getenv("TAGGED_VERSION")
-		if version == "" {
-			version = "dev"
-		} else {
-			version = version[1:]
-		}
-	})
+func renderManifest(helmFlags string) TestManifest {
+	makefileSerializer.Lock()
+	defer makefileSerializer.Unlock()
+
+	if tm, ok := manifests[helmFlags]; ok {
+		return tm
+	}
+
+	f, err := ioutil.TempFile("", "*.yaml")
+	ExpectWithOffset(2, err).NotTo(HaveOccurred())
+	f.Close()
+	manifestYaml := f.Name()
+	defer os.Remove(manifestYaml)
+
+	MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags, "OUTPUT_YAML="+manifestYaml)
+	tm := NewTestManifest(manifestYaml)
+	manifests[helmFlags] = tm
+	return tm
+}

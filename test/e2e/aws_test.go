@@ -267,7 +267,7 @@ var _ = Describe("AWS Lambda", func() {
 	})
 
 	It("be able to call lambda via gateway", func() {
-		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy", testClients.GlooPort)
+		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy-v2", testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := &gw1.VirtualService{
@@ -310,21 +310,6 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.VirtualServiceClient.Write(vs, opts)
 		Expect(err).NotTo(HaveOccurred())
 
-		/* // TODO(yuval-k): i dont think we need this as we can use the default gateway.
-
-		gateway := &gw1.Gateway{
-			Metadata: core.Metadata{
-				Name:      "ingress",
-				Namespace: "default",
-			},
-			VirtualServices: []core.ResourceRef{vs.Metadata.Ref()},
-			BindPort:        envoyPort,
-			BindAddress:     "127.0.0.1",
-		}
-
-		_, err = testClients.GatewayClient.Write(gateway, opts)
-		Expect(err).NotTo(HaveOccurred())
-		*/
 		validateLambdaUppercase(defaults.HttpPort)
 	})
 })

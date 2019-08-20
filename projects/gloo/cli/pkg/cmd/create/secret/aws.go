@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -33,12 +34,12 @@ func awsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := AwsSecretArgsInteractive(&opts.Metadata, input); err != nil {
+				if err := AwsSecretArgsInteractive(input); err != nil {
 					return err
 				}
 			}
 			// create the secret
-			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun); err != nil {
+			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Top.Output); err != nil {
 				return err
 			}
 			return nil
@@ -57,7 +58,7 @@ const (
 	awsPromptSecretKey = "Enter AWS Secret Key (leave empty to read credentials from ~/.aws/credentials): "
 )
 
-func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) error {
+func AwsSecretArgsInteractive(input *options.AwsSecret) error {
 	if err := cliutil.GetStringInput(awsPromptAccessKey, &input.AccessKey); err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func AwsSecretArgsInteractive(meta *core.Metadata, input *options.AwsSecret) err
 	return nil
 }
 
-func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, dryRun bool) error {
+func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, dryRun bool, outputType printers.OutputType) error {
 	if input.AccessKey == "" || input.SecretKey == "" {
 		fmt.Printf("access key or secret key not provided, reading credentials from ~/.aws/credentials")
 		creds := credentials.NewSharedCredentials("", "")
@@ -89,16 +90,16 @@ func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsS
 		},
 	}
 
-	if dryRun {
-		return common.PrintKubeSecret(ctx, secret)
+	if !dryRun {
+		var err error
+		secretClient := helpers.MustSecretClient()
+		if secret, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
+			return err
+		}
+
 	}
 
-	secretClient := helpers.MustSecretClient()
-	if _, err := secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
-		return err
-	}
-
-	fmt.Printf("Created AWS secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
+	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 
 	return nil
 }

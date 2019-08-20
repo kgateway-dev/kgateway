@@ -3,9 +3,10 @@ package basicroute
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	retries "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -42,6 +43,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return err
 	}
 	if err := applyRetries(in, out); err != nil {
+		return err
+	}
+	if err := applyHostRewrite(in, out); err != nil {
 		return err
 	}
 
@@ -96,6 +100,30 @@ func applyRetries(in *v1.Route, out *envoyroute.Route) error {
 	}
 
 	routeAction.Route.RetryPolicy = convertPolicy(policy)
+	return nil
+}
+
+func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
+	hostRewrite := in.GetRoutePlugins().GetHostRewrite()
+	if hostRewrite == nil {
+		return nil
+	}
+	routeAction, ok := out.Action.(*envoyroute.Route_Route)
+	if !ok {
+		return errors.Errorf("hostRewrite is only available for Route Actions")
+	}
+	if routeAction.Route == nil {
+		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
+			"had nil route", in.Action)
+	}
+
+	switch rewriteType := hostRewrite.HostRewriteType.(type) {
+	default:
+		return errors.Errorf("uninmplemented host rewrite type: %T", hostRewrite.HostRewriteType)
+	case *hostrewrite.HostRewrite_HostRewrite:
+		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{HostRewrite: rewriteType.HostRewrite}
+	}
+
 	return nil
 }
 

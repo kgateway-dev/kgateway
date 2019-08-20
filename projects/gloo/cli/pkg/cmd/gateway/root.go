@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -15,7 +16,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Short:   "interact with proxy instances managed by Gloo",
 		Long:    "these commands can be used to interact directly with the Proxies Gloo is managing. They are useful for interacting with and debugging the proxies (Envoy instances) directly.",
 	}
-	cmd.PersistentFlags().StringVar(&opts.Proxy.Name, "name", "gateway-proxy", "the name of the proxy service/deployment to use")
+	cmd.PersistentFlags().StringVar(&opts.Proxy.Name, "name", translator.GatewayProxyName, "the name of the proxy service/deployment to use")
 	cmd.PersistentFlags().StringVar(&opts.Proxy.Port, "port", "http", "the name of the service port to connect to")
 
 	flagutils.AddNamespaceFlag(cmd.PersistentFlags(), &opts.Metadata.Namespace)
@@ -25,6 +26,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.AddCommand(dumpCmd(opts))
 	cmd.AddCommand(logsCmd(opts))
 	cmd.AddCommand(statsCmd(opts))
+	cmd.AddCommand(servedConfigCmd(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

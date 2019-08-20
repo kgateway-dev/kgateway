@@ -1,9 +1,10 @@
 package translator
 
 import (
-	fmt "fmt"
+	"fmt"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -11,6 +12,12 @@ import (
 )
 
 func UpstreamToClusterName(upstream core.ResourceRef) string {
+
+	// For non-namespaced resources, return only name
+	if upstream.Namespace == "" {
+		return upstream.Name
+	}
+
 	// Don't use dots in the name as it messes up prometheus stats
 	return fmt.Sprintf("%s_%s", upstream.Name, upstream.Namespace)
 }
@@ -29,6 +36,26 @@ func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filte
 		}
 
 		s.ConfigType = &envoylistener.Filter_Config{
+			Config: marshalledConf,
+		}
+	}
+
+	return s, nil
+}
+
+func NewAccessLogWithConfig(config proto.Message) (envoyal.AccessLog, error) {
+	s := envoyal.AccessLog{
+		Name: envoyutil.FileAccessLog,
+	}
+
+	if config != nil {
+		marshalledConf, err := envoyutil.MessageToStruct(config)
+		if err != nil {
+			// this should NEVER HAPPEN!
+			return envoyal.AccessLog{}, err
+		}
+
+		s.ConfigType = &envoyal.AccessLog_Config{
 			Config: marshalledConf,
 		}
 	}

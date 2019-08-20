@@ -1,4 +1,8 @@
 {{- if .Values.ingress.enabled }}
+{{- $image := .Values.gateway.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.ingressProxy.deployment.image .Values.global.image }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,9 +38,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: "{{ .Values.ingressProxy.deployment.image.repository }}:{{ .Values.ingressProxy.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.ingressProxy.deployment.image.pullPolicy }}
+        image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress-proxy
+{{- if .Values.ingressProxy.deployment.resources }}
+        resources:
+{{ toYaml .Values.ingressProxy.deployment.resources | indent 10}}
+{{- end}}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -57,9 +65,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-      {{- if .Values.ingressProxy.deployment.image.pullSecret }}
+      {{- if $image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.ingressProxy.deployment.image.pullSecret }}{{end}}
+        - name: {{ $image.pullSecret }}{{end}}
       volumes:
       - configMap:
           name: ingress-envoy-config

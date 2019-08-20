@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix `glooctl add route` for calls in which virtual service is not specified.
+    issueLink: https://github.com/solo-io/gloo/issues/1050

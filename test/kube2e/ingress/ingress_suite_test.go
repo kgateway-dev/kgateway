@@ -6,8 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/go-utils/testutils"
@@ -22,6 +25,12 @@ func TestIngress(t *testing.T) {
 	if testutils.AreTestsDisabled() {
 		return
 	}
+	if os.Getenv("CLUSTER_LOCK_TESTS") != "1" {
+		log.Warnf("This test requires using a cluster lock and is disabled by default. " +
+			"To enable, set CLUSTER_LOCK_TESTS=1 in your env.")
+		return
+	}
+	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Ingress Suite")
@@ -41,12 +50,10 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
-	options := clusterlock.Options{
-		IdPrefix: os.ExpandEnv("ingress-${BUILD_ID}-"),
-	}
-	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), options)
+	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
@@ -57,7 +64,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	defer locker.ReleaseLock()
-	err := testHelper.UninstallGloo()
+	err := testHelper.UninstallGlooAll()
 	Expect(err).NotTo(HaveOccurred())
 
 	// TODO go-utils should expose `glooctl uninstall --delete-namespace`

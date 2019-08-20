@@ -27,6 +27,4 @@ message DestinationSpec {
     transformation.plugins.gloo.solo.io.Parameters parameters = 2;
 
     envoy.api.v2.filter.http.TransformationTemplate response_transformation = 3;
-    // TODO(yuval-k): do we need this?
-    // Parameters response_parameters;
 }

@@ -15,7 +15,7 @@ func Stdio(c *expect.Console) terminal.Stdio {
 	return terminal.Stdio{c.Tty(), c.Tty(), c.Tty()}
 }
 
-func ExpectInteractive(userinput func(*Console), testcli func()) {
+func ExpectInteractive(userInput func(*Console), testCli func()) {
 	c, state, err := vt10x.NewVT10XConsole()
 	Expect(err).NotTo(HaveOccurred())
 	defer c.Close()
@@ -23,30 +23,30 @@ func ExpectInteractive(userinput func(*Console), testcli func()) {
 	// Dump the terminal's screen.
 	defer func() { GinkgoWriter.Write([]byte(expect.StripTrailingEmptyLines(state.String()))) }()
 
-	donec := make(chan struct{})
+	doneC := make(chan struct{})
 	go func() {
 		defer GinkgoRecover()
-		defer close(donec)
+		defer close(doneC)
 
-		userinput(&Console{console: c})
+		userInput(&Console{console: c})
 	}()
 
 	//	time.Sleep(time.Hour)
 	go func() {
 		defer GinkgoRecover()
 
-		testcli()
+		testCli()
 
 		// Close the slave end of the pty, and read the remaining bytes from the master end.
 		c.Tty().Close()
-		<-donec
+		<-doneC
 	}()
 
 	select {
 	case <-time.After(10 * time.Second):
 		c.Tty().Close()
 		Fail("test timed out")
-	case <-donec:
+	case <-doneC:
 	}
 }
 

@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	knativev1alpha1 "github.com/knative/serving/pkg/apis/networking/v1alpha1"
-	knativeclient "github.com/knative/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -14,6 +12,8 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+	knativeclient "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 )
 
 type translatorSyncer struct {
@@ -48,7 +48,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 
-	proxy, err := translateProxy(s.writeNamespace, snap)
+	proxy, err := translateProxy(ctx, s.writeNamespace, snap)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
 			"knative ingress proxy will not be updated.", snap.Hash(), err)
@@ -118,14 +118,15 @@ func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, cluste
 	var updatedClusterIngresses []*knativev1alpha1.ClusterIngress
 	for _, wrappedCi := range clusterIngresses {
 		ci := knativev1alpha1.ClusterIngress(wrappedCi.ClusterIngress)
-		if ci.Status.IsReady() {
+		if ci.Status.ObservedGeneration == ci.ObjectMeta.Generation {
 			continue
 		}
 		ci.Status.InitializeConditions()
 		ci.Status.MarkNetworkConfigured()
-		ci.Status.MarkLoadBalancerReady([]knativev1alpha1.LoadBalancerIngressStatus{
+		lb := []knativev1alpha1.LoadBalancerIngressStatus{
 			{DomainInternal: s.proxyAddress},
-		})
+		}
+		ci.Status.MarkLoadBalancerReady(lb, lb, lb)
 		ci.Status.ObservedGeneration = ci.Generation
 		updatedClusterIngresses = append(updatedClusterIngresses, &ci)
 	}

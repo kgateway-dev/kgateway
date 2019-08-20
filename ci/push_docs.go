@@ -16,6 +16,10 @@ func main() {
 			"docs/v1/gogoproto",
 			"docs/v1/google",
 		},
+		Files: docsutils.Files{{
+			From: "docs/helm-values.md",
+			To:   "docs/installation/gateway/kubernetes/values.txt",
+		}},
 	}
 	docsutils.PushDocsCli(&spec)
 }

@@ -14,7 +14,7 @@ these commands can be used to interact directly with the Proxies Gloo is managin
 
 ```
   -h, --help               help for proxy
-      --name string        the name of the proxy service/deployment to use (default "gateway-proxy")
+      --name string        the name of the proxy service/deployment to use (default "gateway-proxy-v2")
   -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
       --port string        the name of the service port to connect to (default "http")
 ```
@@ -31,6 +31,7 @@ these commands can be used to interact directly with the Proxies Gloo is managin
 * [glooctl proxy address](../glooctl_proxy_address)	 - print the socket address for a proxy
 * [glooctl proxy dump](../glooctl_proxy_dump)	 - dump Envoy config from one of the proxy instances
 * [glooctl proxy logs](../glooctl_proxy_logs)	 - dump Envoy logs from one of the proxy instancesNote: this will enable verbose logging on Envoy
+* [glooctl proxy served-config](../glooctl_proxy_served-config)	 - dump Envoy config being served by the Gloo xDS server
 * [glooctl proxy stats](../glooctl_proxy_stats)	 - stats for one of the proxy instances
 * [glooctl proxy url](../glooctl_proxy_url)	 - print the http endpoint for a proxy
 

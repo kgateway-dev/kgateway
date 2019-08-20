@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix Endpoints getting lost in Kubernetes EDS.
+    issueLink: https://github.com/solo-io/gloo/issues/816

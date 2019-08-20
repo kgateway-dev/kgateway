@@ -17,11 +17,12 @@ func main() {
 	log.Printf("starting generate")
 
 	generateOptions := cmd.GenerateOptions{
-		SkipGenMocks:  true,
-		CustomImports: nil,
-		SkipDirs:      nil,
-		RelativeRoot:  "projects",
-		CompileProtos: true,
+		SkipGenMocks:       true,
+		CustomImports:      nil,
+		SkipGeneratedTests: true,
+		SkipDirs:           nil,
+		RelativeRoot:       "projects",
+		CompileProtos:      true,
 		GenDocs: &cmd.DocsOptions{
 			Output: options.Hugo,
 		},

@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 
 	. "github.com/onsi/ginkgo"
@@ -86,7 +88,7 @@ var _ = Describe("Happy path", func() {
 				},
 			}
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			err := envoyInstance.RunWithRole(ns+"~gateway-proxy", testClients.GlooPort)
+			err := envoyInstance.RunWithRole(ns+"~gateway-proxy-v2", testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			up = tu.Upstream
@@ -255,7 +257,11 @@ var _ = Describe("Happy path", func() {
 				namespace = "gloo-e2e-" + helpers.RandString(8)
 			}
 
-			err := setup.SetupKubeForTest(namespace)
+			_, err := kubeClient.CoreV1().Namespaces().Create(&kubev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: namespace,
+				},
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			svc, err = kubeClient.CoreV1().Services(namespace).Create(&kubev1.Service{
@@ -320,7 +326,7 @@ var _ = Describe("Happy path", func() {
 				writeNamespace = namespace
 				ro := &services.RunOptions{
 					NsToWrite: writeNamespace,
-					NsToWatch: []string{"default", namespace},
+					NsToWatch: []string{namespace},
 					WhatToRun: services.What{
 						DisableGateway: true,
 					},
@@ -328,7 +334,7 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy"
+				role := namespace + "~gateway-proxy-v2"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -363,8 +369,9 @@ var _ = Describe("Happy path", func() {
 		Context("all namespaces", func() {
 			BeforeEach(func() {
 				namespace = "gloo-e2e-" + helpers.RandString(8)
+				prepNamespace()
 
-				writeNamespace = defaults.GlooSystem
+				writeNamespace = namespace
 				ro := &services.RunOptions{
 					NsToWrite: writeNamespace,
 					NsToWatch: []string{},
@@ -375,11 +382,10 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy"
+				role := namespace + "~gateway-proxy-v2"
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
-				prepNamespace()
 			})
 
 			It("watch all namespaces", func() {
@@ -426,7 +432,7 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "gateway-proxy",
+			Name:      translator.GatewayProxyName,
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{

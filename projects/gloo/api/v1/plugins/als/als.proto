@@ -1,0 +1,38 @@
+syntax = "proto3";
+package als.plugins.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/struct.proto";
+
+option (gogoproto.equal_all) = true;
+
+// Contains various settings for Envoy's access logging service.
+// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
+message AccessLoggingService {
+    repeated AccessLog access_log = 1;
+}
+
+message AccessLog {
+
+    // type of Access Logging service to implement
+    oneof OutputDestination {
+        FileSink file_sink = 2;
+    }
+}
+
+message FileSink {
+    // the file path to which the file access logging service will sink
+    string path = 1;
+    // the format which the logs should be outputted by
+    oneof output_format {
+        // the format string by which envoy will format the log lines
+        // https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings
+        string string_format = 2;
+        // the format object by which to envoy will emit the logs in a structured way.
+        // https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries
+        google.protobuf.Struct json_format = 3;
+
+    }
+}

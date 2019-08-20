@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow Gloo to run as default Ingress, without requiring ingress class annotation
+    issueLink: https://github.com/solo-io/gloo/issues/507

@@ -33,5 +33,6 @@ glooctl delete [flags]
 * [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl delete proxy](../glooctl_delete_proxy)	 - delete a proxy
 * [glooctl delete upstream](../glooctl_delete_upstream)	 - delete an upstream
+* [glooctl delete upstreamgroup](../glooctl_delete_upstreamgroup)	 - delete an upstream group
 * [glooctl delete virtualservice](../glooctl_delete_virtualservice)	 - delete a virtualservice
 

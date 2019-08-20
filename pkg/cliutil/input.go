@@ -21,8 +21,20 @@ func GetYesInput(msg string) (bool, error) {
 	return strings.ToLower(yesAnswer) == "y", nil
 }
 
+func GetStringInputLazyPrompt(msgProvider func() string, value *string) error {
+	return GetStringInputDefaultLazyPrompt(msgProvider, value, "")
+}
+
 func GetStringInput(msg string, value *string) error {
 	return GetStringInputDefault(msg, value, "")
+}
+
+func GetStringInputDefaultLazyPrompt(msgProvider func() string, value *string, defaultValue string) error {
+	prompt := &survey.Input{Message: msgProvider(), Default: defaultValue}
+	if err := AskOne(prompt, value, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetStringInputDefault(msg string, value *string, defaultValue string) error {
@@ -69,6 +81,20 @@ func GetBoolInputDefault(msg string, value *bool, defaultValue bool) error {
 	return nil
 }
 
+func GetStringSliceInputLazyPrompt(msgProvider func() string, value *[]string) error {
+	for {
+		var entry string
+		if err := GetStringInputLazyPrompt(msgProvider, &entry); err != nil {
+			return err
+		}
+
+		if entry == "" {
+			return nil
+		}
+		*value = append(*value, entry)
+	}
+}
+
 func GetStringSliceInput(msg string, value *[]string) error {
 	for {
 		var entry string
@@ -94,6 +120,25 @@ func ChooseFromList(message string, choice *string, options []string) error {
 	}
 
 	if err := AskOne(question, choice, survey.Required); err != nil {
+		// this should not error
+		fmt.Println("error with input")
+		return err
+	}
+
+	return nil
+}
+
+func MultiChooseFromList(message string, choices *[]string, options []string) error {
+	if len(options) == 0 {
+		return fmt.Errorf("No options to select from (for prompt: %v)", message)
+	}
+
+	question := &survey.MultiSelect{
+		Message: message,
+		Options: options,
+	}
+
+	if err := AskOne(question, choices, survey.Required); err != nil {
 		// this should not error
 		fmt.Println("error with input")
 		return err

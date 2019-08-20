@@ -1,11 +1,10 @@
-package utils_test
+package utils
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var _ = Describe("PathAsString", func() {

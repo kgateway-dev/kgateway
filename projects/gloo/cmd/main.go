@@ -16,7 +16,7 @@ func main() {
 	if os.Getenv(START_STATS_SERVER) != "" {
 		stats.StartStatsServer()
 	}
-	if err := setup.Main(); err != nil {
+	if err := setup.Main(nil); err != nil {
 		log.Fatalf("err in main: %v", err.Error())
 	}
 }

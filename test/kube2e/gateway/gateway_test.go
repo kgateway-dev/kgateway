@@ -7,7 +7,9 @@ import (
 	"os"
 	"time"
 
+	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -25,6 +27,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
@@ -47,7 +50,7 @@ import (
 var _ = Describe("Kube2e: gateway", func() {
 
 	const (
-		gatewayProxy = "gateway-proxy"
+		gatewayProxy = translator.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -58,13 +61,17 @@ var _ = Describe("Kube2e: gateway", func() {
 		cache      kube.SharedCache
 		kubeClient kubernetes.Interface
 
-		gatewayClient        gatewayv1.GatewayClient
+		gatewayClient        gatewayv2.GatewayClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
 		upstreamGroupClient  gloov1.UpstreamGroupClient
 		upstreamClient       gloov1.UpstreamClient
 		proxyClient          gloov1.ProxyClient
 		serviceClient        skkube.ServiceClient
 	)
+
+	var _ = BeforeEach(StartTestHelper)
+
+	var _ = AfterEach(TearDownTestHelper)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -78,7 +85,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		cache = kube.NewKubeCache(ctx)
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gatewayv1.GatewayCrd,
+			Crd:         gatewayv2.GatewayCrd,
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
@@ -103,7 +110,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			SharedCache: cache,
 		}
 
-		gatewayClient, err = gatewayv1.NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err = gatewayv2.NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Register()
 		Expect(err).NotTo(HaveOccurred())
@@ -155,7 +162,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv1.Gateway, error) {
+			Eventually(func() (*gatewayv2.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -191,11 +198,11 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("correctly routes to the service", func() {
+			It("correctly routes to the service (http)", func() {
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 
 				// wait for default gateway to be created
-				Eventually(func() *gatewayv1.Gateway {
+				Eventually(func() *gatewayv2.Gateway {
 					gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 					return gw
 				}, "15s", "0.5s").Should(Not(BeNil()))
@@ -243,6 +250,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					WithoutStats:      true,
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
+
 		})
 
 		Context("native ssl", func() {
@@ -284,11 +292,10 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 				// wait for default gateway to be created
-				Eventually(func() (*gatewayv1.Gateway, error) {
+				Eventually(func() (*gatewayv2.Gateway, error) {
 					return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 				}, "15s", "0.5s").Should(Not(BeNil()))
 
-				gatewayProxy := "gateway-proxy"
 				gatewayPort := int(443)
 				caFile := ToFile(helpers.Certificate())
 				//noinspection GoUnhandledErrorResult
@@ -301,8 +308,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Protocol:          "https",
 					Path:              "/",
 					Method:            "GET",
-					Host:              gatewayProxy,
-					Service:           gatewayProxy,
+					Host:              translator.GatewayProxyName,
+					Service:           translator.GatewayProxyName,
 					Port:              gatewayPort,
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
@@ -462,6 +469,137 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(spec).ToNot(BeNil())
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
+		})
+	})
+
+	Context("tcp", func() {
+
+		var (
+			defaultGateway *gatewayv2.Gateway
+			tcpEcho        helper.TestRunner
+
+			tcpPort = corev1.ServicePort{
+				Name:       "tcp-proxy",
+				Port:       int32(defaults2.TcpPort),
+				TargetPort: intstr.FromInt(int(defaults2.TcpPort)),
+				Protocol:   "TCP",
+			}
+		)
+
+		BeforeEach(func() {
+			var err error
+
+			tcpEcho, err = helper.NewEchoTcp(testHelper.InstallNamespace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tcpEcho.Deploy(time.Minute)).NotTo(HaveOccurred())
+			defaultGateway = defaults.DefaultTcpGateway(testHelper.InstallNamespace)
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Kube{
+					Kube: &gloov1.KubernetesServiceDestination{
+						Ref: core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      helper.TcpEchoName,
+						},
+						Port: uint32(helper.TcpEchoPort),
+					},
+				},
+			}
+			tcpGateway := defaultGateway.GetTcpGateway()
+			Expect(tcpGateway).NotTo(BeNil())
+			tcpGateway.Destinations = append(tcpGateway.Destinations, &gloov1.TcpHost{
+				Name: "one",
+				Destination: &gloov1.RouteAction{
+					Destination: &gloov1.RouteAction_Single{
+						Single: dest,
+					},
+				},
+			})
+			_, err = gatewayClient.Write(defaultGateway, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			gwSvc, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Get(gatewayProxy, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			found := false
+			for _, v := range gwSvc.Spec.Ports {
+				if v.Name == tcpPort.Name || v.Port == tcpPort.Port {
+					found = true
+					break
+				}
+			}
+			if !found {
+				gwSvc.Spec.Ports = append(gwSvc.Spec.Ports, tcpPort)
+			}
+			_, err = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Update(gwSvc)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			Expect(gatewayClient.Delete(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.DeleteOpts{})).NotTo(HaveOccurred())
+			gwSvc, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Get(gatewayProxy, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			ports := make([]corev1.ServicePort, 0, len(gwSvc.Spec.Ports))
+			for _, v := range gwSvc.Spec.Ports {
+				if v.Name != tcpPort.Name {
+					ports = append(ports, v)
+				}
+			}
+			gwSvc.Spec.Ports = ports
+			_, err = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Update(gwSvc)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tcpEcho.Terminate()).NotTo(HaveOccurred())
+		})
+
+		It("correctly routes to the service (tcp)", func() {
+
+			// wait for default gateway to be created
+			Eventually(func() *gatewayv2.Gateway {
+				gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+				return gw
+			}, "15s", "0.5s").Should(Not(BeNil()))
+
+			// wait for the expected proxy configuration to be accepted
+			Eventually(func() error {
+				proxy, err := proxyClient.Read(testHelper.InstallNamespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				if err != nil {
+					return err
+				}
+
+				if status := proxy.Status; status.State != core.Status_Accepted {
+					return errors.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
+				}
+
+				for _, l := range proxy.Listeners {
+					tcpListener := l.GetTcpListener()
+					if tcpListener == nil {
+						continue
+					}
+					for _, tcph := range tcpListener.TcpHosts {
+						if action := tcph.GetDestination(); action != nil {
+							if single := action.GetSingle(); single != nil {
+								if svcDest := single.GetKube(); svcDest != nil {
+									if svcDest.Ref.Name == helper.TcpEchoName &&
+										svcDest.Ref.Namespace == testHelper.InstallNamespace &&
+										svcDest.Port == uint32(helper.TcpEchoPort) {
+										return nil
+									}
+								}
+							}
+						}
+					}
+				}
+
+				return errors.Errorf("proxy did not contain expected route")
+			}, "15s", "0.5s").Should(BeNil())
+
+			responseString := fmt.Sprintf("Connected to %s",
+				gatewayProxy)
+
+			tcpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
+				Protocol:          "telnet",
+				Service:           gatewayProxy,
+				Port:              int(defaultGateway.BindPort),
+				ConnectionTimeout: 10,
+				Verbose:           true,
+			}, responseString, 1, 30*time.Second)
 		})
 	})
 
@@ -697,7 +835,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv1.Gateway, error) {
+			Eventually(func() (*gatewayv2.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 

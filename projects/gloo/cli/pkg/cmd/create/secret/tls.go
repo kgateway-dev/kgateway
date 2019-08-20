@@ -2,11 +2,9 @@ package secret
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -29,12 +27,12 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 			}
 			if opts.Top.Interactive {
 				// and gather any missing args that are available through interactive mode
-				if err := TlsSecretArgsInteractive(&opts.Metadata, input); err != nil {
+				if err := TlsSecretArgsInteractive(input); err != nil {
 					return err
 				}
 			}
 			// create the secret
-			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun); err != nil {
+			if err := createTlsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Top.Output); err != nil {
 				return err
 			}
 			return nil
@@ -56,7 +54,7 @@ const (
 	tlsPromptCertChain  = "filename of certchain for secret"
 )
 
-func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) error {
+func TlsSecretArgsInteractive(input *options.TlsSecret) error {
 	if err := cliutil.GetStringInput("filename of rootca for secret (optional)", &input.RootCaFilename); err != nil {
 		return err
 	}
@@ -70,7 +68,7 @@ func TlsSecretArgsInteractive(meta *core.Metadata, input *options.TlsSecret) err
 	return nil
 }
 
-func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun bool) error {
+func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun bool, outputType printers.OutputType) error {
 
 	// read the values
 
@@ -90,16 +88,15 @@ func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsS
 		},
 	}
 
-	if dryRun {
-		return common.PrintKubeSecret(ctx, secret)
+	if !dryRun {
+		var err error
+		secretClient := helpers.MustSecretClient()
+		if secret, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
+			return err
+		}
+
 	}
 
-	secretClient := helpers.MustSecretClient()
-	if _, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
-		return err
-	}
-
-	fmt.Printf("Created TLS secret [%v] in namespace [%v]\n", meta.Name, meta.Namespace)
-
+	_ = printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 	return nil
 }

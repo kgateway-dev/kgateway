@@ -39,6 +39,10 @@ func (r *Endpoint) Hash() uint64 {
 	)
 }
 
+func (r *Endpoint) GroupVersionKind() schema.GroupVersionKind {
+	return EndpointGVK
+}
+
 type EndpointList []*Endpoint
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -112,8 +116,6 @@ func (list EndpointList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Endpoint{}
-
 // Kubernetes Adapter for Endpoint
 
 func (o *Endpoint) GetObjectKind() schema.ObjectKind {
@@ -126,11 +128,6 @@ func (o *Endpoint) DeepCopyObject() runtime.Object {
 }
 
 var (
-	EndpointGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gloo.solo.io",
-		Kind:    "Endpoint",
-	}
 	EndpointCrd = crd.NewCrd(
 		"endpoints",
 		EndpointGVK.Group,
@@ -146,3 +143,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	EndpointGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Endpoint",
+	}
+)

@@ -1,4 +1,8 @@
 {{- if or (.Values.ingress.enabled) (.Values.settings.integrations.knative.enabled) }}
+{{- $image := .Values.ingress.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.ingress.deployment.image .Values.global.image }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,8 +22,8 @@ spec:
         gloo: ingress
     spec:
       containers:
-      - image: "{{ .Values.ingress.deployment.image.repository }}:{{ .Values.ingress.deployment.image.tag }}"
-        imagePullPolicy: {{ .Values.ingress.deployment.image.pullPolicy }}
+      - image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress
         env:
         - name: POD_NAMESPACE
@@ -30,10 +34,20 @@ spec:
         - name: "ENABLE_KNATIVE_INGRESS"
           value: "true"
 {{- end }}
+{{- if .Values.settings.integrations.knative.version }}
+        - name: "KNATIVE_VERSION"
+          value: "{{.Values.settings.integrations.knative.version}}"
+{{- end }}
 
 {{- if not (.Values.ingress.enabled) }}
         - name: "DISABLE_KUBE_INGRESS"
           value: "true"
+{{- else }}
+
+  {{- if .Values.ingress.requireIngressClass }}
+        - name: "REQUIRE_INGRESS_CLASS"
+          value: "true"
+  {{- end }}
 {{- end }}
 
 

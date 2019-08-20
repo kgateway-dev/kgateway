@@ -4,7 +4,7 @@ package v1
 
 import (
 	"context"
-	"fmt"
+	fmt "fmt"
 	"time"
 
 	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
@@ -48,16 +48,18 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 	go errutils.AggregateErrs(ctx, errs, watchErrs, "translator-emitter")
 
 	go func() {
-		originalSnapshot := TranslatorSnapshot{}
-		currentSnapshot := originalSnapshot.Clone()
+		currentSnapshot := TranslatorSnapshot{}
 		timer := time.NewTicker(time.Second * 1)
+		var previousHash uint64
 		sync := func() {
-			if originalSnapshot.Hash() == currentSnapshot.Hash() {
+			currentHash := currentSnapshot.Hash()
+			if previousHash == currentHash {
 				return
 			}
 
+			previousHash = currentHash
+
 			stats.Record(ctx, mTranslatorSnapshotOut.M(1))
-			originalSnapshot = currentSnapshot.Clone()
 			sentSnapshot := currentSnapshot.Clone()
 			snapshots <- &sentSnapshot
 		}

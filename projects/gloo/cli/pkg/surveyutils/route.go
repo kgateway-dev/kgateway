@@ -62,17 +62,17 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 		return errors.Errorf("must specify one of %v", pathMatchOptions)
 	}
 
-	if err := cliutil.GetStringSliceInput(
-		fmt.Sprintf("Add a header matcher for this function (empty to skip)? %v", match.HeaderMatcher.Entries),
-		&match.HeaderMatcher.Entries,
-	); err != nil {
+	var headerMsgProvider = func() string {
+		return fmt.Sprintf("Add a header matcher for this function (empty to skip)? %v", match.HeaderMatcher.Entries)
+	}
+	if err := cliutil.GetStringSliceInputLazyPrompt(headerMsgProvider, &match.HeaderMatcher.Entries); err != nil {
 		return err
 	}
 
-	if err := cliutil.GetStringSliceInput(
-		fmt.Sprintf("HTTP Method to match for this route (empty to skip)? %v", match.Methods),
-		&match.Methods,
-	); err != nil {
+	var httpMsgProvider = func() string {
+		return fmt.Sprintf("HTTP Method to match for this route (empty to skip)? %v", match.Methods)
+	}
+	if err := cliutil.GetStringSliceInputLazyPrompt(httpMsgProvider, &match.Methods); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 
 func getDestinationInteractive(route *options.InputRoute) error {
 	dest := &route.Destination
-	// collect secrets list
+	// collect upstreams list
 	usClient := helpers.MustUpstreamClient()
 	ussByKey := make(map[string]*v1.Upstream)
 	ugsByKey := make(map[string]*v1.UpstreamGroup)
@@ -98,8 +98,7 @@ func getDestinationInteractive(route *options.InputRoute) error {
 		}
 	}
 	if len(usKeys) == 0 {
-		return errors.Errorf("no upstreams found. create an upstream first or enable " +
-			"discovery.")
+		return errors.Errorf("no upstreams found. create an upstream first or enable discovery.")
 	}
 
 	ugClient, err := helpers.UpstreamGroupClient()
@@ -208,10 +207,11 @@ func getRestDestinationSpecInteractive(spec *options.RestDestinationSpec, restSp
 	); err != nil {
 		return err
 	}
-	if err := cliutil.GetStringSliceInput(
-		fmt.Sprintf("Add a header parameter for this function (empty to skip)? %v", spec.Parameters.Entries),
-		&spec.Parameters.Entries,
-	); err != nil {
+
+	var headerMsgProvider = func() string {
+		return fmt.Sprintf("Add a header parameter for this function (empty to skip)? %v", spec.Parameters.Entries)
+	}
+	if err := cliutil.GetStringSliceInputLazyPrompt(headerMsgProvider, &spec.Parameters.Entries); err != nil {
 		return err
 	}
 
@@ -262,11 +262,10 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 		}
 	} else {
 		// only get the insert index if the vs is predefined
-		if err := cliutil.GetUint32InputDefault(
+		if err := cliutil.GetUint32Input(
 			fmt.Sprintf("where do you want to insert the route in the "+
 				"virtual service's route list? "),
 			&opts.Add.Route.InsertIndex,
-			0,
 		); err != nil {
 			return err
 		}

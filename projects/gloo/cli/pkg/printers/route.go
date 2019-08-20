@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/gogo/protobuf/types"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -23,6 +25,14 @@ var routeActionType = struct {
 	redirectAction: "redirect_action",
 	directAction:   "direct_action",
 	emptyAction:    "empty_action",
+}
+
+func PrintRoutes(routes []*gloov1.Route, outputType OutputType) error {
+	return cliutils.PrintList(outputType.String(), "", routes,
+		func(data interface{}, w io.Writer) error {
+			RouteTable(data.([]*gloov1.Route), w)
+			return nil
+		}, os.Stdout)
 }
 
 // Destination represents a single destination of a route

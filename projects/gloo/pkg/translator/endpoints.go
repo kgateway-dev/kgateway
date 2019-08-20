@@ -8,11 +8,12 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyendpoints "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 const EnvoyLb = "envoy.lb"
+const SoloAnnotations = "io.solo.annotations"
 
 // Endpoints
 
@@ -37,8 +38,10 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 	clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
 	var endpoints []envoyendpoints.LbEndpoint
 	for _, addr := range clusterEndpoints {
+		metadata := getLbMetadata(upstream, addr.Metadata.Labels, "")
+		metadata = addAnnotations(metadata, addr.Metadata.Annotations)
 		lbEndpoint := envoyendpoints.LbEndpoint{
-			Metadata: getLbMetadata(upstream, addr.Metadata.Labels),
+			Metadata: metadata,
 			HostIdentifier: &envoyendpoints.LbEndpoint_Endpoint{
 				Endpoint: &envoyendpoints.Endpoint{
 					Address: &envoycore.Address{
@@ -78,7 +81,36 @@ func endpointsForUpstream(upstream *v1.Upstream, endpoints []*v1.Endpoint) []*v1
 	return clusterEndpoints
 }
 
-func getLbMetadata(upstream *v1.Upstream, labels map[string]string) *envoycore.Metadata {
+func addAnnotations(metadata *envoycore.Metadata, annotations map[string]string) *envoycore.Metadata {
+	if annotations == nil {
+		return metadata
+	}
+	if metadata == nil {
+		metadata = &envoycore.Metadata{
+			FilterMetadata: map[string]*types.Struct{},
+		}
+	}
+
+	if metadata.FilterMetadata == nil {
+		metadata.FilterMetadata = map[string]*types.Struct{}
+	}
+
+	fields := map[string]*types.Value{}
+	for k, v := range annotations {
+		fields[k] = &types.Value{
+			Kind: &types.Value_StringValue{
+				StringValue: v,
+			},
+		}
+	}
+
+	metadata.FilterMetadata[SoloAnnotations] = &types.Struct{
+		Fields: fields,
+	}
+	return metadata
+}
+
+func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue string) *envoycore.Metadata {
 
 	meta := &envoycore.Metadata{
 		FilterMetadata: map[string]*types.Struct{},
@@ -92,7 +124,7 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string) *envoycore.M
 		for _, k := range allKeys(upstream) {
 			labelsStruct.Fields[k] = &types.Value{
 				Kind: &types.Value_StringValue{
-					StringValue: "",
+					StringValue: zeroValue,
 				},
 			}
 		}

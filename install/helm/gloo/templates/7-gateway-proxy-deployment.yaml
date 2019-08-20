@@ -1,40 +1,84 @@
+{{- if .Values.gateway.updateValues -}}
+{{- include "gloo.updatevalues" . -}}
+{{- end -}}
 {{- if .Values.gateway.enabled }}
-{{- range $key, $spec := .Values.gatewayProxies }}
+{{- $topScope := . }}
+{{- $global := .Values.global }}
+{{- $isUpgrade := .Values.gateway.upgrade }}
+{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $image := $spec.podTemplate.image }}
+{{- if $global }}
+{{- $image = merge $spec.podTemplate.image $global.image }}
+{{- end }}
 ---
 apiVersion: apps/v1
+{{- if $spec.kind.deployment}}
 kind: Deployment
+{{- else }}
+kind: DaemonSet
+{{- end}}
 metadata:
   labels:
     app: gloo
-    gloo: {{ $key }}
-  name: {{ $key }}
+    gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
+  name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 spec:
-  replicas: {{ $spec.deployment.replicas }}
+  {{- if $spec.kind.deployment}}
+  replicas: {{ $spec.kind.deployment.replicas }}
+  {{- end}}
   selector:
     matchLabels:
-      gloo: {{ $key }}
+      gloo: gateway-proxy
+      gateway-proxy-id: {{ $name | kebabcase }}
   template:
     metadata:
       labels:
-        gloo: {{ $key }}
+        gloo: gateway-proxy
+        gateway-proxy-id: {{ $name | kebabcase }}
+        {{- if not $isUpgrade }}
+        gateway-proxy: live
+        {{- end }}
 {{ $annotationExist := false}}
-{{- if $spec.deployment.extraAnnotations }}
+{{- if $spec.podTemplate.extraAnnotations }}
 {{ $annotationExist = true}}
       annotations:
-      {{- range $key, $value := $spec.deployment.extraAnnotations }}
+      {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
 {{- end }}
-{{- if $spec.deployment.stats }}
+{{- if $spec.stats }}
 {{- if not $annotationExist }}
+{{- $annotationExist = true}}
       annotations:
 {{- end}}
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
 {{- end}}
+{{- if $spec.readConfig }}
+{{- if not $annotationExist }}
+      annotations:
+{{- end}}
+        readconfig-stats: /stats
+        readconfig-ready: /ready
+        readconfig-config_dump: /config_dump
+        readconfig-port: "8082"
+{{- end}}
     spec:
+{{- if $spec.kind.deployment.antiAffinity }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  gloo: gateway-proxy
+              topologyKey: kubernetes.io/hostname
+{{- end}}
+      serviceAccountName: gateway-proxy
       containers:
       - args: ["--disable-hot-restart"]
         env:
@@ -46,9 +90,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{ $spec.deployment.image.repository }}:{{ $spec.deployment.image.tag }}
-        imagePullPolicy: {{ $spec.deployment.image.pullPolicy }}
-        name: gateway-proxy
+        image: {{ template "gloo.image" $image }}
+        imagePullPolicy: {{ $image.pullPolicy }}
+        name: {{ $name | kebabcase }}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -58,23 +102,87 @@ spec:
             add:
             - NET_BIND_SERVICE
         ports:
-        - containerPort: {{ $spec.deployment.httpPort }}
+        - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
           protocol: TCP
-        - containerPort: {{ $spec.deployment.httpsPort }}
+          {{- if $spec.kind.daemonSet }}
+          {{- if $spec.kind.daemonSet.hostPort}}
+          hostPort: {{ $spec.podTemplate.httpPort }}
+          {{- end}}
+          {{- end}}
+        - containerPort: {{ $spec.podTemplate.httpsPort }}
           name: https
           protocol: TCP
-{{- with $spec.deployment.extraPorts }}
-{{toYaml  . | indent 8}}{{- end }}
+          {{- if  $spec.kind.daemonSet }}
+          {{- if $spec.kind.daemonSet.hostPort}}
+          hostPort: {{ $spec.podTemplate.httpsPort }}
+          {{- end}}
+          {{- end}}
+{{- with $spec.podTemplate.extraPorts }}
+{{toYaml . | indent 8}}{{- end }}
+{{- if $spec.podTemplate.resources }}
+        resources:
+{{ toYaml $spec.podTemplate.resources | indent 10}}
+{{- end}}
+{{- if $spec.podTemplate.probes }}
+        readinessProbe:
+          exec:
+            command:
+            - wget
+            - -O
+            - /dev/null
+            - localhost:19000/ready
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 10
+        livenessProbe:
+          exec:
+            command:
+            - wget
+            - -O
+            - /dev/null
+            - localhost:19000/server_info
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 10
+{{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-      {{- if $spec.deployment.image.pullSecret }}
+{{- if $spec.extraContainersHelper }}
+        - mountPath: /usr/share/shared-data
+          name: shared-data
+{{- include $spec.extraContainersHelper $topScope | nindent 6 }}
+{{- end }}
+      {{- if $spec.kind.daemonSet }}
+      {{- if $spec.kind.daemonSet.hostPort}}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end}}
+      {{- end}}
+      {{- if $spec.podTemplate.nodeName }}
+      nodeName: {{$spec.podTemplate.nodeName}}
+      {{- end }}
+      {{- if $spec.podTemplate.nodeSelector }}
+      nodeSelector:
+      {{- range $key, $value := $spec.podTemplate.nodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+      {{- if $spec.podTemplate.tolerations }}
+      tolerations:
+{{ toYaml $spec.podTemplate.tolerations | indent 6}}
+      {{- end }}
+      {{- if $image.pullSecret }}
       imagePullSecrets:
-        - name: {{ $spec.deployment.image.pullSecret }}{{end}}
+        - name: {{ $image.pullSecret }}{{end}}
       volumes:
       - configMap:
-          name: {{ $key }}-envoy-config
+          name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
+      {{- if $spec.extraContainersHelper }}
+      - name: shared-data
+        emptyDir: {}
+      {{- end }}
 {{- end }}
 {{- end }}

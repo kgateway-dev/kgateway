@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
@@ -12,6 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 )
 
 var _ = Describe("Plugin", func() {
@@ -26,11 +28,18 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
-		p = new(plugin)
+		b := false
+		p = NewPlugin(&b)
 		out = new(envoyapi.Cluster)
 
 		grpcSepc = &pluginsv1.ServiceSpec_Grpc{
-			Grpc: &v1grpc.ServiceSpec{},
+			Grpc: &v1grpc.ServiceSpec{
+				GrpcServices: []*v1grpc.ServiceSpec_GrpcService{{
+					PackageName:   "foo",
+					ServiceName:   "bar",
+					FunctionNames: []string{"func"},
+				}},
+			},
 		}
 
 		p.Init(plugins.InitParams{})
@@ -56,18 +65,59 @@ var _ = Describe("Plugin", func() {
 		}
 
 	})
+	Context("upstream", func() {
+		It("should not mark none grpc upstreams as http2", func() {
+			upstreamSpec.ServiceSpec.PluginType = nil
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.Http2ProtocolOptions).To(BeNil())
+		})
 
-	It("should not mark none grpc upstreams as http2", func() {
-		upstreamSpec.ServiceSpec.PluginType = nil
-		err := p.ProcessUpstream(params, upstream, out)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(out.Http2ProtocolOptions).To(BeNil())
+		It("should mark grpc upstreams as http2", func() {
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.Http2ProtocolOptions).NotTo(BeNil())
+		})
 	})
 
-	It("should mark grpc upstreams as http2", func() {
-		err := p.ProcessUpstream(params, upstream, out)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(out.Http2ProtocolOptions).NotTo(BeNil())
-	})
+	Context("route", func() {
+		It("should process route", func() {
 
+			var routeParams plugins.RouteParams
+			routeIn := &v1.Route{
+				Matcher: &v1.Matcher{
+					PathSpecifier: &v1.Matcher_Prefix{
+						Prefix: "/",
+					},
+				},
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationSpec: &v1.DestinationSpec{
+									DestinationType: &v1.DestinationSpec_Grpc{
+										Grpc: &v1grpc.DestinationSpec{},
+									},
+								},
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			routeOut := &envoyroute.Route{
+				Action: &envoyroute.Route_Route{
+					Route: &envoyroute.RouteAction{},
+				},
+			}
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			err = p.ProcessRoute(routeParams, routeIn, routeOut)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+	})
 })

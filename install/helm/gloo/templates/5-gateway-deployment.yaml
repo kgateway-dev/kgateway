@@ -1,0 +1,57 @@
+{{- $image := .Values.gateway.deployment.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gateway.deployment.image .Values.global.image }}
+{{- end }}
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway
+  name: gateway-v2
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.gateway.deployment.replicas }}
+  selector:
+    matchLabels:
+      gloo: gateway
+  template:
+    metadata:
+      labels:
+        gloo: gateway
+      {{- if .Values.gateway.deployment.stats }}
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9091"
+        prometheus.io/scrape: "true"
+      {{- end}}
+    spec:
+      serviceAccountName: gateway
+      containers:
+      - image: {{template "gloo.image" $image}}
+        imagePullPolicy: {{ $image.pullPolicy }}
+        name: gateway
+{{- if .Values.gateway.deployment.resources }}
+        resources:
+{{ toYaml .Values.gateway.deployment.resources | indent 10}}
+{{- end}}
+
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10101
+          capabilities:
+            drop:
+            - ALL
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        {{- if .Values.gateway.deployment.stats }}
+          - name: START_STATS_SERVER
+            value: "true"
+        {{- end}}
+{{- end }}

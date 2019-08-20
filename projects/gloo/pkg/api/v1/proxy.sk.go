@@ -41,6 +41,10 @@ func (r *Proxy) Hash() uint64 {
 	)
 }
 
+func (r *Proxy) GroupVersionKind() schema.GroupVersionKind {
+	return ProxyGVK
+}
+
 type ProxyList []*Proxy
 
 // namespace is optional, if left empty, names can collide if the list contains more than one with the same name
@@ -122,8 +126,6 @@ func (list ProxyList) AsInterfaces() []interface{} {
 	return asInterfaces
 }
 
-var _ resources.Resource = &Proxy{}
-
 // Kubernetes Adapter for Proxy
 
 func (o *Proxy) GetObjectKind() schema.ObjectKind {
@@ -136,11 +138,6 @@ func (o *Proxy) DeepCopyObject() runtime.Object {
 }
 
 var (
-	ProxyGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "gloo.solo.io",
-		Kind:    "Proxy",
-	}
 	ProxyCrd = crd.NewCrd(
 		"proxies",
 		ProxyGVK.Group,
@@ -156,3 +153,11 @@ func init() {
 		log.Fatalf("could not add crd to global registry")
 	}
 }
+
+var (
+	ProxyGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "gloo.solo.io",
+		Kind:    "Proxy",
+	}
+)

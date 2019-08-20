@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
@@ -21,9 +23,10 @@ var (
 	GlooCrdNames []string
 
 	// Set up during pre-install (for OS gloo, namespace only)
-	GlooPreInstallKinds []string
-	GlooInstallKinds    []string
-	ExpectedLabels      map[string]string
+	GlooPreInstallKinds     []string
+	GlooInstallKinds        []string
+	GlooGatewayUpgradeKinds []string
+	ExpectedLabels          map[string]string
 
 	KnativeCrdNames []string
 )
@@ -34,6 +37,7 @@ func init() {
 	GlooSystemKinds = []string{
 		"Deployment",
 		"Service",
+		"ServiceAccount",
 		"ConfigMap",
 	}
 
@@ -41,11 +45,14 @@ func init() {
 		"ClusterRole",
 		"ClusterRoleBinding",
 	}
+	GlooPreInstallKinds = append(GlooPreInstallKinds, "ServiceAccount")
+	GlooPreInstallKinds = append(GlooPreInstallKinds, GlooRbacKinds...)
+	GlooInstallKinds = GlooSystemKinds
 
-	GlooInstallKinds = append(GlooSystemKinds, GlooRbacKinds...)
+	GlooGatewayUpgradeKinds = append(GlooInstallKinds, "Job")
 
 	GlooCrdNames = []string{
-		"gateways.gateway.solo.io",
+		"gateways.gateway.solo.io.v2",
 		"proxies.gloo.solo.io",
 		"settings.gloo.solo.io",
 		"upstreams.gloo.solo.io",
@@ -72,11 +79,13 @@ func init() {
 }
 
 type GlooInstallSpec struct {
-	ProductName      string // gloo or glooe
-	HelmArchiveUri   string
-	ValueFileName    string
-	ExtraValues      map[string]string
-	ExcludeResources install.ResourceMatcherFunc
+	ProductName       string // gloo or glooe
+	HelmArchiveUri    string
+	ValueFileName     string
+	UserValueFileName string
+	ExtraValues       map[string]interface{}
+	ValueCallbacks    []install.ValuesCallback
+	ExcludeResources  install.ResourceMatcherFunc
 }
 
 // Entry point for all three GLoo installation commands
@@ -112,12 +121,33 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 		helmChartArchiveUri = helmChartOverride
 	}
 
+	var extraValues map[string]interface{}
+	if opts.Install.Upgrade {
+		extraValues = map[string]interface{}{"gateway": map[string]interface{}{"upgrade": true}}
+	}
+	var valueCallbacks []install.ValuesCallback
+	if opts.Install.Knative.InstallKnativeVersion != "" {
+		valueCallbacks = append(valueCallbacks, func(config *generate.HelmConfig) {
+			if config.Settings != nil &&
+				config.Settings.Integrations != nil &&
+				config.Settings.Integrations.Knative != nil &&
+				config.Settings.Integrations.Knative.Enabled != nil &&
+				*config.Settings.Integrations.Knative.Enabled {
+
+				config.Settings.Integrations.Knative.Version = &opts.Install.Knative.InstallKnativeVersion
+
+			}
+		})
+	}
+
 	return &GlooInstallSpec{
-		HelmArchiveUri:   helmChartArchiveUri,
-		ValueFileName:    valueFileName,
-		ProductName:      "gloo",
-		ExtraValues:      nil,
-		ExcludeResources: nil,
+		HelmArchiveUri:    helmChartArchiveUri,
+		ValueFileName:     valueFileName,
+		UserValueFileName: opts.Install.HelmChartValues,
+		ProductName:       "gloo",
+		ExtraValues:       extraValues,
+		ValueCallbacks:    valueCallbacks,
+		ExcludeResources:  nil,
 	}, nil
 }
 

@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow specify anti pod affinity in the helm chart
+    issueLink: https://github.com/solo-io/gloo/pull/1042

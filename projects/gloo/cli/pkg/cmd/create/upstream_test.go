@@ -187,6 +187,26 @@ spec:
 status: {}
 `))
 		})
+
+		It("can print as solo-kit yaml in dry-run", func() {
+			out, err := testutils.GlooctlOut("create upstream kube --dry-run -oyaml --name kube-upstream --kube-service kube-service --kube-service-labels foo=bar,gloo=baz")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(Equal(`---
+metadata:
+  name: kube-upstream
+  namespace: gloo-system
+status: {}
+upstreamSpec:
+  kube:
+    selector:
+      foo: bar
+      gloo: baz
+    serviceName: kube-service
+    serviceNamespace: default
+    servicePort: 80
+`))
+		})
+
 	})
 
 	Context("Consul", func() {

@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
@@ -12,6 +14,7 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"context"
 	"sync/atomic"
@@ -22,6 +25,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
@@ -32,8 +36,10 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
+	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -43,7 +49,7 @@ import (
 )
 
 type TestClients struct {
-	GatewayClient        gatewayv1.GatewayClient
+	GatewayClient        gatewayv2.GatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
@@ -52,19 +58,19 @@ type TestClients struct {
 	GlooPort             int
 }
 
-var glooPortBase int32 = int32(30400)
+var glooPortBase = int32(30400)
 
 func AllocateGlooPort() int32 {
 	return atomic.AddInt32(&glooPortBase, 1) + int32(config.GinkgoConfig.ParallelNode*1000)
 }
 
-func RunGateway(ctx context.Context, justgloo bool) TestClients {
+func RunGateway(ctx context.Context, justGloo bool) TestClients {
 	ns := defaults.GlooSystem
 	ro := &RunOptions{
 		NsToWrite: ns,
 		NsToWatch: []string{"default", ns},
 		WhatToRun: What{
-			DisableGateway: justgloo,
+			DisableGateway: justGloo,
 		},
 		KubeClient: helpers.MustKubeClient(),
 	}
@@ -86,6 +92,7 @@ type RunOptions struct {
 	Extensions       syncer.Extensions
 	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
+	ConsulClient     consul.ConsulWatcher
 }
 
 //noinspection GoUnhandledErrorResult
@@ -97,6 +104,12 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if runOptions.Cache == nil {
 		runOptions.Cache = memory.NewInMemoryResourceCache()
 	}
+
+	settings := &gloov1.Settings{
+		WatchNamespaces:    runOptions.NsToWatch,
+		DiscoveryNamespace: runOptions.NsToWrite,
+	}
+	ctx = settingsutil.WithSettings(ctx, settings)
 
 	glooOpts := defaultGlooOpts(ctx, runOptions)
 
@@ -112,13 +125,19 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.ControlPlane.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 	if !runOptions.WhatToRun.DisableFds {
-		go fds_syncer.RunFDS(glooOpts)
+		go func() {
+			defer GinkgoRecover()
+			fds_syncer.RunFDS(glooOpts)
+		}()
 	}
 	if !runOptions.WhatToRun.DisableUds {
-		go uds_syncer.RunUDS(glooOpts)
+		go func() {
+			defer GinkgoRecover()
+			uds_syncer.RunUDS(glooOpts)
+		}()
 	}
 
-	testClients := getTestClients(runOptions.Cache, glooOpts.Services)
+	testClients := getTestClients(runOptions.Cache, glooOpts.KubeServiceClient)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	return testClients
 }
@@ -130,7 +149,7 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 		Cache: cache,
 	}
 
-	gatewayClient, err := gatewayv1.NewGatewayClient(memFactory)
+	gatewayClient, err := gatewayv2.NewGatewayClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
@@ -188,16 +207,22 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
+	var kubeCoreCache corecache.KubeCoreCache
+	if runOptions.KubeClient != nil {
+		var err error
+		kubeCoreCache, err = cache.NewKubeCoreCacheWithOptions(ctx, runOptions.KubeClient, time.Hour, runOptions.NsToWatch)
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	return bootstrap.Opts{
-		WriteNamespace:  runOptions.NsToWrite,
-		Upstreams:       f,
-		UpstreamGroups:  f,
-		Proxies:         f,
-		Secrets:         f,
-		Artifacts:       f,
-		Services:        newServiceClient(ctx, f, runOptions),
-		WatchNamespaces: runOptions.NsToWatch,
+		WriteNamespace:    runOptions.NsToWrite,
+		Upstreams:         f,
+		UpstreamGroups:    f,
+		Proxies:           f,
+		Secrets:           f,
+		Artifacts:         f,
+		KubeServiceClient: newServiceClient(ctx, f, runOptions),
+		WatchNamespaces:   runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
@@ -207,8 +232,10 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
 		},
-		KubeClient: runOptions.KubeClient,
-		DevMode:    true,
+		KubeClient:    runOptions.KubeClient,
+		KubeCoreCache: kubeCoreCache,
+		DevMode:       true,
+		ConsulWatcher: runOptions.ConsulClient,
 	}
 }
 

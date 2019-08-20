@@ -3,41 +3,74 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"sort"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-
-	"github.com/mitchellh/hashstructure"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	kubev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
 )
 
-var _ discovery.DiscoveryPlugin = new(plugin)
-
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
-	if p.kubeShareFactory == nil {
-		p.kubeShareFactory = getInformerFactory(p.kube)
+
+	kubeFactory := func(namespaces []string) KubePluginSharedFactory {
+		return getInformerFactory(opts.Ctx, p.kube, namespaces)
+	}
+	watcher, err := newEndpointWatcherForUpstreams(kubeFactory, p.kubeCoreCache, writeNamespace, upstreamsToTrack, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	return watcher.watch(writeNamespace, opts)
+}
+
+func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePluginSharedFactory, kubeCoreCache corecache.KubeCoreCache, writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (*edsWatcher, error) {
+	var namespaces []string
+
+	settings := settingsutil.FromContext(opts.Ctx)
+	if settingsutil.IsAllNamespacesFromSettings(settings) {
+		namespaces = []string{metav1.NamespaceAll}
+	} else {
+		nsSet := map[string]bool{}
+		for _, upstream := range upstreamsToTrack {
+			svcNs := upstream.GetUpstreamSpec().GetKube().GetServiceNamespace()
+			// only care about kube upstreams
+			if svcNs == "" {
+				continue
+			}
+			nsSet[svcNs] = true
+		}
+		for ns := range nsSet {
+			namespaces = append(namespaces, ns)
+		}
+	}
+
+	kubeFactory := kubeFactoryFactory(namespaces)
+	// this can take a bit of time some make sure we are still in business
+	if opts.Ctx.Err() != nil {
+		return nil, opts.Ctx.Err()
 	}
 	opts = opts.WithDefaults()
 
-	return newEndpointsWatcher(p.kube, p.kubeShareFactory, upstreamsToTrack).watch(writeNamespace, opts)
+	return newEndpointsWatcher(kubeCoreCache, namespaces, kubeFactory, upstreamsToTrack), nil
 }
 
 type edsWatcher struct {
-	kube             kubernetes.Interface
 	upstreams        map[core.ResourceRef]*kubeplugin.UpstreamSpec
 	kubeShareFactory KubePluginSharedFactory
+	kubeCoreCache    corecache.KubeCoreCache
+	namespaces       []string
 }
 
-func newEndpointsWatcher(kube kubernetes.Interface, kubeShareFactory KubePluginSharedFactory, upstreams v1.UpstreamList) *edsWatcher {
+func newEndpointsWatcher(kubeCoreCache corecache.KubeCoreCache, namespaces []string, kubeShareFactory KubePluginSharedFactory, upstreams v1.UpstreamList) *edsWatcher {
 	upstreamSpecs := make(map[core.ResourceRef]*kubeplugin.UpstreamSpec)
 	for _, us := range upstreams {
 		kubeUpstream, ok := us.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube)
@@ -48,29 +81,44 @@ func newEndpointsWatcher(kube kubernetes.Interface, kubeShareFactory KubePluginS
 		upstreamSpecs[us.Metadata.Ref()] = kubeUpstream.Kube
 	}
 	return &edsWatcher{
-		kube:             kube,
 		upstreams:        upstreamSpecs,
 		kubeShareFactory: kubeShareFactory,
+		kubeCoreCache:    kubeCoreCache,
+		namespaces:       namespaces,
 	}
 }
 
 func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.EndpointList, error) {
-	endpoints, err := c.kubeShareFactory.EndpointsLister().List(labels.SelectorFromSet(opts.Selector))
-	if err != nil {
-		return nil, err
-	}
+	var endpointList []*kubev1.Endpoints
+	var serviceList []*kubev1.Service
+	var podList []*kubev1.Pod
+	ctx := contextutils.WithLogger(opts.Ctx, "kubernetes_eds")
+	logger := contextutils.LoggerFrom(ctx)
 
-	pods, err := c.kubeShareFactory.PodsLister().List(labels.SelectorFromSet(opts.Selector))
-	if err != nil {
-		return nil, err
-	}
+	for _, ns := range c.namespaces {
+		if c.kubeCoreCache.NamespacedServiceLister(ns) == nil {
+			// this namespace is not watched, ignore it.
+			logger.Warnw("namespace is not watched, and has upstreams pointing to it", "namespace", ns)
+			continue
+		}
+		services, err := c.kubeCoreCache.NamespacedServiceLister(ns).List(labels.SelectorFromSet(opts.Selector))
+		if err != nil {
+			return nil, err
+		}
+		serviceList = append(serviceList, services...)
+		pods, err := c.kubeCoreCache.NamespacedPodLister(ns).List(labels.SelectorFromSet(opts.Selector))
+		if err != nil {
+			return nil, err
+		}
+		podList = append(podList, pods...)
 
-	services, err := c.kubeShareFactory.ServicesLister().List(labels.SelectorFromSet(opts.Selector))
-	if err != nil {
-		return nil, err
+		endpoints, err := c.kubeShareFactory.EndpointsLister(ns).List(labels.SelectorFromSet(opts.Selector))
+		if err != nil {
+			return nil, err
+		}
+		endpointList = append(endpointList, endpoints...)
 	}
-
-	return filterEndpoints(opts.Ctx, writeNamespace, endpoints, services, pods, c.upstreams), nil
+	return filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams), nil
 }
 
 func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -120,13 +168,14 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 	services []*kubev1.Service, pods []*kubev1.Pod, upstreams map[core.ResourceRef]*kubeplugin.UpstreamSpec) v1.EndpointList {
 	var endpoints v1.EndpointList
 
-	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "kubernetes_eds"))
+	logger := contextutils.LoggerFrom(ctx)
 
 	type Epkey struct {
 		Address      string
 		Port         uint32
 		PodName      string
 		PodNamespace string
+		UpstreamRef  core.ResourceRef
 	}
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
@@ -201,7 +250,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 							continue
 						}
 					}
-					key := Epkey{addr.IP, port, podName, podNamespace}
+					key := Epkey{addr.IP, port, podName, podNamespace, usRef}
 					copyRef := usRef
 					endpointsMap[key] = append(endpointsMap[key], &copyRef)
 				}
@@ -213,8 +262,8 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 
 		// sort refs for idempotency
 		sort.Slice(refs, func(i, j int) bool { return refs[i].Key() < refs[j].Key() })
-
-		hash, _ := hashstructure.Hash(addr, nil)
+		hasher := fnv.New64()
+		hasher.Write([]byte(fmt.Sprintf("%+v", addr)))
 		dnsname := strings.Map(func(r rune) rune {
 			if '0' <= r && r <= '9' {
 				return r
@@ -224,7 +273,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 			}
 			return '-'
 		}, addr.Address)
-		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hash)
+		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hasher.Sum(nil))
 		pod, _ := getPodForIp(addr.Address, addr.PodName, addr.PodNamespace, pods)
 		ep := createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, pod)
 		endpoints = append(endpoints, ep)
