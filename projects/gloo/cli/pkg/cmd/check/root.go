@@ -16,8 +16,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
-	v13 "k8s.io/api/core/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -101,12 +101,12 @@ func checkResources(opts *options.Options) (bool, error) {
 func checkPods(opts *options.Options) (bool, error) {
 	fmt.Printf("Checking pods... ")
 	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, v12.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
 	if err != nil {
 		fmt.Printf("Gloo namespace does not exist\n")
 		return false, err
 	}
-	pods, err := client.CoreV1().Pods(opts.Metadata.Namespace).List(v12.ListOptions{})
+	pods, err := client.CoreV1().Pods(opts.Metadata.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -116,7 +116,7 @@ func checkPods(opts *options.Options) (bool, error) {
 	}
 	for _, pod := range pods.Items {
 		for _, condition := range pod.Status.Conditions {
-			if condition.Type == v13.PodReady && condition.Status != v13.ConditionTrue {
+			if condition.Type == corev1.PodReady && condition.Status != corev1.ConditionTrue {
 				fmt.Printf("Pod %s in namespace %s is not ready!\n", pod.Name, pod.Namespace)
 				return false, err
 			}
@@ -289,7 +289,7 @@ func checkConnection() error {
 	if err != nil {
 		return errors.Wrapf(err, "Could not get kubernetes client")
 	}
-	_, err = client.CoreV1().Namespaces().List(v12.ListOptions{})
+	_, err = client.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}
