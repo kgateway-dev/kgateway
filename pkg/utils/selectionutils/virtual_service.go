@@ -48,7 +48,7 @@ func (s *virtualServiceSelector) SelectOrCreate(ctx context.Context, ref *core.R
 	}
 
 	// Create a new default virtual service with the given name
-	if ref.GetNamespace() != "" || ref.GetName() != "" {
+	if ref.GetName() != "" {
 		return s.create(ctx, ref)
 	}
 

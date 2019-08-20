@@ -106,19 +106,6 @@ var _ = Describe("SelectorTest", func() {
 				ExpectEqualProtoMessages(actual, expected)
 			})
 
-			It("creates a new default vs with the provided namespace and default name", func() {
-				nsRef := &core.ResourceRef{Namespace: "just-ns"}
-				expected := getDefault(nsRef.Namespace, "default")
-
-				vsClient.EXPECT().
-					Write(expected, clients.WriteOpts{Ctx: context.Background()}).
-					Return(expected, nil)
-
-				actual, err := selector.SelectOrCreate(context.Background(), nsRef)
-				Expect(err).NotTo(HaveOccurred())
-				ExpectEqualProtoMessages(actual, expected)
-			})
-
 			It("errors when the client errors on read", func() {
 				vsClient.EXPECT().
 					Read(ref.Namespace, ref.Name, clients.ReadOpts{Ctx: context.Background()}).
