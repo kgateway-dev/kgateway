@@ -100,9 +100,18 @@ func checkResources(opts *options.Options) (bool, error) {
 func checkPods(opts *options.Options) (bool, error) {
 	fmt.Printf("Checking pods... ")
 	client := helpers.MustKubeClient()
+	_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, v12.GetOptions{})
+	if err != nil {
+		fmt.Printf("Gloo namespace does not exist\n")
+		return false, err
+	}
 	pods, err := client.CoreV1().Pods(opts.Metadata.Namespace).List(v12.ListOptions{})
 	if err != nil {
 		return false, err
+	}
+	if len(pods.Items) == 0 {
+		fmt.Printf("Gloo is not installed\n")
+		return false, nil
 	}
 	for _, pod := range pods.Items {
 		for _, condition := range pod.Status.Conditions {
@@ -208,7 +217,7 @@ func checkVirtualServices(namespaces, knownUpstreams []string) (bool, error) {
 
 func checkGateways(namespaces []string) (bool, error) {
 	fmt.Printf("Checking gateways... ")
-	client := helpers.MustGatewayClient()
+	client := helpers.MustGatewayV2Client()
 	for _, ns := range namespaces {
 		gateways, err := client.List(ns, clients.ListOpts{})
 		if err != nil {
