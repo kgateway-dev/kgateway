@@ -123,11 +123,16 @@ type DiscoveryDeployment struct {
 }
 
 type Gateway struct {
-	Enabled       *bool                 `json:"enabled" desc:"enable Gloo API Gateway features"`
-	Upgrade       *bool                 `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
-	Deployment    *GatewayDeployment    `json:"deployment,omitempty"`
-	ConversionJob *GatewayConversionJob `json:"conversionJob,omitempty"`
-	UpdateValues  bool                  `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	Enabled             *bool                 `json:"enabled" desc:"enable Gloo API Gateway features"`
+	Upgrade             *bool                 `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
+	Deployment          *GatewayDeployment    `json:"deployment,omitempty"`
+	ConversionJob       *GatewayConversionJob `json:"conversionJob,omitempty"`
+	UpdateValues        bool                  `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	ProxyServiceAccount ServiceAccount        `json:"proxyServiceAccount" `
+}
+
+type ServiceAccount struct {
+	DisableAutomount bool `json:"disableAutomount" desc:"disable automunting the service account to the gateway proxy. not mounting the token hards the proxy container, but may interfere with service mesh integrations"`
 }
 
 type GatewayDeployment struct {
