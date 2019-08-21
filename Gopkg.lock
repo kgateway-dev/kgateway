@@ -1415,13 +1415,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-<<<<<<< HEAD
-  revision = "ada8c902524532b5458a3c1f6c87057c101d1007"
-  version = "v0.10.11"
-=======
   revision = "ed277fb6f43f758200ce1b32189f78c6df98545b"
   version = "v0.10.12"
->>>>>>> origin/master
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
