@@ -37,14 +37,14 @@ Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/
 Supported artifact backends can be selected in Gloo's boostrap options.
 
 ```yaml
-"data": string
+"data": map<string, string>
 "metadata": .core.solo.io.Metadata
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `data` | `string` | Raw data data being stored |  |
+| `data` | `map<string, string>` | Raw data data being stored |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 
 

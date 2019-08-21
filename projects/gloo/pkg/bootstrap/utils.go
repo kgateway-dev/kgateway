@@ -7,6 +7,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -15,14 +16,19 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
+	skcfgmap "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
 // used for vault and consul key-value storage
@@ -215,7 +221,7 @@ func ArtifactFactoryForSettings(ctx context.Context,
 	clientset *kubernetes.Interface,
 	kubeCoreCache *cache.KubeCoreCache,
 	pluralName string) (factory.ResourceClientFactory, error) {
-	if settings.SecretSource == nil {
+	if settings.ArtifactSource == nil {
 		if sharedCache == nil {
 			return nil, errors.Errorf("internal error: shared cache cannot be nil")
 		}
@@ -229,9 +235,10 @@ func ArtifactFactoryForSettings(ctx context.Context,
 		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.RefreshRate, settings.WatchNamespaces); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
-		return &factory.KubeSecretClientFactory{
-			Clientset: *clientset,
-			Cache:     *kubeCoreCache,
+		return &factory.KubeConfigMapClientFactory{
+			Clientset:       *clientset,
+			Cache:           *kubeCoreCache,
+			CustomConverter: &kubeConverter{},
 		}, nil
 	case *v1.Settings_DirectoryArtifactSource:
 		return &factory.FileResourceClientFactory{
@@ -278,4 +285,47 @@ func initializeForKube(ctx context.Context,
 
 	return nil
 
+}
+
+type kubeConverter struct{}
+
+func (cc *kubeConverter) FromKubeConfigMap(ctx context.Context, rc *skcfgmap.ResourceClient, configMap *kubev1.ConfigMap) (resources.Resource, error) {
+	resource := rc.NewResource()
+	resourceMap := map[string]interface{}{
+		"data": configMap.Data,
+	}
+
+	if err := skprotoutils.UnmarshalMap(resourceMap, resource); err != nil {
+		return nil, errors.Wrapf(err, "reading configmap data into %v", rc.Kind())
+	}
+	resource.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta))
+
+	return resource, nil
+}
+
+func (cc *kubeConverter) ToKubeConfigMap(ctx context.Context, rc *skcfgmap.ResourceClient, resource resources.Resource) (*kubev1.ConfigMap, error) {
+
+	resourceMap, err := skprotoutils.MarshalMapEmitZeroValues(resource)
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshalling resource as map")
+	}
+	configMapData := make(map[string]string)
+	if dataObj, ok := resourceMap["data"]; ok {
+		if data, ok := dataObj.(map[string]string); ok {
+			for k, v := range data {
+				configMapData[k] = v
+			}
+		} else {
+			return nil, errors.Wrapf(err, "resource data is not map[string]string")
+		}
+	} else {
+		return nil, errors.Wrapf(err, "resource has no data field")
+	}
+
+	meta := skkubeutils.ToKubeMeta(resource.GetMetadata())
+	return &kubev1.ConfigMap{
+		ObjectMeta: meta,
+		Data:       configMapData,
+	}, nil
+	return nil, nil
 }
