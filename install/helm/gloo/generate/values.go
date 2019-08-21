@@ -132,7 +132,7 @@ type Gateway struct {
 }
 
 type ServiceAccount struct {
-	DisableAutomount bool `json:"disableAutomount" desc:"disable automunting the service account to the gateway proxy. not mounting the token hards the proxy container, but may interfere with service mesh integrations"`
+	DisableAutomount bool `json:"disableAutomount" desc:"disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations"`
 }
 
 type GatewayDeployment struct {
