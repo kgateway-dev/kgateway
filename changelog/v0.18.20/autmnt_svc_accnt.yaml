@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Mount proxy service account by default and add option to disable it.
+    issueLink: https://github.com/solo-io/gloo/issues/1057

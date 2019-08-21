@@ -9,7 +9,8 @@ gatewayProxies:
       cluster:
         - name: zipkin
           connect_timeout: 1s
-          type: strict_dns
+          type: STRICT_DNS
+          respect_dns_ttl: true
           lb_policy: round_robin
           load_assignment:
             cluster_name: zipkin

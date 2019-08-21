@@ -1032,6 +1032,17 @@
   version = "v0.0.3"
 
 [[projects]]
+  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
+  version = "v0.0.1"
+
+[[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -1355,7 +1366,7 @@
   version = "v0.9.17"
 
 [[projects]]
-  digest = "1:7014c21429a1dd11cb5adac6350f406faf2c804326f3a7f6877965c6749ee04c"
+  digest = "1:162f303ec471a59b8810f1e3215b44ef2a502e9c598c6bb5aa78e3bc58def0b8"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1414,8 +1425,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "6172b86a18792f91c5323a624db93b8d8efbccb9"
-  version = "v0.10.10"
+  revision = "ed277fb6f43f758200ce1b32189f78c6df98545b"
+  version = "v0.10.12"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2538,6 +2549,7 @@
     "github.com/jhump/protoreflect/grpcreflect",
     "github.com/k0kubun/pp",
     "github.com/keybase/go-ps",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",

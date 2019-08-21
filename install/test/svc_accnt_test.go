@@ -47,6 +47,12 @@ var _ = Describe("SVC Accnt Test", func() {
 	It("gateway-proxy", func() {
 		prepareMakefile("gateway-proxy", "--namespace "+namespace+" --set namespace.create=true --set rbac.namespaced=false")
 		svcAccount := resourceBuilder.GetServiceAccount()
+		testManifest.ExpectServiceAccount(svcAccount)
+	})
+
+	It("gateway-proxy disables svc account", func() {
+		prepareMakefile("gateway-proxy", "--namespace "+namespace+" --set namespace.create=true --set rbac.namespaced=false --set gateway.proxyServiceAccount.disableAutomount=true")
+		svcAccount := resourceBuilder.GetServiceAccount()
 		falze := false
 		svcAccount.AutomountServiceAccountToken = &falze
 		testManifest.ExpectServiceAccount(svcAccount)

@@ -1,3 +1,6 @@
+{{- if .Values.gateway.updateValues -}}
+{{- include "gloo.updatevalues" . -}}
+{{- end -}}
 {{- if .Values.gateway.enabled }}
 {{- $topScope := . }}
 {{- $global := .Values.global }}
@@ -64,6 +67,17 @@ spec:
         readconfig-port: "8082"
 {{- end}}
     spec:
+{{- if $spec.kind.deployment.antiAffinity }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  gloo: gateway-proxy
+              topologyKey: kubernetes.io/hostname
+{{- end}}
       serviceAccountName: gateway-proxy
       containers:
       - args: ["--disable-hot-restart"]

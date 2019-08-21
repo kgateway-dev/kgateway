@@ -25,6 +25,7 @@ gloo:
     stats: true
 
 discovery:
+  enabled: true
   deployment:
     image:
       repository: discovery
@@ -43,7 +44,7 @@ gateway:
     image:
       repository: gateway-conversion
     restartPolicy: Never
-
+  proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxyV2:
     stats: true
