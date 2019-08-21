@@ -30,9 +30,9 @@
   name = "github.com/solo-io/solo-kit"
   version = "0.10.11"
 
-[[constraint]]
+[[override]]
   name = "github.com/solo-io/go-utils"
-  version = "0.9.17"
+  revision = "6f0f88fc9e1bccb4b0971909c9ac2c744534c27f"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
