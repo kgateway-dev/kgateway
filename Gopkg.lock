@@ -1352,7 +1352,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "6f0f88fc9e1bccb4b0971909c9ac2c744534c27f"
+  revision = "3f015a0b67c87de6eeefcfe4cd050b594140b11c"
+  version = "v0.9.18"
 
 [[projects]]
   digest = "1:0bd79c47c37b90172a7533d490a7e770eef20f72d0c90be0f3205fb572bf1f18"
