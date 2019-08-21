@@ -44,7 +44,7 @@ gateway:
     image:
       repository: gateway-conversion
     restartPolicy: Never
-
+  proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxyV2:
     stats: true
