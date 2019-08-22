@@ -56,6 +56,29 @@ var _ = Describe("Utils", func() {
 		Expect(cfg.Burst).To(Equal(1000))
 	})
 
+	Context("kube converter", func() {
+		It("should convert config map to artifact", func() {
+			kubeConverter := NewKubeConverter()
+			cfgmap := &kubev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cfg", Namespace: "foo",
+					Labels:      map[string]string{"foo": "bar"},
+					Annotations: map[string]string{"foo": "bar2"},
+				},
+				Data: map[string]string{
+					"test": "data",
+				},
+			}
+			artifact, err := kubeConverter.FromKubeConfigMapWithResource(context.TODO(), new(v1.Artifact), "artifact", cfgmap)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(artifact).NotTo(BeNil())
+			cfgmap2, err := kubeConverter.ToKubeConfigMapSimple(context.TODO(), artifact)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfgmap).To(Equal(cfgmap2))
+
+		})
+	})
+
 	Context("kube tests", func() {
 		BeforeEach(func() {
 			if os.Getenv("RUN_KUBE_TESTS") != "1" {

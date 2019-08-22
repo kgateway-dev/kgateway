@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -287,16 +288,24 @@ func initializeForKube(ctx context.Context,
 
 }
 
+func NewKubeConverter() *kubeConverter {
+	return &kubeConverter{}
+}
+
 type kubeConverter struct{}
 
 func (cc *kubeConverter) FromKubeConfigMap(ctx context.Context, rc *skcfgmap.ResourceClient, configMap *kubev1.ConfigMap) (resources.Resource, error) {
-	resource := rc.NewResource()
+
+	return cc.FromKubeConfigMapWithResource(ctx, rc.NewResource(), rc.Kind(), configMap)
+}
+
+func (cc *kubeConverter) FromKubeConfigMapWithResource(ctx context.Context, resource resources.Resource, kind string, configMap *kubev1.ConfigMap) (resources.Resource, error) {
 	resourceMap := map[string]interface{}{
 		"data": configMap.Data,
 	}
 
 	if err := skprotoutils.UnmarshalMap(resourceMap, resource); err != nil {
-		return nil, errors.Wrapf(err, "reading configmap data into %v", rc.Kind())
+		return nil, errors.Wrapf(err, "reading configmap data into %v", kind)
 	}
 	resource.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta))
 
@@ -304,6 +313,10 @@ func (cc *kubeConverter) FromKubeConfigMap(ctx context.Context, rc *skcfgmap.Res
 }
 
 func (cc *kubeConverter) ToKubeConfigMap(ctx context.Context, rc *skcfgmap.ResourceClient, resource resources.Resource) (*kubev1.ConfigMap, error) {
+	return cc.ToKubeConfigMapSimple(ctx, resource)
+}
+
+func (cc *kubeConverter) ToKubeConfigMapSimple(ctx context.Context, resource resources.Resource) (*kubev1.ConfigMap, error) {
 
 	resourceMap, err := skprotoutils.MarshalMapEmitZeroValues(resource)
 	if err != nil {
@@ -311,15 +324,19 @@ func (cc *kubeConverter) ToKubeConfigMap(ctx context.Context, rc *skcfgmap.Resou
 	}
 	configMapData := make(map[string]string)
 	if dataObj, ok := resourceMap["data"]; ok {
-		if data, ok := dataObj.(map[string]string); ok {
+		if data, ok := dataObj.(map[string]interface{}); ok {
 			for k, v := range data {
-				configMapData[k] = v
+				if stringV, ok := v.(string); ok {
+					configMapData[k] = stringV
+				} else {
+					return nil, fmt.Errorf("resource data value %s of type %T is not a string", k, v)
+				}
 			}
 		} else {
-			return nil, errors.Wrapf(err, "resource data is not map[string]string")
+			return nil, fmt.Errorf("resource data is not map[string]interface{}")
 		}
 	} else {
-		return nil, errors.Wrapf(err, "resource has no data field")
+		return nil, fmt.Errorf("resource has no data field")
 	}
 
 	meta := skkubeutils.ToKubeMeta(resource.GetMetadata())
@@ -327,5 +344,4 @@ func (cc *kubeConverter) ToKubeConfigMap(ctx context.Context, rc *skcfgmap.Resou
 		ObjectMeta: meta,
 		Data:       configMapData,
 	}, nil
-	return nil, nil
 }
