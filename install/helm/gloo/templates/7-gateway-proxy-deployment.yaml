@@ -99,8 +99,10 @@ spec:
           capabilities:
             drop:
             - ALL
+          {{- if not $spec.podTemplate.disableNetBind }}
             add:
             - NET_BIND_SERVICE
+          {{- end}}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http

@@ -181,6 +181,7 @@ type GatewayProxyPodTemplate struct {
 	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
 	Probes           bool                  `json:"probes" desc:"enable liveness and readiness probes"`
 	Resources        *ResourceRequirements `json:"resources"`
+	DisableNetBind   bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
 }
 
 type GatewayProxyService struct {
