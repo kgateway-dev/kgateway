@@ -49,8 +49,6 @@ message LoadBalancerConfig {
     }
 
     message Maglev {
-        // Optional, customizes the parameters used in the hashing algorithm
-        RingHashConfig ring_hash_config = 1;
     }
 
     oneof type {

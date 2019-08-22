@@ -149,13 +149,11 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 
 
 ```yaml
-"ringHashConfig": .gloo.solo.io.LoadBalancerConfig.RingHashConfig
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `ringHashConfig` | [.gloo.solo.io.LoadBalancerConfig.RingHashConfig](../load_balancer.proto.sk#ringhashconfig) | Optional, customizes the parameters used in the hashing algorithm |  |
 
 
 

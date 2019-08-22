@@ -45,9 +45,6 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoyroute.RouteAction_HashPolicy {
-	if len(spec) == 0 {
-		return nil
-	}
 	var policies []*envoyroute.RouteAction_HashPolicy
 	for _, s := range spec {
 		policy := &envoyroute.RouteAction_HashPolicy{
@@ -121,14 +118,12 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			setRingHashLbConfig(out, lbtype.RingHash.RingHashConfig)
 		case *v1.LoadBalancerConfig_Maglev_:
 			out.LbPolicy = envoyapi.Cluster_MAGLEV
-			setRingHashLbConfig(out, lbtype.Maglev.RingHashConfig)
 		}
 	}
 
 	return nil
 }
 
-// RING_HASH and MAGLEV load balancers use the same RingHashConfig
 func setRingHashLbConfig(out *envoyapi.Cluster, userConfig *v1.LoadBalancerConfig_RingHashConfig) {
 	cfg := &envoyapi.Cluster_RingHashLbConfig_{
 		RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{},

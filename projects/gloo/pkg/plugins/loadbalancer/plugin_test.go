@@ -3,11 +3,14 @@ package loadbalancer_test
 import (
 	"time"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
@@ -132,7 +135,28 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-		err := plugin.ProcessUpstream(params, upstream, out)
+		sampleUpstream := &v1.Upstream{
+			UpstreamSpec: upstreamSpec,
+		}
+		sampleInputResource := v1.UpstreamList{sampleUpstream}.AsInputResources()[0]
+		yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
+		Expect(err).NotTo(HaveOccurred())
+		// sample user config
+		sampleInputYaml := `apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  creationTimestamp: null
+spec:
+  upstreamSpec:
+    loadBalancerConfig:
+      ringHash:
+        ringHashConfig:
+          maximumRingSize: "200"
+          minimumRingSize: "100"
+status: {}
+`
+		Expect(yamlForm).To(Equal(sampleInputYaml))
+		err = plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
 		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
@@ -155,28 +179,34 @@ var _ = Describe("Plugin", func() {
 		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
 	})
 
-	// maglev is a drop in replacement for ring hash, uses same config
 	It("should set lb policy maglev - full config", func() {
 		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_Maglev_{
-				Maglev: &v1.LoadBalancerConfig_Maglev{
-					RingHashConfig: &v1.LoadBalancerConfig_RingHashConfig{
-						MinimumRingSize: 100,
-						MaximumRingSize: 200,
-					},
-				},
+				Maglev: &v1.LoadBalancerConfig_Maglev{},
 			},
 		}
-		err := plugin.ProcessUpstream(params, upstream, out)
+		sampleUpstream := &v1.Upstream{
+			UpstreamSpec: upstreamSpec,
+		}
+		sampleInputResource := v1.UpstreamList{sampleUpstream}.AsInputResources()[0]
+		yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
+		Expect(err).NotTo(HaveOccurred())
+		// sample user config
+		sampleInputYaml := `apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  creationTimestamp: null
+spec:
+  upstreamSpec:
+    loadBalancerConfig:
+      maglev: {}
+status: {}
+`
+		Expect(yamlForm).To(Equal(sampleInputYaml))
+		err = plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
-		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
-			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
-				MinimumRingSize: &types.UInt64Value{Value: 100},
-				MaximumRingSize: &types.UInt64Value{Value: 200},
-				HashFunction:    envoyapi.Cluster_RingHashLbConfig_XX_HASH,
-			},
-		}))
+		Expect(out.LbConfig).To(BeNil())
 	})
 
 	Context("route plugin", func() {
@@ -244,7 +274,39 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			sampleVirtualService := &gatewayv1.VirtualService{
+				VirtualHost: &v1.VirtualHost{
+					Name:   "mk",
+					Routes: []*v1.Route{route},
+				},
+			}
+			sampleInputResource := gatewayv1.VirtualServiceList{sampleVirtualService}.AsInputResources()[0]
+			yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, gatewayv1.VirtualServiceCrd)
+			Expect(err).NotTo(HaveOccurred())
+			// sample user config
+			sampleInputYaml := `apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  creationTimestamp: null
+spec:
+  virtualHost:
+    name: mk
+    routes:
+    - routePlugins:
+        lbHash:
+          hashPolicies:
+          - header: x-test-affinity
+            terminal: true
+          - header: origin
+          - sourceIp: true
+          - cookie:
+              name: gloo
+              path: /abc
+              ttl: 1s
+status: {}
+`
+			Expect(yamlForm).To(Equal(sampleInputYaml))
+			err = plugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoyroute.RouteAction_HashPolicy{
 				{
