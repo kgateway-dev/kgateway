@@ -5,7 +5,7 @@ Expand the name of the chart.
 
 
 {{- define "gloo.roleKind" -}}
-{{- if .Values.rbac.namespaced -}}
+{{- if .Values.global.glooRbac.namespaced -}}
 Role
 {{- else -}}
 ClusterRole
@@ -13,7 +13,7 @@ ClusterRole
 {{- end -}}
 
 {{- define "gloo.rolebindingsuffix" -}}
-{{- if not .Values.rbac.namespaced -}}
+{{- if not .Values.global.glooRbac.namespaced -}}
 -{{ .Release.Namespace }}
 {{- end -}}
 {{- end -}}

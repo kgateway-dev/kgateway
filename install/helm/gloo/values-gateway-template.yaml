@@ -1,7 +1,5 @@
 namespace:
   create: false
-rbac:
-  create: true
 crds:
   create: true
 k8s:
@@ -77,3 +75,5 @@ global:
   image:
     registry: quay.io/solo-io
     pullPolicy: IfNotPresent
+  glooRbac:
+    create: true

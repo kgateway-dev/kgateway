@@ -11,7 +11,6 @@ type HelmConfig struct {
 
 type Config struct {
 	Namespace      *Namespace              `json:"namespace,omitempty"`
-	Rbac           *Rbac                   `json:"rbac,omitempty"`
 	Crds           *Crds                   `json:"crds,omitempty"`
 	Settings       *Settings               `json:"settings,omitempty"`
 	Gloo           *Gloo                   `json:"gloo,omitempty"`
@@ -26,6 +25,7 @@ type Config struct {
 type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
+	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
 }
 
 type Namespace struct {
