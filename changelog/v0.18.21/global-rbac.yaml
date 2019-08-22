@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Move rbac to globals.glooRbac to simplify rbac config access in gloo-ee.
+    issueLink: https://github.com/solo-io/gloo/issues/989
+    resolvesIssue: false
