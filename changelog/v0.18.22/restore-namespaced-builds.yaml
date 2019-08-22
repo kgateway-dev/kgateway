@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update test values file to allow for namespaced tests now that rbac is global.
+    issueLink: https://github.com/solo-io/gloo/pull/1063
