@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: added helm value to create a gateway proxy without NET_BIND_SERVICE
+    issueLink: https://github.com/solo-io/gloo/issues/1068
