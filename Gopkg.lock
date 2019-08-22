@@ -1316,7 +1316,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:9ff54606b7fb1538ec5ac1c8d5766f3c3c1b44c1ab39a0701e42b6916183ecce"
+  digest = "1:017d6dff9c1bfb1d1b45fc7e77780fa5829a7b36cd9b9893eff8a4e093551e91"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1346,13 +1346,14 @@
     "testutils/clusterlock",
     "testutils/exec",
     "testutils/helper",
+    "testutils/kube",
     "versionutils",
     "versionutils/kubeapi",
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "71704af17a52b1dce01b6bb8bcab447f59e59f07"
-  version = "v0.9.17"
+  revision = "3f015a0b67c87de6eeefcfe4cd050b594140b11c"
+  version = "v0.9.18"
 
 [[projects]]
   digest = "1:162f303ec471a59b8810f1e3215b44ef2a502e9c598c6bb5aa78e3bc58def0b8"

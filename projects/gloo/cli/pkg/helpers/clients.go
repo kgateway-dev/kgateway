@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -210,6 +211,39 @@ func ProxyClient() (v1.ProxyClient, error) {
 	return proxyClient, nil
 }
 
+func MustGatewayV2Client() gatewayv2.GatewayClient {
+	client, err := GatewayV2Client()
+	if err != nil {
+		log.Fatalf("failed to create gateway v2 client: %v", err)
+	}
+	return client
+}
+
+func GatewayV2Client() (gatewayv2.GatewayClient, error) {
+	memoryResourceClient := getMemoryClients()
+	if memoryResourceClient != nil {
+		return gatewayv2.NewGatewayClient(memoryResourceClient)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache(context.TODO())
+	gatewayClient, err := gatewayv2.NewGatewayClient(&factory.KubeResourceClientFactory{
+		Crd:         gatewayv2.GatewayCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating gateway client")
+	}
+	if err := gatewayClient.Register(); err != nil {
+		return nil, err
+	}
+	return gatewayClient, nil
+}
+
 func MustVirtualServiceClient() gatewayv1.VirtualServiceClient {
 	client, err := VirtualServiceClient()
 	if err != nil {
@@ -312,7 +346,11 @@ func secretClient() (v1.SecretClient, error) {
 }
 
 func GetKubernetesClient() (*kubernetes.Clientset, error) {
-	config, err := getKubernetesConfig(0)
+	return GetKubernetesClientWithTimeout(0)
+}
+
+func GetKubernetesClientWithTimeout(timeout time.Duration) (*kubernetes.Clientset, error) {
+	config, err := getKubernetesConfig(timeout)
 	if err != nil {
 		return nil, err
 	}

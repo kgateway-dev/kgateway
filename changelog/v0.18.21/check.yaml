@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added "glooctl check" command for quickly highlighting issues with Gloo CRDs.
+    issueLink: https://github.com/solo-io/gloo/issues/1052
