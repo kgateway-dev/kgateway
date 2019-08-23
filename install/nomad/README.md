@@ -14,7 +14,10 @@ This tutorial uses files stored on the Gloo GitHub repository.
 
 In order to install on Nomad, we'll want to clone the repository:
 
+## Run the complete Demo
 
+If your environment is set up with `docker`, `nomad`, `consul`, `vault`, and `levant`, you can simply run 
+`demo.sh` to run a local demo of Gloo routing to the PetStore Nomad.
 
 ## Running Nomad, Consul and Vault
 
@@ -93,7 +96,7 @@ levant deploy \
     -var-file variables/variables-linux.yaml \
     -address <nomad-host>:<nomad-port> \
     -consul-address <nomad-host>:<nomad-port> \
-    jobs/demo.nomad
+    jobs/petstore.nomad
 ```
 
 If running locally or with `vagrant`, you can omit the `address` flags:
@@ -101,7 +104,7 @@ If running locally or with `vagrant`, you can omit the `address` flags:
 ```bash
 levant deploy \
     -var-file variables/variables-linux.yaml \
-    jobs/demo.nomad
+    jobs/petstore.nomad
 ```
 
 ### Deploy the PetStore on Nomad (Mac)
@@ -111,7 +114,7 @@ This option assumes you have Nomad, Consul, Vault, and Docker installed and runn
 ```bash
 levant deploy \
     -var-file variables/variables-mac.yaml \
-    jobs/demo.nomad
+    jobs/petstore.nomad
 ```
 
 
