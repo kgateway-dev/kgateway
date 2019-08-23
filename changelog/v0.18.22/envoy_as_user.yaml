@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add helm value that allows running envoy as user
+    issueLink: https://github.com/solo-io/gloo/issues/1071

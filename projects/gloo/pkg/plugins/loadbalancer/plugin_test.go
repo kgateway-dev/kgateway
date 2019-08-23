@@ -3,8 +3,14 @@ package loadbalancer_test
 import (
 	"time"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	types "github.com/gogo/protobuf/types"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
@@ -107,4 +113,264 @@ var _ = Describe("Plugin", func() {
 		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_ROUND_ROBIN))
 	})
 
+	It("should set lb policy ring hash - basic config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_RingHash_{
+				RingHash: &v1.LoadBalancerConfig_RingHash{},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
+	})
+
+	It("should set lb policy ring hash - full config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_RingHash_{
+				RingHash: &v1.LoadBalancerConfig_RingHash{
+					RingHashConfig: &v1.LoadBalancerConfig_RingHashConfig{
+						MinimumRingSize: 100,
+						MaximumRingSize: 200,
+					},
+				},
+			},
+		}
+		sampleUpstream := &v1.Upstream{
+			UpstreamSpec: upstreamSpec,
+		}
+		sampleInputResource := v1.UpstreamList{sampleUpstream}.AsInputResources()[0]
+		yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
+		Expect(err).NotTo(HaveOccurred())
+		// sample user config
+		sampleInputYaml := `apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  creationTimestamp: null
+spec:
+  upstreamSpec:
+    loadBalancerConfig:
+      ringHash:
+        ringHashConfig:
+          maximumRingSize: "200"
+          minimumRingSize: "100"
+status: {}
+`
+		Expect(yamlForm).To(Equal(sampleInputYaml))
+		err = plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
+		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
+			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
+				MinimumRingSize: &types.UInt64Value{Value: 100},
+				MaximumRingSize: &types.UInt64Value{Value: 200},
+				HashFunction:    envoyapi.Cluster_RingHashLbConfig_XX_HASH,
+			},
+		}))
+	})
+
+	It("should set lb policy maglev - basic config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_Maglev_{
+				Maglev: &v1.LoadBalancerConfig_Maglev{},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+	})
+
+	It("should set lb policy maglev - full config", func() {
+		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_Maglev_{
+				Maglev: &v1.LoadBalancerConfig_Maglev{},
+			},
+		}
+		sampleUpstream := &v1.Upstream{
+			UpstreamSpec: upstreamSpec,
+		}
+		sampleInputResource := v1.UpstreamList{sampleUpstream}.AsInputResources()[0]
+		yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
+		Expect(err).NotTo(HaveOccurred())
+		// sample user config
+		sampleInputYaml := `apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  creationTimestamp: null
+spec:
+  upstreamSpec:
+    loadBalancerConfig:
+      maglev: {}
+status: {}
+`
+		Expect(yamlForm).To(Equal(sampleInputYaml))
+		err = plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+		Expect(out.LbConfig).To(BeNil())
+	})
+
+	Context("route plugin", func() {
+		var (
+			routeParams plugins.RouteParams
+			route       *v1.Route
+			outRoute    *envoyroute.Route
+		)
+		BeforeEach(func() {
+			outRoute = new(envoyroute.Route)
+
+			routeParams = plugins.RouteParams{}
+			route = &v1.Route{}
+
+		})
+
+		// positive cases
+		It("configures routes - basic config", func() {
+			route.RoutePlugins = &v1.RoutePlugins{
+				LbHash: &lbhash.RouteActionHashConfig{
+					HashPolicies: []*lbhash.HashPolicy{{
+						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
+						Terminal: false,
+					},
+					},
+				},
+			}
+			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoyroute.RouteAction_HashPolicy{{
+				PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
+					Header: &envoyroute.RouteAction_HashPolicy_Header{
+						HeaderName: "origin",
+					},
+				},
+				Terminal: false,
+			}}))
+		})
+		It("configures routes - all types", func() {
+			ttlDur := time.Second
+			route.RoutePlugins = &v1.RoutePlugins{
+				LbHash: &lbhash.RouteActionHashConfig{
+					HashPolicies: []*lbhash.HashPolicy{
+						{
+							// users may choose to add a specialty terminal header such as this
+							KeyType:  &lbhash.HashPolicy_Header{Header: "x-test-affinity"},
+							Terminal: true,
+						},
+						{
+							KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
+							Terminal: false,
+						},
+						{
+							KeyType:  &lbhash.HashPolicy_SourceIp{SourceIp: true},
+							Terminal: false,
+						},
+						{
+							KeyType: &lbhash.HashPolicy_Cookie{Cookie: &lbhash.Cookie{
+								Name: "gloo",
+								Ttl:  &ttlDur,
+								Path: "/abc",
+							}},
+							Terminal: false,
+						},
+					},
+				},
+			}
+			sampleVirtualService := &gatewayv1.VirtualService{
+				VirtualHost: &v1.VirtualHost{
+					Name:   "mk",
+					Routes: []*v1.Route{route},
+				},
+			}
+			sampleInputResource := gatewayv1.VirtualServiceList{sampleVirtualService}.AsInputResources()[0]
+			yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, gatewayv1.VirtualServiceCrd)
+			Expect(err).NotTo(HaveOccurred())
+			// sample user config
+			sampleInputYaml := `apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  creationTimestamp: null
+spec:
+  virtualHost:
+    name: mk
+    routes:
+    - routePlugins:
+        lbHash:
+          hashPolicies:
+          - header: x-test-affinity
+            terminal: true
+          - header: origin
+          - sourceIp: true
+          - cookie:
+              name: gloo
+              path: /abc
+              ttl: 1s
+status: {}
+`
+			Expect(yamlForm).To(Equal(sampleInputYaml))
+			err = plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoyroute.RouteAction_HashPolicy{
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
+						Header: &envoyroute.RouteAction_HashPolicy_Header{
+							HeaderName: "x-test-affinity",
+						},
+					},
+					Terminal: true,
+				},
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
+						Header: &envoyroute.RouteAction_HashPolicy_Header{
+							HeaderName: "origin",
+						},
+					},
+					Terminal: false,
+				},
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_ConnectionProperties_{
+						ConnectionProperties: &envoyroute.RouteAction_HashPolicy_ConnectionProperties{
+							SourceIp: true,
+						},
+					},
+					Terminal: false,
+				},
+				{
+					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoyroute.RouteAction_HashPolicy_Cookie{
+							Name: "gloo",
+							Ttl:  &ttlDur,
+							Path: "/abc",
+						},
+					},
+					Terminal: false,
+				},
+			}))
+		})
+		// negative cases
+		It("skips non-route-action routes", func() {
+			outRoute.Action = &envoyroute.Route_Redirect{}
+			route.Action = &v1.Route_RedirectAction{}
+			// the following represents a misconfigured route
+			route.RoutePlugins = &v1.RoutePlugins{
+				LbHash: &lbhash.RouteActionHashConfig{
+					HashPolicies: []*lbhash.HashPolicy{{
+						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
+						Terminal: false,
+					},
+					},
+				},
+			}
+			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).To(HaveOccurred())
+			Expect(outRoute.GetRoute()).To(BeNil())
+		})
+		It("skips routes that do not feature the plugin", func() {
+			outRoute.Action = &envoyroute.Route_Route{
+				Route: &envoyroute.RouteAction{},
+			}
+			route.RoutePlugins = &v1.RoutePlugins{}
+			err := plugin.ProcessRoute(routeParams, route, outRoute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outRoute.GetRoute().HashPolicy).To(BeNil())
+		})
+	})
 })

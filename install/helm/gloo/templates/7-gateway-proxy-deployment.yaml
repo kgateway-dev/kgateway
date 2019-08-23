@@ -96,6 +96,10 @@ spec:
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          {{- if $spec.podTemplate.runUnprivileged }}
+          runAsNonRoot: true
+          runAsUser: 10101
+          {{- end}}
           capabilities:
             drop:
             - ALL

@@ -9,12 +9,20 @@ import (
 )
 
 func PrintKubeCrd(in resources.InputResource, resourceCrd crd.Crd) error {
-	raw, err := yaml.Marshal(resourceCrd.KubeResource(in))
+	str, err := GenerateKubeCrdString(in, resourceCrd)
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(raw))
+	fmt.Println(str)
 	return nil
+}
+
+func GenerateKubeCrdString(in resources.InputResource, resourceCrd crd.Crd) (string, error) {
+	raw, err := yaml.Marshal(resourceCrd.KubeResource(in))
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
 }
 
 func PrintKubeCrdList(in resources.InputResourceList, resourceCrd crd.Crd) error {
