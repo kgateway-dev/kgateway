@@ -29,10 +29,10 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 //
 //Gloo runs an independent (goroutine) controller to monitor secrets. Secrets are stored in their own secret storage layer. Gloo can monitor secrets stored in the following secret storage services:
 //
-// Kubernetes Secrets
-// Hashicorp Vault
-// Plaintext files (recommended only for testing)
-// Secrets must adhere to a structure, specified by the plugin that requires them.
+//- Kubernetes Secrets
+//- Hashicorp Vault
+//- Plaintext files (recommended only for testing)
+//- Secrets must adhere to a structure, specified by the plugin that requires them.
 //
 //Gloo's secret backend can be configured in Gloo's bootstrap options
 type Secret struct {
@@ -250,8 +250,60 @@ func _Secret_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
+//
+//
+//There are two ways of providing AWS secrets:
+//
+//- Method 1: `glooctl create secret aws`
+//
+// ```
+// glooctl create secret aws --name aws-secret-from-glooctl \
+//     --namespace default \
+//     --access-key $ACC \
+//     --secret-key $SEC
+// ```
+//
+//will produce a Kubernetes resource similar to this (note the `aws` field and `resource_kind` annotation):
+//
+// ```
+// apiVersion: v1
+// data:
+//   aws: base64EncodedStringForMachineConsumption
+// kind: Secret
+// metadata:
+//   annotations:
+//     resource_kind: '*v1.Secret'
+//   creationTimestamp: "2019-08-23T15:10:20Z"
+//   name: aws-secret-from-glooctl
+//   namespace: default
+//   resourceVersion: "592637"
+//   selfLink: /api/v1/namespaces/default/secrets/secret-e2e
+//   uid: 1f8c147f-c5b8-11e9-bbf3-42010a8001bc
+// type: Opaque
+// ```
+//
+// - Method 2: `kubectl apply -f resource-file.yaml`
+//   - If using a git-ops flow, or otherwise creating secrets from yaml files, you may prefer to provide AWS credentials
+//   using the format below, with `aws_access_key_id` and `aws_secret_access_key` fields.
+//   - This circumvents the need for the annotation, which are not supported by some tools such as
+//   [godaddy/kubernetes-external-secrets](https://github.com/godaddy/kubernetes-external-secrets)
+//
+// ```yaml
+// # a sample aws secret resource-file.yaml
+// apiVersion: v1
+// data:
+//   aws_access_key_id: some-id
+//   aws_secret_access_key: some-secret
+// kind: Secret
+// metadata:
+//   name: aws-secret-abcd
+//   namespace: default
+// ```
+//
 type AwsSecret struct {
-	AccessKey            string   `protobuf:"bytes,1,opt,name=access_key,json=accessKey,proto3" json:"access_key,omitempty"`
+	// provided by `glooctl create secret aws`
+	AccessKey string `protobuf:"bytes,1,opt,name=access_key,json=accessKey,proto3" json:"access_key,omitempty"`
+	// provided by `glooctl create secret aws`
 	SecretKey            string   `protobuf:"bytes,2,opt,name=secret_key,json=secretKey,proto3" json:"secret_key,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -297,6 +349,7 @@ func (m *AwsSecret) GetSecretKey() string {
 }
 
 type AzureSecret struct {
+	// provided by `glooctl create secret azure`
 	ApiKeys              map[string]string `protobuf:"bytes,1,rep,name=api_keys,json=apiKeys,proto3" json:"api_keys,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -335,8 +388,11 @@ func (m *AzureSecret) GetApiKeys() map[string]string {
 }
 
 type TlsSecret struct {
-	CertChain            string   `protobuf:"bytes,1,opt,name=cert_chain,json=certChain,proto3" json:"cert_chain,omitempty"`
-	PrivateKey           string   `protobuf:"bytes,2,opt,name=private_key,json=privateKey,proto3" json:"private_key,omitempty"`
+	// provided by `glooctl create secret tls`
+	CertChain string `protobuf:"bytes,1,opt,name=cert_chain,json=certChain,proto3" json:"cert_chain,omitempty"`
+	// provided by `glooctl create secret tls`
+	PrivateKey string `protobuf:"bytes,2,opt,name=private_key,json=privateKey,proto3" json:"private_key,omitempty"`
+	// provided by `glooctl create secret tls`
 	RootCa               string   `protobuf:"bytes,3,opt,name=root_ca,json=rootCa,proto3" json:"root_ca,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

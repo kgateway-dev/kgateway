@@ -33,10 +33,10 @@ Certain plugins such as the AWS Lambda Plugin require the use of secrets for aut
 
 Gloo runs an independent (goroutine) controller to monitor secrets. Secrets are stored in their own secret storage layer. Gloo can monitor secrets stored in the following secret storage services:
 
-Kubernetes Secrets
-Hashicorp Vault
-Plaintext files (recommended only for testing)
-Secrets must adhere to a structure, specified by the plugin that requires them.
+- Kubernetes Secrets
+- Hashicorp Vault
+- Plaintext files (recommended only for testing)
+- Secrets must adhere to a structure, specified by the plugin that requires them.
 
 Gloo's secret backend can be configured in Gloo's bootstrap options
 
@@ -51,10 +51,10 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk#awssecret) |  |  |
-| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk#azuresecret) |  |  |
-| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk#tlssecret) |  |  |
-| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk#extension) |  |  |
+| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk#awssecret) | AWS credentials |  |
+| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk#azuresecret) | Azure credentials |  |
+| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk#tlssecret) | TLS secret specification |  |
+| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk#extension) | Arbitrary secret specification |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 
 
@@ -63,7 +63,54 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 ---
 ### AwsSecret
 
+ 
+There are two ways of providing AWS secrets:
 
+- Method 1: `glooctl create secret aws`
+
+```
+glooctl create secret aws --name aws-secret-from-glooctl \
+    --namespace default \
+    --access-key $ACC \
+    --secret-key $SEC
+```
+
+will produce a Kubernetes resource similar to this (note the `aws` field and `resource_kind` annotation):
+
+```
+apiVersion: v1
+data:
+  aws: base64EncodedStringForMachineConsumption
+kind: Secret
+metadata:
+  annotations:
+    resource_kind: '*v1.Secret'
+  creationTimestamp: "2019-08-23T15:10:20Z"
+  name: aws-secret-from-glooctl
+  namespace: default
+  resourceVersion: "592637"
+  selfLink: /api/v1/namespaces/default/secrets/secret-e2e
+  uid: 1f8c147f-c5b8-11e9-bbf3-42010a8001bc
+type: Opaque
+```
+
+- Method 2: `kubectl apply -f resource-file.yaml`
+  - If using a git-ops flow, or otherwise creating secrets from yaml files, you may prefer to provide AWS credentials
+  using the format below, with `aws_access_key_id` and `aws_secret_access_key` fields.
+  - This circumvents the need for the annotation, which are not supported by some tools such as
+  [godaddy/kubernetes-external-secrets](https://github.com/godaddy/kubernetes-external-secrets)
+
+```yaml
+# a sample aws secret resource-file.yaml
+apiVersion: v1
+data:
+  aws_access_key_id: some-id
+  aws_secret_access_key: some-secret
+kind: Secret
+metadata:
+  name: aws-secret-abcd
+  namespace: default
+```
 
 ```yaml
 "accessKey": string
@@ -73,8 +120,8 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `accessKey` | `string` |  |  |
-| `secretKey` | `string` |  |  |
+| `accessKey` | `string` | provided by `glooctl create secret aws` |  |
+| `secretKey` | `string` | provided by `glooctl create secret aws` |  |
 
 
 
@@ -91,7 +138,7 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `apiKeys` | `map<string, string>` |  |  |
+| `apiKeys` | `map<string, string>` | provided by `glooctl create secret azure` |  |
 
 
 
@@ -110,9 +157,9 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `certChain` | `string` |  |  |
-| `privateKey` | `string` |  |  |
-| `rootCa` | `string` |  |  |
+| `certChain` | `string` | provided by `glooctl create secret tls` |  |
+| `privateKey` | `string` | provided by `glooctl create secret tls` |  |
+| `rootCa` | `string` | provided by `glooctl create secret tls` |  |
 
 
 
