@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Provide installation mechanism for Nomad.
-    issueLink: https://github.com/solo-io/gloo/pull/1065
