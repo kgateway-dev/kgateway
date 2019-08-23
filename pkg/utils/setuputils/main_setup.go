@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/gogo/protobuf/types"
@@ -80,6 +82,7 @@ func Main(opts SetupOpts) error {
 
 func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
 	if settingsDir != "" {
+		contextutils.LoggerFrom(ctx).Infow("using filesystem for settings", zap.String("directory", settingsDir))
 		return v1.NewSettingsClient(&factory.FileResourceClientFactory{
 			RootDir: settingsDir,
 		})
