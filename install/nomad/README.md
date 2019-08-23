@@ -35,6 +35,8 @@ docker network create --driver=weaveworks/net-plugin:latest_release --attachable
 
 ```
 
+If running locally on Linux, you'll need to disable SELinux in order to run the demo (or add permission for docker containers to access `/` on their filesystem).
+
 ### Running Nomad Using Vagrant 
 
 The provided `Vagrantfile` will run Nomad, Consul, and Vault inside a VM on your local machine. Download and install [HashiCorp Vagrant](https://www.vagrantup.com).
