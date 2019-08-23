@@ -2,6 +2,7 @@ package edit
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	editOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
@@ -31,6 +32,12 @@ func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.
 			if err != nil {
 				return err
 			}
+			if err := prerun.CallParentPrerun(cmd, args); err != nil {
+				return err
+			}
+			if err := prerun.EnableConsulClients(opts.Edit.Consul); err != nil {
+				return err
+			}
 			return nil
 		},
 	}
@@ -40,6 +47,7 @@ func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.
 	// add resource version flag. this is not needed in interactive mode, as we can do an edit
 	// atomically in that case
 	addEditFlags(cmd.PersistentFlags(), opts)
+	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Edit.Consul)
 
 	cmd.AddCommand(virtualservice.RootCmd(opts, optionsFunc...))
 	cmd.AddCommand(upstream.RootCmd(opts, optionsFunc...))

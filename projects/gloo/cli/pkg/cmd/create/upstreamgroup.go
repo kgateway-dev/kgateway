@@ -4,6 +4,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -31,6 +34,15 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 			"multiple routes or virtual services referencing the same multiple weighted destinations where you want to " +
 			"change the weighting consistently for all calling routes. This is a common need for Canary deployments " +
 			"where you want all calling routes to forward traffic consistently across the two service versions.",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := prerun.CallParentPrerun(cmd, args); err != nil {
+				return err
+			}
+			if err := prerun.EnableConsulClients(opts.Create.Consul); err != nil {
+				return err
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !opts.Top.Interactive && len(opts.Create.InputUpstreamGroup.WeightedDestinations.Entries) == 0 {
 				return errors.Errorf(EmptyUpstreamGroupCreateError)
@@ -47,6 +59,7 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 		},
 	}
 	cliutils.ApplyOptions(cmd, optionsFunc)
+	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Create.Consul)
 
 	flags := cmd.Flags()
 	flags.StringSliceVar(

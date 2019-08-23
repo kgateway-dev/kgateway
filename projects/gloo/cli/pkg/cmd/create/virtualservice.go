@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -26,6 +27,15 @@ func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) 
 			"Virtual services must not have overlapping domains, as the virtual service to match a request " +
 			"is selected by the Host header (in HTTP1) or :authority header (in HTTP2). " +
 			"The routes within a virtual service ",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := prerun.CallParentPrerun(cmd, args); err != nil {
+				return err
+			}
+			if err := prerun.EnableConsulClients(opts.Create.Consul); err != nil {
+				return err
+			}
+			return nil
+		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Top.Interactive {
 				if err := surveyutils.AddVirtualServiceFlagsInteractive(&opts.Create.VirtualService); err != nil {
@@ -44,6 +54,7 @@ func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) 
 		},
 	}
 	pflags := cmd.PersistentFlags()
+	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Create.Consul)
 	flagutils.AddVirtualServiceFlags(pflags, &opts.Create.VirtualService)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
