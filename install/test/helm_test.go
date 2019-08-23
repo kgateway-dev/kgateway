@@ -177,6 +177,16 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
+				It("unprivelged user", func() {
+					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.podTemplate.runUnprivileged=true"
+					prepareMakefile(helmFlags)
+					truez := true
+					uid := int64(10101)
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsNonRoot = &truez
+					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
+					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+				})
+
 				It("enables anti affinity ", func() {
 					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.kind.deployment.antiAffinity=true"
 					prepareMakefile(helmFlags)
