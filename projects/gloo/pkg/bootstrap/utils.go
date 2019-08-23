@@ -214,6 +214,7 @@ func ArtifactFactoryForSettings(ctx context.Context,
 	cfg **rest.Config,
 	clientset *kubernetes.Interface,
 	kubeCoreCache *cache.KubeCoreCache,
+	consulClient *consulapi.Client,
 	pluralName string) (factory.ResourceClientFactory, error) {
 	if settings.ArtifactSource == nil {
 		if sharedCache == nil {
@@ -237,6 +238,15 @@ func ArtifactFactoryForSettings(ctx context.Context,
 	case *v1.Settings_DirectoryArtifactSource:
 		return &factory.FileResourceClientFactory{
 			RootDir: filepath.Join(source.DirectoryArtifactSource.Directory, pluralName),
+		}, nil
+	case *v1.Settings_ConsulKvArtifactSource:
+		rootKey := source.ConsulKvArtifactSource.GetRootKey()
+		if rootKey == "" {
+			rootKey = DefaultRootKey
+		}
+		return &factory.ConsulResourceClientFactory{
+			Consul:  consulClient,
+			RootKey: rootKey,
 		}, nil
 	}
 	return nil, errors.Errorf("invalid config source type")

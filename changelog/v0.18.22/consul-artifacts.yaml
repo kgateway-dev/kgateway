@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add support for consul-based artifacts
+    issueLink: https://github.com/solo-io/gloo/pull/1073

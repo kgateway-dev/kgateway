@@ -102,7 +102,6 @@ message TcpHost {
     RouteAction destination = 2;
     // If provided, the Gateway will serve TLS/SSL traffic for this set of routes
     gloo.solo.io.SslConfig ssl_config = 3;
-    //matcher
 }
 
 // Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
