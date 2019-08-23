@@ -10,8 +10,13 @@ sleep 1
 
 VAULT_ADDR=http://127.0.0.1:8200 vault policy write gloo ./gloo-policy.hcl
 
+LINUX_ARGS=
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    LINUX_ARGS=--network-interface=docker0
+fi
+
 nomad agent -dev \
-    --bind 0.0.0.0 \
+    --bind 0.0.0.0 $LINUX_ARGS \
     --vault-enabled=true \
     --vault-address=http://127.0.0.1:8200 \
     --vault-token=root &

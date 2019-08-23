@@ -5,9 +5,12 @@ echo "Launching Consul-Vault-Nomad for Demo (see $(dirname "$0")/.hashi-logs for
 
 sleep 10
 
+INGRESS_IP=localhost
+
 VARFILE=""
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     VARFILE=variables/variables-linux.yaml
+    INGRESS_IP=172.17.0.1
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     VARFILE=variables/variables-mac.yaml
 fi
@@ -35,7 +38,7 @@ glooctl add route \
 sleep 3
 
 echo "cURL the gateway"
-curl localhost:8080/
+curl $INGRESS_IP:8080/
 
 trap 'kill $(jobs -p)' EXIT
 
