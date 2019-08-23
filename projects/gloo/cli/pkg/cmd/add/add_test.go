@@ -1,14 +1,15 @@
 package add_test
 
 import (
+	"log"
+	"os"
+
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"github.com/solo-io/gloo/test/services"
-	"log"
-	"os"
 )
 
 var _ = Describe("Add", func() {
