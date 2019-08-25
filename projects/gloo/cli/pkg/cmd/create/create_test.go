@@ -38,13 +38,13 @@ var _ = Describe("Create", func() {
 	})
 
 	BeforeEach(func() {
+		helpers.UseDefaultClients()
 		var err error
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
 		err = consulInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
-		helpers.UseConsulClients(client, "gloo")
 	})
 
 	AfterEach(func() {
@@ -65,14 +65,14 @@ var _ = Describe("Create", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(kv).NotTo(BeNil())
 
-			err = testutils.Glooctl("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.json-upstream=1")
+			err = testutils.Glooctl("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.json-upstream=1 --use-consul")
 			Expect(err).NotTo(HaveOccurred())
 			kv, _, err = client.KV().Get("gloo/gloo.solo.io/v1/UpstreamGroup/gloo-system/test", nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(kv).NotTo(BeNil())
 		})
 		It("does virtualServices", func() {
-			err := testutils.Glooctl("create virtualservice --name test --domains foo.bar,baz.qux")
+			err := testutils.Glooctl("create virtualservice --name test --domains foo.bar,baz.qux --use-consul")
 			Expect(err).NotTo(HaveOccurred())
 			kv, _, err := client.KV().Get("gloo/gateway.solo.io/v1/VirtualService/gloo-system/test", nil)
 			Expect(err).NotTo(HaveOccurred())

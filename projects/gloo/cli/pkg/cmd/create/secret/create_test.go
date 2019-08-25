@@ -40,13 +40,13 @@ var _ = Describe("Create", func() {
 	})
 
 	BeforeEach(func() {
+		helpers.UseDefaultClients()
 		var err error
 		// Start Vault
 		vaultInstance, err = vaultFactory.NewVaultInstance()
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
-		helpers.UseVaultClients(client, "gloo")
 	})
 
 	AfterEach(func() {
@@ -59,7 +59,7 @@ var _ = Describe("Create", func() {
 
 	Context("vault storage backend", func() {
 		It("does secrets", func() {
-			err := testutils.Glooctl("create secret aws --name test --access-key foo --secret-key bar")
+			err := testutils.Glooctl("create secret aws --name test --access-key foo --secret-key bar --use-vault --vault-address=http://localhost:8200 --vault-token=root")
 			Expect(err).NotTo(HaveOccurred())
 			secret, err := client.Logical().Read("secret/data/gloo/gloo.solo.io/v1/Secret/gloo-system/test")
 			Expect(err).NotTo(HaveOccurred())

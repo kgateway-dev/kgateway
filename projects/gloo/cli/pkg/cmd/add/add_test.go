@@ -50,7 +50,6 @@ var _ = Describe("Add", func() {
 			_, err := client.KV().Put(&api.KVPair{Key: "test"}, nil)
 			return err
 		}).ShouldNot(HaveOccurred())
-		helpers.UseConsulClients(client, "gloo")
 	})
 
 	AfterEach(func() {
