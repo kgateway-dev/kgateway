@@ -47,7 +47,7 @@ var _ = Describe("Add", func() {
 		Expect(err).NotTo(HaveOccurred())
 		// wait for consul to start
 		Eventually(func() error {
-			_, err := client.KV().Put(&api.KVPair{Key:"test"}, nil)
+			_, err := client.KV().Put(&api.KVPair{Key: "test"}, nil)
 			return err
 		}).ShouldNot(HaveOccurred())
 		helpers.UseConsulClients(client, "gloo")
