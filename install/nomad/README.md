@@ -14,6 +14,16 @@ This tutorial uses files stored on the Gloo GitHub repository.
 
 In order to install on Nomad, we'll want to clone the repository:
 
+```
+git clone --branch v0.18.23 https://github.com/solo-io/gloo
+cd gloo/install/nomad
+```
+
+Installation files live in the `install/nomad` directory.
+
+The Gloo [Nomad Job](https://www.nomadproject.io/docs/job-specification/index.html) lives at `install/nomad/jobs/gloo.nomad`
+[Levant Variables](https://github.com/jrasell/levant) for the Gloo Nomad Job live at `install/nomad/variables/variables-{mac,linux}.yaml`
+
 ## Run the complete Demo
 
 If your environment is set up with `docker`, `nomad`, `consul`, `vault`, and `levant`, you can simply run 
@@ -163,4 +173,4 @@ curl localhost:8080/
 Congratulations! You've successfully deployed Gloo to Nomad and created your first route.
 
 Most of the existing tutorials for Gloo can be reused with Nomad, however glooctl commands should be 
-used with the `--consul` flag.
+used with the `--use-consul` flag.
