@@ -38,12 +38,18 @@ var _ = Describe("Add", func() {
 	})
 
 	BeforeEach(func() {
+		helpers.UseDefaultClients()
 		var err error
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
 		err = consulInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
+		// wait for consul to start
+		Eventually(func() error {
+			_, err := client.KV().Put(&api.KVPair{Key:"test"}, nil)
+			return err
+		}).ShouldNot(HaveOccurred())
 		helpers.UseConsulClients(client, "gloo")
 	})
 
@@ -67,6 +73,5 @@ var _ = Describe("Add", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(kv).NotTo(BeNil())
 		})
-		//client.KV().Get("")
 	})
 })
