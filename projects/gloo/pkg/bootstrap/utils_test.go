@@ -143,7 +143,7 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	FContext("consul tests", func() {
+	Context("consul tests", func() {
 		if os.Getenv("RUN_CONSUL_TESTS") != "1" {
 			Skip("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 			return
