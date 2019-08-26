@@ -4,6 +4,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -67,11 +68,12 @@ func envoySimplePercent(numerator float32) *envoy_type.Percent {
 	return &envoy_type.Percent{Value: float64(numerator)}
 }
 
-func envoySimplePercentWithDefault(numerator, defaultValue float32) *envoy_type.Percent {
-	if numerator == 0.0 {
+// use FloatValue to detect when nil (avoids error-prone float comparisons)
+func envoySimplePercentWithDefault(numerator *types.FloatValue, defaultValue float32) *envoy_type.Percent {
+	if numerator == nil {
 		return envoySimplePercent(defaultValue)
 	}
-	return envoySimplePercent(numerator)
+	return envoySimplePercent(numerator.Value)
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
