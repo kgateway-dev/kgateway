@@ -82,15 +82,15 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 	if percentages := in.GetRoutePlugins().GetTracing().TracePercentages; percentages != nil {
 		out.Tracing = &envoyroute.Tracing{
-			ClientSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetClientSamplePercentage(), 100.0),
-			RandomSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetRandomSamplePercentage(), 100.0),
-			OverallSampling: common.ToEnvoyPercentageWithDefault(percentages.GetOverallSamplePercentage(), 100.0),
+			ClientSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetClientSamplePercentage(), oneHundredPercent),
+			RandomSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetRandomSamplePercentage(), oneHundredPercent),
+			OverallSampling: common.ToEnvoyPercentageWithDefault(percentages.GetOverallSamplePercentage(), oneHundredPercent),
 		}
 	} else {
 		out.Tracing = &envoyroute.Tracing{
-			ClientSampling:  common.ToEnvoyPercentage(100.0),
-			RandomSampling:  common.ToEnvoyPercentage(100.0),
-			OverallSampling: common.ToEnvoyPercentage(100.0),
+			ClientSampling:  common.ToEnvoyPercentage(oneHundredPercent),
+			RandomSampling:  common.ToEnvoyPercentage(oneHundredPercent),
+			OverallSampling: common.ToEnvoyPercentage(oneHundredPercent),
 		}
 	}
 	descriptor := in.RoutePlugins.Tracing.RouteDescriptor
