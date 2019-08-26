@@ -2,6 +2,9 @@ package tracing
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
 
 	. "github.com/onsi/ginkgo"
@@ -12,6 +15,55 @@ import (
 )
 
 var _ = Describe("Plugin", func() {
+
+	It("should update listener properly", func() {
+		p := NewPlugin()
+		cfg := &envoyhttp.HttpConnectionManager{}
+		hcmSettings := &hcm.HttpConnectionManagerSettings{
+			Tracing: &tracing.ListenerTracingSettings{
+				RequestHeadersForTags: []string{"header1", "header2"},
+				Verbose:               true,
+				TracePercentages: &tracing.TracePercentages{
+					ClientSamplePercentage:  10,
+					RandomSamplePercentage:  20,
+					OverallSamplePercentage: 30,
+				},
+			},
+		}
+		err := p.ProcessHcmSettings(cfg, hcmSettings)
+		Expect(err).To(BeNil())
+		expected := &envoyhttp.HttpConnectionManager{
+			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
+				OperationName:         envoyhttp.INGRESS,
+				RequestHeadersForTags: []string{"header1", "header2"},
+				ClientSampling:        &envoy_type.Percent{Value: 10},
+				RandomSampling:        &envoy_type.Percent{Value: 20},
+				OverallSampling:       &envoy_type.Percent{Value: 30},
+				Verbose:               true,
+			},
+		}
+		Expect(cfg).To(Equal(expected))
+	})
+
+	It("should update listener properly - with defaults", func() {
+		p := NewPlugin()
+		cfg := &envoyhttp.HttpConnectionManager{}
+		hcmSettings := &hcm.HttpConnectionManagerSettings{
+			Tracing: &tracing.ListenerTracingSettings{},
+		}
+		err := p.ProcessHcmSettings(cfg, hcmSettings)
+		Expect(err).To(BeNil())
+		expected := &envoyhttp.HttpConnectionManager{
+			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
+				OperationName:   envoyhttp.INGRESS,
+				ClientSampling:  &envoy_type.Percent{Value: 100},
+				RandomSampling:  &envoy_type.Percent{Value: 100},
+				OverallSampling: &envoy_type.Percent{Value: 100},
+				Verbose:         false,
+			},
+		}
+		Expect(cfg).To(Equal(expected))
+	})
 
 	It("should update routes properly", func() {
 		p := NewPlugin()
@@ -33,9 +85,39 @@ var _ = Describe("Plugin", func() {
 		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
-		Expect(outFull.Tracing.ClientSampling.Numerator).To(Equal(uint32(100)))
-		Expect(outFull.Tracing.RandomSampling.Numerator).To(Equal(uint32(0)))
-		Expect(outFull.Tracing.OverallSampling.Numerator).To(Equal(uint32(100)))
+		Expect(outFull.Tracing.ClientSampling.Numerator / 10000).To(Equal(uint32(100)))
+		Expect(outFull.Tracing.RandomSampling.Numerator / 10000).To(Equal(uint32(100)))
+		Expect(outFull.Tracing.OverallSampling.Numerator / 10000).To(Equal(uint32(100)))
+	})
+
+	It("should update routes properly - with defaults", func() {
+		p := NewPlugin()
+		in := &v1.Route{}
+		out := &envoyroute.Route{}
+		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
+		Expect(err).NotTo(HaveOccurred())
+
+		inFull := &v1.Route{
+			Matcher: nil,
+			Action:  nil,
+			RoutePlugins: &v1.RoutePlugins{
+				Tracing: &tracing.RouteTracingSettings{
+					RouteDescriptor: "hello",
+					TracePercentages: &tracing.TracePercentages{
+						ClientSamplePercentage:  10,
+						RandomSamplePercentage:  20,
+						OverallSamplePercentage: 30,
+					},
+				},
+			},
+		}
+		outFull := &envoyroute.Route{}
+		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outFull.Decorator.Operation).To(Equal("hello"))
+		Expect(outFull.Tracing.ClientSampling.Numerator / 10000).To(Equal(uint32(10)))
+		Expect(outFull.Tracing.RandomSampling.Numerator / 10000).To(Equal(uint32(20)))
+		Expect(outFull.Tracing.OverallSampling.Numerator / 10000).To(Equal(uint32(30)))
 	})
 
 })

@@ -10,3 +10,10 @@ func ToEnvoyPercentage(percentage float32) *envoytype.FractionalPercent {
 		Denominator: envoytype.FractionalPercent_MILLION,
 	}
 }
+
+func ToEnvoyPercentageWithDefault(percentage, defaultValue float32) *envoytype.FractionalPercent {
+	if percentage == 0 {
+		return ToEnvoyPercentage(defaultValue)
+	}
+	return ToEnvoyPercentage(percentage)
+}

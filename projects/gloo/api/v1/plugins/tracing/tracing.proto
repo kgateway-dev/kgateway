@@ -17,6 +17,9 @@ message ListenerTracingSettings {
     repeated string request_headers_for_tags = 1;
     // Optional. If true, Envoy will include logs for streaming events. Default: false.
     bool verbose = 2;
+    // Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided.
+    // TracePercentages defines the limits for random, forced, and overall tracing percentages.
+    TracePercentages trace_percentages = 3;
 }
 
 // Contains settings for configuring Envoy's tracing capabilities at the route level.
@@ -27,4 +30,24 @@ message RouteTracingSettings {
     // Optional. If set, will be used to identify the route that produced the trace.
     // Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed.
     string route_descriptor = 1;
+    // Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided.
+    // TracePercentages defines the limits for random, forced, and overall tracing percentages.
+    TracePercentages trace_percentages = 2;
+}
+
+// Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided.
+// TracePercentages defines the limits for random, forced, and overall tracing percentages.
+message TracePercentages {
+    // Percentage of requests that should produce traces when the `x-client-trace-id` header is provided.
+    // optional, defaults to 100.0
+    // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
+    float client_sample_percentage = 1;
+    // Percentage of requests that should produce traces by random sampling.
+    // optional, defaults to 100.0
+    // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
+    float random_sample_percentage = 2;
+    // Overall percentage of requests that should produce traces.
+    // optional, defaults to 100.0
+    // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
+    float overall_sample_percentage = 3;
 }
