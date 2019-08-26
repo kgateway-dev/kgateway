@@ -45,7 +45,11 @@ docker network create --driver=weaveworks/net-plugin:latest_release --attachable
 
 ```
 
-If running locally on Linux, you'll need to disable SELinux in order to run the demo (or add permission for docker containers to access `/` on their filesystem).
+If running locally on Linux, you'll need to disable SELinux in order to run the demo (or add permission for docker containers to access `/` on their filesystem):
+
+```bash
+sudo setenforce 0
+```
 
 ### Running Nomad Using Vagrant 
 
@@ -160,10 +164,16 @@ And finally `curl` the Gateway Proxy:
 curl <nomad-host>:8080/
 ```
 
-If running locally or with Vagrant:
+If running on macOS or with Vagrant:
 
 ```bash
 curl localhost:8080/
+```
+
+If running on Linux, use the Host IP on the `docker0` interface:
+
+```bash
+curl 172.17.0.1:8080/
 ```
 
 ```json
