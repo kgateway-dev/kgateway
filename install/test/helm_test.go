@@ -221,6 +221,38 @@ var _ = Describe("Helm Test", func() {
 					gatewayProxyDeployment = deploy
 				})
 
+				Context("gateway-proxy daemonset", func() {
+					var (
+						daemonSet *appsv1.DaemonSet
+					)
+					BeforeEach(func() {
+						daemonSet = &appsv1.DaemonSet{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "DaemonSet",
+								APIVersion: "apps/v1",
+							},
+							ObjectMeta: gatewayProxyDeployment.ObjectMeta,
+							Spec: appsv1.DaemonSetSpec{
+								Selector: gatewayProxyDeployment.Spec.Selector,
+								Template: gatewayProxyDeployment.Spec.Template,
+							},
+						}
+						for i, port := range daemonSet.Spec.Template.Spec.Containers[0].Ports {
+							port.HostPort = port.ContainerPort
+							daemonSet.Spec.Template.Spec.Containers[0].Ports[i] = port
+						}
+						daemonSet.Spec.Template.Spec.DNSPolicy = v1.DNSClusterFirstWithHostNet
+						daemonSet.Spec.Template.Spec.HostNetwork = true
+
+					})
+
+					It("creates a daemonset", func() {
+						helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.kind.deployment=null --set gatewayProxies.gatewayProxyV2.kind.daemonSet.hostPort=true"
+						prepareMakefile(helmFlags)
+						testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
+					})
+				})
+
 				It("creates a deployment", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
 					prepareMakefile(helmFlags)
