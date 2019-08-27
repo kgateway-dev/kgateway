@@ -39,6 +39,11 @@ var (
 		Short:   "adds configuration to a top-level Gloo resource",
 	}
 
+	CHECK_COMMAND = cobra.Command{
+		Use:   "check",
+		Short: "Checks Gloo resources for errors (requires Gloo running on Kubernetes)",
+	}
+
 	CREATE_COMMAND = cobra.Command{
 		Use:     "create",
 		Aliases: []string{"c"},

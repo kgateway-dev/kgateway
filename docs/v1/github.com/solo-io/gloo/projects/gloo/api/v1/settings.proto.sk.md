@@ -52,6 +52,7 @@ Represents global settings for all the Gloo components.
 "directorySecretSource": .gloo.solo.io.Settings.Directory
 "kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
 "directoryArtifactSource": .gloo.solo.io.Settings.Directory
+"consulKvArtifactSource": .gloo.solo.io.Settings.ConsulKv
 "bindAddr": string
 "refreshRate": .google.protobuf.Duration
 "devMode": bool
@@ -79,6 +80,7 @@ Represents global settings for all the Gloo components.
 | `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#kubernetesconfigmaps) |  |  |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
+| `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk#consulkv) |  |  |
 | `bindAddr` | `string` | Where the gloo xDS server should bind (should not need configuration by user) |  |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc |  |
 | `devMode` | `bool` | Enable serving debug data on port 9090 |  |

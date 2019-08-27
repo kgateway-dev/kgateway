@@ -1,11 +1,11 @@
-{{- if .Values.rbac.create }}
+{{- if .Values.global.glooRbac.create }}
 {{- if .Values.gateway.enabled }}
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-resource-watcher-binding{{ include "gloo.rolebindingsuffix" . }}
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
@@ -30,7 +30,7 @@ kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-upstream-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
@@ -52,7 +52,7 @@ kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
@@ -74,7 +74,7 @@ kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: settings-user-binding{{ include "gloo.rolebindingsuffix" . }}
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
@@ -102,7 +102,7 @@ kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-resource-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
@@ -124,7 +124,7 @@ kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gateway-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:

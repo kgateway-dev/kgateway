@@ -24,6 +24,10 @@ var _ = Describe("Secret Interactive Mode", func() {
 		helpers.UseMemoryClients()
 	})
 
+	AfterEach(func() {
+		helpers.UseDefaultClients()
+	})
+
 	expectMeta := func(meta core.Metadata) {
 		Expect(meta.Namespace).To(Equal(secretNamespace))
 		Expect(meta.Name).To(Equal(secretName))

@@ -84,6 +84,24 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should translate proxy with default name", func() {
+			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+
+			Expect(errs).To(HaveLen(3))
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+			Expect(proxy.Metadata.Namespace).To(Equal(ns))
+		})
+
+		It("should properly translate listener plugins to proxy listener", func() {
+			extensions := map[string]*types.Struct{
+				"plugin": &types.Struct{},
+			}
+
+			snap.Gateways[0].Plugins = &gloov1.ListenerPlugins{
+				Extensions: &gloov1.Extensions{
+					Configs: extensions,
+				},
+			}
 
 			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -91,6 +109,9 @@ var _ = Describe("Translator", func() {
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
+			Expect(proxy.Listeners).To(HaveLen(1))
+			Expect(proxy.Listeners[0].Plugins.Extensions.Configs).To(HaveKey("plugin"))
+			Expect(proxy.Listeners[0].Plugins.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
 		})
 
 		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {

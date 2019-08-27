@@ -7,12 +7,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/consul/api"
+	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/pkg/listers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes/fake"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -26,15 +29,53 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var fakeKubeClientset *fake.Clientset
+var (
+	fakeKubeClientset *fake.Clientset
+	memResourceClient *factory.MemoryResourceClientFactory
+	consulClient      *factory.ConsulResourceClientFactory
+	vaultClient       *factory.VaultSecretClientFactory
 
-var memResourceClient *factory.MemoryResourceClientFactory
-var lock sync.Mutex
+	lock sync.Mutex
+)
 
-func getMemoryClients() *factory.MemoryResourceClientFactory {
+// iterates over all the factory overrides, returning the first non-nil
+// mem > consul
+// if none set, return nil (callers will default to Kube CRD)
+func getConfigClientFactory() factory.ResourceClientFactory {
 	lock.Lock()
 	defer lock.Unlock()
-	return memResourceClient
+	if memResourceClient != nil {
+		return memResourceClient
+	}
+	if consulClient != nil {
+		return consulClient
+	}
+	return nil
+}
+
+// iterates over all the factory overrides, returning the first non-nil
+// mem > vault
+// if none set, return nil (callers will default to Kube Secret)
+func getSecretClientFactory() factory.ResourceClientFactory {
+	lock.Lock()
+	defer lock.Unlock()
+	if memResourceClient != nil {
+		return memResourceClient
+	}
+	if vaultClient != nil {
+		return vaultClient
+	}
+	return nil
+}
+
+// wipes all the client helper overrides
+func UseDefaultClients() {
+	lock.Lock()
+	defer lock.Unlock()
+	fakeKubeClientset = nil
+	memResourceClient = nil
+	consulClient = nil
+	vaultClient = nil
 }
 
 func UseMemoryClients() {
@@ -44,6 +85,26 @@ func UseMemoryClients() {
 		Cache: memory.NewInMemoryResourceCache(),
 	}
 	fakeKubeClientset = fake.NewSimpleClientset()
+}
+
+// only applies to Config and Artifact clients
+func UseConsulClients(client *api.Client, rootKey string) {
+	lock.Lock()
+	defer lock.Unlock()
+	consulClient = &factory.ConsulResourceClientFactory{
+		Consul:  client,
+		RootKey: rootKey,
+	}
+}
+
+// only applies to secret clients
+func UseVaultClients(client *vaultapi.Client, rootKey string) {
+	lock.Lock()
+	defer lock.Unlock()
+	vaultClient = &factory.VaultSecretClientFactory{
+		Vault:   client,
+		RootKey: rootKey,
+	}
 }
 
 func MustKubeClient() kubernetes.Interface {
@@ -75,8 +136,8 @@ func MustGetNamespaces() []string {
 
 // Note: requires RBAC permission to list namespaces at the cluster level
 func GetNamespaces() ([]string, error) {
-	memoryResourceClient := getMemoryClients()
-	if memoryResourceClient != nil {
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
 		return []string{"default", defaults.GlooSystem}, nil
 	}
 
@@ -120,9 +181,9 @@ func MustUpstreamClient() v1.UpstreamClient {
 }
 
 func UpstreamClient() (v1.UpstreamClient, error) {
-	memoryResourceClient := getMemoryClients()
-	if memoryResourceClient != nil {
-		return v1.NewUpstreamClient(memoryResourceClient)
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return v1.NewUpstreamClient(customFactory)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -153,9 +214,9 @@ func MustUpstreamGroupClient() v1.UpstreamGroupClient {
 }
 
 func UpstreamGroupClient() (v1.UpstreamGroupClient, error) {
-	memoryResourceClient := getMemoryClients()
-	if memoryResourceClient != nil {
-		return v1.NewUpstreamGroupClient(memoryResourceClient)
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return v1.NewUpstreamGroupClient(customFactory)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -186,9 +247,9 @@ func MustProxyClient() v1.ProxyClient {
 }
 
 func ProxyClient() (v1.ProxyClient, error) {
-	memoryResourceClient := getMemoryClients()
-	if memoryResourceClient != nil {
-		return v1.NewProxyClient(memoryResourceClient)
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return v1.NewProxyClient(customFactory)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -210,6 +271,39 @@ func ProxyClient() (v1.ProxyClient, error) {
 	return proxyClient, nil
 }
 
+func MustGatewayV2Client() gatewayv2.GatewayClient {
+	client, err := GatewayV2Client()
+	if err != nil {
+		log.Fatalf("failed to create gateway v2 client: %v", err)
+	}
+	return client
+}
+
+func GatewayV2Client() (gatewayv2.GatewayClient, error) {
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return gatewayv2.NewGatewayClient(customFactory)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache(context.TODO())
+	gatewayClient, err := gatewayv2.NewGatewayClient(&factory.KubeResourceClientFactory{
+		Crd:         gatewayv2.GatewayCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating gateway client")
+	}
+	if err := gatewayClient.Register(); err != nil {
+		return nil, err
+	}
+	return gatewayClient, nil
+}
+
 func MustVirtualServiceClient() gatewayv1.VirtualServiceClient {
 	client, err := VirtualServiceClient()
 	if err != nil {
@@ -219,9 +313,9 @@ func MustVirtualServiceClient() gatewayv1.VirtualServiceClient {
 }
 
 func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
-	memoryResourceClient := getMemoryClients()
-	if memoryResourceClient != nil {
-		return gatewayv1.NewVirtualServiceClient(memoryResourceClient)
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return gatewayv1.NewVirtualServiceClient(customFactory)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -252,9 +346,9 @@ func MustSettingsClient() v1.SettingsClient {
 }
 
 func SettingsClient() (v1.SettingsClient, error) {
-	memoryResourceClient := getMemoryClients()
-	if memoryResourceClient != nil {
-		return v1.NewSettingsClient(memoryResourceClient)
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return v1.NewSettingsClient(customFactory)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -285,9 +379,9 @@ func MustSecretClient() v1.SecretClient {
 }
 
 func secretClient() (v1.SecretClient, error) {
-	memoryResourceClient := getMemoryClients()
-	if memoryResourceClient != nil {
-		return v1.NewSecretClient(memoryResourceClient)
+	customFactory := getSecretClientFactory()
+	if customFactory != nil {
+		return v1.NewSecretClient(customFactory)
 	}
 
 	clientset, err := GetKubernetesClient()
@@ -312,7 +406,11 @@ func secretClient() (v1.SecretClient, error) {
 }
 
 func GetKubernetesClient() (*kubernetes.Clientset, error) {
-	config, err := getKubernetesConfig(0)
+	return GetKubernetesClientWithTimeout(0)
+}
+
+func GetKubernetesClientWithTimeout(timeout time.Duration) (*kubernetes.Clientset, error) {
+	config, err := getKubernetesConfig(timeout)
 	if err != nil {
 		return nil, err
 	}

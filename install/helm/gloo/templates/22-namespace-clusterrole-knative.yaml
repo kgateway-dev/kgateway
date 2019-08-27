@@ -1,4 +1,4 @@
-{{- if .Values.rbac.create }}
+{{- if .Values.global.glooRbac.create }}
 
 {{- if .Values.settings.integrations.knative.enabled }}
 kind: ClusterRole

@@ -25,6 +25,10 @@ var _ = Describe("Secret", func() {
 		helpers.UseMemoryClients()
 	})
 
+	AfterEach(func() {
+		helpers.UseDefaultClients()
+	})
+
 	Context("Empty args and flags", func() {
 		It("should give clear error message", func() {
 			err := testutils.Glooctl("create secret")

@@ -86,7 +86,7 @@ clean:
 	rm -rf _output
 	rm -rf _test
 	rm -fr site
-	git clean -xdf install
+	git clean -f -X install
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs

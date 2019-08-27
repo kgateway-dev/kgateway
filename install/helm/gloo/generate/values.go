@@ -11,7 +11,6 @@ type HelmConfig struct {
 
 type Config struct {
 	Namespace      *Namespace              `json:"namespace,omitempty"`
-	Rbac           *Rbac                   `json:"rbac,omitempty"`
 	Crds           *Crds                   `json:"crds,omitempty"`
 	Settings       *Settings               `json:"settings,omitempty"`
 	Gloo           *Gloo                   `json:"gloo,omitempty"`
@@ -26,6 +25,7 @@ type Config struct {
 type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
+	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
 }
 
 type Namespace struct {
@@ -123,11 +123,16 @@ type DiscoveryDeployment struct {
 }
 
 type Gateway struct {
-	Enabled       *bool                 `json:"enabled" desc:"enable Gloo API Gateway features"`
-	Upgrade       *bool                 `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
-	Deployment    *GatewayDeployment    `json:"deployment,omitempty"`
-	ConversionJob *GatewayConversionJob `json:"conversionJob,omitempty"`
-	UpdateValues  bool                  `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	Enabled             *bool                 `json:"enabled" desc:"enable Gloo API Gateway features"`
+	Upgrade             *bool                 `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
+	Deployment          *GatewayDeployment    `json:"deployment,omitempty"`
+	ConversionJob       *GatewayConversionJob `json:"conversionJob,omitempty"`
+	UpdateValues        bool                  `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	ProxyServiceAccount ServiceAccount        `json:"proxyServiceAccount" `
+}
+
+type ServiceAccount struct {
+	DisableAutomount bool `json:"disableAutomount" desc:"disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations"`
 }
 
 type GatewayDeployment struct {
@@ -176,6 +181,8 @@ type GatewayProxyPodTemplate struct {
 	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
 	Probes           bool                  `json:"probes" desc:"enable liveness and readiness probes"`
 	Resources        *ResourceRequirements `json:"resources"`
+	DisableNetBind   bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
+	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user`
 }
 
 type GatewayProxyService struct {

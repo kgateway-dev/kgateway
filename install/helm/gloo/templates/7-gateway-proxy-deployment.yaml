@@ -96,11 +96,17 @@ spec:
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          {{- if $spec.podTemplate.runUnprivileged }}
+          runAsNonRoot: true
+          runAsUser: 10101
+          {{- end}}
           capabilities:
             drop:
             - ALL
+          {{- if not $spec.podTemplate.disableNetBind }}
             add:
             - NET_BIND_SERVICE
+          {{- end}}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http

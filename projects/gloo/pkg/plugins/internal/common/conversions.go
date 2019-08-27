@@ -2,6 +2,7 @@ package common
 
 import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/gogo/protobuf/types"
 )
 
 func ToEnvoyPercentage(percentage float32) *envoytype.FractionalPercent {
@@ -9,4 +10,12 @@ func ToEnvoyPercentage(percentage float32) *envoytype.FractionalPercent {
 		Numerator:   uint32(percentage * 10000),
 		Denominator: envoytype.FractionalPercent_MILLION,
 	}
+}
+
+// use FloatValue to detect when nil (avoids error-prone float comparisons)
+func ToEnvoyPercentageWithDefault(percentage *types.FloatValue, defaultValue float32) *envoytype.FractionalPercent {
+	if percentage == nil {
+		return ToEnvoyPercentage(defaultValue)
+	}
+	return ToEnvoyPercentage(percentage.Value)
 }

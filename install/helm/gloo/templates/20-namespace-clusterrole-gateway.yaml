@@ -1,11 +1,11 @@
-{{- if .Values.rbac.create }}
+{{- if .Values.global.glooRbac.create }}
 {{- if .Values.gateway.enabled }}
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: kube-resource-watcher
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
@@ -26,7 +26,7 @@ kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gloo-upstream-mutator
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
@@ -45,7 +45,7 @@ kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: kube-crd-creator
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
@@ -63,7 +63,7 @@ kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gloo-resource-reader
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
@@ -82,7 +82,7 @@ kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: settings-user
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
@@ -101,7 +101,7 @@ kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gloo-resource-mutator
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
@@ -119,7 +119,7 @@ kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
     name: gateway-resource-reader
-{{- if .Values.rbac.namespaced }}
+{{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:

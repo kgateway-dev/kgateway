@@ -100,7 +100,7 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.RequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))
 		Expect(trace.Verbose).To(BeTrue())
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
-		Expect(trace.RandomSampling.Value).To(Equal(0.0))
+		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
 	})
 

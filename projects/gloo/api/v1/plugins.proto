@@ -21,6 +21,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/als/als.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc_web/grpc_web.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hcm/hcm.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/lbhash/lbhash.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/shadowing/shadowing.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tcp/tcp.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tracing/tracing.proto";
@@ -45,6 +46,7 @@ import "google/protobuf/duration.proto";
 // to be usable by Gloo.
 message ListenerPlugins {
     als.plugins.gloo.solo.io.AccessLoggingService access_logging_service = 1;
+    Extensions extensions = 2;
 }
 
 // Plugin-specific configuration that lives on http listeners
@@ -99,6 +101,10 @@ message RoutePlugins {
     // Defines a CORS policy for the route
     // If a CORS policy is also defined on the route's virtual host, the policies are merged.
     cors.plugins.gloo.solo.io.CorsPolicy cors = 11;
+    // For routes served by a hashing load balancer, this defines the input to the hash key
+    // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
+    // - route, upstream, virtual service
+    lbhash.plugins.gloo.solo.io.RouteActionHashConfig lb_hash = 12;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination

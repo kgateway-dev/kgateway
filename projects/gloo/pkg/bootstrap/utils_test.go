@@ -1,13 +1,30 @@
 package bootstrap_test
 
 import (
+	"context"
+	"os"
+	"time"
+
+	"github.com/hashicorp/consul/api"
+	"github.com/solo-io/gloo/test/services"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/solo-kit/test/setup"
+	kubev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -44,4 +61,183 @@ var _ = Describe("Utils", func() {
 		Expect(cfg.Burst).To(Equal(1000))
 	})
 
+	Context("kube tests", func() {
+		BeforeEach(func() {
+			if os.Getenv("RUN_KUBE_TESTS") != "1" {
+				Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
+			}
+		})
+
+		var (
+			namespace     string
+			cfg           *rest.Config
+			ctx           context.Context
+			cancel        context.CancelFunc
+			kube          kubernetes.Interface
+			kubeCoreCache corecache.KubeCoreCache
+		)
+
+		BeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.Background())
+			namespace = helpers.RandString(8)
+			var err error
+			cfg, err = kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			kube, err = kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = kube.CoreV1().Namespaces().Create(&kubev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: namespace,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			kubeCoreCache, err = corecache.NewKubeCoreCacheWithOptions(ctx, kube, time.Hour, []string{namespace})
+			Expect(err).NotTo(HaveOccurred())
+
+		})
+		AfterEach(func() {
+			cancel()
+			setup.TeardownKube(namespace)
+		})
+
+		Context("artifacts as config maps", func() {
+
+			var (
+				artifactClient v1.ArtifactClient
+			)
+
+			BeforeEach(func() {
+				_, err := kube.CoreV1().ConfigMaps(namespace).Create(
+					&kubev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cfg"},
+						Data: map[string]string{
+							"test": "data",
+						},
+					})
+				Expect(err).NotTo(HaveOccurred())
+
+				settings := &v1.Settings{
+					ArtifactSource:  &v1.Settings_KubernetesArtifactSource{},
+					WatchNamespaces: []string{namespace},
+				}
+
+				factory, err := ArtifactFactoryForSettings(ctx,
+					settings,
+					nil,
+					&cfg,
+					&kube,
+					&kubeCoreCache,
+					&api.Client{},
+					"artifacts")
+				Expect(err).NotTo(HaveOccurred())
+				artifactClient, err = v1.NewArtifactClient(factory)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should work with artifacts", func() {
+				artifact, err := artifactClient.Read(namespace, "cfg", clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(artifact.GetMetadata().Name).To(Equal("cfg"))
+				Expect(artifact.Data["test"]).To(Equal("data"))
+			})
+		})
+	})
+
+	Context("consul tests", func() {
+		if os.Getenv("RUN_CONSUL_TESTS") != "1" {
+			Skip("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
+			return
+		}
+
+		var (
+			consulFactory  *services.ConsulFactory
+			consulInstance *services.ConsulInstance
+			client         *api.Client
+		)
+
+		BeforeSuite(func() {
+			var err error
+			consulFactory, err = services.NewConsulFactory()
+			Expect(err).NotTo(HaveOccurred())
+			client, err = api.NewClient(api.DefaultConfig())
+			Expect(err).NotTo(HaveOccurred())
+
+		})
+
+		AfterSuite(func() {
+			_ = consulFactory.Clean()
+		})
+
+		BeforeEach(func() {
+			var err error
+			// Start Consul
+			consulInstance, err = consulFactory.NewConsulInstance()
+			Expect(err).NotTo(HaveOccurred())
+			err = consulInstance.Run()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			if consulInstance != nil {
+				err := consulInstance.Clean()
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
+
+		Context("artifacts as consul key value", func() {
+
+			var (
+				ctx            context.Context
+				cancel         func()
+				artifactClient v1.ArtifactClient
+			)
+
+			BeforeEach(func() {
+				ctx, cancel = context.WithCancel(context.Background())
+
+				value, err := protoutils.MarshalYAML(&v1.Artifact{
+					Data:     map[string]string{"hi": "bye"},
+					Metadata: core.Metadata{Name: "name", Namespace: "namespace"},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = client.KV().Put(&api.KVPair{
+					Key:   "gloo/gloo.solo.io/v1/Artifact/namespace/name",
+					Value: value,
+				}, nil)
+				Expect(err).NotTo(HaveOccurred())
+
+				settings := &v1.Settings{
+					ArtifactSource: &v1.Settings_ConsulKvArtifactSource{
+						ConsulKvArtifactSource: &v1.Settings_ConsulKv{
+							RootKey: "gloo",
+						},
+					},
+				}
+
+				factory, err := ArtifactFactoryForSettings(ctx,
+					settings,
+					nil,
+					nil,
+					nil,
+					nil,
+					client,
+					"artifacts")
+				Expect(err).NotTo(HaveOccurred())
+				artifactClient, err = v1.NewArtifactClient(factory)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				cancel()
+			})
+
+			It("should work with artifacts", func() {
+				artifact, err := artifactClient.Read("namespace", "name", clients.ReadOpts{Ctx: ctx})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(artifact.GetMetadata().Name).To(Equal("name"))
+				Expect(artifact.Data["hi"]).To(Equal("bye"))
+			})
+		})
+	})
 })

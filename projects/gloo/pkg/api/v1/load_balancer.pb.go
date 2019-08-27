@@ -12,6 +12,7 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -41,6 +42,8 @@ type LoadBalancerConfig struct {
 	//	*LoadBalancerConfig_RoundRobin_
 	//	*LoadBalancerConfig_LeastRequest_
 	//	*LoadBalancerConfig_Random_
+	//	*LoadBalancerConfig_RingHash_
+	//	*LoadBalancerConfig_Maglev_
 	Type                 isLoadBalancerConfig_Type `protobuf_oneof:"type"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
@@ -85,10 +88,18 @@ type LoadBalancerConfig_LeastRequest_ struct {
 type LoadBalancerConfig_Random_ struct {
 	Random *LoadBalancerConfig_Random `protobuf:"bytes,5,opt,name=random,proto3,oneof"`
 }
+type LoadBalancerConfig_RingHash_ struct {
+	RingHash *LoadBalancerConfig_RingHash `protobuf:"bytes,6,opt,name=ring_hash,json=ringHash,proto3,oneof"`
+}
+type LoadBalancerConfig_Maglev_ struct {
+	Maglev *LoadBalancerConfig_Maglev `protobuf:"bytes,7,opt,name=maglev,proto3,oneof"`
+}
 
 func (*LoadBalancerConfig_RoundRobin_) isLoadBalancerConfig_Type()   {}
 func (*LoadBalancerConfig_LeastRequest_) isLoadBalancerConfig_Type() {}
 func (*LoadBalancerConfig_Random_) isLoadBalancerConfig_Type()       {}
+func (*LoadBalancerConfig_RingHash_) isLoadBalancerConfig_Type()     {}
+func (*LoadBalancerConfig_Maglev_) isLoadBalancerConfig_Type()       {}
 
 func (m *LoadBalancerConfig) GetType() isLoadBalancerConfig_Type {
 	if m != nil {
@@ -132,12 +143,28 @@ func (m *LoadBalancerConfig) GetRandom() *LoadBalancerConfig_Random {
 	return nil
 }
 
+func (m *LoadBalancerConfig) GetRingHash() *LoadBalancerConfig_RingHash {
+	if x, ok := m.GetType().(*LoadBalancerConfig_RingHash_); ok {
+		return x.RingHash
+	}
+	return nil
+}
+
+func (m *LoadBalancerConfig) GetMaglev() *LoadBalancerConfig_Maglev {
+	if x, ok := m.GetType().(*LoadBalancerConfig_Maglev_); ok {
+		return x.Maglev
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*LoadBalancerConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _LoadBalancerConfig_OneofMarshaler, _LoadBalancerConfig_OneofUnmarshaler, _LoadBalancerConfig_OneofSizer, []interface{}{
 		(*LoadBalancerConfig_RoundRobin_)(nil),
 		(*LoadBalancerConfig_LeastRequest_)(nil),
 		(*LoadBalancerConfig_Random_)(nil),
+		(*LoadBalancerConfig_RingHash_)(nil),
+		(*LoadBalancerConfig_Maglev_)(nil),
 	}
 }
 
@@ -158,6 +185,16 @@ func _LoadBalancerConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) erro
 	case *LoadBalancerConfig_Random_:
 		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Random); err != nil {
+			return err
+		}
+	case *LoadBalancerConfig_RingHash_:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RingHash); err != nil {
+			return err
+		}
+	case *LoadBalancerConfig_Maglev_:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Maglev); err != nil {
 			return err
 		}
 	case nil:
@@ -194,6 +231,22 @@ func _LoadBalancerConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *p
 		err := b.DecodeMessage(msg)
 		m.Type = &LoadBalancerConfig_Random_{msg}
 		return true, err
+	case 6: // type.ring_hash
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(LoadBalancerConfig_RingHash)
+		err := b.DecodeMessage(msg)
+		m.Type = &LoadBalancerConfig_RingHash_{msg}
+		return true, err
+	case 7: // type.maglev
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(LoadBalancerConfig_Maglev)
+		err := b.DecodeMessage(msg)
+		m.Type = &LoadBalancerConfig_Maglev_{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -215,6 +268,16 @@ func _LoadBalancerConfig_OneofSizer(msg proto.Message) (n int) {
 		n += s
 	case *LoadBalancerConfig_Random_:
 		s := proto.Size(x.Random)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *LoadBalancerConfig_RingHash_:
+		s := proto.Size(x.RingHash)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *LoadBalancerConfig_Maglev_:
+		s := proto.Size(x.Maglev)
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -324,11 +387,135 @@ func (m *LoadBalancerConfig_Random) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_LoadBalancerConfig_Random proto.InternalMessageInfo
 
+// Customizes the parameters used in the hashing algorithm to refine performance or resource usage.
+type LoadBalancerConfig_RingHashConfig struct {
+	// Minimum hash ring size. The larger the ring is (that is, the more hashes there are for each provided host)
+	// the better the request distribution will reflect the desired weights. Defaults to 1024 entries, and limited
+	// to 8M entries.
+	MinimumRingSize uint64 `protobuf:"varint,1,opt,name=minimum_ring_size,json=minimumRingSize,proto3" json:"minimum_ring_size,omitempty"`
+	// Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered to further
+	// constrain resource use.
+	MaximumRingSize      uint64   `protobuf:"varint,2,opt,name=maximum_ring_size,json=maximumRingSize,proto3" json:"maximum_ring_size,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *LoadBalancerConfig_RingHashConfig) Reset()         { *m = LoadBalancerConfig_RingHashConfig{} }
+func (m *LoadBalancerConfig_RingHashConfig) String() string { return proto.CompactTextString(m) }
+func (*LoadBalancerConfig_RingHashConfig) ProtoMessage()    {}
+func (*LoadBalancerConfig_RingHashConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aaa1c019b03e4b0f, []int{0, 3}
+}
+func (m *LoadBalancerConfig_RingHashConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LoadBalancerConfig_RingHashConfig.Unmarshal(m, b)
+}
+func (m *LoadBalancerConfig_RingHashConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LoadBalancerConfig_RingHashConfig.Marshal(b, m, deterministic)
+}
+func (m *LoadBalancerConfig_RingHashConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LoadBalancerConfig_RingHashConfig.Merge(m, src)
+}
+func (m *LoadBalancerConfig_RingHashConfig) XXX_Size() int {
+	return xxx_messageInfo_LoadBalancerConfig_RingHashConfig.Size(m)
+}
+func (m *LoadBalancerConfig_RingHashConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_LoadBalancerConfig_RingHashConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LoadBalancerConfig_RingHashConfig proto.InternalMessageInfo
+
+func (m *LoadBalancerConfig_RingHashConfig) GetMinimumRingSize() uint64 {
+	if m != nil {
+		return m.MinimumRingSize
+	}
+	return 0
+}
+
+func (m *LoadBalancerConfig_RingHashConfig) GetMaximumRingSize() uint64 {
+	if m != nil {
+		return m.MaximumRingSize
+	}
+	return 0
+}
+
+type LoadBalancerConfig_RingHash struct {
+	// Optional, customizes the parameters used in the hashing algorithm
+	RingHashConfig       *LoadBalancerConfig_RingHashConfig `protobuf:"bytes,1,opt,name=ring_hash_config,json=ringHashConfig,proto3" json:"ring_hash_config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                           `json:"-"`
+	XXX_unrecognized     []byte                             `json:"-"`
+	XXX_sizecache        int32                              `json:"-"`
+}
+
+func (m *LoadBalancerConfig_RingHash) Reset()         { *m = LoadBalancerConfig_RingHash{} }
+func (m *LoadBalancerConfig_RingHash) String() string { return proto.CompactTextString(m) }
+func (*LoadBalancerConfig_RingHash) ProtoMessage()    {}
+func (*LoadBalancerConfig_RingHash) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aaa1c019b03e4b0f, []int{0, 4}
+}
+func (m *LoadBalancerConfig_RingHash) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LoadBalancerConfig_RingHash.Unmarshal(m, b)
+}
+func (m *LoadBalancerConfig_RingHash) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LoadBalancerConfig_RingHash.Marshal(b, m, deterministic)
+}
+func (m *LoadBalancerConfig_RingHash) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LoadBalancerConfig_RingHash.Merge(m, src)
+}
+func (m *LoadBalancerConfig_RingHash) XXX_Size() int {
+	return xxx_messageInfo_LoadBalancerConfig_RingHash.Size(m)
+}
+func (m *LoadBalancerConfig_RingHash) XXX_DiscardUnknown() {
+	xxx_messageInfo_LoadBalancerConfig_RingHash.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LoadBalancerConfig_RingHash proto.InternalMessageInfo
+
+func (m *LoadBalancerConfig_RingHash) GetRingHashConfig() *LoadBalancerConfig_RingHashConfig {
+	if m != nil {
+		return m.RingHashConfig
+	}
+	return nil
+}
+
+type LoadBalancerConfig_Maglev struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *LoadBalancerConfig_Maglev) Reset()         { *m = LoadBalancerConfig_Maglev{} }
+func (m *LoadBalancerConfig_Maglev) String() string { return proto.CompactTextString(m) }
+func (*LoadBalancerConfig_Maglev) ProtoMessage()    {}
+func (*LoadBalancerConfig_Maglev) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aaa1c019b03e4b0f, []int{0, 5}
+}
+func (m *LoadBalancerConfig_Maglev) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LoadBalancerConfig_Maglev.Unmarshal(m, b)
+}
+func (m *LoadBalancerConfig_Maglev) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LoadBalancerConfig_Maglev.Marshal(b, m, deterministic)
+}
+func (m *LoadBalancerConfig_Maglev) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LoadBalancerConfig_Maglev.Merge(m, src)
+}
+func (m *LoadBalancerConfig_Maglev) XXX_Size() int {
+	return xxx_messageInfo_LoadBalancerConfig_Maglev.Size(m)
+}
+func (m *LoadBalancerConfig_Maglev) XXX_DiscardUnknown() {
+	xxx_messageInfo_LoadBalancerConfig_Maglev.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LoadBalancerConfig_Maglev proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*LoadBalancerConfig)(nil), "gloo.solo.io.LoadBalancerConfig")
 	proto.RegisterType((*LoadBalancerConfig_RoundRobin)(nil), "gloo.solo.io.LoadBalancerConfig.RoundRobin")
 	proto.RegisterType((*LoadBalancerConfig_LeastRequest)(nil), "gloo.solo.io.LoadBalancerConfig.LeastRequest")
 	proto.RegisterType((*LoadBalancerConfig_Random)(nil), "gloo.solo.io.LoadBalancerConfig.Random")
+	proto.RegisterType((*LoadBalancerConfig_RingHashConfig)(nil), "gloo.solo.io.LoadBalancerConfig.RingHashConfig")
+	proto.RegisterType((*LoadBalancerConfig_RingHash)(nil), "gloo.solo.io.LoadBalancerConfig.RingHash")
+	proto.RegisterType((*LoadBalancerConfig_Maglev)(nil), "gloo.solo.io.LoadBalancerConfig.Maglev")
 }
 
 func init() {
@@ -336,34 +523,42 @@ func init() {
 }
 
 var fileDescriptor_aaa1c019b03e4b0f = []byte{
-	// 419 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xcd, 0x6e, 0xd4, 0x30,
-	0x10, 0xc7, 0x77, 0xe9, 0xb2, 0x42, 0xde, 0xf4, 0x40, 0x00, 0x11, 0x22, 0x54, 0x3e, 0x2e, 0x20,
-	0xa1, 0x3a, 0x14, 0x24, 0xce, 0x90, 0x72, 0xd8, 0x43, 0xf9, 0x90, 0xb5, 0x02, 0x89, 0x4b, 0xe4,
-	0x24, 0x53, 0xc7, 0xe0, 0xf5, 0x18, 0xc7, 0x66, 0xd5, 0x37, 0xe1, 0x11, 0x78, 0x2b, 0x24, 0x5e,
-	0x82, 0x2b, 0xb2, 0x93, 0xc2, 0x4a, 0x15, 0xda, 0xde, 0xf2, 0xf7, 0xcc, 0xef, 0x67, 0x3b, 0x1e,
-	0xf2, 0x52, 0x48, 0xd7, 0xf9, 0x9a, 0x36, 0xb8, 0x2e, 0x7a, 0x54, 0x78, 0x28, 0xb1, 0x10, 0x0a,
-	0xb1, 0x30, 0x16, 0x3f, 0x43, 0xe3, 0xfa, 0x21, 0x71, 0x23, 0x8b, 0x6f, 0x47, 0x85, 0x42, 0xde,
-	0x56, 0x35, 0x57, 0x5c, 0x37, 0x60, 0xa9, 0xb1, 0xe8, 0x30, 0x4d, 0x42, 0x03, 0x0d, 0x2c, 0x95,
-	0x98, 0xdf, 0x14, 0x28, 0x30, 0x16, 0x8a, 0xf0, 0x35, 0xf4, 0xe4, 0x07, 0x02, 0x51, 0x28, 0x28,
-	0x62, 0xaa, 0xfd, 0x69, 0xd1, 0x7a, 0xcb, 0x9d, 0x44, 0xfd, 0xbf, 0xfa, 0xc6, 0x72, 0x63, 0xc0,
-	0xf6, 0x43, 0xfd, 0xe1, 0xef, 0x3d, 0x92, 0x9e, 0x20, 0x6f, 0xcb, 0x71, 0xeb, 0x63, 0xd4, 0xa7,
-	0x52, 0xa4, 0x2b, 0x72, 0xbb, 0x03, 0xae, 0x5c, 0x77, 0x56, 0x19, 0xae, 0x65, 0x53, 0xb9, 0xce,
-	0x42, 0xdf, 0xa1, 0x6a, 0xb3, 0xe9, 0xfd, 0xe9, 0xe3, 0xc5, 0xb3, 0xbb, 0x74, 0x10, 0xd3, 0x73,
-	0x31, 0x7d, 0x8d, 0xbe, 0x56, 0xf0, 0x81, 0x2b, 0x0f, 0xec, 0xd6, 0x08, 0xbf, 0x0f, 0xec, 0xea,
-	0x1c, 0x4d, 0xdf, 0x91, 0x1b, 0xde, 0xb4, 0xdc, 0x41, 0xb5, 0x06, 0x2b, 0xa0, 0xda, 0x48, 0xdd,
-	0xe2, 0x26, 0xbb, 0x12, 0x8d, 0x77, 0x2e, 0x1a, 0xc7, 0xab, 0x94, 0xb3, 0xef, 0x3f, 0xef, 0x4d,
-	0xd9, 0xf5, 0x81, 0x7d, 0x13, 0xd0, 0x8f, 0x91, 0x4c, 0xdf, 0x92, 0x85, 0x45, 0xaf, 0xdb, 0xca,
-	0x62, 0x2d, 0x75, 0xb6, 0x17, 0x45, 0x4f, 0xe8, 0xf6, 0x7f, 0xa3, 0x17, 0x6f, 0x47, 0x59, 0x60,
-	0x58, 0x40, 0x96, 0x13, 0x46, 0xec, 0xdf, 0x94, 0xae, 0xc8, 0xbe, 0x02, 0xde, 0xbb, 0xca, 0xc2,
-	0x57, 0x0f, 0xbd, 0xcb, 0x66, 0xd1, 0x78, 0xb8, 0xd3, 0x78, 0x12, 0x28, 0x36, 0x40, 0xcb, 0x09,
-	0x4b, 0xd4, 0x56, 0x4e, 0x5f, 0x91, 0xb9, 0xe5, 0xba, 0xc5, 0x75, 0x76, 0x35, 0xea, 0x1e, 0xed,
-	0x3e, 0x60, 0x6c, 0x5f, 0x4e, 0xd8, 0x08, 0xe6, 0x09, 0x21, 0xff, 0x0e, 0x9d, 0x1f, 0x91, 0x64,
-	0x7b, 0xc3, 0xf4, 0x01, 0x49, 0x9a, 0x0e, 0x65, 0x03, 0x55, 0x83, 0x5e, 0xbb, 0xf8, 0x44, 0xfb,
-	0x6c, 0x31, 0xac, 0x1d, 0x87, 0xa5, 0xfc, 0x1a, 0x99, 0x0f, 0xd2, 0x72, 0x4e, 0x66, 0xee, 0xcc,
-	0x40, 0xf9, 0xe2, 0xc7, 0xaf, 0x83, 0xe9, 0xa7, 0xa7, 0x97, 0x9b, 0x52, 0xf3, 0x45, 0x8c, 0x93,
-	0x5a, 0xcf, 0xe3, 0xfb, 0x3c, 0xff, 0x13, 0x00, 0x00, 0xff, 0xff, 0x54, 0x1e, 0xcd, 0x56, 0xe0,
-	0x02, 0x00, 0x00,
+	// 555 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x94, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0xc7, 0x93, 0x12, 0x4c, 0xd8, 0xa4, 0x85, 0x1a, 0x10, 0xc6, 0x42, 0xe5, 0xe3, 0xc2, 0x97,
+	0x6a, 0x53, 0x90, 0x38, 0x43, 0xca, 0xc1, 0x87, 0x16, 0xd0, 0x12, 0x81, 0xe0, 0x62, 0xad, 0xed,
+	0xed, 0x7a, 0x61, 0xbd, 0x63, 0xd6, 0x76, 0x43, 0xfb, 0x24, 0x3c, 0x02, 0x6f, 0x55, 0x89, 0x27,
+	0x41, 0xfb, 0x91, 0x12, 0xa8, 0x50, 0xd2, 0x53, 0x76, 0x76, 0xe6, 0xf7, 0xf7, 0xfc, 0x27, 0x63,
+	0xa3, 0x97, 0x8c, 0xb7, 0x65, 0x97, 0x45, 0x39, 0x54, 0x71, 0x03, 0x02, 0xb6, 0x39, 0xc4, 0x4c,
+	0x00, 0xc4, 0xb5, 0x82, 0x2f, 0x34, 0x6f, 0x1b, 0x1b, 0x91, 0x9a, 0xc7, 0x87, 0x3b, 0xb1, 0x00,
+	0x52, 0xa4, 0x19, 0x11, 0x44, 0xe6, 0x54, 0x45, 0xb5, 0x82, 0x16, 0xfc, 0xb1, 0x2e, 0x88, 0x34,
+	0x1b, 0x71, 0x08, 0x93, 0x73, 0xe9, 0xd5, 0xa2, 0x63, 0x5c, 0x36, 0xb1, 0xc8, 0x4a, 0xd2, 0x94,
+	0xee, 0xc7, 0xea, 0x86, 0xd7, 0x19, 0x30, 0x30, 0xc7, 0x58, 0x9f, 0xdc, 0xed, 0x16, 0x03, 0x60,
+	0x82, 0xc6, 0x26, 0xca, 0xba, 0x83, 0xb8, 0xe8, 0x14, 0x69, 0x39, 0xc8, 0xff, 0xe5, 0x67, 0x8a,
+	0xd4, 0x35, 0x55, 0x8d, 0xcd, 0xdf, 0x3f, 0xf1, 0x90, 0xbf, 0x07, 0xa4, 0x98, 0x38, 0x13, 0xbb,
+	0x20, 0x0f, 0x38, 0xf3, 0xa7, 0xe8, 0x66, 0x49, 0x89, 0x68, 0xcb, 0xa3, 0xb4, 0x26, 0x92, 0xe7,
+	0x69, 0x5b, 0x2a, 0xda, 0x94, 0x20, 0x8a, 0xa0, 0x7f, 0xb7, 0xff, 0x70, 0xf4, 0xec, 0x76, 0x64,
+	0x85, 0xa3, 0xb9, 0x70, 0xf4, 0x1a, 0xba, 0x4c, 0xd0, 0x0f, 0x44, 0x74, 0x14, 0xdf, 0x70, 0xf0,
+	0x3b, 0xcd, 0x4e, 0xe7, 0xa8, 0xff, 0x16, 0x5d, 0xeb, 0xea, 0x82, 0xb4, 0x34, 0xad, 0xa8, 0x62,
+	0x34, 0x9d, 0x71, 0x59, 0xc0, 0x2c, 0x58, 0x33, 0x8a, 0xb7, 0xce, 0x2a, 0x3a, 0x2b, 0x93, 0xc1,
+	0x8f, 0x93, 0x3b, 0x7d, 0xbc, 0x69, 0xd9, 0x7d, 0x8d, 0x7e, 0x34, 0xa4, 0xff, 0x06, 0x8d, 0x14,
+	0x74, 0xb2, 0x48, 0x15, 0x64, 0x5c, 0x06, 0x17, 0x8c, 0xd0, 0x93, 0x68, 0xf1, 0x1f, 0x88, 0xce,
+	0xba, 0x8b, 0xb0, 0x66, 0xb0, 0x46, 0x92, 0x1e, 0x46, 0xea, 0x34, 0xf2, 0xa7, 0x68, 0x5d, 0x50,
+	0xd2, 0xb4, 0xa9, 0xa2, 0xdf, 0x3a, 0xda, 0xb4, 0xc1, 0xc0, 0x28, 0x6e, 0x2f, 0x55, 0xdc, 0xd3,
+	0x14, 0xb6, 0x50, 0xd2, 0xc3, 0x63, 0xb1, 0x10, 0xfb, 0xaf, 0x90, 0xa7, 0x88, 0x2c, 0xa0, 0x0a,
+	0x2e, 0x1a, 0xb9, 0x07, 0xcb, 0x1b, 0x34, 0xe5, 0x49, 0x0f, 0x3b, 0xd0, 0x4f, 0xd0, 0x65, 0xc5,
+	0x25, 0x4b, 0xf5, 0x3e, 0x04, 0x9e, 0x51, 0x79, 0xb4, 0x5c, 0x85, 0x4b, 0x96, 0x90, 0xa6, 0x4c,
+	0x7a, 0x78, 0xa8, 0xdc, 0x59, 0x37, 0x53, 0x11, 0x26, 0xe8, 0x61, 0x70, 0x69, 0xc5, 0x66, 0xf6,
+	0x4d, 0xb9, 0x6e, 0xc6, 0x82, 0xe1, 0x18, 0xa1, 0x3f, 0x13, 0x0c, 0x77, 0xd0, 0x78, 0xd1, 0xbd,
+	0x7f, 0x0f, 0x8d, 0xf3, 0x12, 0x78, 0x4e, 0xd3, 0x1c, 0x3a, 0xd9, 0x9a, 0x7d, 0x59, 0xc7, 0x23,
+	0x7b, 0xb7, 0xab, 0xaf, 0xc2, 0x21, 0xf2, 0xac, 0xc3, 0xb0, 0x44, 0x1b, 0xf3, 0x2e, 0xdd, 0xe6,
+	0x3d, 0x46, 0x9b, 0x15, 0x97, 0xbc, 0xea, 0xaa, 0xd4, 0x38, 0x6e, 0xf8, 0x31, 0x35, 0x1a, 0x03,
+	0x7c, 0xc5, 0x25, 0x34, 0xf1, 0x9e, 0x1f, 0x53, 0x53, 0x4b, 0xbe, 0xff, 0x53, 0xbb, 0xe6, 0x6a,
+	0x6d, 0x62, 0x5e, 0x1b, 0x52, 0x34, 0x9c, 0x3f, 0xc9, 0xff, 0x84, 0xae, 0x9e, 0x4e, 0x33, 0xcd,
+	0xcd, 0x73, 0xdd, 0x5a, 0xc7, 0x2b, 0x0f, 0xd5, 0x86, 0x78, 0x43, 0xfd, 0x15, 0x6b, 0x6b, 0x76,
+	0x5e, 0x13, 0x0f, 0x0d, 0xda, 0xa3, 0x9a, 0x4e, 0x5e, 0xfc, 0xfc, 0xb5, 0xd5, 0xff, 0xfc, 0x74,
+	0xb5, 0xef, 0x40, 0xfd, 0x95, 0xb9, 0x6f, 0x41, 0xe6, 0x99, 0xf7, 0xe0, 0xf9, 0xef, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0xed, 0x12, 0x4e, 0x29, 0x92, 0x04, 0x00, 0x00,
 }
 
 func (this *LoadBalancerConfig) Equal(that interface{}) bool {
@@ -483,6 +678,54 @@ func (this *LoadBalancerConfig_Random_) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *LoadBalancerConfig_RingHash_) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*LoadBalancerConfig_RingHash_)
+	if !ok {
+		that2, ok := that.(LoadBalancerConfig_RingHash_)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.RingHash.Equal(that1.RingHash) {
+		return false
+	}
+	return true
+}
+func (this *LoadBalancerConfig_Maglev_) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*LoadBalancerConfig_Maglev_)
+	if !ok {
+		that2, ok := that.(LoadBalancerConfig_Maglev_)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Maglev.Equal(that1.Maglev) {
+		return false
+	}
+	return true
+}
 func (this *LoadBalancerConfig_RoundRobin) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -542,6 +785,87 @@ func (this *LoadBalancerConfig_Random) Equal(that interface{}) bool {
 	that1, ok := that.(*LoadBalancerConfig_Random)
 	if !ok {
 		that2, ok := that.(LoadBalancerConfig_Random)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *LoadBalancerConfig_RingHashConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*LoadBalancerConfig_RingHashConfig)
+	if !ok {
+		that2, ok := that.(LoadBalancerConfig_RingHashConfig)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.MinimumRingSize != that1.MinimumRingSize {
+		return false
+	}
+	if this.MaximumRingSize != that1.MaximumRingSize {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *LoadBalancerConfig_RingHash) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*LoadBalancerConfig_RingHash)
+	if !ok {
+		that2, ok := that.(LoadBalancerConfig_RingHash)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.RingHashConfig.Equal(that1.RingHashConfig) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *LoadBalancerConfig_Maglev) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*LoadBalancerConfig_Maglev)
+	if !ok {
+		that2, ok := that.(LoadBalancerConfig_Maglev)
 		if ok {
 			that1 = &that2
 		} else {

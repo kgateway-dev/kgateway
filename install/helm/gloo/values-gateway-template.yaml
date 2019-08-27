@@ -1,7 +1,5 @@
 namespace:
   create: false
-rbac:
-  create: true
 crds:
   create: true
 k8s:
@@ -44,7 +42,7 @@ gateway:
     image:
       repository: gateway-conversion
     restartPolicy: Never
-
+  proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxyV2:
     stats: true
@@ -77,3 +75,5 @@ global:
   image:
     registry: quay.io/solo-io
     pullPolicy: IfNotPresent
+  glooRbac:
+    create: true
