@@ -53,6 +53,7 @@ message ListenerPlugins {
 message HttpListenerPlugins {
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
     hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
+    Extensions extensions = 3;
 }
 
 // Plugin-specific configuration that lives on tcp listeners
