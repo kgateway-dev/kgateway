@@ -200,21 +200,6 @@ func RelativeToStage(wellKnown WellKnownFilterStage, weight int) FilterStage {
 	}
 }
 
-// The following FilterStages are preserved for backwards compatibility. They will be removed and should not be used
-// going forward.
-var (
-	// Deprecated
-	FaultFilter = DuringStage(FaultStage)
-	// Deprecated
-	PreInAuth = BeforeStage(AuthNStage)
-	// Deprecated
-	InAuth = DuringStage(AuthNStage)
-	// Deprecated
-	PostInAuth = AfterStage(AuthNStage)
-	// Deprecated
-	PreOutAuth = BeforeStage(OutAuthStage)
-)
-
 /*
 	Generation plugins
 */
