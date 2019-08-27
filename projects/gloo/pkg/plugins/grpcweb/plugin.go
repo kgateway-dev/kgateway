@@ -8,10 +8,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-const (
-	// filter info
-	pluginStage = plugins.PostInAuth
-)
+// filter info
+var pluginStage = plugins.AfterStage(plugins.AuthNStage)
 
 func NewPlugin() *Plugin {
 	return &Plugin{}

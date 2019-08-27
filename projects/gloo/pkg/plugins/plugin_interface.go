@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"context"
+	"sort"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -85,6 +86,28 @@ type StagedListenerFilter struct {
 	Stage          FilterStage
 }
 
+type StagedListenerFilterList []StagedListenerFilter
+
+func (s StagedListenerFilterList) Len() int {
+	return len(s)
+}
+
+// filters by Relative Stage, Weighting, Name, and (to ensure stability) index
+func (s StagedListenerFilterList) Less(i, j int) bool {
+	if FilterStageLess(s[i].Stage, s[j].Stage) {
+		return true
+	}
+	if s[i].ListenerFilter.Name < s[j].ListenerFilter.Name {
+		return true
+	}
+	// ensure stability
+	return i < j
+}
+
+func (s StagedListenerFilterList) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 // Currently only supported for TCP listeners, plan to change this in the future
 type ListenerFilterChainPlugin interface {
 	Plugin
@@ -106,33 +129,90 @@ type StagedHttpFilter struct {
 	Stage      FilterStage
 }
 
-type FilterStage int
+type StagedHttpFilterList []StagedHttpFilter
 
-const Space = 100
+func (s StagedHttpFilterList) Len() int {
+	return len(s)
+}
 
+// filters by Relative Stage, Weighting, Name, and (to ensure stability) index
+func (s StagedHttpFilterList) Less(i, j int) bool {
+	if FilterStageLess(s[i].Stage, s[j].Stage) {
+		return true
+	}
+	if s[i].HttpFilter.Name < s[j].HttpFilter.Name {
+		return true
+	}
+	// ensure stability
+	return i < j
+}
+
+func (s StagedHttpFilterList) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+var _ sort.Interface = StagedHttpFilterList{}
+
+// WellKnownFilterStages are represented by an integer that reflects their relative ordering
+type WellKnownFilterStage int
+
+// If new well known filter stages are added, they should be inserted in a position corresponding to their order
 const (
-	Fault FilterStage = iota*Space*3 + Space + Space/2
-
-	InAuthN   // Authentication stage
-	InAuthZ   // Authorization stage
-	RateLimit // Rate limiting stage
-
-	Accepted // Request passed all the checks and will be forwarded upstream
-	// JsonGrpc?
-	OutAuth // Add auth for the upstream (i.e. aws λ)
-	Route   // Request is going upstream.
+	FaultStage     WellKnownFilterStage = iota // Fault injection // First Filter Stage
+	CorsStage                                  // Cors stage
+	AuthNStage                                 // Authentication stage
+	AuthZStage                                 // Authorization stage
+	RateLimitStage                             // Rate limiting stage
+	AcceptedStage                              // Request passed all the checks and will be forwarded upstream
+	OutAuthStage                               // Add auth for the upstream (i.e. aws λ)
+	RouteStage                                 // Request is going to upstream // Last Filter Stage
 )
 
-func BeforeStage(f FilterStage) FilterStage { return f - 1 } // TODO: round down to 3Space and then minus one
-func AfterStage(f FilterStage) FilterStage  { return f + 1 }
+type FilterStage struct {
+	RelativeTo WellKnownFilterStage
+	Weight     int
+}
 
-// TODO(yuval-k): these are here for to avoid a breaking change. remove these when we can.
-const (
-	FaultFilter = Fault
-	InAuth      = InAuthN
-	PreInAuth   = InAuth - Space/2
-	PostInAuth  = InAuth + Space/2
-	PreOutAuth  = OutAuth - Space/2
+// FilterStageLess implements the sort.Interface Less function for use in other implementations of sort.Interface
+func FilterStageLess(a, b FilterStage) bool {
+	if a.RelativeTo < b.RelativeTo {
+		return true
+	}
+	if a.Weight < b.Weight {
+		return true
+	}
+	return false
+}
+
+func BeforeStage(wellKnown WellKnownFilterStage) FilterStage {
+	return RelativeToStage(wellKnown, -1)
+}
+func DuringStage(wellKnown WellKnownFilterStage) FilterStage {
+	return RelativeToStage(wellKnown, 0)
+}
+func AfterStage(wellKnown WellKnownFilterStage) FilterStage {
+	return RelativeToStage(wellKnown, 1)
+}
+func RelativeToStage(wellKnown WellKnownFilterStage, weight int) FilterStage {
+	return FilterStage{
+		RelativeTo: wellKnown,
+		Weight:     weight,
+	}
+}
+
+// The following FilterStages are preserved for backwards compatibility. They will be removed and should not be used
+// going forward.
+var (
+	// Deprecated
+	FaultFilter = DuringStage(FaultStage)
+	// Deprecated
+	PreInAuth = BeforeStage(AuthNStage)
+	// Deprecated
+	InAuth = DuringStage(AuthNStage)
+	// Deprecated
+	PostInAuth = AfterStage(AuthNStage)
+	// Deprecated
+	PreOutAuth = BeforeStage(OutAuthStage)
 )
 
 /*

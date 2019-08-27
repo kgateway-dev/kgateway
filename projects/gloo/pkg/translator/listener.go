@@ -106,7 +106,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 	httpConnMgr := t.computeHttpConnectionManagerFilter(params, httpListener.HttpListener, rdsName, report)
 	listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
 		ListenerFilter: httpConnMgr,
-		Stage:          plugins.PostInAuth,
+		Stage:          plugins.AfterStage(plugins.AuthNStage),
 	})
 
 	return sortListenerFilters(listenerFilters)
@@ -177,8 +177,8 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 				matchingCfg.SniDomains = append(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
 			}
 		} else {
-			copy := *sslConfig
-			ptrToCopy := &copy
+			cfgCopy := *sslConfig
+			ptrToCopy := &cfgCopy
 			mergedSslSecrets[key] = ptrToCopy
 			result = append(result, ptrToCopy)
 		}
@@ -212,22 +212,11 @@ func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDoma
 	}
 }
 
-func sortListenerFilters(filters []plugins.StagedListenerFilter) []envoylistener.Filter {
-	// sort them first by stage, then by name.
-	less := func(i, j int) bool {
-		filteri := filters[i]
-		filterj := filters[j]
-		if filteri.Stage != filterj.Stage {
-			return filteri.Stage < filterj.Stage
-		}
-		return filteri.ListenerFilter.Name < filterj.ListenerFilter.Name
-	}
-	sort.SliceStable(filters, less)
-
+func sortListenerFilters(filters plugins.StagedListenerFilterList) []envoylistener.Filter {
+	sort.Sort(filters)
 	var sortedFilters []envoylistener.Filter
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.ListenerFilter)
 	}
-
 	return sortedFilters
 }
