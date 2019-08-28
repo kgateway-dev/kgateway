@@ -1356,7 +1356,7 @@
   version = "v0.9.20"
 
 [[projects]]
-  digest = "1:162f303ec471a59b8810f1e3215b44ef2a502e9c598c6bb5aa78e3bc58def0b8"
+  digest = "1:0c523d2b247101a369af494af789cacc855eb181b566d1959d76037d62fdf504"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1386,6 +1386,7 @@
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/clients/wrapper",
     "pkg/api/v1/control-plane/cache",
+    "pkg/api/v1/control-plane/client",
     "pkg/api/v1/control-plane/log",
     "pkg/api/v1/control-plane/server",
     "pkg/api/v1/control-plane/util",
@@ -1693,9 +1694,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:601e63e7d4577f907118bec825902505291918859d223bce015539e79f1160e3"
+  digest = "1:eff11a4ed88d9d3e28dd697961c550af1c4d0d3dccdc6252715b9a65a1d541bb"
   name = "google.golang.org/genproto"
-  packages = ["googleapis/rpc/status"]
+  packages = [
+    "googleapis/api/annotations",
+    "googleapis/rpc/status",
+  ]
   pruneopts = "UT"
   revision = "02b4e95473316948020af0b7a4f0f22c73929b0e"
 
@@ -2590,6 +2594,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/vault",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache",
+    "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server",
     "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util",
     "github.com/solo-io/solo-kit/pkg/api/v1/eventloop",
@@ -2614,6 +2619,7 @@
     "go.opencensus.io/trace",
     "go.uber.org/zap",
     "golang.org/x/sync/errgroup",
+    "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/reflection",
