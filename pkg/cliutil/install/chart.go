@@ -126,10 +126,22 @@ func RenderChart(helmChart *chart.Chart, overrideValues *chart.Config, renderOpt
 	// Helm uses the standard go log package. Redirect its output to the debug.log file  so that we don't
 	// expose useless warnings to the user.
 	log.SetOutput(cliutil.GetLogger())
+
+	// - Rendering the helm chart locally in Go side-effects the provided helm chart, removing any dependencies
+	//   that were not needed but neglects to remove those same deps from the requirements.lock file.
+	//   Thus, if we try to render the same chart twice in a row (while disabling some subcharts), the second
+	//   requirements.lock check (CheckDependencies() in renderutil.Render()) will fail because it expects all
+	//   subcharts to be there, and the provided chart has already had its dependencies pruned
+	// - To avoid this, we make a copy of the dependencies before render, and restore them to undo the side-effect
+	var origDeps []*chart.Chart
+	for _, dep := range helmChart.Dependencies {
+		origDeps = append(origDeps, dep)
+	}
 	renderedTemplates, err := renderutil.Render(helmChart, overrideValues, renderOptions)
 	if err != nil {
 		return nil, err
 	}
+	helmChart.Dependencies = origDeps
 
 	manifests := tiller.SortByKind(manifest.SplitManifests(renderedTemplates))
 
