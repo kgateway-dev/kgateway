@@ -1,7 +1,7 @@
 syntax = "proto3";
 package rbac.plugins.gloo.solo.io;
 
-option go_package = "github.com/solo-io/solo-projects/projects/gloo/pkg/api/v1/plugins/rbac";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rbac";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;

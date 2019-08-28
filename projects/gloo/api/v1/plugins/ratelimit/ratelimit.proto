@@ -1,6 +1,6 @@
 syntax = "proto3";
 package ratelimit.plugins.gloo.solo.io;
-option go_package = "github.com/solo-io/solo-projects/projects/gloo/pkg/api/v1/plugins/ratelimit";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/ratelimit";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "google/protobuf/wrappers.proto";

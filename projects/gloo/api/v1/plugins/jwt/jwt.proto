@@ -1,7 +1,7 @@
 syntax = "proto3";
 package jwt.plugins.gloo.solo.io;
 
-option go_package = "github.com/solo-io/solo-projects/projects/gloo/pkg/api/v1/plugins/jwt";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/jwt";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 

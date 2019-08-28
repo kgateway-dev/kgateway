@@ -1,10 +1,10 @@
 syntax = "proto3";
 package glooe.solo.io;
-option go_package = "github.com/solo-io/solo-projects/projects/gloo/pkg/api/v1";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
-import "github.com/solo-io/solo-projects/projects/gloo/api/v1/plugins/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/ratelimit/ratelimit.proto";
 
 
 import "gogoproto/gogo.proto";
