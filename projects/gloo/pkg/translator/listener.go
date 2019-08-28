@@ -106,7 +106,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 	httpConnMgr := t.computeHttpConnectionManagerFilter(params, httpListener.HttpListener, rdsName, report)
 	listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
 		ListenerFilter: httpConnMgr,
-		Stage:          plugins.AfterStage(plugins.AuthNStage),
+		Stage:          plugins.AfterStage(plugins.AuthZStage),
 	})
 
 	return sortListenerFilters(listenerFilters)

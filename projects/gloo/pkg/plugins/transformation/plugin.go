@@ -11,7 +11,7 @@ const (
 	FilterName = "io.solo.transformation"
 )
 
-var pluginStage = plugins.AfterStage(plugins.AuthNStage)
+var pluginStage = plugins.AfterStage(plugins.AuthZStage)
 
 type Plugin struct {
 	RequireTransformationFilter bool

@@ -9,7 +9,7 @@ import (
 )
 
 // filter info
-var pluginStage = plugins.AfterStage(plugins.AuthNStage)
+var pluginStage = plugins.AfterStage(plugins.AuthZStage)
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
