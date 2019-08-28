@@ -49,11 +49,12 @@ var _ = Describe("Plugin", func() {
 			StagedHttpFilter{&envoyhttp.HttpFilter{Name: "E"}, DuringStage(RateLimitStage)},
 			StagedHttpFilter{&envoyhttp.HttpFilter{Name: "D"}, DuringStage(AuthZStage)},
 			StagedHttpFilter{&envoyhttp.HttpFilter{Name: "C"}, DuringStage(AuthNStage)},
+			StagedHttpFilter{&envoyhttp.HttpFilter{Name: "Waf"}, DuringStage(WafStage)},
 			StagedHttpFilter{&envoyhttp.HttpFilter{Name: "B"}, DuringStage(CorsStage)},
 			StagedHttpFilter{&envoyhttp.HttpFilter{Name: "A"}, DuringStage(FaultStage)},
 		}
 		sort.Sort(filters)
-		ExpectNameOrder(filters, []string{"A", "B", "C", "D", "E", "F", "G", "H"})
+		ExpectNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})
 
 		By("verify stable sort")
 		firstFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &types.Struct{Fields: map[string]*types.Value{"a": nil}}}}
@@ -71,20 +72,18 @@ var _ = Describe("Plugin", func() {
 	It("should order listener filter stages correctly", func() {
 		By("base case")
 		filters := StagedListenerFilterList{
-			StagedListenerFilter{envoylistener.Filter{Name: "mockFilter"}, BeforeStage(CorsStage)},
-		}
-		filters = StagedListenerFilterList{
 			StagedListenerFilter{envoylistener.Filter{Name: "H"}, DuringStage(RouteStage)},
 			StagedListenerFilter{envoylistener.Filter{Name: "G"}, DuringStage(OutAuthStage)},
 			StagedListenerFilter{envoylistener.Filter{Name: "F"}, DuringStage(AcceptedStage)},
 			StagedListenerFilter{envoylistener.Filter{Name: "E"}, DuringStage(RateLimitStage)},
 			StagedListenerFilter{envoylistener.Filter{Name: "D"}, DuringStage(AuthZStage)},
 			StagedListenerFilter{envoylistener.Filter{Name: "C"}, DuringStage(AuthNStage)},
+			StagedListenerFilter{envoylistener.Filter{Name: "Waf"}, DuringStage(WafStage)},
 			StagedListenerFilter{envoylistener.Filter{Name: "B"}, DuringStage(CorsStage)},
 			StagedListenerFilter{envoylistener.Filter{Name: "A"}, DuringStage(FaultStage)},
 		}
 		sort.Sort(filters)
-		ExpectListenerFilterNameOrder(filters, []string{"A", "B", "C", "D", "E", "F", "G", "H"})
+		ExpectListenerFilterNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})
 	})
 })
 

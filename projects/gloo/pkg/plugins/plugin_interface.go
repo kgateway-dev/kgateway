@@ -94,8 +94,11 @@ func (s StagedListenerFilterList) Len() int {
 
 // filters by Relative Stage, Weighting, Name, and (to ensure stability) index
 func (s StagedListenerFilterList) Less(i, j int) bool {
-	if FilterStageLess(s[i].Stage, s[j].Stage) {
+	switch FilterStageComparison(s[i].Stage, s[j].Stage) {
+	case -1:
 		return true
+	case 1:
+		return false
 	}
 	if s[i].ListenerFilter.Name < s[j].ListenerFilter.Name {
 		return true
@@ -137,8 +140,11 @@ func (s StagedHttpFilterList) Len() int {
 
 // filters by Relative Stage, Weighting, Name, and (to ensure stability) index
 func (s StagedHttpFilterList) Less(i, j int) bool {
-	if FilterStageLess(s[i].Stage, s[j].Stage) {
+	switch FilterStageComparison(s[i].Stage, s[j].Stage) {
+	case -1:
 		return true
+	case 1:
+		return false
 	}
 	if s[i].HttpFilter.Name < s[j].HttpFilter.Name {
 		return true
@@ -160,6 +166,7 @@ type WellKnownFilterStage int
 const (
 	FaultStage     WellKnownFilterStage = iota // Fault injection // First Filter Stage
 	CorsStage                                  // Cors stage
+	WafStage                                   // Web application firewall stage
 	AuthNStage                                 // Authentication stage
 	AuthZStage                                 // Authorization stage
 	RateLimitStage                             // Rate limiting stage
@@ -173,15 +180,21 @@ type FilterStage struct {
 	Weight     int
 }
 
-// FilterStageLess implements the sort.Interface Less function for use in other implementations of sort.Interface
-func FilterStageLess(a, b FilterStage) bool {
+// FilterStageComparison helps implement the sort.Interface Less function for use in other implementations of sort.Interface
+// returns -1 if less than, 0 if equal, 1 if greater than
+// It is not sufficient to return a Less bool because calling functions need to know if equal or greater when Less is false
+func FilterStageComparison(a, b FilterStage) int {
 	if a.RelativeTo < b.RelativeTo {
-		return true
+		return -1
+	} else if a.RelativeTo > b.RelativeTo {
+		return 1
 	}
 	if a.Weight < b.Weight {
-		return true
+		return -1
+	} else if a.Weight > b.Weight {
+		return 1
 	}
-	return false
+	return 0
 }
 
 func BeforeStage(wellKnown WellKnownFilterStage) FilterStage {
