@@ -6,8 +6,10 @@ import (
 	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,6 +88,61 @@ var _ = Describe("Helm Test", func() {
 				testManifest.ExpectService(svc)
 			})
 
+			Context("gateway conversion job", func() {
+				var (
+					job *batchv1.Job
+				)
+				BeforeEach(func() {
+					job = &batchv1.Job{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Job",
+							APIVersion: "batch/v1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app":  "gloo",
+								"gloo": "gateway",
+							},
+							Name:      "gateway-conversion",
+							Namespace: namespace,
+						},
+						Spec: batchv1.JobSpec{
+							Template: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Labels: map[string]string{
+										"gloo": "gateway",
+									},
+								},
+								Spec: v1.PodSpec{
+									RestartPolicy:      v1.RestartPolicyNever,
+									ServiceAccountName: "gateway",
+									Containers: []v1.Container{
+										{
+											Name:            "gateway-conversion",
+											Image:           "quay.io/solo-io/gateway-conversion:" + version,
+											ImagePullPolicy: v1.PullAlways,
+											Env: []v1.EnvVar{
+												GetPodNamespaceEnvVar(),
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+				})
+
+				It("doesn't creates a deployment", func() {
+					prepareMakefile("--namespace " + namespace + " --set gateway.upgrade=false")
+					testManifest.Expect(job.Kind, job.Namespace, job.Name).To(BeNil())
+				})
+
+				It("creates a deployment", func() {
+					prepareMakefile("--namespace " + namespace + " --set gateway.upgrade=true")
+					testManifest.Expect(job.Kind, job.Namespace, job.Name).To(BeEquivalentTo(job))
+				})
+			})
+
 			Context("gateway-proxy deployment", func() {
 				var (
 					gatewayProxyDeployment *appsv1.Deployment
@@ -162,6 +219,38 @@ var _ = Describe("Helm Test", func() {
 					}
 					deploy.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
 					gatewayProxyDeployment = deploy
+				})
+
+				Context("gateway-proxy daemonset", func() {
+					var (
+						daemonSet *appsv1.DaemonSet
+					)
+					BeforeEach(func() {
+						daemonSet = &appsv1.DaemonSet{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "DaemonSet",
+								APIVersion: "apps/v1",
+							},
+							ObjectMeta: gatewayProxyDeployment.ObjectMeta,
+							Spec: appsv1.DaemonSetSpec{
+								Selector: gatewayProxyDeployment.Spec.Selector,
+								Template: gatewayProxyDeployment.Spec.Template,
+							},
+						}
+						for i, port := range daemonSet.Spec.Template.Spec.Containers[0].Ports {
+							port.HostPort = port.ContainerPort
+							daemonSet.Spec.Template.Spec.Containers[0].Ports[i] = port
+						}
+						daemonSet.Spec.Template.Spec.DNSPolicy = v1.DNSClusterFirstWithHostNet
+						daemonSet.Spec.Template.Spec.HostNetwork = true
+
+					})
+
+					It("creates a daemonset", func() {
+						helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.kind.deployment=null --set gatewayProxies.gatewayProxyV2.kind.daemonSet.hostPort=true"
+						prepareMakefile(helmFlags)
+						testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
+					})
 				})
 
 				It("creates a deployment", func() {

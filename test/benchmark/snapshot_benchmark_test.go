@@ -35,7 +35,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 
 	})
 	Measure("it should do something hard efficiently", func(b Benchmarker) {
-		const times = 100
+		const times = 1
 		runtime1 := b.Time(fmt.Sprintf("runtime of %d reflect-based hash calls", times), func() {
 			for i := 0; i < times; i++ {
 				for _, us := range allUpstreams {

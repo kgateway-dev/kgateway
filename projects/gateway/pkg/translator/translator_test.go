@@ -103,6 +103,12 @@ var _ = Describe("Translator", func() {
 				},
 			}
 
+			httpGateway := snap.Gateways[0].GetHttpGateway()
+			Expect(httpGateway).NotTo(BeNil())
+			httpGateway.Plugins = &gloov1.HttpListenerPlugins{Extensions: &gloov1.Extensions{
+				Configs: extensions,
+			}}
+
 			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs).To(HaveLen(3))
@@ -112,6 +118,10 @@ var _ = Describe("Translator", func() {
 			Expect(proxy.Listeners).To(HaveLen(1))
 			Expect(proxy.Listeners[0].Plugins.Extensions.Configs).To(HaveKey("plugin"))
 			Expect(proxy.Listeners[0].Plugins.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
+			httpListener := proxy.Listeners[0].GetHttpListener()
+			Expect(httpListener).NotTo(BeNil())
+			Expect(httpListener.ListenerPlugins.Extensions.Configs).To(HaveKey("plugin"))
+			Expect(httpListener.ListenerPlugins.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
 		})
 
 		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {

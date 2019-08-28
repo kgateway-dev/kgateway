@@ -67,6 +67,7 @@ spec:
         readconfig-port: "8082"
 {{- end}}
     spec:
+{{- if $spec.kind.deployment }}
 {{- if $spec.kind.deployment.antiAffinity }}
       affinity:
         podAntiAffinity:
@@ -77,6 +78,7 @@ spec:
                 matchLabels:
                   gloo: gateway-proxy
               topologyKey: kubernetes.io/hostname
+{{- end}}
 {{- end}}
       serviceAccountName: gateway-proxy
       containers:
