@@ -125,6 +125,7 @@ message DestinationSpec {
 message WeightedDestinationPlugins {
     // Append/Remove headers on Requests or Responses to/from this Weighted Destination
     headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 1;
+    envoy.api.v2.filter.http.RouteTransformations transformations = 2;
 }
 
 // Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.

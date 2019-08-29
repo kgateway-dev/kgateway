@@ -197,12 +197,14 @@ is selected for routing.
 
 ```yaml
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
+"transformations": .envoy.api.v2.filter.http.RouteTransformations
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) |  |  |
 
 
 

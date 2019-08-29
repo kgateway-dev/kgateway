@@ -28,15 +28,23 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 // TODO(yuval-k): We need to figure out what\if to do in edge cases where there is cluster weight transform
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	if in.RoutePlugins == nil {
-		return nil
-	}
-	if in.RoutePlugins.Transformations == nil {
+	transformations := in.GetRoutePlugins().GetTransformations()
+	if transformations == nil {
 		return nil
 	}
 
 	p.RequireTransformationFilter = true
-	return pluginutils.SetRoutePerFilterConfig(out, FilterName, in.RoutePlugins.Transformations)
+	return pluginutils.SetRoutePerFilterConfig(out, FilterName, transformations)
+}
+
+func (p *Plugin) ProcessWeightedDestination(_ plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
+	transformations := in.GetWeighedDestinationPlugins().GetTransformations()
+	if transformations == nil {
+		return nil
+	}
+
+	p.RequireTransformationFilter = true
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, transformations)
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
