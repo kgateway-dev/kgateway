@@ -31,7 +31,7 @@ var _ = Describe("Plugin", func() {
 		expected = configStruct
 	})
 
-	It("converts the header manipulation config for weighted destinations", func() {
+	It("sets transformation config for weighted destinations", func() {
 		out := &envoyroute.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			WeighedDestinationPlugins: &v1.WeightedDestinationPlugins{
@@ -41,7 +41,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
-	It("converts the header manipulation config for virtual hosts", func() {
+	It("sets transformation config for virtual hosts", func() {
 		out := &envoyroute.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			VirtualHostPlugins: &v1.VirtualHostPlugins{
@@ -51,7 +51,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
-	It("converts the header manipulation config for routes", func() {
+	It("sets transformation config for routes", func() {
 
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
