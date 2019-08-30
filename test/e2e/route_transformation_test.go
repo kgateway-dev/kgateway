@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -22,7 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Transformations", func() {
+var _ = FDescribe("Transformations", func() {
 
 	var (
 		ctx           context.Context
@@ -33,8 +34,18 @@ var _ = Describe("Transformations", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		t := services.RunGateway(ctx, true)
-		testClients = t
+		ns := defaults.GlooSystem
+		ro := &services.RunOptions{
+			NsToWrite: ns,
+			NsToWatch: []string{"default", ns},
+			WhatToRun: services.What{
+				DisableGateway: true,
+				DisableFds:     true,
+				DisableUds:     true,
+			},
+		}
+
+		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
