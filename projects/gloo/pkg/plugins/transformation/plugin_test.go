@@ -39,7 +39,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.PerFilterConfig).To(HaveKeyWithVakue(FilterName, expected))
+		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("converts the header manipulation config for virtual hosts", func() {
 		out := &envoyroute.VirtualHost{}
@@ -49,7 +49,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.PerFilterConfig).To(HaveKeyWithVakue(FilterName, expected))
+		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("converts the header manipulation config for routes", func() {
 
@@ -60,6 +60,6 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.PerFilterConfig).To(HaveKeyWithVakue(FilterName, expected))
+		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 })
