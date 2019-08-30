@@ -157,7 +157,7 @@ func init() {
 var (
 	UpstreamGroupGVK = schema.GroupVersionKind{
 		Version: "v1",
-		Group:   "gloo.solo.io",
+		Group:   "glooe.solo.io",
 		Kind:    "UpstreamGroup",
 	}
 )

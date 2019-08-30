@@ -1,0 +1,41 @@
+syntax = "proto3";
+package glooe.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
+
+import "envoy/api/v2/discovery.proto";
+import "google/api/annotations.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/ratelimit/ratelimit.proto";
+
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+
+/*
+@solo-kit:xds-service=RateLimitDiscoveryService
+@solo-kit:resource.no_references
+ */
+message RateLimitConfig {
+    // @solo-kit:resource.name
+    string domain = 1;
+    repeated ratelimit.plugins.gloo.solo.io.Descriptor descriptors = 2;
+}
+
+/*
+@solo-kit:resource.xds-enabled
+*/
+service RateLimitDiscoveryService {
+    rpc StreamRateLimitConfig(stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+    }
+
+    rpc DeltaRateLimitConfig(stream envoy.api.v2.DeltaDiscoveryRequest)
+        returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+    }
+
+    rpc FetchRateLimitConfig(envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+        option (google.api.http) = {
+        post: "/v2/discovery:ratelimitconfig"
+        body: "*"
+        };
+    }
+}

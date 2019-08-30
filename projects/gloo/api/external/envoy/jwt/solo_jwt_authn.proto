@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package envoy.config.filter.http.solo_jwt_authn.v2;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/jwt";
+option java_package = "io.envoyproxy.envoy.config.filter.http.solo_jwt_authn.v2";
+option java_outer_classname = "SoloJwtAuthnProto";
+option java_multiple_files = true;
+import "validate/validate.proto";
+
+message SoloJwtAuthnPerRoute {
+  string requirement = 1;
+
+  // If this is specified, one of the claims will be copied to a header
+  // and the route cache will be cleared.
+  message ClaimToHeader {
+    string claim = 1;
+    string header = 2;
+    bool append = 3;
+  }
+  message ClaimToHeaders { repeated ClaimToHeader claims = 1; }
+
+  map<string, ClaimToHeaders> claims_to_headers = 2;
+
+  // clear the route cache if claims were added to the header
+  bool clear_route_cache = 3;
+  string payload_in_metadata = 4;
+}

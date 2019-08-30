@@ -145,7 +145,7 @@ func init() {
 var (
 	SecretGVK = schema.GroupVersionKind{
 		Version: "v1",
-		Group:   "gloo.solo.io",
+		Group:   "glooe.solo.io",
 		Kind:    "Secret",
 	}
 )

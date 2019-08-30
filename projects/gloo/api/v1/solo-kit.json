@@ -1,64 +1,7 @@
 {
   "title": "Gloo, The Hybrid Application Gateway",
   "description": "Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.\n\n",
-  "name": "gloo.solo.io",
+  "name": "glooe.solo.io",
   "version": "v1",
-  "docs_dir": "../docs/api",
-  "imports": [
-    "github.com/solo-io/solo-kit/api/external/kubernetes"
-  ],
-  "resource_groups": {
-    "setup.gloo.solo.io": [
-      {
-        "name": "Settings",
-        "package": "gloo.solo.io"
-      }
-    ],
-    "api.gloo.solo.io": [
-      {
-        "name": "Artifact",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Endpoint",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Proxy",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "UpstreamGroup",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Secret",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "Upstream",
-        "package": "gloo.solo.io"
-      }
-    ],
-    "eds.gloo.solo.io": [
-      {
-        "name": "Upstream",
-        "package": "gloo.solo.io"
-      }
-    ],
-    "discovery.gloo.solo.io": [
-      {
-        "name": "Upstream",
-        "package": "gloo.solo.io"
-      },
-      {
-        "name": "KubeNamespace",
-        "package": "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-      },
-      {
-        "name": "Secret",
-        "package": "gloo.solo.io"
-      }
-    ]
-  }
+  "docs_dir": "docs/api"
 }

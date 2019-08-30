@@ -40,13 +40,13 @@ message HttpService {
   string path_prefix = 1;
 
   message Request {
-    // These headers will be copied from the incoming request to the request going
-    // to the auth server. Note that in addition to the user's supplied matchers:
-    //
-    // 1. *Host*, *Method*, *Path* and *Content-Length* are automatically included to the list.
-    //
-    // 2. *Content-Length* will be set to 0 and the request to the authorization service will not have
-    // a message body.
+  // These headers will be copied from the incoming request to the request going
+  // to the auth server. Note that in addition to the user's supplied matchers:
+  //
+  // 1. *Host*, *Method*, *Path* and *Content-Length* are automatically included to the list.
+  //
+  // 2. *Content-Length* will be set to 0 and the request to the authorization service will not have
+  // a message body.
     repeated string allowed_headers = 1;
 
     // These headers that will be included to the request to authorization service. Note that
@@ -56,9 +56,9 @@ message HttpService {
   Request request = 2;
 
   message Response {
-    // When this is set, authorization response headers that have a will be added to the original client request and sent to the upstream.
-    // Note that coexistent headers will be overridden.
-    repeated string allowed_upstream_headers = 1;
+  // When this is set, authorization response headers that have a will be added to the original client request and sent to the upstream.
+  // Note that coexistent headers will be overridden.
+  repeated string allowed_upstream_headers = 1;
 
     // When this. is set, authorization response headers that will be added to the client's response when auth request is denied.
     // Note that when this list is *not* set, all the authorization response headers, except *Authority
@@ -97,15 +97,15 @@ message PluginAuth {
 }
 
 message AuthPlugin {
-  // Name of the plugin
-  string name = 1;
-  // Name of the compiled plugin file. If not specified, GlooE will look for an ".so" file with same name as the plugin.
-  string plugin_file_name = 2;
-  // Name of the exported symbol that implements the plugin interface in the plugin.
-  // If not specified, defaults to the name of the plugin
-  string exported_symbol_name = 3;
+    // Name of the plugin
+    string name = 1;
+    // Name of the compiled plugin file. If not specified, GlooE will look for an ".so" file with same name as the plugin.
+    string plugin_file_name = 2;
+    // Name of the exported symbol that implements the plugin interface in the plugin.
+    // If not specified, defaults to the name of the plugin
+    string exported_symbol_name = 3;
 
-  google.protobuf.Struct config = 4;
+    google.protobuf.Struct config = 4;
 }
 
 message BasicAuth {
@@ -117,7 +117,7 @@ message BasicAuth {
       string hashed_password = 2;
     }
     map<string, SaltedHashedPassword> users = 2;
-  }
+    }
   Apr apr = 2;
 }
 
@@ -139,6 +139,9 @@ message OAuth {
   // a callback path relative to app url that will be used for OIDC callbacks.
   // needs to not be used by the application
   string callback_path = 5;
+
+  // Scopes to request in addtion to openid scope.
+  repeated string scopes = 6;
 }
 
 message OauthSecret { string client_secret = 1; }
@@ -233,6 +236,10 @@ message ExtAuthConfig {
     // a callback path relative to app url that will be used for OIDC callbacks.
     // needs to not be used by the application
     string callback_path = 5;
+
+    // scopes to request in addition to the openid scope.
+    repeated string scopes = 6;
+
   }
 
   message ApiKeyAuthConfig {
@@ -243,7 +250,7 @@ message ExtAuthConfig {
   message OpaAuthConfig {
     // An optional modules (filename, module content) maps containing modules assist in the resolution of `query`.
     map<string, string> modules = 1;
-
+  
     // The query that determines the auth decision. The result of this query must be either a boolean
     // or an array with boolean as the first element. A boolean `true` value means that the request
     // will be authorized. Any other value, or error, means that the request will be denied.
@@ -275,13 +282,13 @@ message ExtAuthConfig {
 */
 service ExtAuthDiscoveryService {
   rpc StreamExtAuthConfig(stream envoy.api.v2.DiscoveryRequest)
-  returns (stream envoy.api.v2.DiscoveryResponse) {}
+      returns (stream envoy.api.v2.DiscoveryResponse) {}
 
   rpc DeltaExtAuthConfig(stream envoy.api.v2.DeltaDiscoveryRequest)
-  returns (stream envoy.api.v2.DeltaDiscoveryResponse) {}
+      returns (stream envoy.api.v2.DeltaDiscoveryResponse) {}
 
   rpc FetchExtAuthConfig(envoy.api.v2.DiscoveryRequest)
-  returns (envoy.api.v2.DiscoveryResponse) {
+      returns (envoy.api.v2.DiscoveryResponse) {
     option (google.api.http) = {
       post : "/v2/discovery:extauthconfig"
       body : "*"
