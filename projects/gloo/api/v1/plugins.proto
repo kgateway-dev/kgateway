@@ -75,6 +75,8 @@ message VirtualHostPlugins {
     // Defines a CORS policy for the virtual host
     // If a CORS policy is also defined on the route matched by the request, the policies are merged.
     cors.plugins.gloo.solo.io.CorsPolicy cors = 3;
+    // Transformations to apply
+    envoy.api.v2.filter.http.RouteTransformations transformations = 4;
 }
 
 // Plugin-specific configuration that lives on routes
@@ -82,6 +84,7 @@ message VirtualHostPlugins {
 // Note to developers: new Route Plugins must be added to this struct
 // to be usable by Gloo.
 message RoutePlugins {
+    // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 1;
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
     transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
@@ -125,6 +128,7 @@ message DestinationSpec {
 message WeightedDestinationPlugins {
     // Append/Remove headers on Requests or Responses to/from this Weighted Destination
     headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 1;
+    // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 2;
 }
 
