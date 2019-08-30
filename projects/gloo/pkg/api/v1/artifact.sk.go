@@ -145,7 +145,7 @@ func init() {
 var (
 	ArtifactGVK = schema.GroupVersionKind{
 		Version: "v1",
-		Group:   "glooe.solo.io",
+		Group:   "gloo.solo.io",
 		Kind:    "Artifact",
 	}
 )

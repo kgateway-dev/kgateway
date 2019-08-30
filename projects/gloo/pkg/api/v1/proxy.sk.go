@@ -157,7 +157,7 @@ func init() {
 var (
 	ProxyGVK = schema.GroupVersionKind{
 		Version: "v1",
-		Group:   "glooe.solo.io",
+		Group:   "gloo.solo.io",
 		Kind:    "Proxy",
 	}
 )

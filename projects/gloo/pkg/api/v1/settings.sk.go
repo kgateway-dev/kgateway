@@ -171,7 +171,7 @@ func init() {
 var (
 	SettingsGVK = schema.GroupVersionKind{
 		Version: "v1",
-		Group:   "glooe.solo.io",
+		Group:   "gloo.solo.io",
 		Kind:    "Settings",
 	}
 )

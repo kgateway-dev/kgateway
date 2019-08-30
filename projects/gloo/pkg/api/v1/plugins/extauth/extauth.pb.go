@@ -618,7 +618,7 @@ type OAuth struct {
 	// a callback path relative to app url that will be used for OIDC callbacks.
 	// needs to not be used by the application
 	CallbackPath string `protobuf:"bytes,5,opt,name=callback_path,json=callbackPath,proto3" json:"callback_path,omitempty"`
-	// Scopes to request in addtion to openid scope.
+	// Scopes to request in addition to openid scope.
 	Scopes               []string `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
