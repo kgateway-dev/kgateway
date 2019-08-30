@@ -1,8 +1,6 @@
 package als
 
 import (
-	"context"
-
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
@@ -13,11 +11,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-)
-
-const (
-	// filter info
-	pluginStage = plugins.PostInAuth
 )
 
 func NewPlugin() *Plugin {
@@ -59,7 +52,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := hcmCfg.GetAccessLog()
-					hcmCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.AccessLoggingService, accessLogs)
+					hcmCfg.AccessLog, err = handleAccessLogPlugins(alSettings.AccessLoggingService, accessLogs)
 					if err != nil {
 						return err
 					}
@@ -88,7 +81,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := tcpCfg.GetAccessLog()
-					tcpCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.AccessLoggingService, accessLogs)
+					tcpCfg.AccessLog, err = handleAccessLogPlugins(alSettings.AccessLoggingService, accessLogs)
 					if err != nil {
 						return err
 					}
@@ -105,7 +98,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	return nil
 }
 
-func handleAccessLogPlugins(ctx context.Context, service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
+func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
 		switch cfgType := al.GetOutputDestination().(type) {

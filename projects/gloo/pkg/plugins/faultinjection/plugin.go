@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	FilterName  = "envoy.fault"
-	pluginStage = plugins.FaultFilter
+	FilterName = "envoy.fault"
 )
+
+var pluginStage = plugins.DuringStage(plugins.FaultStage)
 
 type Plugin struct {
 }

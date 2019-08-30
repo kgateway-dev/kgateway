@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	FilterName  = "io.solo.transformation"
-	pluginStage = plugins.PostInAuth
+	FilterName = "io.solo.transformation"
 )
+
+var pluginStage = plugins.AfterStage(plugins.AuthZStage)
 
 type Plugin struct {
 	RequireTransformationFilter bool

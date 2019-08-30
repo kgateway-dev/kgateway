@@ -43,7 +43,7 @@ var _ = Describe("Grpcweb", func() {
 		exptected := []plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhttp.HttpFilter{Name: envoyutil.GRPCWeb},
-				Stage:      plugins.PostInAuth,
+				Stage:      plugins.AfterStage(plugins.AuthZStage),
 			},
 		}
 		Expect(f).To(BeEquivalentTo(exptected))
