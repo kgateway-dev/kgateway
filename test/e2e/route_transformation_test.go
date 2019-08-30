@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Transformations", func() {
+var _ = Describe("Transformations", func() {
 
 	var (
 		ctx           context.Context
@@ -214,6 +214,7 @@ var _ = FDescribe("Transformations", func() {
 							Multi: &gloov1.MultiDestination{
 								Destinations: []*gloov1.WeightedDestination{
 									{
+										Weight: 1,
 										WeighedDestinationPlugins: &gloov1.WeightedDestinationPlugins{
 											Transformations: transform,
 										},
