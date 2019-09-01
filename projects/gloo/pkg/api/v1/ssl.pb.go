@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type SslParameters_ProtocolVersion int32
 
@@ -173,97 +173,13 @@ func (m *SslConfig) GetParameters() *SslParameters {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*SslConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _SslConfig_OneofMarshaler, _SslConfig_OneofUnmarshaler, _SslConfig_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*SslConfig) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*SslConfig_SecretRef)(nil),
 		(*SslConfig_SslFiles)(nil),
 		(*SslConfig_Sds)(nil),
 	}
-}
-
-func _SslConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*SslConfig)
-	// ssl_secrets
-	switch x := m.SslSecrets.(type) {
-	case *SslConfig_SecretRef:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.SecretRef); err != nil {
-			return err
-		}
-	case *SslConfig_SslFiles:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.SslFiles); err != nil {
-			return err
-		}
-	case *SslConfig_Sds:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Sds); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("SslConfig.SslSecrets has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _SslConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*SslConfig)
-	switch tag {
-	case 1: // ssl_secrets.secret_ref
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(core.ResourceRef)
-		err := b.DecodeMessage(msg)
-		m.SslSecrets = &SslConfig_SecretRef{msg}
-		return true, err
-	case 2: // ssl_secrets.ssl_files
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(SSLFiles)
-		err := b.DecodeMessage(msg)
-		m.SslSecrets = &SslConfig_SslFiles{msg}
-		return true, err
-	case 4: // ssl_secrets.sds
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(SDSConfig)
-		err := b.DecodeMessage(msg)
-		m.SslSecrets = &SslConfig_Sds{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _SslConfig_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*SslConfig)
-	// ssl_secrets
-	switch x := m.SslSecrets.(type) {
-	case *SslConfig_SecretRef:
-		s := proto.Size(x.SecretRef)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *SslConfig_SslFiles:
-		s := proto.Size(x.SslFiles)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *SslConfig_Sds:
-		s := proto.Size(x.Sds)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
@@ -432,97 +348,13 @@ func (m *UpstreamSslConfig) GetParameters() *SslParameters {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*UpstreamSslConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _UpstreamSslConfig_OneofMarshaler, _UpstreamSslConfig_OneofUnmarshaler, _UpstreamSslConfig_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*UpstreamSslConfig) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*UpstreamSslConfig_SecretRef)(nil),
 		(*UpstreamSslConfig_SslFiles)(nil),
 		(*UpstreamSslConfig_Sds)(nil),
 	}
-}
-
-func _UpstreamSslConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*UpstreamSslConfig)
-	// ssl_secrets
-	switch x := m.SslSecrets.(type) {
-	case *UpstreamSslConfig_SecretRef:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.SecretRef); err != nil {
-			return err
-		}
-	case *UpstreamSslConfig_SslFiles:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.SslFiles); err != nil {
-			return err
-		}
-	case *UpstreamSslConfig_Sds:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Sds); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("UpstreamSslConfig.SslSecrets has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _UpstreamSslConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*UpstreamSslConfig)
-	switch tag {
-	case 1: // ssl_secrets.secret_ref
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(core.ResourceRef)
-		err := b.DecodeMessage(msg)
-		m.SslSecrets = &UpstreamSslConfig_SecretRef{msg}
-		return true, err
-	case 2: // ssl_secrets.ssl_files
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(SSLFiles)
-		err := b.DecodeMessage(msg)
-		m.SslSecrets = &UpstreamSslConfig_SslFiles{msg}
-		return true, err
-	case 4: // ssl_secrets.sds
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(SDSConfig)
-		err := b.DecodeMessage(msg)
-		m.SslSecrets = &UpstreamSslConfig_Sds{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _UpstreamSslConfig_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*UpstreamSslConfig)
-	// ssl_secrets
-	switch x := m.SslSecrets.(type) {
-	case *UpstreamSslConfig_SecretRef:
-		s := proto.Size(x.SecretRef)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSslConfig_SslFiles:
-		s := proto.Size(x.SslFiles)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSslConfig_Sds:
-		s := proto.Size(x.Sds)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type SDSConfig struct {
