@@ -56,9 +56,10 @@ type plugin struct {
 }
 
 const (
-	filterName  = "envoy.grpc_json_transcoder"
-	pluginStage = plugins.PreOutAuth
+	filterName = "envoy.grpc_json_transcoder"
 )
+
+var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx

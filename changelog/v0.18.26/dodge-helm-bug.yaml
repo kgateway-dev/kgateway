@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix confusing and bug prone helm render bug by wrapping render and undoing chart side-effects
+    issueLink: https://github.com/solo-io/gloo/issues/1092

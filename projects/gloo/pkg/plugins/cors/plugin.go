@@ -31,9 +31,7 @@ var (
 	InvalidRouteActionError = errors.New("cannot use cors plugin on non-Route_Route route actions")
 )
 
-const (
-	pluginStage = plugins.PostInAuth
-)
+var pluginStage = plugins.DuringStage(plugins.CorsStage)
 
 func NewPlugin() *plugin {
 	return &plugin{}

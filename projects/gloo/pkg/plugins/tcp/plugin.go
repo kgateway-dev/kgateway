@@ -17,11 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	// filter info
-	pluginStage = plugins.PostInAuth
-)
-
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }

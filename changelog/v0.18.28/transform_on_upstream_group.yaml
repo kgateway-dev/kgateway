@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Support transformations on UpstreamGroup, multi destination, and vhosts.
+    issueLink: https://github.com/solo-io/gloo/pull/1097

@@ -81,22 +81,11 @@ func (t *translator) computeHttpFilters(params plugins.Params, listener *v1.Http
 	return envoyHttpFilters
 }
 
-func sortFilters(filters []plugins.StagedHttpFilter) []*envoyhttp.HttpFilter {
-	// sort them first by stage, then by name.
-	less := func(i, j int) bool {
-		filteri := filters[i]
-		filterj := filters[j]
-		if filteri.Stage != filterj.Stage {
-			return filteri.Stage < filterj.Stage
-		}
-		return filteri.HttpFilter.Name < filterj.HttpFilter.Name
-	}
-	sort.SliceStable(filters, less)
-
+func sortFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {
+	sort.Sort(filters)
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.HttpFilter)
 	}
-
 	return sortedFilters
 }

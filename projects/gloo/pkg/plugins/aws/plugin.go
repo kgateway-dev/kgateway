@@ -29,13 +29,14 @@ import (
 
 const (
 	// filter info
-	filterName  = "io.solo.aws_lambda"
-	pluginStage = plugins.OutAuth
+	filterName = "io.solo.aws_lambda"
 
 	// cluster info
 	accessKey = "access_key"
 	secretKey = "secret_key"
 )
+
+var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
 
 func getLambdaHostname(s *aws.UpstreamSpec) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", s.Region)
