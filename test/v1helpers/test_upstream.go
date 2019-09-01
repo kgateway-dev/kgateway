@@ -30,7 +30,12 @@ type ReceivedRequest struct {
 }
 
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx)
+	backendPort, responses := runTestServer(ctx, "")
+	return newTestUpstream(addr, backendPort, responses)
+}
+
+func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
+	backendPort, responses := runTestServer(ctx, reply)
 	return newTestUpstream(addr, backendPort, responses)
 }
 
@@ -84,12 +89,14 @@ func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest
 	}
 }
 
-func runTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
+func runTestServer(ctx context.Context, reply string) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
 		rr.Method = r.Method
-		if r.Body != nil {
+		if reply != "" {
+			_, _ = rw.Write([]byte(reply))
+		} else if r.Body != nil {
 			body, _ := ioutil.ReadAll(r.Body)
 			_ = r.Body.Close()
 			if len(body) != 0 {

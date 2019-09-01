@@ -30,12 +30,16 @@ func fakeUpstreamName(consulSvcName string) string {
 }
 
 // Creates an upstream for each service in the map
-func toUpstreamList(services []*ServiceMeta) v1.UpstreamList {
+func toUpstreamList(forNamespace string, services []*ServiceMeta) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
-		upstreams = append(upstreams, ToUpstream(svc))
+		us := ToUpstream(svc)
+		if us.Metadata.Namespace != forNamespace {
+			continue
+		}
+		upstreams = append(upstreams, us)
 	}
-	return upstreams
+	return upstreams.Sort()
 }
 
 func ToUpstream(service *ServiceMeta) *v1.Upstream {
