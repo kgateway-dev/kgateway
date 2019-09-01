@@ -98,7 +98,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 
 		list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(list).To(HaveLen(5))
+		Expect(list).To(HaveLen(4))
 	})
 
 	It("correctly aggregates watches on all underlying upstream sources", func() {
@@ -114,7 +114,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			case <-time.After(500 * time.Millisecond):
 				return nil, errors.Errorf("timed out waiting for next upstream list")
 			}
-		}, "3s").Should(HaveLen(5))
+		}, "3s").Should(HaveLen(4))
 		Consistently(errChan).Should(Not(Receive()))
 
 		cancel()
@@ -141,7 +141,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 				case <-time.After(500 * time.Millisecond):
 					return nil, errors.Errorf("timed out waiting for next upstream list")
 				}
-			}, "3s").Should(HaveLen(5))
+			}, "3s").Should(HaveLen(4))
 
 			Consistently(errChan).Should(Not(Receive()))
 
