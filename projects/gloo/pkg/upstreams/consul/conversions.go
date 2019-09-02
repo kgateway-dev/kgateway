@@ -34,7 +34,7 @@ func toUpstreamList(forNamespace string, services []*ServiceMeta) v1.UpstreamLis
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
 		us := ToUpstream(svc)
-		if us.Metadata.Namespace != forNamespace {
+		if forNamespace != "" && us.Metadata.Namespace != forNamespace {
 			continue
 		}
 		upstreams = append(upstreams, us)
