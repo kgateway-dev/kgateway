@@ -177,7 +177,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 		// add query matcher to out path. kombina for now
 		// TODO: support query for matching
-		outPath += `?{{ default(query_string), "")}}`
+		outPath += `?{{ default(query_string, "")}}`
 
 		// Add param extractors back
 		var extractors map[string]*transformapi.Extraction
