@@ -1,7 +1,7 @@
 syntax = "proto3";
 package extauth.plugins.gloo.solo.io;
 
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/extauth";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
