@@ -140,7 +140,7 @@ message OAuth {
   // needs to not be used by the application
   string callback_path = 5;
 
-  // Scopes to request in addition to openid scope.
+  // Scopes to request in addtion to openid scope.
   repeated string scopes = 6;
 }
 
