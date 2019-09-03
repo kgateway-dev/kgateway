@@ -24,7 +24,7 @@ var _ = time.Kitchen
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Specifies the route’s hashing policy if the upstream cluster uses a hashing load balancer.
 // https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy
@@ -223,13 +223,92 @@ func (m *HashPolicy) GetTerminal() bool {
 	return false
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*HashPolicy) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*HashPolicy) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _HashPolicy_OneofMarshaler, _HashPolicy_OneofUnmarshaler, _HashPolicy_OneofSizer, []interface{}{
 		(*HashPolicy_Header)(nil),
 		(*HashPolicy_Cookie)(nil),
 		(*HashPolicy_SourceIp)(nil),
 	}
+}
+
+func _HashPolicy_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*HashPolicy)
+	// KeyType
+	switch x := m.KeyType.(type) {
+	case *HashPolicy_Header:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.Header)
+	case *HashPolicy_Cookie:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Cookie); err != nil {
+			return err
+		}
+	case *HashPolicy_SourceIp:
+		t := uint64(0)
+		if x.SourceIp {
+			t = 1
+		}
+		_ = b.EncodeVarint(3<<3 | proto.WireVarint)
+		_ = b.EncodeVarint(t)
+	case nil:
+	default:
+		return fmt.Errorf("HashPolicy.KeyType has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _HashPolicy_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*HashPolicy)
+	switch tag {
+	case 1: // KeyType.header
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.KeyType = &HashPolicy_Header{x}
+		return true, err
+	case 2: // KeyType.cookie
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Cookie)
+		err := b.DecodeMessage(msg)
+		m.KeyType = &HashPolicy_Cookie{msg}
+		return true, err
+	case 3: // KeyType.source_ip
+		if wire != proto.WireVarint {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeVarint()
+		m.KeyType = &HashPolicy_SourceIp{x != 0}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _HashPolicy_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*HashPolicy)
+	// KeyType
+	switch x := m.KeyType.(type) {
+	case *HashPolicy_Header:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.Header)))
+		n += len(x.Header)
+	case *HashPolicy_Cookie:
+		s := proto.Size(x.Cookie)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *HashPolicy_SourceIp:
+		n += 1 // tag and wire
+		n += 1
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 func init() {

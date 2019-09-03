@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Contains various settings for Envoy's access logging service.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
@@ -124,11 +124,59 @@ func (m *AccessLog) GetFileSink() *FileSink {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*AccessLog) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*AccessLog) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _AccessLog_OneofMarshaler, _AccessLog_OneofUnmarshaler, _AccessLog_OneofSizer, []interface{}{
 		(*AccessLog_FileSink)(nil),
 	}
+}
+
+func _AccessLog_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*AccessLog)
+	// OutputDestination
+	switch x := m.OutputDestination.(type) {
+	case *AccessLog_FileSink:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.FileSink); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("AccessLog.OutputDestination has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _AccessLog_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*AccessLog)
+	switch tag {
+	case 2: // OutputDestination.file_sink
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileSink)
+		err := b.DecodeMessage(msg)
+		m.OutputDestination = &AccessLog_FileSink{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _AccessLog_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*AccessLog)
+	// OutputDestination
+	switch x := m.OutputDestination.(type) {
+	case *AccessLog_FileSink:
+		s := proto.Size(x.FileSink)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 type FileSink struct {
@@ -212,12 +260,74 @@ func (m *FileSink) GetJsonFormat() *types.Struct {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*FileSink) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*FileSink) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _FileSink_OneofMarshaler, _FileSink_OneofUnmarshaler, _FileSink_OneofSizer, []interface{}{
 		(*FileSink_StringFormat)(nil),
 		(*FileSink_JsonFormat)(nil),
 	}
+}
+
+func _FileSink_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*FileSink)
+	// output_format
+	switch x := m.OutputFormat.(type) {
+	case *FileSink_StringFormat:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.StringFormat)
+	case *FileSink_JsonFormat:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.JsonFormat); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("FileSink.OutputFormat has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _FileSink_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*FileSink)
+	switch tag {
+	case 2: // output_format.string_format
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.OutputFormat = &FileSink_StringFormat{x}
+		return true, err
+	case 3: // output_format.json_format
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(types.Struct)
+		err := b.DecodeMessage(msg)
+		m.OutputFormat = &FileSink_JsonFormat{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _FileSink_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*FileSink)
+	// output_format
+	switch x := m.OutputFormat.(type) {
+	case *FileSink_StringFormat:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.StringFormat)))
+		n += len(x.StringFormat)
+	case *FileSink_JsonFormat:
+		s := proto.Size(x.JsonFormat)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 func init() {
