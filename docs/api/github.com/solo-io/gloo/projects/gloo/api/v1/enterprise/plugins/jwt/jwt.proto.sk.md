@@ -121,7 +121,7 @@ Describes how to retrieve a JWT from a header
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | `string` | The name of the header. for exmaple, "authorization" |  |
+| `header` | `string` | The name of the header. for example, "authorization" |  |
 | `prefix` | `string` | Prefix before the token. for example, "Bearer " |  |
 
 

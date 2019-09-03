@@ -39,7 +39,7 @@ message Jwks {
 message TokenSource {
     // Describes how to retrieve a JWT from a header
     message HeaderSource {
-        // The name of the header. for exmaple, "authorization"
+        // The name of the header. for example, "authorization"
         string header = 1;
         // Prefix before the token. for example, "Bearer "
         string prefix = 2;

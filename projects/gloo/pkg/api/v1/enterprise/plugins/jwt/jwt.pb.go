@@ -252,7 +252,7 @@ func (m *TokenSource) GetQueryParams() []string {
 
 // Describes how to retrieve a JWT from a header
 type TokenSource_HeaderSource struct {
-	// The name of the header. for exmaple, "authorization"
+	// The name of the header. for example, "authorization"
 	Header string `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// Prefix before the token. for example, "Bearer "
 	Prefix               string   `protobuf:"bytes,2,opt,name=prefix,proto3" json:"prefix,omitempty"`
