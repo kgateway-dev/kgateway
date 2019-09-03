@@ -23,7 +23,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rbac/rbac.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/plugins/rbac/rbac.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto)
 
 
 
@@ -62,7 +62,7 @@ An RBAC principal - the identity enitity (usually a user or a service account).
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `jwtPrincipal` | [.rbac.plugins.gloo.solo.io.JWTPrincipal](../../../enterprise/plugins/rbac/rbac.proto.sk#jwtprincipal) |  |  |
+| `jwtPrincipal` | [.rbac.plugins.gloo.solo.io.JWTPrincipal](../rbac.proto.sk#jwtprincipal) |  |  |
 
 
 
@@ -101,8 +101,8 @@ If more than one field is added, all of them need to match.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `principals` | [[]rbac.plugins.gloo.solo.io.Principal](../../../enterprise/plugins/rbac/rbac.proto.sk#principal) | Principals in this policy. |  |
-| `permissions` | [.rbac.plugins.gloo.solo.io.Permissions](../../../enterprise/plugins/rbac/rbac.proto.sk#permissions) | Permissions granted to the principals. |  |
+| `principals` | [[]rbac.plugins.gloo.solo.io.Principal](../rbac.proto.sk#principal) | Principals in this policy. |  |
+| `permissions` | [.rbac.plugins.gloo.solo.io.Permissions](../rbac.proto.sk#permissions) | Permissions granted to the principals. |  |
 
 
 
@@ -153,7 +153,7 @@ If more than one field is added, all of them need to match.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `config` | [.rbac.plugins.gloo.solo.io.Config](../../../enterprise/plugins/rbac/rbac.proto.sk#config) |  |  |
+| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk#config) |  |  |
 
 
 
@@ -172,7 +172,7 @@ If more than one field is added, all of them need to match.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disable` | `bool` | Disable RBAC checks on this route. This is useful to allow access to static resources \ login page without RBAC checks. |  |
-| `config` | [.rbac.plugins.gloo.solo.io.Config](../../../enterprise/plugins/rbac/rbac.proto.sk#config) |  |  |
+| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk#config) |  |  |
 
 
 

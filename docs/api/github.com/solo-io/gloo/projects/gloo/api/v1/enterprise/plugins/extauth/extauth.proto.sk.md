@@ -287,7 +287,7 @@ Deprecated
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration" |  |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application |  |
-| `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
+| `scopes` | `[]string` | Scopes to request in addtion to openid scope. |  |
 
 
 
