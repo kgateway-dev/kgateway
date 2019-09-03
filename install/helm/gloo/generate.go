@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	glooVersion "github.com/solo-io/gloo/pkg/version"
+
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
@@ -104,6 +106,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		return err
 	}
 
+	applyUiValues(cfg.ApiServer)
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
@@ -149,6 +152,7 @@ func generateKnativeValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		return err
 	}
 
+	applyUiValues(cfg.ApiServer)
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Ingress.Deployment.Image.Tag = version
@@ -183,6 +187,7 @@ func generateIngressValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		return err
 	}
 
+	applyUiValues(cfg.ApiServer)
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Ingress.Deployment.Image.Tag = version
@@ -215,4 +220,19 @@ func generateChartYaml(version string) error {
 	chart.Version = version
 
 	return writeYaml(&chart, chartOutput)
+}
+
+func applyUiValues(apiserver *generate.ApiServer) error {
+	apiserver.Deployment.Ui.Image.Tag = glooVersion.UiImageTag
+	apiserver.Deployment.Ui.Image.Registry = glooVersion.UiImageRegistry
+	apiserver.Deployment.Ui.Image.Repository = glooVersion.UiImageRepositoryFront
+
+	apiserver.Deployment.Server.Image.Tag = glooVersion.UiImageTag
+	apiserver.Deployment.Server.Image.Registry = glooVersion.UiImageRegistry
+	apiserver.Deployment.Server.Image.Repository = glooVersion.UiImageRepositoryBack
+
+	apiserver.Deployment.Envoy.Image.Tag = glooVersion.UiImageTag
+	apiserver.Deployment.Envoy.Image.Registry = glooVersion.UiImageRegistry
+	apiserver.Deployment.Envoy.Image.Repository = glooVersion.UiImageRepositoryProxy
+	return nil
 }

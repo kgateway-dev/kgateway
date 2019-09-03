@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.apiServer.service.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: {{ .Values.apiServer.service.name }}
+spec:
+  ports:
+    - name: static
+      port: {{.Values.apiServer.deployment.ui.staticPort}}
+      protocol: TCP
+  selector:
+    gloo: {{ .Values.apiServer.service.name }}
+  type: NodePort
