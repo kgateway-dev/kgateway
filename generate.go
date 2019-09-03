@@ -21,7 +21,7 @@ func main() {
 		CustomImports:      nil,
 		SkipGeneratedTests: true,
 		SkipDirs:           nil,
-		RelativeRoot:       "projects",
+		RelativeRoot:       "",
 		CompileProtos:      true,
 		GenDocs: &cmd.DocsOptions{
 			Output: options.Hugo,
