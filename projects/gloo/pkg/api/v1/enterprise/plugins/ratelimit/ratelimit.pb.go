@@ -25,7 +25,7 @@ var _ = time.Kitchen
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type RateLimit_Unit int32
 
@@ -586,9 +586,9 @@ func (m *Action) GetHeaderValueMatch() *Action_HeaderValueMatch {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Action) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Action_OneofMarshaler, _Action_OneofUnmarshaler, _Action_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Action) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Action_SourceCluster_)(nil),
 		(*Action_DestinationCluster_)(nil),
 		(*Action_RequestHeaders_)(nil),
@@ -596,144 +596,6 @@ func (*Action) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error,
 		(*Action_GenericKey_)(nil),
 		(*Action_HeaderValueMatch_)(nil),
 	}
-}
-
-func _Action_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Action)
-	// action_specifier
-	switch x := m.ActionSpecifier.(type) {
-	case *Action_SourceCluster_:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.SourceCluster); err != nil {
-			return err
-		}
-	case *Action_DestinationCluster_:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.DestinationCluster); err != nil {
-			return err
-		}
-	case *Action_RequestHeaders_:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RequestHeaders); err != nil {
-			return err
-		}
-	case *Action_RemoteAddress_:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RemoteAddress); err != nil {
-			return err
-		}
-	case *Action_GenericKey_:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GenericKey); err != nil {
-			return err
-		}
-	case *Action_HeaderValueMatch_:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.HeaderValueMatch); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Action.ActionSpecifier has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Action_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Action)
-	switch tag {
-	case 1: // action_specifier.source_cluster
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Action_SourceCluster)
-		err := b.DecodeMessage(msg)
-		m.ActionSpecifier = &Action_SourceCluster_{msg}
-		return true, err
-	case 2: // action_specifier.destination_cluster
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Action_DestinationCluster)
-		err := b.DecodeMessage(msg)
-		m.ActionSpecifier = &Action_DestinationCluster_{msg}
-		return true, err
-	case 3: // action_specifier.request_headers
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Action_RequestHeaders)
-		err := b.DecodeMessage(msg)
-		m.ActionSpecifier = &Action_RequestHeaders_{msg}
-		return true, err
-	case 4: // action_specifier.remote_address
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Action_RemoteAddress)
-		err := b.DecodeMessage(msg)
-		m.ActionSpecifier = &Action_RemoteAddress_{msg}
-		return true, err
-	case 5: // action_specifier.generic_key
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Action_GenericKey)
-		err := b.DecodeMessage(msg)
-		m.ActionSpecifier = &Action_GenericKey_{msg}
-		return true, err
-	case 6: // action_specifier.header_value_match
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Action_HeaderValueMatch)
-		err := b.DecodeMessage(msg)
-		m.ActionSpecifier = &Action_HeaderValueMatch_{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Action_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Action)
-	// action_specifier
-	switch x := m.ActionSpecifier.(type) {
-	case *Action_SourceCluster_:
-		s := proto.Size(x.SourceCluster)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Action_DestinationCluster_:
-		s := proto.Size(x.DestinationCluster)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Action_RequestHeaders_:
-		s := proto.Size(x.RequestHeaders)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Action_RemoteAddress_:
-		s := proto.Size(x.RemoteAddress)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Action_GenericKey_:
-		s := proto.Size(x.GenericKey)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Action_HeaderValueMatch_:
-		s := proto.Size(x.HeaderValueMatch)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // The following descriptor entry is appended to the descriptor:
@@ -1217,9 +1079,9 @@ func (m *HeaderMatcher) GetInvertMatch() bool {
 	return false
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*HeaderMatcher) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _HeaderMatcher_OneofMarshaler, _HeaderMatcher_OneofUnmarshaler, _HeaderMatcher_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*HeaderMatcher) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*HeaderMatcher_ExactMatch)(nil),
 		(*HeaderMatcher_RegexMatch)(nil),
 		(*HeaderMatcher_RangeMatch)(nil),
@@ -1227,127 +1089,6 @@ func (*HeaderMatcher) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer)
 		(*HeaderMatcher_PrefixMatch)(nil),
 		(*HeaderMatcher_SuffixMatch)(nil),
 	}
-}
-
-func _HeaderMatcher_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*HeaderMatcher)
-	// header_match_specifier
-	switch x := m.HeaderMatchSpecifier.(type) {
-	case *HeaderMatcher_ExactMatch:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.ExactMatch)
-	case *HeaderMatcher_RegexMatch:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.RegexMatch)
-	case *HeaderMatcher_RangeMatch:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RangeMatch); err != nil {
-			return err
-		}
-	case *HeaderMatcher_PresentMatch:
-		t := uint64(0)
-		if x.PresentMatch {
-			t = 1
-		}
-		_ = b.EncodeVarint(7<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(t)
-	case *HeaderMatcher_PrefixMatch:
-		_ = b.EncodeVarint(9<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.PrefixMatch)
-	case *HeaderMatcher_SuffixMatch:
-		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.SuffixMatch)
-	case nil:
-	default:
-		return fmt.Errorf("HeaderMatcher.HeaderMatchSpecifier has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _HeaderMatcher_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*HeaderMatcher)
-	switch tag {
-	case 4: // header_match_specifier.exact_match
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.HeaderMatchSpecifier = &HeaderMatcher_ExactMatch{x}
-		return true, err
-	case 5: // header_match_specifier.regex_match
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.HeaderMatchSpecifier = &HeaderMatcher_RegexMatch{x}
-		return true, err
-	case 6: // header_match_specifier.range_match
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Int64Range)
-		err := b.DecodeMessage(msg)
-		m.HeaderMatchSpecifier = &HeaderMatcher_RangeMatch{msg}
-		return true, err
-	case 7: // header_match_specifier.present_match
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.HeaderMatchSpecifier = &HeaderMatcher_PresentMatch{x != 0}
-		return true, err
-	case 9: // header_match_specifier.prefix_match
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.HeaderMatchSpecifier = &HeaderMatcher_PrefixMatch{x}
-		return true, err
-	case 10: // header_match_specifier.suffix_match
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.HeaderMatchSpecifier = &HeaderMatcher_SuffixMatch{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _HeaderMatcher_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*HeaderMatcher)
-	// header_match_specifier
-	switch x := m.HeaderMatchSpecifier.(type) {
-	case *HeaderMatcher_ExactMatch:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.ExactMatch)))
-		n += len(x.ExactMatch)
-	case *HeaderMatcher_RegexMatch:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.RegexMatch)))
-		n += len(x.RegexMatch)
-	case *HeaderMatcher_RangeMatch:
-		s := proto.Size(x.RangeMatch)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *HeaderMatcher_PresentMatch:
-		n += 1 // tag and wire
-		n += 1
-	case *HeaderMatcher_PrefixMatch:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.PrefixMatch)))
-		n += len(x.PrefixMatch)
-	case *HeaderMatcher_SuffixMatch:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.SuffixMatch)))
-		n += len(x.SuffixMatch)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // Query parameter matching treats the query string of a request's :path header

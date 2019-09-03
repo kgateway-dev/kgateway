@@ -47,7 +47,7 @@ var _ = time.Kitchen
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Plugin-specific configuration that lives on gateways
 // Each ListenerPlugin object contains configuration for a specific plugin
@@ -520,116 +520,14 @@ func (m *DestinationSpec) GetGrpc() *grpc.DestinationSpec {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*DestinationSpec) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _DestinationSpec_OneofMarshaler, _DestinationSpec_OneofUnmarshaler, _DestinationSpec_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*DestinationSpec) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*DestinationSpec_Aws)(nil),
 		(*DestinationSpec_Azure)(nil),
 		(*DestinationSpec_Rest)(nil),
 		(*DestinationSpec_Grpc)(nil),
 	}
-}
-
-func _DestinationSpec_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*DestinationSpec)
-	// destination_type
-	switch x := m.DestinationType.(type) {
-	case *DestinationSpec_Aws:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Aws); err != nil {
-			return err
-		}
-	case *DestinationSpec_Azure:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Azure); err != nil {
-			return err
-		}
-	case *DestinationSpec_Rest:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Rest); err != nil {
-			return err
-		}
-	case *DestinationSpec_Grpc:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Grpc); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("DestinationSpec.DestinationType has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _DestinationSpec_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*DestinationSpec)
-	switch tag {
-	case 1: // destination_type.aws
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(aws.DestinationSpec)
-		err := b.DecodeMessage(msg)
-		m.DestinationType = &DestinationSpec_Aws{msg}
-		return true, err
-	case 2: // destination_type.azure
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(azure.DestinationSpec)
-		err := b.DecodeMessage(msg)
-		m.DestinationType = &DestinationSpec_Azure{msg}
-		return true, err
-	case 3: // destination_type.rest
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(rest.DestinationSpec)
-		err := b.DecodeMessage(msg)
-		m.DestinationType = &DestinationSpec_Rest{msg}
-		return true, err
-	case 4: // destination_type.grpc
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(grpc.DestinationSpec)
-		err := b.DecodeMessage(msg)
-		m.DestinationType = &DestinationSpec_Grpc{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _DestinationSpec_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*DestinationSpec)
-	// destination_type
-	switch x := m.DestinationType.(type) {
-	case *DestinationSpec_Aws:
-		s := proto.Size(x.Aws)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *DestinationSpec_Azure:
-		s := proto.Size(x.Azure)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *DestinationSpec_Rest:
-		s := proto.Size(x.Rest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *DestinationSpec_Grpc:
-		s := proto.Size(x.Grpc)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // Plugin-specific configuration that is applied when a specific weighted destination
@@ -863,9 +761,9 @@ func (m *UpstreamSpec) GetAwsEc2() *ec2.UpstreamSpec {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*UpstreamSpec) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _UpstreamSpec_OneofMarshaler, _UpstreamSpec_OneofUnmarshaler, _UpstreamSpec_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*UpstreamSpec) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*UpstreamSpec_Kube)(nil),
 		(*UpstreamSpec_Static)(nil),
 		(*UpstreamSpec_Pipe)(nil),
@@ -874,162 +772,6 @@ func (*UpstreamSpec) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) 
 		(*UpstreamSpec_Consul)(nil),
 		(*UpstreamSpec_AwsEc2)(nil),
 	}
-}
-
-func _UpstreamSpec_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*UpstreamSpec)
-	// upstream_type
-	switch x := m.UpstreamType.(type) {
-	case *UpstreamSpec_Kube:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Kube); err != nil {
-			return err
-		}
-	case *UpstreamSpec_Static:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Static); err != nil {
-			return err
-		}
-	case *UpstreamSpec_Pipe:
-		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Pipe); err != nil {
-			return err
-		}
-	case *UpstreamSpec_Aws:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Aws); err != nil {
-			return err
-		}
-	case *UpstreamSpec_Azure:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Azure); err != nil {
-			return err
-		}
-	case *UpstreamSpec_Consul:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Consul); err != nil {
-			return err
-		}
-	case *UpstreamSpec_AwsEc2:
-		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.AwsEc2); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("UpstreamSpec.UpstreamType has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _UpstreamSpec_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*UpstreamSpec)
-	switch tag {
-	case 1: // upstream_type.kube
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(kubernetes.UpstreamSpec)
-		err := b.DecodeMessage(msg)
-		m.UpstreamType = &UpstreamSpec_Kube{msg}
-		return true, err
-	case 4: // upstream_type.static
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(static.UpstreamSpec)
-		err := b.DecodeMessage(msg)
-		m.UpstreamType = &UpstreamSpec_Static{msg}
-		return true, err
-	case 12: // upstream_type.pipe
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(pipe.UpstreamSpec)
-		err := b.DecodeMessage(msg)
-		m.UpstreamType = &UpstreamSpec_Pipe{msg}
-		return true, err
-	case 2: // upstream_type.aws
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(aws.UpstreamSpec)
-		err := b.DecodeMessage(msg)
-		m.UpstreamType = &UpstreamSpec_Aws{msg}
-		return true, err
-	case 3: // upstream_type.azure
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(azure.UpstreamSpec)
-		err := b.DecodeMessage(msg)
-		m.UpstreamType = &UpstreamSpec_Azure{msg}
-		return true, err
-	case 5: // upstream_type.consul
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(consul.UpstreamSpec)
-		err := b.DecodeMessage(msg)
-		m.UpstreamType = &UpstreamSpec_Consul{msg}
-		return true, err
-	case 11: // upstream_type.aws_ec2
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ec2.UpstreamSpec)
-		err := b.DecodeMessage(msg)
-		m.UpstreamType = &UpstreamSpec_AwsEc2{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _UpstreamSpec_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*UpstreamSpec)
-	// upstream_type
-	switch x := m.UpstreamType.(type) {
-	case *UpstreamSpec_Kube:
-		s := proto.Size(x.Kube)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSpec_Static:
-		s := proto.Size(x.Static)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSpec_Pipe:
-		s := proto.Size(x.Pipe)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSpec_Aws:
-		s := proto.Size(x.Aws)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSpec_Azure:
-		s := proto.Size(x.Azure)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSpec_Consul:
-		s := proto.Size(x.Consul)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *UpstreamSpec_AwsEc2:
-		s := proto.Size(x.AwsEc2)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {

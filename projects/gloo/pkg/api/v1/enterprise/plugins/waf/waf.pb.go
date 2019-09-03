@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Settings struct {
 	// disable waf on this listener
@@ -156,70 +156,12 @@ func (m *CoreRuleSet) GetCustomSettingsFile() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*CoreRuleSet) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _CoreRuleSet_OneofMarshaler, _CoreRuleSet_OneofUnmarshaler, _CoreRuleSet_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*CoreRuleSet) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*CoreRuleSet_CustomSettingsString)(nil),
 		(*CoreRuleSet_CustomSettingsFile)(nil),
 	}
-}
-
-func _CoreRuleSet_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*CoreRuleSet)
-	// CustomSettingsType
-	switch x := m.CustomSettingsType.(type) {
-	case *CoreRuleSet_CustomSettingsString:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.CustomSettingsString)
-	case *CoreRuleSet_CustomSettingsFile:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.CustomSettingsFile)
-	case nil:
-	default:
-		return fmt.Errorf("CoreRuleSet.CustomSettingsType has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _CoreRuleSet_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*CoreRuleSet)
-	switch tag {
-	case 2: // CustomSettingsType.custom_settings_string
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.CustomSettingsType = &CoreRuleSet_CustomSettingsString{x}
-		return true, err
-	case 3: // CustomSettingsType.custom_settings_file
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.CustomSettingsType = &CoreRuleSet_CustomSettingsFile{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _CoreRuleSet_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*CoreRuleSet)
-	// CustomSettingsType
-	switch x := m.CustomSettingsType.(type) {
-	case *CoreRuleSet_CustomSettingsString:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.CustomSettingsString)))
-		n += len(x.CustomSettingsString)
-	case *CoreRuleSet_CustomSettingsFile:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.CustomSettingsFile)))
-		n += len(x.CustomSettingsFile)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type VhostSettings struct {

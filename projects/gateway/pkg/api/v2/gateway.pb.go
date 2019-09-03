@@ -24,7 +24,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 //
 //A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
@@ -175,78 +175,12 @@ func (m *Gateway) GetGatewayProxyName() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Gateway) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Gateway_OneofMarshaler, _Gateway_OneofUnmarshaler, _Gateway_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Gateway) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Gateway_HttpGateway)(nil),
 		(*Gateway_TcpGateway)(nil),
 	}
-}
-
-func _Gateway_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Gateway)
-	// GatewayType
-	switch x := m.GatewayType.(type) {
-	case *Gateway_HttpGateway:
-		_ = b.EncodeVarint(9<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.HttpGateway); err != nil {
-			return err
-		}
-	case *Gateway_TcpGateway:
-		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.TcpGateway); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Gateway.GatewayType has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Gateway_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Gateway)
-	switch tag {
-	case 9: // GatewayType.http_gateway
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(HttpGateway)
-		err := b.DecodeMessage(msg)
-		m.GatewayType = &Gateway_HttpGateway{msg}
-		return true, err
-	case 10: // GatewayType.tcp_gateway
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(TcpGateway)
-		err := b.DecodeMessage(msg)
-		m.GatewayType = &Gateway_TcpGateway{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Gateway_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Gateway)
-	// GatewayType
-	switch x := m.GatewayType.(type) {
-	case *Gateway_HttpGateway:
-		s := proto.Size(x.HttpGateway)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Gateway_TcpGateway:
-		s := proto.Size(x.TcpGateway)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type HttpGateway struct {

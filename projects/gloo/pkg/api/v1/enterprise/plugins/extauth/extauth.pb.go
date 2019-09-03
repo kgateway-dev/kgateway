@@ -31,7 +31,7 @@ var _ = time.Kitchen
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Settings struct {
 	// The upstream to ask about auth decisions
@@ -1004,9 +1004,9 @@ func (m *AuthConfig) GetOpaAuth() *OpaAuth {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*AuthConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _AuthConfig_OneofMarshaler, _AuthConfig_OneofUnmarshaler, _AuthConfig_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*AuthConfig) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*AuthConfig_BasicAuth)(nil),
 		(*AuthConfig_Oauth)(nil),
 		(*AuthConfig_CustomAuth)(nil),
@@ -1014,144 +1014,6 @@ func (*AuthConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) er
 		(*AuthConfig_PluginAuth)(nil),
 		(*AuthConfig_OpaAuth)(nil),
 	}
-}
-
-func _AuthConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*AuthConfig)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *AuthConfig_BasicAuth:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.BasicAuth); err != nil {
-			return err
-		}
-	case *AuthConfig_Oauth:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Oauth); err != nil {
-			return err
-		}
-	case *AuthConfig_CustomAuth:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.CustomAuth); err != nil {
-			return err
-		}
-	case *AuthConfig_ApiKeyAuth:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ApiKeyAuth); err != nil {
-			return err
-		}
-	case *AuthConfig_PluginAuth:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.PluginAuth); err != nil {
-			return err
-		}
-	case *AuthConfig_OpaAuth:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.OpaAuth); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("AuthConfig.AuthConfig has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _AuthConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*AuthConfig)
-	switch tag {
-	case 1: // auth_config.basic_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(BasicAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &AuthConfig_BasicAuth{msg}
-		return true, err
-	case 2: // auth_config.oauth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(OAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &AuthConfig_Oauth{msg}
-		return true, err
-	case 3: // auth_config.custom_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(CustomAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &AuthConfig_CustomAuth{msg}
-		return true, err
-	case 4: // auth_config.api_key_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ApiKeyAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &AuthConfig_ApiKeyAuth{msg}
-		return true, err
-	case 5: // auth_config.plugin_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(AuthPlugin)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &AuthConfig_PluginAuth{msg}
-		return true, err
-	case 6: // auth_config.opa_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(OpaAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &AuthConfig_OpaAuth{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _AuthConfig_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*AuthConfig)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *AuthConfig_BasicAuth:
-		s := proto.Size(x.BasicAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuthConfig_Oauth:
-		s := proto.Size(x.Oauth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuthConfig_CustomAuth:
-		s := proto.Size(x.CustomAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuthConfig_ApiKeyAuth:
-		s := proto.Size(x.ApiKeyAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuthConfig_PluginAuth:
-		s := proto.Size(x.PluginAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuthConfig_OpaAuth:
-		s := proto.Size(x.OpaAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type VhostExtension struct {
@@ -1273,135 +1135,15 @@ func (m *VhostExtension) GetConfigs() []*AuthConfig {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*VhostExtension) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _VhostExtension_OneofMarshaler, _VhostExtension_OneofUnmarshaler, _VhostExtension_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*VhostExtension) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*VhostExtension_BasicAuth)(nil),
 		(*VhostExtension_Oauth)(nil),
 		(*VhostExtension_CustomAuth)(nil),
 		(*VhostExtension_ApiKeyAuth)(nil),
 		(*VhostExtension_PluginAuth)(nil),
 	}
-}
-
-func _VhostExtension_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*VhostExtension)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *VhostExtension_BasicAuth:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.BasicAuth); err != nil {
-			return err
-		}
-	case *VhostExtension_Oauth:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Oauth); err != nil {
-			return err
-		}
-	case *VhostExtension_CustomAuth:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.CustomAuth); err != nil {
-			return err
-		}
-	case *VhostExtension_ApiKeyAuth:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ApiKeyAuth); err != nil {
-			return err
-		}
-	case *VhostExtension_PluginAuth:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.PluginAuth); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("VhostExtension.AuthConfig has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _VhostExtension_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*VhostExtension)
-	switch tag {
-	case 1: // auth_config.basic_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(BasicAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &VhostExtension_BasicAuth{msg}
-		return true, err
-	case 2: // auth_config.oauth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(OAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &VhostExtension_Oauth{msg}
-		return true, err
-	case 3: // auth_config.custom_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(CustomAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &VhostExtension_CustomAuth{msg}
-		return true, err
-	case 4: // auth_config.api_key_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ApiKeyAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &VhostExtension_ApiKeyAuth{msg}
-		return true, err
-	case 5: // auth_config.plugin_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(PluginAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &VhostExtension_PluginAuth{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _VhostExtension_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*VhostExtension)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *VhostExtension_BasicAuth:
-		s := proto.Size(x.BasicAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VhostExtension_Oauth:
-		s := proto.Size(x.Oauth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VhostExtension_CustomAuth:
-		s := proto.Size(x.CustomAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VhostExtension_ApiKeyAuth:
-		s := proto.Size(x.ApiKeyAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VhostExtension_PluginAuth:
-		s := proto.Size(x.PluginAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type RouteExtension struct {
@@ -1558,116 +1300,14 @@ func (m *ExtAuthConfig) GetConfigs() []*ExtAuthConfig_AuthConfig {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*ExtAuthConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ExtAuthConfig_OneofMarshaler, _ExtAuthConfig_OneofUnmarshaler, _ExtAuthConfig_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ExtAuthConfig) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*ExtAuthConfig_Oauth)(nil),
 		(*ExtAuthConfig_BasicAuth)(nil),
 		(*ExtAuthConfig_ApiKeyAuth)(nil),
 		(*ExtAuthConfig_PluginAuth)(nil),
 	}
-}
-
-func _ExtAuthConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ExtAuthConfig)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *ExtAuthConfig_Oauth:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Oauth); err != nil {
-			return err
-		}
-	case *ExtAuthConfig_BasicAuth:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.BasicAuth); err != nil {
-			return err
-		}
-	case *ExtAuthConfig_ApiKeyAuth:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ApiKeyAuth); err != nil {
-			return err
-		}
-	case *ExtAuthConfig_PluginAuth:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.PluginAuth); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("ExtAuthConfig.AuthConfig has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _ExtAuthConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ExtAuthConfig)
-	switch tag {
-	case 3: // auth_config.oauth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ExtAuthConfig_OAuthConfig)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_Oauth{msg}
-		return true, err
-	case 4: // auth_config.basic_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(BasicAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_BasicAuth{msg}
-		return true, err
-	case 5: // auth_config.api_key_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ExtAuthConfig_ApiKeyAuthConfig)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_ApiKeyAuth{msg}
-		return true, err
-	case 6: // auth_config.plugin_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(PluginAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_PluginAuth{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _ExtAuthConfig_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ExtAuthConfig)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *ExtAuthConfig_Oauth:
-		s := proto.Size(x.Oauth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ExtAuthConfig_BasicAuth:
-		s := proto.Size(x.BasicAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ExtAuthConfig_ApiKeyAuth:
-		s := proto.Size(x.ApiKeyAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ExtAuthConfig_PluginAuth:
-		s := proto.Size(x.PluginAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type ExtAuthConfig_OAuthConfig struct {
@@ -1952,135 +1592,15 @@ func (m *ExtAuthConfig_AuthConfig) GetOpaAuth() *ExtAuthConfig_OpaAuthConfig {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*ExtAuthConfig_AuthConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ExtAuthConfig_AuthConfig_OneofMarshaler, _ExtAuthConfig_AuthConfig_OneofUnmarshaler, _ExtAuthConfig_AuthConfig_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ExtAuthConfig_AuthConfig) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*ExtAuthConfig_AuthConfig_Oauth)(nil),
 		(*ExtAuthConfig_AuthConfig_BasicAuth)(nil),
 		(*ExtAuthConfig_AuthConfig_ApiKeyAuth)(nil),
 		(*ExtAuthConfig_AuthConfig_PluginAuth)(nil),
 		(*ExtAuthConfig_AuthConfig_OpaAuth)(nil),
 	}
-}
-
-func _ExtAuthConfig_AuthConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ExtAuthConfig_AuthConfig)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *ExtAuthConfig_AuthConfig_Oauth:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Oauth); err != nil {
-			return err
-		}
-	case *ExtAuthConfig_AuthConfig_BasicAuth:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.BasicAuth); err != nil {
-			return err
-		}
-	case *ExtAuthConfig_AuthConfig_ApiKeyAuth:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ApiKeyAuth); err != nil {
-			return err
-		}
-	case *ExtAuthConfig_AuthConfig_PluginAuth:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.PluginAuth); err != nil {
-			return err
-		}
-	case *ExtAuthConfig_AuthConfig_OpaAuth:
-		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.OpaAuth); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("ExtAuthConfig_AuthConfig.AuthConfig has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _ExtAuthConfig_AuthConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ExtAuthConfig_AuthConfig)
-	switch tag {
-	case 3: // auth_config.oauth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ExtAuthConfig_OAuthConfig)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_AuthConfig_Oauth{msg}
-		return true, err
-	case 4: // auth_config.basic_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(BasicAuth)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_AuthConfig_BasicAuth{msg}
-		return true, err
-	case 5: // auth_config.api_key_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ExtAuthConfig_ApiKeyAuthConfig)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_AuthConfig_ApiKeyAuth{msg}
-		return true, err
-	case 6: // auth_config.plugin_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(AuthPlugin)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_AuthConfig_PluginAuth{msg}
-		return true, err
-	case 7: // auth_config.opa_auth
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ExtAuthConfig_OpaAuthConfig)
-		err := b.DecodeMessage(msg)
-		m.AuthConfig = &ExtAuthConfig_AuthConfig_OpaAuth{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _ExtAuthConfig_AuthConfig_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ExtAuthConfig_AuthConfig)
-	// auth_config
-	switch x := m.AuthConfig.(type) {
-	case *ExtAuthConfig_AuthConfig_Oauth:
-		s := proto.Size(x.Oauth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ExtAuthConfig_AuthConfig_BasicAuth:
-		s := proto.Size(x.BasicAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ExtAuthConfig_AuthConfig_ApiKeyAuth:
-		s := proto.Size(x.ApiKeyAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ExtAuthConfig_AuthConfig_PluginAuth:
-		s := proto.Size(x.PluginAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ExtAuthConfig_AuthConfig_OpaAuth:
-		s := proto.Size(x.OpaAuth)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {
