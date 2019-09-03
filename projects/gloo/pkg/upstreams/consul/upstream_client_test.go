@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/golang/mock/gomock"
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
@@ -67,7 +69,7 @@ var _ = Describe("ConsulClient", func() {
 		It("returns the expected upstreams", func() {
 			usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
-			upstreams, err := usClient.List("", clients.ListOpts{Ctx: ctx})
+			upstreams, err := usClient.List(defaults.GlooSystem, clients.ListOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(upstreams).To(HaveLen(3))
@@ -139,7 +141,7 @@ var _ = Describe("ConsulClient", func() {
 			It("correctly reacts to service updates", func() {
 				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
-				upstreamChan, errChan, err := usClient.Watch("", clients.WatchOpts{Ctx: ctx})
+				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
@@ -205,7 +207,7 @@ var _ = Describe("ConsulClient", func() {
 			It("can recover from the error", func() {
 				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
-				upstreamChan, errChan, err := usClient.Watch("", clients.WatchOpts{Ctx: ctx})
+				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
@@ -246,7 +248,7 @@ var _ = Describe("ConsulClient", func() {
 			It("publishes a single event", func() {
 				usClient := NewConsulUpstreamClient(NewConsulWatcherFromClient(client))
 
-				upstreamChan, errChan, err := usClient.Watch("", clients.WatchOpts{Ctx: ctx})
+				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Give the watch some time to start

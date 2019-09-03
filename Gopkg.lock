@@ -484,7 +484,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:dc9cbd16a546ee8d4a9f4823c9c91f0825e294fc085493a5a3937183d5f17b84"
+  digest = "1:92af5d1e4774a8cceb6dfae9d31e3a2879cd44a84eb63c0bd571d9866c82e0f4"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
@@ -496,8 +496,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "4cbf7e384e768b4e01799441fdf2a706a5635ae7"
-  version = "v1.2.0"
+  revision = "0ca988a254f991240804bf9821f3450d87ccbb1b"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -1032,6 +1032,17 @@
   version = "v0.0.3"
 
 [[projects]]
+  digest = "1:36aebe90a13cf9128280ac834399b8bebf83685283c78df279d61c46bb2a8d83"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk",
+  ]
+  pruneopts = "UT"
+  revision = "2ea3427bfa539cca900ca2768d8663ecc8a708c1"
+  version = "v0.0.1"
+
+[[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -1356,7 +1367,7 @@
   version = "v0.9.20"
 
 [[projects]]
-  digest = "1:162f303ec471a59b8810f1e3215b44ef2a502e9c598c6bb5aa78e3bc58def0b8"
+  digest = "1:4b2cdf80972ed8e79c4e9c5119886fe0e2847cbbd3bf77474ed2259a8535359f"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1411,12 +1422,13 @@
     "pkg/utils/fileutils",
     "pkg/utils/kubeutils",
     "pkg/utils/protoutils",
+    "pkg/utils/syncutils",
     "test/helpers",
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "ed277fb6f43f758200ce1b32189f78c6df98545b"
-  version = "v0.10.12"
+  revision = "516e34cf58adb6e4c674b7c95ef181c0ea43cb6a"
+  version = "v0.10.14"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2539,6 +2551,7 @@
     "github.com/jhump/protoreflect/grpcreflect",
     "github.com/k0kubun/pp",
     "github.com/keybase/go-ps",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
