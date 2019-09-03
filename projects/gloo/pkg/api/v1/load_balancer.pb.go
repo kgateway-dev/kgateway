@@ -25,7 +25,7 @@ var _ = time.Kitchen
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream
 // endpoints.
@@ -157,135 +157,15 @@ func (m *LoadBalancerConfig) GetMaglev() *LoadBalancerConfig_Maglev {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*LoadBalancerConfig) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _LoadBalancerConfig_OneofMarshaler, _LoadBalancerConfig_OneofUnmarshaler, _LoadBalancerConfig_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*LoadBalancerConfig) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*LoadBalancerConfig_RoundRobin_)(nil),
 		(*LoadBalancerConfig_LeastRequest_)(nil),
 		(*LoadBalancerConfig_Random_)(nil),
 		(*LoadBalancerConfig_RingHash_)(nil),
 		(*LoadBalancerConfig_Maglev_)(nil),
 	}
-}
-
-func _LoadBalancerConfig_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*LoadBalancerConfig)
-	// type
-	switch x := m.Type.(type) {
-	case *LoadBalancerConfig_RoundRobin_:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RoundRobin); err != nil {
-			return err
-		}
-	case *LoadBalancerConfig_LeastRequest_:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.LeastRequest); err != nil {
-			return err
-		}
-	case *LoadBalancerConfig_Random_:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Random); err != nil {
-			return err
-		}
-	case *LoadBalancerConfig_RingHash_:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RingHash); err != nil {
-			return err
-		}
-	case *LoadBalancerConfig_Maglev_:
-		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Maglev); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("LoadBalancerConfig.Type has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _LoadBalancerConfig_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*LoadBalancerConfig)
-	switch tag {
-	case 3: // type.round_robin
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LoadBalancerConfig_RoundRobin)
-		err := b.DecodeMessage(msg)
-		m.Type = &LoadBalancerConfig_RoundRobin_{msg}
-		return true, err
-	case 4: // type.least_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LoadBalancerConfig_LeastRequest)
-		err := b.DecodeMessage(msg)
-		m.Type = &LoadBalancerConfig_LeastRequest_{msg}
-		return true, err
-	case 5: // type.random
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LoadBalancerConfig_Random)
-		err := b.DecodeMessage(msg)
-		m.Type = &LoadBalancerConfig_Random_{msg}
-		return true, err
-	case 6: // type.ring_hash
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LoadBalancerConfig_RingHash)
-		err := b.DecodeMessage(msg)
-		m.Type = &LoadBalancerConfig_RingHash_{msg}
-		return true, err
-	case 7: // type.maglev
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LoadBalancerConfig_Maglev)
-		err := b.DecodeMessage(msg)
-		m.Type = &LoadBalancerConfig_Maglev_{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _LoadBalancerConfig_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*LoadBalancerConfig)
-	// type
-	switch x := m.Type.(type) {
-	case *LoadBalancerConfig_RoundRobin_:
-		s := proto.Size(x.RoundRobin)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *LoadBalancerConfig_LeastRequest_:
-		s := proto.Size(x.LeastRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *LoadBalancerConfig_Random_:
-		s := proto.Size(x.Random)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *LoadBalancerConfig_RingHash_:
-		s := proto.Size(x.RingHash)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *LoadBalancerConfig_Maglev_:
-		s := proto.Size(x.Maglev)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type LoadBalancerConfig_RoundRobin struct {

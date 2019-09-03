@@ -21,7 +21,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Policies for rewriting the Host Header
 // Based on Envoy's host_rewrite from https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto
@@ -83,55 +83,11 @@ func (m *HostRewrite) GetHostRewrite() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*HostRewrite) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _HostRewrite_OneofMarshaler, _HostRewrite_OneofUnmarshaler, _HostRewrite_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*HostRewrite) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*HostRewrite_HostRewrite)(nil),
 	}
-}
-
-func _HostRewrite_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*HostRewrite)
-	// host_rewrite_type
-	switch x := m.HostRewriteType.(type) {
-	case *HostRewrite_HostRewrite:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.HostRewrite)
-	case nil:
-	default:
-		return fmt.Errorf("HostRewrite.HostRewriteType has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _HostRewrite_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*HostRewrite)
-	switch tag {
-	case 1: // host_rewrite_type.host_rewrite
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.HostRewriteType = &HostRewrite_HostRewrite{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _HostRewrite_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*HostRewrite)
-	// host_rewrite_type
-	switch x := m.HostRewriteType.(type) {
-	case *HostRewrite_HostRewrite:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.HostRewrite)))
-		n += len(x.HostRewrite)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {
