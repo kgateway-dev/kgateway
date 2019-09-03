@@ -106,7 +106,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		return err
 	}
 
-	applyUiValues(cfg.ApiServer)
+	applyFallbackValuesForUi(cfg.ApiServer)
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
@@ -152,7 +152,7 @@ func generateKnativeValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		return err
 	}
 
-	applyUiValues(cfg.ApiServer)
+	applyFallbackValuesForUi(cfg.ApiServer)
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Ingress.Deployment.Image.Tag = version
@@ -187,7 +187,7 @@ func generateIngressValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		return err
 	}
 
-	applyUiValues(cfg.ApiServer)
+	applyFallbackValuesForUi(cfg.ApiServer)
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Ingress.Deployment.Image.Tag = version
@@ -222,17 +222,29 @@ func generateChartYaml(version string) error {
 	return writeYaml(&chart, chartOutput)
 }
 
-func applyUiValues(apiserver *generate.ApiServer) error {
-	apiserver.Deployment.Ui.Image.Tag = glooVersion.UiImageTag
-	apiserver.Deployment.Ui.Image.Registry = glooVersion.UiImageRegistry
-	apiserver.Deployment.Ui.Image.Repository = glooVersion.UiImageRepositoryFront
+// Since the UI is released in a separate process, it is unlikely that the helm values will be customized.
+// However, customization may be useful when testing new releases so respect any provided value. Otherwise apply the
+// default fallback value.
+func applyFallbackValuesForUi(apiServer *generate.ApiServer) {
+	setFallbackString(&apiServer.Deployment.Ui.Image.Tag, glooVersion.UiImageTag)
+	setFallbackString(&apiServer.Deployment.Ui.Image.Registry, glooVersion.UiImageRegistry)
+	setFallbackString(&apiServer.Deployment.Ui.Image.Repository, glooVersion.UiImageRepositoryFront)
 
-	apiserver.Deployment.Server.Image.Tag = glooVersion.UiImageTag
-	apiserver.Deployment.Server.Image.Registry = glooVersion.UiImageRegistry
-	apiserver.Deployment.Server.Image.Repository = glooVersion.UiImageRepositoryBack
+	setFallbackString(&apiServer.Deployment.Server.Image.Tag, glooVersion.UiImageTag)
+	setFallbackString(&apiServer.Deployment.Server.Image.Registry, glooVersion.UiImageRegistry)
+	setFallbackString(&apiServer.Deployment.Server.Image.Repository, glooVersion.UiImageRepositoryBack)
 
-	apiserver.Deployment.Envoy.Image.Tag = glooVersion.UiImageTag
-	apiserver.Deployment.Envoy.Image.Registry = glooVersion.UiImageRegistry
-	apiserver.Deployment.Envoy.Image.Repository = glooVersion.UiImageRepositoryProxy
-	return nil
+	setFallbackString(&apiServer.Deployment.Envoy.Image.Tag, glooVersion.UiImageTag)
+	setFallbackString(&apiServer.Deployment.Envoy.Image.Registry, glooVersion.UiImageRegistry)
+	setFallbackString(&apiServer.Deployment.Envoy.Image.Repository, glooVersion.UiImageRepositoryProxy)
+}
+
+func setFallbackString(target *string, fallback string) {
+	if target == nil {
+		target = &fallback
+		return
+	}
+	if *target == "" {
+		*target = fallback
+	}
 }
