@@ -4,8 +4,10 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/pull/1101
   - type: NON_USER_FACING
     description: fix ordering of steps in consul e2e test
+  - type: NON_USER_FACING
+    description: regen solo-kit event loops
   - dependencyOwner: solo-io
     dependencyRepo: solo-kit
-    dependencyTag: v0.10.13
-    description: Update solo-kit to version v0.10.13.
+    dependencyTag: v0.10.14
+    description: Update solo-kit to version v0.10.14.
     type: DEPENDENCY_BUMP

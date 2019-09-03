@@ -508,9 +508,12 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1356,7 +1359,7 @@
   version = "v0.9.20"
 
 [[projects]]
-  digest = "1:2dfc0afea83dbbc05250007cedd4e33d31de3c0705376fff2514f71c97969b2c"
+  digest = "1:4b2cdf80972ed8e79c4e9c5119886fe0e2847cbbd3bf77474ed2259a8535359f"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1411,12 +1414,13 @@
     "pkg/utils/fileutils",
     "pkg/utils/kubeutils",
     "pkg/utils/protoutils",
+    "pkg/utils/syncutils",
     "test/helpers",
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "f4059a95a098ff232d2cff80523b19adc50101d5"
-  version = "v0.10.13"
+  revision = "516e34cf58adb6e4c674b7c95ef181c0ea43cb6a"
+  version = "v0.10.14"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2521,6 +2525,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
