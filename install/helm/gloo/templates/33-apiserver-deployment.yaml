@@ -1,3 +1,4 @@
+{{- if .Values.apiServer.enable }}
 {{- $apiServerImage := .Values.apiServer.deployment.server.image }}
 {{- $uiImage := .Values.apiServer.deployment.ui.image }}
 {{- $envoyImage := .Values.apiServer.deployment.envoy.image }}
@@ -87,3 +88,4 @@ spec:
       imagePullSecrets:
         - name: {{ $apiServerImage.pullSecret }}
       {{- end }}
+{{- end }} # .Values.apiServer.enable

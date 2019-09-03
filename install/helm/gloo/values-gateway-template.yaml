@@ -31,6 +31,7 @@ discovery:
     stats: true
 
 apiServer:
+  enable: true
   enableBeta: true
   deployment:
     stats: true
@@ -38,7 +39,7 @@ apiServer:
     server:
       image:
         name: apiserver
-        repository: grpcserver-ee
+        repository: grpcserver-eeboomboom
       grpcPort: 10101
       oauth: {}
     ui:

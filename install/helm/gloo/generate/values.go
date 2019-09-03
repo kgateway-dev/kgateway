@@ -239,6 +239,7 @@ type K8s struct {
 }
 
 type ApiServer struct {
+	Enable     bool                 `json:"enable,omitempty" desc:"If set, will deploy a read-only UI for Gloo"`
 	NoAuth     bool                 `json:"noAuth"`
 	Deployment *ApiServerDeployment `json:"deployment,omitempty"`
 	Service    *ApiServerService    `json:"service,omitempty"`
