@@ -23,7 +23,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Describes APIs and application-level information for services
 // Gloo routes to. ServiceSpec is contained within the UpstreamSpec for certain types
@@ -102,12 +102,78 @@ func (m *ServiceSpec) GetGrpc() *grpc.ServiceSpec {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*ServiceSpec) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ServiceSpec) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ServiceSpec_OneofMarshaler, _ServiceSpec_OneofUnmarshaler, _ServiceSpec_OneofSizer, []interface{}{
 		(*ServiceSpec_Rest)(nil),
 		(*ServiceSpec_Grpc)(nil),
 	}
+}
+
+func _ServiceSpec_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ServiceSpec)
+	// plugin_type
+	switch x := m.PluginType.(type) {
+	case *ServiceSpec_Rest:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Rest); err != nil {
+			return err
+		}
+	case *ServiceSpec_Grpc:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Grpc); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ServiceSpec.PluginType has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ServiceSpec_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ServiceSpec)
+	switch tag {
+	case 1: // plugin_type.rest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(rest.ServiceSpec)
+		err := b.DecodeMessage(msg)
+		m.PluginType = &ServiceSpec_Rest{msg}
+		return true, err
+	case 2: // plugin_type.grpc
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(grpc.ServiceSpec)
+		err := b.DecodeMessage(msg)
+		m.PluginType = &ServiceSpec_Grpc{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ServiceSpec_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ServiceSpec)
+	// plugin_type
+	switch x := m.PluginType.(type) {
+	case *ServiceSpec_Rest:
+		s := proto.Size(x.Rest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ServiceSpec_Grpc:
+		s := proto.Size(x.Grpc)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 func init() {

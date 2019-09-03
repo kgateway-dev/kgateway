@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 //
 //Certain plugins such as the AWS Lambda Plugin require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
@@ -138,14 +138,116 @@ func (m *Secret) GetMetadata() core.Metadata {
 	return core.Metadata{}
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*Secret) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Secret) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Secret_OneofMarshaler, _Secret_OneofUnmarshaler, _Secret_OneofSizer, []interface{}{
 		(*Secret_Aws)(nil),
 		(*Secret_Azure)(nil),
 		(*Secret_Tls)(nil),
 		(*Secret_Extension)(nil),
 	}
+}
+
+func _Secret_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*Secret)
+	// kind
+	switch x := m.Kind.(type) {
+	case *Secret_Aws:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Aws); err != nil {
+			return err
+		}
+	case *Secret_Azure:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Azure); err != nil {
+			return err
+		}
+	case *Secret_Tls:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Tls); err != nil {
+			return err
+		}
+	case *Secret_Extension:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Extension); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Secret.Kind has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _Secret_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*Secret)
+	switch tag {
+	case 1: // kind.aws
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(AwsSecret)
+		err := b.DecodeMessage(msg)
+		m.Kind = &Secret_Aws{msg}
+		return true, err
+	case 2: // kind.azure
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(AzureSecret)
+		err := b.DecodeMessage(msg)
+		m.Kind = &Secret_Azure{msg}
+		return true, err
+	case 3: // kind.tls
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(TlsSecret)
+		err := b.DecodeMessage(msg)
+		m.Kind = &Secret_Tls{msg}
+		return true, err
+	case 4: // kind.extension
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Extension)
+		err := b.DecodeMessage(msg)
+		m.Kind = &Secret_Extension{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _Secret_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Secret)
+	// kind
+	switch x := m.Kind.(type) {
+	case *Secret_Aws:
+		s := proto.Size(x.Aws)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Secret_Azure:
+		s := proto.Size(x.Azure)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Secret_Tls:
+		s := proto.Size(x.Tls)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Secret_Extension:
+		s := proto.Size(x.Extension)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 //

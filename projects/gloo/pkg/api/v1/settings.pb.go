@@ -23,7 +23,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Possible modes for running the function discovery service (FDS). FDS polls services in-cluster for Swagger
 // and gRPC endpoints. This behavior can be controlled with the use of annotations.
@@ -382,9 +382,9 @@ func (m *Settings) GetStatus() core.Status {
 	return core.Status{}
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*Settings) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Settings) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Settings_OneofMarshaler, _Settings_OneofUnmarshaler, _Settings_OneofSizer, []interface{}{
 		(*Settings_KubernetesConfigSource)(nil),
 		(*Settings_DirectoryConfigSource)(nil),
 		(*Settings_ConsulKvSource)(nil),
@@ -395,6 +395,222 @@ func (*Settings) XXX_OneofWrappers() []interface{} {
 		(*Settings_DirectoryArtifactSource)(nil),
 		(*Settings_ConsulKvArtifactSource)(nil),
 	}
+}
+
+func _Settings_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*Settings)
+	// config_source
+	switch x := m.ConfigSource.(type) {
+	case *Settings_KubernetesConfigSource:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.KubernetesConfigSource); err != nil {
+			return err
+		}
+	case *Settings_DirectoryConfigSource:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.DirectoryConfigSource); err != nil {
+			return err
+		}
+	case *Settings_ConsulKvSource:
+		_ = b.EncodeVarint(21<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ConsulKvSource); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Settings.ConfigSource has unexpected type %T", x)
+	}
+	// secret_source
+	switch x := m.SecretSource.(type) {
+	case *Settings_KubernetesSecretSource:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.KubernetesSecretSource); err != nil {
+			return err
+		}
+	case *Settings_VaultSecretSource:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.VaultSecretSource); err != nil {
+			return err
+		}
+	case *Settings_DirectorySecretSource:
+		_ = b.EncodeVarint(8<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.DirectorySecretSource); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Settings.SecretSource has unexpected type %T", x)
+	}
+	// artifact_source
+	switch x := m.ArtifactSource.(type) {
+	case *Settings_KubernetesArtifactSource:
+		_ = b.EncodeVarint(9<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.KubernetesArtifactSource); err != nil {
+			return err
+		}
+	case *Settings_DirectoryArtifactSource:
+		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.DirectoryArtifactSource); err != nil {
+			return err
+		}
+	case *Settings_ConsulKvArtifactSource:
+		_ = b.EncodeVarint(23<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ConsulKvArtifactSource); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Settings.ArtifactSource has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _Settings_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*Settings)
+	switch tag {
+	case 4: // config_source.kubernetes_config_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_KubernetesCrds)
+		err := b.DecodeMessage(msg)
+		m.ConfigSource = &Settings_KubernetesConfigSource{msg}
+		return true, err
+	case 5: // config_source.directory_config_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_Directory)
+		err := b.DecodeMessage(msg)
+		m.ConfigSource = &Settings_DirectoryConfigSource{msg}
+		return true, err
+	case 21: // config_source.consul_kv_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_ConsulKv)
+		err := b.DecodeMessage(msg)
+		m.ConfigSource = &Settings_ConsulKvSource{msg}
+		return true, err
+	case 6: // secret_source.kubernetes_secret_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_KubernetesSecrets)
+		err := b.DecodeMessage(msg)
+		m.SecretSource = &Settings_KubernetesSecretSource{msg}
+		return true, err
+	case 7: // secret_source.vault_secret_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_VaultSecrets)
+		err := b.DecodeMessage(msg)
+		m.SecretSource = &Settings_VaultSecretSource{msg}
+		return true, err
+	case 8: // secret_source.directory_secret_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_Directory)
+		err := b.DecodeMessage(msg)
+		m.SecretSource = &Settings_DirectorySecretSource{msg}
+		return true, err
+	case 9: // artifact_source.kubernetes_artifact_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_KubernetesConfigmaps)
+		err := b.DecodeMessage(msg)
+		m.ArtifactSource = &Settings_KubernetesArtifactSource{msg}
+		return true, err
+	case 10: // artifact_source.directory_artifact_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_Directory)
+		err := b.DecodeMessage(msg)
+		m.ArtifactSource = &Settings_DirectoryArtifactSource{msg}
+		return true, err
+	case 23: // artifact_source.consul_kv_artifact_source
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(Settings_ConsulKv)
+		err := b.DecodeMessage(msg)
+		m.ArtifactSource = &Settings_ConsulKvArtifactSource{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _Settings_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Settings)
+	// config_source
+	switch x := m.ConfigSource.(type) {
+	case *Settings_KubernetesConfigSource:
+		s := proto.Size(x.KubernetesConfigSource)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Settings_DirectoryConfigSource:
+		s := proto.Size(x.DirectoryConfigSource)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Settings_ConsulKvSource:
+		s := proto.Size(x.ConsulKvSource)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	// secret_source
+	switch x := m.SecretSource.(type) {
+	case *Settings_KubernetesSecretSource:
+		s := proto.Size(x.KubernetesSecretSource)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Settings_VaultSecretSource:
+		s := proto.Size(x.VaultSecretSource)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Settings_DirectorySecretSource:
+		s := proto.Size(x.DirectorySecretSource)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	// artifact_source
+	switch x := m.ArtifactSource.(type) {
+	case *Settings_KubernetesArtifactSource:
+		s := proto.Size(x.KubernetesArtifactSource)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Settings_DirectoryArtifactSource:
+		s := proto.Size(x.DirectoryArtifactSource)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Settings_ConsulKvArtifactSource:
+		s := proto.Size(x.ConsulKvArtifactSource)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 // Use Kubernetes CRDs as storage.
