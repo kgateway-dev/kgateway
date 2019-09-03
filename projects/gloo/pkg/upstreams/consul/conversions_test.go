@@ -24,7 +24,7 @@ var _ = Describe("Conversions", func() {
 			{Name: "svc-2", DataCenters: []string{"dc1", "dc3", "dc4"}},
 		}
 
-		usList := toUpstreamList(servicesWithDataCenters)
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters)
 		usList.Sort()
 
 		Expect(usList).To(HaveLen(2))

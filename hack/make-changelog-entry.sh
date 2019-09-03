@@ -27,7 +27,7 @@ write_changelog_issue() {
 changelog:
   - type: $TYPE
     description: ${DESCRIPTION}
-    issueLink: https://github.com/solo-io/gloo/pull/${ISSUE}
+    issueLink: https://github.com/${REPO}/issues/${ISSUE}
 EOF
 }
 

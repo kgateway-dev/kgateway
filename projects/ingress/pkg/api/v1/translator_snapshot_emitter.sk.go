@@ -243,7 +243,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 		snapshots <- &initialSnapshot
 
 		timer := time.NewTicker(time.Second * 1)
-		var previousHash uint64
+		previousHash := currentSnapshot.Hash()
 		sync := func() {
 			currentHash := currentSnapshot.Hash()
 			if previousHash == currentHash {
