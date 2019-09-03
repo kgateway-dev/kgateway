@@ -27,6 +27,7 @@ weight: 5
 - [ApiKeyAuth](#apikeyauth)
 - [ApiKeySecret](#apikeysecret)
 - [OpaAuth](#opaauth)
+- [Ldap](#ldap)
 - [AuthConfig](#authconfig)
 - [VhostExtension](#vhostextension)
 - [RouteExtension](#routeextension)
@@ -57,6 +58,8 @@ weight: 5
 "requestTimeout": .google.protobuf.Duration
 "failureModeAllow": bool
 "requestBody": .extauth.plugins.gloo.solo.io.BufferSettings
+"clearRouteCache": bool
+"statusOnError": int
 
 ```
 
@@ -68,6 +71,8 @@ weight: 5
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the ext auth service to respond. defaults to 200ms |  |
 | `failureModeAllow` | `bool` | In case of a failure or timeout querying the auth server, normally a request is denied. if this is set to true, the request will be allowed. |  |
 | `requestBody` | [.extauth.plugins.gloo.solo.io.BufferSettings](../extauth.proto.sk#buffersettings) | Set this if you also want to send the body of the request, and not just the headers. |  |
+| `clearRouteCache` | `bool` | Clears route cache in order to allow the external authorization service to correctly affect routing decisions. Filter clears all cached routes when: 1. The field is set to *true*. 2. The status returned from the authorization service is a HTTP 200 or gRPC 0. 3. At least one *authorization response header* is added to the client request, or is used for altering another client request header. |  |
+| `statusOnError` | `int` | Sets the HTTP status that is returned to the client when there is a network error between the filter and the authorization server. The default status is HTTP 403 Forbidden. If set, this must be one of the following: - 100 - 200 201 202 203 204 205 206 207 208 226 - 300 301 302 303 304 305 307 308 - 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 421 422 423 424 426 428 429 431 - 500 501 502 503 504 505 506 507 508 510 511 |  |
 
 
 
@@ -369,9 +374,40 @@ Deprecated
 
 
 ---
+### Ldap
+
+ 
+Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:
+ * Requests provide credentials via the basic HTTP authentication header. Gloo will BIND to the LDAP server using the
+   credentials extracted from the header.
+ * Your LDAP server is configured so that each entry you want to authorize has an attribute that indicates its group
+   memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
+
+```yaml
+"address": string
+"userDnTemplate": string
+"membershipAttributeName": string
+"allowedGroups": []string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `address` | `string` | Address of the LDAP server to query. Should be in the form: <address>:<port>. |  |
+| `userDnTemplate` | `string` | Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io" |  |
+| `membershipAttributeName` | `string` | Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided. |  |
+| `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" } |  |
+
+
+
+
+---
 ### AuthConfig
 
-
+ 
+This message represents the user-facing auth configuration. When processed by Gloo, certain configuration types
+(i.a. oauth, opa) will be translated, e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig` for the
+final config format that will be included in the extauth snapshot.
 
 ```yaml
 "basicAuth": .extauth.plugins.gloo.solo.io.BasicAuth
@@ -380,6 +416,7 @@ Deprecated
 "apiKeyAuth": .extauth.plugins.gloo.solo.io.ApiKeyAuth
 "pluginAuth": .extauth.plugins.gloo.solo.io.AuthPlugin
 "opaAuth": .extauth.plugins.gloo.solo.io.OpaAuth
+"ldap": .extauth.plugins.gloo.solo.io.Ldap
 
 ```
 
@@ -391,6 +428,7 @@ Deprecated
 | `apiKeyAuth` | [.extauth.plugins.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk#apikeyauth) |  |  |
 | `pluginAuth` | [.extauth.plugins.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  |  |
 | `opaAuth` | [.extauth.plugins.gloo.solo.io.OpaAuth](../extauth.proto.sk#opaauth) |  |  |
+| `ldap` | [.extauth.plugins.gloo.solo.io.Ldap](../extauth.proto.sk#ldap) |  |  |
 
 
 
@@ -541,6 +579,7 @@ Deprecated
 "apiKeyAuth": .extauth.plugins.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig
 "pluginAuth": .extauth.plugins.gloo.solo.io.AuthPlugin
 "opaAuth": .extauth.plugins.gloo.solo.io.ExtAuthConfig.OpaAuthConfig
+"ldap": .extauth.plugins.gloo.solo.io.Ldap
 
 ```
 
@@ -551,6 +590,7 @@ Deprecated
 | `apiKeyAuth` | [.extauth.plugins.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk#apikeyauthconfig) |  |  |
 | `pluginAuth` | [.extauth.plugins.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  |  |
 | `opaAuth` | [.extauth.plugins.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk#opaauthconfig) |  |  |
+| `ldap` | [.extauth.plugins.gloo.solo.io.Ldap](../extauth.proto.sk#ldap) |  |  |
 
 
 

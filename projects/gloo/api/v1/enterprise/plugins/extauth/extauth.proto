@@ -33,6 +33,28 @@ message Settings {
 
   // Set this if you also want to send the body of the request, and not just the headers.
   BufferSettings request_body = 6;
+
+  // Clears route cache in order to allow the external authorization service to correctly affect
+  // routing decisions. Filter clears all cached routes when:
+  //
+  // 1. The field is set to *true*.
+  //
+  // 2. The status returned from the authorization service is a HTTP 200 or gRPC 0.
+  //
+  // 3. At least one *authorization response header* is added to the client request, or is used for
+  // altering another client request header.
+  //
+  bool clear_route_cache = 7;
+
+  // Sets the HTTP status that is returned to the client when there is a network error between the
+  // filter and the authorization server. The default status is HTTP 403 Forbidden.
+  // If set, this must be one of the following:
+  // - 100
+  // - 200 201 202 203 204 205 206 207 208 226
+  // - 300 301 302 303 304 305 307 308
+  // - 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 421 422 423 424 426 428 429 431
+  // - 500 501 502 503 504 505 506 507 508 510 511
+  uint32 status_on_error = 8;
 }
 
 message HttpService {
@@ -174,6 +196,35 @@ message OpaAuth {
   string query = 2;
 }
 
+// Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:
+//  * Requests provide credentials via the basic HTTP authentication header. Gloo will BIND to the LDAP server using the
+//    credentials extracted from the header.
+//  * Your LDAP server is configured so that each entry you want to authorize has an attribute that indicates its group
+//    memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
+message Ldap {
+
+  // Address of the LDAP server to query. Should be in the form: <address>:<port>.
+  string address = 1;
+
+  // Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder.
+  // When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the
+  // placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope).
+  // E.g. "uid=%s,ou=people,dc=solo,dc=io"
+  string userDnTemplate = 2;
+
+  // Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look
+  // for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided.
+  string membershipAttributeName = 3;
+
+  // In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must
+  // contain at least of one of the group DNs specified via this option.
+  // E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
+  repeated string allowedGroups = 4;
+}
+
+// This message represents the user-facing auth configuration. When processed by Gloo, certain configuration types
+// (i.a. oauth, opa) will be translated, e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig` for the
+// final config format that will be included in the extauth snapshot.
 message AuthConfig {
   oneof auth_config {
     BasicAuth basic_auth = 1;
@@ -182,6 +233,7 @@ message AuthConfig {
     ApiKeyAuth api_key_auth = 4;
     AuthPlugin plugin_auth = 5;
     OpaAuth opa_auth = 6;
+    Ldap ldap = 7;
   }
 }
 
@@ -250,12 +302,13 @@ message ExtAuthConfig {
   message OpaAuthConfig {
     // An optional modules (filename, module content) maps containing modules assist in the resolution of `query`.
     map<string, string> modules = 1;
-  
+
     // The query that determines the auth decision. The result of this query must be either a boolean
     // or an array with boolean as the first element. A boolean `true` value means that the request
     // will be authorized. Any other value, or error, means that the request will be denied.
     string query = 2;
   }
+
   // Deprecated
   oneof auth_config {
     OAuthConfig oauth = 3;
@@ -271,6 +324,7 @@ message ExtAuthConfig {
       ApiKeyAuthConfig api_key_auth = 5;
       AuthPlugin plugin_auth = 6;
       OpaAuthConfig opa_auth = 7;
+      Ldap ldap = 8;
     }
   }
 
