@@ -37,6 +37,11 @@ type RouteParams struct {
 	VirtualHost *v1.VirtualHost
 }
 
+type RouteActionParams struct {
+	RouteParams
+	Route *v1.Route
+}
+
 /*
 	Upstream Plugins
 */
@@ -59,7 +64,7 @@ type RoutePlugin interface {
 // suggestion: if your plugin requires configuration from a RoutePlugin field, implement the RoutePlugin interface
 type RouteActionPlugin interface {
 	Plugin
-	ProcessRouteAction(params RouteParams, inAction *v1.RouteAction, out *envoyroute.RouteAction) error
+	ProcessRouteAction(params RouteActionParams, inAction *v1.RouteAction, out *envoyroute.RouteAction) error
 }
 
 type WeightedDestinationPlugin interface {

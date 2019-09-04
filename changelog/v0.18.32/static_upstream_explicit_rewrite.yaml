@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow explicitly enabling or disabling auto-rewrite for upstreams.
+    issueLink: https://github.com/solo-io/gloo/issues/NUMBER
