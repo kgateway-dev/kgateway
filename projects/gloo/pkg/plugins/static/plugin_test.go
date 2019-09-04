@@ -142,7 +142,7 @@ var _ = Describe("Plugin", func() {
 			}
 
 		})
-		It("host rewrites with an address", func() {
+		It("host rewrites with an address by default", func() {
 			p.ProcessUpstream(params, upstream, out)
 			p.ProcessRouteAction(paramsRouteAction, inRouteAction, outRouteAction)
 			Expect(outRouteAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
@@ -153,7 +153,7 @@ var _ = Describe("Plugin", func() {
 			p.ProcessRouteAction(paramsRouteAction, inRouteAction, outRouteAction)
 			Expect(outRouteAction.GetAutoHostRewrite().GetValue()).To(Equal(false))
 		})
-		It("host rewrites with an ip", func() {
+		It("skips auto host rewrite with an ip by default", func() {
 			upstreamSpec.Hosts = []*v1static.Host{{
 				Addr: "1.2.3.4",
 				Port: 1234,
