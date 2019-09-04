@@ -239,7 +239,9 @@ type K8s struct {
 }
 
 type ApiServer struct {
-	Enable     bool                 `json:"enable,omitempty" desc:"If set, will deploy a read-only UI for Gloo"`
+	Enable bool `json:"enable,omitempty" desc:"If set, will deploy a read-only UI for Gloo"`
+	// used for gating config (like license secret) that are only relevant to the enterprise UI
+	Enterprise bool                 `json:"enterprise,omitempty"`
 	Deployment *ApiServerDeployment `json:"deployment,omitempty"`
 	Service    *ApiServerService    `json:"service,omitempty"`
 	ConfigMap  *ApiServerConfigMap  `json:"configMap,omitempty"`

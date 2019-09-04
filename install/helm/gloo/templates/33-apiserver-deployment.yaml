@@ -61,12 +61,14 @@ spec:
             {{- end}} # stats
             - name: NO_AUTH
               value: "1"
+      {{- if .Values.apiServer.enterprise }}
             - name: GLOO_LICENSE_KEY
               valueFrom:
                 secretKeyRef:
                   name: license
                   key: license-key
-          ports:
+      {{- end}} # .Values.apiServer.enterprise
+      ports:
             - name: grpcport
               containerPort: {{.Values.apiServer.deployment.server.grpcPort}}
               protocol: TCP
