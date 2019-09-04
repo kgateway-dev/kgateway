@@ -240,7 +240,6 @@ type K8s struct {
 
 type ApiServer struct {
 	Enable     bool                 `json:"enable,omitempty" desc:"If set, will deploy a read-only UI for Gloo"`
-	NoAuth     bool                 `json:"noAuth"`
 	Deployment *ApiServerDeployment `json:"deployment,omitempty"`
 	Service    *ApiServerService    `json:"service,omitempty"`
 	ConfigMap  *ApiServerConfigMap  `json:"configMap,omitempty"`
@@ -267,9 +266,8 @@ type ApiServerEnvoyDeployment struct {
 }
 
 type ApiServerUiDeployment struct {
-	StaticPort       uint   `json:"staticPort"`
-	StaticPortNoAuth uint   `json:"staticPortNoAuth"`
-	Image            *Image `json:"image,omitempty"`
+	StaticPort uint   `json:"staticPort"`
+	Image      *Image `json:"image,omitempty"`
 	*DeploymentSpec
 }
 
