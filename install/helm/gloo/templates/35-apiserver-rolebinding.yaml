@@ -1,0 +1,23 @@
+{{- if .Values.apiServer.enable }}
+kind: {{ include "gloo.roleKind" . }}Binding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Values.apiServer.service.name }}-role-binding{{ include "gloo.rolebindingsuffix" . }}
+  {{- if .Values.gloo.global.glooRbac.namespaced }}
+namespace: {{ .Release.Namespace }}
+  {{- end }}
+labels:
+  app: gloo
+  gloo: rbac
+annotations:
+  "helm.sh/hook": "pre-install"
+  "helm.sh/hook-weight": "15"
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.apiServer.service.name }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: {{ include "gloo.roleKind" . }}
+  name: {{ .Values.apiServer.service.name }}
+  apiGroup: rbac.authorization.k8s.io
+  {{- end }} # .Values.apiServer.enable
