@@ -24,7 +24,7 @@ message UpstreamSpec {
 
     // Enable \ Disable auto host re-write.
     // If not set, the default behavior is to enable auto host rewrite, if the first host in the
-    // list is not an IP address (i.e. it is a DNS adress)
+    // list is not an IP address (i.e. it is a DNS address)
     // If enabled (explicitly or by the default) auto_host_rewrite will be automatically added
     // to routes that point to this upstream.
     google.protobuf.BoolValue auto_host_rewrite = 6;

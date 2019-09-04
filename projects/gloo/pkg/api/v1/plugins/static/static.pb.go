@@ -38,7 +38,7 @@ type UpstreamSpec struct {
 	UseTls bool `protobuf:"varint,3,opt,name=use_tls,json=useTls,proto3" json:"use_tls,omitempty"`
 	// Enable \ Disable auto host re-write.
 	// If not set, the default behavior is to enable auto host rewrite, if the first host in the
-	// list is not an IP address (i.e. it is a DNS adress)
+	// list is not an IP address (i.e. it is a DNS address)
 	// If enabled (explicitly or by the default) auto_host_rewrite will be automatically added
 	// to routes that point to this upstream.
 	AutoHostRewrite *types.BoolValue `protobuf:"bytes,6,opt,name=auto_host_rewrite,json=autoHostRewrite,proto3" json:"auto_host_rewrite,omitempty"`
