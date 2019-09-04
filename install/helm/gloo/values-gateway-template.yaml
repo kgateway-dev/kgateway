@@ -30,6 +30,30 @@ discovery:
     replicas: 1
     stats: true
 
+apiServer:
+  enable: true
+  enableBeta: true
+  deployment:
+    stats: true
+    name: "grpcserver-ui"
+    server:
+      image:
+        name: apiserver
+        repository: grpcserver-ee
+      grpcPort: 10101
+      oauth: {}
+    ui:
+      image:
+        name: "gloo-ui"
+        repository: grpcserver-ui
+      staticPort: 8080
+    envoy:
+      image:
+        name: "grpcserver-envoy"
+        repository: grpcserver-envoy
+  service:
+    name: "apiserver-ui"
+
 gateway:
   enabled: true
   upgrade: false
