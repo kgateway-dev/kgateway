@@ -68,7 +68,7 @@ spec:
                   name: license
                   key: license-key
       {{- end}} # .Values.apiServer.enterprise
-      ports:
+          ports:
             - name: grpcport
               containerPort: {{.Values.apiServer.deployment.server.grpcPort}}
               protocol: TCP
