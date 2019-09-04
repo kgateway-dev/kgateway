@@ -39,7 +39,7 @@ apiServer:
     server:
       image:
         name: apiserver
-        repository: grpcserver-eeboomboom
+        repository: grpcserver-ee
       grpcPort: 10101
       oauth: {}
     ui:
