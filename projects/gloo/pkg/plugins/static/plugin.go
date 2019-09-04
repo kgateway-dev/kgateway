@@ -115,7 +115,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	// the upstream has a DNS name. to cover the case that it is an external service
 	// that requires the host header, we will add host rewrite.
-	if hostname != "" {
+	if (hostname != "" && spec.GetAutoHostRewrite() == nil) || spec.GetAutoHostRewrite().GetValue() {
 		// set the type to strict dns
 		out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
 			Type: envoyapi.Cluster_STRICT_DNS,
@@ -131,7 +131,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 }
 
-func (p *plugin) ProcessRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoyroute.RouteAction) error {
+func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, in *v1.RouteAction, out *envoyroute.RouteAction) error {
+
+	// if someone is trying to do a host re-write, nothing to do here.
+	if params.Route.GetRoutePlugins().GetHostRewrite() != nil {
+		return nil
+	}
+
 	upstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in)
 	if err != nil {
 		return err
