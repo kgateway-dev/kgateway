@@ -203,6 +203,14 @@ message OpaAuth {
 //    memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
 message Ldap {
 
+  // Configuration properties for pooling connections to the LDAP server.
+  message ConnectionPool {
+    // Maximum number connections that are pooled at any give time. The default value is 5.
+    uint32 maxSize = 1;
+    // Number of connections that the pool will be pre-populated with upon initialization. The default value is 2.
+    uint32 initialSize = 2;
+  }
+
   // Address of the LDAP server to query. Should be in the form: <address>:<port>.
   string address = 1;
 
@@ -220,6 +228,9 @@ message Ldap {
   // contain at least of one of the group DNs specified via this option.
   // E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
   repeated string allowedGroups = 4;
+
+  // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
+  ConnectionPool pool = 5;
 }
 
 // This message represents the user-facing auth configuration. When processed by Gloo, certain configuration types

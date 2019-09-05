@@ -28,6 +28,7 @@ weight: 5
 - [ApiKeySecret](#apikeysecret)
 - [OpaAuth](#opaauth)
 - [Ldap](#ldap)
+- [ConnectionPool](#connectionpool)
 - [AuthConfig](#authconfig)
 - [VhostExtension](#vhostextension)
 - [RouteExtension](#routeextension)
@@ -388,6 +389,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 "userDnTemplate": string
 "membershipAttributeName": string
 "allowedGroups": []string
+"pool": .extauth.plugins.gloo.solo.io.Ldap.ConnectionPool
 
 ```
 
@@ -397,6 +399,27 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `userDnTemplate` | `string` | Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io" |  |
 | `membershipAttributeName` | `string` | Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided. |  |
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" } |  |
+| `pool` | [.extauth.plugins.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |  |
+
+
+
+
+---
+### ConnectionPool
+
+ 
+Configuration properties for pooling connections to the LDAP server.
+
+```yaml
+"maxSize": int
+"initialSize": int
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `maxSize` | `int` | Maximum number connections that are pooled at any give time. The default value is 5. |  |
+| `initialSize` | `int` | Number of connections that the pool will be pre-populated with upon initialization. The default value is 2. |  |
 
 
 

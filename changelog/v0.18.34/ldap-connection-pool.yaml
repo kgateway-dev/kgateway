@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add LDAP connection pool setting to Ext Auth API.
+  issueLink: https://github.com/solo-io/gloo/issues/1128
