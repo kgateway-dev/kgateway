@@ -215,6 +215,8 @@ func convertVirtualHost(vs core.ResourceRef, ours *v1.VirtualHost) *gloov1.Virtu
 		Domains:            ours.Domains,
 		Routes:             convertRoutes(ours.Routes),
 		VirtualHostPlugins: ours.VirtualHostPlugins,
+		// TODO: remove on next breaking change
+		CorsPolicy: ours.CorsPolicy,
 	}
 
 	return vh
