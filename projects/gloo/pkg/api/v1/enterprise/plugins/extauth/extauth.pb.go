@@ -1006,7 +1006,8 @@ func (m *Ldap) GetPool() *Ldap_ConnectionPool {
 	return nil
 }
 
-// Configuration properties for pooling connections to the LDAP server.
+// Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
+// is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
 type Ldap_ConnectionPool struct {
 	// Maximum number connections that are pooled at any give time. The default value is 5.
 	MaxSize uint32 `protobuf:"varint,1,opt,name=maxSize,proto3" json:"maxSize,omitempty"`

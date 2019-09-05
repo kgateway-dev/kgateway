@@ -408,7 +408,8 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 ### ConnectionPool
 
  
-Configuration properties for pooling connections to the LDAP server.
+Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
+is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
 
 ```yaml
 "maxSize": int
