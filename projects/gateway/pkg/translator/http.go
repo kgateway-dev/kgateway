@@ -228,6 +228,8 @@ func convertVirtualHost(vs core.ResourceRef, ours *v1.VirtualHost, tables v1.Rou
 		Domains:            ours.Domains,
 		Routes:             routes,
 		VirtualHostPlugins: ours.VirtualHostPlugins,
+		// TODO: remove on next breaking change
+		CorsPolicy: ours.CorsPolicy,
 	}
 
 	return vh, nil
