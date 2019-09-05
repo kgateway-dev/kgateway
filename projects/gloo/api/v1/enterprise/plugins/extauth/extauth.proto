@@ -203,7 +203,8 @@ message OpaAuth {
 //    memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
 message Ldap {
 
-  // Configuration properties for pooling connections to the LDAP server.
+  // Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
+  // is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
   message ConnectionPool {
     // Maximum number connections that are pooled at any give time. The default value is 5.
     uint32 maxSize = 1;
