@@ -412,15 +412,15 @@ Configuration properties for pooling connections to the LDAP server. If the pool
 is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
 
 ```yaml
-"maxSize": int
-"initialSize": int
+"maxSize": .google.protobuf.UInt32Value
+"initialSize": .google.protobuf.UInt32Value
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `maxSize` | `int` | Maximum number connections that are pooled at any give time. The default value is 5. |  |
-| `initialSize` | `int` | Number of connections that the pool will be pre-populated with upon initialization. The default value is 2. |  |
+| `maxSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Maximum number connections that are pooled at any give time. The default value is 5. |  |
+| `initialSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Number of connections that the pool will be pre-populated with upon initialization. The default value is 2. |  |
 
 
 

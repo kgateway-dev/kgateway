@@ -12,7 +12,7 @@ import "envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
-
+import "google/protobuf/wrappers.proto";
 
 message Settings {
   // The upstream to ask about auth decisions
@@ -207,9 +207,9 @@ message Ldap {
   // is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
   message ConnectionPool {
     // Maximum number connections that are pooled at any give time. The default value is 5.
-    uint32 maxSize = 1;
+    google.protobuf.UInt32Value maxSize = 1;
     // Number of connections that the pool will be pre-populated with upon initialization. The default value is 2.
-    uint32 initialSize = 2;
+    google.protobuf.UInt32Value initialSize = 2;
   }
 
   // Address of the LDAP server to query. Should be in the form: <address>:<port>.
