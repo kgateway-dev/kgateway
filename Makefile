@@ -93,7 +93,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
@@ -106,6 +106,12 @@ $(OUTPUT_DIR)/.generated-code:
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
+
+# Make sure that the enterprise API *.pb.go files that are generated but not used in this repo are valid.
+.PHONY: verify-enterprise-protos
+verify-enterprise-protos:
+	@echo Verifying validity of generated enterprise files...
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
 
 #----------------------------------------------------------------------------------
 # Generate mocks
