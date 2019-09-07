@@ -85,8 +85,9 @@ message HttpGateway {
     // if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above).
     repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
 
+    // Select virtual services by their label. This will apply only to virtual services
+    // in the same namespace as the gateway resource.
     // only one of `virtualServices` or `virtualServiceSelector` should be provided
-    // rather than providing
     map<string, string> virtual_service_selector = 2 ;
 
     // http gateway configuration

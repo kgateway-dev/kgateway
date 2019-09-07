@@ -215,8 +215,9 @@ type HttpGateway struct {
 	// names of the the virtual services, which contain the actual routes for the gateway
 	// if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above).
 	VirtualServices []core.ResourceRef `protobuf:"bytes,1,rep,name=virtual_services,json=virtualServices,proto3" json:"virtual_services"`
+	// Select virtual services by their label. This will apply only to virtual services
+	// in the same namespace as the gateway resource.
 	// only one of `virtualServices` or `virtualServiceSelector` should be provided
-	// rather than providing
 	VirtualServiceSelector map[string]string `protobuf:"bytes,2,rep,name=virtual_service_selector,json=virtualServiceSelector,proto3" json:"virtual_service_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// http gateway configuration
 	Plugins              *v1.HttpListenerPlugins `protobuf:"bytes,8,opt,name=plugins,proto3" json:"plugins,omitempty"`

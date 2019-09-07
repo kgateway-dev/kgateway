@@ -26,6 +26,7 @@ const (
 var _ = Describe("Translator", func() {
 	var (
 		snap       *v2.ApiSnapshot
+		labelSet   = map[string]string{"a": "b"}
 		translator Translator
 	)
 
@@ -207,7 +208,7 @@ var _ = Describe("Translator", func() {
 					},
 					VirtualServices: v1.VirtualServiceList{
 						{
-							Metadata: core.Metadata{Namespace: ns, Name: "name1"},
+							Metadata: core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
 							VirtualHost: &v1.VirtualHost{
 								Domains: []string{"d1.com"},
 								Routes: []*v1.Route{
@@ -256,20 +257,40 @@ var _ = Describe("Translator", func() {
 				Expect(proxy.Listeners[0].SslConfigurations).To(BeEmpty())
 			})
 
-			It("should translate a gateway to only have its vservices", func() {
-				snap.Gateways[0].GatewayType = &v2.Gateway_HttpGateway{
-					HttpGateway: &v2.HttpGateway{
-						VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
-					},
-				}
+			Context("with VirtualServices (refs)", func() {
+				It("should translate a gateway to only have its vservices", func() {
+					snap.Gateways[0].GatewayType = &v2.Gateway_HttpGateway{
+						HttpGateway: &v2.HttpGateway{
+							VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
+						},
+					}
 
-				proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
 
-				Expect(errs.Validate()).NotTo(HaveOccurred())
-				Expect(proxy).NotTo(BeNil())
-				Expect(proxy.Listeners).To(HaveLen(1))
-				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-				Expect(listener.VirtualHosts).To(HaveLen(1))
+					Expect(errs.Validate()).NotTo(HaveOccurred())
+					Expect(proxy).NotTo(BeNil())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+					Expect(listener.VirtualHosts).To(HaveLen(1))
+				})
+			})
+
+			Context("with VirtualServiceSelector", func() {
+				It("should translate a gateway to only have its vservices", func() {
+					snap.Gateways[0].GatewayType = &v2.Gateway_HttpGateway{
+						HttpGateway: &v2.HttpGateway{
+							VirtualServiceSelector: labelSet,
+						},
+					}
+
+					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+
+					Expect(errs.Validate()).NotTo(HaveOccurred())
+					Expect(proxy).NotTo(BeNil())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+					Expect(listener.VirtualHosts).To(HaveLen(1))
+				})
 			})
 
 			It("should not have vhosts with ssl", func() {

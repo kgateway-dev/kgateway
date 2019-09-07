@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -142,25 +144,46 @@ func getVirtualServiceForGateway(gateway *v2.Gateway, virtualServices v1.Virtual
 	if httpGateway == nil {
 		return nil
 	}
-	virtualServiceRefs := httpGateway.VirtualServices
-	// add all virtual services if empty
-	if len(virtualServiceRefs) == 0 {
-		for _, virtualService := range virtualServices {
-			virtualServiceRefs = append(virtualServiceRefs, core.ResourceRef{
-				Name:      virtualService.GetMetadata().Name,
-				Namespace: virtualService.GetMetadata().Namespace,
-			})
-		}
-	}
 
 	var virtualServicesForGateway v1.VirtualServiceList
-	for _, ref := range virtualServiceRefs {
-		virtualService, err := virtualServices.Find(ref.Strings())
-		if err != nil {
-			resourceErrs.AddError(gateway, err)
-			continue
+
+	switch {
+	case len(httpGateway.VirtualServiceSelector) > 0:
+		// select virtual services by the label selector
+		// must be in the same namespace as the Gateway
+		selector := labels.SelectorFromSet(httpGateway.VirtualServiceSelector)
+
+		virtualServices.Each(func(element *v1.VirtualService) {
+			vsLabels := labels.Set(element.Metadata.Labels)
+			if element.Metadata.Namespace == gateway.Metadata.Namespace && selector.Matches(vsLabels) {
+				virtualServicesForGateway = append(virtualServicesForGateway, element)
+			}
+		})
+
+	default:
+		// use individual refs to collect virtual services
+		virtualServiceRefs := httpGateway.VirtualServices
+
+		// fall back to all virtual services in all watchNamespaces
+		// TODO: make this all vs in a single namespace
+		// https://github.com/solo-io/gloo/issues/1142
+		if len(virtualServiceRefs) == 0 {
+			for _, virtualService := range virtualServices {
+				virtualServiceRefs = append(virtualServiceRefs, core.ResourceRef{
+					Name:      virtualService.GetMetadata().Name,
+					Namespace: virtualService.GetMetadata().Namespace,
+				})
+			}
 		}
-		virtualServicesForGateway = append(virtualServicesForGateway, virtualService)
+
+		for _, ref := range virtualServiceRefs {
+			virtualService, err := virtualServices.Find(ref.Strings())
+			if err != nil {
+				resourceErrs.AddError(gateway, err)
+				continue
+			}
+			virtualServicesForGateway = append(virtualServicesForGateway, virtualService)
+		}
 	}
 
 	return virtualServicesForGateway
