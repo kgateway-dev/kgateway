@@ -1,9 +1,4 @@
-{{- if .Values.gateway.enabled }}
-{{- if .Values.accessLogger }}
-{{ $serverPort := 8083 }}
-{{- if .Values.accessLogger.port }}
-{{ $serverPort := .Values.accessLogger.port }}
-{{- end}} # if .Values.accessLogger.port
+{{- if and  .Values.gateway.enabled .Values.accessLogger.enabled }}
 {{- $image := .Values.accessLogger.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.accessLogger.image .Values.global.image }}
@@ -48,10 +43,9 @@ spec:
             value: {{.Values.accessLogger.serviceName}}
 {{- end }} # if .Values.accessLogger.serviceName
           - name: SERVER_PORT
-            value: "{{ $serverPort }}"
+            value: "{{ .Values.accessLogger.port }}"
           ports:
-          - containerPort: {{ $serverPort }}
+          - containerPort: {{ .Values.accessLogger.port }}
             name: http
             protocol: TCP
-{{- end }} # if .Values.accessLogger
-{{- end }} # if .Values.gateway.enabled
+{{- end }}

@@ -1,4 +1,5 @@
 accessLogger:
+  enabled: true
   port: 8083
   serviceName: AccessLog
   image:

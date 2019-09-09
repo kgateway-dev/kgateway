@@ -28,6 +28,9 @@ ingressProxy:
 gateway:
   enabled: false
 
+accessLogger:
+  enabled: false
+
 global:
   image:
     registry: quay.io/solo-io

@@ -125,20 +125,16 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
-{{- if $.Values.accessLogger }}
+{{- if $.Values.accessLogger.enabled }}
       - name: access_log_cluster
         connect_timeout: 5.000s
         hosts:
         - socket_address:
             address: gateway-proxy-v2-access-logger.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
-{{- if $.Values.accessLogger.port }}
             port_value: {{$.Values.accessLogger.port}}
-{{- else -}}
-            port_value: 8083
-{{- end}} # if $.Values.accessLogger.port
         http2_protocol_options: {}
         type: STRICT_DNS
-{{- end}} # if $.Values.accessLogger
+{{- end}} # if .Values.accessLogger.enabled
 {{- if $spec.tracing -}}
 {{- if $spec.tracing.cluster}}
 {{ toYaml $spec.tracing.cluster | indent 6}}

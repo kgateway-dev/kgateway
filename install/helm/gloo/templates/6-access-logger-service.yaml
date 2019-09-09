@@ -1,9 +1,4 @@
-{{- if .Values.gateway.enabled }}
-{{- if .Values.accessLogger }}
-{{ $serverPort := 8083 }}
-{{- if .Values.accessLogger.port }}
-{{ $serverPort := .Values.accessLogger.port }}
-{{- end}} # if .Values.accessLogger.port
+{{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 
 apiVersion: v1
 kind: Service
@@ -15,9 +10,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
 spec:
   ports:
-  - port: {{ $serverPort }}
-    targetPort: {{ $serverPort }}
+  - port: {{ .Values.accessLogger.port }}
+    targetPort: {{ .Values.accessLogger.port }}
     protocol: TCP
     name: http
-{{- end }} # if $spec.accessLogger
-{{ end }} # if .Values.gateway.enabled
+{{- end }}
