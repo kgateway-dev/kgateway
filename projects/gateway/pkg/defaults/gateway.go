@@ -14,7 +14,7 @@ const GatewayProxyName = "gateway-proxy-v2"
 func DefaultGateway(writeNamespace string) *v2.Gateway {
 	return &v2.Gateway{
 		Metadata: core.Metadata{
-			Name:        "gateway",
+			Name:        GatewayProxyName,
 			Namespace:   writeNamespace,
 			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},

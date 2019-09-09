@@ -1,0 +1,33 @@
+{{- range $name, $spec := .Values.gatewayProxies }}
+apiVersion: gateway.solo.io.v2/v2
+kind: GatewayList
+items:
+ - apiVersion: gateway.solo.io.v2/v2
+   kind: Gateway
+   metadata:
+     name: {{ $name | kebabcase }}
+     namespace: {{ $.Release.Namespace }}
+   spec:
+     bindAddress: "{{ $spec.httpListenAddress }}"
+     bindPort: {{ $spec.podTemplate.httpPort }}
+     gatewayProxyName: {{ $spec.proxyName }}
+     httpGateway: {}
+     useProxyProto: {{ $spec.useProxyProto }}
+     ssl: false
+     proxyNames:
+       - {{ $name | kebabcase }}
+ - apiVersion: gateway.solo.io.v2/v2
+   kind: Gateway
+   metadata:
+     name: {{ $name | kebabcase }}-ssl
+     namespace: {{ $.Release.Namespace }}
+   spec:
+     bindAddress: "{{ $spec.httpListenAddress }}"
+     bindPort: {{ $spec.podTemplate.httpsPort }}
+     gatewayProxyName: {{ $spec.proxyName }}
+     httpGateway: {}
+     useProxyProto: {{ $spec.useProxyProto }}
+     ssl: true
+     proxyNames:
+       - {{ $name | kebabcase }}
+{{- end }}

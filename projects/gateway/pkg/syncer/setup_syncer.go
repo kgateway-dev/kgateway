@@ -124,6 +124,8 @@ func RunGateway(opts Opts) error {
 		return err
 	}
 
+	// the helm install should have created these, but go ahead and try again just in case
+	// installing through helm lets these be configurable
 	for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
 		if _, err := gatewayClient.Write(gw, clients.WriteOpts{
 			Ctx: opts.WatchOpts.Ctx,
