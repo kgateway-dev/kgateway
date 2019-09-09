@@ -34,7 +34,7 @@ func (s *Server) StreamAccessLogs(srv envoyals.AccessLogService_StreamAccessLogs
 		zap.Any("node_locality", msg.Identifier.Node.GetLocality()),
 		zap.Any("node_metadata", msg.Identifier.Node.GetMetadata()),
 	)
-	contextutils.LoggerFrom(ctx).Debug("received access log message")
+	contextutils.LoggerFrom(ctx).Info("received access log message")
 
 	if s.opts.Ordered {
 		for _, cb := range s.opts.Callbacks {

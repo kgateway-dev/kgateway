@@ -42,11 +42,19 @@ func Run() {
 				switch msg := message.GetLogEntries().(type) {
 				case *pb.StreamAccessLogsMessage_HttpLogs:
 					for _, v := range msg.HttpLogs.LogEntry {
-						logger.Debug(zap.Any("http_access_log", v))
+						logger.With(
+							zap.Any("protocol_version", v.ProtocolVersion),
+							zap.Any("request_path", v.Request.Path),
+							zap.Any("request_method", v.Request.RequestMethod),
+							zap.Any("response_status", v.Response.ResponseCode),
+						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
 					for _, v := range msg.TcpLogs.LogEntry {
-						logger.Debug(zap.Any("tcp_access_log", v))
+						logger.With(
+							zap.Any("upstream_cluster", v.CommonProperties.UpstreamCluster),
+							zap.Any("route_name", v.CommonProperties.RouteName),
+						).Info("received tcp request")
 					}
 				}
 				return nil

@@ -14,4 +14,7 @@ spec:
     targetPort: {{ .Values.accessLogger.port }}
     protocol: TCP
     name: http
+  selector:
+    app: gloo
+    gloo: gateway-proxy-v2-access-logger
 {{- end }}
