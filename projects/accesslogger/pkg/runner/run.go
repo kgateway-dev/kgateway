@@ -6,9 +6,9 @@ import (
 	"net"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
-	"github.com/solo-io/gloo/pkg/healthchecker"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/healthchecker"
 	"github.com/solo-io/go-utils/stats"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"

@@ -1326,7 +1326,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:0622a7421784520bdbca7fdfe16c6e6c46b370758b449c5e8c5f87208efa5cc1"
+  digest = "1:dd6e22af3ef48089103837a2eb782f3f3a7cfe1f307ae1ef92f107bcd7e1158c"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1340,6 +1340,7 @@
     "errutils",
     "githubutils",
     "hashutils",
+    "healthchecker",
     "installutils/helmchart",
     "installutils/kuberesource",
     "kubeinstallutils",
@@ -2583,6 +2584,7 @@
     "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/githubutils",
     "github.com/solo-io/go-utils/hashutils",
+    "github.com/solo-io/go-utils/healthchecker",
     "github.com/solo-io/go-utils/installutils/helmchart",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/log",

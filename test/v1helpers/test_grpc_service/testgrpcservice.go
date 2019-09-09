@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/healthchecker"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
+	"github.com/solo-io/go-utils/healthchecker"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
