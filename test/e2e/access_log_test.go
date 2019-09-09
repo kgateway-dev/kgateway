@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -125,9 +124,8 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					settings = runner.Settings{
-						GlooAddress: fmt.Sprintf("localhost:%d", testClients.GlooPort),
-						DebugPort:   0,
-						ServerPort:  int(accessLogPort),
+						DebugPort:  0,
+						ServerPort: int(accessLogPort),
 					}
 
 					opts := loggingservice.Options{

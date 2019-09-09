@@ -1,8 +1,2 @@
 accessLogger:
   enabled: true
-  port: 8083
-  serviceName: AccessLog
-  image:
-    repository: access-logger
-    tag: dev
-  replicas: 1
