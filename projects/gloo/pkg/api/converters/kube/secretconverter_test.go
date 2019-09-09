@@ -11,7 +11,7 @@ import (
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -84,30 +84,32 @@ var _ = Describe("SecretConverter", func() {
 
 	})
 
-	It("should convert annotation-free from of aws secret from kube secret", func() {
-		secret := &kubev1.Secret{
-			Data: map[string][]byte{
-				AwsAccessKeyName: []byte("access"),
-				AwsSecretKeyName: []byte("secret"),
-			},
+	It("should round trip kube aws secret to gloo aws secret and back to kube aws secret", func() {
+		awsSecret := &v1.AwsSecret{
+			AccessKey: "access",
+			SecretKey: "secret",
+		}
+		kubeSecret := &kubev1.Secret{
+			Type: kubev1.SecretTypeOpaque,
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "s1",
 				Namespace: "ns",
 				Labels:    map[string]string{},
 			},
+			Data: map[string][]byte{
+				AwsAccessKeyName: []byte(awsSecret.AccessKey),
+				AwsSecretKeyName: []byte(awsSecret.SecretKey),
+			},
 		}
 		var awsConverter AwsSecretConverter
-		mockKube := &kubev1.Secret{Type: "this is a mock"}
-		mockResource := &v1.Secret{Metadata: core.Metadata{Name: "mock-name"}}
-		mockConverter := newMockConverter(mockKube, mockResource)
-		chainedConverter := NewSecretConverterChain(&awsConverter, mockConverter)
-		resource, err := chainedConverter.FromKubeSecret(context.Background(), nil, secret)
+		chainedConverter := NewSecretConverterChain(&awsConverter)
+		resource, err := chainedConverter.FromKubeSecret(context.Background(), nil, kubeSecret)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resource.GetMetadata().Name).To(Equal("s1"))
-		Expect(resource.(*v1.Secret).Kind.(*v1.Secret_Aws).Aws).NotTo(Equal(""))
-		kubeSecret, err := chainedConverter.ToKubeSecret(context.Background(), nil, resource)
+		Expect(resource.(*v1.Secret).Kind.(*v1.Secret_Aws).Aws).To(Equal(awsSecret))
+		derivedSecret, err := chainedConverter.ToKubeSecret(context.Background(), nil, resource)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(kubeSecret).To(Equal(mockKube))
+		Expect(derivedSecret).To(Equal(kubeSecret))
 	})
 
 	It("converter chain should exit in expected order", func() {

@@ -36,6 +36,7 @@ Statuses are meant to be read-only by users
 "reason": string
 "reportedBy": string
 "subresourceStatuses": map<string, .core.solo.io.Status>
+"details": .google.protobuf.Struct
 
 ```
 
@@ -45,6 +46,7 @@ Statuses are meant to be read-only by users
 | `reason` | `string` | Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty |  |
 | `reportedBy` | `string` | Reference to the reporter who wrote this status |  |
 | `subresourceStatuses` | `map<string, .core.solo.io.Status>` | Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource |  |
+| `details` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque details about status results |  |
 
 
 
@@ -59,6 +61,7 @@ Statuses are meant to be read-only by users
 | `Pending` | Pending status indicates the resource has not yet been validated |
 | `Accepted` | Accepted indicates the resource has been validated |
 | `Rejected` | Rejected indicates an invalid configuration by the user Rejected resources may be propagated to the xDS server depending on their severity |
+| `Warning` | Warning indicates a partially invalid configuration by the user Resources with Warnings may be partially accepted by a controller, depending on the implementation |
 
 
 
