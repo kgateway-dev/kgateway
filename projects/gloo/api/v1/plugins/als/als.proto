@@ -46,7 +46,7 @@ message FileSink {
 message GrpcService {
     // name of log stream
     string log_name = 1;
-    // TThe static cluster defined in bootstrap config to route to
+    // The static cluster defined in bootstrap config to route to
     oneof service_ref {
         string static_cluster_name = 2;
     }
