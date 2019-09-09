@@ -237,7 +237,7 @@ func (*FileSink) XXX_OneofWrappers() []interface{} {
 type GrpcService struct {
 	// name of log stream
 	LogName string `protobuf:"bytes,1,opt,name=log_name,json=logName,proto3" json:"log_name,omitempty"`
-	// The upstream to ask about auth decisions
+	// The static cluster defined in bootstrap config to route to
 	//
 	// Types that are valid to be assigned to ServiceRef:
 	//	*GrpcService_StaticClusterName
