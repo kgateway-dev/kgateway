@@ -512,22 +512,22 @@ type isAction_ActionSpecifier interface {
 }
 
 type Action_SourceCluster_ struct {
-	SourceCluster *Action_SourceCluster `protobuf:"bytes,1,opt,name=source_cluster,json=sourceCluster,proto3,oneof"`
+	SourceCluster *Action_SourceCluster `protobuf:"bytes,1,opt,name=source_cluster,json=sourceCluster,proto3,oneof" json:"source_cluster,omitempty"`
 }
 type Action_DestinationCluster_ struct {
-	DestinationCluster *Action_DestinationCluster `protobuf:"bytes,2,opt,name=destination_cluster,json=destinationCluster,proto3,oneof"`
+	DestinationCluster *Action_DestinationCluster `protobuf:"bytes,2,opt,name=destination_cluster,json=destinationCluster,proto3,oneof" json:"destination_cluster,omitempty"`
 }
 type Action_RequestHeaders_ struct {
-	RequestHeaders *Action_RequestHeaders `protobuf:"bytes,3,opt,name=request_headers,json=requestHeaders,proto3,oneof"`
+	RequestHeaders *Action_RequestHeaders `protobuf:"bytes,3,opt,name=request_headers,json=requestHeaders,proto3,oneof" json:"request_headers,omitempty"`
 }
 type Action_RemoteAddress_ struct {
-	RemoteAddress *Action_RemoteAddress `protobuf:"bytes,4,opt,name=remote_address,json=remoteAddress,proto3,oneof"`
+	RemoteAddress *Action_RemoteAddress `protobuf:"bytes,4,opt,name=remote_address,json=remoteAddress,proto3,oneof" json:"remote_address,omitempty"`
 }
 type Action_GenericKey_ struct {
-	GenericKey *Action_GenericKey `protobuf:"bytes,5,opt,name=generic_key,json=genericKey,proto3,oneof"`
+	GenericKey *Action_GenericKey `protobuf:"bytes,5,opt,name=generic_key,json=genericKey,proto3,oneof" json:"generic_key,omitempty"`
 }
 type Action_HeaderValueMatch_ struct {
-	HeaderValueMatch *Action_HeaderValueMatch `protobuf:"bytes,6,opt,name=header_value_match,json=headerValueMatch,proto3,oneof"`
+	HeaderValueMatch *Action_HeaderValueMatch `protobuf:"bytes,6,opt,name=header_value_match,json=headerValueMatch,proto3,oneof" json:"header_value_match,omitempty"`
 }
 
 func (*Action_SourceCluster_) isAction_ActionSpecifier()      {}
@@ -991,22 +991,22 @@ type isHeaderMatcher_HeaderMatchSpecifier interface {
 }
 
 type HeaderMatcher_ExactMatch struct {
-	ExactMatch string `protobuf:"bytes,4,opt,name=exact_match,json=exactMatch,proto3,oneof"`
+	ExactMatch string `protobuf:"bytes,4,opt,name=exact_match,json=exactMatch,proto3,oneof" json:"exact_match,omitempty"`
 }
 type HeaderMatcher_RegexMatch struct {
-	RegexMatch string `protobuf:"bytes,5,opt,name=regex_match,json=regexMatch,proto3,oneof"`
+	RegexMatch string `protobuf:"bytes,5,opt,name=regex_match,json=regexMatch,proto3,oneof" json:"regex_match,omitempty"`
 }
 type HeaderMatcher_RangeMatch struct {
-	RangeMatch *Int64Range `protobuf:"bytes,6,opt,name=range_match,json=rangeMatch,proto3,oneof"`
+	RangeMatch *Int64Range `protobuf:"bytes,6,opt,name=range_match,json=rangeMatch,proto3,oneof" json:"range_match,omitempty"`
 }
 type HeaderMatcher_PresentMatch struct {
-	PresentMatch bool `protobuf:"varint,7,opt,name=present_match,json=presentMatch,proto3,oneof"`
+	PresentMatch bool `protobuf:"varint,7,opt,name=present_match,json=presentMatch,proto3,oneof" json:"present_match,omitempty"`
 }
 type HeaderMatcher_PrefixMatch struct {
-	PrefixMatch string `protobuf:"bytes,9,opt,name=prefix_match,json=prefixMatch,proto3,oneof"`
+	PrefixMatch string `protobuf:"bytes,9,opt,name=prefix_match,json=prefixMatch,proto3,oneof" json:"prefix_match,omitempty"`
 }
 type HeaderMatcher_SuffixMatch struct {
-	SuffixMatch string `protobuf:"bytes,10,opt,name=suffix_match,json=suffixMatch,proto3,oneof"`
+	SuffixMatch string `protobuf:"bytes,10,opt,name=suffix_match,json=suffixMatch,proto3,oneof" json:"suffix_match,omitempty"`
 }
 
 func (*HeaderMatcher_ExactMatch) isHeaderMatcher_HeaderMatchSpecifier()   {}

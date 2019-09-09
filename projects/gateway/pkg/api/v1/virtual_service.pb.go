@@ -473,16 +473,16 @@ type isRoute_Action interface {
 }
 
 type Route_RouteAction struct {
-	RouteAction *v1.RouteAction `protobuf:"bytes,2,opt,name=route_action,json=routeAction,proto3,oneof"`
+	RouteAction *v1.RouteAction `protobuf:"bytes,2,opt,name=route_action,json=routeAction,proto3,oneof" json:"route_action,omitempty"`
 }
 type Route_RedirectAction struct {
-	RedirectAction *v1.RedirectAction `protobuf:"bytes,3,opt,name=redirect_action,json=redirectAction,proto3,oneof"`
+	RedirectAction *v1.RedirectAction `protobuf:"bytes,3,opt,name=redirect_action,json=redirectAction,proto3,oneof" json:"redirect_action,omitempty"`
 }
 type Route_DirectResponseAction struct {
-	DirectResponseAction *v1.DirectResponseAction `protobuf:"bytes,4,opt,name=direct_response_action,json=directResponseAction,proto3,oneof"`
+	DirectResponseAction *v1.DirectResponseAction `protobuf:"bytes,4,opt,name=direct_response_action,json=directResponseAction,proto3,oneof" json:"direct_response_action,omitempty"`
 }
 type Route_DelegateAction struct {
-	DelegateAction *core.ResourceRef `protobuf:"bytes,5,opt,name=delegate_action,json=delegateAction,proto3,oneof"`
+	DelegateAction *core.ResourceRef `protobuf:"bytes,5,opt,name=delegate_action,json=delegateAction,proto3,oneof" json:"delegate_action,omitempty"`
 }
 
 func (*Route_RouteAction) isRoute_Action()          {}

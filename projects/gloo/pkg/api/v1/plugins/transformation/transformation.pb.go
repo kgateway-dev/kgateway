@@ -122,10 +122,10 @@ type isTransformation_TransformationType interface {
 }
 
 type Transformation_TransformationTemplate struct {
-	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,proto3,oneof"`
+	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,proto3,oneof" json:"transformation_template,omitempty"`
 }
 type Transformation_HeaderBodyTransform struct {
-	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,proto3,oneof"`
+	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,proto3,oneof" json:"header_body_transform,omitempty"`
 }
 
 func (*Transformation_TransformationTemplate) isTransformation_TransformationType() {}
@@ -261,13 +261,13 @@ type isTransformationTemplate_BodyTransformation interface {
 }
 
 type TransformationTemplate_Body struct {
-	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
+	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,proto3,oneof" json:"body,omitempty"`
 }
 type TransformationTemplate_Passthrough struct {
-	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,proto3,oneof"`
+	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,proto3,oneof" json:"passthrough,omitempty"`
 }
 type TransformationTemplate_MergeExtractorsToBody struct {
-	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,proto3,oneof"`
+	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,proto3,oneof" json:"merge_extractors_to_body,omitempty"`
 }
 
 func (*TransformationTemplate_Body) isTransformationTemplate_BodyTransformation()                  {}

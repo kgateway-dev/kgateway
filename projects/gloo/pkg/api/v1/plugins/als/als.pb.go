@@ -105,7 +105,7 @@ type isAccessLog_OutputDestination interface {
 }
 
 type AccessLog_FileSink struct {
-	FileSink *FileSink `protobuf:"bytes,2,opt,name=file_sink,json=fileSink,proto3,oneof"`
+	FileSink *FileSink `protobuf:"bytes,2,opt,name=file_sink,json=fileSink,proto3,oneof" json:"file_sink,omitempty"`
 }
 
 func (*AccessLog_FileSink) isAccessLog_OutputDestination() {}
@@ -175,10 +175,10 @@ type isFileSink_OutputFormat interface {
 }
 
 type FileSink_StringFormat struct {
-	StringFormat string `protobuf:"bytes,2,opt,name=string_format,json=stringFormat,proto3,oneof"`
+	StringFormat string `protobuf:"bytes,2,opt,name=string_format,json=stringFormat,proto3,oneof" json:"string_format,omitempty"`
 }
 type FileSink_JsonFormat struct {
-	JsonFormat *types.Struct `protobuf:"bytes,3,opt,name=json_format,json=jsonFormat,proto3,oneof"`
+	JsonFormat *types.Struct `protobuf:"bytes,3,opt,name=json_format,json=jsonFormat,proto3,oneof" json:"json_format,omitempty"`
 }
 
 func (*FileSink_StringFormat) isFileSink_OutputFormat() {}

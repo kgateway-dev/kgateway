@@ -163,10 +163,10 @@ type isJwks_Jwks interface {
 }
 
 type Jwks_Remote struct {
-	Remote *RemoteJwks `protobuf:"bytes,1,opt,name=remote,proto3,oneof"`
+	Remote *RemoteJwks `protobuf:"bytes,1,opt,name=remote,proto3,oneof" json:"remote,omitempty"`
 }
 type Jwks_Local struct {
-	Local *LocalJwks `protobuf:"bytes,2,opt,name=local,proto3,oneof"`
+	Local *LocalJwks `protobuf:"bytes,2,opt,name=local,proto3,oneof" json:"local,omitempty"`
 }
 
 func (*Jwks_Remote) isJwks_Jwks() {}

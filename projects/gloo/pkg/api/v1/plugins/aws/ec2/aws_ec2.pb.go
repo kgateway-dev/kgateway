@@ -178,10 +178,10 @@ type isTagFilter_Spec interface {
 }
 
 type TagFilter_Key struct {
-	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof"`
+	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof" json:"key,omitempty"`
 }
 type TagFilter_KvPair_ struct {
-	KvPair *TagFilter_KvPair `protobuf:"bytes,2,opt,name=kv_pair,json=kvPair,proto3,oneof"`
+	KvPair *TagFilter_KvPair `protobuf:"bytes,2,opt,name=kv_pair,json=kvPair,proto3,oneof" json:"kv_pair,omitempty"`
 }
 
 func (*TagFilter_Key) isTagFilter_Spec()     {}

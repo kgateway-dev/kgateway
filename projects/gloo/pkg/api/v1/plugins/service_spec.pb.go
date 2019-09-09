@@ -72,10 +72,10 @@ type isServiceSpec_PluginType interface {
 }
 
 type ServiceSpec_Rest struct {
-	Rest *rest.ServiceSpec `protobuf:"bytes,1,opt,name=rest,proto3,oneof"`
+	Rest *rest.ServiceSpec `protobuf:"bytes,1,opt,name=rest,proto3,oneof" json:"rest,omitempty"`
 }
 type ServiceSpec_Grpc struct {
-	Grpc *grpc.ServiceSpec `protobuf:"bytes,2,opt,name=grpc,proto3,oneof"`
+	Grpc *grpc.ServiceSpec `protobuf:"bytes,2,opt,name=grpc,proto3,oneof" json:"grpc,omitempty"`
 }
 
 func (*ServiceSpec_Rest) isServiceSpec_PluginType() {}

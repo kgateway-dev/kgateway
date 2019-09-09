@@ -175,13 +175,13 @@ type isHashPolicy_KeyType interface {
 }
 
 type HashPolicy_Header struct {
-	Header string `protobuf:"bytes,1,opt,name=header,proto3,oneof"`
+	Header string `protobuf:"bytes,1,opt,name=header,proto3,oneof" json:"header,omitempty"`
 }
 type HashPolicy_Cookie struct {
-	Cookie *Cookie `protobuf:"bytes,2,opt,name=cookie,proto3,oneof"`
+	Cookie *Cookie `protobuf:"bytes,2,opt,name=cookie,proto3,oneof" json:"cookie,omitempty"`
 }
 type HashPolicy_SourceIp struct {
-	SourceIp bool `protobuf:"varint,3,opt,name=source_ip,json=sourceIp,proto3,oneof"`
+	SourceIp bool `protobuf:"varint,3,opt,name=source_ip,json=sourceIp,proto3,oneof" json:"source_ip,omitempty"`
 }
 
 func (*HashPolicy_Header) isHashPolicy_KeyType()   {}
