@@ -110,7 +110,8 @@ var _ = Describe("Helm Test", func() {
 
 			Context("access logging service", func() {
 				var (
-					accessLoggerName = "gateway-proxy-v2-access-logger"
+					accessLoggerName          = "gateway-proxy-v2-access-logger"
+					gatewayProxyConfigMapName = "gateway-proxy-v2-envoy-config"
 				)
 				BeforeEach(func() {
 					labels = map[string]string{
@@ -157,6 +158,25 @@ var _ = Describe("Helm Test", func() {
 					dep.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
 					testManifest.ExpectDeploymentAppsV1(dep)
 					testManifest.ExpectService(svc)
+				})
+
+				It("has a proxy with tracing provider", func() {
+					prepareMakefileFromValuesFile("install/test/val_access_logger.yaml")
+					proxySpec := make(map[string]string)
+					labels = map[string]string{
+						"gloo":             "gateway-proxy",
+						"app":              "gloo",
+						"gateway-proxy-id": "gateway-proxy-v2",
+					}
+					proxySpec["envoy.yaml"] = confWithAccessLogger
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      proxySpec,
+					}
+					proxy := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(proxy)
 				})
 			})
 
