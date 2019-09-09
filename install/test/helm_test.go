@@ -120,7 +120,7 @@ var _ = Describe("Helm Test", func() {
 					}
 				})
 
-				It("can create an access logging service", func() {
+				It("can create an access logging deployment/service", func() {
 					prepareMakefileFromValuesFile("install/test/val_access_logger.yaml")
 					container := GetContainerSpec("quay.io/solo-io", "access-logger", version, GetPodNamespaceEnvVar(), GetPodNameEnvVar(),
 						v1.EnvVar{
@@ -132,7 +132,7 @@ var _ = Describe("Helm Test", func() {
 							Value: "8083",
 						},
 					)
-					container.PullPolicy = "IfNotPresent"
+					container.PullPolicy = "Always"
 					rb := &ResourceBuilder{
 						Namespace:  namespace,
 						Name:       accessLoggerName,
@@ -148,7 +148,7 @@ var _ = Describe("Helm Test", func() {
 						},
 					}
 					svc := rb.GetService()
-					svc.Spec.Selector = nil
+					svc.Spec.Selector = labels
 					svc.Spec.Type = ""
 					svc.Spec.Ports[0].TargetPort = intstr.FromInt(8083)
 					dep := rb.GetDeploymentAppsv1()
@@ -160,7 +160,7 @@ var _ = Describe("Helm Test", func() {
 					testManifest.ExpectService(svc)
 				})
 
-				It("has a proxy with tracing provider", func() {
+				It("has a proxy with access logging cluster", func() {
 					prepareMakefileFromValuesFile("install/test/val_access_logger.yaml")
 					proxySpec := make(map[string]string)
 					labels = map[string]string{

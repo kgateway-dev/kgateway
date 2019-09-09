@@ -485,11 +485,16 @@ static_resources:
     upstream_connection_options:
       tcp_keepalive: {}
   - connect_timeout: 5.000s
-    hosts:
-    - socket_address:
-        address: gateway-proxy-v2-access-logger.gloo-system.svc.cluster.local
-        port_value: 8083
     http2_protocol_options: {}
+    load_assignment:
+      cluster_name: access_log_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gateway-proxy-v2-access-logger.gloo-system.svc.cluster.local
+                port_value: 8083
     name: access_log_cluster
     type: STRICT_DNS
   - connect_timeout: 5.000s
