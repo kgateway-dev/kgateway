@@ -1104,25 +1104,25 @@ type isAuthConfig_AuthConfig interface {
 }
 
 type AuthConfig_BasicAuth struct {
-	BasicAuth *BasicAuth `protobuf:"bytes,1,opt,name=basic_auth,json=basicAuth,proto3,oneof"`
+	BasicAuth *BasicAuth `protobuf:"bytes,1,opt,name=basic_auth,json=basicAuth,proto3,oneof" json:"basic_auth,omitempty"`
 }
 type AuthConfig_Oauth struct {
-	Oauth *OAuth `protobuf:"bytes,2,opt,name=oauth,proto3,oneof"`
+	Oauth *OAuth `protobuf:"bytes,2,opt,name=oauth,proto3,oneof" json:"oauth,omitempty"`
 }
 type AuthConfig_CustomAuth struct {
-	CustomAuth *CustomAuth `protobuf:"bytes,3,opt,name=custom_auth,json=customAuth,proto3,oneof"`
+	CustomAuth *CustomAuth `protobuf:"bytes,3,opt,name=custom_auth,json=customAuth,proto3,oneof" json:"custom_auth,omitempty"`
 }
 type AuthConfig_ApiKeyAuth struct {
-	ApiKeyAuth *ApiKeyAuth `protobuf:"bytes,4,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof"`
+	ApiKeyAuth *ApiKeyAuth `protobuf:"bytes,4,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof" json:"api_key_auth,omitempty"`
 }
 type AuthConfig_PluginAuth struct {
-	PluginAuth *AuthPlugin `protobuf:"bytes,5,opt,name=plugin_auth,json=pluginAuth,proto3,oneof"`
+	PluginAuth *AuthPlugin `protobuf:"bytes,5,opt,name=plugin_auth,json=pluginAuth,proto3,oneof" json:"plugin_auth,omitempty"`
 }
 type AuthConfig_OpaAuth struct {
-	OpaAuth *OpaAuth `protobuf:"bytes,6,opt,name=opa_auth,json=opaAuth,proto3,oneof"`
+	OpaAuth *OpaAuth `protobuf:"bytes,6,opt,name=opa_auth,json=opaAuth,proto3,oneof" json:"opa_auth,omitempty"`
 }
 type AuthConfig_Ldap struct {
-	Ldap *Ldap `protobuf:"bytes,7,opt,name=ldap,proto3,oneof"`
+	Ldap *Ldap `protobuf:"bytes,7,opt,name=ldap,proto3,oneof" json:"ldap,omitempty"`
 }
 
 func (*AuthConfig_BasicAuth) isAuthConfig_AuthConfig()  {}
@@ -1251,19 +1251,19 @@ type isVhostExtension_AuthConfig interface {
 }
 
 type VhostExtension_BasicAuth struct {
-	BasicAuth *BasicAuth `protobuf:"bytes,1,opt,name=basic_auth,json=basicAuth,proto3,oneof"`
+	BasicAuth *BasicAuth `protobuf:"bytes,1,opt,name=basic_auth,json=basicAuth,proto3,oneof" json:"basic_auth,omitempty"`
 }
 type VhostExtension_Oauth struct {
-	Oauth *OAuth `protobuf:"bytes,2,opt,name=oauth,proto3,oneof"`
+	Oauth *OAuth `protobuf:"bytes,2,opt,name=oauth,proto3,oneof" json:"oauth,omitempty"`
 }
 type VhostExtension_CustomAuth struct {
-	CustomAuth *CustomAuth `protobuf:"bytes,3,opt,name=custom_auth,json=customAuth,proto3,oneof"`
+	CustomAuth *CustomAuth `protobuf:"bytes,3,opt,name=custom_auth,json=customAuth,proto3,oneof" json:"custom_auth,omitempty"`
 }
 type VhostExtension_ApiKeyAuth struct {
-	ApiKeyAuth *ApiKeyAuth `protobuf:"bytes,4,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof"`
+	ApiKeyAuth *ApiKeyAuth `protobuf:"bytes,4,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof" json:"api_key_auth,omitempty"`
 }
 type VhostExtension_PluginAuth struct {
-	PluginAuth *PluginAuth `protobuf:"bytes,5,opt,name=plugin_auth,json=pluginAuth,proto3,oneof"`
+	PluginAuth *PluginAuth `protobuf:"bytes,5,opt,name=plugin_auth,json=pluginAuth,proto3,oneof" json:"plugin_auth,omitempty"`
 }
 
 func (*VhostExtension_BasicAuth) isVhostExtension_AuthConfig()  {}
@@ -1420,16 +1420,16 @@ type isExtAuthConfig_AuthConfig interface {
 }
 
 type ExtAuthConfig_Oauth struct {
-	Oauth *ExtAuthConfig_OAuthConfig `protobuf:"bytes,3,opt,name=oauth,proto3,oneof"`
+	Oauth *ExtAuthConfig_OAuthConfig `protobuf:"bytes,3,opt,name=oauth,proto3,oneof" json:"oauth,omitempty"`
 }
 type ExtAuthConfig_BasicAuth struct {
-	BasicAuth *BasicAuth `protobuf:"bytes,4,opt,name=basic_auth,json=basicAuth,proto3,oneof"`
+	BasicAuth *BasicAuth `protobuf:"bytes,4,opt,name=basic_auth,json=basicAuth,proto3,oneof" json:"basic_auth,omitempty"`
 }
 type ExtAuthConfig_ApiKeyAuth struct {
-	ApiKeyAuth *ExtAuthConfig_ApiKeyAuthConfig `protobuf:"bytes,5,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof"`
+	ApiKeyAuth *ExtAuthConfig_ApiKeyAuthConfig `protobuf:"bytes,5,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof" json:"api_key_auth,omitempty"`
 }
 type ExtAuthConfig_PluginAuth struct {
-	PluginAuth *PluginAuth `protobuf:"bytes,6,opt,name=plugin_auth,json=pluginAuth,proto3,oneof"`
+	PluginAuth *PluginAuth `protobuf:"bytes,6,opt,name=plugin_auth,json=pluginAuth,proto3,oneof" json:"plugin_auth,omitempty"`
 }
 
 func (*ExtAuthConfig_Oauth) isExtAuthConfig_AuthConfig()      {}
@@ -1716,22 +1716,22 @@ type isExtAuthConfig_AuthConfig_AuthConfig interface {
 }
 
 type ExtAuthConfig_AuthConfig_Oauth struct {
-	Oauth *ExtAuthConfig_OAuthConfig `protobuf:"bytes,3,opt,name=oauth,proto3,oneof"`
+	Oauth *ExtAuthConfig_OAuthConfig `protobuf:"bytes,3,opt,name=oauth,proto3,oneof" json:"oauth,omitempty"`
 }
 type ExtAuthConfig_AuthConfig_BasicAuth struct {
-	BasicAuth *BasicAuth `protobuf:"bytes,4,opt,name=basic_auth,json=basicAuth,proto3,oneof"`
+	BasicAuth *BasicAuth `protobuf:"bytes,4,opt,name=basic_auth,json=basicAuth,proto3,oneof" json:"basic_auth,omitempty"`
 }
 type ExtAuthConfig_AuthConfig_ApiKeyAuth struct {
-	ApiKeyAuth *ExtAuthConfig_ApiKeyAuthConfig `protobuf:"bytes,5,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof"`
+	ApiKeyAuth *ExtAuthConfig_ApiKeyAuthConfig `protobuf:"bytes,5,opt,name=api_key_auth,json=apiKeyAuth,proto3,oneof" json:"api_key_auth,omitempty"`
 }
 type ExtAuthConfig_AuthConfig_PluginAuth struct {
-	PluginAuth *AuthPlugin `protobuf:"bytes,6,opt,name=plugin_auth,json=pluginAuth,proto3,oneof"`
+	PluginAuth *AuthPlugin `protobuf:"bytes,6,opt,name=plugin_auth,json=pluginAuth,proto3,oneof" json:"plugin_auth,omitempty"`
 }
 type ExtAuthConfig_AuthConfig_OpaAuth struct {
-	OpaAuth *ExtAuthConfig_OpaAuthConfig `protobuf:"bytes,7,opt,name=opa_auth,json=opaAuth,proto3,oneof"`
+	OpaAuth *ExtAuthConfig_OpaAuthConfig `protobuf:"bytes,7,opt,name=opa_auth,json=opaAuth,proto3,oneof" json:"opa_auth,omitempty"`
 }
 type ExtAuthConfig_AuthConfig_Ldap struct {
-	Ldap *Ldap `protobuf:"bytes,8,opt,name=ldap,proto3,oneof"`
+	Ldap *Ldap `protobuf:"bytes,8,opt,name=ldap,proto3,oneof" json:"ldap,omitempty"`
 }
 
 func (*ExtAuthConfig_AuthConfig_Oauth) isExtAuthConfig_AuthConfig_AuthConfig()      {}

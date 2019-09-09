@@ -110,10 +110,10 @@ type isGateway_GatewayType interface {
 }
 
 type Gateway_HttpGateway struct {
-	HttpGateway *HttpGateway `protobuf:"bytes,9,opt,name=http_gateway,json=httpGateway,proto3,oneof"`
+	HttpGateway *HttpGateway `protobuf:"bytes,9,opt,name=http_gateway,json=httpGateway,proto3,oneof" json:"http_gateway,omitempty"`
 }
 type Gateway_TcpGateway struct {
-	TcpGateway *TcpGateway `protobuf:"bytes,10,opt,name=tcp_gateway,json=tcpGateway,proto3,oneof"`
+	TcpGateway *TcpGateway `protobuf:"bytes,10,opt,name=tcp_gateway,json=tcpGateway,proto3,oneof" json:"tcp_gateway,omitempty"`
 }
 
 func (*Gateway_HttpGateway) isGateway_GatewayType() {}

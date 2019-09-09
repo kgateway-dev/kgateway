@@ -126,10 +126,10 @@ type isCoreRuleSet_CustomSettingsType interface {
 }
 
 type CoreRuleSet_CustomSettingsString struct {
-	CustomSettingsString string `protobuf:"bytes,2,opt,name=custom_settings_string,json=customSettingsString,proto3,oneof"`
+	CustomSettingsString string `protobuf:"bytes,2,opt,name=custom_settings_string,json=customSettingsString,proto3,oneof" json:"custom_settings_string,omitempty"`
 }
 type CoreRuleSet_CustomSettingsFile struct {
-	CustomSettingsFile string `protobuf:"bytes,3,opt,name=custom_settings_file,json=customSettingsFile,proto3,oneof"`
+	CustomSettingsFile string `protobuf:"bytes,3,opt,name=custom_settings_file,json=customSettingsFile,proto3,oneof" json:"custom_settings_file,omitempty"`
 }
 
 func (*CoreRuleSet_CustomSettingsString) isCoreRuleSet_CustomSettingsType() {}

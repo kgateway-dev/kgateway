@@ -367,10 +367,10 @@ type isRouteExtension_Route interface {
 }
 
 type RouteExtension_Disable struct {
-	Disable bool `protobuf:"varint,1,opt,name=disable,proto3,oneof"`
+	Disable bool `protobuf:"varint,1,opt,name=disable,proto3,oneof" json:"disable,omitempty"`
 }
 type RouteExtension_Config struct {
-	Config *Config `protobuf:"bytes,2,opt,name=config,proto3,oneof"`
+	Config *Config `protobuf:"bytes,2,opt,name=config,proto3,oneof" json:"config,omitempty"`
 }
 
 func (*RouteExtension_Disable) isRouteExtension_Route() {}

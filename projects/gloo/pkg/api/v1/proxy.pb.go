@@ -196,10 +196,10 @@ type isListener_ListenerType interface {
 }
 
 type Listener_HttpListener struct {
-	HttpListener *HttpListener `protobuf:"bytes,4,opt,name=http_listener,json=httpListener,proto3,oneof"`
+	HttpListener *HttpListener `protobuf:"bytes,4,opt,name=http_listener,json=httpListener,proto3,oneof" json:"http_listener,omitempty"`
 }
 type Listener_TcpListener struct {
-	TcpListener *TcpListener `protobuf:"bytes,5,opt,name=tcp_listener,json=tcpListener,proto3,oneof"`
+	TcpListener *TcpListener `protobuf:"bytes,5,opt,name=tcp_listener,json=tcpListener,proto3,oneof" json:"tcp_listener,omitempty"`
 }
 
 func (*Listener_HttpListener) isListener_ListenerType() {}
@@ -581,13 +581,13 @@ type isRoute_Action interface {
 }
 
 type Route_RouteAction struct {
-	RouteAction *RouteAction `protobuf:"bytes,2,opt,name=route_action,json=routeAction,proto3,oneof"`
+	RouteAction *RouteAction `protobuf:"bytes,2,opt,name=route_action,json=routeAction,proto3,oneof" json:"route_action,omitempty"`
 }
 type Route_RedirectAction struct {
-	RedirectAction *RedirectAction `protobuf:"bytes,3,opt,name=redirect_action,json=redirectAction,proto3,oneof"`
+	RedirectAction *RedirectAction `protobuf:"bytes,3,opt,name=redirect_action,json=redirectAction,proto3,oneof" json:"redirect_action,omitempty"`
 }
 type Route_DirectResponseAction struct {
-	DirectResponseAction *DirectResponseAction `protobuf:"bytes,4,opt,name=direct_response_action,json=directResponseAction,proto3,oneof"`
+	DirectResponseAction *DirectResponseAction `protobuf:"bytes,4,opt,name=direct_response_action,json=directResponseAction,proto3,oneof" json:"direct_response_action,omitempty"`
 }
 
 func (*Route_RouteAction) isRoute_Action()          {}
@@ -701,13 +701,13 @@ type isMatcher_PathSpecifier interface {
 }
 
 type Matcher_Prefix struct {
-	Prefix string `protobuf:"bytes,1,opt,name=prefix,proto3,oneof"`
+	Prefix string `protobuf:"bytes,1,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 }
 type Matcher_Exact struct {
-	Exact string `protobuf:"bytes,2,opt,name=exact,proto3,oneof"`
+	Exact string `protobuf:"bytes,2,opt,name=exact,proto3,oneof" json:"exact,omitempty"`
 }
 type Matcher_Regex struct {
-	Regex string `protobuf:"bytes,3,opt,name=regex,proto3,oneof"`
+	Regex string `protobuf:"bytes,3,opt,name=regex,proto3,oneof" json:"regex,omitempty"`
 }
 
 func (*Matcher_Prefix) isMatcher_PathSpecifier() {}
@@ -947,13 +947,13 @@ type isRouteAction_Destination interface {
 }
 
 type RouteAction_Single struct {
-	Single *Destination `protobuf:"bytes,1,opt,name=single,proto3,oneof"`
+	Single *Destination `protobuf:"bytes,1,opt,name=single,proto3,oneof" json:"single,omitempty"`
 }
 type RouteAction_Multi struct {
-	Multi *MultiDestination `protobuf:"bytes,2,opt,name=multi,proto3,oneof"`
+	Multi *MultiDestination `protobuf:"bytes,2,opt,name=multi,proto3,oneof" json:"multi,omitempty"`
 }
 type RouteAction_UpstreamGroup struct {
-	UpstreamGroup *core.ResourceRef `protobuf:"bytes,3,opt,name=upstream_group,json=upstreamGroup,proto3,oneof"`
+	UpstreamGroup *core.ResourceRef `protobuf:"bytes,3,opt,name=upstream_group,json=upstreamGroup,proto3,oneof" json:"upstream_group,omitempty"`
 }
 
 func (*RouteAction_Single) isRouteAction_Destination()        {}
@@ -1049,13 +1049,13 @@ type isDestination_DestinationType interface {
 }
 
 type Destination_Upstream struct {
-	Upstream *core.ResourceRef `protobuf:"bytes,10,opt,name=upstream,proto3,oneof"`
+	Upstream *core.ResourceRef `protobuf:"bytes,10,opt,name=upstream,proto3,oneof" json:"upstream,omitempty"`
 }
 type Destination_Kube struct {
-	Kube *KubernetesServiceDestination `protobuf:"bytes,11,opt,name=kube,proto3,oneof"`
+	Kube *KubernetesServiceDestination `protobuf:"bytes,11,opt,name=kube,proto3,oneof" json:"kube,omitempty"`
 }
 type Destination_Consul struct {
-	Consul *ConsulServiceDestination `protobuf:"bytes,12,opt,name=consul,proto3,oneof"`
+	Consul *ConsulServiceDestination `protobuf:"bytes,12,opt,name=consul,proto3,oneof" json:"consul,omitempty"`
 }
 
 func (*Destination_Upstream) isDestination_DestinationType() {}
@@ -1434,10 +1434,10 @@ type isRedirectAction_PathRewriteSpecifier interface {
 }
 
 type RedirectAction_PathRedirect struct {
-	PathRedirect string `protobuf:"bytes,2,opt,name=path_redirect,json=pathRedirect,proto3,oneof"`
+	PathRedirect string `protobuf:"bytes,2,opt,name=path_redirect,json=pathRedirect,proto3,oneof" json:"path_redirect,omitempty"`
 }
 type RedirectAction_PrefixRewrite struct {
-	PrefixRewrite string `protobuf:"bytes,5,opt,name=prefix_rewrite,json=prefixRewrite,proto3,oneof"`
+	PrefixRewrite string `protobuf:"bytes,5,opt,name=prefix_rewrite,json=prefixRewrite,proto3,oneof" json:"prefix_rewrite,omitempty"`
 }
 
 func (*RedirectAction_PathRedirect) isRedirectAction_PathRewriteSpecifier()  {}

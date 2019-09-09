@@ -165,31 +165,31 @@ type isSettings_ArtifactSource interface {
 }
 
 type Settings_KubernetesConfigSource struct {
-	KubernetesConfigSource *Settings_KubernetesCrds `protobuf:"bytes,4,opt,name=kubernetes_config_source,json=kubernetesConfigSource,proto3,oneof"`
+	KubernetesConfigSource *Settings_KubernetesCrds `protobuf:"bytes,4,opt,name=kubernetes_config_source,json=kubernetesConfigSource,proto3,oneof" json:"kubernetes_config_source,omitempty"`
 }
 type Settings_DirectoryConfigSource struct {
-	DirectoryConfigSource *Settings_Directory `protobuf:"bytes,5,opt,name=directory_config_source,json=directoryConfigSource,proto3,oneof"`
+	DirectoryConfigSource *Settings_Directory `protobuf:"bytes,5,opt,name=directory_config_source,json=directoryConfigSource,proto3,oneof" json:"directory_config_source,omitempty"`
 }
 type Settings_ConsulKvSource struct {
-	ConsulKvSource *Settings_ConsulKv `protobuf:"bytes,21,opt,name=consul_kv_source,json=consulKvSource,proto3,oneof"`
+	ConsulKvSource *Settings_ConsulKv `protobuf:"bytes,21,opt,name=consul_kv_source,json=consulKvSource,proto3,oneof" json:"consul_kv_source,omitempty"`
 }
 type Settings_KubernetesSecretSource struct {
-	KubernetesSecretSource *Settings_KubernetesSecrets `protobuf:"bytes,6,opt,name=kubernetes_secret_source,json=kubernetesSecretSource,proto3,oneof"`
+	KubernetesSecretSource *Settings_KubernetesSecrets `protobuf:"bytes,6,opt,name=kubernetes_secret_source,json=kubernetesSecretSource,proto3,oneof" json:"kubernetes_secret_source,omitempty"`
 }
 type Settings_VaultSecretSource struct {
-	VaultSecretSource *Settings_VaultSecrets `protobuf:"bytes,7,opt,name=vault_secret_source,json=vaultSecretSource,proto3,oneof"`
+	VaultSecretSource *Settings_VaultSecrets `protobuf:"bytes,7,opt,name=vault_secret_source,json=vaultSecretSource,proto3,oneof" json:"vault_secret_source,omitempty"`
 }
 type Settings_DirectorySecretSource struct {
-	DirectorySecretSource *Settings_Directory `protobuf:"bytes,8,opt,name=directory_secret_source,json=directorySecretSource,proto3,oneof"`
+	DirectorySecretSource *Settings_Directory `protobuf:"bytes,8,opt,name=directory_secret_source,json=directorySecretSource,proto3,oneof" json:"directory_secret_source,omitempty"`
 }
 type Settings_KubernetesArtifactSource struct {
-	KubernetesArtifactSource *Settings_KubernetesConfigmaps `protobuf:"bytes,9,opt,name=kubernetes_artifact_source,json=kubernetesArtifactSource,proto3,oneof"`
+	KubernetesArtifactSource *Settings_KubernetesConfigmaps `protobuf:"bytes,9,opt,name=kubernetes_artifact_source,json=kubernetesArtifactSource,proto3,oneof" json:"kubernetes_artifact_source,omitempty"`
 }
 type Settings_DirectoryArtifactSource struct {
-	DirectoryArtifactSource *Settings_Directory `protobuf:"bytes,10,opt,name=directory_artifact_source,json=directoryArtifactSource,proto3,oneof"`
+	DirectoryArtifactSource *Settings_Directory `protobuf:"bytes,10,opt,name=directory_artifact_source,json=directoryArtifactSource,proto3,oneof" json:"directory_artifact_source,omitempty"`
 }
 type Settings_ConsulKvArtifactSource struct {
-	ConsulKvArtifactSource *Settings_ConsulKv `protobuf:"bytes,23,opt,name=consul_kv_artifact_source,json=consulKvArtifactSource,proto3,oneof"`
+	ConsulKvArtifactSource *Settings_ConsulKv `protobuf:"bytes,23,opt,name=consul_kv_artifact_source,json=consulKvArtifactSource,proto3,oneof" json:"consul_kv_artifact_source,omitempty"`
 }
 
 func (*Settings_KubernetesConfigSource) isSettings_ConfigSource()     {}

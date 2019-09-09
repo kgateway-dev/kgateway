@@ -79,16 +79,16 @@ type isSecret_Kind interface {
 }
 
 type Secret_Aws struct {
-	Aws *AwsSecret `protobuf:"bytes,1,opt,name=aws,proto3,oneof"`
+	Aws *AwsSecret `protobuf:"bytes,1,opt,name=aws,proto3,oneof" json:"aws,omitempty"`
 }
 type Secret_Azure struct {
-	Azure *AzureSecret `protobuf:"bytes,2,opt,name=azure,proto3,oneof"`
+	Azure *AzureSecret `protobuf:"bytes,2,opt,name=azure,proto3,oneof" json:"azure,omitempty"`
 }
 type Secret_Tls struct {
-	Tls *TlsSecret `protobuf:"bytes,3,opt,name=tls,proto3,oneof"`
+	Tls *TlsSecret `protobuf:"bytes,3,opt,name=tls,proto3,oneof" json:"tls,omitempty"`
 }
 type Secret_Extension struct {
-	Extension *Extension `protobuf:"bytes,4,opt,name=extension,proto3,oneof"`
+	Extension *Extension `protobuf:"bytes,4,opt,name=extension,proto3,oneof" json:"extension,omitempty"`
 }
 
 func (*Secret_Aws) isSecret_Kind()       {}

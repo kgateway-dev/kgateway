@@ -64,7 +64,7 @@ type isHostRewrite_HostRewriteType interface {
 }
 
 type HostRewrite_HostRewrite struct {
-	HostRewrite string `protobuf:"bytes,1,opt,name=host_rewrite,json=hostRewrite,proto3,oneof"`
+	HostRewrite string `protobuf:"bytes,1,opt,name=host_rewrite,json=hostRewrite,proto3,oneof" json:"host_rewrite,omitempty"`
 }
 
 func (*HostRewrite_HostRewrite) isHostRewrite_HostRewriteType() {}

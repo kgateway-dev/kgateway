@@ -470,16 +470,16 @@ type isDestinationSpec_DestinationType interface {
 }
 
 type DestinationSpec_Aws struct {
-	Aws *aws.DestinationSpec `protobuf:"bytes,1,opt,name=aws,proto3,oneof"`
+	Aws *aws.DestinationSpec `protobuf:"bytes,1,opt,name=aws,proto3,oneof" json:"aws,omitempty"`
 }
 type DestinationSpec_Azure struct {
-	Azure *azure.DestinationSpec `protobuf:"bytes,2,opt,name=azure,proto3,oneof"`
+	Azure *azure.DestinationSpec `protobuf:"bytes,2,opt,name=azure,proto3,oneof" json:"azure,omitempty"`
 }
 type DestinationSpec_Rest struct {
-	Rest *rest.DestinationSpec `protobuf:"bytes,3,opt,name=rest,proto3,oneof"`
+	Rest *rest.DestinationSpec `protobuf:"bytes,3,opt,name=rest,proto3,oneof" json:"rest,omitempty"`
 }
 type DestinationSpec_Grpc struct {
-	Grpc *grpc.DestinationSpec `protobuf:"bytes,4,opt,name=grpc,proto3,oneof"`
+	Grpc *grpc.DestinationSpec `protobuf:"bytes,4,opt,name=grpc,proto3,oneof" json:"grpc,omitempty"`
 }
 
 func (*DestinationSpec_Aws) isDestinationSpec_DestinationType()   {}
@@ -645,25 +645,25 @@ type isUpstreamSpec_UpstreamType interface {
 }
 
 type UpstreamSpec_Kube struct {
-	Kube *kubernetes.UpstreamSpec `protobuf:"bytes,8,opt,name=kube,proto3,oneof"`
+	Kube *kubernetes.UpstreamSpec `protobuf:"bytes,8,opt,name=kube,proto3,oneof" json:"kube,omitempty"`
 }
 type UpstreamSpec_Static struct {
-	Static *static.UpstreamSpec `protobuf:"bytes,9,opt,name=static,proto3,oneof"`
+	Static *static.UpstreamSpec `protobuf:"bytes,9,opt,name=static,proto3,oneof" json:"static,omitempty"`
 }
 type UpstreamSpec_Pipe struct {
-	Pipe *pipe.UpstreamSpec `protobuf:"bytes,10,opt,name=pipe,proto3,oneof"`
+	Pipe *pipe.UpstreamSpec `protobuf:"bytes,10,opt,name=pipe,proto3,oneof" json:"pipe,omitempty"`
 }
 type UpstreamSpec_Aws struct {
-	Aws *aws.UpstreamSpec `protobuf:"bytes,11,opt,name=aws,proto3,oneof"`
+	Aws *aws.UpstreamSpec `protobuf:"bytes,11,opt,name=aws,proto3,oneof" json:"aws,omitempty"`
 }
 type UpstreamSpec_Azure struct {
-	Azure *azure.UpstreamSpec `protobuf:"bytes,12,opt,name=azure,proto3,oneof"`
+	Azure *azure.UpstreamSpec `protobuf:"bytes,12,opt,name=azure,proto3,oneof" json:"azure,omitempty"`
 }
 type UpstreamSpec_Consul struct {
-	Consul *consul.UpstreamSpec `protobuf:"bytes,13,opt,name=consul,proto3,oneof"`
+	Consul *consul.UpstreamSpec `protobuf:"bytes,13,opt,name=consul,proto3,oneof" json:"consul,omitempty"`
 }
 type UpstreamSpec_AwsEc2 struct {
-	AwsEc2 *ec2.UpstreamSpec `protobuf:"bytes,14,opt,name=aws_ec2,json=awsEc2,proto3,oneof"`
+	AwsEc2 *ec2.UpstreamSpec `protobuf:"bytes,14,opt,name=aws_ec2,json=awsEc2,proto3,oneof" json:"aws_ec2,omitempty"`
 }
 
 func (*UpstreamSpec_Kube) isUpstreamSpec_UpstreamType()   {}

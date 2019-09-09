@@ -80,19 +80,19 @@ type isLoadBalancerConfig_Type interface {
 }
 
 type LoadBalancerConfig_RoundRobin_ struct {
-	RoundRobin *LoadBalancerConfig_RoundRobin `protobuf:"bytes,3,opt,name=round_robin,json=roundRobin,proto3,oneof"`
+	RoundRobin *LoadBalancerConfig_RoundRobin `protobuf:"bytes,3,opt,name=round_robin,json=roundRobin,proto3,oneof" json:"round_robin,omitempty"`
 }
 type LoadBalancerConfig_LeastRequest_ struct {
-	LeastRequest *LoadBalancerConfig_LeastRequest `protobuf:"bytes,4,opt,name=least_request,json=leastRequest,proto3,oneof"`
+	LeastRequest *LoadBalancerConfig_LeastRequest `protobuf:"bytes,4,opt,name=least_request,json=leastRequest,proto3,oneof" json:"least_request,omitempty"`
 }
 type LoadBalancerConfig_Random_ struct {
-	Random *LoadBalancerConfig_Random `protobuf:"bytes,5,opt,name=random,proto3,oneof"`
+	Random *LoadBalancerConfig_Random `protobuf:"bytes,5,opt,name=random,proto3,oneof" json:"random,omitempty"`
 }
 type LoadBalancerConfig_RingHash_ struct {
-	RingHash *LoadBalancerConfig_RingHash `protobuf:"bytes,6,opt,name=ring_hash,json=ringHash,proto3,oneof"`
+	RingHash *LoadBalancerConfig_RingHash `protobuf:"bytes,6,opt,name=ring_hash,json=ringHash,proto3,oneof" json:"ring_hash,omitempty"`
 }
 type LoadBalancerConfig_Maglev_ struct {
-	Maglev *LoadBalancerConfig_Maglev `protobuf:"bytes,7,opt,name=maglev,proto3,oneof"`
+	Maglev *LoadBalancerConfig_Maglev `protobuf:"bytes,7,opt,name=maglev,proto3,oneof" json:"maglev,omitempty"`
 }
 
 func (*LoadBalancerConfig_RoundRobin_) isLoadBalancerConfig_Type()   {}

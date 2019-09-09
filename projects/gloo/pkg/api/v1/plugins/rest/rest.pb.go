@@ -110,10 +110,10 @@ type isServiceSpec_SwaggerInfo_SwaggerSpec interface {
 }
 
 type ServiceSpec_SwaggerInfo_Url struct {
-	Url string `protobuf:"bytes,1,opt,name=url,proto3,oneof"`
+	Url string `protobuf:"bytes,1,opt,name=url,proto3,oneof" json:"url,omitempty"`
 }
 type ServiceSpec_SwaggerInfo_Inline struct {
-	Inline string `protobuf:"bytes,2,opt,name=inline,proto3,oneof"`
+	Inline string `protobuf:"bytes,2,opt,name=inline,proto3,oneof" json:"inline,omitempty"`
 }
 
 func (*ServiceSpec_SwaggerInfo_Url) isServiceSpec_SwaggerInfo_SwaggerSpec()    {}

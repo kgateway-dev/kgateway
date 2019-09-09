@@ -111,13 +111,13 @@ type isSslConfig_SslSecrets interface {
 }
 
 type SslConfig_SecretRef struct {
-	SecretRef *core.ResourceRef `protobuf:"bytes,1,opt,name=secret_ref,json=secretRef,proto3,oneof"`
+	SecretRef *core.ResourceRef `protobuf:"bytes,1,opt,name=secret_ref,json=secretRef,proto3,oneof" json:"secret_ref,omitempty"`
 }
 type SslConfig_SslFiles struct {
-	SslFiles *SSLFiles `protobuf:"bytes,2,opt,name=ssl_files,json=sslFiles,proto3,oneof"`
+	SslFiles *SSLFiles `protobuf:"bytes,2,opt,name=ssl_files,json=sslFiles,proto3,oneof" json:"ssl_files,omitempty"`
 }
 type SslConfig_Sds struct {
-	Sds *SDSConfig `protobuf:"bytes,4,opt,name=sds,proto3,oneof"`
+	Sds *SDSConfig `protobuf:"bytes,4,opt,name=sds,proto3,oneof" json:"sds,omitempty"`
 }
 
 func (*SslConfig_SecretRef) isSslConfig_SslSecrets() {}
@@ -286,13 +286,13 @@ type isUpstreamSslConfig_SslSecrets interface {
 }
 
 type UpstreamSslConfig_SecretRef struct {
-	SecretRef *core.ResourceRef `protobuf:"bytes,1,opt,name=secret_ref,json=secretRef,proto3,oneof"`
+	SecretRef *core.ResourceRef `protobuf:"bytes,1,opt,name=secret_ref,json=secretRef,proto3,oneof" json:"secret_ref,omitempty"`
 }
 type UpstreamSslConfig_SslFiles struct {
-	SslFiles *SSLFiles `protobuf:"bytes,2,opt,name=ssl_files,json=sslFiles,proto3,oneof"`
+	SslFiles *SSLFiles `protobuf:"bytes,2,opt,name=ssl_files,json=sslFiles,proto3,oneof" json:"ssl_files,omitempty"`
 }
 type UpstreamSslConfig_Sds struct {
-	Sds *SDSConfig `protobuf:"bytes,4,opt,name=sds,proto3,oneof"`
+	Sds *SDSConfig `protobuf:"bytes,4,opt,name=sds,proto3,oneof" json:"sds,omitempty"`
 }
 
 func (*UpstreamSslConfig_SecretRef) isUpstreamSslConfig_SslSecrets() {}
