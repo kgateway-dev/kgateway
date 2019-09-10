@@ -120,7 +120,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
 					settings = runner.Settings{
@@ -161,7 +161,7 @@ var _ = Describe("Gateway", func() {
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					gw.Plugins = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
@@ -245,7 +245,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					path = "/dev/stdout"
 					if !envoyInstance.UseDocker {
@@ -258,7 +258,7 @@ var _ = Describe("Gateway", func() {
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					gw.Plugins = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
