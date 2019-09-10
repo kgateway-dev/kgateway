@@ -50,6 +50,9 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 func deleteRbac(cli install.KubeCli) error {
 	fmt.Printf("Removing Gloo RBAC configuration...\n")
 	for _, rbacKind := range GlooRbacKinds {
+		if err := cli.Kubectl(nil, "get", rbacKind, "-l", "app=gloo"); err != nil {
+			continue
+		}
 		if err := cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo"); err != nil {
 			return errors.Wrapf(err, "deleting rbac failed")
 		}
@@ -69,11 +72,19 @@ func deleteGlooSystem(cli install.KubeCli, namespace string) error {
 
 func deleteGlooCrds(cli install.KubeCli) error {
 	fmt.Printf("Removing Gloo CRDs...\n")
-	args := []string{"delete", "crd"}
+	getCmdArgs := []string{"get", "crd"}
+	deleteCmdArgs := []string{"delete", "crd"}
+	var args []string
 	for _, crd := range GlooCrdNames {
 		args = append(args, crd)
 	}
-	if err := cli.Kubectl(nil, args...); err != nil {
+	getCmdArgs = append(getCmdArgs, args...)
+	deleteCmdArgs = append(deleteCmdArgs, args...)
+	if err := cli.Kubectl(nil, getCmdArgs...); err != nil {
+		fmt.Printf("No Gloo CRDs were found.\n")
+		return nil
+	}
+	if err := cli.Kubectl(nil, deleteCmdArgs...); err != nil {
 		return errors.Wrapf(err, "deleting crds failed")
 	}
 	return nil
@@ -81,6 +92,10 @@ func deleteGlooCrds(cli install.KubeCli) error {
 
 func deleteNamespace(cli install.KubeCli, namespace string) error {
 	fmt.Printf("Removing namespace %s...\n", namespace)
+	if err := cli.Kubectl(nil, "get", "namespace", namespace); err != nil {
+		fmt.Printf("deleting Gloo from namespace %s failed as it does not exist\n", namespace)
+		return nil
+	}
 	if err := cli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
 		return errors.Wrapf(err, "deleting namespace %s failed", namespace)
 	}

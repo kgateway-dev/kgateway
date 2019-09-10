@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: if we run glooctl uninstall -all with a nonexistent namespace, still uninstall everything instead of erroring out.
+    issueLink: https://github.com/solo-io/gloo/issues/602
