@@ -1316,7 +1316,8 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:67036657b73d767f10b05994c6c658e7b3f6e1d6dfa880a8b74985cdc56db6a3"
+  branch = "rbac-testing"
+  digest = "1:e34054a0d2ac42c3ef08d6fbc77acb2c11d97585f3575a032a7bfa90bb2e36ac"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1352,8 +1353,7 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "08035688c449b622f94aacb89d759f672cc31905"
-  version = "v0.9.20"
+  revision = "dd68ca79cba69c24809b3d33f1d4d1423e754c3d"
 
 [[projects]]
   digest = "1:59e275b45ff5aa7eaf961237f8110bafff38e29bf904900e1acc57aac95e6475"
