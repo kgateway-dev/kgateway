@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow the default gateways to be configurable through helm
+    issueLink: https://github.com/solo-io/gloo/issues/1048

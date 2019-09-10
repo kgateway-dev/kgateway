@@ -1,6 +1,9 @@
 {{- range $name, $spec := .Values.gatewayProxies }}
 apiVersion: gateway.solo.io.v2/v2
 kind: GatewayList
+metadata:
+  labels:
+    app: gloo
 items:
  - apiVersion: gateway.solo.io.v2/v2
    kind: Gateway

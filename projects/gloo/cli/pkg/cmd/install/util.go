@@ -47,7 +47,7 @@ func init() {
 	}
 	GlooPreInstallKinds = append(GlooPreInstallKinds, "ServiceAccount")
 	GlooPreInstallKinds = append(GlooPreInstallKinds, GlooRbacKinds...)
-	GlooInstallKinds = GlooSystemKinds
+	GlooInstallKinds = append(GlooSystemKinds, "GatewayList")
 
 	GlooGatewayUpgradeKinds = append(GlooInstallKinds, "Job")
 
