@@ -4,6 +4,9 @@ kind: GatewayList
 metadata:
   labels:
     app: gloo
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "5"
 items:
  - apiVersion: gateway.solo.io.v2/v2
    kind: Gateway
