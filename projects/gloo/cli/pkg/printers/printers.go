@@ -17,6 +17,7 @@ const (
 	TABLE OutputType = iota
 	YAML
 	JSON
+	JSON_FMT
 	KUBE_YAML
 	WIDE
 )
@@ -34,15 +35,16 @@ type outputTypeProperties struct {
 var typeProperties = []outputTypeProperties{
 	{TABLE, []string{"table"}, true},
 	{YAML, []string{"yaml", "yml"}, false},
-	{JSON, []string{"json"}, false},
 	{KUBE_YAML, []string{"kube-yaml"}, false},
+	{JSON, []string{"json"}, false},
+	{JSON_FMT, []string{"jsonfmt"}, false},
 	{WIDE, []string{"wide"}, true},
 }
 
 var (
 	_OutputTypeToValue = map[string]OutputType{}
-	//"yaml":      YAML,
-	//"yml":       YAML,
+	// "yaml":      YAML,
+	// "yml":       YAML,
 
 	_OutputValueToType = map[OutputType]string{}
 	// YAML:      "yaml",

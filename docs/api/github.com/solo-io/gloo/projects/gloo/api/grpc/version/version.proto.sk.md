@@ -49,13 +49,13 @@ weight: 5
 
 
 ```yaml
-"serverVersion": .gloo.solo.io.ServerVersion
+"serverVersion": []gloo.solo.io.ServerVersion
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `serverVersion` | [.gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) |  |  |
+| `serverVersion` | [[]gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) |  |  |
 
 
 
@@ -84,12 +84,14 @@ weight: 5
 
 ```yaml
 "containers": []gloo.solo.io.Kubernetes.Container
+"namespace": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `containers` | [[]gloo.solo.io.Kubernetes.Container](../version.proto.sk#container) |  |  |
+| `namespace` | `string` |  |  |
 
 
 
@@ -101,7 +103,7 @@ weight: 5
 
 ```yaml
 "tag": string
-"repository": string
+"name": string
 "registry": string
 
 ```
@@ -109,7 +111,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `tag` | `string` |  |  |
-| `repository` | `string` |  |  |
+| `name` | `string` |  |  |
 | `registry` | `string` |  |  |
 
 
