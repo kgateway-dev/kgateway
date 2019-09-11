@@ -2,9 +2,10 @@ package install
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/version"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/install"

@@ -39,19 +39,27 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 
 func deleteRbac(cli install.KubeCli) {
 	fmt.Printf("Removing Gloo RBAC configuration...\n")
+	failedRbacs := ""
 	for _, rbacKind := range GlooRbacKinds {
 		if err := cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo"); err != nil {
-			fmt.Printf("Deleting rbac %s failed\n", rbacKind)
+			failedRbacs += rbacKind + " "
 		}
+	}
+	if len(failedRbacs) > 0 {
+		fmt.Printf("Unable to delete Gloo RBACs: %s. Continuing...\n", failedRbacs)
 	}
 }
 
 func deleteGlooSystem(cli install.KubeCli, namespace string) {
 	fmt.Printf("Removing Gloo system components from namespace %s...\n", namespace)
+	failedComponents := ""
 	for _, kind := range GlooSystemKinds {
 		if err := cli.Kubectl(nil, "delete", kind, "-l", "app=gloo", "-n", namespace); err != nil {
-			fmt.Printf("Deleting gloo system %s failed\n", kind)
+			failedComponents += kind + " "
 		}
+	}
+	if len(failedComponents) > 0 {
+		fmt.Printf("Unable to delete gloo system components: %s. Continuing...\n", failedComponents)
 	}
 }
 
@@ -62,14 +70,14 @@ func deleteGlooCrds(cli install.KubeCli) {
 		args = append(args, crd)
 	}
 	if err := cli.Kubectl(nil, args...); err != nil {
-		fmt.Printf("Deleting Gloo CRDs failed\n")
+		fmt.Printf("Unable to delete Gloo CRDs. Continuing...\n")
 	}
 }
 
 func deleteNamespace(cli install.KubeCli, namespace string) {
 	fmt.Printf("Removing namespace %s...\n", namespace)
 	if err := cli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
-		fmt.Printf("Deleting namespace %s failed\n", namespace)
+		fmt.Printf("Unable to delete namespace %s. Continuing...\n", namespace)
 	}
 }
 
@@ -83,11 +91,11 @@ func uninstallKnativeIfNecessary() {
 		fmt.Printf("Removing knative components installed by Gloo %#v...\n", installOpts)
 		manifests, err := RenderKnativeManifests(*installOpts)
 		if err != nil {
-			fmt.Printf("Rendering knative manifests\n")
+			fmt.Printf("Could not determine which knative components to remove. Continuing...\n")
 			return
 		}
 		if err := install.KubectlDelete([]byte(manifests), "--ignore-not-found"); err != nil {
-			fmt.Printf("Deleting knative failed\n")
+			fmt.Printf("Unable to delete knative. Continuing...\n")
 		}
 	}
 }
