@@ -47,13 +47,13 @@ var _ = Describe("Extauth", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	extAuthExtension := func(index int) *extauthpb.RouteExtension {
+	extAuthExtension := func(index int, metadata core.Metadata) *extauthpb.RouteExtension {
 		var extAuthRouteExt extauthpb.RouteExtension
 		var err error
-		vsvc, err = vsClient.Read(vsvc.Metadata.Namespace, vsvc.Metadata.Name, clients.ReadOpts{})
+		vsv, err := helpers.MustVirtualServiceClient().Read(metadata.Namespace, metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = utils.UnmarshalExtension(vsvc.VirtualHost.Routes[index].RoutePlugins, constants.ExtAuthExtensionName, &extAuthRouteExt)
+		err = utils.UnmarshalExtension(vsv.VirtualHost.Routes[index].RoutePlugins, constants.ExtAuthExtensionName, &extAuthRouteExt)
 		if err != nil {
 			if err == utils.NotFoundError {
 				return nil
@@ -70,7 +70,7 @@ var _ = Describe("Extauth", func() {
 				err := testutils.Glooctl(cmd)
 				Expect(err).NotTo(HaveOccurred())
 
-				extension := extAuthExtension(index)
+				extension := extAuthExtension(index, vsvc.Metadata)
 				Expect(extension).To(Equal(expected))
 			},
 			Entry("edit route 0 doesnt impact route one", "edit route externalauth --name vs --namespace gloo-system --index 0 --disable=true",
@@ -106,7 +106,7 @@ var _ = Describe("Extauth", func() {
 			}, func() {
 				err := testutils.Glooctl("edit route externalauth -i")
 				Expect(err).NotTo(HaveOccurred())
-				extension := extAuthExtension(1)
+				extension := extAuthExtension(1, vsvc.Metadata)
 				Expect(extension).To(Equal(&extauthpb.RouteExtension{
 					Disable: true,
 				}))
