@@ -34,7 +34,7 @@ func Routes(opts *options.Options) *cobra.Command {
 		Use:     "route",
 		Aliases: []string{"r", "routes"},
 		Short:   "get a list of routes for a given virtual service",
-		Long:    "usage: glooctl get virtualservice route",
+		Long:    "usage: glooctl get virtualservice [virtual service name] routes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var vsName string
 			if len(args) > 0 {
