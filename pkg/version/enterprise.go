@@ -1,7 +1,6 @@
 package version
 
 const (
-
 	EnterpriseTag = "0.18.23"
 
 	// This value may change with new Gloo releases
