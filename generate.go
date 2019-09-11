@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
@@ -19,7 +17,7 @@ func main() {
 	log.Printf("starting generate")
 
 	generateOptions := cmd.GenerateOptions{
-		CustomCompileProtos: []string{os.ExpandEnv("./projects/gloo/api/grpc")},
+		CustomCompileProtos: []string{"projects/gloo/api/grpc"},
 		SkipGenMocks:       true,
 		CustomImports:      nil,
 		SkipGeneratedTests: true,

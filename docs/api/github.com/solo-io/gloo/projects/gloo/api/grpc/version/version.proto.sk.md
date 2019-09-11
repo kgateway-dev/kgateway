@@ -49,13 +49,13 @@ weight: 5
 
 
 ```yaml
-"serverVersion": []gloo.solo.io.ServerVersion
+"version": .gloo.solo.io.Version
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `serverVersion` | [[]gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) |  |  |
+| `version` | [.gloo.solo.io.Version](../version.proto.sk#version) |  |  |
 
 
 

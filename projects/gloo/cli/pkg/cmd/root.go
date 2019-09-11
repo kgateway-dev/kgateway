@@ -31,7 +31,6 @@ func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, option
 		Short: "CLI for Gloo",
 		Long: `glooctl is the unified CLI for Gloo.
 	Find more information at https://solo.io`,
-		// Version: version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// persistent pre run is be called after flag parsing
 			// since this is the root of the cli app, it will be called regardless of the particular subcommand used

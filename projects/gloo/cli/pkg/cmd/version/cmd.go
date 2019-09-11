@@ -177,7 +177,7 @@ func printVersion(opts *options.Options, vrs *version.Version) error {
 		headers, content := []string{"Namespace"}, []string{kubeSrvVrs.GetNamespace()}
 		for _, container := range kubeSrvVrs.GetContainers() {
 			headers = append(headers, container.GetName())
-			content = append(content,  container.GetTag())
+			content = append(content, container.GetTag())
 		}
 		table.SetHeader(headers)
 		table.Append(content)
