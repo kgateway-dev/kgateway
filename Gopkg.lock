@@ -1326,11 +1326,7 @@
   version = "0.1.0"
 
 [[projects]]
-<<<<<<< HEAD
   digest = "1:1dc2e558a06130008ba80449dfdcc3aeeac076987034ae94c0ed59979078bfb1"
-=======
-  digest = "1:dd6e22af3ef48089103837a2eb782f3f3a7cfe1f307ae1ef92f107bcd7e1158c"
->>>>>>> origin
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1367,13 +1363,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-<<<<<<< HEAD
   revision = "99425e92adea7affd5ae8ba82346c95eabb13b7c"
   version = "v0.10.1"
-=======
-  revision = "075c4b07de59a9b7b20475b7eab02dcdc6a62d64"
-  version = "v0.10.0"
->>>>>>> origin
 
 [[projects]]
   digest = "1:082c3354d1fc17d293495ec1e582f16acac6cedaf78da80049b52a1fda9ef792"
@@ -2618,7 +2609,6 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
-    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/vault",
