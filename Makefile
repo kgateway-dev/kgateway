@@ -243,6 +243,28 @@ ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingre
 		$(call get_test_tag,ingress)
 
 #----------------------------------------------------------------------------------
+# Access Logger
+#----------------------------------------------------------------------------------
+
+ACCESS_LOG_DIR=projects/accesslogger
+ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
+
+$(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
+
+
+.PHONY: access-logger
+access-logger: $(OUTPUT_DIR)/access-logger-linux-amd64
+
+$(OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
+	cp $< $@
+
+access-logger-docker: $(OUTPUT_DIR)/access-logger-linux-amd64 $(OUTPUT_DIR)/Dockerfile.access-logger
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.access-logger \
+		-t quay.io/solo-io/access-logger:$(VERSION) \
+		$(call get_test_tag,access-logger)
+
+#----------------------------------------------------------------------------------
 # Discovery
 #----------------------------------------------------------------------------------
 
@@ -392,7 +414,7 @@ ifeq ($(RELEASE),"true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gloo-envoy-wrapper-docker ingress-docker
+docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gloo-envoy-wrapper-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -405,7 +427,8 @@ ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/ingress:$(VERSION) && \
 	docker push quay.io/solo-io/discovery:$(VERSION) && \
 	docker push quay.io/solo-io/gloo:$(VERSION) && \
-	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
+	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
+	docker push quay.io/solo-io/access-logger:$(VERSION)
 endif
 
 push-kind-images: docker

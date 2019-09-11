@@ -111,6 +111,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
 	cfg.Gateway.ConversionJob.Image.Tag = version
+	cfg.AccessLogger.Image.Tag = version
 
 	for _, v := range cfg.GatewayProxies {
 		v.PodTemplate.Image.Tag = version
@@ -121,6 +122,7 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Gateway.Deployment.Image.PullPolicy = always
 		cfg.Gateway.ConversionJob.Image.PullPolicy = always
+		cfg.AccessLogger.Image.PullPolicy = always
 		for _, v := range cfg.GatewayProxies {
 			v.PodTemplate.Image.PullPolicy = always
 		}

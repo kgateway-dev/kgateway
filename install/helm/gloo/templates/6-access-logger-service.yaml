@@ -1,0 +1,20 @@
+{{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-proxy-v2-access-logger
+  name: gateway-proxy-v2-access-logger
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ports:
+  - port: {{ .Values.accessLogger.port }}
+    targetPort: {{ .Values.accessLogger.port }}
+    protocol: TCP
+    name: http
+  selector:
+    app: gloo
+    gloo: gateway-proxy-v2-access-logger
+{{- end }}

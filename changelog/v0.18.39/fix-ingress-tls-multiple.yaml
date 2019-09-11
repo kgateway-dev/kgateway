@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix issue where the las TLS secret overrides the others when multiple TLS secrets are provided (kubernetes Ingress)
+    issueLink: https://github.com/solo-io/gloo/pull/1151

@@ -14,6 +14,7 @@ weight: 5
 - [AccessLoggingService](#accessloggingservice)
 - [AccessLog](#accesslog)
 - [FileSink](#filesink)
+- [GrpcService](#grpcservice)
   
 
 
@@ -50,12 +51,14 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 ```yaml
 "fileSink": .als.plugins.gloo.solo.io.FileSink
+"grpcService": .als.plugins.gloo.solo.io.GrpcService
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `fileSink` | [.als.plugins.gloo.solo.io.FileSink](../als.proto.sk#filesink) |  |  |
+| `fileSink` | [.als.plugins.gloo.solo.io.FileSink](../als.proto.sk#filesink) | Output access logs to local file |  |
+| `grpcService` | [.als.plugins.gloo.solo.io.GrpcService](../als.proto.sk#grpcservice) | Send access logs to GRPC service |  |
 
 
 
@@ -77,6 +80,31 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | `path` | `string` | the file path to which the file access logging service will sink |  |
 | `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings |  |
 | `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries |  |
+
+
+
+
+---
+### GrpcService
+
+
+
+```yaml
+"logName": string
+"staticClusterName": string
+"additionalRequestHeadersToLog": []string
+"additionalResponseHeadersToLog": []string
+"additionalResponseTrailersToLog": []string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `logName` | `string` | name of log stream |  |
+| `staticClusterName` | `string` |  |  |
+| `additionalRequestHeadersToLog` | `[]string` |  |  |
+| `additionalResponseHeadersToLog` | `[]string` |  |  |
+| `additionalResponseTrailersToLog` | `[]string` |  |  |
 
 
 

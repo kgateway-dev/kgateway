@@ -21,6 +21,7 @@ type Config struct {
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
 	ApiServer      *ApiServer              `json:"apiServer,omitempty"`
+	AccessLogger   *AccessLogger           `json:"accessLogger,omitempty"`
 }
 
 type Global struct {
@@ -198,6 +199,14 @@ type GatewayProxyService struct {
 type Tracing struct {
 	Provider string `json:"provider,omitempty"`
 	Cluster  string `json:"cluster,omitempty"`
+}
+
+type AccessLogger struct {
+	Image       *Image `json:"image,omitempty"`
+	Port        uint   `json:"port,omitempty"`
+	ServiceName string `json:"serviceName,omitempty"`
+	Enabled     bool   `json:"enabled,omitempty"`
+	*DeploymentSpec
 }
 
 type GatewayProxyConfigMap struct {

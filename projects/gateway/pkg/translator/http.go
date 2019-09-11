@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/gogo/protobuf/proto"
@@ -210,13 +211,12 @@ func desiredListenerForHttp(gateway *v2.Gateway, virtualServicesForGateway v1.Vi
 	)
 
 	for _, virtualService := range virtualServicesForGateway.Sort() {
-		ref := virtualService.Metadata.Ref()
 		if virtualService.VirtualHost == nil {
 			virtualService.VirtualHost = &v1.VirtualHost{}
 		}
-		vh, err := convertVirtualHost(ref, virtualService.VirtualHost, tables)
+		vh, err := virtualServiceToVirtualHost(virtualService, tables, resourceErrs)
 		if err != nil {
-			resourceErrs.AddError(gateway, err)
+			resourceErrs.AddError(virtualService, err)
 			continue
 		}
 		virtualHosts = append(virtualHosts, vh)
@@ -240,31 +240,37 @@ func desiredListenerForHttp(gateway *v2.Gateway, virtualServicesForGateway v1.Vi
 	return listener
 }
 
-func convertVirtualHost(vs core.ResourceRef, ours *v1.VirtualHost, tables v1.RouteTableList) (*gloov1.VirtualHost, error) {
-	routes, err := convertRoutes(ours.Routes, tables)
+func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, resourceErrs reporter.ResourceErrors) (*gloov1.VirtualHost, error) {
+	routes, err := convertRoutes(vs, tables, resourceErrs)
 	if err != nil {
 		return nil, err
 	}
 
 	vh := &gloov1.VirtualHost{
-		Name:               fmt.Sprintf("%v.%v", vs.Namespace, vs.Name),
-		Domains:            ours.Domains,
+		Name:               fmt.Sprintf("%v.%v", vs.Metadata.Namespace, vs.Metadata.Name),
+		Domains:            vs.VirtualHost.Domains,
 		Routes:             routes,
-		VirtualHostPlugins: ours.VirtualHostPlugins,
+		VirtualHostPlugins: vs.VirtualHost.VirtualHostPlugins,
 		// TODO: remove on next breaking change
-		CorsPolicy: ours.CorsPolicy,
+		CorsPolicy: vs.VirtualHost.CorsPolicy,
 	}
 
 	return vh, nil
 }
 
-func convertRoutes(ours []*v1.Route, tables v1.RouteTableList) ([]*gloov1.Route, error) {
+func convertRoutes(vs *v1.VirtualService, tables v1.RouteTableList, resourceErrs reporter.ResourceErrors) ([]*gloov1.Route, error) {
 	var routes []*gloov1.Route
-	for _, r := range ours {
+	for _, r := range vs.GetVirtualHost().GetRoutes() {
 		rv := &routeVisitor{tables: tables}
-		mergedRoutes, err := rv.convertRoute(r)
+		mergedRoutes, err := rv.convertRoute(vs, r, resourceErrs)
 		if err != nil {
 			return nil, err
+		}
+		for _, route := range mergedRoutes {
+			if err := appendSource(route, vs); err != nil {
+				// should never happen
+				return nil, err
+			}
 		}
 		routes = append(routes, mergedRoutes...)
 	}
@@ -273,11 +279,12 @@ func convertRoutes(ours []*v1.Route, tables v1.RouteTableList) ([]*gloov1.Route,
 
 // converts a tree of gateway Routes into a list of Gloo routes
 type routeVisitor struct {
+	ctx     context.Context
 	tables  v1.RouteTableList
 	visited v1.RouteTableList
 }
 
-func (rv *routeVisitor) convertRoute(ours *v1.Route) ([]*gloov1.Route, error) {
+func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours *v1.Route, resourceErrs reporter.ResourceErrors) ([]*gloov1.Route, error) {
 	route := &gloov1.Route{
 		Matcher:      ours.Matcher,
 		RoutePlugins: ours.RoutePlugins,
@@ -296,7 +303,7 @@ func (rv *routeVisitor) convertRoute(ours *v1.Route) ([]*gloov1.Route, error) {
 			RouteAction: action.RouteAction,
 		}
 	case *v1.Route_DelegateAction:
-		return rv.convertDelegateAction(ours)
+		return rv.convertDelegateAction(ownerResource, ours, resourceErrs)
 	}
 	return []*gloov1.Route{route}, nil
 }
@@ -311,7 +318,7 @@ var (
 	noDelegateActionErr = errors.Errorf("internal error: convertDelegateAction() called on route without delegate action")
 )
 
-func (rv *routeVisitor) convertDelegateAction(ours *v1.Route) ([]*gloov1.Route, error) {
+func (rv *routeVisitor) convertDelegateAction(sourceResource resources.InputResource, ours *v1.Route, resourceErrs reporter.ResourceErrors) ([]*gloov1.Route, error) {
 	action := ours.GetDelegateAction()
 	if action == nil {
 		return nil, noDelegateActionErr
@@ -336,6 +343,7 @@ func (rv *routeVisitor) convertDelegateAction(ours *v1.Route) ([]*gloov1.Route, 
 	}
 	routeTable, err := rv.tables.Find(action.Strings())
 	if err != nil {
+		resourceErrs.AddError(sourceResource, err)
 		return nil, err
 	}
 	for _, visited := range rv.visited {
@@ -351,7 +359,7 @@ func (rv *routeVisitor) convertDelegateAction(ours *v1.Route) ([]*gloov1.Route, 
 	var delegatedRoutes []*gloov1.Route
 	for _, route := range routeTable.Routes {
 		route := proto.Clone(route).(*v1.Route)
-		subRoutes, err := subRv.convertRoute(route)
+		subRoutes, err := subRv.convertRoute(routeTable, route, resourceErrs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "converting sub-route")
 		}
@@ -367,6 +375,10 @@ func (rv *routeVisitor) convertDelegateAction(ours *v1.Route) ([]*gloov1.Route, 
 			// inherit route plugins from parent
 			if sub.RoutePlugins == nil {
 				sub.RoutePlugins = proto.Clone(ours.RoutePlugins).(*gloov1.RoutePlugins)
+			}
+			if err := appendSource(sub, routeTable); err != nil {
+				// should never happen
+				return nil, err
 			}
 			delegatedRoutes = append(delegatedRoutes, sub)
 		}

@@ -285,7 +285,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:f74866f96499508fd2a1993bf3cb272ecb7f3da0ca1bbc20fbf25f7d848ad73e"
+  digest = "1:804fc6d7fa7cbe63ab06204ddcd7dc9aa316a246c362ee41f15200e1343fd544"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -307,6 +307,8 @@
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
     "envoy/config/trace/v2",
+    "envoy/data/accesslog/v2",
+    "envoy/service/accesslog/v2",
     "envoy/service/discovery/v2",
     "envoy/type",
     "envoy/type/matcher",
@@ -953,6 +955,14 @@
   revision = "95032a82bc518f77982ea72343cc1ade730072f0"
 
 [[projects]]
+  digest = "1:fd9bea48bbc5bba66d9891c72af7255fbebecdff845c37c679406174ece5ca1b"
+  name = "github.com/kelseyhightower/envconfig"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0b417c4ec4a8a82eecc22a1459a504aa55163d61"
+  version = "v1.4.0"
+
+[[projects]]
   digest = "1:ae5f4d0779a45e2cb3075d8b3ece6c623e171407f4aac83521392ff06d188871"
   name = "github.com/kevinburke/ssh_config"
   packages = ["."]
@@ -1316,7 +1326,11 @@
   version = "0.1.0"
 
 [[projects]]
+<<<<<<< HEAD
   digest = "1:1dc2e558a06130008ba80449dfdcc3aeeac076987034ae94c0ed59979078bfb1"
+=======
+  digest = "1:dd6e22af3ef48089103837a2eb782f3f3a7cfe1f307ae1ef92f107bcd7e1158c"
+>>>>>>> origin
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1330,6 +1344,7 @@
     "errutils",
     "githubutils",
     "hashutils",
+    "healthchecker",
     "installutils/helmchart",
     "installutils/kuberesource",
     "kubeinstallutils",
@@ -1352,11 +1367,16 @@
     "vfsutils",
   ]
   pruneopts = "UT"
+<<<<<<< HEAD
   revision = "99425e92adea7affd5ae8ba82346c95eabb13b7c"
   version = "v0.10.1"
+=======
+  revision = "075c4b07de59a9b7b20475b7eab02dcdc6a62d64"
+  version = "v0.10.0"
+>>>>>>> origin
 
 [[projects]]
-  digest = "1:59e275b45ff5aa7eaf961237f8110bafff38e29bf904900e1acc57aac95e6475"
+  digest = "1:082c3354d1fc17d293495ec1e582f16acac6cedaf78da80049b52a1fda9ef792"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1417,8 +1437,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "516e34cf58adb6e4c674b7c95ef181c0ea43cb6a"
-  version = "v0.10.14"
+  revision = "b533affaeae86153ab0b21ce7a5131ecc9613728"
+  version = "v0.10.16"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2512,10 +2532,13 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
+    "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
     "github.com/envoyproxy/go-control-plane/pkg/util",
     "github.com/envoyproxy/protoc-gen-validate/validate",
+    "github.com/fgrosse/zaptest",
     "github.com/ghodss/yaml",
     "github.com/go-openapi/loads",
     "github.com/go-openapi/spec",
@@ -2523,6 +2546,7 @@
     "github.com/go-swagger/go-swagger/examples/2.0/petstore/server/api",
     "github.com/gogo/googleapis/google/api",
     "github.com/gogo/protobuf/gogoproto",
+    "github.com/gogo/protobuf/jsonpb",
     "github.com/gogo/protobuf/proto",
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
@@ -2544,6 +2568,7 @@
     "github.com/jhump/protoreflect/desc",
     "github.com/jhump/protoreflect/grpcreflect",
     "github.com/k0kubun/pp",
+    "github.com/kelseyhightower/envconfig",
     "github.com/keybase/go-ps",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
@@ -2569,6 +2594,7 @@
     "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/githubutils",
     "github.com/solo-io/go-utils/hashutils",
+    "github.com/solo-io/go-utils/healthchecker",
     "github.com/solo-io/go-utils/installutils/helmchart",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/log",
@@ -2592,6 +2618,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
+    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/vault",
@@ -2615,6 +2642,7 @@
     "github.com/solo-io/solo-kit/test/setup",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
+    "go.opencensus.io/plugin/ocgrpc",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",

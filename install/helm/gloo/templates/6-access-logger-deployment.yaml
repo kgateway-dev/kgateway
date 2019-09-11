@@ -1,0 +1,51 @@
+{{- if and  .Values.gateway.enabled .Values.accessLogger.enabled }}
+{{- $image := .Values.accessLogger.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.accessLogger.image .Values.global.image }}
+{{- end }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-proxy-v2-access-logger
+  name: gateway-proxy-v2-access-logger
+  namespace: {{ $.Release.Namespace }}
+spec:
+  replicas: {{ .Values.accessLogger.replicas }}
+  selector:
+    matchLabels:
+      app: gloo
+      gloo: gateway-proxy-v2-access-logger
+  template:
+    metadata:
+      labels:
+        app: gloo
+        gloo: gateway-proxy-v2-access-logger
+    spec:
+      serviceAccountName: gateway-proxy
+      containers:
+        - image: {{ template "gloo.image" $image }}
+          imagePullPolicy: {{ $image.pullPolicy }}
+          name: access-logger
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+{{- if .Values.accessLogger.serviceName }}
+          - name: SERVICE_NAME
+            value: {{.Values.accessLogger.serviceName}}
+{{- end }} # if .Values.accessLogger.serviceName
+          - name: SERVER_PORT
+            value: "{{ .Values.accessLogger.port }}"
+          ports:
+          - containerPort: {{ .Values.accessLogger.port }}
+            name: http
+            protocol: TCP
+{{- end }}

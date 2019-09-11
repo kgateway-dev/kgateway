@@ -70,6 +70,16 @@ static_resources:
     http2_protocol_options: {}
     type: STATIC
 {{end}}
+{{if .AccessLogAddr}}
+  - name: access_log_cluster
+    connect_timeout: 5.000s
+    hosts:
+    - socket_address:
+        address: {{.AccessLogAddr}}
+        port_value: {{.AccessLogPort}}
+    http2_protocol_options: {}
+    type: STATIC
+{{end}}
 
 dynamic_resources:
   ads_config:
@@ -190,6 +200,8 @@ func (ef *EnvoyFactory) Clean() error {
 }
 
 type EnvoyInstance struct {
+	AccessLogAddr string
+	AccessLogPort uint32
 	RatelimitAddr string
 	RatelimitPort uint32
 	ID            string
@@ -219,10 +231,11 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 	}
 
 	ei := &EnvoyInstance{
-		envoypath: ef.envoypath,
-		UseDocker: ef.useDocker,
-		GlooAddr:  gloo,
-		AdminPort: atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
+		envoypath:     ef.envoypath,
+		UseDocker:     ef.useDocker,
+		GlooAddr:      gloo,
+		AccessLogAddr: gloo,
+		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil

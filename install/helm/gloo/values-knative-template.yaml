@@ -22,6 +22,9 @@ settings:
 gateway:
   enabled: false
 
+accessLogger:
+  enabled: false
+
 discovery:
   fdsMode: WHITELIST
 

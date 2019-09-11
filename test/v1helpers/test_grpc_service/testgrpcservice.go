@@ -4,14 +4,11 @@ import (
 	"context"
 	"errors"
 	"net"
-	"os"
-	"os/signal"
 	"strconv"
-	"sync/atomic"
-	"syscall"
 	"time"
 
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
+	"github.com/solo-io/go-utils/healthchecker"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -36,8 +33,8 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 	srv := newServer()
-	hc := NewHealthChecker(health.NewServer())
-	healthpb.RegisterHealthServer(grpcServer, hc.grpc)
+	hc := healthchecker.NewGrpc("TestService", health.NewServer())
+	healthpb.RegisterHealthServer(grpcServer, hc.GetServer())
 	glootest.RegisterTestServiceServer(grpcServer, srv)
 	glootest.RegisterTestService2Server(grpcServer, srv)
 	go grpcServer.Serve(lis)
@@ -69,7 +66,7 @@ func newServer() *TestGRPCServer {
 type TestGRPCServer struct {
 	C             chan *glootest.TestRequest
 	Port          uint32
-	HealthChecker *healthChecker
+	HealthChecker healthchecker.HealthChecker
 }
 
 // Returns a list of all shelves in the bookstore.
@@ -91,33 +88,4 @@ func (s *TestGRPCServer) TestMethod2(_ context.Context, req *glootest.TestReques
 		s.C <- &glootest.TestRequest{Str: req.Str}
 	}()
 	return &glootest.TestResponse2{Str: req.Str}, nil
-}
-
-type healthChecker struct {
-	grpc *health.Server
-	ok   uint32
-}
-
-func NewHealthChecker(grpcHealthServer *health.Server) *healthChecker {
-	ret := &healthChecker{}
-	ret.ok = 1
-
-	ret.grpc = grpcHealthServer
-	ret.grpc.SetServingStatus("TestService", healthpb.HealthCheckResponse_SERVING)
-
-	sigterm := make(chan os.Signal, 1)
-	signal.Notify(sigterm, syscall.SIGTERM)
-
-	go func() {
-		<-sigterm
-		atomic.StoreUint32(&ret.ok, 0)
-		ret.grpc.SetServingStatus("TestService", healthpb.HealthCheckResponse_NOT_SERVING)
-	}()
-
-	return ret
-}
-
-func (hc *healthChecker) Fail() {
-	atomic.StoreUint32(&hc.ok, 0)
-	hc.grpc.SetServingStatus("TestService", healthpb.HealthCheckResponse_NOT_SERVING)
 }

@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add support for GRPC access log streaming
+  issueLink: https://github.com/solo-io/gloo/issues/1046
