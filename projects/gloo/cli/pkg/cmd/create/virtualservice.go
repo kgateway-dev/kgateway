@@ -1,8 +1,9 @@
 package create
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"

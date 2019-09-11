@@ -18,6 +18,7 @@ glooctl install gateway [flags]
 
 ```
   -d, --dry-run              Dump the raw installation yaml instead of applying it to kubernetes
+      --enterprise           Install Enterprise Gloo
   -f, --file string          Install Gloo from this Helm chart archive file rather than from a release
   -h, --help                 help for gateway
       --license-key string   License key to activate GlooE features
