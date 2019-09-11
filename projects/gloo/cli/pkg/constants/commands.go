@@ -108,4 +108,11 @@ var (
 		Use:   "ratelimit",
 		Short: "root command for rate limit functionality",
 	}
+
+	VERSION_COMMAND = cobra.Command{
+		Use:     "version",
+		Aliases: []string{"v"},
+		Short:   "Print current version",
+		Long:    "Get the version of Glooctl and Gloo",
+	}
 )

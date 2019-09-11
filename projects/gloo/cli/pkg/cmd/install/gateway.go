@@ -2,23 +2,21 @@ package install
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/version"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/spf13/cobra"
+	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/spf13/cobra"
-
-	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
