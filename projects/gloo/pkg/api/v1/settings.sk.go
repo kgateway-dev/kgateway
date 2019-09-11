@@ -51,6 +51,8 @@ func (r *Settings) Hash() uint64 {
 		r.Consul,
 		r.Kubernetes,
 		r.Extensions,
+		r.RatelimitDescriptors,
+		r.RatelimitServer,
 		r.ConfigSource,
 		r.SecretSource,
 		r.ArtifactSource,

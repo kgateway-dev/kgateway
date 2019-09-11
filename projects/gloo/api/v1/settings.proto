@@ -10,6 +10,7 @@ import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
@@ -270,8 +271,18 @@ message Settings {
     // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
     KubernetesConfiguration kubernetes = 22;
 
-    // Settings for extensions
-    Extensions extensions = 16;
+    // Deprecated: Opaque settings config for Gloo extensions
+    Extensions extensions = 16 [deprecated=true];
+
+    // Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service;
+    // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+    // Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors.
+    // Configure rate-limit *actions*, which define how request characteristics get translated into descriptors,
+    // on the VirtualHost or its routes
+    ratelimit.plugins.gloo.solo.io.EnvoySettings ratelimit_descriptors = 26;
+
+    // Enterprise-only: Settings for the rate limiting server itself
+    ratelimit.plugins.gloo.solo.io.Settings ratelimit_server = 27;
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 14 [(gogoproto.nullable) = false];
