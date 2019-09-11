@@ -32,8 +32,7 @@
 
 [[override]]
   name = "github.com/solo-io/go-utils"
-#  version = "0.9.20"
-  branch = "rbac-testing"
+ version = "0.10.1"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
