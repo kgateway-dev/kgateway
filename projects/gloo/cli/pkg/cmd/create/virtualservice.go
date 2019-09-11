@@ -3,6 +3,8 @@ package create
 import (
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -51,6 +53,15 @@ func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			"Virtual services must not have overlapping domains, as the virtual service to match a request " +
 			"is selected by the Host header (in HTTP1) or :authority header (in HTTP2). " +
 			"When using Gloo Enterprise, virtual services can be configured with rate limiting, oauth, and apikey auth.",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := prerun.CallParentPrerun(cmd, args); err != nil {
+				return err
+			}
+			if err := prerun.EnableConsulClients(opts.Create.Consul); err != nil {
+				return err
+			}
+			return nil
+		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Top.Interactive {
 				if err := surveyutils.AddVirtualServiceFlagsInteractive(&opts.Create.VirtualService); err != nil {
@@ -71,6 +82,7 @@ func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
+	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Create.Consul)
 	flagutils.AddVirtualServiceFlags(pflags, &opts.Create.VirtualService)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 
