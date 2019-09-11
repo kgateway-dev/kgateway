@@ -26,7 +26,7 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 				clients.DeleteOpts{Ctx: opts.Top.Ctx}); err != nil {
 				return err
 			}
-			fmt.Printf("uptream %v deleted", name)
+			fmt.Printf("upstream %v deleted", name)
 			return nil
 		},
 	}
