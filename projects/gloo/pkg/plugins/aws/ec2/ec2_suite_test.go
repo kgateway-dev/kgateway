@@ -9,7 +9,6 @@ import (
 )
 
 func TestEc2(t *testing.T) {
-	testutils.RegisterPreFailHandler(testutils.PrintTrimmedStack)
 	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "EC2 Suite")
 }
