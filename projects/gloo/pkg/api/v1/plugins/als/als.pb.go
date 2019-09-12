@@ -11,6 +11,7 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
+	_ "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -22,7 +23,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Contains various settings for Envoy's access logging service.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
@@ -69,6 +70,7 @@ type AccessLog struct {
 	//
 	// Types that are valid to be assigned to OutputDestination:
 	//	*AccessLog_FileSink
+	//	*AccessLog_GrpcService
 	OutputDestination    isAccessLog_OutputDestination `protobuf_oneof:"OutputDestination"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
@@ -105,10 +107,14 @@ type isAccessLog_OutputDestination interface {
 }
 
 type AccessLog_FileSink struct {
-	FileSink *FileSink `protobuf:"bytes,2,opt,name=file_sink,json=fileSink,proto3,oneof"`
+	FileSink *FileSink `protobuf:"bytes,2,opt,name=file_sink,json=fileSink,proto3,oneof" json:"file_sink,omitempty"`
+}
+type AccessLog_GrpcService struct {
+	GrpcService *GrpcService `protobuf:"bytes,3,opt,name=grpc_service,json=grpcService,proto3,oneof" json:"grpc_service,omitempty"`
 }
 
-func (*AccessLog_FileSink) isAccessLog_OutputDestination() {}
+func (*AccessLog_FileSink) isAccessLog_OutputDestination()    {}
+func (*AccessLog_GrpcService) isAccessLog_OutputDestination() {}
 
 func (m *AccessLog) GetOutputDestination() isAccessLog_OutputDestination {
 	if m != nil {
@@ -124,59 +130,19 @@ func (m *AccessLog) GetFileSink() *FileSink {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*AccessLog) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _AccessLog_OneofMarshaler, _AccessLog_OneofUnmarshaler, _AccessLog_OneofSizer, []interface{}{
-		(*AccessLog_FileSink)(nil),
-	}
-}
-
-func _AccessLog_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*AccessLog)
-	// OutputDestination
-	switch x := m.OutputDestination.(type) {
-	case *AccessLog_FileSink:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.FileSink); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("AccessLog.OutputDestination has unexpected type %T", x)
+func (m *AccessLog) GetGrpcService() *GrpcService {
+	if x, ok := m.GetOutputDestination().(*AccessLog_GrpcService); ok {
+		return x.GrpcService
 	}
 	return nil
 }
 
-func _AccessLog_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*AccessLog)
-	switch tag {
-	case 2: // OutputDestination.file_sink
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(FileSink)
-		err := b.DecodeMessage(msg)
-		m.OutputDestination = &AccessLog_FileSink{msg}
-		return true, err
-	default:
-		return false, nil
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*AccessLog) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*AccessLog_FileSink)(nil),
+		(*AccessLog_GrpcService)(nil),
 	}
-}
-
-func _AccessLog_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*AccessLog)
-	// OutputDestination
-	switch x := m.OutputDestination.(type) {
-	case *AccessLog_FileSink:
-		s := proto.Size(x.FileSink)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type FileSink struct {
@@ -223,10 +189,10 @@ type isFileSink_OutputFormat interface {
 }
 
 type FileSink_StringFormat struct {
-	StringFormat string `protobuf:"bytes,2,opt,name=string_format,json=stringFormat,proto3,oneof"`
+	StringFormat string `protobuf:"bytes,2,opt,name=string_format,json=stringFormat,proto3,oneof" json:"string_format,omitempty"`
 }
 type FileSink_JsonFormat struct {
-	JsonFormat *types.Struct `protobuf:"bytes,3,opt,name=json_format,json=jsonFormat,proto3,oneof"`
+	JsonFormat *types.Struct `protobuf:"bytes,3,opt,name=json_format,json=jsonFormat,proto3,oneof" json:"json_format,omitempty"`
 }
 
 func (*FileSink_StringFormat) isFileSink_OutputFormat() {}
@@ -260,80 +226,119 @@ func (m *FileSink) GetJsonFormat() *types.Struct {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*FileSink) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _FileSink_OneofMarshaler, _FileSink_OneofUnmarshaler, _FileSink_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*FileSink) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*FileSink_StringFormat)(nil),
 		(*FileSink_JsonFormat)(nil),
 	}
 }
 
-func _FileSink_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*FileSink)
-	// output_format
-	switch x := m.OutputFormat.(type) {
-	case *FileSink_StringFormat:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.StringFormat)
-	case *FileSink_JsonFormat:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.JsonFormat); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("FileSink.OutputFormat has unexpected type %T", x)
+type GrpcService struct {
+	// name of log stream
+	LogName string `protobuf:"bytes,1,opt,name=log_name,json=logName,proto3" json:"log_name,omitempty"`
+	// The static cluster defined in bootstrap config to route to
+	//
+	// Types that are valid to be assigned to ServiceRef:
+	//	*GrpcService_StaticClusterName
+	ServiceRef                      isGrpcService_ServiceRef `protobuf_oneof:"service_ref"`
+	AdditionalRequestHeadersToLog   []string                 `protobuf:"bytes,4,rep,name=additional_request_headers_to_log,json=additionalRequestHeadersToLog,proto3" json:"additional_request_headers_to_log,omitempty"`
+	AdditionalResponseHeadersToLog  []string                 `protobuf:"bytes,5,rep,name=additional_response_headers_to_log,json=additionalResponseHeadersToLog,proto3" json:"additional_response_headers_to_log,omitempty"`
+	AdditionalResponseTrailersToLog []string                 `protobuf:"bytes,6,rep,name=additional_response_trailers_to_log,json=additionalResponseTrailersToLog,proto3" json:"additional_response_trailers_to_log,omitempty"`
+	XXX_NoUnkeyedLiteral            struct{}                 `json:"-"`
+	XXX_unrecognized                []byte                   `json:"-"`
+	XXX_sizecache                   int32                    `json:"-"`
+}
+
+func (m *GrpcService) Reset()         { *m = GrpcService{} }
+func (m *GrpcService) String() string { return proto.CompactTextString(m) }
+func (*GrpcService) ProtoMessage()    {}
+func (*GrpcService) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dd8d2602efe636cc, []int{3}
+}
+func (m *GrpcService) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GrpcService.Unmarshal(m, b)
+}
+func (m *GrpcService) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GrpcService.Marshal(b, m, deterministic)
+}
+func (m *GrpcService) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GrpcService.Merge(m, src)
+}
+func (m *GrpcService) XXX_Size() int {
+	return xxx_messageInfo_GrpcService.Size(m)
+}
+func (m *GrpcService) XXX_DiscardUnknown() {
+	xxx_messageInfo_GrpcService.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GrpcService proto.InternalMessageInfo
+
+type isGrpcService_ServiceRef interface {
+	isGrpcService_ServiceRef()
+	Equal(interface{}) bool
+}
+
+type GrpcService_StaticClusterName struct {
+	StaticClusterName string `protobuf:"bytes,2,opt,name=static_cluster_name,json=staticClusterName,proto3,oneof" json:"static_cluster_name,omitempty"`
+}
+
+func (*GrpcService_StaticClusterName) isGrpcService_ServiceRef() {}
+
+func (m *GrpcService) GetServiceRef() isGrpcService_ServiceRef {
+	if m != nil {
+		return m.ServiceRef
 	}
 	return nil
 }
 
-func _FileSink_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*FileSink)
-	switch tag {
-	case 2: // output_format.string_format
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.OutputFormat = &FileSink_StringFormat{x}
-		return true, err
-	case 3: // output_format.json_format
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(types.Struct)
-		err := b.DecodeMessage(msg)
-		m.OutputFormat = &FileSink_JsonFormat{msg}
-		return true, err
-	default:
-		return false, nil
+func (m *GrpcService) GetLogName() string {
+	if m != nil {
+		return m.LogName
 	}
+	return ""
 }
 
-func _FileSink_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*FileSink)
-	// output_format
-	switch x := m.OutputFormat.(type) {
-	case *FileSink_StringFormat:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.StringFormat)))
-		n += len(x.StringFormat)
-	case *FileSink_JsonFormat:
-		s := proto.Size(x.JsonFormat)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+func (m *GrpcService) GetStaticClusterName() string {
+	if x, ok := m.GetServiceRef().(*GrpcService_StaticClusterName); ok {
+		return x.StaticClusterName
 	}
-	return n
+	return ""
+}
+
+func (m *GrpcService) GetAdditionalRequestHeadersToLog() []string {
+	if m != nil {
+		return m.AdditionalRequestHeadersToLog
+	}
+	return nil
+}
+
+func (m *GrpcService) GetAdditionalResponseHeadersToLog() []string {
+	if m != nil {
+		return m.AdditionalResponseHeadersToLog
+	}
+	return nil
+}
+
+func (m *GrpcService) GetAdditionalResponseTrailersToLog() []string {
+	if m != nil {
+		return m.AdditionalResponseTrailersToLog
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*GrpcService) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*GrpcService_StaticClusterName)(nil),
+	}
 }
 
 func init() {
 	proto.RegisterType((*AccessLoggingService)(nil), "als.plugins.gloo.solo.io.AccessLoggingService")
 	proto.RegisterType((*AccessLog)(nil), "als.plugins.gloo.solo.io.AccessLog")
 	proto.RegisterType((*FileSink)(nil), "als.plugins.gloo.solo.io.FileSink")
+	proto.RegisterType((*GrpcService)(nil), "als.plugins.gloo.solo.io.GrpcService")
 }
 
 func init() {
@@ -341,29 +346,41 @@ func init() {
 }
 
 var fileDescriptor_dd8d2602efe636cc = []byte{
-	// 345 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0xcf, 0x4a, 0xc3, 0x40,
-	0x10, 0xc6, 0x1b, 0x2b, 0xd2, 0x6c, 0x2d, 0x62, 0x2c, 0x18, 0x8a, 0x48, 0x89, 0x08, 0xbd, 0xb8,
-	0x8b, 0xf5, 0x26, 0x5e, 0x1a, 0xa4, 0xf4, 0x20, 0x08, 0xe9, 0xad, 0x97, 0x92, 0x86, 0xcd, 0x76,
-	0xda, 0xed, 0x4e, 0xc8, 0x6e, 0xfa, 0x20, 0x3e, 0x85, 0xcf, 0xe5, 0x93, 0x48, 0x76, 0x9b, 0x9e,
-	0x2c, 0x78, 0x58, 0xf8, 0xf6, 0x9b, 0xdf, 0xfc, 0x61, 0x86, 0xc4, 0x02, 0xcc, 0xba, 0x5a, 0xd1,
-	0x0c, 0x77, 0x4c, 0xa3, 0xc4, 0x27, 0x40, 0x26, 0x24, 0x22, 0x2b, 0x4a, 0xdc, 0xf0, 0xcc, 0x68,
-	0xf7, 0x4b, 0x0b, 0x60, 0xfb, 0x67, 0x56, 0xc8, 0x4a, 0x80, 0xd2, 0x2c, 0x95, 0xf6, 0xd1, 0xa2,
-	0x44, 0x83, 0x41, 0x68, 0xa5, 0x0b, 0xd1, 0x1a, 0xa7, 0x75, 0x25, 0x0a, 0x38, 0xe8, 0x0b, 0x14,
-	0x68, 0x21, 0x56, 0x2b, 0xc7, 0x0f, 0xee, 0x04, 0xa2, 0x90, 0x9c, 0xd9, 0xdf, 0xaa, 0xca, 0x99,
-	0x36, 0x65, 0x95, 0x19, 0x17, 0x8d, 0x16, 0xa4, 0x3f, 0xc9, 0x32, 0xae, 0xf5, 0x07, 0x0a, 0x01,
-	0x4a, 0xcc, 0x79, 0xb9, 0x87, 0x8c, 0x07, 0x31, 0x21, 0xa9, 0xf5, 0x97, 0x12, 0x45, 0xe8, 0x0d,
-	0xdb, 0xa3, 0xee, 0xf8, 0x81, 0x9e, 0x6a, 0x4d, 0x8f, 0x35, 0x12, 0x3f, 0x6d, 0x64, 0x94, 0x11,
-	0xff, 0xe8, 0x07, 0x13, 0xe2, 0xe7, 0x20, 0xf9, 0x52, 0x83, 0xda, 0x86, 0x67, 0x43, 0x6f, 0xd4,
-	0x1d, 0x47, 0xa7, 0xeb, 0x4d, 0x41, 0xf2, 0x39, 0xa8, 0xed, 0xac, 0x95, 0x74, 0xf2, 0x83, 0x8e,
-	0x6f, 0xc8, 0xf5, 0x67, 0x65, 0x8a, 0xca, 0xbc, 0x73, 0x6d, 0x40, 0xa5, 0x06, 0x50, 0x45, 0x5f,
-	0x1e, 0xe9, 0x34, 0x74, 0x10, 0x90, 0xf3, 0x22, 0x35, 0xeb, 0xd0, 0x1b, 0x7a, 0x23, 0x3f, 0xb1,
-	0x3a, 0x78, 0x24, 0x3d, 0x6d, 0x4a, 0x50, 0x62, 0x99, 0x63, 0xb9, 0x4b, 0x8d, 0x6d, 0xee, 0xcf,
-	0x5a, 0xc9, 0xa5, 0xb3, 0xa7, 0xd6, 0x0d, 0x5e, 0x49, 0x77, 0xa3, 0x51, 0x35, 0x50, 0xdb, 0x4e,
-	0x78, 0x4b, 0xdd, 0xf2, 0x68, 0xb3, 0x3c, 0x3a, 0xb7, 0xcb, 0x9b, 0xb5, 0x12, 0x52, 0xd3, 0x2e,
-	0x37, 0xbe, 0x22, 0x3d, 0xb4, 0x83, 0x1d, 0xb2, 0xe3, 0xf8, 0xfb, 0xe7, 0xde, 0x5b, 0xbc, 0xfd,
-	0xef, 0xda, 0xc5, 0x56, 0xfc, 0x71, 0xf1, 0xd5, 0x85, 0xed, 0xf9, 0xf2, 0x1b, 0x00, 0x00, 0xff,
-	0xff, 0x45, 0x47, 0xf1, 0xb0, 0x34, 0x02, 0x00, 0x00,
+	// 536 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xd1, 0x6e, 0xd3, 0x3c,
+	0x14, 0x80, 0x9b, 0x6d, 0xff, 0xfe, 0xe5, 0x64, 0x15, 0x5a, 0x36, 0x89, 0x32, 0xc1, 0x28, 0x99,
+	0x26, 0xf5, 0x02, 0x12, 0x18, 0x77, 0x88, 0x9b, 0x05, 0x34, 0xa2, 0x69, 0x02, 0x29, 0xdd, 0xd5,
+	0x6e, 0x22, 0x37, 0x75, 0x5c, 0xaf, 0x6e, 0x4e, 0xb0, 0x9d, 0x3d, 0x08, 0x4f, 0xc1, 0x1d, 0x4f,
+	0xc2, 0x4b, 0xf0, 0x24, 0x28, 0x76, 0xb2, 0x75, 0xd0, 0x4a, 0x5c, 0x54, 0x3d, 0xf6, 0xf9, 0xfc,
+	0xf9, 0x1c, 0x9d, 0x18, 0x62, 0xc6, 0xf5, 0xac, 0x9e, 0x84, 0x39, 0x2e, 0x22, 0x85, 0x02, 0x5f,
+	0x71, 0x8c, 0x98, 0x40, 0x8c, 0x2a, 0x89, 0x37, 0x34, 0xd7, 0xca, 0xae, 0x48, 0xc5, 0xa3, 0xdb,
+	0x37, 0x51, 0x25, 0x6a, 0xc6, 0x4b, 0x15, 0x11, 0x61, 0x7e, 0x61, 0x25, 0x51, 0xa3, 0x3f, 0x30,
+	0xa1, 0x4d, 0x85, 0x0d, 0x1e, 0x36, 0xa6, 0x90, 0xe3, 0xe1, 0x01, 0x43, 0x86, 0x06, 0x8a, 0x9a,
+	0xc8, 0xf2, 0x87, 0x2f, 0x57, 0xdc, 0x69, 0xfe, 0xe7, 0x5c, 0x77, 0x37, 0x49, 0x5a, 0xb4, 0xf4,
+	0x53, 0x86, 0xc8, 0x04, 0x8d, 0xcc, 0x6a, 0x52, 0x17, 0x91, 0xd2, 0xb2, 0xce, 0xb5, 0xcd, 0x06,
+	0xd7, 0x70, 0x70, 0x96, 0xe7, 0x54, 0xa9, 0x4b, 0x64, 0x8c, 0x97, 0x6c, 0x4c, 0xe5, 0x2d, 0xcf,
+	0xa9, 0x1f, 0x03, 0x10, 0xb3, 0x9f, 0x09, 0x64, 0x03, 0x67, 0xb8, 0x39, 0xf2, 0x4e, 0x8f, 0xc3,
+	0x75, 0x85, 0x86, 0x77, 0x8e, 0xd4, 0x25, 0x5d, 0x18, 0xfc, 0x70, 0xc0, 0xbd, 0x4b, 0xf8, 0x67,
+	0xe0, 0x16, 0x5c, 0xd0, 0x4c, 0xf1, 0x72, 0x3e, 0xd8, 0x18, 0x3a, 0x23, 0xef, 0x34, 0x58, 0x2f,
+	0x3c, 0xe7, 0x82, 0x8e, 0x79, 0x39, 0x4f, 0x7a, 0xe9, 0x4e, 0xd1, 0xc6, 0xfe, 0x05, 0xec, 0x32,
+	0x59, 0xe5, 0x99, 0xb2, 0x45, 0x0e, 0x36, 0x8d, 0xe5, 0x64, 0xbd, 0xe5, 0x93, 0xac, 0xf2, 0xb6,
+	0xa3, 0xa4, 0x97, 0x7a, 0xec, 0x7e, 0x19, 0xef, 0xc3, 0xde, 0x97, 0x5a, 0x57, 0xb5, 0xfe, 0x48,
+	0x95, 0xe6, 0x25, 0xd1, 0x1c, 0xcb, 0xe0, 0x9b, 0x03, 0x3b, 0xdd, 0xcd, 0xbe, 0x0f, 0x5b, 0x15,
+	0xd1, 0xb3, 0x81, 0x33, 0x74, 0x46, 0x6e, 0x6a, 0x62, 0xff, 0x04, 0xfa, 0x4a, 0x4b, 0x5e, 0xb2,
+	0xac, 0x40, 0xb9, 0x20, 0xda, 0x34, 0xe2, 0x26, 0xbd, 0x74, 0xd7, 0x6e, 0x9f, 0x9b, 0x5d, 0xff,
+	0x1d, 0x78, 0x37, 0x0a, 0xcb, 0x0e, 0xb2, 0x75, 0x3e, 0x0e, 0xed, 0x24, 0xc2, 0x6e, 0x12, 0xe1,
+	0xd8, 0x4c, 0x22, 0xe9, 0xa5, 0xd0, 0xd0, 0xf6, 0x6c, 0xfc, 0x08, 0xfa, 0x68, 0x0a, 0x6b, 0x4f,
+	0x07, 0x3f, 0x37, 0xc0, 0x5b, 0x6a, 0xc4, 0x7f, 0x02, 0x3b, 0x02, 0x59, 0x56, 0x92, 0x05, 0x6d,
+	0x6b, 0xfb, 0x5f, 0x20, 0xfb, 0x4c, 0x16, 0xd4, 0x7f, 0x0d, 0xfb, 0x4a, 0x13, 0xcd, 0xf3, 0x2c,
+	0x17, 0xb5, 0xd2, 0x54, 0x5a, 0xaa, 0x2b, 0x72, 0xcf, 0x26, 0x3f, 0xd8, 0x9c, 0x39, 0x91, 0xc0,
+	0x0b, 0x32, 0x9d, 0xf2, 0xa6, 0x7b, 0x22, 0x32, 0x49, 0xbf, 0xd6, 0x54, 0xe9, 0x6c, 0x46, 0xc9,
+	0x94, 0x4a, 0x95, 0x69, 0x34, 0xe3, 0xdf, 0x1a, 0x6e, 0x8e, 0xdc, 0xf4, 0xd9, 0x3d, 0x98, 0x5a,
+	0x2e, 0xb1, 0xd8, 0x15, 0x36, 0xf3, 0xbd, 0x80, 0xe0, 0x81, 0x49, 0x55, 0x58, 0x2a, 0xfa, 0xa7,
+	0xea, 0x3f, 0xa3, 0x3a, 0x5a, 0x56, 0x59, 0xf0, 0x81, 0xeb, 0x12, 0x8e, 0x57, 0xb9, 0xb4, 0x24,
+	0x5c, 0x2c, 0xc9, 0xb6, 0x8d, 0xec, 0xf9, 0xdf, 0xb2, 0xab, 0x16, 0x34, 0xb6, 0xb8, 0x0f, 0x5e,
+	0xfb, 0xc5, 0x64, 0x92, 0x16, 0x71, 0xfc, 0xfd, 0xd7, 0x91, 0x73, 0xfd, 0xfe, 0xdf, 0x1e, 0x6e,
+	0x35, 0x67, 0x2b, 0x1e, 0xef, 0x64, 0xdb, 0xcc, 0xf0, 0xed, 0xef, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0xb1, 0x43, 0xa9, 0x88, 0xff, 0x03, 0x00, 0x00,
 }
 
 func (this *AccessLoggingService) Equal(that interface{}) bool {
@@ -455,6 +472,30 @@ func (this *AccessLog_FileSink) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *AccessLog_GrpcService) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AccessLog_GrpcService)
+	if !ok {
+		that2, ok := that.(AccessLog_GrpcService)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.GrpcService.Equal(that1.GrpcService) {
+		return false
+	}
+	return true
+}
 func (this *FileSink) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -535,6 +576,90 @@ func (this *FileSink_JsonFormat) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.JsonFormat.Equal(that1.JsonFormat) {
+		return false
+	}
+	return true
+}
+func (this *GrpcService) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GrpcService)
+	if !ok {
+		that2, ok := that.(GrpcService)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.LogName != that1.LogName {
+		return false
+	}
+	if that1.ServiceRef == nil {
+		if this.ServiceRef != nil {
+			return false
+		}
+	} else if this.ServiceRef == nil {
+		return false
+	} else if !this.ServiceRef.Equal(that1.ServiceRef) {
+		return false
+	}
+	if len(this.AdditionalRequestHeadersToLog) != len(that1.AdditionalRequestHeadersToLog) {
+		return false
+	}
+	for i := range this.AdditionalRequestHeadersToLog {
+		if this.AdditionalRequestHeadersToLog[i] != that1.AdditionalRequestHeadersToLog[i] {
+			return false
+		}
+	}
+	if len(this.AdditionalResponseHeadersToLog) != len(that1.AdditionalResponseHeadersToLog) {
+		return false
+	}
+	for i := range this.AdditionalResponseHeadersToLog {
+		if this.AdditionalResponseHeadersToLog[i] != that1.AdditionalResponseHeadersToLog[i] {
+			return false
+		}
+	}
+	if len(this.AdditionalResponseTrailersToLog) != len(that1.AdditionalResponseTrailersToLog) {
+		return false
+	}
+	for i := range this.AdditionalResponseTrailersToLog {
+		if this.AdditionalResponseTrailersToLog[i] != that1.AdditionalResponseTrailersToLog[i] {
+			return false
+		}
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *GrpcService_StaticClusterName) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GrpcService_StaticClusterName)
+	if !ok {
+		that2, ok := that.(GrpcService_StaticClusterName)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.StaticClusterName != that1.StaticClusterName {
 		return false
 	}
 	return true

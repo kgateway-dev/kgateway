@@ -3,6 +3,8 @@ package options
 import (
 	"context"
 
+	"github.com/hashicorp/consul/api"
+	vaultapi "github.com/hashicorp/vault/api"
 	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -16,6 +18,8 @@ type Options struct {
 	Upgrade   Upgrade
 	Create    Create
 	Delete    Delete
+	Edit      Edit
+	Route     Route
 	Get       Get
 	Add       Add
 	Remove    Remove
@@ -26,7 +30,7 @@ type Top struct {
 	File        string
 	Output      printTypes.OutputType
 	Ctx         context.Context
-	Verbose     bool // currently only used by install and uninstall, sends kubectlc command output to terminal
+	Verbose     bool // currently only used by install and uninstall, sends kubectl command output to terminal
 }
 
 type Install struct {
@@ -71,11 +75,33 @@ type Upgrade struct {
 
 type Get struct {
 	Selector InputMapStringString
+	Consul   Consul // use consul as config backend
 }
 
 type Delete struct {
 	Selector InputMapStringString
 	All      bool
+	Consul   Consul // use consul as config backend
+}
+
+type Edit struct {
+	Consul Consul // use consul as config backend
+}
+
+type Route struct {
+	Consul Consul // use consul as config backend
+}
+
+type Consul struct {
+	UseConsul bool // enable consul config clients
+	RootKey   string
+	Client    func() (*api.Client, error)
+}
+
+type Vault struct {
+	UseVault bool // enable vault secret clients
+	RootKey  string
+	Client   func() (*vaultapi.Client, error)
 }
 
 type Create struct {
@@ -83,7 +109,9 @@ type Create struct {
 	InputUpstream      InputUpstream
 	InputUpstreamGroup InputUpstreamGroup
 	InputSecret        Secret
-	DryRun             bool // print resource as a kubernetes style yaml and exit without writing to storage
+	DryRun             bool   // print resource as a kubernetes style yaml and exit without writing to storage
+	Consul             Consul // use consul as config backend
+	Vault              Vault  // use vault as secrets backend
 }
 
 type RouteMatchers struct {
@@ -96,7 +124,8 @@ type RouteMatchers struct {
 
 type Add struct {
 	Route  InputRoute
-	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
+	DryRun bool   // print resource as a kubernetes style yaml and exit without writing to storage
+	Consul Consul // use consul as config backend
 }
 
 type InputRoute struct {
@@ -161,7 +190,8 @@ type RestDestinationSpec struct {
 }
 
 type Remove struct {
-	Route RemoveRoute
+	Route  RemoveRoute
+	Consul Consul // use consul as config backend
 }
 
 type RemoveRoute struct {

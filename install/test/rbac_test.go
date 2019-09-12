@@ -17,6 +17,20 @@ var _ = Describe("RBAC Test", func() {
 		testManifest = renderManifest(helmFlags)
 	}
 
+	Context("implementation-agnostic permissions", func() {
+		It("correctly assigns permissions for single-namespace gloo", func() {
+			prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=true")
+			permissions := GetServiceAccountPermissions("gloo-system")
+			testManifest.ExpectPermissions(permissions)
+		})
+
+		It("correctly assigns permissions for cluster-scoped gloo", func() {
+			prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
+			permissions := GetServiceAccountPermissions("")
+			testManifest.ExpectPermissions(permissions)
+		})
+	})
+
 	Context("kube-resource-watcher", func() {
 		BeforeEach(func() {
 			resourceBuilder = ResourceBuilder{
@@ -29,12 +43,7 @@ var _ = Describe("RBAC Test", func() {
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{""},
-						Resources: []string{"pods", "services", "secrets", "endpoints", "configmaps"},
-						Verbs:     []string{"get", "list", "watch"},
-					},
-					{
-						APIGroups: []string{""},
-						Resources: []string{"namespaces"},
+						Resources: []string{"pods", "services", "secrets", "endpoints", "configmaps", "namespaces"},
 						Verbs:     []string{"get", "list", "watch"},
 					},
 				},
@@ -351,7 +360,7 @@ var _ = Describe("RBAC Test", func() {
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{"gateway.solo.io"},
-						Resources: []string{"virtualservices"},
+						Resources: []string{"virtualservices", "routetables"},
 						Verbs:     []string{"get", "list", "watch", "update"},
 					}, {
 						APIGroups: []string{"gateway.solo.io"},

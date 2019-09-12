@@ -50,7 +50,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	defer span.End()
 
 	s.latestSnap = snap
-	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
+	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, )", snap.Hash(),
 		len(snap.Proxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts))

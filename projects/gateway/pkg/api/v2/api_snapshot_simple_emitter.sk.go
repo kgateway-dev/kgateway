@@ -87,6 +87,8 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 					switch typed := res.(type) {
 					case *gateway_solo_io.VirtualService:
 						currentSnapshot.VirtualServices = append(currentSnapshot.VirtualServices, typed)
+					case *gateway_solo_io.RouteTable:
+						currentSnapshot.RouteTables = append(currentSnapshot.RouteTables, typed)
 					case *Gateway:
 						currentSnapshot.Gateways = append(currentSnapshot.Gateways, typed)
 					default:

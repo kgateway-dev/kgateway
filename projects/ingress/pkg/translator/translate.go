@@ -33,6 +33,7 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot, requireIngres
 	var virtualHostsHttps []*gloov1.VirtualHost
 	var sslConfigs []*gloov1.SslConfig
 	for _, svh := range secureVirtualHosts {
+		svh := svh
 		virtualHostsHttps = append(virtualHostsHttps, svh.vh)
 		sslConfigs = append(sslConfigs, &gloov1.SslConfig{
 			SslSecrets: &gloov1.SslConfig_SecretRef{
@@ -210,7 +211,7 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 		}
 		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
 			vh: &gloov1.VirtualHost{
-				Name:    host + "-http",
+				Name:    host + "-https",
 				Domains: []string{host},
 				Routes:  routes,
 			},

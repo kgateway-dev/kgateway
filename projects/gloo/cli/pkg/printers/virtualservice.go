@@ -134,9 +134,9 @@ func matcherString(matcher *gloov1.Matcher) string {
 	return ""
 }
 
-func destinationString(route *gloov1.Route) string {
+func destinationString(route *v1.Route) string {
 	switch action := route.Action.(type) {
-	case *gloov1.Route_RouteAction:
+	case *v1.Route_RouteAction:
 		switch dest := action.RouteAction.Destination.(type) {
 		case *gloov1.RouteAction_Multi:
 			return fmt.Sprintf("%v destinations", len(dest.Multi.Destinations))
@@ -150,9 +150,9 @@ func destinationString(route *gloov1.Route) string {
 		case *gloov1.RouteAction_UpstreamGroup:
 			return fmt.Sprintf("upstream group: %s.%s", dest.UpstreamGroup.Name, dest.UpstreamGroup.Namespace)
 		}
-	case *gloov1.Route_DirectResponseAction:
+	case *v1.Route_DirectResponseAction:
 		return strconv.Itoa(int(action.DirectResponseAction.Status))
-	case *gloov1.Route_RedirectAction:
+	case *v1.Route_RedirectAction:
 		return action.RedirectAction.HostRedirect
 	}
 	return ""

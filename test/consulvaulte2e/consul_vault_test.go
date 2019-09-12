@@ -262,16 +262,15 @@ func makeSslVirtualService(secret core.ResourceRef) *v1.VirtualService {
 			Name:      "vs-ssl",
 			Namespace: "default",
 		},
-		VirtualHost: &gloov1.VirtualHost{
-			Name:    "virt1",
+		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
-			Routes: []*gloov1.Route{{
+			Routes: []*v1.Route{{
 				Matcher: &gloov1.Matcher{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
 				},
-				Action: &gloov1.Route_RouteAction{
+				Action: &v1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
@@ -304,16 +303,15 @@ func makeFunctionRoutingVirtualService(upstream core.ResourceRef, funcName strin
 			Name:      "vs-functions",
 			Namespace: "default",
 		},
-		VirtualHost: &gloov1.VirtualHost{
-			Name:    "virt1",
+		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
-			Routes: []*gloov1.Route{{
+			Routes: []*v1.Route{{
 				Matcher: &gloov1.Matcher{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
 				},
-				Action: &gloov1.Route_RouteAction{
+				Action: &v1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{

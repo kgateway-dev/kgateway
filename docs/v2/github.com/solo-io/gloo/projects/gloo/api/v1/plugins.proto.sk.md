@@ -61,6 +61,7 @@ Plugin-specific configuration that lives on http listeners
 ```yaml
 "grpcWeb": .grpc_web.plugins.gloo.solo.io.GrpcWeb
 "httpConnectionManagerSettings": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings
+"extensions": .gloo.solo.io.Extensions
 
 ```
 
@@ -68,6 +69,7 @@ Plugin-specific configuration that lives on http listeners
 | ----- | ---- | ----------- |----------- | 
 | `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk#grpcweb) |  |  |
 | `httpConnectionManagerSettings` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings](../plugins/hcm/hcm.proto.sk#httpconnectionmanagersettings) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
 
 
 
@@ -105,6 +107,7 @@ to be usable by Gloo.
 "stats": .stats.plugins.gloo.solo.io.Stats
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
+"transformations": .envoy.api.v2.filter.http.RouteTransformations
 
 ```
 
@@ -115,6 +118,7 @@ to be usable by Gloo.
 | `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply |  |
 
 
 
@@ -146,7 +150,7 @@ to be usable by Gloo.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) |  |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply |  |
 | `faults` | [.fault.plugins.gloo.solo.io.RouteFaults](../plugins/faultinjection/fault.proto.sk#routefaults) |  |  |
 | `prefixRewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#prefixrewrite) |  |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
@@ -195,12 +199,14 @@ is selected for routing.
 
 ```yaml
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
+"transformations": .envoy.api.v2.filter.http.RouteTransformations
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply |  |
 
 
 
@@ -217,6 +223,8 @@ Each upstream type is handled by a corresponding Gloo plugin.
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "loadBalancerConfig": .gloo.solo.io.LoadBalancerConfig
 "connectionConfig": .gloo.solo.io.ConnectionConfig
+"healthChecks": []gloo.solo.io.HealthCheckConfig
+"outlierDetection": .gloo.solo.io.OutlierDetection
 "useHttp2": bool
 "kube": .kubernetes.plugins.gloo.solo.io.UpstreamSpec
 "static": .static.plugins.gloo.solo.io.UpstreamSpec
@@ -234,6 +242,8 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |  |
 | `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk#loadbalancerconfig) |  |  |
 | `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk#connectionconfig) |  |  |
+| `healthChecks` | [[]gloo.solo.io.HealthCheckConfig](../health_check.proto.sk#healthcheckconfig) |  |  |
+| `outlierDetection` | [.gloo.solo.io.OutlierDetection](../health_check.proto.sk#outlierdetection) |  |  |
 | `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  |  |

@@ -3,6 +3,8 @@ package syncer
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
@@ -60,7 +62,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 		"created_by": "gateway-v2",
 	}
 
-	byProxy := gatewaysByProxyNamespace(snap.Gateways)
+	byProxy := gatewaysByProxyName(snap.Gateways)
 	tuples := make([]*proxyErrorTuple, 0, len(byProxy))
 	for key, val := range byProxy {
 		proxy, resourceErrs := s.translator.Translate(ctx, key, s.writeNamespace, snap, val)
@@ -179,14 +181,16 @@ func watchProxyStatus(ctx context.Context, proxyClient gloov1.ProxyClient, proxy
 	return statuses, nil
 }
 
-func gatewaysByProxyNamespace(gatewayLists v2.GatewayList) map[string]v2.GatewayList {
+func gatewaysByProxyName(gateways v2.GatewayList) map[string]v2.GatewayList {
 	result := make(map[string]v2.GatewayList)
-	for _, v := range gatewayLists {
-		gatewayName := v.GatewayProxyName
-		if gatewayName == "" {
-			gatewayName = translator.GatewayProxyName
+	for _, gw := range gateways {
+		proxyNames := gw.ProxyNames
+		if len(proxyNames) == 0 {
+			proxyNames = []string{defaults.GatewayProxyName}
 		}
-		result[gatewayName] = append(result[gatewayName], v)
+		for _, name := range proxyNames {
+			result[name] = append(result[name], gw)
+		}
 	}
 	return result
 }

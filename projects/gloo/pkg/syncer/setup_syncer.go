@@ -370,7 +370,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 
 	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.UpstreamCrd)
 	if err != nil {
-		return bootstrap.Opts{}, err
+		return bootstrap.Opts{}, errors.Wrapf(err, "creating config source from settings")
 	}
 
 	kubeServiceClient, err := bootstrap.KubeServiceClientForSettings(
@@ -416,6 +416,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		&cfg,
 		clientset,
 		&kubeCoreCache,
+		consulClient,
 		v1.ArtifactCrd.Plural,
 	)
 	if err != nil {

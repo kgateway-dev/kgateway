@@ -16,10 +16,7 @@ metadata:
       "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: [""]
-  resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["namespaces"]
+  resources: ["pods", "services", "secrets", "endpoints", "configmaps", "namespaces"]
   verbs: ["get", "list", "watch"]
 ---
 kind: {{ include "gloo.roleKind" . }}
@@ -130,7 +127,7 @@ metadata:
       "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gateway.solo.io"]
-  resources: ["virtualservices"]
+  resources: ["virtualservices", "routetables"]
   # update is needed for status updates
   verbs: ["get", "list", "watch", "update"]
 - apiGroups: ["gateway.solo.io"]

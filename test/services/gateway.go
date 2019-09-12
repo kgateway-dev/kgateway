@@ -182,6 +182,7 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) gatew
 		WatchNamespaces: runOptions.NsToWatch,
 		Gateways:        f,
 		VirtualServices: f,
+		RouteTables:     f,
 		Proxies:         f,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,

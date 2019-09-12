@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Enable delegate routing & use of RouteTable Resource in Gateway
+    issueLink: https://github.com/solo-io/gloo/pull/1120
+  - type: FIX
+    description: fix install race condition with helm pre-install hook
+    issueLink: https://github.com/solo-io/gloo/pull/1122

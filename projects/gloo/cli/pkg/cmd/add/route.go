@@ -71,7 +71,7 @@ func addRoute(opts *options.Options) error {
 		return err
 	}
 
-	v1Route := &v1.Route{
+	v1Route := &gatewayv1.Route{
 		Matcher:      match,
 		Action:       action,
 		RoutePlugins: plugins,
@@ -149,8 +149,8 @@ func matcherFromInput(input options.RouteMatchers) (*v1.Matcher, error) {
 	return m, nil
 }
 
-func actionFromInput(input options.InputRoute) (*v1.Route_RouteAction, error) {
-	a := &v1.Route_RouteAction{
+func actionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteAction, error) {
+	a := &gatewayv1.Route_RouteAction{
 		RouteAction: &v1.RouteAction{},
 	}
 

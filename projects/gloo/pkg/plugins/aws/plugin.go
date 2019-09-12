@@ -11,7 +11,8 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 
 	"github.com/gogo/protobuf/proto"
@@ -25,17 +26,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-//go:generate protoc -I$GOPATH/src/github.com/envoyproxy/protoc-gen-validate -I. -I$GOPATH/src/github.com/gogo/protobuf/protobuf --gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:${GOPATH}/src/ filter.proto
-
 const (
 	// filter info
-	filterName  = "io.solo.aws_lambda"
-	pluginStage = plugins.OutAuth
+	filterName = "io.solo.aws_lambda"
 
 	// cluster info
 	accessKey = "access_key"
 	secretKey = "secret_key"
 )
+
+var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
 
 func getLambdaHostname(s *aws.UpstreamSpec) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", s.Region)

@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -41,6 +43,15 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			"[clusters](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager) in Envoy terminology. \n" +
 			"Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more. \n" +
 			"Each upstream type is handled by a corresponding Gloo plugin. \n",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := prerun.CallParentPrerun(cmd, args); err != nil {
+				return err
+			}
+			if err := prerun.EnableConsulClients(opts.Create.Consul); err != nil {
+				return err
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !opts.Top.Interactive {
 				return errors.Errorf(EmptyUpstreamCreateError)
@@ -101,6 +112,7 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 				"with a static upstream. Requests routed to a static upstream will be round-robin load balanced across each host.",
 		),
 	)
+	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Create.Consul)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

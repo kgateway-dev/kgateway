@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix apiserver RBAC - allow listing setting.
+    issueLink: https://github.com/solo-io/gloo/issues/1156

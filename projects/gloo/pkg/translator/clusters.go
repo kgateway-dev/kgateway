@@ -1,15 +1,18 @@
 package translator
 
 import (
+	"fmt"
+	"time"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-
-	"github.com/pkg/errors"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"go.opencensus.io/trace"
 )
@@ -35,7 +38,7 @@ func (t *translator) computeClusters(params plugins.Params, resourceErrs reporte
 
 func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream, resourceErrs reporter.ResourceErrors) *envoyapi.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
-	out := t.initializeCluster(upstream, params.Snapshot.Endpoints)
+	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, resourceErrs)
 
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
@@ -54,12 +57,22 @@ func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream
 	return out
 }
 
-func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint) *envoyapi.Cluster {
+func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, resourceErrs reporter.ResourceErrors) *envoyapi.Cluster {
+	hcConfig, err := createHealthCheckConfig(upstream)
+	if err != nil {
+		resourceErrs.AddError(upstream, err)
+	}
+	detectCfg, err := createOutlierDetectionConfig(upstream)
+	if err != nil {
+		resourceErrs.AddError(upstream, err)
+	}
 	out := &envoyapi.Cluster{
-		Name:            UpstreamToClusterName(upstream.Metadata.Ref()),
-		Metadata:        new(envoycore.Metadata),
-		CircuitBreakers: getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, t.settings.CircuitBreakers),
-		LbSubsetConfig:  createLbConfig(upstream),
+		Name:             UpstreamToClusterName(upstream.Metadata.Ref()),
+		Metadata:         new(envoycore.Metadata),
+		CircuitBreakers:  getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, t.settings.CircuitBreakers),
+		LbSubsetConfig:   createLbConfig(upstream),
+		HealthChecks:     hcConfig,
+		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
 		ConnectTimeout:       ClusterConnectionTimeout,
 		Http2ProtocolOptions: getHttp2ptions(upstream.UpstreamSpec),
@@ -69,6 +82,55 @@ func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.En
 		xds.SetEdsOnCluster(out)
 	}
 	return out
+}
+
+var (
+	DefaultHealthCheckTimeout  = time.Second * 5
+	DefaultHealthCheckInterval = time.Millisecond * 100
+	DefaultThreshold           = &types.UInt32Value{
+		Value: 5,
+	}
+
+	NilFieldError = func(fieldName string) error {
+		return errors.Errorf("The field %s cannot be nil", fieldName)
+	}
+)
+
+func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, error) {
+
+	if upstream.GetUpstreamSpec() == nil {
+		return nil, nil
+	}
+	result := make([]*envoycore.HealthCheck, 0, len(upstream.GetUpstreamSpec().GetHealthChecks()))
+	for i, hc := range upstream.GetUpstreamSpec().GetHealthChecks() {
+		// These values are required by envoy, but not explicityly
+		if hc.HealthyThreshold == nil {
+			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthyThreshold", i))
+		}
+		if hc.UnhealthyThreshold == nil {
+			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].UnhealthyThreshold", i))
+		}
+
+		if err := hc.Validate(); err != nil {
+			return nil, err
+		}
+
+		result = append(result, hc)
+	}
+	return result, nil
+}
+
+func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoycluster.OutlierDetection, error) {
+	spec := upstream.GetUpstreamSpec()
+	if spec == nil {
+		return nil, nil
+	}
+	// This should be enough validation as nothing implicitly needs to be set
+	if err := spec.GetOutlierDetection().Validate(); err != nil {
+		return nil, err
+	}
+
+	return spec.GetOutlierDetection(), nil
 }
 
 func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {

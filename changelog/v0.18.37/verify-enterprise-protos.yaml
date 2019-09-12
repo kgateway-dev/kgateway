@@ -1,0 +1,8 @@
+changelog:
+- type: FIX
+  description: >
+   Add Make target to verify that generated enterprise API files are valid. This is just a first patch and does not
+   completely solve the issue, as it requires adding packages to be verified manually to the verification file; if we
+   forget to make this update, invalid files might still be released.
+  issueLink: https://github.com/solo-io/gloo/issues/1134
+  resolvesIssue: false

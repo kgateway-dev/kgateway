@@ -3,6 +3,8 @@ package utils
 import (
 	"sort"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -11,6 +13,12 @@ import (
 // 1. exact path < regex path < path prefix
 // 2. longer path string < shorter path string
 func SortRoutesByPath(routes []*v1.Route) {
+	sort.SliceStable(routes, func(i, j int) bool {
+		return lessMatcher(routes[i].Matcher, routes[j].Matcher)
+	})
+}
+
+func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
 		return lessMatcher(routes[i].Matcher, routes[j].Matcher)
 	})

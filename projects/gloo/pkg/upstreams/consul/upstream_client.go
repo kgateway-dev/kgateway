@@ -41,7 +41,7 @@ func (*consulUpstreamClient) Delete(namespace, name string, opts skclients.Delet
 	panic(notImplementedErrMsg)
 }
 
-func (c *consulUpstreamClient) List(_ string, opts skclients.ListOpts) (v1.UpstreamList, error) {
+func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (v1.UpstreamList, error) {
 
 	// Get a list of the available data centers
 	dataCenters, err := c.consul.DataCenters()
@@ -65,10 +65,10 @@ func (c *consulUpstreamClient) List(_ string, opts skclients.ListOpts) (v1.Upstr
 		})
 	}
 
-	return toUpstreamList(toServiceMetaSlice(services)), nil
+	return toUpstreamList(namespace, toServiceMetaSlice(services)), nil
 }
 
-func (c *consulUpstreamClient) Watch(_ string, opts skclients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
+func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
 	dataCenters, err := c.consul.DataCenters()
 	if err != nil {
 		return nil, nil, err
@@ -83,7 +83,7 @@ func (c *consulUpstreamClient) Watch(_ string, opts skclients.WatchOpts) (<-chan
 			case services, ok := <-servicesChan:
 				if ok {
 					//  Transform to upstreams
-					upstreams := toUpstreamList(services)
+					upstreams := toUpstreamList(namespace, services)
 					upstreamsChan <- upstreams
 				}
 			case <-opts.Ctx.Done():

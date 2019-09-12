@@ -43,6 +43,7 @@ func (r *Gateway) Hash() uint64 {
 		r.Plugins,
 		r.UseProxyProto,
 		r.GatewayProxyName,
+		r.ProxyNames,
 		r.GatewayType,
 	)
 }

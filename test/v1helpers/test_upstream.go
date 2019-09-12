@@ -12,10 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/gogo/protobuf/proto"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
@@ -27,38 +26,70 @@ type ReceivedRequest struct {
 	Body        []byte
 	Host        string
 	GRPCRequest proto.Message
+	Port        uint32
 }
 
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx)
-	return newTestUpstream(addr, backendPort, responses)
+	backendPort, responses := runTestServer(ctx, "")
+	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
-func NewTestGRPCUpstream(ctx context.Context, addr string) *TestUpstream {
-	srv := testgrpcservice.RunServer(ctx)
-	received := make(chan *ReceivedRequest, 100)
-	go func() {
-		defer GinkgoRecover()
-		for r := range srv.C {
-			received <- &ReceivedRequest{GRPCRequest: r}
-		}
-	}()
+func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
+	backendPort, responses := runTestServer(ctx, reply)
+	return newTestUpstream(addr, []uint32{backendPort}, responses)
+}
 
-	us := newTestUpstream(addr, srv.Port, received)
+func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUpstream {
+	grpcServices := make([]*testgrpcservice.TestGRPCServer, replicas)
+	for i := range grpcServices {
+		grpcServices[i] = testgrpcservice.RunServer(ctx)
+	}
+	received := make(chan *ReceivedRequest, 100)
+	for _, srv := range grpcServices {
+		srv := srv
+		go func() {
+			defer GinkgoRecover()
+			for r := range srv.C {
+				received <- &ReceivedRequest{GRPCRequest: r, Port: srv.Port}
+			}
+		}()
+	}
+	ports := make([]uint32, 0, len(grpcServices))
+	for _, v := range grpcServices {
+		ports = append(ports, v.Port)
+	}
+
+	us := newTestUpstream(addr, ports, received)
+	us.GrpcServers = grpcServices
 	return us
 }
 
 type TestUpstream struct {
-	Upstream *gloov1.Upstream
-	C        <-chan *ReceivedRequest
-	Address  string
-	Port     uint32
+	Upstream    *gloov1.Upstream
+	C           <-chan *ReceivedRequest
+	Address     string
+	Port        uint32
+	GrpcServers []*testgrpcservice.TestGRPCServer
+}
+
+func (tu *TestUpstream) FailGrpcHealthCheck() *testgrpcservice.TestGRPCServer {
+	for _, v := range tu.GrpcServers[:len(tu.GrpcServers)-1] {
+		v.HealthChecker.Fail()
+	}
+	return tu.GrpcServers[len(tu.GrpcServers)-1]
 }
 
 var id = 0
 
-func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest) *TestUpstream {
+func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequest) *TestUpstream {
 	id += 1
+	hosts := make([]*static_plugin_gloo.Host, len(ports))
+	for i, port := range ports {
+		hosts[i] = &static_plugin_gloo.Host{
+			Addr: addr,
+			Port: port,
+		}
+	}
 	u := &gloov1.Upstream{
 		Metadata: core.Metadata{
 			Name:      fmt.Sprintf("local-%d", id),
@@ -67,10 +98,7 @@ func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest
 		UpstreamSpec: &gloov1.UpstreamSpec{
 			UpstreamType: &gloov1.UpstreamSpec_Static{
 				Static: &static_plugin_gloo.UpstreamSpec{
-					Hosts: []*static_plugin_gloo.Host{{
-						Addr: addr,
-						Port: port,
-					}},
+					Hosts: hosts,
 				},
 			},
 		},
@@ -79,17 +107,18 @@ func newTestUpstream(addr string, port uint32, responses <-chan *ReceivedRequest
 	return &TestUpstream{
 		Upstream: u,
 		C:        responses,
-		Address:  fmt.Sprintf("%s:%d", addr, port),
-		Port:     port,
+		Port:     ports[0],
 	}
 }
 
-func runTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
+func runTestServer(ctx context.Context, reply string) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
 		rr.Method = r.Method
-		if r.Body != nil {
+		if reply != "" {
+			_, _ = rw.Write([]byte(reply))
+		} else if r.Body != nil {
 			body, _ := ioutil.ReadAll(r.Body)
 			_ = r.Body.Close()
 			if len(body) != 0 {
@@ -119,10 +148,15 @@ func runTestServer(ctx context.Context) (uint32, <-chan *ReceivedRequest) {
 		panic(err)
 	}
 
-	handler := http.HandlerFunc(handlerFunc)
+	mux := http.NewServeMux()
+	mux.Handle("/", http.HandlerFunc(handlerFunc))
+	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Write([]byte("OK"))
+	}))
+
 	go func() {
 		defer GinkgoRecover()
-		h := &http.Server{Handler: handler}
+		h := &http.Server{Handler: mux}
 		go func() {
 			defer GinkgoRecover()
 			if err := h.Serve(listener); err != nil {

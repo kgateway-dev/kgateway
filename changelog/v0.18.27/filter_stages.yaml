@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: More filter stages to help filter ordering.

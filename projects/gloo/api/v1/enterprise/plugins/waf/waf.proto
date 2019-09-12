@@ -1,0 +1,44 @@
+syntax = "proto3";
+package waf.plugins.gloo.solo.io;
+
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/waf";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+message Settings {
+    // disable waf on this listener
+    bool disabled = 1;
+    // Add owasp core rule set
+    // if nil will not be added
+    CoreRuleSet core_rule_set = 2;
+    // custom rule sets rules to add
+    repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 3;
+}
+
+message CoreRuleSet {
+    // Optional custom settings for the OWASP core rule set.
+    // For an example on the configuration options see: https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example
+    // The same rules apply to these options as do to the `RuleSet`s. The file option is better if possible.
+    oneof CustomSettingsType {
+        // String representing the core rule set custom config options
+        string custom_settings_string = 2;
+        // String representing the core rule set custom config options
+        string custom_settings_file = 3;
+    }
+}
+
+
+message VhostSettings {
+    // disable waf on this virtual host
+    bool disabled = 1;
+    Settings settings = 2;
+}
+
+message RouteSettings {
+    // disable waf on this route
+    bool disabled = 1;
+    Settings settings = 2;
+}

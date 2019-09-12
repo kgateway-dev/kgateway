@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ServiceSpec struct {
 	Transformations      map[string]*transformation.TransformationTemplate `protobuf:"bytes,1,rep,name=transformations,proto3" json:"transformations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -110,10 +110,10 @@ type isServiceSpec_SwaggerInfo_SwaggerSpec interface {
 }
 
 type ServiceSpec_SwaggerInfo_Url struct {
-	Url string `protobuf:"bytes,1,opt,name=url,proto3,oneof"`
+	Url string `protobuf:"bytes,1,opt,name=url,proto3,oneof" json:"url,omitempty"`
 }
 type ServiceSpec_SwaggerInfo_Inline struct {
-	Inline string `protobuf:"bytes,2,opt,name=inline,proto3,oneof"`
+	Inline string `protobuf:"bytes,2,opt,name=inline,proto3,oneof" json:"inline,omitempty"`
 }
 
 func (*ServiceSpec_SwaggerInfo_Url) isServiceSpec_SwaggerInfo_SwaggerSpec()    {}
@@ -140,70 +140,12 @@ func (m *ServiceSpec_SwaggerInfo) GetInline() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*ServiceSpec_SwaggerInfo) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ServiceSpec_SwaggerInfo_OneofMarshaler, _ServiceSpec_SwaggerInfo_OneofUnmarshaler, _ServiceSpec_SwaggerInfo_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ServiceSpec_SwaggerInfo) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*ServiceSpec_SwaggerInfo_Url)(nil),
 		(*ServiceSpec_SwaggerInfo_Inline)(nil),
 	}
-}
-
-func _ServiceSpec_SwaggerInfo_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ServiceSpec_SwaggerInfo)
-	// swagger_spec
-	switch x := m.SwaggerSpec.(type) {
-	case *ServiceSpec_SwaggerInfo_Url:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.Url)
-	case *ServiceSpec_SwaggerInfo_Inline:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.Inline)
-	case nil:
-	default:
-		return fmt.Errorf("ServiceSpec_SwaggerInfo.SwaggerSpec has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _ServiceSpec_SwaggerInfo_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ServiceSpec_SwaggerInfo)
-	switch tag {
-	case 1: // swagger_spec.url
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.SwaggerSpec = &ServiceSpec_SwaggerInfo_Url{x}
-		return true, err
-	case 2: // swagger_spec.inline
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.SwaggerSpec = &ServiceSpec_SwaggerInfo_Inline{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _ServiceSpec_SwaggerInfo_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ServiceSpec_SwaggerInfo)
-	// swagger_spec
-	switch x := m.SwaggerSpec.(type) {
-	case *ServiceSpec_SwaggerInfo_Url:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Url)))
-		n += len(x.Url)
-	case *ServiceSpec_SwaggerInfo_Inline:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Inline)))
-		n += len(x.Inline)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // This is only for upstream with REST service spec

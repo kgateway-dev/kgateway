@@ -7,11 +7,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
@@ -60,7 +60,7 @@ var _ = Describe("GRPC Plugin", func() {
 		err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr())
+		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
 		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -72,58 +72,11 @@ var _ = Describe("GRPC Plugin", func() {
 		cancel()
 	})
 
-	getGrpcVs := func() *gatewayv1.VirtualService {
-		return &gatewayv1.VirtualService{
-			Metadata: core.Metadata{
-				Name:      "default",
-				Namespace: writeNamespace,
-			},
-			VirtualHost: &gloov1.VirtualHost{
-				Routes: []*gloov1.Route{
-					{
-						Matcher: &gloov1.Matcher{
-							PathSpecifier: &gloov1.Matcher_Prefix{
-								Prefix: "/test",
-							},
-						},
-						Action: &gloov1.Route_RouteAction{
-							RouteAction: &gloov1.RouteAction{
-								Destination: &gloov1.RouteAction_Single{
-									Single: &gloov1.Destination{
-										DestinationType: &gloov1.Destination_Upstream{
-											Upstream: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
-										},
-										DestinationSpec: &gloov1.DestinationSpec{
-											DestinationType: &gloov1.DestinationSpec_Grpc{
-												Grpc: &grpc.DestinationSpec{
-													Package:  "glootest",
-													Function: "TestMethod",
-													Service:  "TestService",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-	}
-
-	It("Routes to GRPC Functions", func() {
-
-		vs := getGrpcVs()
-		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		body := []byte(`{"str": "foo"}`)
-
-		testRequest := func() (string, error) {
+	basicReq := func(b []byte) func() (string, error) {
+		return func() (string, error) {
 			// send a request with a body
 			var buf bytes.Buffer
-			buf.Write(body)
+			buf.Write(b)
 			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), "application/json", &buf)
 			if err != nil {
 				return "", err
@@ -132,6 +85,17 @@ var _ = Describe("GRPC Plugin", func() {
 			body, err := ioutil.ReadAll(res.Body)
 			return string(body), err
 		}
+	}
+
+	It("Routes to GRPC Functions", func() {
+
+		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		body := []byte(`{"str": "foo"}`)
+
+		testRequest := basicReq(body)
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
@@ -142,7 +106,7 @@ var _ = Describe("GRPC Plugin", func() {
 
 	It("Routes to GRPC Functions with parameters", func() {
 
-		vs := getGrpcVs()
+		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
 		grpc.Parameters = &transformation.Parameters{
 			Path: &types.StringValue{Value: "/test/{str}"},
@@ -166,5 +130,44 @@ var _ = Describe("GRPC Plugin", func() {
 			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 		}))))
 	})
-
 })
+
+func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.VirtualService {
+	return &gatewayv1.VirtualService{
+		Metadata: core.Metadata{
+			Name:      "default",
+			Namespace: writeNamespace,
+		},
+		VirtualHost: &gatewayv1.VirtualHost{
+			Routes: []*gatewayv1.Route{
+				{
+					Matcher: &gloov1.Matcher{
+						PathSpecifier: &gloov1.Matcher_Prefix{
+							Prefix: "/test",
+						},
+					},
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: utils.ResourceRefPtr(usRef),
+									},
+									DestinationSpec: &gloov1.DestinationSpec{
+										DestinationType: &gloov1.DestinationSpec_Grpc{
+											Grpc: &grpc.DestinationSpec{
+												Package:  "glootest",
+												Function: "TestMethod",
+												Service:  "TestService",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}

@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add api for delegate routing
+    issueLink: https://github.com/solo-io/gloo/pull/1111

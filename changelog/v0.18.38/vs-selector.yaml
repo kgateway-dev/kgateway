@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: implement virtualservice selector
+    issueLink: https://github.com/solo-io/gloo/pull/1143

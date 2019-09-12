@@ -86,14 +86,14 @@ clean:
 	rm -rf _output
 	rm -rf _test
 	rm -fr site
-	git clean -xdf install
+	git clean -f -X install
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
@@ -106,6 +106,12 @@ $(OUTPUT_DIR)/.generated-code:
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
+
+# Make sure that the enterprise API *.pb.go files that are generated but not used in this repo are valid.
+.PHONY: verify-enterprise-protos
+verify-enterprise-protos:
+	@echo Verifying validity of generated enterprise files...
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -125,6 +131,7 @@ MOCK_RESOURCE_INFO := \
 	gloo:upstream:UpstreamClient \
 	gateway:gateway:GatewayClient \
 	gateway:virtual_service:VirtualServiceClient\
+	gateway:route_table:RouteTableClient\
 
 # Use gomock (https://github.com/golang/mock) to generate mocks for our resource clients.
 .PHONY: generate-client-mocks
@@ -234,6 +241,28 @@ ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingre
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.ingress \
 		-t quay.io/solo-io/ingress:$(VERSION) \
 		$(call get_test_tag,ingress)
+
+#----------------------------------------------------------------------------------
+# Access Logger
+#----------------------------------------------------------------------------------
+
+ACCESS_LOG_DIR=projects/accesslogger
+ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
+
+$(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
+
+
+.PHONY: access-logger
+access-logger: $(OUTPUT_DIR)/access-logger-linux-amd64
+
+$(OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
+	cp $< $@
+
+access-logger-docker: $(OUTPUT_DIR)/access-logger-linux-amd64 $(OUTPUT_DIR)/Dockerfile.access-logger
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.access-logger \
+		-t quay.io/solo-io/access-logger:$(VERSION) \
+		$(call get_test_tag,access-logger)
 
 #----------------------------------------------------------------------------------
 # Discovery
@@ -385,7 +414,7 @@ ifeq ($(RELEASE),"true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gloo-envoy-wrapper-docker ingress-docker
+docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gloo-envoy-wrapper-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -398,7 +427,8 @@ ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/ingress:$(VERSION) && \
 	docker push quay.io/solo-io/discovery:$(VERSION) && \
 	docker push quay.io/solo-io/gloo:$(VERSION) && \
-	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
+	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
+	docker push quay.io/solo-io/access-logger:$(VERSION)
 endif
 
 push-kind-images: docker

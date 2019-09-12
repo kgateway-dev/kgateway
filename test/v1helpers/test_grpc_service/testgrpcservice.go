@@ -8,7 +8,10 @@ import (
 	"time"
 
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
+	"github.com/solo-io/go-utils/healthchecker"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -30,6 +33,8 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 	srv := newServer()
+	hc := healthchecker.NewGrpc("TestService", health.NewServer())
+	healthpb.RegisterHealthServer(grpcServer, hc.GetServer())
 	glootest.RegisterTestServiceServer(grpcServer, srv)
 	glootest.RegisterTestService2Server(grpcServer, srv)
 	go grpcServer.Serve(lis)
@@ -47,6 +52,7 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	}
 
 	srv.Port = uint32(port)
+	srv.HealthChecker = hc
 
 	return srv
 }
@@ -58,8 +64,9 @@ func newServer() *TestGRPCServer {
 }
 
 type TestGRPCServer struct {
-	C    chan *glootest.TestRequest
-	Port uint32
+	C             chan *glootest.TestRequest
+	Port          uint32
+	HealthChecker healthchecker.HealthChecker
 }
 
 // Returns a list of all shelves in the bookstore.

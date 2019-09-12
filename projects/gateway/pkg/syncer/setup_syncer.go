@@ -50,6 +50,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
+	routeTableFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.RouteTableCrd)
+	if err != nil {
+		return err
+	}
+
 	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v2.GatewayCrd)
 	if err != nil {
 		return err
@@ -71,6 +76,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		WatchNamespaces: watchNamespaces,
 		Gateways:        gatewayFactory,
 		VirtualServices: virtualServiceFactory,
+		RouteTables:     routeTableFactory,
 		Proxies:         proxyFactory,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
@@ -102,6 +108,14 @@ func RunGateway(opts Opts) error {
 		return err
 	}
 
+	routeTableClient, err := v1.NewRouteTableClient(opts.RouteTables)
+	if err != nil {
+		return err
+	}
+	if err := routeTableClient.Register(); err != nil {
+		return err
+	}
+
 	proxyClient, err := gloov1.NewProxyClient(opts.Proxies)
 	if err != nil {
 		return err
@@ -118,7 +132,7 @@ func RunGateway(opts Opts) error {
 		}
 	}
 
-	emitter := v2.NewApiEmitter(virtualServiceClient, gatewayClient)
+	emitter := v2.NewApiEmitter(virtualServiceClient, routeTableClient, gatewayClient)
 
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient())
 	writeErrs := make(chan error)

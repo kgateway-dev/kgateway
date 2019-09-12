@@ -1,0 +1,11 @@
+changelog:
+  - type: FIX
+    description: Fix apiserver intialization restart race condition.
+    issueLink: https://github.com/solo-io/gloo/pull/1149
+  - type: FIX
+    description: Clarify that UI is read-only, non-enterprise version.
+    issueLink: https://github.com/solo-io/gloo/pull/1146
+    resolvesIssue: false
+  - type: FIX
+    description: Fix apiserver so that UI can show Envoy details without requiring access to the admin port.
+    issueLink: https://github.com/solo-io/gloo/issues/1125

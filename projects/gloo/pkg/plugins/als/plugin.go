@@ -1,9 +1,8 @@
 package als
 
 import (
-	"context"
-
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
@@ -13,11 +12,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/go-utils/errors"
 )
 
 const (
-	// filter info
-	pluginStage = plugins.PostInAuth
+	ClusterName = "access_log_cluster"
 )
 
 func NewPlugin() *Plugin {
@@ -59,7 +58,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := hcmCfg.GetAccessLog()
-					hcmCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.AccessLoggingService, accessLogs)
+					hcmCfg.AccessLog, err = handleAccessLogPlugins(alSettings.AccessLoggingService, accessLogs, params)
 					if err != nil {
 						return err
 					}
@@ -88,7 +87,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := tcpCfg.GetAccessLog()
-					tcpCfg.AccessLog, err = handleAccessLogPlugins(params.Ctx, alSettings.AccessLoggingService, accessLogs)
+					tcpCfg.AccessLog, err = handleAccessLogPlugins(alSettings.AccessLoggingService, accessLogs, params)
 					if err != nil {
 						return err
 					}
@@ -105,14 +104,26 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	return nil
 }
 
-func handleAccessLogPlugins(ctx context.Context, service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
+func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog, params plugins.Params) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
 		switch cfgType := al.GetOutputDestination().(type) {
 		case *als.AccessLog_FileSink:
 			var cfg envoyalcfg.FileAccessLog
-			copyFileSettings(&cfg, cfgType)
-			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(&cfg)
+			if err := copyFileSettings(&cfg, cfgType); err != nil {
+				return nil, err
+			}
+			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(envoyutil.FileAccessLog, &cfg)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, &newAlsCfg)
+		case *als.AccessLog_GrpcService:
+			var cfg envoyalcfg.HttpGrpcAccessLogConfig
+			if err := copyGrpcSettings(&cfg, cfgType, params); err != nil {
+				return nil, err
+			}
+			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(envoyutil.HTTPGRPCAccessLog, &cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -123,7 +134,29 @@ func handleAccessLogPlugins(ctx context.Context, service *als.AccessLoggingServi
 	return logCfg, nil
 }
 
-func copyFileSettings(cfg *envoyalcfg.FileAccessLog, alsSettings *als.AccessLog_FileSink) {
+func copyGrpcSettings(cfg *envoyalcfg.HttpGrpcAccessLogConfig, alsSettings *als.AccessLog_GrpcService, params plugins.Params) error {
+	if alsSettings.GrpcService == nil {
+		return errors.New("grpc service object cannot be nil")
+	}
+
+	svc := &envoycore.GrpcService{
+		TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+			EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+				ClusterName: alsSettings.GrpcService.GetStaticClusterName(),
+			},
+		},
+	}
+	cfg.AdditionalRequestHeadersToLog = alsSettings.GrpcService.AdditionalRequestHeadersToLog
+	cfg.AdditionalResponseHeadersToLog = alsSettings.GrpcService.AdditionalResponseHeadersToLog
+	cfg.AdditionalResponseTrailersToLog = alsSettings.GrpcService.AdditionalResponseTrailersToLog
+	cfg.CommonConfig = &envoyalcfg.CommonGrpcAccessLogConfig{
+		LogName:     alsSettings.GrpcService.LogName,
+		GrpcService: svc,
+	}
+	return cfg.Validate()
+}
+
+func copyFileSettings(cfg *envoyalcfg.FileAccessLog, alsSettings *als.AccessLog_FileSink) error {
 	cfg.Path = alsSettings.FileSink.Path
 	switch fileSinkType := alsSettings.FileSink.GetOutputFormat().(type) {
 	case *als.FileSink_StringFormat:
@@ -135,4 +168,5 @@ func copyFileSettings(cfg *envoyalcfg.FileAccessLog, alsSettings *als.AccessLog_
 			JsonFormat: fileSinkType.JsonFormat,
 		}
 	}
+	return cfg.Validate()
 }

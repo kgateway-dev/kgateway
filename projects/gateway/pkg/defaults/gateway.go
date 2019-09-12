@@ -4,11 +4,12 @@ import (
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
+
+const GatewayProxyName = "gateway-proxy-v2"
 
 func DefaultGateway(writeNamespace string) *v2.Gateway {
 	return &v2.Gateway{
@@ -17,7 +18,7 @@ func DefaultGateway(writeNamespace string) *v2.Gateway {
 			Namespace:   writeNamespace,
 			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},
-		GatewayProxyName: translator.GatewayProxyName,
+		ProxyNames: []string{GatewayProxyName},
 		GatewayType: &v2.Gateway_HttpGateway{
 			HttpGateway: &v2.HttpGateway{},
 		},
@@ -48,10 +49,10 @@ func DefaultTcpGateway(writeNamespace string) *v2.Gateway {
 		GatewayType: &v2.Gateway_TcpGateway{
 			TcpGateway: &v2.TcpGateway{},
 		},
-		GatewayProxyName: translator.GatewayProxyName,
-		BindAddress:      "::",
-		BindPort:         defaults.TcpPort,
-		UseProxyProto:    &types.BoolValue{Value: false},
+		ProxyNames:    []string{GatewayProxyName},
+		BindAddress:   "::",
+		BindPort:      defaults.TcpPort,
+		UseProxyProto: &types.BoolValue{Value: false},
 	}
 }
 
@@ -70,14 +71,13 @@ func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 			Name:      name,
 			Namespace: namespace,
 		},
-		VirtualHost: &gloov1.VirtualHost{
-			Name:    "routes",
+		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
-			Routes: []*gloov1.Route{{
+			Routes: []*v1.Route{{
 				Matcher: &gloov1.Matcher{
 					PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/"},
 				},
-				Action: &gloov1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{
+				Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{
 					Status: 200,
 					Body: `Gloo and Envoy are configured correctly!
 

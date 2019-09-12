@@ -234,7 +234,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectKinds(validator.resources, append([]string{"Settings"}, install.GlooPreInstallKinds...))
 			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
@@ -278,7 +278,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectKinds(validator.resources, append([]string{"Settings"}, install.GlooPreInstallKinds...))
 			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 
@@ -320,7 +320,7 @@ var _ = Describe("Install", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validator.applied).To(BeTrue())
 			Expect(validator.waited).To(BeFalse())
-			expectKinds(validator.resources, install.GlooPreInstallKinds)
+			expectKinds(validator.resources, append([]string{"Settings"}, install.GlooPreInstallKinds...))
 			expectLabels(validator.resources, install.ExpectedLabels)
 		})
 

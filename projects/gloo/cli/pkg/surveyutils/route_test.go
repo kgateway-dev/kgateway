@@ -26,9 +26,8 @@ var _ = Describe("Route", func() {
 				Name:      "vs",
 				Namespace: "gloo-system",
 			},
-			VirtualHost: &v1.VirtualHost{
-				Name: "vs",
-				Routes: []*v1.Route{{
+			VirtualHost: &gatewayv1.VirtualHost{
+				Routes: []*gatewayv1.Route{{
 					Matcher: &v1.Matcher{
 						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/"},
 					}}, {

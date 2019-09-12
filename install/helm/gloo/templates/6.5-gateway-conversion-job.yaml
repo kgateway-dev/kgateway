@@ -18,6 +18,7 @@ spec:
       labels:
         gloo: gateway
     spec:
+      serviceAccountName: gateway
       containers:
         - image: {{template "gloo.image" $image}}
           imagePullPolicy: {{ $image.pullPolicy }}

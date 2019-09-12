@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/proto"
@@ -52,6 +53,7 @@ var _ = Describe("Translator", func() {
 		settings          *v1.Settings
 		translator        Translator
 		upstream          *v1.Upstream
+		upName            core.Metadata
 		proxy             *v1.Proxy
 		params            plugins.Params
 		registeredPlugins []plugins.Plugin
@@ -82,7 +84,7 @@ var _ = Describe("Translator", func() {
 		}
 		registeredPlugins = registry.Plugins(opts)
 
-		upName := core.Metadata{
+		upName = core.Metadata{
 			Name:      "test",
 			Namespace: "gloo-system",
 		}
@@ -183,6 +185,12 @@ var _ = Describe("Translator", func() {
 			},
 		}
 	})
+
+	translateWithError := func() {
+		_, errs, err := translator.Translate(params, proxy)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(errs.Validate()).To(HaveOccurred())
+	}
 
 	translate := func() {
 
@@ -329,6 +337,106 @@ var _ = Describe("Translator", func() {
 			Expect(headerMatch.Name).To(Equal("test"))
 			regex := headerMatch.GetRegexMatch()
 			Expect(regex).To(Equal("testvalue"))
+		})
+
+	})
+
+	Context("Health check config", func() {
+		It("will error if required field is nil", func() {
+			upstream.UpstreamSpec.HealthChecks = []*envoycore.HealthCheck{
+				{
+					// Timeout:  &defaultTimeout,
+					Interval: &DefaultHealthCheckInterval,
+				},
+			}
+			translateWithError()
+		})
+
+		It("will error if no health checker is supplied", func() {
+			upstream.UpstreamSpec.HealthChecks = []*envoycore.HealthCheck{
+				{
+					Timeout:            &DefaultHealthCheckTimeout,
+					Interval:           &DefaultHealthCheckInterval,
+					HealthyThreshold:   DefaultThreshold,
+					UnhealthyThreshold: DefaultThreshold,
+				},
+			}
+			translateWithError()
+		})
+
+		It("can translate the http health check", func() {
+			expectedResult := []*envoycore.HealthCheck{
+				{
+					Timeout:            &DefaultHealthCheckTimeout,
+					Interval:           &DefaultHealthCheckInterval,
+					HealthyThreshold:   DefaultThreshold,
+					UnhealthyThreshold: DefaultThreshold,
+					HealthChecker: &envoycore.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
+							Host:        "host",
+							Path:        "path",
+							ServiceName: "svc",
+							UseHttp2:    true,
+						},
+					},
+				},
+			}
+			upstream.UpstreamSpec.HealthChecks = expectedResult
+			translate()
+			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
+		})
+
+		It("can translate the grpc health check", func() {
+			expectedResult := []*envoycore.HealthCheck{
+				{
+					Timeout:            &DefaultHealthCheckTimeout,
+					Interval:           &DefaultHealthCheckInterval,
+					HealthyThreshold:   DefaultThreshold,
+					UnhealthyThreshold: DefaultThreshold,
+					HealthChecker: &envoycore.HealthCheck_GrpcHealthCheck_{
+						GrpcHealthCheck: &envoycore.HealthCheck_GrpcHealthCheck{
+							ServiceName: "svc",
+							Authority:   "authority",
+						},
+					},
+				},
+			}
+			upstream.UpstreamSpec.HealthChecks = expectedResult
+			translate()
+			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
+		})
+
+		It("can properly translate outlier detection config", func() {
+			dur := &types.Duration{Seconds: 1}
+			expectedResult := &envoycluster.OutlierDetection{
+				Consecutive_5Xx:                        DefaultThreshold,
+				Interval:                               dur,
+				BaseEjectionTime:                       dur,
+				MaxEjectionPercent:                     DefaultThreshold,
+				EnforcingConsecutive_5Xx:               DefaultThreshold,
+				EnforcingSuccessRate:                   DefaultThreshold,
+				SuccessRateMinimumHosts:                DefaultThreshold,
+				SuccessRateRequestVolume:               DefaultThreshold,
+				SuccessRateStdevFactor:                 nil,
+				ConsecutiveGatewayFailure:              DefaultThreshold,
+				EnforcingConsecutiveGatewayFailure:     nil,
+				SplitExternalLocalOriginErrors:         true,
+				ConsecutiveLocalOriginFailure:          nil,
+				EnforcingConsecutiveLocalOriginFailure: nil,
+				EnforcingLocalOriginSuccessRate:        nil,
+			}
+			upstream.UpstreamSpec.OutlierDetection = expectedResult
+			translate()
+			Expect(cluster.OutlierDetection).To(BeEquivalentTo(expectedResult))
+		})
+
+		It("can properly validate outlier detection config", func() {
+			dur := &types.Duration{Seconds: 0}
+			expectedResult := &envoycluster.OutlierDetection{
+				Interval: dur,
+			}
+			upstream.UpstreamSpec.OutlierDetection = expectedResult
+			translateWithError()
 		})
 
 	})

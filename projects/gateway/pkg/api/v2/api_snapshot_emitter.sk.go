@@ -52,17 +52,19 @@ func init() {
 type ApiEmitter interface {
 	Register() error
 	VirtualService() gateway_solo_io.VirtualServiceClient
+	RouteTable() gateway_solo_io.RouteTableClient
 	Gateway() GatewayClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
-func NewApiEmitter(virtualServiceClient gateway_solo_io.VirtualServiceClient, gatewayClient GatewayClient) ApiEmitter {
-	return NewApiEmitterWithEmit(virtualServiceClient, gatewayClient, make(chan struct{}))
+func NewApiEmitter(virtualServiceClient gateway_solo_io.VirtualServiceClient, routeTableClient gateway_solo_io.RouteTableClient, gatewayClient GatewayClient) ApiEmitter {
+	return NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(virtualServiceClient gateway_solo_io.VirtualServiceClient, gatewayClient GatewayClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(virtualServiceClient gateway_solo_io.VirtualServiceClient, routeTableClient gateway_solo_io.RouteTableClient, gatewayClient GatewayClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
 		virtualService: virtualServiceClient,
+		routeTable:     routeTableClient,
 		gateway:        gatewayClient,
 		forceEmit:      emit,
 	}
@@ -71,11 +73,15 @@ func NewApiEmitterWithEmit(virtualServiceClient gateway_solo_io.VirtualServiceCl
 type apiEmitter struct {
 	forceEmit      <-chan struct{}
 	virtualService gateway_solo_io.VirtualServiceClient
+	routeTable     gateway_solo_io.RouteTableClient
 	gateway        GatewayClient
 }
 
 func (c *apiEmitter) Register() error {
 	if err := c.virtualService.Register(); err != nil {
+		return err
+	}
+	if err := c.routeTable.Register(); err != nil {
 		return err
 	}
 	if err := c.gateway.Register(); err != nil {
@@ -86,6 +92,10 @@ func (c *apiEmitter) Register() error {
 
 func (c *apiEmitter) VirtualService() gateway_solo_io.VirtualServiceClient {
 	return c.virtualService
+}
+
+func (c *apiEmitter) RouteTable() gateway_solo_io.RouteTableClient {
+	return c.routeTable
 }
 
 func (c *apiEmitter) Gateway() GatewayClient {
@@ -116,6 +126,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	virtualServiceChan := make(chan virtualServiceListWithNamespace)
 
 	var initialVirtualServiceList gateway_solo_io.VirtualServiceList
+	/* Create channel for RouteTable */
+	type routeTableListWithNamespace struct {
+		list      gateway_solo_io.RouteTableList
+		namespace string
+	}
+	routeTableChan := make(chan routeTableListWithNamespace)
+
+	var initialRouteTableList gateway_solo_io.RouteTableList
 	/* Create channel for Gateway */
 	type gatewayListWithNamespace struct {
 		list      GatewayList
@@ -145,6 +163,24 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		go func(namespace string) {
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, virtualServiceErrs, namespace+"-virtualServices")
+		}(namespace)
+		/* Setup namespaced watch for RouteTable */
+		{
+			routeTables, err := c.routeTable.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial RouteTable list")
+			}
+			initialRouteTableList = append(initialRouteTableList, routeTables...)
+		}
+		routeTableNamespacesChan, routeTableErrs, err := c.routeTable.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting RouteTable watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, routeTableErrs, namespace+"-routeTables")
 		}(namespace)
 		/* Setup namespaced watch for Gateway */
 		{
@@ -177,6 +213,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 						return
 					case virtualServiceChan <- virtualServiceListWithNamespace{list: virtualServiceList, namespace: namespace}:
 					}
+				case routeTableList := <-routeTableNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case routeTableChan <- routeTableListWithNamespace{list: routeTableList, namespace: namespace}:
+					}
 				case gatewayList := <-gatewayNamespacesChan:
 					select {
 					case <-ctx.Done():
@@ -189,6 +231,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	}
 	/* Initialize snapshot for VirtualServices */
 	currentSnapshot.VirtualServices = initialVirtualServiceList.Sort()
+	/* Initialize snapshot for RouteTables */
+	currentSnapshot.RouteTables = initialRouteTableList.Sort()
 	/* Initialize snapshot for Gateways */
 	currentSnapshot.Gateways = initialGatewayList.Sort()
 
@@ -199,7 +243,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		snapshots <- &initialSnapshot
 
 		timer := time.NewTicker(time.Second * 1)
-		var previousHash uint64
+		previousHash := currentSnapshot.Hash()
 		sync := func() {
 			currentHash := currentSnapshot.Hash()
 			if previousHash == currentHash {
@@ -216,6 +260,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			}
 		}
 		virtualServicesByNamespace := make(map[string]gateway_solo_io.VirtualServiceList)
+		routeTablesByNamespace := make(map[string]gateway_solo_io.RouteTableList)
 		gatewaysByNamespace := make(map[string]GatewayList)
 
 		for {
@@ -244,6 +289,18 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					virtualServiceList = append(virtualServiceList, virtualServices...)
 				}
 				currentSnapshot.VirtualServices = virtualServiceList.Sort()
+			case routeTableNamespacedList := <-routeTableChan:
+				record()
+
+				namespace := routeTableNamespacedList.namespace
+
+				// merge lists by namespace
+				routeTablesByNamespace[namespace] = routeTableNamespacedList.list
+				var routeTableList gateway_solo_io.RouteTableList
+				for _, routeTables := range routeTablesByNamespace {
+					routeTableList = append(routeTableList, routeTables...)
+				}
+				currentSnapshot.RouteTables = routeTableList.Sort()
 			case gatewayNamespacedList := <-gatewayChan:
 				record()
 

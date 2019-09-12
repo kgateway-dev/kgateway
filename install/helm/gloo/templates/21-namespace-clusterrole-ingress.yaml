@@ -22,7 +22,7 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["get", "create"]
 - apiGroups: ["gloo.solo.io"]
-  resources: ["settings", "upstreams","upstreamgroups", "proxies","virtualservices"]
+  resources: ["settings", "upstreams","upstreamgroups", "proxies","virtualservices", "routetables"]
   verbs: ["*"]
 - apiGroups: ["extensions", ""]
   resources: ["ingresses"]

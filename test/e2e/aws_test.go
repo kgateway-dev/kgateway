@@ -275,16 +275,15 @@ var _ = Describe("AWS Lambda", func() {
 				Name:      "app",
 				Namespace: "default",
 			},
-			VirtualHost: &gloov1.VirtualHost{
-				Name:    "app",
+			VirtualHost: &gw1.VirtualHost{
 				Domains: []string{"*"},
-				Routes: []*gloov1.Route{{
+				Routes: []*gw1.Route{{
 					Matcher: &gloov1.Matcher{
 						PathSpecifier: &gloov1.Matcher_Prefix{
 							Prefix: "/",
 						},
 					},
-					Action: &gloov1.Route_RouteAction{
+					Action: &gw1.Route_RouteAction{
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{

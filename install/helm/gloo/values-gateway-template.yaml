@@ -67,6 +67,13 @@ gatewayProxies:
     configMap:
       data:
 
+accessLogger:
+  enabled: false
+  port: 8083
+  serviceName: AccessLog
+  image:
+    repository: access-logger
+  replicas: 1
 
 ingress:
   enabled: false

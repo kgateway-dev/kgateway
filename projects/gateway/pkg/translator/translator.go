@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -12,7 +14,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-const GatewayProxyName = "gateway-proxy-v2"
+// deprecated, use defaults.GatewayProxyName
+const GatewayProxyName = defaults.GatewayProxyName
 
 type ListenerFactory interface {
 	GenerateListeners(ctx context.Context, snap *v2.ApiSnapshot, filteredGateways []*v2.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener

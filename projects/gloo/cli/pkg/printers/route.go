@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -27,7 +29,7 @@ var routeActionType = struct {
 	emptyAction:    "empty_action",
 }
 
-func PrintRoutes(routes []*gloov1.Route, outputType OutputType) error {
+func PrintRoutes(routes []*v1.Route, outputType OutputType) error {
 	return cliutils.PrintList(outputType.String(), "", routes,
 		func(data interface{}, w io.Writer) error {
 			RouteTable(data.([]*gloov1.Route), w)

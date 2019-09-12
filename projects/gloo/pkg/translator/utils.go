@@ -43,9 +43,9 @@ func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filte
 	return s, nil
 }
 
-func NewAccessLogWithConfig(config proto.Message) (envoyal.AccessLog, error) {
+func NewAccessLogWithConfig(name string, config proto.Message) (envoyal.AccessLog, error) {
 	s := envoyal.AccessLog{
-		Name: envoyutil.FileAccessLog,
+		Name: name,
 	}
 
 	if config != nil {

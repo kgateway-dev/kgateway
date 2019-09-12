@@ -112,17 +112,16 @@ var _ = Describe("Robustness tests", func() {
 				Name:      "echo-vs",
 				Namespace: namespace,
 			},
-			VirtualHost: &gloov1.VirtualHost{
-				Name:    "echo-vh",
+			VirtualHost: &gatewayv1.VirtualHost{
 				Domains: []string{"*"},
-				Routes: []*gloov1.Route{
+				Routes: []*gatewayv1.Route{
 					{
 						Matcher: &gloov1.Matcher{
 							PathSpecifier: &gloov1.Matcher_Prefix{
 								Prefix: "/1",
 							},
 						},
-						Action: &gloov1.Route_RouteAction{
+						Action: &gatewayv1.Route_RouteAction{
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
@@ -174,13 +173,13 @@ var _ = Describe("Robustness tests", func() {
 		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gloov1.Route{
+		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
 			Matcher: &gloov1.Matcher{
 				PathSpecifier: &gloov1.Matcher_Prefix{
 					Prefix: "/3",
 				},
 			},
-			Action: &gloov1.Route_RouteAction{
+			Action: &gatewayv1.Route_RouteAction{
 				RouteAction: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{
 						Single: &gloov1.Destination{

@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Upstream Spec for AWS Lambda Upstreams
 // AWS Upstreams represent a collection of Lambda Functions for a particular AWS Account (IAM Role or User account)
@@ -178,10 +178,10 @@ type isTagFilter_Spec interface {
 }
 
 type TagFilter_Key struct {
-	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof"`
+	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof" json:"key,omitempty"`
 }
 type TagFilter_KvPair_ struct {
-	KvPair *TagFilter_KvPair `protobuf:"bytes,2,opt,name=kv_pair,json=kvPair,proto3,oneof"`
+	KvPair *TagFilter_KvPair `protobuf:"bytes,2,opt,name=kv_pair,json=kvPair,proto3,oneof" json:"kv_pair,omitempty"`
 }
 
 func (*TagFilter_Key) isTagFilter_Spec()     {}
@@ -208,74 +208,12 @@ func (m *TagFilter) GetKvPair() *TagFilter_KvPair {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*TagFilter) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _TagFilter_OneofMarshaler, _TagFilter_OneofUnmarshaler, _TagFilter_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*TagFilter) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*TagFilter_Key)(nil),
 		(*TagFilter_KvPair_)(nil),
 	}
-}
-
-func _TagFilter_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*TagFilter)
-	// spec
-	switch x := m.Spec.(type) {
-	case *TagFilter_Key:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.Key)
-	case *TagFilter_KvPair_:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.KvPair); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("TagFilter.Spec has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _TagFilter_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*TagFilter)
-	switch tag {
-	case 1: // spec.key
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Spec = &TagFilter_Key{x}
-		return true, err
-	case 2: // spec.kv_pair
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(TagFilter_KvPair)
-		err := b.DecodeMessage(msg)
-		m.Spec = &TagFilter_KvPair_{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _TagFilter_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*TagFilter)
-	// spec
-	switch x := m.Spec.(type) {
-	case *TagFilter_Key:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Key)))
-		n += len(x.Key)
-	case *TagFilter_KvPair_:
-		s := proto.Size(x.KvPair)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type TagFilter_KvPair struct {

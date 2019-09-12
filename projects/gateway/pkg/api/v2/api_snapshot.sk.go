@@ -13,12 +13,14 @@ import (
 
 type ApiSnapshot struct {
 	VirtualServices gateway_solo_io.VirtualServiceList
+	RouteTables     gateway_solo_io.RouteTableList
 	Gateways        GatewayList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
 	return ApiSnapshot{
 		VirtualServices: s.VirtualServices.Clone(),
+		RouteTables:     s.RouteTables.Clone(),
 		Gateways:        s.Gateways.Clone(),
 	}
 }
@@ -26,12 +28,17 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 func (s ApiSnapshot) Hash() uint64 {
 	return hashutils.HashAll(
 		s.hashVirtualServices(),
+		s.hashRouteTables(),
 		s.hashGateways(),
 	)
 }
 
 func (s ApiSnapshot) hashVirtualServices() uint64 {
 	return hashutils.HashAll(s.VirtualServices.AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashRouteTables() uint64 {
+	return hashutils.HashAll(s.RouteTables.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashGateways() uint64 {
@@ -41,6 +48,7 @@ func (s ApiSnapshot) hashGateways() uint64 {
 func (s ApiSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	fields = append(fields, zap.Uint64("virtualServices", s.hashVirtualServices()))
+	fields = append(fields, zap.Uint64("routeTables", s.hashRouteTables()))
 	fields = append(fields, zap.Uint64("gateways", s.hashGateways()))
 
 	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
@@ -49,6 +57,7 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 type ApiSnapshotStringer struct {
 	Version         uint64
 	VirtualServices []string
+	RouteTables     []string
 	Gateways        []string
 }
 
@@ -57,6 +66,11 @@ func (ss ApiSnapshotStringer) String() string {
 
 	s += fmt.Sprintf("  VirtualServices %v\n", len(ss.VirtualServices))
 	for _, name := range ss.VirtualServices {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  RouteTables %v\n", len(ss.RouteTables))
+	for _, name := range ss.RouteTables {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
@@ -72,6 +86,7 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 	return ApiSnapshotStringer{
 		Version:         s.Hash(),
 		VirtualServices: s.VirtualServices.NamespacesDotNames(),
+		RouteTables:     s.RouteTables.NamespacesDotNames(),
 		Gateways:        s.Gateways.NamespacesDotNames(),
 	}
 }

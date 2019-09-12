@@ -28,7 +28,8 @@ weight: 5
 ### Gateway
 
  
-A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
+A Gateway describes a single Listener (bind address:port)
+and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
 
 ```yaml
 "ssl": bool
@@ -41,21 +42,23 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 "httpGateway": .gateway.solo.io.v2.HttpGateway
 "tcpGateway": .gateway.solo.io.v2.TcpGateway
 "gatewayProxyName": string
+"proxyNames": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `ssl` | `bool` | if set to false, only use virtual services with no ssl configured. if set to true, only use virtual services with ssl configured. |  |
+| `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. |  |
 | `bindAddress` | `string` | the bind address the gateway should serve traffic on |  |
-| `bindPort` | `int` | bind ports must not conflict across gateways in a namespace |  |
+| `bindPort` | `int` | bind ports must not conflict across gateways for a single proxy |  |
 | `plugins` | [.gloo.solo.io.ListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk#listenerplugins) | top level plugin configuration for all routes on the gateway |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener |  |
 | `httpGateway` | [.gateway.solo.io.v2.HttpGateway](../gateway.proto.sk#httpgateway) |  |  |
 | `tcpGateway` | [.gateway.solo.io.v2.TcpGateway](../gateway.proto.sk#tcpgateway) |  |  |
-| `gatewayProxyName` | `string` |  |  |
+| `gatewayProxyName` | `string` | deprecated: use proxyNames |  |
+| `proxyNames` | `string` | By default, each Gateway is exposed on the default `gateway-proxy-v2` which lives in the Gloo installation namespace. Use `proxyNames` to expose Gateways on custom proxies deployed by the user via the [Gloo Helm Chart](https://gloo.solo.io/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values) > Note: when using camel-case proxy names in the Helm chart, they should be converted to kebab-case for use with `proxyNames`, such that: `gatewayProxyV2` in the Helm Values becomes `gateway-proxy-v2` in the list of proxyNames |  |
 
 
 
@@ -67,6 +70,7 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 
 ```yaml
 "virtualServices": []core.solo.io.ResourceRef
+"virtualServiceSelector": map<string, string>
 "plugins": .gloo.solo.io.HttpListenerPlugins
 
 ```
@@ -74,6 +78,7 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | names of the the virtual services, which contain the actual routes for the gateway if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above). |  |
+| `virtualServiceSelector` | `map<string, string>` | only one of `virtualServices` or `virtualServiceSelector` should be provided rather than providing |  |
 | `plugins` | [.gloo.solo.io.HttpListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk#httplistenerplugins) | http gateway configuration |  |
 
 

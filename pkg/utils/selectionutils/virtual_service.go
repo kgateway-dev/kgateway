@@ -5,7 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/listers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -82,7 +81,7 @@ func (s *virtualServiceSelector) create(ctx context.Context, ref *core.ResourceR
 			Namespace: ref.GetNamespace(),
 			Name:      ref.GetName(),
 		},
-		VirtualHost: &gloov1.VirtualHost{
+		VirtualHost: &gatewayv1.VirtualHost{
 			Domains: []string{"*"},
 		},
 	}

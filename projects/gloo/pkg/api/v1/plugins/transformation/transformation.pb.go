@@ -21,7 +21,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type RouteTransformations struct {
 	RequestTransformation *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
@@ -122,10 +122,10 @@ type isTransformation_TransformationType interface {
 }
 
 type Transformation_TransformationTemplate struct {
-	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,proto3,oneof"`
+	TransformationTemplate *TransformationTemplate `protobuf:"bytes,1,opt,name=transformation_template,json=transformationTemplate,proto3,oneof" json:"transformation_template,omitempty"`
 }
 type Transformation_HeaderBodyTransform struct {
-	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,proto3,oneof"`
+	HeaderBodyTransform *HeaderBodyTransform `protobuf:"bytes,2,opt,name=header_body_transform,json=headerBodyTransform,proto3,oneof" json:"header_body_transform,omitempty"`
 }
 
 func (*Transformation_TransformationTemplate) isTransformation_TransformationType() {}
@@ -152,78 +152,12 @@ func (m *Transformation) GetHeaderBodyTransform() *HeaderBodyTransform {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Transformation) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Transformation_OneofMarshaler, _Transformation_OneofUnmarshaler, _Transformation_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Transformation) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Transformation_TransformationTemplate)(nil),
 		(*Transformation_HeaderBodyTransform)(nil),
 	}
-}
-
-func _Transformation_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Transformation)
-	// transformation_type
-	switch x := m.TransformationType.(type) {
-	case *Transformation_TransformationTemplate:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.TransformationTemplate); err != nil {
-			return err
-		}
-	case *Transformation_HeaderBodyTransform:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.HeaderBodyTransform); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Transformation.TransformationType has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Transformation_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Transformation)
-	switch tag {
-	case 1: // transformation_type.transformation_template
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(TransformationTemplate)
-		err := b.DecodeMessage(msg)
-		m.TransformationType = &Transformation_TransformationTemplate{msg}
-		return true, err
-	case 2: // transformation_type.header_body_transform
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(HeaderBodyTransform)
-		err := b.DecodeMessage(msg)
-		m.TransformationType = &Transformation_HeaderBodyTransform{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Transformation_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Transformation)
-	// transformation_type
-	switch x := m.TransformationType.(type) {
-	case *Transformation_TransformationTemplate:
-		s := proto.Size(x.TransformationTemplate)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Transformation_HeaderBodyTransform:
-		s := proto.Size(x.HeaderBodyTransform)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Extraction struct {
@@ -327,13 +261,13 @@ type isTransformationTemplate_BodyTransformation interface {
 }
 
 type TransformationTemplate_Body struct {
-	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
+	Body *InjaTemplate `protobuf:"bytes,4,opt,name=body,proto3,oneof" json:"body,omitempty"`
 }
 type TransformationTemplate_Passthrough struct {
-	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,proto3,oneof"`
+	Passthrough *Passthrough `protobuf:"bytes,5,opt,name=passthrough,proto3,oneof" json:"passthrough,omitempty"`
 }
 type TransformationTemplate_MergeExtractorsToBody struct {
-	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,proto3,oneof"`
+	MergeExtractorsToBody *MergeExtractorsToBody `protobuf:"bytes,6,opt,name=merge_extractors_to_body,json=mergeExtractorsToBody,proto3,oneof" json:"merge_extractors_to_body,omitempty"`
 }
 
 func (*TransformationTemplate_Body) isTransformationTemplate_BodyTransformation()                  {}
@@ -389,97 +323,13 @@ func (m *TransformationTemplate) GetMergeExtractorsToBody() *MergeExtractorsToBo
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*TransformationTemplate) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _TransformationTemplate_OneofMarshaler, _TransformationTemplate_OneofUnmarshaler, _TransformationTemplate_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*TransformationTemplate) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*TransformationTemplate_Body)(nil),
 		(*TransformationTemplate_Passthrough)(nil),
 		(*TransformationTemplate_MergeExtractorsToBody)(nil),
 	}
-}
-
-func _TransformationTemplate_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*TransformationTemplate)
-	// body_transformation
-	switch x := m.BodyTransformation.(type) {
-	case *TransformationTemplate_Body:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Body); err != nil {
-			return err
-		}
-	case *TransformationTemplate_Passthrough:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Passthrough); err != nil {
-			return err
-		}
-	case *TransformationTemplate_MergeExtractorsToBody:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.MergeExtractorsToBody); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("TransformationTemplate.BodyTransformation has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _TransformationTemplate_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*TransformationTemplate)
-	switch tag {
-	case 4: // body_transformation.body
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(InjaTemplate)
-		err := b.DecodeMessage(msg)
-		m.BodyTransformation = &TransformationTemplate_Body{msg}
-		return true, err
-	case 5: // body_transformation.passthrough
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Passthrough)
-		err := b.DecodeMessage(msg)
-		m.BodyTransformation = &TransformationTemplate_Passthrough{msg}
-		return true, err
-	case 6: // body_transformation.merge_extractors_to_body
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(MergeExtractorsToBody)
-		err := b.DecodeMessage(msg)
-		m.BodyTransformation = &TransformationTemplate_MergeExtractorsToBody{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _TransformationTemplate_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*TransformationTemplate)
-	// body_transformation
-	switch x := m.BodyTransformation.(type) {
-	case *TransformationTemplate_Body:
-		s := proto.Size(x.Body)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *TransformationTemplate_Passthrough:
-		s := proto.Size(x.Passthrough)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *TransformationTemplate_MergeExtractorsToBody:
-		s := proto.Size(x.MergeExtractorsToBody)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 //

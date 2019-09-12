@@ -38,6 +38,9 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/faul
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/headers/headers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hostrewrite/hostrewrite.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto";
+
 import "google/protobuf/duration.proto";
 
 // Plugin-specific configuration that lives on gateways
@@ -53,6 +56,7 @@ message ListenerPlugins {
 message HttpListenerPlugins {
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
     hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
+    Extensions extensions = 3;
 }
 
 // Plugin-specific configuration that lives on tcp listeners
@@ -74,6 +78,8 @@ message VirtualHostPlugins {
     // Defines a CORS policy for the virtual host
     // If a CORS policy is also defined on the route matched by the request, the policies are merged.
     cors.plugins.gloo.solo.io.CorsPolicy cors = 3;
+    // Transformations to apply
+    envoy.api.v2.filter.http.RouteTransformations transformations = 4;
 }
 
 // Plugin-specific configuration that lives on routes
@@ -81,6 +87,7 @@ message VirtualHostPlugins {
 // Note to developers: new Route Plugins must be added to this struct
 // to be usable by Gloo.
 message RoutePlugins {
+    // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 1;
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
     transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
@@ -124,35 +131,39 @@ message DestinationSpec {
 message WeightedDestinationPlugins {
     // Append/Remove headers on Requests or Responses to/from this Weighted Destination
     headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 1;
+    // Transformations to apply
+    envoy.api.v2.filter.http.RouteTransformations transformations = 2;
 }
 
 // Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
 // Each upstream type is handled by a corresponding Gloo plugin.
 message UpstreamSpec {
 
-    UpstreamSslConfig ssl_config = 6;
+    UpstreamSslConfig ssl_config = 1;
 
     // Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
     // if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
     // will be used.
-    CircuitBreakerConfig circuit_breakers = 7;
-    LoadBalancerConfig load_balancer_config = 8;
-    ConnectionConfig connection_config = 9;
+    CircuitBreakerConfig circuit_breakers = 2;
+    LoadBalancerConfig load_balancer_config = 3;
+    ConnectionConfig connection_config = 4;
+    repeated envoy.api.v2.core.HealthCheck health_checks = 5;
+    envoy.api.v2.cluster.OutlierDetection outlier_detection = 6;
 
     // Use http2 when communicating with this upstream
     // this field is evaluated `true` for upstreams
     // with a grpc service spec
-    bool use_http2 = 10;
+    bool use_http2 = 7;
 
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.
     oneof upstream_type {
-        kubernetes.plugins.gloo.solo.io.UpstreamSpec kube = 1;
-        static.plugins.gloo.solo.io.UpstreamSpec static = 4;
-        pipe.plugins.gloo.solo.io.UpstreamSpec pipe = 12;
-        aws.plugins.gloo.solo.io.UpstreamSpec aws = 2;
-        azure.plugins.gloo.solo.io.UpstreamSpec azure = 3;
-        consul.plugins.gloo.solo.io.UpstreamSpec consul = 5;
-        aws_ec2.plugins.gloo.solo.io.UpstreamSpec aws_ec2 = 11;
+        kubernetes.plugins.gloo.solo.io.UpstreamSpec kube = 8;
+        static.plugins.gloo.solo.io.UpstreamSpec static = 9;
+        pipe.plugins.gloo.solo.io.UpstreamSpec pipe = 10;
+        aws.plugins.gloo.solo.io.UpstreamSpec aws = 11;
+        azure.plugins.gloo.solo.io.UpstreamSpec azure = 12;
+        consul.plugins.gloo.solo.io.UpstreamSpec consul = 13;
+        aws_ec2.plugins.gloo.solo.io.UpstreamSpec aws_ec2 = 14;
     }
 }

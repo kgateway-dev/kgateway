@@ -275,9 +275,8 @@ status: {}
 				},
 			}
 			sampleVirtualService := &gatewayv1.VirtualService{
-				VirtualHost: &v1.VirtualHost{
-					Name:   "mk",
-					Routes: []*v1.Route{route},
+				VirtualHost: &gatewayv1.VirtualHost{
+					Routes: []*gatewayv1.Route{{RoutePlugins: route.RoutePlugins}},
 				},
 			}
 			sampleInputResource := gatewayv1.VirtualServiceList{sampleVirtualService}.AsInputResources()[0]
@@ -290,7 +289,6 @@ metadata:
   creationTimestamp: null
 spec:
   virtualHost:
-    name: mk
     routes:
     - routePlugins:
         lbHash:
