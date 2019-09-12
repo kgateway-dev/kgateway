@@ -94,7 +94,7 @@ var _ = Describe("version command", func() {
 +-------------+--------------------+-----------------+
 `
 
-		var osYamlOutput = `Client:
+		var osYamlOutput = `Client: 
 version: undefined
 
 Server:
@@ -107,14 +107,15 @@ kubernetes:
     Registry: quay.io/solo-io
     Tag: v0.0.2
   namespace: gloo-system
-  type: Gateway
+type: Gateway
 
 `
 
-		var eYamlOutput = `Client:
+		var eYamlOutput = `Client: 
 version: undefined
 
 Server:
+enterprise: true
 kubernetes:
   containers:
   - Name: gloo
@@ -123,22 +124,21 @@ kubernetes:
   - Name: gateway
     Registry: quay.io/solo-io
     Tag: v0.0.2
-  enterprise: true
   namespace: gloo-system
-  type: Gateway
+type: Gateway
 
 `
 
-		var osJsonOutput = `Client:
+		var osJsonOutput = `Client: 
 {"version":"undefined"}
 Server:
-{"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system","type":"Gateway"}}
+{"type":"Gateway","kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
 `
 
-		var eJsonOutput = `Client:
+		var eJsonOutput = `Client: 
 {"version":"undefined"}
 Server:
-{"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system","type":"Gateway","enterprise":true}}
+{"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
 `
 
 		tests := []struct {

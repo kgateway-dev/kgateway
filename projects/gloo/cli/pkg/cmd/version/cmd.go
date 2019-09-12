@@ -90,9 +90,10 @@ func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
+		fmt.Fprintln(w, "Server:")
 		for _, v := range vrs.GetServer() {
 			serverVersionStr := GetJson(v)
-			fmt.Fprintf(w, "Server: %s\n", string(serverVersionStr))
+			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
 		}
 	case printers.YAML:
 		clientVersionStr := GetYaml(vrs.GetClient())
@@ -101,9 +102,10 @@ func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
+		fmt.Fprintln(w, "Server:")
 		for _, v := range vrs.GetServer() {
 			serverVersionStr := GetYaml(v)
-			fmt.Fprintf(w, "Server: %s\n", string(serverVersionStr))
+			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
 		}
 	default:
 		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().Version)
