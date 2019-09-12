@@ -41,16 +41,25 @@ upstreamSpec:
       port: 80
 `
 
+		tableOutput := `+--------------------+--------+---------+---------------------------------+
+|      UPSTREAM      |  TYPE  | STATUS  |             DETAILS             |
++--------------------+--------+---------+---------------------------------+
+| jsonplaceholder-80 | Static | Pending | hosts:                          |
+|                    |        |         | -                               |
+|                    |        |         | jsonplaceholder.typicode.com:80 |
+|                    |        |         |                                 |
++--------------------+--------+---------+---------------------------------+`
+
 		It("--dry-run should override -o table and replace with kube-yaml", func() {
 			By("should use kube-yaml format by default")
 			output, err := testutils.GlooctlOut("create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80 --dry-run")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(kubeYamlOutput))
 
-			By("should override -o table flag")
+			By("should not override -o table flag")
 			output, err = testutils.GlooctlOut("create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80 --dry-run -o table")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(Equal(kubeYamlOutput))
+			Expect(output).To(Equal(tableOutput))
 
 			By("should respect -o kube-yaml flag")
 			output, err = testutils.GlooctlOut("create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80 --dry-run -o kube-yaml")

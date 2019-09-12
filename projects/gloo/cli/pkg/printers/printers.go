@@ -112,7 +112,3 @@ func (o *OutputType) UnmarshalJSON(data []byte) error {
 func (o *OutputType) IsTable() bool {
 	return _OutputValueToIsTable[*o]
 }
-
-func (o *OutputType) IsDryRunnable() bool {
-	return !_OutputValueToIsTable[*o]
-}

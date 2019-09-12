@@ -10,8 +10,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const (
+	OutputFlag = "output"
+)
+
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
-	set.VarP(outputType, "output", "o", "output format: (yaml, json, table, kube-yaml, wide)")
+	set.VarP(outputType, OutputFlag, "o", "output format: (yaml, json, table, kube-yaml, wide)")
 }
 
 func AddFileFlag(set *pflag.FlagSet, strptr *string) {
