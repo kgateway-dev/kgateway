@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Use better ginko flags for CI
+    issueLink: https://github.com/solo-io/gloo/issues/1153
+    resolvesIssue: false
