@@ -16,7 +16,7 @@ import (
 //go:generate mockgen -destination ./mocks/mock_watcher.go -source clients.go
 
 type ServerVersion interface {
-	Get(opts *options.Options) (*version.ServerVersion, error)
+	Get(opts *options.Options) ([]*version.ServerVersion, error)
 }
 
 type kube struct{}
@@ -31,7 +31,7 @@ func NewKube() *kube {
 	return &kube{}
 }
 
-func (k *kube) Get(opts *options.Options) (*version.ServerVersion, error) {
+func (k *kube) Get(opts *options.Options) ([]*version.ServerVersion, error) {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
@@ -85,16 +85,16 @@ func (k *kube) Get(opts *options.Options) (*version.ServerVersion, error) {
 		return nil, nil
 	}
 	serverVersion := &version.ServerVersion{
+		Type:       deploymentType,
+		Enterprise: foundGlooE,
 		VersionType: &version.ServerVersion_Kubernetes{
 			Kubernetes: &version.Kubernetes{
 				Containers: kubeContainerList,
 				Namespace:  opts.Metadata.Namespace,
-				Type:       deploymentType,
-				Enterprise: foundGlooE,
 			},
 		},
 	}
-	return serverVersion, nil
+	return []*version.ServerVersion{serverVersion}, nil
 }
 
 func parseContainerString(container kubev1.Container) *generate.Image {

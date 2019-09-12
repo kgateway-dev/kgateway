@@ -7,12 +7,16 @@ import "gogoproto/gogo.proto";
 
 option (gogoproto.equal_all) = true;
 
+// TODO: implement for version rpc
 message VersionRequest {}
 
+// currently unused. will be usd for version rpc
 message VersionResponse {
     Version version = 1 [(validate.rules).message = {required: true}];
 }
 
+
+// type of gloo server instance
 enum GlooType {
     Unknown = 0;
     Gateway = 1;
@@ -21,9 +25,16 @@ enum GlooType {
 }
 
 message ServerVersion {
+    GlooType type = 1;
+
+    // Whether or not this is an enterprise distribution
+    bool enterprise = 2;
+
+    // The type of server distribution
+    // Currently only kubernetes is supported
     oneof version_type {
         option (validate.required) = true;
-        Kubernetes kubernetes = 1;
+        Kubernetes kubernetes = 3;
     }
 }
 
@@ -34,13 +45,11 @@ message Kubernetes {
          string Registry = 3;
     }
 
+    // Array of containers comprising a single distribution of gloo
     repeated Container containers = 1;
 
+    // namespace gloo is running in
     string namespace = 2;
-
-    GlooType type = 3;
-
-    bool enterprise = 4;
 }
 
 message ClientVersion {
@@ -49,6 +58,8 @@ message ClientVersion {
 
 message Version {
     ClientVersion client = 1;
-    ServerVersion server = 2;
+    // This field is an array of server versions because although there can only be 1 client version. There can
+    // potentially be many instances of gloo running on a single cluster
+    repeated ServerVersion server = 2;
 }
 

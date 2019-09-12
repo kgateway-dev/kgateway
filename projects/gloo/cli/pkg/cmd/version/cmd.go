@@ -90,8 +90,10 @@ func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
-		serverVersionStr := GetJson(vrs.GetServer())
-		fmt.Fprintf(w, "Server: \n%s\n", string(serverVersionStr))
+		for _, v := range vrs.GetServer() {
+			serverVersionStr := GetJson(v)
+			fmt.Fprintf(w, "Server: %s\n", string(serverVersionStr))
+		}
 	case printers.YAML:
 		clientVersionStr := GetYaml(vrs.GetClient())
 		fmt.Fprintf(w, "Client: \n%s\n", string(clientVersionStr))
@@ -99,31 +101,43 @@ func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
-		serverVersionStr := GetYaml(vrs.GetServer())
-		fmt.Fprintf(w, "Server: \n%s\n", string(serverVersionStr))
+		for _, v := range vrs.GetServer() {
+			serverVersionStr := GetYaml(v)
+			fmt.Fprintf(w, "Server: %s\n", string(serverVersionStr))
+		}
 	default:
 		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().Version)
 		if vrs.GetServer() == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
-		kubeSrvVrs := vrs.GetServer().GetKubernetes()
-		if kubeSrvVrs == nil {
+		srv := vrs.GetServer()
+		if srv == nil {
 			fmt.Println(undefinedServer)
 			return nil
 		}
+
+
 		table := tablewriter.NewWriter(w)
 		headers := []string{"Namespace", "Deployment-Type", "Containers"}
-		content := []string{kubeSrvVrs.GetNamespace(), getDistributionName(kubeSrvVrs.GetType().String(), kubeSrvVrs.GetEnterprise())}
 		var rows [][]string
-		for i, container := range kubeSrvVrs.GetContainers() {
-			name := fmt.Sprintf("%s: %s", container.GetName(), container.GetTag())
-			if i == 0 {
-				rows = append(rows, append(content, name))
-			} else {
-				rows = append(rows, []string{"", "", name})
+		for _, v := range srv {
+			kubeSrvVrs := v.GetKubernetes()
+			if kubeSrvVrs == nil {
+				continue
 			}
+			content := []string{kubeSrvVrs.GetNamespace(), getDistributionName(v.GetType().String(), v.GetEnterprise())}
+			for i, container := range kubeSrvVrs.GetContainers() {
+				name := fmt.Sprintf("%s: %s", container.GetName(), container.GetTag())
+				if i == 0 {
+					rows = append(rows, append(content, name))
+				} else {
+					rows = append(rows, []string{"", "", name})
+				}
+			}
+
 		}
+
 		table.SetHeader(headers)
 		table.AppendBulk(rows)
 		table.SetAlignment(tablewriter.ALIGN_LEFT)

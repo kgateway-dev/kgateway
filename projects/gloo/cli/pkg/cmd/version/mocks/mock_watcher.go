@@ -5,11 +5,10 @@
 package mock_version
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	options "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	version "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	reflect "reflect"
 )
 
 // MockServerVersion is a mock of ServerVersion interface
@@ -36,10 +35,10 @@ func (m *MockServerVersion) EXPECT() *MockServerVersionMockRecorder {
 }
 
 // Get mocks base method
-func (m *MockServerVersion) Get(opts *options.Options) (*version.ServerVersion, error) {
+func (m *MockServerVersion) Get(opts *options.Options) ([]*version.ServerVersion, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", opts)
-	ret0, _ := ret[0].(*version.ServerVersion)
+	ret0, _ := ret[0].([]*version.ServerVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

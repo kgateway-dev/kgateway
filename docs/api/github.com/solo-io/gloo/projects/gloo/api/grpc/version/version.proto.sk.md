@@ -38,7 +38,8 @@ weight: 5
 ---
 ### VersionRequest
 
-
+ 
+TODO: implement for version rpc
 
 ```yaml
 
@@ -53,7 +54,8 @@ weight: 5
 ---
 ### VersionResponse
 
-
+ 
+currently unused. will be usd for version rpc
 
 ```yaml
 "version": .gloo.solo.io.Version
@@ -73,12 +75,16 @@ weight: 5
 
 
 ```yaml
+"type": .gloo.solo.io.GlooType
+"enterprise": bool
 "kubernetes": .gloo.solo.io.Kubernetes
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `type` | [.gloo.solo.io.GlooType](../version.proto.sk#glootype) |  |  |
+| `enterprise` | `bool` | Whether or not this is an enterprise distribution |  |
 | `kubernetes` | [.gloo.solo.io.Kubernetes](../version.proto.sk#kubernetes) |  |  |
 
 
@@ -92,17 +98,13 @@ weight: 5
 ```yaml
 "containers": []gloo.solo.io.Kubernetes.Container
 "namespace": string
-"type": .gloo.solo.io.GlooType
-"enterprise": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `containers` | [[]gloo.solo.io.Kubernetes.Container](../version.proto.sk#container) |  |  |
-| `namespace` | `string` |  |  |
-| `type` | [.gloo.solo.io.GlooType](../version.proto.sk#glootype) |  |  |
-| `enterprise` | `bool` |  |  |
+| `containers` | [[]gloo.solo.io.Kubernetes.Container](../version.proto.sk#container) | Array of containers comprising a single distribution of gloo |  |
+| `namespace` | `string` | namespace gloo is running in |  |
 
 
 
@@ -152,21 +154,21 @@ weight: 5
 
 ```yaml
 "client": .gloo.solo.io.ClientVersion
-"server": .gloo.solo.io.ServerVersion
+"server": []gloo.solo.io.ServerVersion
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `client` | [.gloo.solo.io.ClientVersion](../version.proto.sk#clientversion) |  |  |
-| `server` | [.gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) |  |  |
+| `server` | [[]gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) | This field is an array of server versions because although there can only be 1 client version. There can potentially be many instances of gloo running on a single cluster |  |
 
 
 
   
 ### GlooType
 
-Description: 
+Description: type of gloo server instance
 
 | Name | Description |
 | ----- | ----------- | 

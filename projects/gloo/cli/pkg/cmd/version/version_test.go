@@ -35,7 +35,7 @@ var _ = Describe("version command", func() {
 		})
 		It("can get the version", func() {
 			opts := &options.Options{}
-			v := &version.ServerVersion{}
+			v := make([]*version.ServerVersion, 1)
 			client.EXPECT().Get(opts).Return(v, nil).Times(1)
 			vrs, err := getVersion(client, opts)
 			Expect(err).NotTo(HaveOccurred())
@@ -55,6 +55,7 @@ var _ = Describe("version command", func() {
 			buf = &bytes.Buffer{}
 
 			sv = &version.ServerVersion{
+				Type:      version.GlooType_Gateway,
 				VersionType: &version.ServerVersion_Kubernetes{
 					Kubernetes: &version.Kubernetes{
 						Containers: []*version.Kubernetes_Container{
@@ -70,7 +71,6 @@ var _ = Describe("version command", func() {
 							},
 						},
 						Namespace: namespace,
-						Type:      version.GlooType_Gateway,
 					},
 				},
 			}
@@ -94,10 +94,10 @@ var _ = Describe("version command", func() {
 +-------------+--------------------+-----------------+
 `
 
-		var osYamlOutput = `Client: 
+		var osYamlOutput = `Client:
 version: undefined
 
-Server: 
+Server:
 kubernetes:
   containers:
   - Name: gloo
@@ -111,10 +111,10 @@ kubernetes:
 
 `
 
-		var eYamlOutput = `Client: 
+		var eYamlOutput = `Client:
 version: undefined
 
-Server: 
+Server:
 kubernetes:
   containers:
   - Name: gloo
@@ -129,15 +129,15 @@ kubernetes:
 
 `
 
-		var osJsonOutput = `Client: 
+		var osJsonOutput = `Client:
 {"version":"undefined"}
-Server: 
+Server:
 {"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system","type":"Gateway"}}
 `
 
-		var eJsonOutput = `Client: 
+		var eJsonOutput = `Client:
 {"version":"undefined"}
-Server: 
+Server:
 {"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system","type":"Gateway","enterprise":true}}
 `
 
@@ -194,9 +194,8 @@ Server:
 							Output: test.outputType,
 						},
 					}
-					kube := sv.GetKubernetes()
-					kube.Enterprise = test.enterprise
-					client.EXPECT().Get(opts).Times(1).Return(sv, nil)
+					sv.Enterprise = test.enterprise
+					client.EXPECT().Get(opts).Times(1).Return([]*version.ServerVersion{sv}, nil)
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(buf.String()).To(Equal(test.result))
