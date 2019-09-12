@@ -144,15 +144,15 @@ func printVersion(opts *options.Options, vrs *version.Version) error {
 		}
 		serverVersionStr := GetJson(vrs.GetServerVersion())
 		fmt.Printf("Server: \n%s\n", string(serverVersionStr))
-	case printers.JSON_FMT:
-		clientVersionStr := GetJson(vrs.GetClientVersion())
-		fmt.Printf("Client: \n%s\n", FormatJson(clientVersionStr))
-		if vrs.GetServerVersion() == nil {
-			fmt.Println(undefinedServer)
-			return nil
-		}
-		serverVersionStr := GetJson(vrs.GetServerVersion())
-		fmt.Printf("Server: \n%s\n", string(FormatJson(serverVersionStr)))
+	// case printers.JSON_FMT:
+	// 	clientVersionStr := GetJson(vrs.GetClientVersion())
+	// 	fmt.Printf("Client: \n%s\n", FormatJson(clientVersionStr))
+	// 	if vrs.GetServerVersion() == nil {
+	// 		fmt.Println(undefinedServer)
+	// 		return nil
+	// 	}
+	// 	serverVersionStr := GetJson(vrs.GetServerVersion())
+	// 	fmt.Printf("Server: \n%s\n", string(FormatJson(serverVersionStr)))
 	case printers.YAML:
 		clientVersionStr := GetYaml(vrs.GetClientVersion())
 		fmt.Printf("Client: \n%s\n", string(clientVersionStr))
