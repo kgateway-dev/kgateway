@@ -1,8 +1,6 @@
 package version
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -18,12 +16,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/spf13/cobra"
 	kubev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -36,8 +31,13 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Aliases: constants.VERSION_COMMAND.Aliases,
 		Short:   constants.VERSION_COMMAND.Short,
 		Long:    constants.VERSION_COMMAND.Long,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if !cmd.PersistentFlags().Changed(flagutils.OutputFlag) {
+				opts.Top.Output = printers.JSON
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			vrs, err := getVersion(cmd, opts)
+			vrs, err := getVersion(NewKube(), opts)
 			if err != nil {
 				return err
 			}
@@ -52,18 +52,15 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func getVersion(cmd *cobra.Command, opts *options.Options) (*version.Version, error) {
+func getVersion(sv ServerVersion, opts *options.Options) (*version.Version, error) {
 	clientVersion, err := getClientVersion()
 	if err != nil {
 		return nil, err
 	}
-	serverVersion, err := getServerVersion(opts)
-	if err != nil {
-		return nil, err
-	}
+	serverVersion, err := sv.Get(opts)
 	return &version.Version{
-		ClientVersion: clientVersion,
-		ServerVersion: serverVersion,
+		Client: clientVersion,
+		Server: serverVersion,
 	}, nil
 }
 
@@ -72,50 +69,6 @@ func getClientVersion() (*version.ClientVersion, error) {
 		Version: linkedversion.Version,
 	}
 	return vrs, nil
-}
-
-func getServerVersion(opts *options.Options) (*version.ServerVersion, error) {
-	cfg, err := kubeutils.GetConfig("", "")
-	if err != nil {
-		// kubecfg is missing, therefore no cluster is present, only print client version
-		return nil, nil
-	}
-	client, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(metav1.ListOptions{
-		// search only for gloo deployments based on labels
-		LabelSelector: "app=gloo",
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var kubeContainerList []*version.Kubernetes_Container
-	for _, v := range deployments.Items {
-		for _, container := range v.Spec.Template.Spec.Containers {
-			containerInfo := parseContainerString(container)
-			kubeContainerList = append(kubeContainerList, &version.Kubernetes_Container{
-				Tag:      containerInfo.Tag,
-				Name:     containerInfo.Repository,
-				Registry: containerInfo.Registry,
-			})
-		}
-	}
-	if len(kubeContainerList) == 0 {
-		return nil, nil
-	}
-	serverVersion := &version.ServerVersion{
-		VersionType: &version.ServerVersion_Kubernetes{
-			Kubernetes: &version.Kubernetes{
-				Containers: kubeContainerList,
-				Namespace:  opts.Metadata.Namespace,
-			},
-		},
-	}
-	return serverVersion, nil
 }
 
 func parseContainerString(container kubev1.Container) *generate.Image {
@@ -136,39 +89,30 @@ func parseContainerString(container kubev1.Container) *generate.Image {
 func printVersion(opts *options.Options, vrs *version.Version) error {
 	switch opts.Top.Output {
 	case printers.JSON:
-		clientVersionStr := GetJson(vrs.GetClientVersion())
+		clientVersionStr := GetJson(vrs.GetClient())
 		fmt.Printf("Client: \n%s\n", string(clientVersionStr))
-		if vrs.GetServerVersion() == nil {
+		if vrs.GetServer() == nil {
 			fmt.Println(undefinedServer)
 			return nil
 		}
-		serverVersionStr := GetJson(vrs.GetServerVersion())
+		serverVersionStr := GetJson(vrs.GetServer())
 		fmt.Printf("Server: \n%s\n", string(serverVersionStr))
-	// case printers.JSON_FMT:
-	// 	clientVersionStr := GetJson(vrs.GetClientVersion())
-	// 	fmt.Printf("Client: \n%s\n", FormatJson(clientVersionStr))
-	// 	if vrs.GetServerVersion() == nil {
-	// 		fmt.Println(undefinedServer)
-	// 		return nil
-	// 	}
-	// 	serverVersionStr := GetJson(vrs.GetServerVersion())
-	// 	fmt.Printf("Server: \n%s\n", string(FormatJson(serverVersionStr)))
 	case printers.YAML:
-		clientVersionStr := GetYaml(vrs.GetClientVersion())
+		clientVersionStr := GetYaml(vrs.GetClient())
 		fmt.Printf("Client: \n%s\n", string(clientVersionStr))
-		if vrs.GetServerVersion() == nil {
+		if vrs.GetServer() == nil {
 			fmt.Println(undefinedServer)
 			return nil
 		}
-		serverVersionStr := GetYaml(vrs.GetServerVersion())
+		serverVersionStr := GetYaml(vrs.GetServer())
 		fmt.Printf("Server: \n%s\n", string(serverVersionStr))
 	default:
-		fmt.Printf("Client: version: %s\n", vrs.GetClientVersion().Version)
-		if vrs.GetServerVersion() == nil {
+		fmt.Printf("Client: version: %s\n", vrs.GetClient().Version)
+		if vrs.GetServer() == nil {
 			fmt.Println(undefinedServer)
 			return nil
 		}
-		kubeSrvVrs := vrs.GetServerVersion().GetKubernetes()
+		kubeSrvVrs := vrs.GetServer().GetKubernetes()
 		if kubeSrvVrs == nil {
 			fmt.Println(undefinedServer)
 			return nil
@@ -186,14 +130,6 @@ func printVersion(opts *options.Options, vrs *version.Version) error {
 		table.Render()
 	}
 	return nil
-}
-
-func FormatJson(byt []byte) string {
-	var out bytes.Buffer
-	if err := json.Indent(&out, byt, "", "\t"); err != nil {
-		panic(err)
-	}
-	return out.String()
 }
 
 func GetJson(pb proto.Message) []byte {

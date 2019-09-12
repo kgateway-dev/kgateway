@@ -20,6 +20,13 @@ weight: 5
 - [Version](#version)
   
 
+ 
+
+##### Enums:
+
+
+	- [GlooType](#glootype)
+
 
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/grpc/version/version.proto)
@@ -85,6 +92,7 @@ weight: 5
 ```yaml
 "containers": []gloo.solo.io.Kubernetes.Container
 "namespace": string
+"type": .gloo.solo.io.GlooType
 
 ```
 
@@ -92,6 +100,7 @@ weight: 5
 | ----- | ---- | ----------- |----------- | 
 | `containers` | [[]gloo.solo.io.Kubernetes.Container](../version.proto.sk#container) |  |  |
 | `namespace` | `string` |  |  |
+| `type` | [.gloo.solo.io.GlooType](../version.proto.sk#glootype) |  |  |
 
 
 
@@ -140,18 +149,30 @@ weight: 5
 
 
 ```yaml
-"clientVersion": .gloo.solo.io.ClientVersion
-"serverVersion": .gloo.solo.io.ServerVersion
+"client": .gloo.solo.io.ClientVersion
+"server": .gloo.solo.io.ServerVersion
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `clientVersion` | [.gloo.solo.io.ClientVersion](../version.proto.sk#clientversion) |  |  |
-| `serverVersion` | [.gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) |  |  |
+| `client` | [.gloo.solo.io.ClientVersion](../version.proto.sk#clientversion) |  |  |
+| `server` | [.gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) |  |  |
 
 
 
+  
+### GlooType
+
+Description: 
+
+| Name | Description |
+| ----- | ----------- | 
+| Unknown |  |
+| Gateway |  |
+| Enterprise |  |
+| Ingress |  |
+| Knative |  |
 
 
 <!-- Start of HubSpot Embed Code -->
