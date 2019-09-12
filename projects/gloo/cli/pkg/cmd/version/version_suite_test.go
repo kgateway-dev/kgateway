@@ -1,4 +1,4 @@
-package version_test
+package version
 
 import (
 	"testing"
@@ -7,7 +7,12 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var (
+	T *testing.T
+)
+
 func TestVersion(t *testing.T) {
+	T = t
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Version Suite")
 }

@@ -8,3 +8,6 @@ changelog:
 - type: NEW_FEATURE
   description: Modify glooctl version command to output both client and server versions
   issueLink: https://github.com/solo-io/gloo/issues/722
+- type: FIX
+  description: for both glooctl add and glooctl create, a --dry-run will output a kube-yaml file unless the --output flag overrides it.
+  issueLink: https://github.com/solo-io/gloo/issues/907
