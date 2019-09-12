@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/go-utils/stringutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -13,6 +14,12 @@ type ServerVersion interface {
 }
 
 type kube struct{}
+
+var (
+	KnativeUniqueContainers = []string{"knative-external-proxy", "knative-internal-proxy"}
+	IngressUniqueContainers = []string{"ingress"}
+	GlooEUniqueContainers = []string{"gloo-ee"}
+)
 
 func NewKube() *kube {
 	return &kube{}
@@ -38,6 +45,7 @@ func (k *kube) Get(opts *options.Options) (*version.ServerVersion, error) {
 	}
 
 	var kubeContainerList []*version.Kubernetes_Container
+	var foundGlooE, foundIngress, foundKnative bool
 	for _, v := range deployments.Items {
 		for _, container := range v.Spec.Template.Spec.Containers {
 			containerInfo := parseContainerString(container)
@@ -46,8 +54,29 @@ func (k *kube) Get(opts *options.Options) (*version.ServerVersion, error) {
 				Name:     containerInfo.Repository,
 				Registry: containerInfo.Registry,
 			})
+			switch {
+			case stringutils.ContainsString(containerInfo.Repository, KnativeUniqueContainers):
+				foundKnative = true
+			case stringutils.ContainsString(containerInfo.Repository, IngressUniqueContainers):
+				foundIngress = true
+			case stringutils.ContainsString(containerInfo.Repository, GlooEUniqueContainers):
+				foundGlooE = true
+			}
 		}
 	}
+
+	var deploymentType version.GlooType
+	switch {
+	case foundGlooE:
+		deploymentType = version.GlooType_Enterprise
+	case foundKnative:
+		deploymentType = version.GlooType_Knative
+	case foundIngress:
+		deploymentType = version.GlooType_Knative
+	default:
+		deploymentType = version.GlooType_Gateway
+	}
+
 	if len(kubeContainerList) == 0 {
 		return nil, nil
 	}
@@ -56,7 +85,7 @@ func (k *kube) Get(opts *options.Options) (*version.ServerVersion, error) {
 			Kubernetes: &version.Kubernetes{
 				Containers: kubeContainerList,
 				Namespace:  opts.Metadata.Namespace,
-				Type:       version.GlooType_Gateway,
+				Type:       deploymentType,
 			},
 		},
 	}

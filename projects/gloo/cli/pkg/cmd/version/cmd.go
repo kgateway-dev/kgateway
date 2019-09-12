@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/spf13/cobra"
 	kubev1 "k8s.io/api/core/v1"
@@ -25,16 +26,24 @@ const (
 	undefinedServer = "\nServer: version undefined, could not find any version of gloo running"
 )
 
+var (
+	NoNamespaceAllError = errors.New("single namespace must be specified, cannot be namespace all for version command")
+)
+
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     constants.VERSION_COMMAND.Use,
 		Aliases: constants.VERSION_COMMAND.Aliases,
 		Short:   constants.VERSION_COMMAND.Short,
 		Long:    constants.VERSION_COMMAND.Long,
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.PersistentFlags().Changed(flagutils.OutputFlag) {
 				opts.Top.Output = printers.JSON
 			}
+			if opts.Metadata.Namespace == "" {
+				return NoNamespaceAllError
+			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			vrs, err := getVersion(NewKube(), opts)
@@ -118,13 +127,19 @@ func printVersion(opts *options.Options, vrs *version.Version) error {
 			return nil
 		}
 		table := tablewriter.NewWriter(os.Stdout)
-		headers, content := []string{"Namespace"}, []string{kubeSrvVrs.GetNamespace()}
-		for _, container := range kubeSrvVrs.GetContainers() {
-			headers = append(headers, container.GetName())
-			content = append(content, container.GetTag())
+		headers := []string{"Namespace", "Deployment-Type", "Containers"}
+		content := []string{kubeSrvVrs.GetNamespace(), kubeSrvVrs.GetType().String()}
+		var rows [][]string
+		for i, container := range kubeSrvVrs.GetContainers() {
+			name := fmt.Sprintf("%s: %s", container.GetName(), container.GetTag())
+			if i == 0 {
+				rows = append(rows, append(content, name))
+			} else {
+				rows = append(rows, []string{"", "", name})
+			}
 		}
 		table.SetHeader(headers)
-		table.Append(content)
+		table.AppendBulk(rows)
 		table.SetAlignment(tablewriter.ALIGN_LEFT)
 		fmt.Println("Server:")
 		table.Render()
