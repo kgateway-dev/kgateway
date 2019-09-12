@@ -17,7 +17,6 @@ const (
 	TABLE OutputType = iota
 	YAML
 	JSON
-	JSON_FMT
 	KUBE_YAML
 	WIDE
 )
@@ -37,7 +36,6 @@ var typeProperties = []outputTypeProperties{
 	{YAML, []string{"yaml", "yml"}, false},
 	{KUBE_YAML, []string{"kube-yaml"}, false},
 	{JSON, []string{"json"}, false},
-	{JSON_FMT, []string{"jsonfmt"}, false},
 	{WIDE, []string{"wide"}, true},
 }
 
