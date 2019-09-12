@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    description: Update the UI to provide better errors during mutation attempts.
-    issueLink: https://github.com/solo-io/gloo/pull/1146
-    resolvesIssue: false

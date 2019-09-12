@@ -20,7 +20,6 @@ type Config struct {
 	Ingress        *Ingress                `json:"ingress,omitempty"`
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
-	ApiServer      *ApiServer              `json:"apiServer,omitempty"`
 	AccessLogger   *AccessLogger           `json:"accessLogger,omitempty"`
 }
 
@@ -245,52 +244,4 @@ type IngressProxyConfigMap struct {
 
 type K8s struct {
 	ClusterName string `json:"clusterName" desc:"cluster name to use when referencing services."`
-}
-
-type ApiServer struct {
-	Enable bool `json:"enable,omitempty" desc:"If set, will deploy a read-only UI for Gloo"`
-	// used for gating config (like license secret) that are only relevant to the enterprise UI
-	Enterprise bool                 `json:"enterprise,omitempty"`
-	Deployment *ApiServerDeployment `json:"deployment,omitempty"`
-	Service    *ApiServerService    `json:"service,omitempty"`
-	ConfigMap  *ApiServerConfigMap  `json:"configMap,omitempty"`
-	EnableBeta bool                 `json:"enableBeta,omitempty"`
-}
-
-type ApiServerDeployment struct {
-	Server *ApiServerServerDeployment `json:"server,omitempty"`
-	Ui     *ApiServerUiDeployment     `json:"ui,omitempty"`
-	Envoy  *ApiServerEnvoyDeployment  `json:"envoy,omitempty"`
-	*DeploymentSpec
-}
-
-type ApiServerServerDeployment struct {
-	GrpcPort uint   `json:"grpcPort"`
-	OAuth    *OAuth `json:"oauth,omitempty"`
-	Image    *Image `json:"image"`
-	*DeploymentSpec
-}
-
-type ApiServerEnvoyDeployment struct {
-	Image *Image `json:"image"`
-	*DeploymentSpec
-}
-
-type ApiServerUiDeployment struct {
-	StaticPort uint   `json:"staticPort"`
-	Image      *Image `json:"image,omitempty"`
-	*DeploymentSpec
-}
-
-type ApiServerService struct {
-	Name string `json:"name"`
-}
-
-type ApiServerConfigMap struct {
-	Name string `json:"name"`
-}
-
-type OAuth struct {
-	Server string `json:"server"`
-	Client string `json:"client"`
 }
