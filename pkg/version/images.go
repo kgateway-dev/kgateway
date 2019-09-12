@@ -2,7 +2,7 @@ package version
 
 const (
 	// This value may change with new Gloo releases
-	UiImageTag = "0.18.28"
+	UiImageTag = "0.18.29"
 
 	// The following values should not change frequently
 	UiImageRegistry        = "quay.io/solo-io"
