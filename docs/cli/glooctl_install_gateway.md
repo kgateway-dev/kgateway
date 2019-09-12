@@ -35,4 +35,5 @@ glooctl install gateway [flags]
 ### SEE ALSO
 
 * [glooctl install](../glooctl_install)	 - install gloo on different platforms
+* [glooctl install gateway enterprise](../glooctl_install_gateway_enterprise)	 - install the Gloo Enterprise Gateway on kubernetes
 

@@ -26,7 +26,6 @@ choose which version of Gloo to install.
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl install enterprise](../glooctl_install_enterprise)	 - install the Gloo Enterprise Gateway on kubernetes
 * [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Gateway on kubernetes
 * [glooctl install ingress](../glooctl_install_ingress)	 - install the Gloo Ingress Controller on kubernetes
 * [glooctl install knative](../glooctl_install_knative)	 - install Knative with Gloo on kubernetes
