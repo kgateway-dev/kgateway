@@ -18,117 +18,15 @@ var _ = Describe("RBAC Test", func() {
 	}
 
 	Context("implementation-agnostic permissions", func() {
-		var permissions *ServiceAccountPermissions
-		BeforeEach(func() {
-			prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
-			permissions = &ServiceAccountPermissions{}
-
-			// Apiserver
-			permissions.AddExpectedPermission(
-				"gloo-system.apiserver-ui",
-				"gloo-system",
-				[]string{""},
-				[]string{"pods", "services", "configmaps", "namespaces", "secrets"},
-				[]string{"get", "list", "watch"})
-			permissions.AddExpectedPermission(
-				"gloo-system.apiserver-ui",
-				"gloo-system",
-				[]string{"apiextensions.k8s.io"},
-				[]string{"customresourcedefinitions"},
-				[]string{"get"})
-			permissions.AddExpectedPermission(
-				"gloo-system.apiserver-ui",
-				"gloo-system",
-				[]string{"gloo.solo.io"},
-				[]string{"artifacts", "settings", "upstreams", "upstreamgroups", "proxies", "secrets"},
-				[]string{"get", "list", "watch"})
-			permissions.AddExpectedPermission(
-				"gloo-system.apiserver-ui",
-				"gloo-system",
-				[]string{"gateway.solo.io.v2"},
-				[]string{"gateways"},
-				[]string{"get", "list", "watch"})
-			permissions.AddExpectedPermission(
-				"gloo-system.apiserver-ui",
-				"gloo-system",
-				[]string{"gateway.solo.io"},
-				[]string{"virtualservices"},
-				[]string{"get", "list", "watch"})
-
-			// Gateway
-			permissions.AddExpectedPermission(
-				"gloo-system.gateway",
-				"gloo-system",
-				[]string{"gloo.solo.io"},
-				[]string{"settings"},
-				[]string{"get", "list", "watch", "create"})
-			permissions.AddExpectedPermission(
-				"gloo-system.gateway",
-				"gloo-system",
-				[]string{"gloo.solo.io"},
-				[]string{"proxies"},
-				[]string{"get", "list", "watch", "create", "update", "delete"})
-			permissions.AddExpectedPermission(
-				"gloo-system.gateway",
-				"gloo-system",
-				[]string{"gateway.solo.io.v2"},
-				[]string{"gateways"},
-				[]string{"get", "list", "watch", "create", "update"})
-			permissions.AddExpectedPermission(
-				"gloo-system.gateway",
-				"gloo-system",
-				[]string{"gateway.solo.io"},
-				[]string{"gateways"},
-				[]string{"get", "list", "watch", "create", "update"})
-			permissions.AddExpectedPermission(
-				"gloo-system.gateway",
-				"gloo-system",
-				[]string{"gateway.solo.io"},
-				[]string{"virtualservices", "routetables"},
-				[]string{"get", "list", "watch", "update"})
-
-			// Gloo
-			permissions.AddExpectedPermission(
-				"gloo-system.gloo",
-				"gloo-system",
-				[]string{""},
-				[]string{"pods", "services", "configmaps", "namespaces", "secrets", "endpoints"},
-				[]string{"get", "list", "watch"})
-			permissions.AddExpectedPermission(
-				"gloo-system.gloo",
-				"gloo-system",
-				[]string{"gloo.solo.io"},
-				[]string{"upstreams", "upstreamgroups", "proxies"},
-				[]string{"get", "list", "watch", "update"})
-			permissions.AddExpectedPermission(
-				"gloo-system.gloo",
-				"gloo-system",
-				[]string{"gloo.solo.io"},
-				[]string{"settings"},
-				[]string{"get", "list", "watch", "create"})
-
-			// Discovery
-			permissions.AddExpectedPermission(
-				"gloo-system.discovery",
-				"gloo-system",
-				[]string{""},
-				[]string{"pods", "services", "configmaps", "namespaces", "secrets", "endpoints"},
-				[]string{"get", "list", "watch"})
-			permissions.AddExpectedPermission(
-				"gloo-system.discovery",
-				"gloo-system",
-				[]string{"gloo.solo.io"},
-				[]string{"settings"},
-				[]string{"get", "list", "watch", "create"})
-			permissions.AddExpectedPermission(
-				"gloo-system.discovery",
-				"gloo-system",
-				[]string{"gloo.solo.io"},
-				[]string{"upstream"},
-				[]string{"get", "list", "watch", "create", "update", "delete"})
+		It("correctly assigns permissions for single-namespace gloo", func() {
+			prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=true")
+			permissions := GetServiceAccountPermissions("gloo-system")
+			testManifest.ExpectPermissions(permissions)
 		})
 
-		It("are correctly configured for all service accounts", func() {
+		It("correctly assigns permissions for cluster-scoped gloo", func() {
+			prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
+			permissions := GetServiceAccountPermissions("")
 			testManifest.ExpectPermissions(permissions)
 		})
 	})
