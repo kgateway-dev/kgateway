@@ -55,7 +55,7 @@ var _ = Describe("version command", func() {
 			buf = &bytes.Buffer{}
 
 			sv = &version.ServerVersion{
-				Type:      version.GlooType_Gateway,
+				Type: version.GlooType_Gateway,
 				VersionType: &version.ServerVersion_Kubernetes{
 					Kubernetes: &version.Kubernetes{
 						Containers: []*version.Kubernetes_Container{

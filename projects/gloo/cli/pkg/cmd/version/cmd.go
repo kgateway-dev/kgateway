@@ -119,7 +119,6 @@ func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
 			return nil
 		}
 
-
 		table := tablewriter.NewWriter(w)
 		headers := []string{"Namespace", "Deployment-Type", "Containers"}
 		var rows [][]string
