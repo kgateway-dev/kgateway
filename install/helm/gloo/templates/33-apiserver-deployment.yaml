@@ -19,10 +19,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      app: gloo
       gloo: {{ .Values.apiServer.service.name }}
   template:
     metadata:
       labels:
+        app: gloo
         gloo: {{ .Values.apiServer.service.name }}
       {{- if .Values.apiServer.deployment.stats }}
       annotations:
