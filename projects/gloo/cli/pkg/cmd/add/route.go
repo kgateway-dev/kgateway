@@ -140,8 +140,8 @@ func matcherFromInput(input options.RouteMatchers) (*v1.Matcher, error) {
 			Regex: true,
 		})
 	}
-	sort.SliceStable(m.Headers, func(i, j int) bool {
-		return m.Headers[i].Name < m.Headers[j].Name
+	sort.SliceStable(m.QueryParameters, func(i, j int) bool {
+		return m.QueryParameters[i].Name < m.QueryParameters[j].Name
 	})
 	if len(input.Methods) > 0 {
 		m.Methods = input.Methods
