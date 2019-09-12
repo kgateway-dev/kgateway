@@ -121,11 +121,12 @@ type Create struct {
 }
 
 type RouteMatchers struct {
-	PathPrefix    string
-	PathExact     string
-	PathRegex     string
-	Methods       []string
-	HeaderMatcher InputMapStringString
+	PathPrefix            string
+	PathExact             string
+	PathRegex             string
+	Methods               []string
+	HeaderMatcher         InputMapStringString
+	QueryParameterMatcher InputMapStringString
 }
 
 type Add struct {
