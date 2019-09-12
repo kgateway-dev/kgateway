@@ -36,7 +36,6 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddInstallFlags(pflags, &opts.Install)
 	flagutils.AddEnterpriseInstallFlags(pflags, &opts.Install)
 	return cmd
 }

@@ -93,6 +93,7 @@ weight: 5
 "containers": []gloo.solo.io.Kubernetes.Container
 "namespace": string
 "type": .gloo.solo.io.GlooType
+"enterprise": bool
 
 ```
 
@@ -101,6 +102,7 @@ weight: 5
 | `containers` | [[]gloo.solo.io.Kubernetes.Container](../version.proto.sk#container) |  |  |
 | `namespace` | `string` |  |  |
 | `type` | [.gloo.solo.io.GlooType](../version.proto.sk#glootype) |  |  |
+| `enterprise` | `bool` |  |  |
 
 
 
@@ -170,7 +172,6 @@ Description:
 | ----- | ----------- | 
 | Unknown |  |
 | Gateway |  |
-| Enterprise |  |
 | Ingress |  |
 | Knative |  |
 

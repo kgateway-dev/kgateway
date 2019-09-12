@@ -76,7 +76,7 @@ var _ = Describe("version command", func() {
 			}
 		})
 
-		var tableOutput = `Client: version: undefined
+		var osTableOutput = `Client: version: undefined
 +-------------+-----------------+-----------------+
 |  NAMESPACE  | DEPLOYMENT-TYPE |   CONTAINERS    |
 +-------------+-----------------+-----------------+
@@ -85,7 +85,16 @@ var _ = Describe("version command", func() {
 +-------------+-----------------+-----------------+
 `
 
-		var yamlOutput = `Client: 
+		var eTableOutput = `Client: version: undefined
++-------------+--------------------+-----------------+
+|  NAMESPACE  |  DEPLOYMENT-TYPE   |   CONTAINERS    |
++-------------+--------------------+-----------------+
+| gloo-system | Gateway Enterprise | gloo: v0.0.1    |
+|             |                    | gateway: v0.0.2 |
++-------------+--------------------+-----------------+
+`
+
+		var osYamlOutput = `Client: 
 version: undefined
 
 Server: 
@@ -102,30 +111,77 @@ kubernetes:
 
 `
 
-		var jsonOutput = `Client: 
+		var eYamlOutput = `Client: 
+version: undefined
+
+Server: 
+kubernetes:
+  containers:
+  - Name: gloo
+    Registry: quay.io/solo-io
+    Tag: v0.0.1
+  - Name: gateway
+    Registry: quay.io/solo-io
+    Tag: v0.0.2
+  enterprise: true
+  namespace: gloo-system
+  type: Gateway
+
+`
+
+		var osJsonOutput = `Client: 
 {"version":"undefined"}
 Server: 
 {"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system","type":"Gateway"}}
 `
+
+		var eJsonOutput = `Client: 
+{"version":"undefined"}
+Server: 
+{"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system","type":"Gateway","enterprise":true}}
+`
+
 		tests := []struct {
 			name       string
 			result     string
 			outputType printers.OutputType
+			enterprise bool
 		}{
 			{
 				name:       "yaml",
-				result:     yamlOutput,
+				result:     osYamlOutput,
 				outputType: printers.YAML,
+				enterprise: false,
 			},
 			{
 				name:       "json",
-				result:     jsonOutput,
+				result:     osJsonOutput,
 				outputType: printers.JSON,
+				enterprise: false,
 			},
 			{
 				name:       "table",
-				result:     tableOutput,
+				result:     osTableOutput,
 				outputType: printers.TABLE,
+				enterprise: false,
+			},
+			{
+				name:       "enterprise yaml",
+				result:     eYamlOutput,
+				outputType: printers.YAML,
+				enterprise: true,
+			},
+			{
+				name:       "enterprise json",
+				result:     eJsonOutput,
+				outputType: printers.JSON,
+				enterprise: true,
+			},
+			{
+				name:       "enterprise table",
+				result:     eTableOutput,
+				outputType: printers.TABLE,
+				enterprise: true,
 			},
 		}
 
@@ -138,6 +194,8 @@ Server:
 							Output: test.outputType,
 						},
 					}
+					kube := sv.GetKubernetes()
+					kube.Enterprise = test.enterprise
 					client.EXPECT().Get(opts).Times(1).Return(sv, nil)
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())

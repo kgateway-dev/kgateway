@@ -73,8 +73,6 @@ func (k *kube) Get(opts *options.Options) (*version.ServerVersion, error) {
 
 	var deploymentType version.GlooType
 	switch {
-	case foundGlooE:
-		deploymentType = version.GlooType_Enterprise
 	case foundKnative:
 		deploymentType = version.GlooType_Knative
 	case foundIngress:
@@ -92,6 +90,7 @@ func (k *kube) Get(opts *options.Options) (*version.ServerVersion, error) {
 				Containers: kubeContainerList,
 				Namespace:  opts.Metadata.Namespace,
 				Type:       deploymentType,
+				Enterprise: foundGlooE,
 			},
 		},
 	}

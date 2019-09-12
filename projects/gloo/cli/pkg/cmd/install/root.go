@@ -19,7 +19,6 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 	}
 	cmd.AddCommand(
 		gatewayCmd(opts),
-		enterpriseCmd(opts),
 		ingressCmd(opts),
 		knativeCmd(opts),
 	)

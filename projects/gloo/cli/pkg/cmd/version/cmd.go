@@ -114,7 +114,7 @@ func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
 		}
 		table := tablewriter.NewWriter(w)
 		headers := []string{"Namespace", "Deployment-Type", "Containers"}
-		content := []string{kubeSrvVrs.GetNamespace(), kubeSrvVrs.GetType().String()}
+		content := []string{kubeSrvVrs.GetNamespace(), getDistributionName(kubeSrvVrs.GetType().String(), kubeSrvVrs.GetEnterprise())}
 		var rows [][]string
 		for i, container := range kubeSrvVrs.GetContainers() {
 			name := fmt.Sprintf("%s: %s", container.GetName(), container.GetTag())
@@ -131,6 +131,13 @@ func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
 		table.Render()
 	}
 	return nil
+}
+
+func getDistributionName(name string, enterprise bool) string {
+	if enterprise {
+		return name + " Enterprise"
+	}
+	return name
 }
 
 func GetJson(pb proto.Message) []byte {

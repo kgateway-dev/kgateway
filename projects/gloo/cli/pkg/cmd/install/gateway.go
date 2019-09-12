@@ -22,7 +22,11 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 			return nil
 		},
 	}
+
 	pflags := cmd.PersistentFlags()
 	flagutils.AddInstallFlags(pflags, &opts.Install)
+
+	cmd.AddCommand(enterpriseCmd(opts))
+
 	return cmd
 }

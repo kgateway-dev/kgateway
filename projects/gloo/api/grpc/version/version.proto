@@ -16,9 +16,8 @@ message VersionResponse {
 enum GlooType {
     Unknown = 0;
     Gateway = 1;
-    Enterprise = 2;
-    Ingress = 3;
-    Knative = 4;
+    Ingress = 2;
+    Knative = 3;
 }
 
 message ServerVersion {
@@ -40,6 +39,8 @@ message Kubernetes {
     string namespace = 2;
 
     GlooType type = 3;
+
+    bool enterprise = 4;
 }
 
 message ClientVersion {

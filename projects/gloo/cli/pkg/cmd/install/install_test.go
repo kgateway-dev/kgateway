@@ -23,12 +23,12 @@ var _ = Describe("Install", func() {
 	const licenseKey = "--license-key=fake-license-key"
 
 	It("shouldn't get errors for enterprise dry run", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install enterprise --file %s --dry-run %s", file, licenseKey))
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s", file, licenseKey))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("shouldn't get errors for enterprise upgrade dry run", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install enterprise --file %s --dry-run --upgrade", file))
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run --upgrade", file))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
