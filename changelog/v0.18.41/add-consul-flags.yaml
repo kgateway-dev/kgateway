@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: add back the virtualservice create consul related flags
-    issueLink: https://github.com/solo-io/gloo/issues/1172
