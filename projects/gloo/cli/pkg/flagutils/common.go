@@ -14,6 +14,7 @@ const (
 	OutputFlag = "output"
 	FileFlag   = "file"
 	DryRunFlag = "dry-run"
+	KubeConfigFlag = "kubeconfig"
 )
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
@@ -27,6 +28,10 @@ func AddFileFlag(set *pflag.FlagSet, strptr *string) {
 func AddDryRunFlag(set *pflag.FlagSet, dryRun *bool) {
 	set.BoolVarP(dryRun, DryRunFlag, "", false, "print kubernetes-formatted yaml "+
 		"rather than creating or updating a resource")
+}
+
+func AddKubeConfigFlag(set *pflag.FlagSet, kubeConfig *string) {
+	set.StringVarP(kubeConfig, KubeConfigFlag, "", "", "kubeconfig to use, if not standard one")
 }
 
 func AddConsulConfigFlags(set *pflag.FlagSet, consul *options.Consul) {

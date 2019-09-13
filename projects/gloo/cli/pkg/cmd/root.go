@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/route"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/upgrade"
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
@@ -44,6 +45,9 @@ func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, option
 			return nil
 		},
 	}
+
+	flagutils.AddKubeConfigFlag(app.PersistentFlags(), &opts.Top.KubeConfig)
+	app.PersistentFlags()
 
 	app.SetVersionTemplate(versionTemplate)
 	// Complete additional passed in setup
