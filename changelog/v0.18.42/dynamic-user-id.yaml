@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow container user ids to be dynamically set by the cluster
+    issueLink: https://github.com/solo-io/customers/issues/5
