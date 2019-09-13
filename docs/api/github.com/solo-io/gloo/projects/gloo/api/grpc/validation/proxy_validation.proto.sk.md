@@ -16,6 +16,8 @@ weight: 5
 - [Error](#error)
 - [Type](#type)
 - [HttpListenerReport](#httplistenerreport)
+- [Error](#error)
+- [Type](#type)
 - [VirtualHostReport](#virtualhostreport)
 - [Error](#error)
 - [Type](#type)
@@ -111,7 +113,7 @@ error types for top-level listener config
 | `NameNotUniqueError` |  |
 | `BindPortNotUniqueError` |  |
 | `SSLConfigError` |  |
-| `PluginError` |  |
+| `ProcessingError` |  |
 
 
 
@@ -122,15 +124,47 @@ error types for top-level listener config
 
 
 ```yaml
-"errors": []string
+"errors": []gloo.solo.io.HttpListenerReport.Error
 "virtualHostReports": []gloo.solo.io.VirtualHostReport
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `errors` | `[]string` | errors that were detected on the top-level http listener plugins |  |
+| `errors` | [[]gloo.solo.io.HttpListenerReport.Error](../proxy_validation.proto.sk#error) |  |  |
 | `virtualHostReports` | [[]gloo.solo.io.VirtualHostReport](../proxy_validation.proto.sk#virtualhostreport) | report for nested virtual hosts |  |
+
+
+
+
+---
+### Error
+
+ 
+error types for top-level http listener config
+
+```yaml
+"type": .gloo.solo.io.HttpListenerReport.Error.Type
+"reason": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `type` | [.gloo.solo.io.HttpListenerReport.Error.Type](../proxy_validation.proto.sk#type) | the type of the error |  |
+| `reason` | `string` | any extra info as a string |  |
+
+
+
+
+---
+### Type
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `ProcessingError` |  |
 
 
 
@@ -183,7 +217,7 @@ error types for top-level virtual host config
 | ----- | ----------- | 
 | `NameNotUniqueError` |  |
 | `DomainsNotUniqueError` |  |
-| `PluginError` |  |
+| `ProcessingError` |  |
 
 
 
@@ -234,7 +268,7 @@ error types for the given route config
 | ----- | ----------- | 
 | `InvalidMatcherError` |  |
 | `InvalidDestinationError` |  |
-| `PluginError` |  |
+| `ProcessingError` |  |
 
 
 
@@ -288,7 +322,7 @@ error types for top-level tcp listener config
 | `NameNotUniqueError` |  |
 | `BindPortNotUniqueError` |  |
 | `SSLConfigError` |  |
-| `PluginError` |  |
+| `ProcessingError` |  |
 
 
 
@@ -339,7 +373,7 @@ error types for tcp host config
 | ----- | ----------- | 
 | `NameNotUniqueError` |  |
 | `InvalidDestinationError` |  |
-| `PluginError` |  |
+| `ProcessingError` |  |
 
 
 

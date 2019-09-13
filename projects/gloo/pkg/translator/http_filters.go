@@ -10,7 +10,7 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -67,7 +67,7 @@ func (t *translator) computeHttpFilters(params plugins.Params, listener *v1.Http
 		}
 		stagedFilters, err := filterPlugin.HttpFilters(params, listener)
 		if err != nil {
-			validation.AppendHTTPListenerError(httpListenerReport, err.Error())
+			validation.AppendHTTPListenerError(httpListenerReport, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.HttpFilter == nil {

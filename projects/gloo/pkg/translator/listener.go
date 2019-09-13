@@ -40,7 +40,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 			result, err := listenerPlugin.ProcessListenerFilterChain(params, listener)
 			if err != nil {
 				validation.AppendListenerError(listenerReport,
-					validationapi.ListenerReport_Error_PluginError,
+					validationapi.ListenerReport_Error_ProcessingError,
 					err.Error())
 				continue
 			}
@@ -73,7 +73,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 		}
 		if err := listenerPlugin.ProcessListener(params, listener, out); err != nil {
 			validation.AppendListenerError(listenerReport,
-				validationapi.ListenerReport_Error_PluginError,
+				validationapi.ListenerReport_Error_ProcessingError,
 				err.Error())
 		}
 	}
@@ -92,7 +92,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 		stagedFilters, err := filterPlugin.ProcessListenerFilter(params, listener)
 		if err != nil {
 			validation.AppendListenerError(listenerReport,
-				validationapi.ListenerReport_Error_PluginError,
+				validationapi.ListenerReport_Error_ProcessingError,
 				err.Error())
 		}
 		for _, listenerFilter := range stagedFilters {

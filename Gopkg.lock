@@ -2609,6 +2609,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
+    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/vault",

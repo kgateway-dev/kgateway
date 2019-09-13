@@ -96,9 +96,9 @@ type setupSyncer struct {
 	extensions                     *Extensions
 	runFunc                        RunFunc
 	makeGrpcServer                 func(ctx context.Context) *grpc.Server
-	previousXdsAddr                string
+	previousXdsAddr                net.Addr
 	cancelPreviousXdsServer        context.CancelFunc
-	previousValidationAddr         string
+	previousValidationAddr         net.Addr
 	cancelPreviousValidationServer context.CancelFunc
 	controlPlane                   bootstrap.ControlPlane
 	validationServer               bootstrap.ValidationServer
@@ -160,9 +160,18 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			xdsAddr = DefaultXdsBindAddr
 		}
 	}
+	xdsTcpAddress, err := getAddr(xdsAddr)
+	if err != nil {
+		return errors.Wrapf(err, "parsing xds addr")
+	}
+
 	validationAddr := settings.GetGloo().GetValidationBindAddr()
 	if validationAddr == "" {
 		validationAddr = DefaultValidationBindAddr
+	}
+	validationTcpAddress, err := getAddr(validationAddr)
+	if err != nil {
+		return errors.Wrapf(err, "parsing validation addr")
 	}
 
 	refreshRate, err := types.DurationFromProto(settings.RefreshRate)
@@ -179,29 +188,26 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	emptyControlPlane := bootstrap.ControlPlane{}
 	emptyValidationServer := bootstrap.ValidationServer{}
 
-	if xdsAddr != s.previousXdsAddr {
+	if xdsTcpAddress != s.previousXdsAddr {
 		if s.cancelPreviousXdsServer != nil {
 			s.cancelPreviousXdsServer()
 			s.cancelPreviousXdsServer = nil
 		}
 		s.controlPlane = emptyControlPlane
+		s.previousXdsAddr = xdsTcpAddress
 	}
 
-	if validationAddr != s.previousValidationAddr {
+	if validationTcpAddress != s.previousValidationAddr {
 		if s.cancelPreviousValidationServer != nil {
 			s.cancelPreviousValidationServer()
 			s.cancelPreviousValidationServer = nil
 		}
 		s.validationServer = emptyValidationServer
+		s.previousValidationAddr = validationTcpAddress
 	}
 
 	// initialize the control plane context in this block either on the first loop, or if bind addr changed
 	if s.controlPlane == emptyControlPlane {
-		xdsTcpAddress, err := getAddr(xdsAddr)
-		if err != nil {
-			return errors.Wrapf(err, "parsing xds addr")
-		}
-
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
 		var callbacks xdsserver.Callbacks
@@ -214,11 +220,6 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	// initialize the validation server context in this block either on the first loop, or if bind addr changed
 	if s.validationServer == emptyValidationServer {
-		validationTcpAddress, err := getAddr(validationAddr)
-		if err != nil {
-			return errors.Wrapf(err, "parsing validation addr")
-		}
-
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
 		s.validationServer = NewValidationServer(s.makeGrpcServer(ctx), validationTcpAddress, true)

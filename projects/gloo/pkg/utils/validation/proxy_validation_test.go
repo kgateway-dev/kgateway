@@ -94,7 +94,10 @@ var _ = Describe("validation utils", func() {
 				},
 			)
 			httpListenerReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport
-			httpListenerReport.Errors = append(httpListenerReport.Errors, "bad http plugin")
+			httpListenerReport.Errors = append(httpListenerReport.Errors, &validation.HttpListenerReport_Error{
+				Type:   validation.HttpListenerReport_Error_ProcessingError,
+				Reason: "bad http plugin",
+			})
 
 			virtualHostReport := rpt.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[2]
 

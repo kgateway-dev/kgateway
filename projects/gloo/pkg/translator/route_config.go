@@ -118,7 +118,7 @@ func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtua
 		if err := virtualHostPlugin.ProcessVirtualHost(params, virtualHost, &out); err != nil {
 			validation.AppendVirtualHostError(
 				vhostReport,
-				validationapi.VirtualHostReport_Error_PluginError,
+				validationapi.VirtualHostReport_Error_ProcessingError,
 				fmt.Sprintf("invalid virtual host [%s]: %v", virtualHost.Name, err.Error()),
 			)
 		}
@@ -191,7 +191,7 @@ func (t *translator) setAction(params plugins.RouteParams, routeReport *validati
 			}
 			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
 				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_PluginError,
+					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
 				)
 			}
@@ -209,7 +209,7 @@ func (t *translator) setAction(params plugins.RouteParams, routeReport *validati
 			}
 			if err := routePlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
 				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_PluginError,
+					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
 				)
 			}
@@ -309,7 +309,7 @@ func (t *translator) setWeightedClusters(params plugins.RouteParams, multiDest *
 			}
 			if err := weightedDestinationPlugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
 				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_PluginError,
+					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
 				)
 			}
@@ -532,7 +532,7 @@ func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
 
 	err = validateMultiDestination(upstreams, upstreamGroup.Destinations)
 	if err != nil {
-		return errors.Wrap(err, "invalid destination in weighted destination in upstream group")
+		return err
 	}
 	return nil
 }

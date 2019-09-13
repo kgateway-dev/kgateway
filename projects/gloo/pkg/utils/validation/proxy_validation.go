@@ -69,7 +69,7 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 		case *validation.ListenerReport_HttpListenerReport:
 			httpListener := listenerType.HttpListenerReport
 			for _, errReport := range httpListener.GetErrors() {
-				appendErr("HTTP Plugin", "plugin", errReport)
+				appendErr("HTTP Plugin", "plugin", errReport.Reason)
 			}
 			for _, vhReport := range httpListener.GetVirtualHostReports() {
 				for _, errReport := range vhReport.GetErrors() {
@@ -112,8 +112,11 @@ func AppendVirtualHostError(virtualHostReport *validation.VirtualHostReport, err
 	})
 }
 
-func AppendHTTPListenerError(httpListenerReport *validation.HttpListenerReport, reason string) {
-	httpListenerReport.Errors = append(httpListenerReport.Errors, reason)
+func AppendHTTPListenerError(httpListenerReport *validation.HttpListenerReport, errType validation.HttpListenerReport_Error_Type, reason string) {
+	httpListenerReport.Errors = append(httpListenerReport.Errors, &validation.HttpListenerReport_Error{
+		Type:   errType,
+		Reason: reason,
+	})
 }
 
 func AppendRouteError(routeReport *validation.RouteReport, errType validation.RouteReport_Error_Type, reason string) {
