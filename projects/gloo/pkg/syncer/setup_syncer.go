@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
+
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -273,6 +275,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	authConfigClient, err := extauth.NewAuthConfigClient(opts.AuthConfigs)
+	if err != nil {
+		return err
+	}
+
 	// Register grpc endpoints to the grpc server
 	xdsHasher := xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
@@ -302,7 +309,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	errs := make(chan error)
 
-	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient)
+	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
 	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
 	apiSync := NewTranslatorSyncer(translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, allPlugins...), opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
 	apiEventLoop := v1.NewApiEventLoop(apiCache, apiSync)
@@ -422,6 +429,12 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
+
+	authConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, extauth.AuthConfigCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
 		Upstreams:         upstreamFactory,
 		KubeServiceClient: kubeServiceClient,
@@ -429,6 +442,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		UpstreamGroups:    upstreamGroupFactory,
 		Secrets:           secretFactory,
 		Artifacts:         artifactFactory,
+		AuthConfigs:       authConfigFactory,
 		KubeCoreCache:     kubeCoreCache,
 	}, nil
 }

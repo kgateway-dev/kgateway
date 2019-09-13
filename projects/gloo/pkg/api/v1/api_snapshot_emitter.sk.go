@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	auth_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -55,14 +57,15 @@ type ApiEmitter interface {
 	UpstreamGroup() UpstreamGroupClient
 	Secret() SecretClient
 	Upstream() UpstreamClient
+	AuthConfig() auth_gloo_solo_io.AuthConfigClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
-func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient) ApiEmitter {
-	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, make(chan struct{}))
+func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient auth_gloo_solo_io.AuthConfigClient) ApiEmitter {
+	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient auth_gloo_solo_io.AuthConfigClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
 		artifact:      artifactClient,
 		endpoint:      endpointClient,
@@ -70,6 +73,7 @@ func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient Endpoin
 		upstreamGroup: upstreamGroupClient,
 		secret:        secretClient,
 		upstream:      upstreamClient,
+		authConfig:    authConfigClient,
 		forceEmit:     emit,
 	}
 }
@@ -82,6 +86,7 @@ type apiEmitter struct {
 	upstreamGroup UpstreamGroupClient
 	secret        SecretClient
 	upstream      UpstreamClient
+	authConfig    auth_gloo_solo_io.AuthConfigClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -101,6 +106,9 @@ func (c *apiEmitter) Register() error {
 		return err
 	}
 	if err := c.upstream.Register(); err != nil {
+		return err
+	}
+	if err := c.authConfig.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -128,6 +136,10 @@ func (c *apiEmitter) Secret() SecretClient {
 
 func (c *apiEmitter) Upstream() UpstreamClient {
 	return c.upstream
+}
+
+func (c *apiEmitter) AuthConfig() auth_gloo_solo_io.AuthConfigClient {
+	return c.authConfig
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -194,6 +206,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	upstreamChan := make(chan upstreamListWithNamespace)
 
 	var initialUpstreamList UpstreamList
+	/* Create channel for AuthConfig */
+	type authConfigListWithNamespace struct {
+		list      auth_gloo_solo_io.AuthConfigList
+		namespace string
+	}
+	authConfigChan := make(chan authConfigListWithNamespace)
+
+	var initialAuthConfigList auth_gloo_solo_io.AuthConfigList
 
 	currentSnapshot := ApiSnapshot{}
 
@@ -306,6 +326,24 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
 		}(namespace)
+		/* Setup namespaced watch for AuthConfig */
+		{
+			authConfigs, err := c.authConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial AuthConfig list")
+			}
+			initialAuthConfigList = append(initialAuthConfigList, authConfigs...)
+		}
+		authConfigNamespacesChan, authConfigErrs, err := c.authConfig.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting AuthConfig watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, authConfigErrs, namespace+"-authConfigs")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -349,6 +387,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 						return
 					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
 					}
+				case authConfigList := <-authConfigNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case authConfigChan <- authConfigListWithNamespace{list: authConfigList, namespace: namespace}:
+					}
 				}
 			}
 		}(namespace)
@@ -365,6 +409,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	currentSnapshot.Secrets = initialSecretList.Sort()
 	/* Initialize snapshot for Upstreams */
 	currentSnapshot.Upstreams = initialUpstreamList.Sort()
+	/* Initialize snapshot for AuthConfigs */
+	currentSnapshot.AuthConfigs = initialAuthConfigList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
@@ -395,6 +441,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		upstreamGroupsByNamespace := make(map[string]UpstreamGroupList)
 		secretsByNamespace := make(map[string]SecretList)
 		upstreamsByNamespace := make(map[string]UpstreamList)
+		authConfigsByNamespace := make(map[string]auth_gloo_solo_io.AuthConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -482,6 +529,18 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					upstreamList = append(upstreamList, upstreams...)
 				}
 				currentSnapshot.Upstreams = upstreamList.Sort()
+			case authConfigNamespacedList := <-authConfigChan:
+				record()
+
+				namespace := authConfigNamespacedList.namespace
+
+				// merge lists by namespace
+				authConfigsByNamespace[namespace] = authConfigNamespacedList.list
+				var authConfigList auth_gloo_solo_io.AuthConfigList
+				for _, authConfigs := range authConfigsByNamespace {
+					authConfigList = append(authConfigList, authConfigs...)
+				}
+				currentSnapshot.AuthConfigs = authConfigList.Sort()
 			}
 		}
 	}()

@@ -25,6 +25,7 @@ type Opts struct {
 	Proxies           factory.ResourceClientFactory
 	Secrets           factory.ResourceClientFactory
 	Artifacts         factory.ResourceClientFactory
+	AuthConfigs       factory.ResourceClientFactory
 	BindAddr          net.Addr
 	KubeClient        kubernetes.Interface
 	ConsulWatcher     consul.ConsulWatcher

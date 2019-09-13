@@ -1,5 +1,5 @@
 syntax = "proto3";
-package extauth.plugins.gloo.solo.io;
+package auth.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth";
 
@@ -8,6 +8,9 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
@@ -238,6 +241,17 @@ message Ldap {
 // (i.a. oauth, opa) will be translated, e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig` for the
 // final config format that will be included in the extauth snapshot.
 message AuthConfig {
+
+  option (core.solo.io.resource).short_name = "ac";
+  option (core.solo.io.resource).plural_name = "auth_configs";
+
+  // Status indicates the validation status of this resource.
+  // Status is read-only by clients, and set by gloo during validation
+  core.solo.io.Status status = 10 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+
+  // Metadata contains the object metadata for this resource
+  core.solo.io.Metadata metadata = 11 [(gogoproto.nullable) = false];
+
   oneof auth_config {
     BasicAuth basic_auth = 1;
     OAuth oauth = 2;
@@ -249,6 +263,12 @@ message AuthConfig {
   }
 }
 
+// Asdasd
+message ExtAuthExtension {
+  repeated core.solo.io.ResourceRef configs = 1;
+}
+
+// Deprecated
 message VhostExtension {
   oneof auth_config {
     // Deprecated: use `configs` field instead.
