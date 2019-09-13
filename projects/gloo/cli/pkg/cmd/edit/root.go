@@ -55,6 +55,7 @@ func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.
 	cmd.AddCommand(route.RootCmd(opts, optionsFunc...))
 	cmd.AddCommand(virtualservice.RootCmd(opts, optionsFunc...))
 	cmd.AddCommand(upstream.RootCmd(opts, optionsFunc...))
+	cmd.AddCommand(virtualservice.RateLimitConfig(opts, optionsFunc...))
 	return cmd
 }
 

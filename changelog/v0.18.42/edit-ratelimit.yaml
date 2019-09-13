@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Change `edit virtualservice ratelimit` command to `edit ratelimit`.
+  issueLink: https://github.com/solo-io/gloo/issues/1094
