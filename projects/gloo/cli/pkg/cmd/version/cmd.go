@@ -55,12 +55,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func getVersion(c ServerVersion, opts *options.Options) (*version.Version, error) {
+func getVersion(sv ServerVersion, opts *options.Options) (*version.Version, error) {
 	clientVersion, err := getClientVersion()
 	if err != nil {
 		return nil, err
 	}
-	serverVersion, err := c.Get(opts)
+	serverVersion, err := sv.Get(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +77,8 @@ func getClientVersion() (*version.ClientVersion, error) {
 	return vrs, nil
 }
 
-func printVersion(c ServerVersion, w io.Writer, opts *options.Options) error {
-	vrs, err := getVersion(c, opts)
+func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
+	vrs, err := getVersion(sv, opts)
 	if err != nil {
 		return err
 	}

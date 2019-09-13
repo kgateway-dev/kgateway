@@ -9,12 +9,11 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/errors"
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/spf13/cobra"
 	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -40,7 +39,6 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-// Entry point for all three GLoo installation commands
 func installGlooE(opts *options.Options) error {
 	if !opts.Install.DryRun {
 		fmt.Printf("Starting Gloo Enterprise installation...\n")
@@ -93,20 +91,16 @@ func GetEnterpriseInstallSpec(opts *options.Options) (*GlooInstallSpec, error) {
 		ProductName:       "glooe",
 		ValueFileName:     "",
 		ExtraValues:       extraValues,
-		ExcludeResources:  getExcludeExistingPVCs(opts.Install.Namespace),
+		ExcludeResources:  pvcExists(opts.Install.Namespace),
 		UserValueFileName: opts.Install.HelmChartValues,
 	}, nil
 }
 
 const PersistentVolumeClaim = "PersistentVolumeClaim"
 
-func getExcludeExistingPVCs(namespace string) install.ResourceMatcherFunc {
+func pvcExists(namespace string) install.ResourceMatcherFunc {
 	return func(resource install.ResourceType) (bool, error) {
-		cfg, err := kubeutils.GetConfig("", "")
-		if err != nil {
-			return false, err
-		}
-		kubeClient, err := kubernetes.NewForConfig(cfg)
+		kubeClient, err := helpers.KubeClient()
 		if err != nil {
 			return false, err
 		}

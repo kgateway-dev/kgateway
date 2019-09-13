@@ -11,8 +11,6 @@ weight: 5
 #### Types:
 
 
-- [VersionRequest](#versionrequest)
-- [VersionResponse](#versionresponse)
 - [ServerVersion](#serverversion)
 - [Kubernetes](#kubernetes)
 - [Container](#container)
@@ -31,40 +29,6 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/grpc/version/version.proto)
 
-
-
-
-
----
-### VersionRequest
-
- 
-TODO: implement for version rpc
-
-```yaml
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-
-
-
-
----
-### VersionResponse
-
- 
-currently unused. will be usd for version rpc
-
-```yaml
-"version": .gloo.solo.io.Version
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `version` | [.gloo.solo.io.Version](../version.proto.sk#version) |  |  |
 
 
 
@@ -161,7 +125,7 @@ currently unused. will be usd for version rpc
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `client` | [.gloo.solo.io.ClientVersion](../version.proto.sk#clientversion) |  |  |
-| `server` | [[]gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) | This field is an array of server versions because although there can only be 1 client version. There can potentially be many instances of gloo running on a single cluster |  |
+| `server` | [[]gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) | This field is an array of server versions because although there can only be 1 client version, there can potentially be many instances of gloo running on a single cluster |  |
 
 
 
