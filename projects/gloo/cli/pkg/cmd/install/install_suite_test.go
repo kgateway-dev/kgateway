@@ -14,7 +14,6 @@ import (
 
 func TestInstall(t *testing.T) {
 	RegisterFailHandler(Fail)
-	gotestutils.RegisterPreFailHandler(gotestutils.PrintTrimmedStack)
 	gotestutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Install Suite")
 }
