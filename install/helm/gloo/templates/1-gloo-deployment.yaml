@@ -46,7 +46,7 @@ spec:
           runAsNonRoot: true
           {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
           {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
-          {{- /* the user id may be set quite high- openshift wants a userids that may get printed as scientific notation */}}
+          {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" .Values.gloo.deployment.runAsUser -}}
           {{- end }}
