@@ -40,7 +40,6 @@ type Top struct {
 type Install struct {
 	DryRun            bool
 	Upgrade           bool
-	Enterprise        bool
 	Namespace         string
 	HelmChartOverride string
 	HelmChartValues   string

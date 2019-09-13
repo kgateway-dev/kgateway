@@ -3,9 +3,8 @@ package cmd
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/del"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit"
@@ -14,15 +13,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/remove"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/route"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/upgrade"
+	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
 )
-
-var versionTemplate = `{{with .Name}}{{printf "%s community edition " .}}{{end}}{{printf "version %s" .Version}}
-`
 
 func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 
@@ -31,7 +28,6 @@ func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, option
 		Short: "CLI for Gloo",
 		Long: `glooctl is the unified CLI for Gloo.
 	Find more information at https://solo.io`,
-		Version: version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// persistent pre run is be called after flag parsing
 			// since this is the root of the cli app, it will be called regardless of the particular subcommand used
@@ -46,8 +42,6 @@ func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, option
 
 	// Complete additional passed in setup
 	cliutils.ApplyOptions(app, optionsFunc)
-
-	app.SetVersionTemplate(versionTemplate)
 
 	return app
 }
@@ -77,6 +71,7 @@ func GlooCli(version string) *cobra.Command {
 			upgrade.RootCmd(opts),
 			gateway.RootCmd(opts),
 			check.RootCmd(opts),
+			versioncmd.RootCmd(opts),
 			completionCmd(),
 		)
 	}

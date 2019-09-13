@@ -1,7 +1,7 @@
 package version
 
 const (
-	EnterpriseTag = "0.18.23"
+	EnterpriseTag = "0.18.29"
 
 	// This value may change with new Gloo releases
 	UiImageTag = EnterpriseTag

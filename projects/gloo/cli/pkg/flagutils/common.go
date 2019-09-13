@@ -12,6 +12,8 @@ import (
 
 const (
 	OutputFlag = "output"
+	FileFlag   = "file"
+	DryRunFlag = "dry-run"
 )
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
@@ -19,11 +21,11 @@ func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 }
 
 func AddFileFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVarP(strptr, "file", "f", "", "file to be read or written to")
+	set.StringVarP(strptr, FileFlag, "f", "", "file to be read or written to")
 }
 
 func AddDryRunFlag(set *pflag.FlagSet, dryRun *bool) {
-	set.BoolVarP(dryRun, "dry-run", "", false, "print kubernetes-formatted yaml "+
+	set.BoolVarP(dryRun, DryRunFlag, "", false, "print kubernetes-formatted yaml "+
 		"rather than creating or updating a resource")
 }
 
