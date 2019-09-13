@@ -209,7 +209,7 @@ func pluginsFromInput(input options.RoutePlugins) (*v1.RoutePlugins, error) {
 
 func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, error) {
 	switch {
-	case input.Aws.LogicalName != "":
+	case input.Aws.LogicalName != "" && input.Aws.LogicalName != surveyutils.NoneOfTheAbove:
 		return &v1.DestinationSpec{
 			DestinationType: &v1.DestinationSpec_Aws{
 				Aws: &aws.DestinationSpec{
@@ -218,7 +218,7 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 				},
 			},
 		}, nil
-	case input.Rest.FunctionName != "":
+	case input.Rest.FunctionName != "" && input.Rest.FunctionName != surveyutils.NoneOfTheAbove:
 		return &v1.DestinationSpec{
 			DestinationType: &v1.DestinationSpec_Rest{
 				Rest: &rest.DestinationSpec{
