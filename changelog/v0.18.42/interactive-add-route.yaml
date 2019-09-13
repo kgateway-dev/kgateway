@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Allow you to skip choosing a function when adding routes interactively.
+  issueLink: https://github.com/solo-io/gloo/issues/470
