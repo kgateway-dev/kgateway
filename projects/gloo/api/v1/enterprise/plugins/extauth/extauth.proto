@@ -334,6 +334,9 @@ message ExtAuthConfig {
   // @solo-kit:resource.name
   string auth_config_ref_name = 1;
 
+  // Deprecated: use auth_config_ref_name instead
+  string vhost = 2;
+
   message OAuthConfig {
     // your client id as registered with the issuer
     string client_id = 1;

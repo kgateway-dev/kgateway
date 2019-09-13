@@ -584,6 +584,7 @@ is requested (meaning that all the polled connections are in use), the connectio
 
 ```yaml
 "authConfigRefName": string
+"vhost": string
 "oauth": .auth.glooe.solo.io.ExtAuthConfig.OAuthConfig
 "basicAuth": .auth.glooe.solo.io.BasicAuth
 "apiKeyAuth": .auth.glooe.solo.io.ExtAuthConfig.ApiKeyAuthConfig
@@ -595,6 +596,7 @@ is requested (meaning that all the polled connections are in use), the connectio
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `authConfigRefName` | `string` |  |  |
+| `vhost` | `string` | Deprecated: use auth_config_ref_name instead |  |
 | `oauth` | [.auth.glooe.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk#oauthconfig) |  |  |
 | `basicAuth` | [.auth.glooe.solo.io.BasicAuth](../extauth.proto.sk#basicauth) |  |  |
 | `apiKeyAuth` | [.auth.glooe.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk#apikeyauthconfig) |  |  |
