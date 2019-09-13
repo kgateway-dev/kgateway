@@ -37,7 +37,7 @@ func (r *AuthConfig) Hash() uint64 {
 	metaCopy.ResourceVersion = ""
 	return hashutils.HashAll(
 		metaCopy,
-		r.AuthConfig,
+		r.Configs,
 	)
 }
 
@@ -157,7 +157,7 @@ func init() {
 var (
 	AuthConfigGVK = schema.GroupVersionKind{
 		Version: "extauth",
-		Group:   "extauth.plugins.gloo.solo.io",
+		Group:   "auth.glooe.solo.io",
 		Kind:    "AuthConfig",
 	}
 )

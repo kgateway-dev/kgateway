@@ -5,7 +5,7 @@ package v1
 import (
 	"fmt"
 
-	auth_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
+	auth_glooe_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
 
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
@@ -18,7 +18,7 @@ type ApiSnapshot struct {
 	UpstreamGroups UpstreamGroupList
 	Secrets        SecretList
 	Upstreams      UpstreamList
-	AuthConfigs    auth_gloo_solo_io.AuthConfigList
+	AuthConfigs    auth_glooe_solo_io.AuthConfigList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {

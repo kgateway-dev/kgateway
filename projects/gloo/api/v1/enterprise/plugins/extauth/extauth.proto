@@ -1,5 +1,5 @@
 syntax = "proto3";
-package auth.gloo.solo.io;
+package auth.glooe.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth";
 
@@ -16,6 +16,88 @@ import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
+
+
+// This is the user-facing auth configuration. When processed by Gloo, certain configuration types (i.a. oauth, opa)
+// will be translated, e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig` for the final config
+// format that will be included in the extauth snapshot.
+message AuthConfig {
+
+  option (core.solo.io.resource).short_name = "ac";
+  option (core.solo.io.resource).plural_name = "auth_configs";
+
+  // Status indicates the validation status of this resource.
+  // Status is read-only by clients, and set by gloo during validation
+  core.solo.io.Status status = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+
+  // Metadata contains the object metadata for this resource
+  core.solo.io.Metadata metadata = 2 [(gogoproto.nullable) = false];
+
+  message Config {
+    oneof auth_config {
+      BasicAuth basic_auth = 1;
+      OAuth oauth = 2;
+      CustomAuth custom_auth = 3;
+      ApiKeyAuth api_key_auth = 4;
+      AuthPlugin plugin_auth = 5;
+      OpaAuth opa_auth = 6;
+      Ldap ldap = 7;
+    }
+  }
+
+  repeated Config configs = 3;
+}
+
+// Auth configurations defined on virtual hosts and routes will be unmarshalled to this message.
+message ExtAuthExtension {
+  oneof spec {
+    //  Set to true to disable auth on the virtual host/route.
+    bool disable = 1;
+    // A reference to an AuthConfig.
+    core.solo.io.ResourceRef config_ref = 2;
+  }
+}
+
+// Deprecated: use ExtAuthExtension
+message VhostExtension {
+  // Deprecated: use `configs` field instead.
+  oneof auth_config {
+    // Deprecated: use `configs` field instead.
+    BasicAuth basic_auth = 1;
+    // Deprecated: use `configs` field instead.
+    OAuth oauth = 2;
+    // Deprecated: use `configs` field instead.
+    CustomAuth custom_auth = 3;
+    // Deprecated: use `configs` field instead.
+    ApiKeyAuth api_key_auth = 4;
+    // Deprecated: use `configs` field instead.
+    PluginAuth plugin_auth = 5;
+  }
+
+  message AuthConfig {
+    oneof auth_config {
+      BasicAuth basic_auth = 1;
+      OAuth oauth = 2;
+      CustomAuth custom_auth = 3;
+      ApiKeyAuth api_key_auth = 4;
+      AuthPlugin plugin_auth = 5;
+      OpaAuth opa_auth = 6;
+      Ldap ldap = 7;
+    }
+  }
+
+  // A chain of AuthN\AuthZ configurations which will be executed in the order they are specified. The first plugin to deny a request will
+  // cause a 403 response to be returned; any subsequent plugin in the chain will not be executed.
+  // The headers on the OkHttpResponse returned from a plugin in the chain will be added to the request that will be sent
+  // to the next one(s) according to the rules described here:
+  // https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-okhttpresponse
+  repeated AuthConfig configs = 6;
+}
+
+// Deprecated: use ExtAuthExtension
+message RouteExtension {
+  bool disable = 1;
+}
 
 message Settings {
   // The upstream to ask about auth decisions
@@ -65,25 +147,25 @@ message HttpService {
   string path_prefix = 1;
 
   message Request {
-  // These headers will be copied from the incoming request to the request going
-  // to the auth server. Note that in addition to the user's supplied matchers:
-  //
-  // 1. *Host*, *Method*, *Path* and *Content-Length* are automatically included to the list.
-  //
-  // 2. *Content-Length* will be set to 0 and the request to the authorization service will not have
-  // a message body.
+    // These headers will be copied from the incoming request to the request going
+    // to the auth server. Note that in addition to the user's supplied matchers:
+    //
+    // 1. *Host*, *Method*, *Path* and *Content-Length* are automatically included to the list.
+    //
+    // 2. *Content-Length* will be set to 0 and the request to the authorization service will not have
+    // a message body.
     repeated string allowed_headers = 1;
 
     // These headers that will be included to the request to authorization service. Note that
     // client request of the same key will be overridden.
-    map<string,string> headers_to_add = 2;
+    map<string, string> headers_to_add = 2;
   }
   Request request = 2;
 
   message Response {
-  // When this is set, authorization response headers that have a will be added to the original client request and sent to the upstream.
-  // Note that coexistent headers will be overridden.
-  repeated string allowed_upstream_headers = 1;
+    // When this is set, authorization response headers that have a will be added to the original client request and sent to the upstream.
+    // Note that coexistent headers will be overridden.
+    repeated string allowed_upstream_headers = 1;
 
     // When this. is set, authorization response headers that will be added to the client's response when auth request is denied.
     // Note that when this list is *not* set, all the authorization response headers, except *Authority
@@ -122,15 +204,15 @@ message PluginAuth {
 }
 
 message AuthPlugin {
-    // Name of the plugin
-    string name = 1;
-    // Name of the compiled plugin file. If not specified, GlooE will look for an ".so" file with same name as the plugin.
-    string plugin_file_name = 2;
-    // Name of the exported symbol that implements the plugin interface in the plugin.
-    // If not specified, defaults to the name of the plugin
-    string exported_symbol_name = 3;
+  // Name of the plugin
+  string name = 1;
+  // Name of the compiled plugin file. If not specified, GlooE will look for an ".so" file with same name as the plugin.
+  string plugin_file_name = 2;
+  // Name of the exported symbol that implements the plugin interface in the plugin.
+  // If not specified, defaults to the name of the plugin
+  string exported_symbol_name = 3;
 
-    google.protobuf.Struct config = 4;
+  google.protobuf.Struct config = 4;
 }
 
 message BasicAuth {
@@ -142,7 +224,7 @@ message BasicAuth {
       string hashed_password = 2;
     }
     map<string, SaltedHashedPassword> users = 2;
-    }
+  }
   Apr apr = 2;
 }
 
@@ -169,7 +251,9 @@ message OAuth {
   repeated string scopes = 6;
 }
 
-message OauthSecret { string client_secret = 1; }
+message OauthSecret {
+  string client_secret = 1;
+}
 
 message ApiKeyAuth {
   // identify all valid apikey secrets using the provided label selector.
@@ -233,65 +317,13 @@ message Ldap {
   // E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
   repeated string allowedGroups = 4;
 
+
+  // This is the identifier of the AuthConfig resource that this configuration is associated with.
+  // Any request to the external auth server includes an identifier that is matched against this field to determine
+  // which AuthConfig should be applied to it.
   // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
   ConnectionPool pool = 5;
 }
-
-// This message represents the user-facing auth configuration. When processed by Gloo, certain configuration types
-// (i.a. oauth, opa) will be translated, e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig` for the
-// final config format that will be included in the extauth snapshot.
-message AuthConfig {
-
-  option (core.solo.io.resource).short_name = "ac";
-  option (core.solo.io.resource).plural_name = "auth_configs";
-
-  // Status indicates the validation status of this resource.
-  // Status is read-only by clients, and set by gloo during validation
-  core.solo.io.Status status = 10 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
-
-  // Metadata contains the object metadata for this resource
-  core.solo.io.Metadata metadata = 11 [(gogoproto.nullable) = false];
-
-  oneof auth_config {
-    BasicAuth basic_auth = 1;
-    OAuth oauth = 2;
-    CustomAuth custom_auth = 3;
-    ApiKeyAuth api_key_auth = 4;
-    AuthPlugin plugin_auth = 5;
-    OpaAuth opa_auth = 6;
-    Ldap ldap = 7;
-  }
-}
-
-// Asdasd
-message ExtAuthExtension {
-  repeated core.solo.io.ResourceRef configs = 1;
-}
-
-// Deprecated
-message VhostExtension {
-  oneof auth_config {
-    // Deprecated: use `configs` field instead.
-    BasicAuth basic_auth = 1;
-    // Deprecated: use `configs` field instead.
-    OAuth oauth = 2;
-    // Deprecated: use `configs` field instead.
-    CustomAuth custom_auth = 3;
-    // Deprecated: use `configs` field instead.
-    ApiKeyAuth api_key_auth = 4;
-    // Deprecated: use `configs` field instead.
-    PluginAuth plugin_auth = 5;
-  }
-
-  // A chain of AuthN\AuthZ configurations which will be executed in the order they are specified. The first plugin to deny a request will
-  // cause a 403 response to be returned; any subsequent plugin in the chain will not be executed.
-  // The headers on the OkHttpResponse returned from a plugin in the chain will be added to the request that will be sent
-  // to the next one(s) according to the rules described here:
-  // https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-okhttpresponse
-  repeated AuthConfig configs = 6;
-}
-
-message RouteExtension { bool disable = 1; }
 
 /*
 @solo-kit:xds-service=ExtAuthDiscoveryService
@@ -300,7 +332,7 @@ message RouteExtension { bool disable = 1; }
 message ExtAuthConfig {
 
   // @solo-kit:resource.name
-  string vhost = 1;
+  string auth_config_ref_name = 1;
 
   message OAuthConfig {
     // your client id as registered with the issuer
@@ -349,7 +381,7 @@ message ExtAuthConfig {
     PluginAuth plugin_auth = 6;
   }
 
-  message AuthConfig {
+  message Config {
     oneof auth_config {
       OAuthConfig oauth = 3;
       BasicAuth basic_auth = 4;
@@ -360,21 +392,20 @@ message ExtAuthConfig {
     }
   }
 
-  repeated AuthConfig configs = 8;
+  repeated Config configs = 8;
 }
 
 /*
 @solo-kit:resource.xds-enabled
 */
 service ExtAuthDiscoveryService {
-  rpc StreamExtAuthConfig(stream envoy.api.v2.DiscoveryRequest)
-      returns (stream envoy.api.v2.DiscoveryResponse) {}
+  rpc StreamExtAuthConfig (stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+  }
 
-  rpc DeltaExtAuthConfig(stream envoy.api.v2.DeltaDiscoveryRequest)
-      returns (stream envoy.api.v2.DeltaDiscoveryResponse) {}
+  rpc DeltaExtAuthConfig (stream envoy.api.v2.DeltaDiscoveryRequest) returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+  }
 
-  rpc FetchExtAuthConfig(envoy.api.v2.DiscoveryRequest)
-      returns (envoy.api.v2.DiscoveryResponse) {
+  rpc FetchExtAuthConfig (envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
     option (google.api.http) = {
       post : "/v2/discovery:extauthconfig"
       body : "*"

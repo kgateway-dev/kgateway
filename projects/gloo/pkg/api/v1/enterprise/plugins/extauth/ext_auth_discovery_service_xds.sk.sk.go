@@ -19,7 +19,7 @@ import (
 
 // Type Definitions:
 
-const ExtAuthConfigType = cache.TypePrefix + "/extauth.plugins.gloo.solo.io.ExtAuthConfig"
+const ExtAuthConfigType = cache.TypePrefix + "/auth.glooe.solo.io.ExtAuthConfig"
 
 /* Defined a resource - to be used by snapshot */
 type ExtAuthConfigXdsResourceWrapper struct {
@@ -37,7 +37,7 @@ func NewExtAuthConfigXdsResourceWrapper(resourceProto *ExtAuthConfig) *ExtAuthCo
 }
 
 func (e *ExtAuthConfigXdsResourceWrapper) Self() cache.XdsResourceReference {
-	return cache.XdsResourceReference{Name: e.Resource.Vhost, Type: ExtAuthConfigType}
+	return cache.XdsResourceReference{Name: e.Resource.AuthConfigRefName, Type: ExtAuthConfigType}
 }
 
 func (e *ExtAuthConfigXdsResourceWrapper) ResourceProto() cache.ResourceProto {

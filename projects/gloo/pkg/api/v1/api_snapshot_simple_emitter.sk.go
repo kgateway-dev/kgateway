@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	auth_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
+	auth_glooe_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
 
 	"go.opencensus.io/stats"
 
@@ -97,7 +97,7 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					case *Upstream:
 						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
-					case *auth_gloo_solo_io.AuthConfig:
+					case *auth_glooe_solo_io.AuthConfig:
 						currentSnapshot.AuthConfigs = append(currentSnapshot.AuthConfigs, typed)
 					default:
 						select {
