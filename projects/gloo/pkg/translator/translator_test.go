@@ -301,7 +301,7 @@ var _ = Describe("Translator", func() {
 			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("InvalidMatcherError. Reason: no path specifier provided; Route Error: PluginError. Reason: missing path for grpc route"))
+			Expect(errs.Validate().Error()).To(ContainSubstring("InvalidMatcherError. Reason: no path specifier provided; Route Error: ProcessingError. Reason: missing path for grpc route"))
 
 			expectedReport := validationutils.MakeReport(proxy)
 			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
