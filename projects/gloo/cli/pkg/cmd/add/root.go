@@ -23,6 +23,9 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			if err := prerun.EnableConsulClients(opts.Add.Consul); err != nil {
 				return err
 			}
+			if err := prerun.HarmonizeDryRunAndOutputFormat(opts, cmd); err != nil {
+				return err
+			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

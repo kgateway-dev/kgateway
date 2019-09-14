@@ -3,11 +3,8 @@ package cmd
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/del"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit"
@@ -16,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/remove"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/route"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/upgrade"
+	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
@@ -33,12 +31,13 @@ func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, option
 		Short: "CLI for Gloo",
 		Long: `glooctl is the unified CLI for Gloo.
 	Find more information at https://solo.io`,
+		// deprecated in favor of version command
 		Version: version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// persistent pre run is be called after flag parsing
 			// since this is the root of the cli app, it will be called regardless of the particular subcommand used
 			for _, optFunc := range preRunFuncs {
-				if err := optFunc(opts); err != nil {
+				if err := optFunc(opts, cmd); err != nil {
 					return err
 				}
 			}
@@ -46,10 +45,9 @@ func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, option
 		},
 	}
 
+	app.SetVersionTemplate(versionTemplate)
 	// Complete additional passed in setup
 	cliutils.ApplyOptions(app, optionsFunc)
-
-	app.SetVersionTemplate(versionTemplate)
 
 	return app
 }
@@ -79,24 +77,14 @@ func GlooCli(version string) *cobra.Command {
 			upgrade.RootCmd(opts),
 			gateway.RootCmd(opts),
 			check.RootCmd(opts),
+			versioncmd.RootCmd(opts),
 			completionCmd(),
 		)
 	}
 
-	preRunFuncs := []PreRunFunc{
-		HarmonizeDryRunAndOutputFormat,
-	}
+	var preRunFuncs []PreRunFunc
 
 	return App(version, opts, preRunFuncs, optionsFunc)
 }
 
-type PreRunFunc func(*options.Options) error
-
-func HarmonizeDryRunAndOutputFormat(opts *options.Options) error {
-	// in order to allow table output by default, and meaningful dry runs we need to override the output default
-	// enforcing this in the PersistentPreRun saves us from having to do so in any new printers or output types
-	if opts.Create.DryRun && !opts.Top.Output.IsDryRunnable() {
-		opts.Top.Output = printers.DryRunFallbackOutputType
-	}
-	return nil
-}
+type PreRunFunc func(*options.Options, *cobra.Command) error

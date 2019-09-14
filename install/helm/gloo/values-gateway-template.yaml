@@ -21,6 +21,7 @@ gloo:
     xdsPort: 9977
     replicas: 1
     stats: true
+    runAsUser: 10101
 
 discovery:
   enabled: true
@@ -29,6 +30,7 @@ discovery:
       repository: discovery
     replicas: 1
     stats: true
+    runAsUser: 10101
 
 gateway:
   enabled: true
@@ -38,6 +40,7 @@ gateway:
       repository: gateway
     replicas: 1
     stats: true
+    runAsUser: 10101
   conversionJob:
     image:
       repository: gateway-conversion
@@ -55,6 +58,7 @@ gatewayProxies:
         repository: gloo-envoy-wrapper
       httpPort: 8080
       httpsPort: 8443
+      runAsUser: 10101
     service:
       type: LoadBalancer
       # clusterIP: None

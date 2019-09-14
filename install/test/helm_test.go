@@ -122,7 +122,7 @@ var _ = Describe("Helm Test", func() {
 
 				It("can create an access logging deployment/service", func() {
 					prepareMakefileFromValuesFile("install/test/val_access_logger.yaml")
-					container := GetContainerSpec("quay.io/solo-io", "access-logger", version, GetPodNamespaceEnvVar(), GetPodNameEnvVar(),
+					container := GetQuayContainerSpec("access-logger", version, GetPodNamespaceEnvVar(), GetPodNameEnvVar(),
 						v1.EnvVar{
 							Name:  "SERVICE_NAME",
 							Value: "AccessLog",

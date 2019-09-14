@@ -18,6 +18,8 @@ func AddRouteFlags(set *pflag.FlagSet, route *options.InputRoute) {
 		"the HTTP methods (GET, POST, etc.) to match on the request. if empty, all methods will match ")
 	set.StringSliceVarP(&route.Matcher.HeaderMatcher.Entries, "header", "d", []string{},
 		"headers to match on the request. values can be specified using regex strings")
+	set.StringSliceVarP(&route.Matcher.QueryParameterMatcher.Entries, "queryParameter", "q", []string{},
+		"query parameters to match on the request. values can be specified using regex strings")
 
 	set.StringVarP(&route.Destination.Upstream.Name, "dest-name", "u", "",
 		"name of the destination upstream for this route")

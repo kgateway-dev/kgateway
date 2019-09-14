@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 
 	. "github.com/onsi/ginkgo"
@@ -39,7 +41,7 @@ var _ = Describe("Regression", func() {
 	BeforeEach(func() {
 		opts = &options.Options{}
 		preRunFuncs := []cmd.PreRunFunc{
-			cmd.HarmonizeDryRunAndOutputFormat,
+			prerun.HarmonizeDryRunAndOutputFormat,
 		}
 		app = cmd.App("0.1.0", opts, preRunFuncs)
 		output = &bytes.Buffer{}
