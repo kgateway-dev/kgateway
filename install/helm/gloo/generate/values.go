@@ -105,9 +105,11 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	Image   *Image `json:"image,omitempty"`
-	XdsPort int    `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
-	Stats   bool   `json:"stats" desc:"enable prometheus stats"`
+	Image          *Image  `json:"image,omitempty"`
+	XdsPort        int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
+	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	*DeploymentSpec
 }
 
@@ -118,8 +120,10 @@ type Discovery struct {
 }
 
 type DiscoveryDeployment struct {
-	Image *Image `json:"image,omitempty"`
-	Stats bool   `json:"stats" desc:"enable prometheus stats"`
+	Image          *Image  `json:"image,omitempty"`
+	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
+	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	*DeploymentSpec
 }
 
@@ -137,8 +141,10 @@ type ServiceAccount struct {
 }
 
 type GatewayDeployment struct {
-	Image *Image `json:"image,omitempty"`
-	Stats bool   `json:"stats" desc:"enable prometheus stats"`
+	Image          *Image  `json:"image,omitempty"`
+	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
+	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	*DeploymentSpec
 }
 
@@ -184,6 +190,8 @@ type GatewayProxyPodTemplate struct {
 	Resources        *ResourceRequirements `json:"resources"`
 	DisableNetBind   bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
 	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user`
+	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser        float64               `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 }
 
 type GatewayProxyService struct {

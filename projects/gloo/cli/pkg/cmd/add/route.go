@@ -133,6 +133,16 @@ func matcherFromInput(input options.RouteMatchers) (*v1.Matcher, error) {
 	default:
 		return nil, errors.Errorf("must provide path prefix, path exact, or path regex for route matcher")
 	}
+	for k, v := range input.QueryParameterMatcher.MustMap() {
+		m.QueryParameters = append(m.QueryParameters, &v1.QueryParameterMatcher{
+			Name:  k,
+			Value: v,
+			Regex: true,
+		})
+	}
+	sort.SliceStable(m.QueryParameters, func(i, j int) bool {
+		return m.QueryParameters[i].Name < m.QueryParameters[j].Name
+	})
 	if len(input.Methods) > 0 {
 		m.Methods = input.Methods
 	}

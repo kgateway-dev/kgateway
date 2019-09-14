@@ -38,4 +38,34 @@ var _ = Describe("Routes", func() {
 		Expect(ug.GetName()).To(Equal("petstore"))
 		Expect(ug.GetNamespace()).To(Equal("default"))
 	})
+
+	It("should take in headers", func() {
+		err := testutils.Glooctl("add route --path-exact /sample-route-a --dest-name default-petstore-8080 --header param1=value1,param2=,param3=")
+		Expect(err).NotTo(HaveOccurred())
+
+		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		Expect(vs.Metadata.Name).To(Equal("default"))
+		parameters := vs.VirtualHost.Routes[0].Matcher.Headers
+		Expect(parameters[0].Name).To(Equal("param1"))
+		Expect(parameters[0].Value).To(Equal("value1"))
+		Expect(parameters[1].Name).To(Equal("param2"))
+		Expect(parameters[1].Value).To(Equal(""))
+		Expect(parameters[2].Name).To(Equal("param3"))
+		Expect(parameters[2].Value).To(Equal(""))
+	})
+
+	It("should take in query parameters", func() {
+		err := testutils.Glooctl("add route --path-exact /sample-route-a --dest-name default-petstore-8080 --queryParameter param1=value1,param2=,param3=")
+		Expect(err).NotTo(HaveOccurred())
+
+		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		Expect(vs.Metadata.Name).To(Equal("default"))
+		parameters := vs.VirtualHost.Routes[0].Matcher.QueryParameters
+		Expect(parameters[0].Name).To(Equal("param1"))
+		Expect(parameters[0].Value).To(Equal("value1"))
+		Expect(parameters[1].Name).To(Equal("param2"))
+		Expect(parameters[1].Value).To(Equal(""))
+		Expect(parameters[2].Name).To(Equal("param3"))
+		Expect(parameters[2].Value).To(Equal(""))
+	})
 })

@@ -40,7 +40,9 @@ spec:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           runAsNonRoot: true
-          runAsUser: 10101
+          {{- if not .Values.discovery.deployment.floatingUserId }}
+          runAsUser: {{ printf "%.0f" .Values.discovery.deployment.runAsUser -}}
+          {{- end }}
           capabilities:
             drop:
             - ALL

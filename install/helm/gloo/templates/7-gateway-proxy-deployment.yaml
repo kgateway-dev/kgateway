@@ -100,7 +100,9 @@ spec:
           allowPrivilegeEscalation: false
           {{- if $spec.podTemplate.runUnprivileged }}
           runAsNonRoot: true
-          runAsUser: 10101
+          {{- if not $spec.podTemplate.floatingUserId }}
+          runAsUser: {{ printf "%.0f" $spec.podTemplate.runAsUser -}}
+          {{- end }}
           {{- end}}
           capabilities:
             drop:

@@ -34,6 +34,7 @@ glooctl add route [flags]
   -r, --path-regex string                 regex matcher for route. note: only one of path-exact, path-regex, or path-prefix should be set
       --prefix-rewrite string             rewrite the matched portion of HTTP requests with this prefix.
                                           note that this will be overridden if your routes point to function destinations
+  -q, --queryParameter strings            query parameters to match on the request. values can be specified using regex strings
   -f, --rest-function-name string         name of the REST function to invoke with this route. use if destination has a REST service spec
       --rest-parameters strings           Parameters for the rest function that are to be read off of incoming request headers. format specified as follows: 'header_name=extractor_string' where header_name is the HTTP2 equivalent header (':path' for HTTP 1 path).
                                           

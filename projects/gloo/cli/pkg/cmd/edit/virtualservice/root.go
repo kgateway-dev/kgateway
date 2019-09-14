@@ -46,6 +46,7 @@ func RootCmd(opts *options.EditOptions, optionsFunc ...cliutils.OptionsFunc) *co
 
 	addEditVirtualServiceOptions(cmd.Flags(), optsExt)
 	cliutils.ApplyOptions(cmd, optionsFunc)
+	cmd.AddCommand(RateLimitConfig(opts, optionsFunc...))
 	return cmd
 }
 
