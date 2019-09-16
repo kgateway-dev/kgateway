@@ -23,6 +23,20 @@ type validationServer struct {
 	translator     translator.Translator
 }
 
+func (s *validationServer) ValidateProxy(ctx context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
+	s.l.RLock()
+	snapCopy := s.latestSnapshot.Clone()
+	s.l.RUnlock()
+
+	params := plugins.Params{Ctx: ctx, Snapshot: &snapCopy}
+
+	_, _, report, err := s.translator.Translate(params, req.GetProxy())
+	if err != nil {
+		return nil, err
+	}
+	return &validation.ProxyValidationServiceResponse{ProxyReport: report}, nil
+}
+
 func NewValidationServer(translator translator.Translator) ValidationServer {
 	return &validationServer{translator: translator}
 }
@@ -33,20 +47,6 @@ func (s *validationServer) Sync(_ context.Context, snap *v1.ApiSnapshot) error {
 	s.latestSnapshot = &snapCopy
 	s.l.Unlock()
 	return nil
-}
-
-func (s *validationServer) ValidateProxy(ctx context.Context, proxy *v1.Proxy) (*validation.ProxyReport, error) {
-	s.l.RLock()
-	snapCopy := s.latestSnapshot.Clone()
-	s.l.RUnlock()
-
-	params := plugins.Params{Ctx: ctx, Snapshot: &snapCopy}
-
-	_, _, report, err := s.translator.Translate(params, proxy)
-	if err != nil {
-		return nil, err
-	}
-	return report, nil
 }
 
 func (s *validationServer) Register(grpcServer *grpc.Server) {
