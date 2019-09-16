@@ -92,17 +92,20 @@ func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) s
 	return s.Setup
 }
 
+type grpcServer struct {
+	addr   net.Addr
+	cancel context.CancelFunc
+}
+
 type setupSyncer struct {
-	extensions                     *Extensions
-	runFunc                        RunFunc
-	makeGrpcServer                 func(ctx context.Context) *grpc.Server
-	previousXdsAddr                net.Addr
-	cancelPreviousXdsServer        context.CancelFunc
-	previousValidationAddr         net.Addr
-	cancelPreviousValidationServer context.CancelFunc
-	controlPlane                   bootstrap.ControlPlane
-	validationServer               bootstrap.ValidationServer
-	callbacks                      xdsserver.Callbacks
+	extensions               *Extensions
+	runFunc                  RunFunc
+	makeGrpcServer           func(ctx context.Context) *grpc.Server
+	previousXdsServer        grpcServer
+	previousValidationServer grpcServer
+	controlPlane             bootstrap.ControlPlane
+	validationServer         bootstrap.ValidationServer
+	callbacks                xdsserver.Callbacks
 }
 
 func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
@@ -188,22 +191,22 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	emptyControlPlane := bootstrap.ControlPlane{}
 	emptyValidationServer := bootstrap.ValidationServer{}
 
-	if xdsTcpAddress != s.previousXdsAddr {
-		if s.cancelPreviousXdsServer != nil {
-			s.cancelPreviousXdsServer()
-			s.cancelPreviousXdsServer = nil
+	if xdsTcpAddress != s.previousXdsServer.addr {
+		if s.previousXdsServer.cancel != nil {
+			s.previousXdsServer.cancel()
+			s.previousXdsServer.cancel = nil
 		}
 		s.controlPlane = emptyControlPlane
-		s.previousXdsAddr = xdsTcpAddress
+		s.previousXdsServer.addr = xdsTcpAddress
 	}
 
-	if validationTcpAddress != s.previousValidationAddr {
-		if s.cancelPreviousValidationServer != nil {
-			s.cancelPreviousValidationServer()
-			s.cancelPreviousValidationServer = nil
+	if validationTcpAddress != s.previousValidationServer.addr {
+		if s.previousValidationServer.cancel != nil {
+			s.previousValidationServer.cancel()
+			s.previousValidationServer.cancel = nil
 		}
 		s.validationServer = emptyValidationServer
-		s.previousValidationAddr = validationTcpAddress
+		s.previousValidationServer.addr = validationTcpAddress
 	}
 
 	// initialize the control plane context in this block either on the first loop, or if bind addr changed
@@ -215,7 +218,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			callbacks = s.extensions.XdsCallbacks
 		}
 		s.controlPlane = NewControlPlane(ctx, s.makeGrpcServer(ctx), xdsTcpAddress, callbacks, true)
-		s.cancelPreviousXdsServer = cancel
+		s.previousXdsServer.cancel = cancel
 	}
 
 	// initialize the validation server context in this block either on the first loop, or if bind addr changed
@@ -223,7 +226,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
 		s.validationServer = NewValidationServer(s.makeGrpcServer(ctx), validationTcpAddress, true)
-		s.cancelPreviousValidationServer = cancel
+		s.previousValidationServer.cancel = cancel
 	}
 
 	consulClient, err := bootstrap.ConsulClientForSettings(settings)
