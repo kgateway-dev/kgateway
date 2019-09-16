@@ -166,6 +166,6 @@ var _ = Describe("Validation Server", func() {
 		_ = s.Sync(context.TODO(), params.Snapshot)
 		rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(rpt).To(Equal(validation.MakeReport(proxy)))
+		Expect(rpt).To(Equal(&validationgrpc.ProxyValidationServiceResponse{ProxyReport: validation.MakeReport(proxy)}))
 	})
 })
