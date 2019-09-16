@@ -25,6 +25,7 @@ Let gloo know the location of the rate limit server. This is a Gloo Enterprise f
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
   -i, --interactive                use interactive mode
+      --kubeconfig string          kubeconfig to use, if not standard one
       --name string                name of the resource to read or write
   -n, --namespace string           namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType          output format: (yaml, json, table, kube-yaml, wide) (default table)

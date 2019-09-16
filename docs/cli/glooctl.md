@@ -14,8 +14,9 @@ glooctl is the unified CLI for Gloo.
 ### Options
 
 ```
-  -h, --help          help for glooctl
-  -i, --interactive   use interactive mode
+  -h, --help                help for glooctl
+  -i, --interactive         use interactive mode
+      --kubeconfig string   kubeconfig to use, if not standard one
 ```
 
 ### SEE ALSO

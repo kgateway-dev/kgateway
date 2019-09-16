@@ -87,7 +87,6 @@ func GlooCli(version string) *cobra.Command {
 		)
 	}
 
-
 	preRunFuncs := []PreRunFunc{
 		prerun.SetKubeConfigEnv,
 	}
@@ -96,5 +95,3 @@ func GlooCli(version string) *cobra.Command {
 }
 
 type PreRunFunc func(*options.Options, *cobra.Command) error
-
-
