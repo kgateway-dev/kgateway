@@ -13,10 +13,14 @@ import (
 )
 
 var _ = Describe("route merge util", func() {
-
 	Context("delegating with path prefix /", func() {
-		It("prepends nothing", func() {
-			routeTables := v1.RouteTableList{
+		var (
+			routeTables v1.RouteTableList
+			vs          *v1.VirtualService
+		)
+
+		BeforeEach(func() {
+			routeTables = v1.RouteTableList{
 				{
 					Metadata: core.Metadata{Name: "leaf"},
 					Routes: []*v1.Route{
@@ -50,7 +54,7 @@ var _ = Describe("route merge util", func() {
 			ref := routeTables[len(routeTables)-1].Metadata.Ref()
 
 			// create a vs to point to the last route table
-			vs := defaults.DefaultVirtualService("a", "b")
+			vs = defaults.DefaultVirtualService("a", "b")
 			vs.VirtualHost.Routes = []*v1.Route{{
 				Matcher: &gloov1.Matcher{
 					PathSpecifier: &gloov1.Matcher_Prefix{
@@ -61,6 +65,41 @@ var _ = Describe("route merge util", func() {
 					DelegateAction: &ref,
 				},
 			}}
+
+		})
+
+		It("handles /paths-with-slashes/ correctly", func() {
+			routeTables[2].Routes[0].Matcher.PathSpecifier.(*gloov1.Matcher_Prefix).Prefix = "/some/thing/"
+
+			resourceErrs := reporter.ResourceErrors{}
+
+			routes, err := convertRoutes(vs, routeTables, resourceErrs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resourceErrs.Validate()).NotTo(HaveOccurred())
+			Expect(routes).To(HaveLen(1))
+			Expect(routes[0].Matcher).To(Equal(&gloov1.Matcher{
+				PathSpecifier: &gloov1.Matcher_Exact{
+					Exact: "/some/thing/exact",
+				},
+			}))
+		})
+		It("handles /paths-with-slash correctly", func() {
+			routeTables[2].Routes[0].Matcher.PathSpecifier.(*gloov1.Matcher_Prefix).Prefix = "/some/thing"
+
+			resourceErrs := reporter.ResourceErrors{}
+
+			routes, err := convertRoutes(vs, routeTables, resourceErrs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resourceErrs.Validate()).NotTo(HaveOccurred())
+			Expect(routes).To(HaveLen(1))
+			Expect(routes[0].Matcher).To(Equal(&gloov1.Matcher{
+				PathSpecifier: &gloov1.Matcher_Exact{
+					Exact: "/some/thing/exact",
+				},
+			}))
+		})
+
+		It("prepends nothing", func() {
 
 			resourceErrs := reporter.ResourceErrors{}
 
