@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/upgrade"
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
@@ -86,9 +87,14 @@ func GlooCli(version string) *cobra.Command {
 		)
 	}
 
-	var preRunFuncs []PreRunFunc
+
+	preRunFuncs := []PreRunFunc{
+		prerun.SetKubeConfigEnv,
+	}
 
 	return App(version, opts, preRunFuncs, optionsFunc)
 }
 
 type PreRunFunc func(*options.Options, *cobra.Command) error
+
+
