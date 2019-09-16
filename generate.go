@@ -17,9 +17,10 @@ func main() {
 	log.Printf("starting generate")
 
 	generateOptions := cmd.GenerateOptions{
-		CustomCompileProtos: []string{"projects/gloo/api/grpc"},
 		SkipGenMocks:       true,
-		CustomImports:      nil,
+		CustomCompileProtos: []string{
+			"projects/gloo/api/grpc",
+		},
 		SkipGeneratedTests: true,
 		SkipDirs:           nil,
 		RelativeRoot:       "",

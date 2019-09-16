@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add gloo and gateway configuration options to settings
+    issueLink: https://github.com/solo-io/gloo/pull/1145
+  - type: NEW_FEATURE
+    description: add detailed proxy validation to gloo translator
+    issueLink: https://github.com/solo-io/gloo/pull/1165
+  - type: NEW_FEATURE
+    description: add proxy validation server to gloo
+    issueLink: https://github.com/solo-io/gloo/pull/1166

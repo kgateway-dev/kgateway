@@ -330,7 +330,7 @@ func (rv *routeVisitor) convertDelegateAction(sourceResource resources.InputReso
 	if prefix == "" {
 		return nil, missingPrefixErr
 	}
-	prefix = "/" + strings.Trim(prefix, "/")
+	prefix = strings.TrimSuffix("/"+strings.Trim(prefix, "/"), "/")
 
 	if len(matcher.GetHeaders()) > 0 {
 		return nil, hasHeaderMatcherErr
@@ -366,11 +366,11 @@ func (rv *routeVisitor) convertDelegateAction(sourceResource resources.InputReso
 		for _, sub := range subRoutes {
 			switch path := sub.Matcher.PathSpecifier.(type) {
 			case *gloov1.Matcher_Exact:
-				path.Exact = prefix + path.Exact
+				path.Exact = prefix + "/" + strings.TrimPrefix(path.Exact, "/")
 			case *gloov1.Matcher_Regex:
-				path.Regex = prefix + path.Regex
+				path.Regex = prefix + "/" + strings.TrimPrefix(path.Regex, "/")
 			case *gloov1.Matcher_Prefix:
-				path.Prefix = prefix + path.Prefix
+				path.Prefix = prefix + "/" + strings.TrimPrefix(path.Prefix, "/")
 			}
 			// inherit route plugins from parent
 			if sub.RoutePlugins == nil {

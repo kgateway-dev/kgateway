@@ -112,7 +112,9 @@ func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) 
 		SecretSource: &v1.Settings_KubernetesSecretSource{
 			KubernetesSecretSource: &v1.Settings_KubernetesSecrets{},
 		},
-		BindAddr:           fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort),
+		Gloo: &v1.GlooOptions{
+			XdsBindAddr: fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort),
+		},
 		RefreshRate:        types.DurationProto(time.Minute),
 		DevMode:            true,
 		DiscoveryNamespace: defaultNamespace,

@@ -46,6 +46,8 @@ func (r *Settings) Hash() uint64 {
 		r.CircuitBreakers,
 		r.Knative,
 		r.Discovery,
+		r.Gloo,
+		r.Gateway,
 		r.Consul,
 		r.Kubernetes,
 		r.Extensions,

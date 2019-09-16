@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
+	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -186,18 +189,19 @@ var _ = Describe("Translator", func() {
 		}
 	})
 
-	translateWithError := func() {
-		_, errs, err := translator.Translate(params, proxy)
+	translateWithError := func() *validation.ProxyReport {
+		_, errs, report, err := translator.Translate(params, proxy)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(errs.Validate()).To(HaveOccurred())
+		return report
 	}
 
 	translate := func() {
-
-		snap, errs, err := translator.Translate(params, proxy)
+		snap, errs, report, err := translator.Translate(params, proxy)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(errs.Validate()).NotTo(HaveOccurred())
 		Expect(snap).NotTo(BeNil())
+		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
 		clusters := snap.GetResources(xds.ClusterType)
 		clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
@@ -227,11 +231,12 @@ var _ = Describe("Translator", func() {
 		proxyClone := proto.Clone(proxy).(*v1.Proxy)
 		proxyClone.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Name = "invalid.name"
 
-		snap, errs, err := translator.Translate(params, proxyClone)
+		snap, errs, report, err := translator.Translate(params, proxyClone)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(errs.Validate()).NotTo(HaveOccurred())
 		Expect(snap).NotTo(BeNil())
+		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
 		routes := snap.GetResources(xds.RouteType)
 		Expect(routes.Items).To(HaveKey("http-listener-routes"))
@@ -269,10 +274,18 @@ var _ = Describe("Translator", func() {
 			}
 		})
 		It("should error when path math is missing", func() {
-			_, errs, err := translator.Translate(params, proxy)
+			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("route_config.invalid route: no path specifier provided"))
+			Expect(errs.Validate().Error()).To(ContainSubstring("Route Error: InvalidMatcherError. Reason: no path specifier provided"))
+			expectedReport := validationutils.MakeReport(proxy)
+			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
+				{
+					Type:   validation.RouteReport_Error_InvalidMatcherError,
+					Reason: "no path specifier provided",
+				},
+			}
+			Expect(report).To(Equal(expectedReport))
 		})
 		It("should error when path math is missing even if we have grpc spec", func() {
 			dest := routes[0].GetRouteAction().GetSingle()
@@ -285,10 +298,23 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			_, errs, err := translator.Translate(params, proxy)
+			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("route_config.invalid route: no path specifier provided"))
+			Expect(errs.Validate().Error()).To(ContainSubstring("InvalidMatcherError. Reason: no path specifier provided; Route Error: ProcessingError. Reason: missing path for grpc route"))
+
+			expectedReport := validationutils.MakeReport(proxy)
+			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
+				{
+					Type:   validation.RouteReport_Error_InvalidMatcherError,
+					Reason: "no path specifier provided",
+				},
+				{
+					Type:   validation.RouteReport_Error_ProcessingError,
+					Reason: "missing path for grpc route",
+				},
+			}
+			Expect(report).To(Equal(expectedReport))
 		})
 	})
 	Context("route header match", func() {
@@ -349,7 +375,9 @@ var _ = Describe("Translator", func() {
 					Interval: &DefaultHealthCheckInterval,
 				},
 			}
-			translateWithError()
+			report := translateWithError()
+
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
 
 		It("will error if no health checker is supplied", func() {
@@ -361,7 +389,8 @@ var _ = Describe("Translator", func() {
 					UnhealthyThreshold: DefaultThreshold,
 				},
 			}
-			translateWithError()
+			report := translateWithError()
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
 
 		It("can translate the http health check", func() {
@@ -436,7 +465,8 @@ var _ = Describe("Translator", func() {
 				Interval: dur,
 			}
 			upstream.UpstreamSpec.OutlierDetection = expectedResult
-			translateWithError()
+			report := translateWithError()
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
 
 	})
@@ -474,7 +504,8 @@ var _ = Describe("Translator", func() {
 
 		It("should translate circuit breakers on settings", func() {
 
-			settings.CircuitBreakers = &v1.CircuitBreakerConfig{
+			settings.Gloo = &v1.GlooOptions{}
+			settings.Gloo.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxConnections:     &types.UInt32Value{Value: 1},
 				MaxPendingRequests: &types.UInt32Value{Value: 2},
 				MaxRequests:        &types.UInt32Value{Value: 3},
@@ -498,7 +529,8 @@ var _ = Describe("Translator", func() {
 
 		It("should override circuit breakers on upstream", func() {
 
-			settings.CircuitBreakers = &v1.CircuitBreakerConfig{
+			settings.Gloo = &v1.GlooOptions{}
+			settings.Gloo.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxConnections:     &types.UInt32Value{Value: 11},
 				MaxPendingRequests: &types.UInt32Value{Value: 12},
 				MaxRequests:        &types.UInt32Value{Value: 13},
@@ -612,11 +644,20 @@ var _ = Describe("Translator", func() {
 		It("should error on invalid ref in upstream groups", func() {
 			upstreamGroup.Destinations[0].Destination.GetUpstream().Name = "notexist"
 
-			_, errs, err := translator.Translate(params, proxy)
+			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			err = errs.Validate()
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("destination # 1: upstream not found: list did not find upstream gloo-system.notexist"))
+
+			expectedReport := validationutils.MakeReport(proxy)
+			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
+				{
+					Type:   validation.RouteReport_Error_InvalidDestinationError,
+					Reason: "invalid destination in weighted destination list: list did not find upstream gloo-system.notexist",
+				},
+			}
+			Expect(report).To(Equal(expectedReport))
 		})
 	})
 	Context("when handling endpoints", func() {
@@ -802,9 +843,17 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should error a route when subset in route doesnt match subset in upstream", func() {
-				_, errs, err := translator.Translate(params, proxy)
+				_, errs, report, err := translator.Translate(params, proxy)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(errs.Validate()).To(HaveOccurred())
+				expectedReport := validationutils.MakeReport(proxy)
+				expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
+					{
+						Type:   validation.RouteReport_Error_InvalidDestinationError,
+						Reason: "route has a subset config, but none of the subsets in the upstream match it.",
+					},
+				}
+				Expect(report).To(Equal(expectedReport))
 			})
 		})
 	})

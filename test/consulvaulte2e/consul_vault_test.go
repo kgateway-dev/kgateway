@@ -3,6 +3,7 @@ package consulvaulte2e_test
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -353,7 +354,9 @@ func writeSettings(settingsDir, writeNamespace string) (*gloov1.Settings, error)
 		Consul: &gloov1.Settings_ConsulConfiguration{
 			ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},
 		},
-		BindAddr:           "0.0.0.0:9977",
+		Gloo: &gloov1.GlooOptions{
+			XdsBindAddr: fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort),
+		},
 		RefreshRate:        types.DurationProto(time.Second * 1),
 		DiscoveryNamespace: writeNamespace,
 		Metadata:           core.Metadata{Namespace: writeNamespace, Name: "default"},

@@ -25,6 +25,8 @@ weight: 5
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
 - [KubernetesConfiguration](#kubernetesconfiguration)
 - [RateLimits](#ratelimits)
+- [GlooOptions](#gloooptions)
+- [GatewayOptions](#gatewayoptions)
   
 
 
@@ -60,6 +62,8 @@ Represents global settings for all the Gloo components.
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "knative": .gloo.solo.io.Settings.KnativeOptions
 "discovery": .gloo.solo.io.Settings.DiscoveryOptions
+"gloo": .gloo.solo.io.GlooOptions
+"gateway": .gloo.solo.io.GatewayOptions
 "consul": .gloo.solo.io.Settings.ConsulConfiguration
 "kubernetes": .gloo.solo.io.Settings.KubernetesConfiguration
 "extensions": .gloo.solo.io.Extensions
@@ -70,8 +74,8 @@ Represents global settings for all the Gloo components.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `discoveryNamespace` | `string` | This is the namespace to which Gloo will write its own resources, e.g. discovered Upstreams or default Gateways. If empty, this will default to "gloo-system". |  |
-| `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo takes into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |  |
+| `discoveryNamespace` | `string` | This is the namespace to which Gloo controllers will write their own resources, e.g. discovered Upstreams or default Gateways. If empty, this will default to "gloo-system". |  |
+| `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |  |
 | `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#kubernetescrds) |  |  |
 | `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
 | `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk#consulkv) |  |  |
@@ -81,13 +85,15 @@ Represents global settings for all the Gloo components.
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#kubernetesconfigmaps) |  |  |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  |  |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk#consulkv) |  |  |
-| `bindAddr` | `string` | Where the gloo xDS server should bind (should not need configuration by user) |  |
+| `bindAddr` | `string` | Where the Gloo xDS server should bind (should not need configuration by user) Deprecated: use gloo.xdsBindAddr |  |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc |  |
 | `devMode` | `bool` | Enable serving debug data on port 9090 |  |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. Deprecated: use gloo.circuitBreakers |  |
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |  |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | Options for configuring Gloo's Discovery service |  |
+| `gloo` | [.gloo.solo.io.GlooOptions](../settings.proto.sk#gloooptions) | Options for configuring `gloo`, the core Gloo controller, which serves dynamic configuration to Envoy |  |
+| `gateway` | [.gloo.solo.io.GatewayOptions](../settings.proto.sk#gatewayoptions) | Options for configuring `gateway`, the Gateway Gloo controller, which enables the VirtualService/Gateway API in Gloo |  |
 | `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
 | `kubernetes` | [.gloo.solo.io.Settings.KubernetesConfiguration](../settings.proto.sk#kubernetesconfiguration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Settings for extensions |  |
@@ -368,6 +374,46 @@ Provides overrides for the default configuration parameters used to interact wit
 | ----- | ---- | ----------- |----------- | 
 | `qPS` | `float` | The maximum queries-per-second Gloo can make to the Kubernetes API Server. |  |
 | `burst` | `int` | Maximum burst for throttle. When a steady state of QPS requests per second, this is an additional number of allowed, to allow for short bursts. |  |
+
+
+
+
+---
+### GlooOptions
+
+ 
+Settings specific to the gloo (Envoy xDS server) controller
+
+```yaml
+"xdsBindAddr": string
+"validationBindAddr": string
+"circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `xdsBindAddr` | `string` | Where the `gloo` xDS server should bind (should not need configuration by user). Defaults to `0.0.0.0:9977` |  |
+| `validationBindAddr` | `string` | Where the `gloo` validation server should bind. Defaults to `0.0.0.0:9988` |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breaker configuration to use for upstream requests, when not provided by specific upstream. |  |
+
+
+
+
+---
+### GatewayOptions
+
+ 
+Settings specific to the Gateway controller
+
+```yaml
+"validationServerAddr": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `validationServerAddr` | `string` | Address of the `gloo` config validation server. Defaults to `gloo:9988` |  |
 
 
 

@@ -1,0 +1,148 @@
+syntax = "proto3";
+package gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
+
+import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
+
+service ProxyValidationService {
+    rpc ValidateProxy (gloo.solo.io.Proxy) returns (ProxyReport) {
+    }
+}
+
+/*
+* The Proxy Report should contain one report for each sub-resource of the Proxy
+* E.g., each listener will have a corresponding report. Within each listener report is
+* a route report corresponding to each route on the listener.
+*
+* If the report contains no errors, the (sub-)resource is valid.
+*/
+message ProxyReport {
+    repeated ListenerReport listener_reports = 1;
+}
+
+message ListenerReport {
+    // error types for top-level listener config
+    message Error {
+        enum Type {
+            NameNotUniqueError = 0;
+            BindPortNotUniqueError = 1;
+            SSLConfigError = 2;
+            ProcessingError = 3;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+    // errors on top-level config of the listener
+    repeated Error errors = 2;
+
+    oneof listener_type_report {
+        // report for the http listener
+        HttpListenerReport http_listener_report = 3;
+        // report for the tcp listener
+        TcpListenerReport tcp_listener_report = 4;
+    }
+}
+
+message HttpListenerReport {
+    // error types for top-level http listener config
+    message Error {
+        enum Type {
+            ProcessingError = 0;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+    repeated Error errors = 1;
+
+    // report for nested virtual hosts
+    repeated VirtualHostReport virtual_host_reports = 2;
+}
+
+message VirtualHostReport {
+    // error types for top-level virtual host config
+    message Error {
+        enum Type {
+            NameNotUniqueError = 0;
+            DomainsNotUniqueError = 1;
+            ProcessingError = 2;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+    // errors on top-level config of the virtual host
+    repeated Error errors = 1;
+
+    repeated RouteReport route_reports = 2;
+}
+
+
+message RouteReport {
+    // error types for the given route config
+    message Error {
+        enum Type {
+            InvalidMatcherError = 0;
+            InvalidDestinationError = 1;
+            ProcessingError = 2;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+    // errors on the config of the route
+    repeated Error errors = 1;
+}
+
+message TcpListenerReport {
+    // error types for top-level tcp listener config
+    message Error {
+        enum Type {
+            NameNotUniqueError = 0;
+            BindPortNotUniqueError = 1;
+            SSLConfigError = 2;
+            ProcessingError = 3;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+    // errors on top-level config of the listener
+    repeated Error errors = 1;
+    repeated TcpHostReport tcp_host_reports = 2;
+}
+
+message TcpHostReport {
+    // error types for tcp host config
+    message Error {
+        enum Type {
+            NameNotUniqueError = 0;
+            InvalidDestinationError = 1;
+            ProcessingError = 2;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+    // errors on the tcp host
+    repeated Error errors = 2;
+}
