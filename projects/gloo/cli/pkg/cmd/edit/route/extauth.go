@@ -40,9 +40,7 @@ func ExtAuthConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ...cliutil
 				return err
 			}
 			if opts.Top.Interactive {
-				if err := cliutil.ChooseBool("Disable auth on this route?", &input.Disable); err != nil {
-					return err
-				}
+				cliutil.ChooseBool("Disable auth on this route?", &input.Disable)
 			}
 			return nil
 		},
