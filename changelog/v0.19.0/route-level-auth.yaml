@@ -1,10 +1,11 @@
 changelog:
-  - type: FIX
-    description: fix issue with partial EDS where clusters were out of sync with endpoints
-    issueLink: https://github.com/solo-io/gloo/issues/899
-  - type: NEW_FEATURE
-    description: Enable running Gloo using Vault as a Secret backend and Consul as a configuration Backend.
-    issueLink: https://github.com/solo-io/gloo/issues/883
-  - type: BREAKING_CHANGE
-    description: Settings CRD has been refactored to reflect Consul changes.
-    issueLink: https://github.com/solo-io/gloo/issues/883
+- type: BREAKING_CHANGE
+  description: >
+    Update the external auth APIs to support configuring authentication/authorization on **routes and weighted
+    destinations**, in addition to virtual hosts. The auth configuration that currently is defined directly on the
+    virtual service/proxy resources (under virtualHostPlugins) will become a top-level solo-kit resource (in the
+    context of Kubernetes this means **a new CRD**). Resources that need to use a particular auth configuration can
+    now just reference the correspondent new `AuthConfig` resource. The advantages of this change are twofold: besides
+    reducing the duplication of configuration, it guarantees the stability of secured upstreams between auth
+    configuration updates.
+  issueLink: https://github.com/solo-io/gloo/issues/1201
