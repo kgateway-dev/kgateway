@@ -209,9 +209,9 @@ type InputVirtualService struct {
 	Domains     []string
 	DisplayName string
 	RateLimit   RateLimit
-	OIDCAuth    OIDCAuth
-	ApiKeyAuth  ApiKeyAuth
-	OpaAuth     OpaAuth
+	//OIDCAuth    OIDCAuth
+	//ApiKeyAuth  ApiKeyAuth
+	//OpaAuth     OpaAuth
 }
 
 const (
