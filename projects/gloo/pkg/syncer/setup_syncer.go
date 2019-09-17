@@ -50,6 +50,8 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	"google.golang.org/grpc/reflection"
 )
 
 type RunFunc func(opts bootstrap.Opts) error
@@ -93,7 +95,7 @@ func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) s
 }
 
 type grpcServer struct {
-	addr   net.Addr
+	addr   string
 	cancel context.CancelFunc
 }
 
@@ -113,23 +115,27 @@ func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.
 	snapshotCache := cache.NewSnapshotCache(true, hasher, contextutils.LoggerFrom(ctx))
 	xdsServer := server.NewServer(snapshotCache, callbacks)
 	envoyv2.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
+	reflection.Register(grpcServer)
+
 	return bootstrap.ControlPlane{
-		GrpcService: bootstrap.GrpcService{
+		GrpcService: &bootstrap.GrpcService{
 			GrpcServer:      grpcServer,
 			StartGrpcServer: start,
 			BindAddr:        bindAddr,
+			Ctx:             ctx,
 		},
 		SnapshotCache: snapshotCache,
 		XDSServer:     xdsServer,
 	}
 }
 
-func NewValidationServer(grpcServer *grpc.Server, bindAddr net.Addr, start bool) bootstrap.ValidationServer {
+func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, start bool) bootstrap.ValidationServer {
 	return bootstrap.ValidationServer{
-		GrpcService: bootstrap.GrpcService{
+		GrpcService: &bootstrap.GrpcService{
 			GrpcServer:      grpcServer,
 			StartGrpcServer: start,
 			BindAddr:        bindAddr,
+			Ctx:             ctx,
 		},
 	}
 }
@@ -191,22 +197,20 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	emptyControlPlane := bootstrap.ControlPlane{}
 	emptyValidationServer := bootstrap.ValidationServer{}
 
-	if xdsTcpAddress != s.previousXdsServer.addr {
+	if xdsAddr != s.previousXdsServer.addr {
 		if s.previousXdsServer.cancel != nil {
 			s.previousXdsServer.cancel()
 			s.previousXdsServer.cancel = nil
 		}
 		s.controlPlane = emptyControlPlane
-		s.previousXdsServer.addr = xdsTcpAddress
 	}
 
-	if validationTcpAddress != s.previousValidationServer.addr {
+	if validationAddr != s.previousValidationServer.addr {
 		if s.previousValidationServer.cancel != nil {
 			s.previousValidationServer.cancel()
 			s.previousValidationServer.cancel = nil
 		}
 		s.validationServer = emptyValidationServer
-		s.previousValidationServer.addr = validationTcpAddress
 	}
 
 	// initialize the control plane context in this block either on the first loop, or if bind addr changed
@@ -219,14 +223,16 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		}
 		s.controlPlane = NewControlPlane(ctx, s.makeGrpcServer(ctx), xdsTcpAddress, callbacks, true)
 		s.previousXdsServer.cancel = cancel
+		s.previousXdsServer.addr = xdsAddr
 	}
 
 	// initialize the validation server context in this block either on the first loop, or if bind addr changed
 	if s.validationServer == emptyValidationServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
-		s.validationServer = NewValidationServer(s.makeGrpcServer(ctx), validationTcpAddress, true)
+		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx), validationTcpAddress, true)
 		s.previousValidationServer.cancel = cancel
+		s.previousValidationServer.addr = validationAddr
 	}
 
 	consulClient, err := bootstrap.ConsulClientForSettings(settings)
@@ -264,7 +270,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.ValidationServer = s.validationServer
 	// if nil, kube plugin disabled
 	opts.KubeClient = clientset
-	opts.DevMode = true
+	opts.DevMode = settings.DevMode
 	opts.Settings = settings
 
 	// if vault service discovery specified, initialize consul watcher
@@ -277,7 +283,12 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		opts.ConsulWatcher = consulClientWrapper
 	}
 
-	return s.runFunc(opts)
+	err = s.runFunc(opts)
+
+	s.validationServer.StartGrpcServer = opts.ValidationServer.StartGrpcServer
+	s.controlPlane.StartGrpcServer = opts.ControlPlane.StartGrpcServer
+
+	return err
 }
 
 type Extensions struct {
@@ -344,7 +355,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	// Register grpc endpoints to the grpc server
-	xdsHasher := xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
+	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
+	xdsHasher := xds.NewNodeHasher()
 
 	allPlugins := registry.Plugins(opts, extensions.PluginExtensions...)
 
@@ -414,39 +426,44 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}()
 
 	if opts.ControlPlane.StartGrpcServer {
+		// copy for the go-routines
+		controlPlane := opts.ControlPlane
 		lis, err := net.Listen(opts.ControlPlane.BindAddr.Network(), opts.ControlPlane.BindAddr.String())
 		if err != nil {
 			return err
 		}
 		go func() {
-			<-opts.WatchOpts.Ctx.Done()
-			opts.ControlPlane.GrpcServer.Stop()
+			<-controlPlane.GrpcService.Ctx.Done()
+			controlPlane.GrpcServer.Stop()
 		}()
 
 		go func() {
-			if err := opts.ControlPlane.GrpcServer.Serve(lis); err != nil {
+			if err := controlPlane.GrpcServer.Serve(lis); err != nil {
 				logger.Errorf("xds grpc server failed to start")
 			}
 		}()
+		opts.ControlPlane.StartGrpcServer = false
 	}
 
 	if opts.ValidationServer.StartGrpcServer {
+		validationServerCopy := opts.ValidationServer
 		lis, err := net.Listen(opts.ValidationServer.BindAddr.Network(), opts.ValidationServer.BindAddr.String())
 		if err != nil {
 			return err
 		}
 		go func() {
-			<-opts.WatchOpts.Ctx.Done()
-			opts.ValidationServer.GrpcServer.Stop()
+			<-validationServerCopy.Ctx.Done()
+			validationServerCopy.GrpcServer.Stop()
 		}()
 
 		go func() {
-			validationServer.Register(opts.ValidationServer.GrpcServer)
+			validationServer.Register(validationServerCopy.GrpcServer)
 
-			if err := opts.ValidationServer.GrpcServer.Serve(lis); err != nil {
+			if err := validationServerCopy.GrpcServer.Serve(lis); err != nil {
 				logger.Errorf("validation grpc server failed to start")
 			}
 		}()
+		opts.ValidationServer.StartGrpcServer = false
 	}
 
 	return nil

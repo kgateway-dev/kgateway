@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"net"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -36,16 +37,17 @@ type Opts struct {
 }
 
 type ControlPlane struct {
-	GrpcService
+	*GrpcService
 	SnapshotCache cache.SnapshotCache
 	XDSServer     server.Server
 }
 
 type ValidationServer struct {
-	GrpcService
+	*GrpcService
 }
 
 type GrpcService struct {
+	Ctx             context.Context
 	BindAddr        net.Addr
 	GrpcServer      *grpc.Server
 	StartGrpcServer bool
