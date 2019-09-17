@@ -41,8 +41,8 @@ var _ = Describe("SetupSyncer", func() {
 				XdsBindAddr:        getRandomAddr(),
 				ValidationBindAddr: getRandomAddr(),
 			},
-			DiscoveryNamespace: "non-existant-namespace",
-			WatchNamespaces:    []string{"non-existant-namespace"},
+			DiscoveryNamespace: "non-existent-namespace",
+			WatchNamespaces:    []string{"non-existent-namespace"},
 		}
 		newContext()
 	})
@@ -53,7 +53,7 @@ var _ = Describe("SetupSyncer", func() {
 	setupTestGrpcClient := func() func() error {
 		cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
 		Expect(err).NotTo(HaveOccurred())
-		// setup a gRPC client to make sure connection is presistent across invocations
+		// setup a gRPC client to make sure connection is persistent across invocations
 		client := reflectpb.NewServerReflectionClient(cc)
 		req := &reflectpb.ServerReflectionRequest{
 			MessageRequest: &reflectpb.ServerReflectionRequest_ListServices{
