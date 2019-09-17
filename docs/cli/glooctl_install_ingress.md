@@ -28,8 +28,9 @@ glooctl install ingress [flags]
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive   use interactive mode
-  -v, --verbose       If true, output from kubectl commands will print to stdout/stderr
+  -i, --interactive         use interactive mode
+      --kubeconfig string   kubeconfig to use, if not standard one
+  -v, --verbose             If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### SEE ALSO

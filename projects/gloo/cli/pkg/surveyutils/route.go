@@ -29,6 +29,10 @@ var pathMatchOptions = []string{
 	pathMatch_Exact,
 }
 
+const (
+	NoneOfTheAbove = "None of the above"
+)
+
 func getMatcherInteractive(match *options.RouteMatchers) error {
 	var pathType string
 	if err := cliutil.ChooseFromList(
@@ -183,6 +187,8 @@ func getAwsDestinationSpecInteractive(spec *options.AwsDestinationSpec, ut *aws.
 	for _, fn := range ut.LambdaFunctions {
 		fnNames = append(fnNames, fn.LogicalName)
 	}
+	// Add the option to skip providing a function
+	fnNames = append(fnNames, NoneOfTheAbove)
 	if err := cliutil.ChooseFromList(
 		"which function should this route invoke? ",
 		&spec.LogicalName,
@@ -200,6 +206,8 @@ func getRestDestinationSpecInteractive(spec *options.RestDestinationSpec, restSp
 		fnNames = append(fnNames, fn)
 	}
 	sort.Strings(fnNames)
+	// Add the option to skip providing a function
+	fnNames = append(fnNames, NoneOfTheAbove)
 	if err := cliutil.ChooseFromList(
 		"which function should this route invoke? ",
 		&spec.FunctionName,

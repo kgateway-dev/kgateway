@@ -32,7 +32,8 @@ glooctl get [flags]
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive   use interactive mode
+  -i, --interactive         use interactive mode
+      --kubeconfig string   kubeconfig to use, if not standard one
 ```
 
 ### SEE ALSO

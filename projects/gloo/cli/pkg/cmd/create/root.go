@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
@@ -24,6 +26,15 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Aliases: constants.CREATE_COMMAND.Aliases,
 		Short:   constants.CREATE_COMMAND.Short,
 		Long:    constants.CREATE_COMMAND.Long,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := prerun.CallParentPrerun(cmd, args); err != nil {
+				return err
+			}
+			if err := prerun.HarmonizeDryRunAndOutputFormat(opts, cmd); err != nil {
+				return err
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var reader io.ReadCloser
 			if opts.Top.File == "" {
@@ -50,7 +61,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &opts.Metadata)
 	flagutils.AddDryRunFlag(cmd.PersistentFlags(), &opts.Create.DryRun)
 
-	cmd.AddCommand(VirtualService(opts))
+	cmd.AddCommand(VSCreate(opts))
 	cmd.AddCommand(Upstream(opts))
 	cmd.AddCommand(UpstreamGroup(opts))
 	cmd.AddCommand(secret.CreateCmd(opts))

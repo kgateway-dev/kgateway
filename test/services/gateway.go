@@ -113,7 +113,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts := defaultGlooOpts(ctx, runOptions)
 
-	glooOpts.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
+	glooOpts.ControlPlane.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
 	if !runOptions.WhatToRun.DisableGateway {
 		opts := defaultTestConstructOpts(ctx, runOptions)
 		go gatewaysyncer.RunGateway(opts)
@@ -229,11 +229,10 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
 		},
-		ControlPlane: syncer.NewControlPlane(ctx, grpcServer, nil, true),
-		BindAddr: &net.TCPAddr{
+		ControlPlane: syncer.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
-		},
+		}, nil, true),
 		KubeClient:    runOptions.KubeClient,
 		KubeCoreCache: kubeCoreCache,
 		DevMode:       true,

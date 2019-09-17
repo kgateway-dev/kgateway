@@ -1,4 +1,4 @@
-package secret_test
+package validation_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCreateSecret(t *testing.T) {
+func TestValidation(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Create Secret Suite")
+	RunSpecs(t, "Validation Suite")
 }

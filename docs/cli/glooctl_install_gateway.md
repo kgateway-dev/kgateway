@@ -28,11 +28,13 @@ glooctl install gateway [flags]
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive   use interactive mode
-  -v, --verbose       If true, output from kubectl commands will print to stdout/stderr
+  -i, --interactive         use interactive mode
+      --kubeconfig string   kubeconfig to use, if not standard one
+  -v, --verbose             If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### SEE ALSO
 
 * [glooctl install](../glooctl_install)	 - install gloo on different platforms
+* [glooctl install gateway enterprise](../glooctl_install_gateway_enterprise)	 - install the Gloo Enterprise Gateway on kubernetes
 

@@ -27,6 +27,7 @@ glooctl create secret aws [flags]
 ```
       --dry-run                        print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                    use interactive mode
+      --kubeconfig string              kubeconfig to use, if not standard one
       --name string                    name of the resource to read or write
   -n, --namespace string               namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType              output format: (yaml, json, table, kube-yaml, wide) (default table)

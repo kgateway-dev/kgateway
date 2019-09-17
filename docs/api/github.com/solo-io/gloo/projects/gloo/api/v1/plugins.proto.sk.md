@@ -47,7 +47,7 @@ to be usable by Gloo.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins |  |
 
 
 
@@ -69,7 +69,7 @@ Plugin-specific configuration that lives on http listeners
 | ----- | ---- | ----------- |----------- | 
 | `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk#grpcweb) |  |  |
 | `httpConnectionManagerSettings` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings](../plugins/hcm/hcm.proto.sk#httpconnectionmanagersettings) |  |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins |  |
 
 
 
@@ -108,17 +108,21 @@ to be usable by Gloo.
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
+"ratelimitGloo": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
+"ratelimitActions": .ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. |  |
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply |  |
+| `ratelimitGloo` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API |  |
+| `ratelimitActions` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings |  |
 
 
 
@@ -145,6 +149,8 @@ to be usable by Gloo.
 "hostRewrite": .hostrewrite.plugins.gloo.solo.io.HostRewrite
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
 "lbHash": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
+"ratelimitGloo": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
+"ratelimitActions": .ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension
 
 ```
 
@@ -155,13 +161,15 @@ to be usable by Gloo.
 | `prefixRewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#prefixrewrite) |  |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins |  |
 | `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing |  |
 | `shadowing` | [.shadowing.plugins.gloo.solo.io.RouteShadowing](../plugins/shadowing/shadowing.proto.sk#routeshadowing) | Specifies traffic shadowing configuration for the route. See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy |  |
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on this Route |  |
 | `hostRewrite` | [.hostrewrite.plugins.gloo.solo.io.HostRewrite](../plugins/hostrewrite/hostrewrite.proto.sk#hostrewrite) | Rewrite the Host header for requests matched on this route |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |  |
 | `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service |  |
+| `ratelimitGloo` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API |  |
+| `ratelimitActions` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings |  |
 
 
 
