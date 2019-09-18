@@ -7,7 +7,7 @@ import (
 type Settings struct {
 	DebugPort   int    `envconfig:"DEBUG_PORT" default:"9091"`
 	ServerPort  int    `envconfig:"SERVER_PORT" default:"8083"`
-	ServiceName string `envconfig:"SERVICE_NAME" default:"AccessLog"`
+	ServiceName string `envconfig:"SERVICE_NAME" default:"Metrics"`
 }
 
 func NewSettings() Settings {
