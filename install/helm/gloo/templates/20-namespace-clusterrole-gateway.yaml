@@ -70,8 +70,8 @@ metadata:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
 rules:
-- apiGroups: ["gloo.solo.io"]
-  resources: ["upstreams","upstreamgroups", "proxies"]
+- apiGroups: ["gloo.solo.io", "enterprise.gloo.solo.io"]
+  resources: ["upstreams","upstreamgroups", "proxies", "authconfigs"]
   # update is needed for status updates
   verbs: ["get", "list", "watch", "update"]
 ---
