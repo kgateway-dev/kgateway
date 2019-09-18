@@ -41,7 +41,7 @@
       },
       {
         "name": "AuthConfig",
-        "package": "auth.glooe.solo.io"
+        "package": "enterprise.gloo.solo.io"
       }
     ],
     "eds.gloo.solo.io": [

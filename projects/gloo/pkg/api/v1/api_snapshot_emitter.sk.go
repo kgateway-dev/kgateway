@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	auth_glooe_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -57,15 +57,15 @@ type ApiEmitter interface {
 	UpstreamGroup() UpstreamGroupClient
 	Secret() SecretClient
 	Upstream() UpstreamClient
-	AuthConfig() auth_glooe_solo_io.AuthConfigClient
+	AuthConfig() enterprise_gloo_solo_io.AuthConfigClient
 	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
-func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient auth_glooe_solo_io.AuthConfigClient) ApiEmitter {
+func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient) ApiEmitter {
 	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient auth_glooe_solo_io.AuthConfigClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
 		artifact:      artifactClient,
 		endpoint:      endpointClient,
@@ -86,7 +86,7 @@ type apiEmitter struct {
 	upstreamGroup UpstreamGroupClient
 	secret        SecretClient
 	upstream      UpstreamClient
-	authConfig    auth_glooe_solo_io.AuthConfigClient
+	authConfig    enterprise_gloo_solo_io.AuthConfigClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -138,7 +138,7 @@ func (c *apiEmitter) Upstream() UpstreamClient {
 	return c.upstream
 }
 
-func (c *apiEmitter) AuthConfig() auth_glooe_solo_io.AuthConfigClient {
+func (c *apiEmitter) AuthConfig() enterprise_gloo_solo_io.AuthConfigClient {
 	return c.authConfig
 }
 
@@ -208,12 +208,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	var initialUpstreamList UpstreamList
 	/* Create channel for AuthConfig */
 	type authConfigListWithNamespace struct {
-		list      auth_glooe_solo_io.AuthConfigList
+		list      enterprise_gloo_solo_io.AuthConfigList
 		namespace string
 	}
 	authConfigChan := make(chan authConfigListWithNamespace)
 
-	var initialAuthConfigList auth_glooe_solo_io.AuthConfigList
+	var initialAuthConfigList enterprise_gloo_solo_io.AuthConfigList
 
 	currentSnapshot := ApiSnapshot{}
 
@@ -441,7 +441,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		upstreamGroupsByNamespace := make(map[string]UpstreamGroupList)
 		secretsByNamespace := make(map[string]SecretList)
 		upstreamsByNamespace := make(map[string]UpstreamList)
-		authConfigsByNamespace := make(map[string]auth_glooe_solo_io.AuthConfigList)
+		authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -536,7 +536,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				// merge lists by namespace
 				authConfigsByNamespace[namespace] = authConfigNamespacedList.list
-				var authConfigList auth_glooe_solo_io.AuthConfigList
+				var authConfigList enterprise_gloo_solo_io.AuthConfigList
 				for _, authConfigs := range authConfigsByNamespace {
 					authConfigList = append(authConfigList, authConfigs...)
 				}

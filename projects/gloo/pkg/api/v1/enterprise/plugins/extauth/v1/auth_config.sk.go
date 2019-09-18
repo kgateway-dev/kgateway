@@ -157,7 +157,7 @@ func init() {
 var (
 	AuthConfigGVK = schema.GroupVersionKind{
 		Version: "v1",
-		Group:   "auth.glooe.solo.io",
+		Group:   "enterprise.gloo.solo.io",
 		Kind:    "AuthConfig",
 	}
 )

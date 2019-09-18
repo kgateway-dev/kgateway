@@ -1,5 +1,5 @@
 syntax = "proto3";
-package auth.glooe.solo.io;
+package enterprise.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1";
 

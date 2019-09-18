@@ -19,7 +19,7 @@ import (
 
 // Type Definitions:
 
-const ExtAuthConfigType = cache.TypePrefix + "/auth.glooe.solo.io.ExtAuthConfig"
+const ExtAuthConfigType = cache.TypePrefix + "/enterprise.gloo.solo.io.ExtAuthConfig"
 
 /* Defined a resource - to be used by snapshot */
 type ExtAuthConfigXdsResourceWrapper struct {
