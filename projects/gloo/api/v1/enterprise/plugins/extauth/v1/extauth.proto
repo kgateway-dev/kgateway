@@ -317,10 +317,6 @@ message Ldap {
   // E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
   repeated string allowedGroups = 4;
 
-
-  // This is the identifier of the AuthConfig resource that this configuration is associated with.
-  // Any request to the external auth server includes an identifier that is matched against this field to determine
-  // which AuthConfig should be applied to it.
   // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
   ConnectionPool pool = 5;
 }
@@ -332,6 +328,9 @@ message Ldap {
 message ExtAuthConfig {
 
   // @solo-kit:resource.name
+  // This is the identifier of the AuthConfig resource that this configuration is associated with.
+  // Any request to the external auth server includes an identifier that is matched against this field to determine
+  // which AuthConfig should be applied to it.
   string auth_config_ref_name = 1;
 
   // Deprecated: use auth_config_ref_name instead

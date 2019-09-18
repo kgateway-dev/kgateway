@@ -1537,9 +1537,6 @@ type Ldap struct {
 	// contain at least of one of the group DNs specified via this option.
 	// E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
 	AllowedGroups []string `protobuf:"bytes,4,rep,name=allowedGroups,proto3" json:"allowedGroups,omitempty"`
-	// This is the identifier of the AuthConfig resource that this configuration is associated with.
-	// Any request to the external auth server includes an identifier that is matched against this field to determine
-	// which AuthConfig should be applied to it.
 	// Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
 	Pool                 *Ldap_ConnectionPool `protobuf:"bytes,5,opt,name=pool,proto3" json:"pool,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
@@ -1661,6 +1658,9 @@ func (m *Ldap_ConnectionPool) GetInitialSize() *types.UInt32Value {
 //@solo-kit:resource.no_references
 type ExtAuthConfig struct {
 	// @solo-kit:resource.name
+	// This is the identifier of the AuthConfig resource that this configuration is associated with.
+	// Any request to the external auth server includes an identifier that is matched against this field to determine
+	// which AuthConfig should be applied to it.
 	AuthConfigRefName string `protobuf:"bytes,1,opt,name=auth_config_ref_name,json=authConfigRefName,proto3" json:"auth_config_ref_name,omitempty"`
 	// Deprecated: use auth_config_ref_name instead
 	Vhost string `protobuf:"bytes,2,opt,name=vhost,proto3" json:"vhost,omitempty"`
