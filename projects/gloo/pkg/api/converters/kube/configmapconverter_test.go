@@ -22,10 +22,12 @@ var _ = Describe("Configmapconverter", func() {
 					Name: "cfg", Namespace: "foo",
 					Labels:      map[string]string{"foo": "bar"},
 					Annotations: map[string]string{"foo": "bar2"},
+					OwnerReferences: []metav1.OwnerReference{},
 				},
 				Data: map[string]string{
 					"test": "data",
 				},
+
 			}
 			artifact, err := kubeConverter.FromKubeConfigMapWithResource(context.TODO(), new(v1.Artifact), "artifact", cfgmap)
 			Expect(err).NotTo(HaveOccurred())

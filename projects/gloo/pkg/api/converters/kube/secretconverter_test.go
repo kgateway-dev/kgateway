@@ -27,6 +27,7 @@ var _ = Describe("SecretConverter", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "s1",
 				Namespace: "ns",
+				OwnerReferences: []metav1.OwnerReference{},
 			},
 		}
 		var t TLSSecretConverter
@@ -72,6 +73,7 @@ var _ = Describe("SecretConverter", func() {
 				Name:      "s1",
 				Namespace: "ns",
 				Labels:    map[string]string{},
+				OwnerReferences: []metav1.OwnerReference{},
 			},
 		}
 		var t TLSSecretConverter
@@ -95,6 +97,7 @@ var _ = Describe("SecretConverter", func() {
 				Name:      "s1",
 				Namespace: "ns",
 				Labels:    map[string]string{},
+				OwnerReferences: []metav1.OwnerReference{},
 			},
 			Data: map[string][]byte{
 				AwsAccessKeyName: []byte(awsSecret.AccessKey),
@@ -122,6 +125,7 @@ var _ = Describe("SecretConverter", func() {
 				Name:      "s1",
 				Namespace: "ns",
 				Labels:    map[string]string{},
+				OwnerReferences: []metav1.OwnerReference{},
 			},
 		}
 		var awsConverter AwsSecretConverter
