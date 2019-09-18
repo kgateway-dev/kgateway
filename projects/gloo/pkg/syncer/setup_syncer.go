@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 
@@ -389,6 +390,33 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	errs := make(chan error)
 
+	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
+	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
+	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
+	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
+	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
+	if err != nil {
+		return err
+	}
+
+	warmTimeout := opts.Settings.GetGloo().GetEndpointsWarmingTimeout()
+	if warmTimeout != nil {
+		warmTimeoutDuration, err := types.DurationFromProto(warmTimeout)
+		ctx := opts.WatchOpts.Ctx
+		err = WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
+		if err != nil {
+			// make sure that the reason we got here is not context cancellation
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			panic("failed warming up endpoints - consider adjusting endpointsWarmingTimeout")
+		}
+	}
+
+	// We are ready!
+
+	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
+
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient)
 	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
 
@@ -409,16 +437,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, apiEventLoopErrs, "event_loop.gloo")
-
-	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
-	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
-	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
-	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
-	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
-	if err != nil {
-		return err
-	}
-	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
 	go func() {
 		for {
@@ -489,6 +507,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
+	return nil
+}
+
+func WaitForReady(ctx context.Context, timeout time.Duration, readychans ...<-chan struct{}) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// wait for everything to finish warming up:
+	for _, chans := range readychans {
+		select {
+		case <-chans:
+			// wait for component to become ready
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 	return nil
 }
 

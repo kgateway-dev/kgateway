@@ -51,6 +51,9 @@ type EndpointDiscovery struct {
 	writeNamespace     string
 	endpointReconciler v1.EndpointReconciler
 	discoveryPlugins   []DiscoveryPlugin
+
+	readyClosed bool
+	ready       chan struct{}
 }
 
 func NewEndpointDiscovery(watchNamespaces []string,
@@ -61,7 +64,9 @@ func NewEndpointDiscovery(watchNamespaces []string,
 		watchNamespaces:    watchNamespaces,
 		writeNamespace:     writeNamespace,
 		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
-		discoveryPlugins:   discoveryPlugins}
+		discoveryPlugins:   discoveryPlugins,
+		ready:              make(chan struct{}),
+	}
 }
 
 func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
@@ -181,6 +186,9 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 					}); err != nil {
 						aggregatedErrs <- err
 					}
+					if len(endpointsByEds) == len(d.discoveryPlugins) {
+						d.signalReady()
+					}
 					lock.Unlock()
 				case err, ok := <-errs:
 					if !ok {
@@ -198,6 +206,17 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 		}(eds)
 	}
 	return aggregatedErrs, nil
+}
+
+func (d *EndpointDiscovery) signalReady() {
+	if !d.readyClosed {
+		d.readyClosed = true
+		close(d.ready)
+	}
+}
+
+func (d *EndpointDiscovery) Ready() <-chan struct{} {
+	return d.ready
 }
 
 func aggregateEndpoints(endpointsByUds map[DiscoveryPlugin]v1.EndpointList) v1.EndpointList {
