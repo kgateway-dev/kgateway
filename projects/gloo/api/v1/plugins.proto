@@ -158,8 +158,8 @@ message WeightedDestinationPlugins {
     headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 1;
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 2;
-
-    Extensions extensions = 3;
+    // Deprecated: Opaque config for Gloo plugins
+    Extensions extensions = 3 [deprecated=true];
 }
 
 // Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
