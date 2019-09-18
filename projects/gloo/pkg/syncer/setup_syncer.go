@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 
@@ -357,6 +358,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
+	if os.Getenv("POD_NAME") != "" {
+		logger = logger.With(zap.String("pod", "gloo"))
+	}
+
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
 		SettingExtensions: opts.Settings.Extensions,
@@ -448,6 +453,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			}
 		}()
 	}
+
+	go func() {
+		for {
+			select {
+			case err, ok := <-errs:
+				if !ok {
+					return
+				}
+				logger.Errorw("gloo main event loop", zap.Error(err))
+			case <-opts.WatchOpts.Ctx.Done():
+				// think about closing this channel
+				// close(errs)
+				return
+			}
+		}
+	}()
 
 	return nil
 }

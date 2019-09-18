@@ -31,6 +31,9 @@ func (c *readOnlyUpstreamBaseClient) Register() error {
 }
 
 func (c *readOnlyUpstreamBaseClient) Read(namespace, name string, opts clients.ReadOpts) (resources.Resource, error) {
+	if isRealUpstream(name) {
+		return c.rc.Read(namespace, name, opts)
+	}
 	return nil, errors.New(notImplementedErrMsg)
 }
 

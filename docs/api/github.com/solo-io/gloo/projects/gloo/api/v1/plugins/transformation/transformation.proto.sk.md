@@ -43,9 +43,18 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk#transformation) |  |  |
-| `clearRouteCache` | `bool` | clear the route cache if the request transformation was applied |  |
-| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk#transformation) |  |  |
+
+
+
+| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk#transformation) |   |  |
+
+
+
+| `clearRouteCache` | `bool` |  clear the route cache if the request transformation was applied.  |  |
+
+
+
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk#transformation) |   |  |
 
 
 
@@ -64,8 +73,14 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../transformation.proto.sk#transformationtemplate) |  |  |
-| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../transformation.proto.sk#headerbodytransform) |  |  |
+
+
+
+| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../transformation.proto.sk#transformationtemplate) |   Only one of `transformationTemplate` or `headerBodyTransform` can be set. |  |
+
+
+
+| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../transformation.proto.sk#headerbodytransform) |   Only one of `headerBodyTransform` or `transformationTemplate` can be set. |  |
 
 
 
@@ -84,9 +99,18 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | `string` |  |  |
-| `regex` | `string` | what information to extract. if extraction fails the result is an empty value. |  |
-| `subgroup` | `int` |  |  |
+
+
+
+| `header` | `string` |   |  |
+
+
+
+| `regex` | `string` |  what information to extract. if extraction fails the result is an empty value.  |  |
+
+
+
+| `subgroup` | `int` |   |  |
 
 
 
@@ -108,12 +132,30 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `advancedTemplates` | `bool` |  |  |
-| `extractors` | `map<string, .envoy.api.v2.filter.http.Extraction>` | Extractors are in the origin request language domain |  |
-| `headers` | `map<string, .envoy.api.v2.filter.http.InjaTemplate>` |  |  |
-| `body` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk#injatemplate) |  |  |
-| `passthrough` | [.envoy.api.v2.filter.http.Passthrough](../transformation.proto.sk#passthrough) |  |  |
-| `mergeExtractorsToBody` | [.envoy.api.v2.filter.http.MergeExtractorsToBody](../transformation.proto.sk#mergeextractorstobody) |  |  |
+
+
+
+| `advancedTemplates` | `bool` |   |  |
+
+
+
+| `extractors` | `map<string, .envoy.api.v2.filter.http.Extraction>` |  Extractors are in the origin request language domain.  |  |
+
+
+
+| `headers` | `map<string, .envoy.api.v2.filter.http.InjaTemplate>` |   |  |
+
+
+
+| `body` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk#injatemplate) |   Only one of `body`, or `mergeExtractorsToBody` can be set. |  |
+
+
+
+| `passthrough` | [.envoy.api.v2.filter.http.Passthrough](../transformation.proto.sk#passthrough) |   Only one of `passthrough`, or `mergeExtractorsToBody` can be set. |  |
+
+
+
+| `mergeExtractorsToBody` | [.envoy.api.v2.filter.http.MergeExtractorsToBody](../transformation.proto.sk#mergeextractorstobody) |   Only one of `mergeExtractorsToBody`, or `passthrough` can be set. |  |
 
 
 
@@ -133,7 +175,10 @@ extracted_value(name, index) -> from the extracted values
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `text` | `string` |  |  |
+
+
+
+| `text` | `string` |   |  |
 
 
 

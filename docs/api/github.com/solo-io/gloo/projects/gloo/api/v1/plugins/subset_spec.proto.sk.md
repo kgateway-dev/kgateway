@@ -35,7 +35,10 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `selectors` | [[]plugins.gloo.solo.io.Selector](../subset_spec.proto.sk#selector) |  |  |
+
+
+
+| `selectors` | [[]plugins.gloo.solo.io.Selector](../subset_spec.proto.sk#selector) |   |  |
 
 
 
@@ -52,7 +55,10 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `keys` | `[]string` |  |  |
+
+
+
+| `keys` | `[]string` |   |  |
 
 
 

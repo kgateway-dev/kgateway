@@ -42,10 +42,22 @@ HeaderManipulation can be specified on routes, virtual hosts, or weighted destin
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `requestHeadersToAdd` | [[]headers.plugins.gloo.solo.io.HeaderValueOption](../headers.proto.sk#headervalueoption) | Specifies a list of HTTP headers that should be added to each request handled by this route or virtual host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) . |  |
-| `requestHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request handled by this route or virtual host. |  |
-| `responseHeadersToAdd` | [[]headers.plugins.gloo.solo.io.HeaderValueOption](../headers.proto.sk#headervalueoption) | Specifies a list of HTTP headers that should be added to each response handled by this route or host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) . |  |
-| `responseHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each response handled by this route or virtual host. |  |
+
+
+
+| `requestHeadersToAdd` | [[]headers.plugins.gloo.solo.io.HeaderValueOption](../headers.proto.sk#headervalueoption) |  Specifies a list of HTTP headers that should be added to each request handled by this route or virtual host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .  |  |
+
+
+
+| `requestHeadersToRemove` | `[]string` |  Specifies a list of HTTP headers that should be removed from each request handled by this route or virtual host.  |  |
+
+
+
+| `responseHeadersToAdd` | [[]headers.plugins.gloo.solo.io.HeaderValueOption](../headers.proto.sk#headervalueoption) |  Specifies a list of HTTP headers that should be added to each response handled by this route or host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .  |  |
+
+
+
+| `responseHeadersToRemove` | `[]string` |  Specifies a list of HTTP headers that should be removed from each response handled by this route or virtual host.  |  |
 
 
 
@@ -64,8 +76,14 @@ Header name/value pair plus option to control append behavior.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | [.headers.plugins.gloo.solo.io.HeaderValue](../headers.proto.sk#headervalue) | Header name/value pair that this option applies to. |  |
-| `append` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should the value be appended? If true (default), the value is appended to existing values. |  |
+
+
+
+| `header` | [.headers.plugins.gloo.solo.io.HeaderValue](../headers.proto.sk#headervalue) |  Header name/value pair that this option applies to.  |  |
+
+
+
+| `append` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  Should the value be appended? If true (default), the value is appended to existing values.  |  |
 
 
 
@@ -84,8 +102,14 @@ Header name/value pair.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `key` | `string` | Header name. |  |
-| `value` | `string` | Header value. |  |
+
+
+
+| `key` | `string` |  Header name.  |  |
+
+
+
+| `value` | `string` |  Header value.  |  |
 
 
 

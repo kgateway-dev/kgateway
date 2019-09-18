@@ -36,7 +36,10 @@ This plugin provides additional configuration options to expose statistics.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualClusters` | [[]stats.plugins.gloo.solo.io.VirtualCluster](../stats.proto.sk#virtualcluster) | Virtual clusters allow exposing additional statistics for traffic served by a Virtual Host. |  |
+
+
+
+| `virtualClusters` | [[]stats.plugins.gloo.solo.io.VirtualCluster](../stats.proto.sk#virtualcluster) |  Virtual clusters allow exposing additional statistics for traffic served by a Virtual Host.  |  |
 
 
 
@@ -62,9 +65,18 @@ Please note that virtual clusters add overhead to the processing of each request
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | `string` | The name of the virtual cluster. This value will be used together with the virtual host name to compute the name of the statistics emitted by this virtual cluster. Statistics names will be in the form: vhost.<virtual host name>.vcluster.<virtual cluster name>.<stat name>. See [the official Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.5.0/configuration/http_filters/router_filter#config-http-filters-router-stats) for more information about the statistics emitted when virtual cluster configurations are specified. Note: This string should not contain any dots ("."), as this is a reserved character for Envoy statistics names. Any dot present in the virtual cluster name will be replaced with an underscore ("_") character by Gloo. |  |
-| `pattern` | `string` | The regex pattern used by Envoy to decide whether to expose statistics for a particular request. Please note that **the entire path** of the request must match the regex (e.g. the regex `/rides/d+` matches the path `/rides/0`, but not `/rides/123/456`). The regex grammar used is defined [here](https://en.cppreference.com/w/cpp/regex/ecmascript). |  |
-| `method` | `string` | If specified, statistics will be exposed only for requests matching the given HTTP method. |  |
+
+
+
+| `name` | `string` |  The name of the virtual cluster. This value will be used together with the virtual host name to compute the name of the statistics emitted by this virtual cluster. Statistics names will be in the form: vhost.<virtual host name>.vcluster.<virtual cluster name>.<stat name>. See [the official Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.5.0/configuration/http_filters/router_filter#config-http-filters-router-stats) for more information about the statistics emitted when virtual cluster configurations are specified. Note: This string should not contain any dots ("."), as this is a reserved character for Envoy statistics names. Any dot present in the virtual cluster name will be replaced with an underscore ("_") character by Gloo.  |  |
+
+
+
+| `pattern` | `string` |  The regex pattern used by Envoy to decide whether to expose statistics for a particular request. Please note that **the entire path** of the request must match the regex (e.g. the regex `/rides/d+` matches the path `/rides/0`, but not `/rides/123/456`). The regex grammar used is defined [here](https://en.cppreference.com/w/cpp/regex/ecmascript).  |  |
+
+
+
+| `method` | `string` |  If specified, statistics will be exposed only for requests matching the given HTTP method.  |  |
 
 
 
