@@ -25,8 +25,8 @@ var _ = Describe("SecretConverter", func() {
 				kubev1.TLSPrivateKeyKey: []byte("key"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "s1",
-				Namespace: "ns",
+				Name:            "s1",
+				Namespace:       "ns",
 				OwnerReferences: []metav1.OwnerReference{},
 			},
 		}
@@ -70,9 +70,9 @@ var _ = Describe("SecretConverter", func() {
 				kubev1.TLSPrivateKeyKey: []byte("key"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "s1",
-				Namespace: "ns",
-				Labels:    map[string]string{},
+				Name:            "s1",
+				Namespace:       "ns",
+				Labels:          map[string]string{},
 				OwnerReferences: []metav1.OwnerReference{},
 			},
 		}
@@ -94,9 +94,9 @@ var _ = Describe("SecretConverter", func() {
 		kubeSecret := &kubev1.Secret{
 			Type: kubev1.SecretTypeOpaque,
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "s1",
-				Namespace: "ns",
-				Labels:    map[string]string{},
+				Name:            "s1",
+				Namespace:       "ns",
+				Labels:          map[string]string{},
 				OwnerReferences: []metav1.OwnerReference{},
 			},
 			Data: map[string][]byte{
@@ -122,9 +122,9 @@ var _ = Describe("SecretConverter", func() {
 				AwsSecretKeyName: []byte("secret"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "s1",
-				Namespace: "ns",
-				Labels:    map[string]string{},
+				Name:            "s1",
+				Namespace:       "ns",
+				Labels:          map[string]string{},
 				OwnerReferences: []metav1.OwnerReference{},
 			},
 		}
