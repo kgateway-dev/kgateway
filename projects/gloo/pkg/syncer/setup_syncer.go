@@ -3,7 +3,6 @@ package syncer
 import (
 	"context"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 
@@ -357,10 +356,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
-
-	if os.Getenv("POD_NAME") != "" {
-		logger = logger.With(zap.String("pod", "gloo"))
-	}
 
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
