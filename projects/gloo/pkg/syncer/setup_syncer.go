@@ -456,14 +456,16 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		if err != nil {
 			return err
 		}
+		// TODO(yuval-k for ilackarms): we need to either restart the grpc service or shim the connection
+		// so that validation is restarted on the new validation server
+		validationServer.Register(validationServerCopy.GrpcServer)
+
 		go func() {
 			<-validationServerCopy.Ctx.Done()
 			validationServerCopy.GrpcServer.Stop()
 		}()
 
 		go func() {
-			validationServer.Register(validationServerCopy.GrpcServer)
-
 			if err := validationServerCopy.GrpcServer.Serve(lis); err != nil {
 				logger.Errorf("validation grpc server failed to start")
 			}
