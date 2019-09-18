@@ -6,38 +6,55 @@ import (
 	"sync"
 	"time"
 
-	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
-	mApiSnapshotIn     = stats.Int64("api.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mApiSnapshotOut    = stats.Int64("api.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mApiSnapshotMissed = stats.Int64("api.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	// Deprecated. See mApiResourcesIn
+	mApiSnapshotIn = stats.Int64("api.gloo.solo.io/emitter/snap_in", "Deprecated. Use api.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
 
+	// metrics for emitter
+	mApiResourcesIn    = stats.Int64("api.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mApiSnapshotOut    = stats.Int64("api.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotMissed = stats.Int64("api.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+
+	// views for emitter
+	// deprecated: see apiResourcesInView
 	apisnapshotInView = &view.View{
-		Name:        "api.gloo.solo.io_snap_emitter/snap_in",
+		Name:        "api.gloo.solo.io/emitter/snap_in",
 		Measure:     mApiSnapshotIn,
-		Description: "The number of snapshots updates coming in",
+		Description: "Deprecated. Use api.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+
+	apiResourcesInView = &view.View{
+		Name:        "api.gloo.solo.io/emitter/resources_in",
+		Measure:     mApiResourcesIn,
+		Description: "The number of resource lists received on open watch channels",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
+		},
+	}
 	apisnapshotOutView = &view.View{
-		Name:        "api.gloo.solo.io/snap_emitter/snap_out",
+		Name:        "api.gloo.solo.io/emitter/snap_out",
 		Measure:     mApiSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	apisnapshotMissedView = &view.View{
-		Name:        "api.gloo.solo.io/snap_emitter/snap_missed",
+		Name:        "api.gloo.solo.io/emitter/snap_missed",
 		Measure:     mApiSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -46,10 +63,20 @@ var (
 )
 
 func init() {
-	view.Register(apisnapshotInView, apisnapshotOutView, apisnapshotMissedView)
+	view.Register(
+		apisnapshotInView,
+		apisnapshotOutView,
+		apisnapshotMissedView,
+		apiResourcesInView,
+	)
+}
+
+type ApiSnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
 type ApiEmitter interface {
+	ApiSnapshotEmitter
 	Register() error
 	Artifact() ArtifactClient
 	Endpoint() EndpointClient
@@ -57,15 +84,13 @@ type ApiEmitter interface {
 	UpstreamGroup() UpstreamGroupClient
 	Secret() SecretClient
 	Upstream() UpstreamClient
-	AuthConfig() enterprise_gloo_solo_io.AuthConfigClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
-func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient) ApiEmitter {
-	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, make(chan struct{}))
+func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient) ApiEmitter {
+	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
 		artifact:      artifactClient,
 		endpoint:      endpointClient,
@@ -73,7 +98,6 @@ func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient Endpoin
 		upstreamGroup: upstreamGroupClient,
 		secret:        secretClient,
 		upstream:      upstreamClient,
-		authConfig:    authConfigClient,
 		forceEmit:     emit,
 	}
 }
@@ -86,7 +110,6 @@ type apiEmitter struct {
 	upstreamGroup UpstreamGroupClient
 	secret        SecretClient
 	upstream      UpstreamClient
-	authConfig    enterprise_gloo_solo_io.AuthConfigClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -106,9 +129,6 @@ func (c *apiEmitter) Register() error {
 		return err
 	}
 	if err := c.upstream.Register(); err != nil {
-		return err
-	}
-	if err := c.authConfig.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -136,10 +156,6 @@ func (c *apiEmitter) Secret() SecretClient {
 
 func (c *apiEmitter) Upstream() UpstreamClient {
 	return c.upstream
-}
-
-func (c *apiEmitter) AuthConfig() enterprise_gloo_solo_io.AuthConfigClient {
-	return c.authConfig
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -206,14 +222,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	upstreamChan := make(chan upstreamListWithNamespace)
 
 	var initialUpstreamList UpstreamList
-	/* Create channel for AuthConfig */
-	type authConfigListWithNamespace struct {
-		list      enterprise_gloo_solo_io.AuthConfigList
-		namespace string
-	}
-	authConfigChan := make(chan authConfigListWithNamespace)
-
-	var initialAuthConfigList enterprise_gloo_solo_io.AuthConfigList
 
 	currentSnapshot := ApiSnapshot{}
 
@@ -326,24 +334,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
 		}(namespace)
-		/* Setup namespaced watch for AuthConfig */
-		{
-			authConfigs, err := c.authConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "initial AuthConfig list")
-			}
-			initialAuthConfigList = append(initialAuthConfigList, authConfigs...)
-		}
-		authConfigNamespacesChan, authConfigErrs, err := c.authConfig.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting AuthConfig watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, authConfigErrs, namespace+"-authConfigs")
-		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -387,12 +377,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 						return
 					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
 					}
-				case authConfigList := <-authConfigNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case authConfigChan <- authConfigListWithNamespace{list: authConfigList, namespace: namespace}:
-					}
 				}
 			}
 		}(namespace)
@@ -409,8 +393,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	currentSnapshot.Secrets = initialSecretList.Sort()
 	/* Initialize snapshot for Upstreams */
 	currentSnapshot.Upstreams = initialUpstreamList.Sort()
-	/* Initialize snapshot for AuthConfigs */
-	currentSnapshot.AuthConfigs = initialAuthConfigList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
@@ -441,7 +423,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		upstreamGroupsByNamespace := make(map[string]UpstreamGroupList)
 		secretsByNamespace := make(map[string]SecretList)
 		upstreamsByNamespace := make(map[string]UpstreamList)
-		authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -462,6 +443,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				namespace := artifactNamespacedList.namespace
 
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"artifact",
+					mApiResourcesIn,
+				)
+
 				// merge lists by namespace
 				artifactsByNamespace[namespace] = artifactNamespacedList.list
 				var artifactList ArtifactList
@@ -473,6 +461,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				record()
 
 				namespace := endpointNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"endpoint",
+					mApiResourcesIn,
+				)
 
 				// merge lists by namespace
 				endpointsByNamespace[namespace] = endpointNamespacedList.list
@@ -486,6 +481,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				namespace := proxyNamespacedList.namespace
 
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"proxy",
+					mApiResourcesIn,
+				)
+
 				// merge lists by namespace
 				proxiesByNamespace[namespace] = proxyNamespacedList.list
 				var proxyList ProxyList
@@ -497,6 +499,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				record()
 
 				namespace := upstreamGroupNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"upstream_group",
+					mApiResourcesIn,
+				)
 
 				// merge lists by namespace
 				upstreamGroupsByNamespace[namespace] = upstreamGroupNamespacedList.list
@@ -510,6 +519,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				namespace := secretNamespacedList.namespace
 
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"secret",
+					mApiResourcesIn,
+				)
+
 				// merge lists by namespace
 				secretsByNamespace[namespace] = secretNamespacedList.list
 				var secretList SecretList
@@ -522,6 +538,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				namespace := upstreamNamespacedList.namespace
 
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"upstream",
+					mApiResourcesIn,
+				)
+
 				// merge lists by namespace
 				upstreamsByNamespace[namespace] = upstreamNamespacedList.list
 				var upstreamList UpstreamList
@@ -529,18 +552,6 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					upstreamList = append(upstreamList, upstreams...)
 				}
 				currentSnapshot.Upstreams = upstreamList.Sort()
-			case authConfigNamespacedList := <-authConfigChan:
-				record()
-
-				namespace := authConfigNamespacedList.namespace
-
-				// merge lists by namespace
-				authConfigsByNamespace[namespace] = authConfigNamespacedList.list
-				var authConfigList enterprise_gloo_solo_io.AuthConfigList
-				for _, authConfigs := range authConfigsByNamespace {
-					authConfigList = append(authConfigList, authConfigs...)
-				}
-				currentSnapshot.AuthConfigs = authConfigList.Sort()
 			}
 		}
 	}()

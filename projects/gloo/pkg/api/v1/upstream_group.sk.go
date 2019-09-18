@@ -35,6 +35,8 @@ func (r *UpstreamGroup) SetStatus(status core.Status) {
 func (r *UpstreamGroup) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
+	metaCopy.Generation = 0
+	// investigate zeroing out owner refs as well
 	return hashutils.HashAll(
 		metaCopy,
 		r.Destinations,

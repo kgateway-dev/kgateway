@@ -37,9 +37,9 @@ A simple wrapper for a Kubernetes Ingress Object.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `kubeIngressSpec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the kubernetes ingress this resource wraps |  |
-| `kubeIngressStatus` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the ingress status of the kubernetes ingress object |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `kubeIngressSpec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the kubernetes ingress this resource wraps. |  |
+| `kubeIngressStatus` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the ingress status of the kubernetes ingress object. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 

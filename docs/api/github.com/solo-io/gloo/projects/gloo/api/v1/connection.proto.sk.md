@@ -38,9 +38,9 @@ Fine tune the settings for connections to an upstream
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `maxRequestsPerConnection` | `int` | Maximum requests for a single upstream connection (unspecified or zero = no limit) |  |
-| `connectTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for new network connections to hosts in the cluster |  |
-| `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk#tcpkeepalive) | Configure OS-level tcp keepalive checks |  |
+| `maxRequestsPerConnection` | `int` | Maximum requests for a single upstream connection (unspecified or zero = no limit). |  |
+| `connectTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for new network connections to hosts in the cluster. |  |
+| `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk#tcpkeepalive) | Configure OS-level tcp keepalive checks. |  |
 
 
 

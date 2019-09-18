@@ -20,8 +20,9 @@ var _ = Describe("Configmapconverter", func() {
 			cfgmap := &kubev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cfg", Namespace: "foo",
-					Labels:      map[string]string{"foo": "bar"},
-					Annotations: map[string]string{"foo": "bar2"},
+					Labels:          map[string]string{"foo": "bar"},
+					Annotations:     map[string]string{"foo": "bar2"},
+					OwnerReferences: []metav1.OwnerReference{},
 				},
 				Data: map[string]string{
 					"test": "data",

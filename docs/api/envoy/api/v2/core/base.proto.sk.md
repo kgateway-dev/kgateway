@@ -223,9 +223,9 @@ Data source consisting of either a file or an inline value.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `filename` | `string` | Local filesystem data source. |  |
-| `inlineBytes` | `bytes` | Bytes inlined in the configuration. |  |
-| `inlineString` | `string` | String inlined in the configuration. |  |
+| `filename` | `string` | Local filesystem data source. Only one of `filename`, or `inlineString` can be set. |  |
+| `inlineBytes` | `bytes` | Bytes inlined in the configuration. Only one of `inlineBytes`, or `inlineString` can be set. |  |
+| `inlineString` | `string` | String inlined in the configuration. Only one of `inlineString`, or `inlineBytes` can be set. |  |
 
 
 
@@ -249,8 +249,8 @@ chosen based on the platform and existence of tls_context.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | The name of the transport socket to instantiate. The name must match a supported transport socket implementation. |  |
-| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  |  |
-| `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) |  |  |
+| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  Only one of `config` or `typedConfig` can be set. |  |
+| `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) |  Only one of `typedConfig` or `config` can be set. |  |
 
 
 
@@ -275,10 +275,10 @@ might not exist in upstream kernels or precompiled Envoy binaries.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `description` | `string` | An optional name to give this socket option for debugging, etc. Uniqueness is not required and no special meaning is assumed. |  |
-| `level` | `int` | Corresponding to the level value passed to setsockopt, such as IPPROTO_TCP |  |
-| `name` | `int` | The numeric name as passed to setsockopt |  |
-| `intValue` | `int` | Because many sockopts take an int value. |  |
-| `bufValue` | `bytes` | Otherwise it's a byte buffer. |  |
+| `level` | `int` | Corresponding to the level value passed to setsockopt, such as IPPROTO_TCP. |  |
+| `name` | `int` | The numeric name as passed to setsockopt. |  |
+| `intValue` | `int` | Because many sockopts take an int value. Only one of `intValue` or `bufValue` can be set. |  |
+| `bufValue` | `bytes` | Otherwise it's a byte buffer. Only one of `bufValue` or `intValue` can be set. |  |
 | `state` | [.envoy.api.v2.core.SocketOption.SocketState](../base.proto.sk#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |  |
 
 

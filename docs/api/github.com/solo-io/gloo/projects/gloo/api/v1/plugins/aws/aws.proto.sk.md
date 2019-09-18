@@ -42,9 +42,9 @@ in a particular region
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `region` | `string` | The AWS Region where the desired Lambda Functions exist |  |
-| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ``` |  |
-| `lambdaFunctions` | [[]aws.plugins.gloo.solo.io.LambdaFunctionSpec](../aws.proto.sk#lambdafunctionspec) | The list of Lambda Functions contained within this region. This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions |  |
+| `region` | `string` | The AWS Region where the desired Lambda Functions exist. |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ```. |  |
+| `lambdaFunctions` | [[]aws.plugins.gloo.solo.io.LambdaFunctionSpec](../aws.proto.sk#lambdafunctionspec) | The list of Lambda Functions contained within this region. This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions. |  |
 
 
 
@@ -66,8 +66,8 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `logicalName` | `string` | the logical name gloo should associate with this function. if left empty, it will default to lambda_function_name+qualifier |  |
-| `lambdaFunctionName` | `string` | The Name of the Lambda Function as it appears in the AWS Lambda Portal |  |
+| `logicalName` | `string` | the logical name gloo should associate with this function. if left empty, it will default to lambda_function_name+qualifier. |  |
+| `lambdaFunctionName` | `string` | The Name of the Lambda Function as it appears in the AWS Lambda Portal. |  |
 | `qualifier` | `string` | The Qualifier for the Lambda Function. Qualifiers act as a kind of version for Lambda Functions. See https://docs.aws.amazon.com/lambda/latest/dg/API_Invoke.html for more info. |  |
 
 
@@ -90,7 +90,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 | ----- | ---- | ----------- |----------- | 
 | `logicalName` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |  |
 | `invocationStyle` | [.aws.plugins.gloo.solo.io.DestinationSpec.InvocationStyle](../aws.proto.sk#invocationstyle) | Can be either Sync or Async. |  |
-| `responseTransformation` | `bool` | de-jsonify response bodies returned from aws lambda |  |
+| `responseTransformation` | `bool` | de-jsonify response bodies returned from aws lambda. |  |
 
 
 

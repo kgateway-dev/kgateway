@@ -300,12 +300,12 @@ repeated fields or map fields.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `selector` | `string` | Selects methods to which this rule applies. Refer to [selector][google.api.DocumentationRule.selector] for syntax details. |  |
-| `get` | `string` | Used for listing and getting information about resources. |  |
-| `put` | `string` | Used for updating a resource. |  |
-| `post` | `string` | Used for creating a resource. |  |
-| `delete` | `string` | Used for deleting a resource. |  |
-| `patch` | `string` | Used for updating a resource. |  |
-| `custom` | [.google.api.CustomHttpPattern](../http.proto.sk#customhttppattern) | The custom pattern is used for specifying an HTTP method that is not included in the `pattern` field, such as HEAD, or "*" to leave the HTTP method unspecified for this rule. The wild-card rule is useful for services that provide content to Web (HTML) clients. |  |
+| `get` | `string` | Used for listing and getting information about resources. Only one of `get`, `put`, `post`, `delete`, or `custom` can be set. |  |
+| `put` | `string` | Used for updating a resource. Only one of `put`, `get`, `post`, `delete`, or `custom` can be set. |  |
+| `post` | `string` | Used for creating a resource. Only one of `post`, `get`, `put`, `delete`, or `custom` can be set. |  |
+| `delete` | `string` | Used for deleting a resource. Only one of `delete`, `get`, `put`, `post`, or `custom` can be set. |  |
+| `patch` | `string` | Used for updating a resource. Only one of `patch`, `get`, `put`, `post`, or `custom` can be set. |  |
+| `custom` | [.google.api.CustomHttpPattern](../http.proto.sk#customhttppattern) | The custom pattern is used for specifying an HTTP method that is not included in the `pattern` field, such as HEAD, or "*" to leave the HTTP method unspecified for this rule. The wild-card rule is useful for services that provide content to Web (HTML) clients. Only one of `custom`, `get`, `put`, `post`, or `patch` can be set. |  |
 | `body` | `string` | The name of the request field whose value is mapped to the HTTP body, or `*` for mapping all fields not captured by the path pattern to the HTTP body. NOTE: the referred field must not be a repeated field and must be present at the top-level of request message type. |  |
 | `additionalBindings` | [[]google.api.HttpRule](../http.proto.sk#httprule) | Additional HTTP bindings for the selector. Nested bindings must not contain an `additional_bindings` field themselves (that is, the nesting may only be one level deep). |  |
 

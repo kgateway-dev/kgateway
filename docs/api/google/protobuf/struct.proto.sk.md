@@ -111,12 +111,12 @@ The JSON representation for `Value` is JSON value.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `nullValue` | [.google.protobuf.NullValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/null-value) | Represents a null value. |  |
-| `numberValue` | `float` | Represents a double value. |  |
-| `stringValue` | `string` | Represents a string value. |  |
-| `boolValue` | `bool` | Represents a boolean value. |  |
-| `structValue` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Represents a structured value. |  |
-| `listValue` | [.google.protobuf.ListValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/list-value) | Represents a repeated `Value`. |  |
+| `nullValue` | [.google.protobuf.NullValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/null-value) | Represents a null value. Only one of `nullValue`, `numberValue`, `stringValue`, `boolValue`, or `listValue` can be set. |  |
+| `numberValue` | `float` | Represents a double value. Only one of `numberValue`, `nullValue`, `stringValue`, `boolValue`, or `listValue` can be set. |  |
+| `stringValue` | `string` | Represents a string value. Only one of `stringValue`, `nullValue`, `numberValue`, `boolValue`, or `listValue` can be set. |  |
+| `boolValue` | `bool` | Represents a boolean value. Only one of `boolValue`, `nullValue`, `numberValue`, `stringValue`, or `listValue` can be set. |  |
+| `structValue` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Represents a structured value. Only one of `structValue`, `nullValue`, `numberValue`, `stringValue`, or `listValue` can be set. |  |
+| `listValue` | [.google.protobuf.ListValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/list-value) | Represents a repeated `Value`. Only one of `listValue`, `nullValue`, `numberValue`, `stringValue`, or `structValue` can be set. |  |
 
 
 

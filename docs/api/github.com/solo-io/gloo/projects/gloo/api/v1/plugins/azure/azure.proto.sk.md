@@ -42,8 +42,8 @@ within a particular Function App
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `functionAppName` | `string` | The Name of the Azure Function App where the functions are grouped |  |
-| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/). {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }} Note that this secret is not required unless Function Discovery is enabled |  |
+| `functionAppName` | `string` | The Name of the Azure Function App where the functions are grouped. |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/). {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }} Note that this secret is not required unless Function Discovery is enabled. |  |
 | `functions` | [[]azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec](../azure.proto.sk#functionspec) |  |  |
 
 
@@ -64,8 +64,8 @@ The Function Spec contains data necessary for Gloo to invoke Azure functions
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `functionName` | `string` | The Name of the Azure Function as it appears in the Azure Functions Portal |  |
-| `authLevel` | [.azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec.AuthLevel](../azure.proto.sk#authlevel) | Auth Level can bve either "anonymous" "function" or "admin" See https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details |  |
+| `functionName` | `string` | The Name of the Azure Function as it appears in the Azure Functions Portal. |  |
+| `authLevel` | [.azure.plugins.gloo.solo.io.UpstreamSpec.FunctionSpec.AuthLevel](../azure.proto.sk#authlevel) | Auth Level can bve either "anonymous" "function" or "admin" See https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details. |  |
 
 
 

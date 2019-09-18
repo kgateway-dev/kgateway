@@ -10,32 +10,51 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
-	mEdsSnapshotIn     = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mEdsSnapshotOut    = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mEdsSnapshotMissed = stats.Int64("eds.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	// Deprecated. See mEdsResourcesIn
+	mEdsSnapshotIn = stats.Int64("eds.gloo.solo.io/emitter/snap_in", "Deprecated. Use eds.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
 
+	// metrics for emitter
+	mEdsResourcesIn    = stats.Int64("eds.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mEdsSnapshotOut    = stats.Int64("eds.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mEdsSnapshotMissed = stats.Int64("eds.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+
+	// views for emitter
+	// deprecated: see edsResourcesInView
 	edssnapshotInView = &view.View{
-		Name:        "eds.gloo.solo.io_snap_emitter/snap_in",
+		Name:        "eds.gloo.solo.io/emitter/snap_in",
 		Measure:     mEdsSnapshotIn,
-		Description: "The number of snapshots updates coming in",
+		Description: "Deprecated. Use eds.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+
+	edsResourcesInView = &view.View{
+		Name:        "eds.gloo.solo.io/emitter/resources_in",
+		Measure:     mEdsResourcesIn,
+		Description: "The number of resource lists received on open watch channels",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
+		},
+	}
 	edssnapshotOutView = &view.View{
-		Name:        "eds.gloo.solo.io/snap_emitter/snap_out",
+		Name:        "eds.gloo.solo.io/emitter/snap_out",
 		Measure:     mEdsSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	edssnapshotMissedView = &view.View{
-		Name:        "eds.gloo.solo.io/snap_emitter/snap_missed",
+		Name:        "eds.gloo.solo.io/emitter/snap_missed",
 		Measure:     mEdsSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -44,13 +63,22 @@ var (
 )
 
 func init() {
-	view.Register(edssnapshotInView, edssnapshotOutView, edssnapshotMissedView)
+	view.Register(
+		edssnapshotInView,
+		edssnapshotOutView,
+		edssnapshotMissedView,
+		edsResourcesInView,
+	)
+}
+
+type EdsSnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *EdsSnapshot, <-chan error, error)
 }
 
 type EdsEmitter interface {
+	EdsSnapshotEmitter
 	Register() error
 	Upstream() UpstreamClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *EdsSnapshot, <-chan error, error)
 }
 
 func NewEdsEmitter(upstreamClient UpstreamClient) EdsEmitter {
@@ -189,6 +217,13 @@ func (c *edsEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				record()
 
 				namespace := upstreamNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"upstream",
+					mEdsResourcesIn,
+				)
 
 				// merge lists by namespace
 				upstreamsByNamespace[namespace] = upstreamNamespacedList.list
