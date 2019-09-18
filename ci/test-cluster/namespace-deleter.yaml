@@ -44,7 +44,8 @@ metadata:
   name: namespace-deleter
   namespace: namespace-deleter
 spec:
-  schedule: "0 */1 * * *"
+  # run every 15 minutes
+  schedule: "*/15 * * * *"
   jobTemplate:
     spec:
       template:
@@ -53,8 +54,9 @@ spec:
           containers:
             - name: kubectl
               image: bitnami/kubectl:1.15
+              # delete test namespaces if older than 30 minutes
               command:
                 - /bin/sh
                 - -c
-                - kubectl get namespaces -o go-template --template '{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | grep test | awk '$2 <= "'$(date -d'now-1 hours' -Ins --utc | sed 's/+0000/Z/')'" { print $1 }' | xargs --no-run-if-empty kubectl delete namespace
+                - kubectl get namespaces -o go-template --template '{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | grep test | awk '$2 <= "'$(date -d'now-60 minutes' -Ins --utc | sed 's/+0000/Z/')'" { print $1 }' | xargs --no-run-if-empty kubectl delete namespace
           restartPolicy: OnFailure
