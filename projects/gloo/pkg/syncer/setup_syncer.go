@@ -2,10 +2,11 @@ package syncer
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
