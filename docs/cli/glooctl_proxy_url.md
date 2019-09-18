@@ -17,8 +17,9 @@ glooctl proxy url [flags]
 ### Options
 
 ```
-  -h, --help            help for url
-  -l, --local-cluster   use when the target kubernetes cluster is running locally, e.g. in minikube or minishift. this will default to true if LoadBalanced services are not assigned external IPs by your cluster
+  -h, --help                        help for url
+  -l, --local-cluster               use when the target kubernetes cluster is running locally, e.g. in minikube or minishift. this will default to true if LoadBalanced services are not assigned external IPs by your cluster
+  -p, --local-cluster-name string   name of the locally running minikube cluster. (default "minikube")
 ```
 
 ### Options inherited from parent commands

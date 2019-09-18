@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Allow users to specify the kubernetes cluster name in `glooctl proxy url` and `glooctl proxy address`
+  issueLink: https://github.com/solo-io/gloo/issues/1095

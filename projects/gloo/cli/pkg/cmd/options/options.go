@@ -69,12 +69,12 @@ type Uninstall struct {
 }
 
 type Proxy struct {
-	LocalCluster bool
+	LocalCluster     bool
 	LocalClusterName string
-	Name         string
-	Port         string
-	FollowLogs   bool
-	DebugLogs    bool
+	Name             string
+	Port             string
+	FollowLogs       bool
+	DebugLogs        bool
 }
 
 type Upgrade struct {
