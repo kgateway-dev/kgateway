@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/test/helpers"
 
@@ -72,7 +73,12 @@ func StartTestHelper() {
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values.Name()))
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(func() error {
-		ok, err := check.CheckResources(&options.Options{})
+		opts := &options.Options{
+			Metadata: core.Metadata{
+				Namespace: testHelper.InstallNamespace,
+			},
+		}
+		ok, err := check.CheckResources(opts)
 		if err != nil {
 			return errors.Wrap(err, "unable to run glooctl check")
 		}
