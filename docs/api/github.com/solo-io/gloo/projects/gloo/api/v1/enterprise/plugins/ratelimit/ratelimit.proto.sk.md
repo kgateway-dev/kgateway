@@ -17,8 +17,6 @@ weight: 5
 - [IngressRateLimit](#ingressratelimit)
 - [Settings](#settings)
 - [EnvoySettings](#envoysettings)
-- [RateLimitCustomConfig](#ratelimitcustomconfig)
-- [RateLimitActions](#ratelimitactions)
 - [RateLimitVhostExtension](#ratelimitvhostextension)
 - [RateLimitRouteExtension](#ratelimitrouteextension)
 - [Action](#action)
@@ -145,23 +143,6 @@ weight: 5
 
 
 ```yaml
-"customConfig": .ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `customConfig` | [.ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig](../ratelimit.proto.sk#ratelimitcustomconfig) |  |  |
-
-
-
-
----
-### RateLimitCustomConfig
-
-
-
-```yaml
 "descriptors": []ratelimit.plugins.gloo.solo.io.Descriptor
 
 ```
@@ -174,7 +155,7 @@ weight: 5
 
 
 ---
-### RateLimitActions
+### RateLimitVhostExtension
 
 
 
@@ -191,37 +172,20 @@ weight: 5
 
 
 ---
-### RateLimitVhostExtension
-
-
-
-```yaml
-"rateLimits": []ratelimit.plugins.gloo.solo.io.RateLimitActions
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) |  |  |
-
-
-
-
----
 ### RateLimitRouteExtension
 
 
 
 ```yaml
 "includeVhRateLimits": bool
-"rateLimits": []ratelimit.plugins.gloo.solo.io.RateLimitActions
+"actions": []ratelimit.plugins.gloo.solo.io.Action
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `includeVhRateLimits` | `bool` |  |  |
-| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) |  |  |
+| `actions` | [[]ratelimit.plugins.gloo.solo.io.Action](../ratelimit.proto.sk#action) |  |  |
 
 
 

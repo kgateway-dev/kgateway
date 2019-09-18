@@ -89,13 +89,13 @@ message VirtualHostPlugins {
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 4;
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
-    ratelimit.plugins.gloo.solo.io.IngressRateLimit ratelimit_gloo = 6;
+    ratelimit.plugins.gloo.solo.io.IngressRateLimit ratelimit_basic = 6;
     // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
     // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
     // Configure rate-limit *actions* here, which define how request characteristics get translated into
     // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
     // their associated limits on the Gloo settings
-    ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension ratelimit_actions = 7;
+    ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension ratelimit = 7;
 }
 
 // Plugin-specific configuration that lives on routes
@@ -130,13 +130,13 @@ message RoutePlugins {
     // - route, upstream, virtual service
     lbhash.plugins.gloo.solo.io.RouteActionHashConfig lb_hash = 12;
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
-    ratelimit.plugins.gloo.solo.io.IngressRateLimit ratelimit_gloo = 13;
+    ratelimit.plugins.gloo.solo.io.IngressRateLimit ratelimit_basic = 13;
     // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
     // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
     // Configure rate-limit *actions* here, which define how request characteristics get translated into
     // descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and
     // their associated limits on the Gloo settings
-    ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension ratelimit_actions = 14;
+    ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension ratelimit = 14;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination

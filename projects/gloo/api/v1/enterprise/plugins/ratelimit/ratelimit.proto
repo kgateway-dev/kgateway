@@ -41,23 +41,18 @@ message Settings {
 }
 
 message EnvoySettings {
-    message RateLimitCustomConfig {
-      repeated Descriptor descriptors = 1;
-    }
-    RateLimitCustomConfig custom_config = 2;
-}
-
-message RateLimitActions {
-    repeated Action actions = 2 ;// [(validate.rules).repeated .min_items = 1];
+    repeated Descriptor descriptors = 1;
 }
 
 message RateLimitVhostExtension {
-    repeated RateLimitActions rate_limits = 1 ;// [(validate.rules).repeated .min_items = 1];
+    reserved 1;
+    repeated Action actions = 2;// [(validate.rules).repeated .min_items = 1];
 }
 
 message RateLimitRouteExtension {
     bool include_vh_rate_limits = 1;
-    repeated RateLimitActions rate_limits = 2 ;// [(validate.rules).repeated .min_items = 1];
+    reserved 2;
+    repeated Action actions = 3;// [(validate.rules).repeated .min_items = 1];
 }
 
 

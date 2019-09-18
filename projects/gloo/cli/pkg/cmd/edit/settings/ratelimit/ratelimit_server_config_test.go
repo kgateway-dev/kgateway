@@ -46,10 +46,10 @@ var _ = Describe("CustomServerConfig", func() {
 			return []byte(yaml), "", nil
 		}
 
-		return testutils.Glooctl("edit settings --name default --namespace gloo-system ratelimit custom-server-config")
+		return testutils.Glooctl("edit settings --name default --namespace gloo-system ratelimit custom-server-config") //TODO(kdorosh) rename custom-server-config command
 	}
 
-	Validate := func(yaml string) *ratelimitpb.EnvoySettings_RateLimitCustomConfig {
+	Validate := func(yaml string) *ratelimitpb.EnvoySettings {
 		err := Run(yaml)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
@@ -60,7 +60,7 @@ var _ = Describe("CustomServerConfig", func() {
 		err = utils.UnmarshalExtension(settings, constants.EnvoyRateLimitExtensionName, &rlSettings)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		return rlSettings.CustomConfig
+		return &rlSettings
 	}
 
 	It("should parse example 1", func() {

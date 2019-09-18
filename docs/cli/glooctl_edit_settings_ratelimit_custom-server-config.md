@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl edit settings ratelimit custom-server-config
 
-Add a custom rate limit settings (Enterprise)
+Add rate limit settings (Enterprise)
 
 ### Synopsis
 

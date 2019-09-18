@@ -44,5 +44,5 @@ glooctl edit settings ratelimit [flags]
 ### SEE ALSO
 
 * [glooctl edit settings](../glooctl_edit_settings)	 - root command for settings
-* [glooctl edit settings ratelimit custom-server-config](../glooctl_edit_settings_ratelimit_custom-server-config)	 - Add a custom rate limit settings (Enterprise)
+* [glooctl edit settings ratelimit custom-server-config](../glooctl_edit_settings_ratelimit_custom-server-config)	 - Add rate limit settings (Enterprise)
 

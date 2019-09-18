@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/gogo/protobuf/types"
@@ -26,7 +28,7 @@ func RateLimitCustomConfig(opts *editOptions.EditOptions, optionsFunc ...cliutil
 	cmd := &cobra.Command{
 		// Use command constants to aid with replacement.
 		Use:   "custom-server-config",
-		Short: "Add a custom rate limit settings (Enterprise)",
+		Short: "Add rate limit settings (Enterprise)",
 		Long: `This allows using lyft rate limit server configuration language to configure the rate limit server.
 		For more information see: https://github.com/lyft/ratelimit
 		Note: do not add the 'domain' configuration key.
@@ -53,11 +55,6 @@ func edit(opts *editOptions.EditOptions) error {
 		}
 	}
 
-	customcfg := rlSettings.CustomConfig
-	if customcfg == nil {
-		customcfg = new(ratelimitpb.EnvoySettings_RateLimitCustomConfig)
-	}
-
 	var editor cmdutils.Editor
 	editor.JsonTransform = func(jsn []byte) []byte {
 		// make unit upper case
@@ -67,17 +64,13 @@ func edit(opts *editOptions.EditOptions) error {
 			return []byte(unit + strings.ToUpper(string(u[len(unit):])))
 		})
 	}
-	customcfgProto, err := editor.EditConfig(customcfg)
+	var rlSettingsProto proto.Message
+	rlSettingsProto, err = editor.EditConfig(&rlSettings)
 	if err != nil {
 		return err
 	}
-	customcfg = customcfgProto.(*ratelimitpb.EnvoySettings_RateLimitCustomConfig)
-	rlSettings.CustomConfig = customcfg
 
-	rlStruct, err := protoutils.MarshalStruct(&rlSettings)
-	if err != nil {
-		return err
-	}
+	rlStruct, err := protoutils.MarshalStruct(rlSettingsProto)
 
 	if settings.Extensions == nil {
 		settings.Extensions = &gloov1.Extensions{}
