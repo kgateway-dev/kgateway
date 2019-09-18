@@ -36,7 +36,10 @@ Based on Envoy's host_rewrite from https://www.envoyproxy.io/docs/envoy/latest/a
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `hostRewrite` | `string` | Indicates that during forwarding, the host header will be swapped with this value. |  |
+
+
+
+| `hostRewrite` | `string` |  Indicates that during forwarding, the host header will be swapped with this value.  |  |
 
 
 

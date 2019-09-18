@@ -38,9 +38,18 @@ Fine tune the settings for connections to an upstream
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `maxRequestsPerConnection` | `int` | Maximum requests for a single upstream connection (unspecified or zero = no limit) |  |
-| `connectTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for new network connections to hosts in the cluster |  |
-| `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk#tcpkeepalive) | Configure OS-level tcp keepalive checks |  |
+
+
+
+| `maxRequestsPerConnection` | `int` |  Maximum requests for a single upstream connection (unspecified or zero = no limit).  |  |
+
+
+
+| `connectTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  The timeout for new network connections to hosts in the cluster.  |  |
+
+
+
+| `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk#tcpkeepalive) |  Configure OS-level tcp keepalive checks.  |  |
 
 
 
@@ -61,9 +70,18 @@ see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/co
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `keepaliveProbes` | `int` | Maximum number of keepalive probes to send without response before deciding the connection is dead. |  |
-| `keepaliveTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The number of seconds a connection needs to be idle before keep-alive probes start being sent. This is rounded up to the second. |  |
-| `keepaliveInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The number of seconds between keep-alive probes. This is rounded up to the second. |  |
+
+
+
+| `keepaliveProbes` | `int` |  Maximum number of keepalive probes to send without response before deciding the connection is dead.  |  |
+
+
+
+| `keepaliveTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  The number of seconds a connection needs to be idle before keep-alive probes start being sent. This is rounded up to the second.  |  |
+
+
+
+| `keepaliveInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  The number of seconds between keep-alive probes. This is rounded up to the second.  |  |
 
 
 

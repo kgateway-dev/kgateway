@@ -12,32 +12,51 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
-	mApiSnapshotIn     = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mApiSnapshotOut    = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mApiSnapshotMissed = stats.Int64("api.gateway.solo.io.v2/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	// Deprecated. See mApiResourcesIn
+	mApiSnapshotIn = stats.Int64("api.gateway.solo.io.v_2/emitter/snap_in", "Deprecated. Use api.gateway.solo.io.v_2/emitter/resources_in. The number of snapshots in", "1")
 
+	// metrics for emitter
+	mApiResourcesIn    = stats.Int64("api.gateway.solo.io.v_2/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mApiSnapshotOut    = stats.Int64("api.gateway.solo.io.v_2/emitter/snap_out", "The number of snapshots out", "1")
+	mApiSnapshotMissed = stats.Int64("api.gateway.solo.io.v_2/emitter/snap_missed", "The number of snapshots missed", "1")
+
+	// views for emitter
+	// deprecated: see apiResourcesInView
 	apisnapshotInView = &view.View{
-		Name:        "api.gateway.solo.io.v2_snap_emitter/snap_in",
+		Name:        "api.gateway.solo.io.v_2/emitter/snap_in",
 		Measure:     mApiSnapshotIn,
-		Description: "The number of snapshots updates coming in",
+		Description: "Deprecated. Use api.gateway.solo.io.v_2/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+
+	apiResourcesInView = &view.View{
+		Name:        "api.gateway.solo.io.v_2/emitter/resources_in",
+		Measure:     mApiResourcesIn,
+		Description: "The number of resource lists received on open watch channels",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
+		},
+	}
 	apisnapshotOutView = &view.View{
-		Name:        "api.gateway.solo.io.v2/snap_emitter/snap_out",
+		Name:        "api.gateway.solo.io.v_2/emitter/snap_out",
 		Measure:     mApiSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	apisnapshotMissedView = &view.View{
-		Name:        "api.gateway.solo.io.v2/snap_emitter/snap_missed",
+		Name:        "api.gateway.solo.io.v_2/emitter/snap_missed",
 		Measure:     mApiSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -46,15 +65,24 @@ var (
 )
 
 func init() {
-	view.Register(apisnapshotInView, apisnapshotOutView, apisnapshotMissedView)
+	view.Register(
+		apisnapshotInView,
+		apisnapshotOutView,
+		apisnapshotMissedView,
+		apiResourcesInView,
+	)
+}
+
+type ApiSnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
 type ApiEmitter interface {
+	ApiSnapshotEmitter
 	Register() error
 	VirtualService() gateway_solo_io.VirtualServiceClient
 	RouteTable() gateway_solo_io.RouteTableClient
 	Gateway() GatewayClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error)
 }
 
 func NewApiEmitter(virtualServiceClient gateway_solo_io.VirtualServiceClient, routeTableClient gateway_solo_io.RouteTableClient, gatewayClient GatewayClient) ApiEmitter {
@@ -282,6 +310,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				namespace := virtualServiceNamespacedList.namespace
 
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"virtual_service",
+					mApiResourcesIn,
+				)
+
 				// merge lists by namespace
 				virtualServicesByNamespace[namespace] = virtualServiceNamespacedList.list
 				var virtualServiceList gateway_solo_io.VirtualServiceList
@@ -294,6 +329,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				namespace := routeTableNamespacedList.namespace
 
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"route_table",
+					mApiResourcesIn,
+				)
+
 				// merge lists by namespace
 				routeTablesByNamespace[namespace] = routeTableNamespacedList.list
 				var routeTableList gateway_solo_io.RouteTableList
@@ -305,6 +347,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				record()
 
 				namespace := gatewayNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"gateway",
+					mApiResourcesIn,
+				)
 
 				// merge lists by namespace
 				gatewaysByNamespace[namespace] = gatewayNamespacedList.list

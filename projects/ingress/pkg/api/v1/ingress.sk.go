@@ -31,6 +31,8 @@ func (r *Ingress) SetMetadata(meta core.Metadata) {
 func (r *Ingress) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
+	metaCopy.Generation = 0
+	// investigate zeroing out owner refs as well
 	return hashutils.HashAll(
 		metaCopy,
 		r.KubeIngressSpec,

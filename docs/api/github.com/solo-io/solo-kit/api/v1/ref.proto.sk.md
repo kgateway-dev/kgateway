@@ -37,8 +37,14 @@ TODO(ilackarms): make upstreamname and secretref into ResourceRefs
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | `string` |  |  |
-| `namespace` | `string` |  |  |
+
+
+
+| `name` | `string` |   |  |
+
+
+
+| `namespace` | `string` |   |  |
 
 
 

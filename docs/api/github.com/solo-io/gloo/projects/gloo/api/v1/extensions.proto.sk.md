@@ -35,7 +35,10 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `configs` | `map<string, .google.protobuf.Struct>` |  |  |
+
+
+
+| `configs` | `map<string, .google.protobuf.Struct>` |   |  |
 
 
 
@@ -52,7 +55,10 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  |  |
+
+
+
+| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |   |  |
 
 
 
