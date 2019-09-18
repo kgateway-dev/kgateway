@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix ratelimit setting propagation with new config location
+    issueLink: https://github.com/solo-io/gloo/issues/1209

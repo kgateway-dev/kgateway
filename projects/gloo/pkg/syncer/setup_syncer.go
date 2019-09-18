@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
 	consulapi "github.com/hashicorp/consul/api"
@@ -360,6 +362,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
 		SettingExtensions: opts.Settings.Extensions,
+		RateLimitDescriptorSettings: ratelimit.EnvoySettings{
+			CustomConfig: opts.Settings.GetRatelimitDescriptors().GetCustomConfig(),
+		},
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
 		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
@@ -448,6 +453,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			}
 		}()
 	}
+
+	go func() {
+		for {
+			select {
+			case err, ok := <-errs:
+				if !ok {
+					return
+				}
+				logger.Errorw("gloo main event loop", zap.Error(err))
+			case <-opts.WatchOpts.Ctx.Done():
+				// think about closing this channel
+				// close(errs)
+				return
+			}
+		}
+	}()
 
 	return nil
 }
