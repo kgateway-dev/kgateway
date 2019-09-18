@@ -143,7 +143,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['dep', 'check-code-and-docs-gen']
+  waitFor: ['dep', 'check-code-and-docs-gen', 'test']
   id: 'compile'
 
 # Run regression tests
