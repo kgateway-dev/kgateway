@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Run glooctl check during regression tests to detect installation errors.
+    issueLink: https://github.com/solo-io/gloo/issues/1159

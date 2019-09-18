@@ -2,6 +2,9 @@ package gateway_test
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -67,6 +70,16 @@ func StartTestHelper() {
 
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values.Name()))
 	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		ok, err := check.CheckResources(&options.Options{})
+		if err != nil {
+			return errors.Wrap(err, "unable to run glooctl check")
+		}
+		if ok {
+			return nil
+		}
+		return errors.New("glooctl check detected a problem with the installation")
+	}, "20s", "4s").Should(Not(BeNil()))
 }
 
 func TearDownTestHelper() {

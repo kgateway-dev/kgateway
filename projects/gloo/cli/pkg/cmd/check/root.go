@@ -25,7 +25,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Use:   constants.CHECK_COMMAND.Use,
 		Short: constants.CHECK_COMMAND.Short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ok, err := checkResources(opts)
+			ok, err := CheckResources(opts)
 			if err != nil {
 				// Not returning error here because this shouldn't propagate as a standard CLI error, which prints usage.
 				fmt.Printf("Error!\n")
@@ -46,7 +46,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func checkResources(opts *options.Options) (bool, error) {
+func CheckResources(opts *options.Options) (bool, error) {
 	err := checkConnection()
 	if err != nil {
 		return false, err
