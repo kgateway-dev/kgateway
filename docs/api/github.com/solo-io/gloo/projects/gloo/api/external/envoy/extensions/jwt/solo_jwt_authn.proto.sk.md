@@ -41,7 +41,7 @@ weight: 5
 | ----- | ---- | ----------- |----------- | 
 | `requirement` | `string` |  |  |
 | `claimsToHeaders` | `map<string, .envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute.ClaimToHeaders>` |  |  |
-| `clearRouteCache` | `bool` | clear the route cache if claims were added to the header |  |
+| `clearRouteCache` | `bool` | clear the route cache if claims were added to the header. |  |
 | `payloadInMetadata` | `string` |  |  |
 
 

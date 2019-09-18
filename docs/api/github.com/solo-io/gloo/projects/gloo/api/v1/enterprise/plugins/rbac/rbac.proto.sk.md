@@ -171,8 +171,8 @@ If more than one field is added, all of them need to match.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disable` | `bool` | Disable RBAC checks on this route. This is useful to allow access to static resources \ login page without RBAC checks. |  |
-| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk#config) |  |  |
+| `disable` | `bool` | Disable RBAC checks on this route. This is useful to allow access to static resources \ login page without RBAC checks. Only one of `disable` or `config` can be set. |  |
+| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk#config) |  Only one of `config` or `disable` can be set. |  |
 
 
 

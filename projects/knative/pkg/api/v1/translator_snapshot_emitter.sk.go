@@ -13,32 +13,51 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
+
+	"github.com/solo-io/go-utils/errutils"
 )
 
 var (
-	mTranslatorSnapshotIn     = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_in", "The number of snapshots in", "1")
-	mTranslatorSnapshotOut    = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_out", "The number of snapshots out", "1")
-	mTranslatorSnapshotMissed = stats.Int64("translator.knative.gloo.solo.io/snap_emitter/snap_missed", "The number of snapshots missed", "1")
+	// Deprecated. See mTranslatorResourcesIn
+	mTranslatorSnapshotIn = stats.Int64("translator.knative.gloo.solo.io/emitter/snap_in", "Deprecated. Use translator.knative.gloo.solo.io/emitter/resources_in. The number of snapshots in", "1")
 
+	// metrics for emitter
+	mTranslatorResourcesIn    = stats.Int64("translator.knative.gloo.solo.io/emitter/resources_in", "The number of resource lists received on open watch channels", "1")
+	mTranslatorSnapshotOut    = stats.Int64("translator.knative.gloo.solo.io/emitter/snap_out", "The number of snapshots out", "1")
+	mTranslatorSnapshotMissed = stats.Int64("translator.knative.gloo.solo.io/emitter/snap_missed", "The number of snapshots missed", "1")
+
+	// views for emitter
+	// deprecated: see translatorResourcesInView
 	translatorsnapshotInView = &view.View{
-		Name:        "translator.knative.gloo.solo.io_snap_emitter/snap_in",
+		Name:        "translator.knative.gloo.solo.io/emitter/snap_in",
 		Measure:     mTranslatorSnapshotIn,
-		Description: "The number of snapshots updates coming in",
+		Description: "Deprecated. Use translator.knative.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
+
+	translatorResourcesInView = &view.View{
+		Name:        "translator.knative.gloo.solo.io/emitter/resources_in",
+		Measure:     mTranslatorResourcesIn,
+		Description: "The number of resource lists received on open watch channels",
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{
+			skstats.NamespaceKey,
+			skstats.ResourceKey,
+		},
+	}
 	translatorsnapshotOutView = &view.View{
-		Name:        "translator.knative.gloo.solo.io/snap_emitter/snap_out",
+		Name:        "translator.knative.gloo.solo.io/emitter/snap_out",
 		Measure:     mTranslatorSnapshotOut,
 		Description: "The number of snapshots updates going out",
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{},
 	}
 	translatorsnapshotMissedView = &view.View{
-		Name:        "translator.knative.gloo.solo.io/snap_emitter/snap_missed",
+		Name:        "translator.knative.gloo.solo.io/emitter/snap_missed",
 		Measure:     mTranslatorSnapshotMissed,
 		Description: "The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.",
 		Aggregation: view.Count(),
@@ -47,14 +66,23 @@ var (
 )
 
 func init() {
-	view.Register(translatorsnapshotInView, translatorsnapshotOutView, translatorsnapshotMissedView)
+	view.Register(
+		translatorsnapshotInView,
+		translatorsnapshotOutView,
+		translatorsnapshotMissedView,
+		translatorResourcesInView,
+	)
+}
+
+type TranslatorSnapshotEmitter interface {
+	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TranslatorSnapshot, <-chan error, error)
 }
 
 type TranslatorEmitter interface {
+	TranslatorSnapshotEmitter
 	Register() error
 	Secret() gloo_solo_io.SecretClient
 	Ingress() github_com_solo_io_gloo_projects_knative_pkg_api_external_knative.IngressClient
-	Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *TranslatorSnapshot, <-chan error, error)
 }
 
 func NewTranslatorEmitter(secretClient gloo_solo_io.SecretClient, ingressClient github_com_solo_io_gloo_projects_knative_pkg_api_external_knative.IngressClient) TranslatorEmitter {
@@ -238,6 +266,13 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 
 				namespace := secretNamespacedList.namespace
 
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"secret",
+					mTranslatorResourcesIn,
+				)
+
 				// merge lists by namespace
 				secretsByNamespace[namespace] = secretNamespacedList.list
 				var secretList gloo_solo_io.SecretList
@@ -249,6 +284,13 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				record()
 
 				namespace := ingressNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"ingress",
+					mTranslatorResourcesIn,
+				)
 
 				// merge lists by namespace
 				ingressesByNamespace[namespace] = ingressNamespacedList.list

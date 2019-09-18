@@ -39,8 +39,8 @@ ServiceSpec configuration is opaque to Gloo and handled by Service Plugins.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rest` | [.rest.plugins.gloo.solo.io.ServiceSpec](../rest/rest.proto.sk#servicespec) |  |  |
-| `grpc` | [.grpc.plugins.gloo.solo.io.ServiceSpec](../grpc/grpc.proto.sk#servicespec) |  |  |
+| `rest` | [.rest.plugins.gloo.solo.io.ServiceSpec](../rest/rest.proto.sk#servicespec) |  Only one of `rest` or `grpc` can be set. |  |
+| `grpc` | [.grpc.plugins.gloo.solo.io.ServiceSpec](../grpc/grpc.proto.sk#servicespec) |  Only one of `grpc` or `rest` can be set. |  |
 
 
 

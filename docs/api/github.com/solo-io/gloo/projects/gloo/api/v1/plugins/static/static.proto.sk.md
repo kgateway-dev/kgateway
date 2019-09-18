@@ -42,10 +42,10 @@ Unlike upstreams created by service discovery, Static Upstreams must be created 
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `hosts` | [[]static.plugins.gloo.solo.io.Host](../static.proto.sk#host) | A list of addresses and ports at least one must be specified |  |
-| `useTls` | `bool` | Attempt to use outbound TLS Gloo will automatically set this to true for port 443 |  |
+| `hosts` | [[]static.plugins.gloo.solo.io.Host](../static.proto.sk#host) | A list of addresses and ports at least one must be specified. |  |
+| `useTls` | `bool` | Attempt to use outbound TLS Gloo will automatically set this to true for port 443. |  |
 | `autoHostRewrite` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable \ Disable auto host re-write. If not set, the default behavior is to enable auto host rewrite, if the first host in the list is not an IP address (i.e. it is a DNS address) If enabled (explicitly or by the default) auto_host_rewrite will be automatically added to routes that point to this upstream. |  |
-| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address |  |
+| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address. |  |
 
 
 
@@ -64,8 +64,8 @@ Represents a single instance of an upstream
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `addr` | `string` | Address (hostname or IP) |  |
-| `port` | `int` | Port the instance is listening on |  |
+| `addr` | `string` | Address (hostname or IP). |  |
+| `port` | `int` | Port the instance is listening on. |  |
 
 
 

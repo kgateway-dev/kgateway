@@ -38,8 +38,8 @@ end).
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `start` | `int` | start of the range (inclusive) |  |
-| `end` | `int` | end of the range (exclusive) |  |
+| `start` | `int` | start of the range (inclusive). |  |
+| `end` | `int` | end of the range (exclusive). |  |
 
 
 
@@ -59,8 +59,8 @@ end).
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `start` | `float` | start of the range (inclusive) |  |
-| `end` | `float` | end of the range (exclusive) |  |
+| `start` | `float` | start of the range (inclusive). |  |
+| `end` | `float` | end of the range (exclusive). |  |
 
 
 

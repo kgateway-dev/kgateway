@@ -35,7 +35,7 @@ if set, prefix_rewrite will be used to rewrite the matched HTTP Path prefix on r
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `prefixRewrite` | `string` | Set to an empty string to remove the matched HTTP Path prefix |  |
+| `prefixRewrite` | `string` | Set to an empty string to remove the matched HTTP Path prefix. |  |
 
 
 

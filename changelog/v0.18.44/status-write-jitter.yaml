@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: Fix upstream status write status error from hybrid client, and generation hash mismatch.
+  issueLink: https://github.com/solo-io/gloo/issues/1212
+  resolvesIssue: false

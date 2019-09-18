@@ -33,15 +33,21 @@ func (s SetupSyncers) Sync(ctx context.Context, snapshot *SetupSnapshot) error {
 }
 
 type setupEventLoop struct {
-	emitter SetupEmitter
+	emitter SetupSnapshotEmitter
 	syncer  SetupSyncer
+	ready   chan struct{}
 }
 
-func NewSetupEventLoop(emitter SetupEmitter, syncer SetupSyncer) eventloop.EventLoop {
+func NewSetupEventLoop(emitter SetupSnapshotEmitter, syncer SetupSyncer) eventloop.EventLoop {
 	return &setupEventLoop{
 		emitter: emitter,
 		syncer:  syncer,
+		ready:   make(chan struct{}),
 	}
+}
+
+func (el *setupEventLoop) Ready() <-chan struct{} {
+	return el.ready
 }
 
 func (el *setupEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error) {
@@ -58,6 +64,7 @@ func (el *setupEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-ch
 	}
 	go errutils.AggregateErrs(opts.Ctx, errs, emitterErrs, "v1.emitter errors")
 	go func() {
+		var channelClosed bool
 		// create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
 		// use closure to allow cancel function to be updated as context changes
@@ -83,6 +90,9 @@ func (el *setupEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-ch
 					default:
 						logger.Errorf("write error channel is full! could not propagate err: %v", err)
 					}
+				} else if !channelClosed {
+					channelClosed = true
+					close(el.ready)
 				}
 			case <-opts.Ctx.Done():
 				return

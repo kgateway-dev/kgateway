@@ -33,15 +33,21 @@ func (s TranslatorSyncers) Sync(ctx context.Context, snapshot *TranslatorSnapsho
 }
 
 type translatorEventLoop struct {
-	emitter TranslatorEmitter
+	emitter TranslatorSnapshotEmitter
 	syncer  TranslatorSyncer
+	ready   chan struct{}
 }
 
-func NewTranslatorEventLoop(emitter TranslatorEmitter, syncer TranslatorSyncer) eventloop.EventLoop {
+func NewTranslatorEventLoop(emitter TranslatorSnapshotEmitter, syncer TranslatorSyncer) eventloop.EventLoop {
 	return &translatorEventLoop{
 		emitter: emitter,
 		syncer:  syncer,
+		ready:   make(chan struct{}),
 	}
+}
+
+func (el *translatorEventLoop) Ready() <-chan struct{} {
+	return el.ready
 }
 
 func (el *translatorEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan error, error) {
@@ -58,6 +64,7 @@ func (el *translatorEventLoop) Run(namespaces []string, opts clients.WatchOpts) 
 	}
 	go errutils.AggregateErrs(opts.Ctx, errs, emitterErrs, "v1.emitter errors")
 	go func() {
+		var channelClosed bool
 		// create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
 		// use closure to allow cancel function to be updated as context changes
@@ -83,6 +90,9 @@ func (el *translatorEventLoop) Run(namespaces []string, opts clients.WatchOpts) 
 					default:
 						logger.Errorf("write error channel is full! could not propagate err: %v", err)
 					}
+				} else if !channelClosed {
+					channelClosed = true
+					close(el.ready)
 				}
 			case <-opts.Ctx.Done():
 				return

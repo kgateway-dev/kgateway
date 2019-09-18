@@ -41,7 +41,7 @@ spec is fine), to make sure that traffic to it is routed with http2.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet |  |
+| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet. |  |
 | `grpcServices` | [[]grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk#grpcservice) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |  |
 
 

@@ -40,7 +40,7 @@ Unlike upstreams created by service discovery, Pipe Upstreams must be created ma
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `path` | `string` | The Unix Domain Socket path. |  |
-| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address |  |
+| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address. |  |
 
 
 
