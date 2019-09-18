@@ -35,10 +35,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `str` | `string` |   |  |
+| `str` | `string` |  |  |
 
 
 
@@ -55,10 +52,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `str` | `string` |   |  |
+| `str` | `string` |  |  |
 
 
 

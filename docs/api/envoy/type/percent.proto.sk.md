@@ -37,10 +37,7 @@ Identifies a percentage, in the range [0.0, 100.0].
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `value` | `float` |   |  |
+| `value` | `float` |  |  |
 
 
 
@@ -64,14 +61,8 @@ both a numerator and denominator that together determine the final fractional va
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `numerator` | `int` |  Specifies the numerator. Defaults to 0.  |  |
-
-
-
-| `denominator` | [.envoy.type.FractionalPercent.DenominatorType](../percent.proto.sk#denominatortype) |  Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%).  |  |
+| `numerator` | `int` | Specifies the numerator. Defaults to 0. |  |
+| `denominator` | [.envoy.type.FractionalPercent.DenominatorType](../percent.proto.sk#denominatortype) | Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%). |  |
 
 
 

@@ -39,18 +39,9 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `disabled` | `bool` |  disable waf on this listener.  |  |
-
-
-
-| `coreRuleSet` | [.waf.plugins.gloo.solo.io.CoreRuleSet](../waf.proto.sk#coreruleset) |  Add owasp core rule set if nil will not be added.  |  |
-
-
-
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk#ruleset) |  custom rule sets rules to add.  |  |
+| `disabled` | `bool` | disable waf on this listener. |  |
+| `coreRuleSet` | [.waf.plugins.gloo.solo.io.CoreRuleSet](../waf.proto.sk#coreruleset) | Add owasp core rule set if nil will not be added. |  |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk#ruleset) | custom rule sets rules to add. |  |
 
 
 
@@ -68,14 +59,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `customSettingsString` | `string` |  String representing the core rule set custom config options.  Only one of `customSettingsString` or `customSettingsFile` can be set. |  |
-
-
-
-| `customSettingsFile` | `string` |  String representing the core rule set custom config options.  Only one of `customSettingsFile` or `customSettingsString` can be set. |  |
+| `customSettingsString` | `string` | String representing the core rule set custom config options. Only one of `customSettingsString` or `customSettingsFile` can be set. |  |
+| `customSettingsFile` | `string` | String representing the core rule set custom config options. Only one of `customSettingsFile` or `customSettingsString` can be set. |  |
 
 
 
@@ -93,14 +78,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `disabled` | `bool` |  disable waf on this virtual host.  |  |
-
-
-
-| `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |   |  |
+| `disabled` | `bool` | disable waf on this virtual host. |  |
+| `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |  |  |
 
 
 
@@ -118,14 +97,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `disabled` | `bool` |  disable waf on this route.  |  |
-
-
-
-| `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |   |  |
+| `disabled` | `bool` | disable waf on this route. |  |
+| `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |  |  |
 
 
 

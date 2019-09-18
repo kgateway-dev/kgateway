@@ -47,18 +47,9 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `type` | [.gloo.solo.io.GlooType](../version.proto.sk#glootype) |   |  |
-
-
-
-| `enterprise` | `bool` |  Whether or not this is an enterprise distribution.  |  |
-
-
-
-| `kubernetes` | [.gloo.solo.io.Kubernetes](../version.proto.sk#kubernetes) |   |  |
+| `type` | [.gloo.solo.io.GlooType](../version.proto.sk#glootype) |  |  |
+| `enterprise` | `bool` | Whether or not this is an enterprise distribution. |  |
+| `kubernetes` | [.gloo.solo.io.Kubernetes](../version.proto.sk#kubernetes) |  |  |
 
 
 
@@ -76,14 +67,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `containers` | [[]gloo.solo.io.Kubernetes.Container](../version.proto.sk#container) |  Array of containers comprising a single distribution of gloo.  |  |
-
-
-
-| `namespace` | `string` |  namespace gloo is running in.  |  |
+| `containers` | [[]gloo.solo.io.Kubernetes.Container](../version.proto.sk#container) | Array of containers comprising a single distribution of gloo. |  |
+| `namespace` | `string` | namespace gloo is running in. |  |
 
 
 
@@ -102,18 +87,9 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `tag` | `string` |   |  |
-
-
-
-| `name` | `string` |   |  |
-
-
-
-| `registry` | `string` |   |  |
+| `tag` | `string` |  |  |
+| `name` | `string` |  |  |
+| `registry` | `string` |  |  |
 
 
 
@@ -130,10 +106,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `version` | `string` |   |  |
+| `version` | `string` |  |  |
 
 
 
@@ -151,14 +124,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `client` | [.gloo.solo.io.ClientVersion](../version.proto.sk#clientversion) |   |  |
-
-
-
-| `server` | [[]gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) |  This field is an array of server versions because although there can only be 1 client version, there can potentially be many instances of gloo running on a single cluster.  |  |
+| `client` | [.gloo.solo.io.ClientVersion](../version.proto.sk#clientversion) |  |  |
+| `server` | [[]gloo.solo.io.ServerVersion](../version.proto.sk#serverversion) | This field is an array of server versions because although there can only be 1 client version, there can potentially be many instances of gloo running on a single cluster. |  |
 
 
 

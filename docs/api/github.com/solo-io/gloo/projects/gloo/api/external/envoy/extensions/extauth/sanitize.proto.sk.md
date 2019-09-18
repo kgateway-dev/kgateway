@@ -34,10 +34,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `headersToRemove` | `[]string` |   |  |
+| `headersToRemove` | `[]string` |  |  |
 
 
 

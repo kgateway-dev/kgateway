@@ -39,18 +39,9 @@ AWS Lambda invocations.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `name` | `string` |  The name of the function.  |  |
-
-
-
-| `qualifier` | `string` |  The qualifier of the function (defaults to $LATEST if not specified).  |  |
-
-
-
-| `async` | `bool` |  Invocation type - async or regular.  |  |
+| `name` | `string` | The name of the function. |  |
+| `qualifier` | `string` | The qualifier of the function (defaults to $LATEST if not specified). |  |
+| `async` | `bool` | Invocation type - async or regular. |  |
 
 
 
@@ -70,22 +61,10 @@ AWS Lambda invocations.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `host` | `string` |  The host header for AWS this cluster.  |  |
-
-
-
-| `region` | `string` |  The region for this cluster.  |  |
-
-
-
-| `accessKey` | `string` |  The access_key for AWS this cluster.  |  |
-
-
-
-| `secretKey` | `string` |  The secret_key for AWS this cluster.  |  |
+| `host` | `string` | The host header for AWS this cluster. |  |
+| `region` | `string` | The region for this cluster. |  |
+| `accessKey` | `string` | The access_key for AWS this cluster. |  |
+| `secretKey` | `string` | The secret_key for AWS this cluster. |  |
 
 
 
