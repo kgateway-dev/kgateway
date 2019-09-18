@@ -359,13 +359,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
 	var syncerExtensions []TranslatorSyncerExtension
-	var rlDescriptorSettings ratelimit.EnvoySettings
-	if rlDescSettings := opts.Settings.GetRatelimitDescriptors(); rlDescSettings != nil {
-		rlDescriptorSettings = *rlDescSettings
-	}
 	params := TranslatorSyncerExtensionParams{
 		SettingExtensions: opts.Settings.Extensions,
-		RateLimitDescriptorSettings: rlDescriptorSettings,
+		RateLimitDescriptorSettings: ratelimit.EnvoySettings{
+			CustomConfig: opts.Settings.GetRatelimitDescriptors().GetCustomConfig(),
+		},
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
 		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
