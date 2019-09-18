@@ -37,14 +37,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.10.0/api-
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `maxConnectAttempts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |   |  |
-
-
-
-| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |   |  |
+| `maxConnectAttempts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |  |
+| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 
 
 

@@ -57,10 +57,7 @@ If the report contains no errors, the (sub-)resource is valid.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `listenerReports` | [[]gloo.solo.io.ListenerReport](../proxy_validation.proto.sk#listenerreport) |   |  |
+| `listenerReports` | [[]gloo.solo.io.ListenerReport](../proxy_validation.proto.sk#listenerreport) |  |  |
 
 
 
@@ -79,18 +76,9 @@ If the report contains no errors, the (sub-)resource is valid.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `errors` | [[]gloo.solo.io.ListenerReport.Error](../proxy_validation.proto.sk#error) |  errors on top-level config of the listener.  |  |
-
-
-
-| `httpListenerReport` | [.gloo.solo.io.HttpListenerReport](../proxy_validation.proto.sk#httplistenerreport) |  report for the http listener.  Only one of `httpListenerReport` or `tcpListenerReport` can be set. |  |
-
-
-
-| `tcpListenerReport` | [.gloo.solo.io.TcpListenerReport](../proxy_validation.proto.sk#tcplistenerreport) |  report for the tcp listener.  Only one of `tcpListenerReport` or `httpListenerReport` can be set. |  |
+| `errors` | [[]gloo.solo.io.ListenerReport.Error](../proxy_validation.proto.sk#error) | errors on top-level config of the listener. |  |
+| `httpListenerReport` | [.gloo.solo.io.HttpListenerReport](../proxy_validation.proto.sk#httplistenerreport) | report for the http listener. Only one of `httpListenerReport` or `tcpListenerReport` can be set. |  |
+| `tcpListenerReport` | [.gloo.solo.io.TcpListenerReport](../proxy_validation.proto.sk#tcplistenerreport) | report for the tcp listener. Only one of `tcpListenerReport` or `httpListenerReport` can be set. |  |
 
 
 
@@ -109,14 +97,8 @@ error types for top-level listener config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `type` | [.gloo.solo.io.ListenerReport.Error.Type](../proxy_validation.proto.sk#type) |  the type of the error.  |  |
-
-
-
-| `reason` | `string` |  any extra info as a string.  |  |
+| `type` | [.gloo.solo.io.ListenerReport.Error.Type](../proxy_validation.proto.sk#type) | the type of the error. |  |
+| `reason` | `string` | any extra info as a string. |  |
 
 
 
@@ -149,14 +131,8 @@ error types for top-level listener config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `errors` | [[]gloo.solo.io.HttpListenerReport.Error](../proxy_validation.proto.sk#error) |   |  |
-
-
-
-| `virtualHostReports` | [[]gloo.solo.io.VirtualHostReport](../proxy_validation.proto.sk#virtualhostreport) |  report for nested virtual hosts.  |  |
+| `errors` | [[]gloo.solo.io.HttpListenerReport.Error](../proxy_validation.proto.sk#error) |  |  |
+| `virtualHostReports` | [[]gloo.solo.io.VirtualHostReport](../proxy_validation.proto.sk#virtualhostreport) | report for nested virtual hosts. |  |
 
 
 
@@ -175,14 +151,8 @@ error types for top-level http listener config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `type` | [.gloo.solo.io.HttpListenerReport.Error.Type](../proxy_validation.proto.sk#type) |  the type of the error.  |  |
-
-
-
-| `reason` | `string` |  any extra info as a string.  |  |
+| `type` | [.gloo.solo.io.HttpListenerReport.Error.Type](../proxy_validation.proto.sk#type) | the type of the error. |  |
+| `reason` | `string` | any extra info as a string. |  |
 
 
 
@@ -212,14 +182,8 @@ error types for top-level http listener config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `errors` | [[]gloo.solo.io.VirtualHostReport.Error](../proxy_validation.proto.sk#error) |  errors on top-level config of the virtual host.  |  |
-
-
-
-| `routeReports` | [[]gloo.solo.io.RouteReport](../proxy_validation.proto.sk#routereport) |   |  |
+| `errors` | [[]gloo.solo.io.VirtualHostReport.Error](../proxy_validation.proto.sk#error) | errors on top-level config of the virtual host. |  |
+| `routeReports` | [[]gloo.solo.io.RouteReport](../proxy_validation.proto.sk#routereport) |  |  |
 
 
 
@@ -238,14 +202,8 @@ error types for top-level virtual host config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `type` | [.gloo.solo.io.VirtualHostReport.Error.Type](../proxy_validation.proto.sk#type) |  the type of the error.  |  |
-
-
-
-| `reason` | `string` |  any extra info as a string.  |  |
+| `type` | [.gloo.solo.io.VirtualHostReport.Error.Type](../proxy_validation.proto.sk#type) | the type of the error. |  |
+| `reason` | `string` | any extra info as a string. |  |
 
 
 
@@ -276,10 +234,7 @@ error types for top-level virtual host config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `errors` | [[]gloo.solo.io.RouteReport.Error](../proxy_validation.proto.sk#error) |  errors on the config of the route.  |  |
+| `errors` | [[]gloo.solo.io.RouteReport.Error](../proxy_validation.proto.sk#error) | errors on the config of the route. |  |
 
 
 
@@ -298,14 +253,8 @@ error types for the given route config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `type` | [.gloo.solo.io.RouteReport.Error.Type](../proxy_validation.proto.sk#type) |  the type of the error.  |  |
-
-
-
-| `reason` | `string` |  any extra info as a string.  |  |
+| `type` | [.gloo.solo.io.RouteReport.Error.Type](../proxy_validation.proto.sk#type) | the type of the error. |  |
+| `reason` | `string` | any extra info as a string. |  |
 
 
 
@@ -337,14 +286,8 @@ error types for the given route config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `errors` | [[]gloo.solo.io.TcpListenerReport.Error](../proxy_validation.proto.sk#error) |  errors on top-level config of the listener.  |  |
-
-
-
-| `tcpHostReports` | [[]gloo.solo.io.TcpHostReport](../proxy_validation.proto.sk#tcphostreport) |   |  |
+| `errors` | [[]gloo.solo.io.TcpListenerReport.Error](../proxy_validation.proto.sk#error) | errors on top-level config of the listener. |  |
+| `tcpHostReports` | [[]gloo.solo.io.TcpHostReport](../proxy_validation.proto.sk#tcphostreport) |  |  |
 
 
 
@@ -363,14 +306,8 @@ error types for top-level tcp listener config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `type` | [.gloo.solo.io.TcpListenerReport.Error.Type](../proxy_validation.proto.sk#type) |  the type of the error.  |  |
-
-
-
-| `reason` | `string` |  any extra info as a string.  |  |
+| `type` | [.gloo.solo.io.TcpListenerReport.Error.Type](../proxy_validation.proto.sk#type) | the type of the error. |  |
+| `reason` | `string` | any extra info as a string. |  |
 
 
 
@@ -402,10 +339,7 @@ error types for top-level tcp listener config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `errors` | [[]gloo.solo.io.TcpHostReport.Error](../proxy_validation.proto.sk#error) |  errors on the tcp host.  |  |
+| `errors` | [[]gloo.solo.io.TcpHostReport.Error](../proxy_validation.proto.sk#error) | errors on the tcp host. |  |
 
 
 
@@ -424,14 +358,8 @@ error types for tcp host config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `type` | [.gloo.solo.io.TcpHostReport.Error.Type](../proxy_validation.proto.sk#type) |  the type of the error.  |  |
-
-
-
-| `reason` | `string` |  any extra info as a string.  |  |
+| `type` | [.gloo.solo.io.TcpHostReport.Error.Type](../proxy_validation.proto.sk#type) | the type of the error. |  |
+| `reason` | `string` | any extra info as a string. |  |
 
 
 

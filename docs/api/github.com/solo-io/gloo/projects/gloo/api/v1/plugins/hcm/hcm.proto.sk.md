@@ -51,70 +51,22 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `skipXffAppend` | `bool` |   |  |
-
-
-
-| `via` | `string` |   |  |
-
-
-
-| `xffNumTrustedHops` | `int` |   |  |
-
-
-
-| `useRemoteAddress` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |   |  |
-
-
-
-| `generateRequestId` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |   |  |
-
-
-
-| `proxy100Continue` | `bool` |   |  |
-
-
-
-| `streamIdleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |   |  |
-
-
-
-| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |   |  |
-
-
-
-| `maxRequestHeadersKb` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |   |  |
-
-
-
-| `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |   |  |
-
-
-
-| `drainTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |   |  |
-
-
-
-| `delayedCloseTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |   |  |
-
-
-
-| `serverName` | `string` |   |  |
-
-
-
-| `acceptHttp10` | `bool` |  For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions.  |  |
-
-
-
-| `defaultHostForHttp10` | `string` |   |  |
-
-
-
-| `tracing` | [.tracing.plugins.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk#listenertracingsettings) |   |  |
+| `skipXffAppend` | `bool` |  |  |
+| `via` | `string` |  |  |
+| `xffNumTrustedHops` | `int` |  |  |
+| `useRemoteAddress` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |  |
+| `generateRequestId` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |  |
+| `proxy100Continue` | `bool` |  |  |
+| `streamIdleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `maxRequestHeadersKb` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |  |
+| `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `drainTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `delayedCloseTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `serverName` | `string` |  |  |
+| `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions. |  |
+| `defaultHostForHttp10` | `string` |  |  |
+| `tracing` | [.tracing.plugins.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk#listenertracingsettings) |  |  |
 
 
 

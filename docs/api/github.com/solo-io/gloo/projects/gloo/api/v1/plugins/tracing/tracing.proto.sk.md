@@ -41,18 +41,9 @@ See here for additional information about configuring tracing with Gloo: https:/
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `requestHeadersForTags` | `[]string` |  Optional. If specified, Envoy will include the headers and header values for any matching request headers.  |  |
-
-
-
-| `verbose` | `bool` |  Optional. If true, Envoy will include logs for streaming events. Default: false.  |  |
-
-
-
-| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk#tracepercentages) |  Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages.  |  |
+| `requestHeadersForTags` | `[]string` | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |  |
+| `verbose` | `bool` | Optional. If true, Envoy will include logs for streaming events. Default: false. |  |
+| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |  |
 
 
 
@@ -74,14 +65,8 @@ See here for additional information about configuring tracing with Gloo: https:/
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `routeDescriptor` | `string` |  Optional. If set, will be used to identify the route that produced the trace. Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed.  |  |
-
-
-
-| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk#tracepercentages) |  Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages.  |  |
+| `routeDescriptor` | `string` | Optional. If set, will be used to identify the route that produced the trace. Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed. |  |
+| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |  |
 
 
 
@@ -102,18 +87,9 @@ TracePercentages defines the limits for random, forced, and overall tracing perc
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `clientSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) |  Percentage of requests that should produce traces when the `x-client-trace-id` header is provided. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.  |  |
-
-
-
-| `randomSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) |  Percentage of requests that should produce traces by random sampling. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.  |  |
-
-
-
-| `overallSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) |  Overall percentage of requests that should produce traces. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.  |  |
+| `clientSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) | Percentage of requests that should produce traces when the `x-client-trace-id` header is provided. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
+| `randomSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) | Percentage of requests that should produce traces by random sampling. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
+| `overallSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) | Overall percentage of requests that should produce traces. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
 
 
 

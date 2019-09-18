@@ -38,26 +38,11 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-
-
-
-| `shortName` | `string` |  becomes the kubernetes short name for the generated crd.  |  |
-
-
-
-| `pluralName` | `string` |  becomes the kubernetes plural name for the generated crd.  |  |
-
-
-
-| `clusterScoped` | `bool` |  the resource lives at the cluster level, namespace is ignored by the server.  |  |
-
-
-
-| `skipDocsGen` | `bool` |  indicates whether documentation generation has to be skipped for the given resource, defaults to false.  |  |
-
-
-
-| `skipHashingAnnotations` | `bool` |  indicates whether annotations should be excluded from the resource's generated hash function. if set to true, changes in annotations will not cause a new snapshot to be emitted.  |  |
+| `shortName` | `string` | becomes the kubernetes short name for the generated crd. |  |
+| `pluralName` | `string` | becomes the kubernetes plural name for the generated crd. |  |
+| `clusterScoped` | `bool` | the resource lives at the cluster level, namespace is ignored by the server. |  |
+| `skipDocsGen` | `bool` | indicates whether documentation generation has to be skipped for the given resource, defaults to false. |  |
+| `skipHashingAnnotations` | `bool` | indicates whether annotations should be excluded from the resource's generated hash function. if set to true, changes in annotations will not cause a new snapshot to be emitted. |  |
 
 
 
