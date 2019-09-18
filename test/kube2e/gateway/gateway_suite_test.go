@@ -80,7 +80,7 @@ func StartTestHelper() {
 			return nil
 		}
 		return errors.New("glooctl check detected a problem with the installation")
-	}, "20s", "4s").Should(Not(BeNil()))
+	}, "20s", "4s").Should(BeNil())
 }
 
 func TearDownTestHelper() {

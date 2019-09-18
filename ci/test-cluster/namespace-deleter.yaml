@@ -51,7 +51,7 @@ spec:
           containers:
             - name: kubectl
               image: bitnami/kubectl:1.15
-              # delete test namespaces if older than 30 minutes
+              # delete test namespaces if older than 60 minutes
               command:
                 - /bin/sh
                 - -c
