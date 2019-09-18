@@ -8,7 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -347,6 +347,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	authConfigClient, err := extauth.NewAuthConfigClient(opts.AuthConfigs)
 	if err != nil {
+		return err
+	}
+	if err := authConfigClient.Register(); err != nil {
 		return err
 	}
 

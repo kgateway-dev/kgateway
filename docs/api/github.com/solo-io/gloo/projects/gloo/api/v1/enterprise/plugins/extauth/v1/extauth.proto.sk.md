@@ -44,7 +44,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/extauth.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/plugins/extauth/extauth.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto)
 
 
 
@@ -67,8 +67,8 @@ format that will be included in the extauth snapshot.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `status` | [.core.solo.io.Status](../../../../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
 | `configs` | [[]auth.glooe.solo.io.AuthConfig.Config](../extauth.proto.sk#config) |  |  |
 
 
@@ -118,7 +118,7 @@ Auth configurations defined on virtual hosts and routes will be unmarshalled to 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disable` | `bool` | Set to true to disable auth on the virtual host/route. |  |
-| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A reference to an AuthConfig. |  |
+| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A reference to an AuthConfig. |  |
 
 
 
@@ -217,7 +217,7 @@ Deprecated: use ExtAuthExtension
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `extauthzServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to ask about auth decisions |  |
+| `extauthzServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to ask about auth decisions |  |
 | `httpService` | [.auth.glooe.solo.io.HttpService](../extauth.proto.sk#httpservice) | If this is set, communication to the upstream will be with HTTP and not GRPC. |  |
 | `userIdHeader` | `string` | If the auth server trusted id of the user, it will be set in this header. Specifically this means that this header will be sanitized form the incoming request. |  |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the ext auth service to respond. defaults to 200ms |  |
@@ -440,7 +440,7 @@ Deprecated
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `clientId` | `string` | your client id as registered with the issuer |  |
-| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | your client secret as registered with the issuer |  |
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | your client secret as registered with the issuer |  |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration" |  |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application |  |
@@ -480,7 +480,7 @@ Deprecated
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `labelSelector` | `map<string, string>` | identify all valid apikey secrets using the provided label selector. apikey secrets must be in gloo's watch namespaces for gloo to locate them |  |
-| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector |  |
+| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector |  |
 
 
 
@@ -519,7 +519,7 @@ Deprecated
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |  |
+| `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |  |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |  |
 
 

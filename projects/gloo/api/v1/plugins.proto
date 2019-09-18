@@ -38,7 +38,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/faul
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/headers/headers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hostrewrite/hostrewrite.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/extauth.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/jwt/jwt.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto";
