@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: namespace-deleter
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: namespace-deleter
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - list
+      - delete
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: namespace-deleter-binding
+subjects:
+  - kind: ServiceAccount
+    name: namespace-deleter
+    namespace: namespace-deleter
+roleRef:
+  kind: ClusterRole
+  name: namespace-deleter
+  apiGroup: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: namespace-deleter
+  namespace: namespace-deleter
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: namespace-deleter
+  namespace: namespace-deleter
+spec:
+  # run every 15 minutes
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: namespace-deleter
+          containers:
+            - name: kubectl
+              image: bitnami/kubectl:1.15
+              # delete test namespaces if older than 60 minutes
+              command:
+                - /bin/sh
+                - -c
+                - kubectl get namespaces -o go-template --template '{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | grep test | awk '$2 <= "'$(date -d'now-60 minutes' -Ins --utc | sed 's/+0000/Z/')'" { print $1 }' | xargs --no-run-if-empty kubectl delete namespace
+          restartPolicy: OnFailure

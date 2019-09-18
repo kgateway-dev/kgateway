@@ -1,6 +1,13 @@
 package constants
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/solo-io/go-utils/errors"
+	"github.com/spf13/cobra"
+)
+
+var (
+	SubcommandError = errors.New("please select a subcommand")
+)
 
 var (
 	VIRTUAL_SERVICE_COMMAND = cobra.Command{
@@ -36,7 +43,7 @@ var (
 	ADD_COMMAND = cobra.Command{
 		Use:     "add",
 		Aliases: []string{"a"},
-		Short:   "adds configuration to a top-level Gloo resource",
+		Short:   "Adds configuration to a top-level Gloo resource",
 	}
 
 	CHECK_COMMAND = cobra.Command{
@@ -49,6 +56,17 @@ var (
 		Aliases: []string{"c"},
 		Short:   "Create a Gloo resource",
 		Long:    "Gloo resources be created from files (including stdin)",
+	}
+
+	DEBUG_COMMAND = cobra.Command{
+		Use:   "debug",
+		Short: "Debug a Gloo resource (requires Gloo running on Kubernetes)",
+	}
+
+	DEBUG_LOG_COMMAND = cobra.Command{
+		Use:     "logs",
+		Aliases: []string{"log"},
+		Short:   "Debug Gloo logs (requires Gloo running on Kubernetes)",
 	}
 
 	DELETE_COMMAND = cobra.Command{

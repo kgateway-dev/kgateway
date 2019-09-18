@@ -2,9 +2,17 @@
 
 
 [[projects]]
-  digest = "1:5ad08b0e14866764a6d7475eb11c9cf05cad9a52c442593bdfa544703ff77f61"
+  digest = "1:08636edd4ac1b095a9689b7a07763aa70e035068e0ff0e9dbfe2b6299b98e498"
   name = "cloud.google.com/go"
-  packages = ["compute/metadata"]
+  packages = [
+    "compute/metadata",
+    "iam",
+    "internal",
+    "internal/optional",
+    "internal/trace",
+    "internal/version",
+    "storage",
+  ]
   pruneopts = "UT"
   revision = "74b12019e2aa53ec27882158f59192d7cd6d1998"
   version = "v0.33.1"
@@ -526,12 +534,16 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:a434da777d13a1093600eca7703330d796b56be4cac1ffcb536ac4eee7abe4d3"
+  digest = "1:48eec3cd72d25c5277aec9b1f0c8a5f4c07210fd9e0c104997c7064486511d09"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
     "proto",
+    "protoc-gen-go",
     "protoc-gen-go/descriptor",
+    "protoc-gen-go/generator",
+    "protoc-gen-go/generator/internal/remap",
+    "protoc-gen-go/grpc",
     "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
@@ -610,6 +622,17 @@
   pruneopts = "UT"
   revision = "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8"
   version = "v1.1.0"
+
+[[projects]]
+  digest = "1:4f880e8e7ff8803aab4bcf2c479eb766435f7decaa1edf080d8f2bf56668de1d"
+  name = "github.com/googleapis/gax-go"
+  packages = [
+    ".",
+    "v2",
+  ]
+  pruneopts = "UT"
+  revision = "bd5b16380fd03dc758d11cef74ba2e3bc8b0e8c2"
+  version = "v2.0.5"
 
 [[projects]]
   digest = "1:65c4414eeb350c47b8de71110150d0ea8a281835b1f386eacaa3ad7325929c21"
@@ -1334,7 +1357,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:97a18528525a1a90cb4aa7f73ed7cfa1a14fc1bf00f9b27cdbce35e1d724e090"
+  digest = "1:ceb8c371a564c9e0eff7551ccc513a1357b446c4121b2d98f721d17a2287ddcc"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1342,6 +1365,7 @@
     "clidoc",
     "cliutils",
     "contextutils",
+    "debugutils",
     "docsutils",
     "envutils",
     "errors",
@@ -1371,8 +1395,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "acf7af80d72935c89b022e3c98ab68226a52eeda"
-  version = "v0.10.2"
+  revision = "8197f6d61c3c2ccf4ce2786b3da566f8d5bf2613"
+  version = "v0.10.4"
 
 [[projects]]
   digest = "1:6bf9bdcdfd28c7a913d5bcbef6717e53fc6f650560f0b4ffe663816b3e2245ec"
@@ -1500,7 +1524,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:61fbe4e62b000d9eda1f434453bacdc1bdb1f1060fcf88aa535efd713432ca3a"
+  digest = "1:50c904c2e8728fa293b8c166d78d9ebda0866a056fac84c436a8cd04b7808125"
   name = "go.opencensus.io"
   packages = [
     ".",
@@ -1510,6 +1534,8 @@
     "metric/metricexport",
     "metric/metricproducer",
     "plugin/ocgrpc",
+    "plugin/ochttp",
+    "plugin/ochttp/propagation/b3",
     "resource",
     "stats",
     "stats/internal",
@@ -1585,6 +1611,28 @@
   ]
   pruneopts = "UT"
   revision = "a2144134853fc9a27a7b1e3eb4f19f1a76df13c9"
+
+[[projects]]
+  branch = "master"
+  digest = "1:691f3a202dd569bd0d33b8b16bcb390a479b3c6ccc8ced9cb13085e47030e11a"
+  name = "golang.org/x/exp"
+  packages = [
+    "apidiff",
+    "cmd/apidiff",
+  ]
+  pruneopts = "UT"
+  revision = "ac5d2bfcbfe092bf8a1233e37c03571b3047d81b"
+
+[[projects]]
+  branch = "master"
+  digest = "1:8b680f1201926e744b91715dda339a799fcc9a37e3a9c6d742bf90b4a6e7e6de"
+  name = "golang.org/x/lint"
+  packages = [
+    ".",
+    "golint",
+  ]
+  pruneopts = "UT"
+  revision = "414d861bb4acf565ff8cb05f9906a2283b7dc75a"
 
 [[projects]]
   digest = "1:4b3acdba8f542c0991a4cd42d11346629b3dd013d57cd1c645ac837ce2857349"
@@ -1684,6 +1732,32 @@
   revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
 
 [[projects]]
+  branch = "master"
+  digest = "1:2958bdacee682ff346b1751d176036a577969d165535f3b682b3177fa81bf614"
+  name = "golang.org/x/tools"
+  packages = [
+    "cmd/goimports",
+    "go/analysis",
+    "go/analysis/passes/inspect",
+    "go/ast/astutil",
+    "go/ast/inspector",
+    "go/buildutil",
+    "go/gcexportdata",
+    "go/internal/gcimporter",
+    "go/internal/packagesdriver",
+    "go/packages",
+    "go/types/objectpath",
+    "go/types/typeutil",
+    "internal/fastwalk",
+    "internal/gopathwalk",
+    "internal/imports",
+    "internal/module",
+    "internal/semver",
+  ]
+  pruneopts = "UT"
+  revision = "e45ffcd953cceb219dc536e24468c0d22a5be010"
+
+[[projects]]
   digest = "1:7b5ce208ea2ca1f96322e6a5b616839fe49ea798648a013039f300475a1aadfc"
   name = "golang.org/x/xerrors"
   packages = [
@@ -1692,6 +1766,25 @@
   ]
   pruneopts = "UT"
   revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
+
+[[projects]]
+  digest = "1:deedfa6fd63a3ab08bcdb6b84de7342a1dbcdb02150c5f6cdb50d2098ecb8e75"
+  name = "google.golang.org/api"
+  packages = [
+    "gensupport",
+    "googleapi",
+    "googleapi/internal/uritemplates",
+    "googleapi/transport",
+    "internal",
+    "iterator",
+    "option",
+    "storage/v1",
+    "transport/http",
+    "transport/http/internal/propagation",
+  ]
+  pruneopts = "UT"
+  revision = "09a9d0a772eb18da65a7917760cf4ca9ae943c83"
+  version = "v0.10.0"
 
 [[projects]]
   digest = "1:d2a8db567a76203e3b41c1f632d86485ffd57f8e650a0d1b19d240671c2fddd7"
@@ -1714,10 +1807,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:eff11a4ed88d9d3e28dd697961c550af1c4d0d3dccdc6252715b9a65a1d541bb"
+  digest = "1:ff760a397fba1ee1a22e40fb75aced010dd149a000f868d754d39a31794ec058"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
+    "googleapis/iam/v1",
+    "googleapis/rpc/code",
     "googleapis/rpc/status",
   ]
   pruneopts = "UT"
@@ -1899,6 +1994,40 @@
   pruneopts = "UT"
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
+
+[[projects]]
+  digest = "1:131158a88aad1f94854d0aa21a64af2802d0a470fb0f01cb33c04fafd2047111"
+  name = "honnef.co/go/tools"
+  packages = [
+    "arg",
+    "cmd/staticcheck",
+    "config",
+    "deprecated",
+    "facts",
+    "functions",
+    "go/types/typeutil",
+    "internal/cache",
+    "internal/passes/buildssa",
+    "internal/renameio",
+    "internal/sharedcheck",
+    "lint",
+    "lint/lintdsl",
+    "lint/lintutil",
+    "lint/lintutil/format",
+    "loader",
+    "printf",
+    "simple",
+    "ssa",
+    "ssautil",
+    "staticcheck",
+    "staticcheck/vrp",
+    "stylecheck",
+    "unused",
+    "version",
+  ]
+  pruneopts = "UT"
+  revision = "afd67930eec2a9ed3e9b19f684d17a062285f16a"
+  version = "2019.2.3"
 
 [[projects]]
   branch = "master"
@@ -2507,6 +2636,14 @@
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:3d36f477f3c80248890ec1f849fe11a0e324f433bbc8c1d7e1be806b75da779f"
+  name = "sigs.k8s.io/controller-runtime"
+  packages = ["pkg/client/apiutil"]
+  pruneopts = "UT"
+  revision = "1592b5ee945140d042351098bf3217d71f36cace"
+  version = "v0.2.1"
+
+[[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
   name = "sigs.k8s.io/yaml"
   packages = ["."]
@@ -2606,6 +2743,7 @@
     "github.com/solo-io/go-utils/clidoc",
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/contextutils",
+    "github.com/solo-io/go-utils/debugutils",
     "github.com/solo-io/go-utils/docsutils",
     "github.com/solo-io/go-utils/envutils",
     "github.com/solo-io/go-utils/errors",
@@ -2621,6 +2759,7 @@
     "github.com/solo-io/go-utils/protoutils",
     "github.com/solo-io/go-utils/stats",
     "github.com/solo-io/go-utils/stringutils",
+    "github.com/solo-io/go-utils/tarutils",
     "github.com/solo-io/go-utils/testutils",
     "github.com/solo-io/go-utils/testutils/clusterlock",
     "github.com/solo-io/go-utils/testutils/exec",
@@ -2659,6 +2798,7 @@
     "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
+    "github.com/spf13/afero",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "go.opencensus.io/plugin/ocgrpc",

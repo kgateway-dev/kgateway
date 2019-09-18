@@ -5,9 +5,18 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validati
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 
 service ProxyValidationService {
-    rpc ValidateProxy (gloo.solo.io.Proxy) returns (ProxyReport) {
+    rpc ValidateProxy (ProxyValidationServiceRequest) returns (ProxyValidationServiceResponse) {
     }
 }
+
+message ProxyValidationServiceRequest {
+    gloo.solo.io.Proxy proxy = 1;
+}
+
+message ProxyValidationServiceResponse {
+    ProxyReport proxy_report = 1;
+}
+
 
 /*
 * The Proxy Report should contain one report for each sub-resource of the Proxy

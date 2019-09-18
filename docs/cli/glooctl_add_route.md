@@ -63,5 +63,5 @@ glooctl add route [flags]
 
 ### SEE ALSO
 
-* [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource.
+* [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource
 

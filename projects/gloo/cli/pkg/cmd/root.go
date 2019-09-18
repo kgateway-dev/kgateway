@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
@@ -82,6 +84,7 @@ func GlooCli(version string) *cobra.Command {
 			upgrade.RootCmd(opts),
 			gateway.RootCmd(opts),
 			check.RootCmd(opts),
+			debug.RootCmd(opts),
 			versioncmd.RootCmd(opts),
 			completionCmd(),
 		)

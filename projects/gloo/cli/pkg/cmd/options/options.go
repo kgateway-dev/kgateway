@@ -36,6 +36,8 @@ type Top struct {
 	Ctx         context.Context
 	Verbose     bool   // currently only used by install and uninstall, sends kubectl command output to terminal
 	KubeConfig  string // file to use for kube config, if not standard one.
+	Zip         bool
+	ErrorsOnly  bool
 }
 
 type Install struct {

@@ -21,10 +21,11 @@ glooctl is the unified CLI for Gloo.
 
 ### SEE ALSO
 
-* [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource.
+* [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource
 * [glooctl check](../glooctl_check)	 - Checks Gloo resources for errors (requires Gloo running on Kubernetes)
 * [glooctl completion](../glooctl_completion)	 - generate auto completion for your shell
 * [glooctl create](../glooctl_create)	 - Create a Gloo resource
+* [glooctl debug](../glooctl_debug)	 - Debug a Gloo resource (requires Gloo running on Kubernetes)
 * [glooctl delete](../glooctl_delete)	 - Delete a Gloo resource
 * [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
 * [glooctl get](../glooctl_get)	 - Display one or a list of Gloo resources

@@ -11,6 +11,8 @@ weight: 5
 #### Types:
 
 
+- [ProxyValidationServiceRequest](#proxyvalidationservicerequest)
+- [ProxyValidationServiceResponse](#proxyvalidationserviceresponse)
 - [ProxyReport](#proxyreport)
 - [ListenerReport](#listenerreport)
 - [Error](#error)
@@ -36,6 +38,40 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/grpc/validation/proxy_validation.proto)
 
+
+
+
+
+---
+### ProxyValidationServiceRequest
+
+
+
+```yaml
+"proxy": .gloo.solo.io.Proxy
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk#proxy) |  |  |
+
+
+
+
+---
+### ProxyValidationServiceResponse
+
+
+
+```yaml
+"proxyReport": .gloo.solo.io.ProxyReport
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `proxyReport` | [.gloo.solo.io.ProxyReport](../proxy_validation.proto.sk#proxyreport) |  |  |
 
 
 
