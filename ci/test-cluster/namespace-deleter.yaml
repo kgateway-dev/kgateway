@@ -15,7 +15,6 @@ rules:
     verbs:
       - list
       - delete
-  ​
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -29,14 +28,12 @@ roleRef:
   kind: ClusterRole
   name: namespace-deleter
   apiGroup: ""
-  ​
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: namespace-deleter
   namespace: namespace-deleter
-  ​
 ---
 apiVersion: batch/v1beta1
 kind: CronJob
