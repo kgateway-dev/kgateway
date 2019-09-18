@@ -2,14 +2,15 @@ package gateway_test
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 
 	"github.com/solo-io/gloo/test/helpers"
 
