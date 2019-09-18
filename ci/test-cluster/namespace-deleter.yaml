@@ -56,5 +56,5 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - kubectl get namespaces -o go-template --template '{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | grep test | awk '$2 <= "'$(date -d'now-4 hours' -Ins --utc | sed 's/+0000/Z/')'" { print $1 }' | xargs --no-run-if-empty kubectl delete namespace
+                - kubectl get namespaces -o go-template --template '{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | grep test | awk '$2 <= "'$(date -d'now-1 hours' -Ins --utc | sed 's/+0000/Z/')'" { print $1 }' | xargs --no-run-if-empty kubectl delete namespace
           restartPolicy: OnFailure
