@@ -127,7 +127,7 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 
 	// Get location of Gloo helm chart
 	helmChartArchiveUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, glooVersion)
-	if opts.Install.Dashboard {
+	if opts.Install.WithUi {
 		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, glooVersion)
 	}
 	if helmChartOverride := opts.Install.HelmChartOverride; helmChartOverride != "" {
