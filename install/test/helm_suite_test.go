@@ -64,7 +64,7 @@ func renderManifest(helmFlags string) TestManifest {
 
 	f, err := ioutil.TempFile("", "*.yaml")
 	ExpectWithOffset(2, err).NotTo(HaveOccurred())
-	f.Close()
+	_ = f.Close()
 	manifestYaml := f.Name()
 	defer os.Remove(manifestYaml)
 

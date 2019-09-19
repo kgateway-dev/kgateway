@@ -23,6 +23,18 @@ type validationServer struct {
 	translator     translator.Translator
 }
 
+func NewValidationServer(translator translator.Translator) *validationServer {
+	return &validationServer{translator: translator}
+}
+
+func (s *validationServer) Sync(_ context.Context, snap *v1.ApiSnapshot) error {
+	snapCopy := snap.Clone()
+	s.l.Lock()
+	s.latestSnapshot = &snapCopy
+	s.l.Unlock()
+	return nil
+}
+
 func (s *validationServer) ValidateProxy(ctx context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
 	s.l.RLock()
 	snapCopy := s.latestSnapshot.Clone()
@@ -35,18 +47,6 @@ func (s *validationServer) ValidateProxy(ctx context.Context, req *validation.Pr
 		return nil, err
 	}
 	return &validation.ProxyValidationServiceResponse{ProxyReport: report}, nil
-}
-
-func NewValidationServer(translator translator.Translator) ValidationServer {
-	return &validationServer{translator: translator}
-}
-
-func (s *validationServer) Sync(_ context.Context, snap *v1.ApiSnapshot) error {
-	snapCopy := snap.Clone()
-	s.l.Lock()
-	s.latestSnapshot = &snapCopy
-	s.l.Unlock()
-	return nil
 }
 
 func (s *validationServer) Register(grpcServer *grpc.Server) {
