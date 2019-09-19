@@ -1,6 +1,7 @@
 {{- range $name, $spec := .Values.gatewayProxies }}
-apiVersion: gateway.solo.io.v2/v2
-kind: GatewayList
+{{- if not $spec.disableGeneratedGateways}}
+apiVersion: v1
+kind: List
 metadata:
   labels:
     app: gloo
@@ -13,6 +14,8 @@ items:
    metadata:
      name: {{ $name | kebabcase }}
      namespace: {{ $.Release.Namespace }}
+     labels:
+       app: gloo
    spec:
      bindAddress: "{{ $spec.httpListenAddress }}"
      bindPort: {{ $spec.podTemplate.httpPort }}
@@ -27,6 +30,8 @@ items:
    metadata:
      name: {{ $name | kebabcase }}-ssl
      namespace: {{ $.Release.Namespace }}
+     labels:
+       app: gloo
    spec:
      bindAddress: "{{ $spec.httpListenAddress }}"
      bindPort: {{ $spec.podTemplate.httpsPort }}
@@ -36,4 +41,5 @@ items:
      ssl: true
      proxyNames:
        - {{ $name | kebabcase }}
+{{- end }}
 {{- end }}

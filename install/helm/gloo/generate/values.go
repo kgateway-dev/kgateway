@@ -154,19 +154,20 @@ type GatewayConversionJob struct {
 }
 
 type GatewayProxy struct {
-	Kind                  *GatewayProxyKind        `json:"kind,omitempty"`
-	PodTemplate           *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
-	ConfigMap             *GatewayProxyConfigMap   `json:"configMap,omitempty"`
-	Service               *GatewayProxyService     `json:"service,omitempty"`
-	Tracing               *Tracing                 `json:"tracing,omitempty"`
-	ExtraContainersHelper string                   `json:"extraContainersHelper,omitempty"`
-	Stats                 bool                     `json:"stats" desc:"enable prometheus stats"`
-	ReadConfig            bool                     `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	Kind                     *GatewayProxyKind        `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
+	PodTemplate              *GatewayProxyPodTemplate `json:"podTemplate,omitempty"`
+	ConfigMap                *GatewayProxyConfigMap   `json:"configMap,omitempty"`
+	Service                  *GatewayProxyService     `json:"service,omitempty"`
+	Tracing                  *Tracing                 `json:"tracing,omitempty"`
+	ExtraContainersHelper    string                   `json:"extraContainersHelper,omitempty"`
+	Stats                    bool                     `json:"stats" desc:"enable prometheus stats"`
+	ReadConfig               bool                     `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	DisableGeneratedGateways bool                     `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
 }
 
 type GatewayProxyKind struct {
-	Deployment *GatewayProxyDeployment `json:"deployment,omitempty"`
-	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty"`
+	Deployment *GatewayProxyDeployment `json:"deployment,omitempty" desc:"set to deploy as a kubernetes deployment, otherwise nil"`
+	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty" desc:"set to deploy as a kubernetes daemonset, otherwise nil"`
 }
 type GatewayProxyDeployment struct {
 	AntiAffinity bool `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
