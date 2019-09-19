@@ -53,12 +53,15 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		vaultResources  factory.ResourceClientFactory
 
 		petstorePort int
+		glooPort     int
 	)
 
 	const writeNamespace = defaults.GlooSystem
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
+
+		glooPort = services.AllocateGlooPort()
 
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
@@ -79,7 +82,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		settingsDir, err = ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
-		settings, err := writeSettings(settingsDir, writeNamespace)
+		settings, err := writeSettings(settingsDir, glooPort, writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulClient, err = bootstrap.ConsulClientForSettings(settings)
@@ -130,7 +133,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+translator.GatewayProxyName, 9977)
+		err = envoyInstance.RunWithRole(writeNamespace+"~"+translator.GatewayProxyName, glooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run a simple web application locally
@@ -335,7 +338,7 @@ func makeFunctionRoutingVirtualService(upstream core.ResourceRef, funcName strin
 	}
 }
 
-func writeSettings(settingsDir, writeNamespace string) (*gloov1.Settings, error) {
+func writeSettings(settingsDir string, glooPort int, writeNamespace string) (*gloov1.Settings, error) {
 	settings := &gloov1.Settings{
 		ConfigSource: &gloov1.Settings_ConsulKvSource{
 			ConsulKvSource: &gloov1.Settings_ConsulKv{},
@@ -355,7 +358,7 @@ func writeSettings(settingsDir, writeNamespace string) (*gloov1.Settings, error)
 			ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},
 		},
 		Gloo: &gloov1.GlooOptions{
-			XdsBindAddr: fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort),
+			XdsBindAddr: fmt.Sprintf("0.0.0.0:%v", glooPort),
 		},
 		RefreshRate:        types.DurationProto(time.Second * 1),
 		DiscoveryNamespace: writeNamespace,
