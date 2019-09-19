@@ -61,7 +61,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
-		glooPort = services.AllocateGlooPort()
+		glooPort = int(services.AllocateGlooPort())
 
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
