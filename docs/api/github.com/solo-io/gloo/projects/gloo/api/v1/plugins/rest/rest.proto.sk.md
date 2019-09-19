@@ -56,8 +56,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `url` | `string` |  |  |
-| `inline` | `string` |  |  |
+| `url` | `string` |  Only one of `url` or `inline` can be set. |  |
+| `inline` | `string` |  Only one of `inline` or `url` can be set. |  |
 
 
 

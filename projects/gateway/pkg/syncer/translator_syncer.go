@@ -3,8 +3,6 @@ package syncer
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
@@ -30,7 +28,7 @@ type translatorSyncer struct {
 	translator      translator.Translator
 }
 
-func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, gwClient v2.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator) v2.ApiSyncer {
+func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, gwClient v2.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator, translator translator.Translator) v2.ApiSyncer {
 	return &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
@@ -39,7 +37,7 @@ func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, 
 		gwClient:        gwClient,
 		vsClient:        vsClient,
 		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
-		translator:      translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}),
+		translator:      translator,
 	}
 }
 
@@ -62,7 +60,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 		"created_by": "gateway-v2",
 	}
 
-	byProxy := gatewaysByProxyName(snap.Gateways)
+	byProxy := utils.GatewaysByProxyName(snap.Gateways)
 	tuples := make([]*proxyErrorTuple, 0, len(byProxy))
 	for key, val := range byProxy {
 		proxy, resourceErrs := s.translator.Translate(ctx, key, s.writeNamespace, snap, val)
@@ -179,18 +177,4 @@ func watchProxyStatus(ctx context.Context, proxyClient gloov1.ProxyClient, proxy
 	}()
 
 	return statuses, nil
-}
-
-func gatewaysByProxyName(gateways v2.GatewayList) map[string]v2.GatewayList {
-	result := make(map[string]v2.GatewayList)
-	for _, gw := range gateways {
-		proxyNames := gw.ProxyNames
-		if len(proxyNames) == 0 {
-			proxyNames = []string{defaults.GatewayProxyName}
-		}
-		for _, name := range proxyNames {
-			result[name] = append(result[name], gw)
-		}
-	}
-	return result
 }

@@ -42,11 +42,11 @@ Statuses are meant to be read-only by users
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `state` | [.core.solo.io.Status.State](../status.proto.sk#state) | State is the enum indicating the state of the resource |  |
-| `reason` | `string` | Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty |  |
-| `reportedBy` | `string` | Reference to the reporter who wrote this status |  |
-| `subresourceStatuses` | `map<string, .core.solo.io.Status>` | Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource |  |
-| `details` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque details about status results |  |
+| `state` | [.core.solo.io.Status.State](../status.proto.sk#state) | State is the enum indicating the state of the resource. |  |
+| `reason` | `string` | Reason is a description of the error for Rejected resources. If the resource is pending or accepted, this field will be empty. |  |
+| `reportedBy` | `string` | Reference to the reporter who wrote this status. |  |
+| `subresourceStatuses` | `map<string, .core.solo.io.Status>` | Reference to statuses (by resource-ref string: "Kind.Namespace.Name") of subresources of the parent resource. |  |
+| `details` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque details about status results. |  |
 
 
 

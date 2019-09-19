@@ -9,7 +9,6 @@ import (
 )
 
 func TestTracing(t *testing.T) {
-	testutils.RegisterPreFailHandler(testutils.PrintTrimmedStack)
 	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Shadowing Suite")
 }

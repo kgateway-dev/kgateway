@@ -51,11 +51,11 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk#awssecret) | AWS credentials |  |
-| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk#azuresecret) | Azure credentials |  |
-| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk#tlssecret) | TLS secret specification |  |
-| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk#extension) | Arbitrary secret specification |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk#awssecret) | AWS credentials. Only one of `aws`, `azure`, or `extension` can be set. |  |
+| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk#azuresecret) | Azure credentials. Only one of `azure`, `aws`, or `extension` can be set. |  |
+| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, or `extension` can be set. |  |
+| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk#extension) | Arbitrary secret specification. Only one of `extension`, `aws`, or `tls` can be set. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 
@@ -120,8 +120,8 @@ metadata:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `accessKey` | `string` | provided by `glooctl create secret aws` |  |
-| `secretKey` | `string` | provided by `glooctl create secret aws` |  |
+| `accessKey` | `string` | provided by `glooctl create secret aws`. |  |
+| `secretKey` | `string` | provided by `glooctl create secret aws`. |  |
 
 
 
@@ -138,7 +138,7 @@ metadata:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `apiKeys` | `map<string, string>` | provided by `glooctl create secret azure` |  |
+| `apiKeys` | `map<string, string>` | provided by `glooctl create secret azure`. |  |
 
 
 
@@ -157,9 +157,9 @@ metadata:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `certChain` | `string` | provided by `glooctl create secret tls` |  |
-| `privateKey` | `string` | provided by `glooctl create secret tls` |  |
-| `rootCa` | `string` | provided by `glooctl create secret tls` |  |
+| `certChain` | `string` | provided by `glooctl create secret tls`. |  |
+| `privateKey` | `string` | provided by `glooctl create secret tls`. |  |
+| `rootCa` | `string` | provided by `glooctl create secret tls`. |  |
 
 
 

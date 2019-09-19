@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -9,28 +10,26 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/gogo/protobuf/types"
-	"github.com/pkg/errors"
+	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, translatorReport reportFunc) *envoyapi.Listener {
+func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *envoyapi.Listener {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
 
-	report := func(err error, format string, args ...interface{}) {
-		translatorReport(err, "listener."+format, args...)
-	}
-	validateListenerPorts(proxy, report)
+	validateListenerPorts(proxy, listenerReport)
 	var filterChains []envoylistener.FilterChain
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
 		// run the http filter chain plugins and listener plugins
-		listenerFilters := t.computeListenerFilters(params, listener, report)
+		listenerFilters := t.computeListenerFilters(params, listener, listenerReport)
 		if len(listenerFilters) == 0 {
 			return nil
 		}
-		filterChains = t.computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, report)
+		filterChains = t.computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, listenerReport)
 	case *v1.Listener_TcpListener:
 		// run the tcp filter chain plugins
 		for _, plug := range t.plugins {
@@ -40,7 +39,9 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 			}
 			result, err := listenerPlugin.ProcessListenerFilterChain(params, listener)
 			if err != nil {
-				report(err, "plugin error on listener filter chain")
+				validation.AppendListenerError(listenerReport,
+					validationapi.ListenerReport_Error_ProcessingError,
+					err.Error())
 				continue
 			}
 			filterChains = append(filterChains, result...)
@@ -71,14 +72,16 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 			continue
 		}
 		if err := listenerPlugin.ProcessListener(params, listener, out); err != nil {
-			report(err, "plugin error on listener")
+			validation.AppendListenerError(listenerReport,
+				validationapi.ListenerReport_Error_ProcessingError,
+				err.Error())
 		}
 	}
 
 	return out
 }
 
-func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.Listener, report reportFunc) []envoylistener.Filter {
+func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.Listener, listenerReport *validationapi.ListenerReport) []envoylistener.Filter {
 	var listenerFilters []plugins.StagedListenerFilter
 	// run the Listener Filter Plugins
 	for _, plug := range t.plugins {
@@ -88,7 +91,9 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 		}
 		stagedFilters, err := filterPlugin.ProcessListenerFilter(params, listener)
 		if err != nil {
-			report(err, "listener plugin error")
+			validation.AppendListenerError(listenerReport,
+				validationapi.ListenerReport_Error_ProcessingError,
+				err.Error())
 		}
 		for _, listenerFilter := range stagedFilters {
 			listenerFilters = append(listenerFilters, listenerFilter)
@@ -101,9 +106,14 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 		return nil
 	}
 
+	httpListenerReport := listenerReport.GetHttpListenerReport()
+	if httpListenerReport == nil {
+		contextutils.LoggerFrom(params.Ctx).DPanic("internal error: listener report was not http type")
+	}
+
 	// add the http connection manager filter after all the InAuth Listener Filters
 	rdsName := routeConfigName(listener)
-	httpConnMgr := t.computeHttpConnectionManagerFilter(params, httpListener.HttpListener, rdsName, report)
+	httpConnMgr := t.computeHttpConnectionManagerFilter(params, httpListener.HttpListener, rdsName, httpListenerReport)
 	listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
 		ListenerFilter: httpConnMgr,
 		Stage:          plugins.AfterStage(plugins.AuthZStage),
@@ -114,7 +124,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, report reportFunc) []envoylistener.FilterChain {
+func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, listenerReport *validationapi.ListenerReport) []envoylistener.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfigurations) == 0 {
@@ -130,7 +140,8 @@ func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, list
 		// get secrets
 		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
-			report(err, "invalid secrets for listener %v", listener.Name)
+			validation.AppendListenerError(listenerReport,
+				validationapi.ListenerReport_Error_SSLConfigError, err.Error())
 			continue
 		}
 		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listener.UseProxyProto, listenerFilters)
@@ -187,16 +198,23 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 	return result
 }
 
-func validateListenerPorts(proxy *v1.Proxy, report reportFunc) {
-	listenersByPort := make(map[uint32][]string)
-	for _, listener := range proxy.Listeners {
-		listenersByPort[listener.BindPort] = append(listenersByPort[listener.BindPort], listener.Name)
+func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.ListenerReport) {
+	listenersByPort := make(map[uint32][]int)
+	for i, listener := range proxy.Listeners {
+		listenersByPort[listener.BindPort] = append(listenersByPort[listener.BindPort], i)
 	}
 	for port, listeners := range listenersByPort {
 		if len(listeners) == 1 {
 			continue
 		}
-		report(errors.Errorf("port %v is shared by listeners %v", port, listeners), "invalid listener config")
+		var listenerNames []string
+		for _, idx := range listeners {
+			listenerNames = append(listenerNames, proxy.Listeners[idx].Name)
+		}
+		validation.AppendListenerError(listenerReport,
+			validationapi.ListenerReport_Error_BindPortNotUniqueError,
+			fmt.Sprintf("port %v is shared by listeners %v", port, listeners),
+		)
 	}
 }
 

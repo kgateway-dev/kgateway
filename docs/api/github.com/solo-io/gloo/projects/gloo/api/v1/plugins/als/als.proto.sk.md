@@ -57,8 +57,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `fileSink` | [.als.plugins.gloo.solo.io.FileSink](../als.proto.sk#filesink) | Output access logs to local file |  |
-| `grpcService` | [.als.plugins.gloo.solo.io.GrpcService](../als.proto.sk#grpcservice) | Send access logs to GRPC service |  |
+| `fileSink` | [.als.plugins.gloo.solo.io.FileSink](../als.proto.sk#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |  |
+| `grpcService` | [.als.plugins.gloo.solo.io.GrpcService](../als.proto.sk#grpcservice) | Send access logs to GRPC service. Only one of `grpcService` or `fileSink` can be set. |  |
 
 
 
@@ -77,9 +77,9 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `path` | `string` | the file path to which the file access logging service will sink |  |
-| `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings |  |
-| `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries |  |
+| `path` | `string` | the file path to which the file access logging service will sink. |  |
+| `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings. Only one of `stringFormat` or `jsonFormat` can be set. |  |
+| `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries. Only one of `jsonFormat` or `stringFormat` can be set. |  |
 
 
 
@@ -100,7 +100,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `logName` | `string` | name of log stream |  |
+| `logName` | `string` | name of log stream. |  |
 | `staticClusterName` | `string` |  |  |
 | `additionalRequestHeadersToLog` | `[]string` |  |  |
 | `additionalResponseHeadersToLog` | `[]string` |  |  |

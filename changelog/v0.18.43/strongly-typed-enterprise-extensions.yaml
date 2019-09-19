@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Move rate-limit API from opaque `extensions` to strongly-typed `enterprise` tag and deprecate old api
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

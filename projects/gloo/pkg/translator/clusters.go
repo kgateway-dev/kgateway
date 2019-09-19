@@ -66,10 +66,16 @@ func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.En
 	if err != nil {
 		resourceErrs.AddError(upstream, err)
 	}
+
+	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
+	if circuitBreakers == nil {
+		circuitBreakers = t.settings.GetCircuitBreakers()
+	}
+
 	out := &envoyapi.Cluster{
 		Name:             UpstreamToClusterName(upstream.Metadata.Ref()),
 		Metadata:         new(envoycore.Metadata),
-		CircuitBreakers:  getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, t.settings.CircuitBreakers),
+		CircuitBreakers:  getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, circuitBreakers),
 		LbSubsetConfig:   createLbConfig(upstream),
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,

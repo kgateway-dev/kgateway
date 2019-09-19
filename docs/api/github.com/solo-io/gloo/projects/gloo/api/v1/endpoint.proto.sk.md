@@ -38,10 +38,10 @@ Endpoints represent dynamically discovered address/ports where an upstream servi
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstreams` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | List of the upstreams the endpoint belongs to |  |
-| `address` | `string` | Address of the endpoint (ip or hostname) |  |
-| `port` | `int` | listening port for the endpoint |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `upstreams` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | List of the upstreams the endpoint belongs to. |  |
+| `address` | `string` | Address of the endpoint (ip or hostname). |  |
+| `port` | `int` | listening port for the endpoint. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 

@@ -38,7 +38,7 @@ https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envo
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `hashPolicies` | [[]lbhash.plugins.gloo.solo.io.HashPolicy](../lbhash.proto.sk#hashpolicy) | The list of policies Envoy will use when generating a hash key for a hashing load balancer |  |
+| `hashPolicies` | [[]lbhash.plugins.gloo.solo.io.HashPolicy](../lbhash.proto.sk#hashpolicy) | The list of policies Envoy will use when generating a hash key for a hashing load balancer. |  |
 
 
 
@@ -62,7 +62,7 @@ additional notes https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | `string` | required, the name of the cookie to be used to obtain the hash key |  |
+| `name` | `string` | required, the name of the cookie to be used to obtain the hash key. |  |
 | `ttl` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | If specified, a cookie with the TTL will be generated if the cookie is not present. If the TTL is present and zero, the generated cookie will be a session cookie. |  |
 | `path` | `string` | The name of the path for the cookie. If no path is specified here, no path will be set for the cookie. |  |
 
@@ -85,9 +85,9 @@ Specifies an element of Envoy's hashing policy for hashing load balancers
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | `string` | Use a given header's value as a component of the hashing load balancer's hash key |  |
-| `cookie` | [.lbhash.plugins.gloo.solo.io.Cookie](../lbhash.proto.sk#cookie) | Use a given cookie as a component of the hashing load balancer's hash key |  |
-| `sourceIp` | `bool` | Use the request's source IP address as a component of the hashing load balancer's hash key |  |
+| `header` | `string` | Use a given header's value as a component of the hashing load balancer's hash key. Only one of `header`, or `sourceIp` can be set. |  |
+| `cookie` | [.lbhash.plugins.gloo.solo.io.Cookie](../lbhash.proto.sk#cookie) | Use a given cookie as a component of the hashing load balancer's hash key. Only one of `cookie`, or `sourceIp` can be set. |  |
+| `sourceIp` | `bool` | Use the request's source IP address as a component of the hashing load balancer's hash key. Only one of `sourceIp`, or `cookie` can be set. |  |
 | `terminal` | `bool` | If set, and a hash key is available after evaluating this policy, Envoy will skip the subsequent policies and use the key as it is. This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys. |  |
 
 

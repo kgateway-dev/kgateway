@@ -34,15 +34,15 @@ type outputTypeProperties struct {
 var typeProperties = []outputTypeProperties{
 	{TABLE, []string{"table"}, true},
 	{YAML, []string{"yaml", "yml"}, false},
-	{JSON, []string{"json"}, false},
 	{KUBE_YAML, []string{"kube-yaml"}, false},
+	{JSON, []string{"json"}, false},
 	{WIDE, []string{"wide"}, true},
 }
 
 var (
 	_OutputTypeToValue = map[string]OutputType{}
-	//"yaml":      YAML,
-	//"yml":       YAML,
+	// "yaml":      YAML,
+	// "yml":       YAML,
 
 	_OutputValueToType = map[OutputType]string{}
 	// YAML:      "yaml",
@@ -111,8 +111,4 @@ func (o *OutputType) UnmarshalJSON(data []byte) error {
 
 func (o *OutputType) IsTable() bool {
 	return _OutputValueToIsTable[*o]
-}
-
-func (o *OutputType) IsDryRunnable() bool {
-	return !_OutputValueToIsTable[*o]
 }

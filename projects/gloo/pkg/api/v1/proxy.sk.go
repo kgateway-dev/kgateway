@@ -35,6 +35,8 @@ func (r *Proxy) SetStatus(status core.Status) {
 func (r *Proxy) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
+	metaCopy.Generation = 0
+	// investigate zeroing out owner refs as well
 	return hashutils.HashAll(
 		metaCopy,
 		r.Listeners,

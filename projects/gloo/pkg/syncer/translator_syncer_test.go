@@ -2,6 +2,7 @@ package syncer_test
 
 import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
@@ -92,11 +93,11 @@ type mockTranslator struct {
 	reportErrs bool
 }
 
-func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceErrors, error) {
+func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceErrors, *validation.ProxyReport, error) {
 	if t.reportErrs {
-		return envoycache.NilSnapshot{}, reporter.ResourceErrors{proxy: errors.Errorf("hi, how ya doin'?")}, nil
+		return envoycache.NilSnapshot{}, reporter.ResourceErrors{proxy: errors.Errorf("hi, how ya doin'?")}, &validation.ProxyReport{}, nil
 	}
-	return envoycache.NilSnapshot{}, nil, nil
+	return envoycache.NilSnapshot{}, nil, &validation.ProxyReport{}, nil
 }
 
 var _ envoycache.SnapshotCache = &mockXdsCache{}

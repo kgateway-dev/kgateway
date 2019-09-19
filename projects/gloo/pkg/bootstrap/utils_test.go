@@ -144,11 +144,6 @@ var _ = Describe("Utils", func() {
 	})
 
 	Context("consul tests", func() {
-		if os.Getenv("RUN_CONSUL_TESTS") != "1" {
-			Skip("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
-			return
-		}
-
 		var (
 			consulFactory  *services.ConsulFactory
 			consulInstance *services.ConsulInstance
@@ -169,6 +164,10 @@ var _ = Describe("Utils", func() {
 		})
 
 		BeforeEach(func() {
+			if os.Getenv("RUN_CONSUL_TESTS") != "1" {
+				Skip("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
+				return
+			}
 			var err error
 			// Start Consul
 			consulInstance, err = consulFactory.NewConsulInstance()

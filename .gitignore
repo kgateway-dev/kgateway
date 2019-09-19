@@ -10,5 +10,9 @@ install/gloo.yaml
 
 cloudbuild-local*.yaml
 
+# OSX files
 .DS_Store
 docs/helm-values.md
+
+# ignore intermediate files that gomock sometimes generates
+**/gomock_reflect*

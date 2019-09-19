@@ -1,6 +1,13 @@
 package constants
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/solo-io/go-utils/errors"
+	"github.com/spf13/cobra"
+)
+
+var (
+	SubcommandError = errors.New("please select a subcommand")
+)
 
 var (
 	VIRTUAL_SERVICE_COMMAND = cobra.Command{
@@ -36,7 +43,7 @@ var (
 	ADD_COMMAND = cobra.Command{
 		Use:     "add",
 		Aliases: []string{"a"},
-		Short:   "adds configuration to a top-level Gloo resource",
+		Short:   "Adds configuration to a top-level Gloo resource",
 	}
 
 	CHECK_COMMAND = cobra.Command{
@@ -49,6 +56,17 @@ var (
 		Aliases: []string{"c"},
 		Short:   "Create a Gloo resource",
 		Long:    "Gloo resources be created from files (including stdin)",
+	}
+
+	DEBUG_COMMAND = cobra.Command{
+		Use:   "debug",
+		Short: "Debug a Gloo resource (requires Gloo running on Kubernetes)",
+	}
+
+	DEBUG_LOG_COMMAND = cobra.Command{
+		Use:     "logs",
+		Aliases: []string{"log"},
+		Short:   "Debug Gloo logs (requires Gloo running on Kubernetes)",
 	}
 
 	DELETE_COMMAND = cobra.Command{
@@ -84,5 +102,35 @@ var (
 		Use:     "edit",
 		Aliases: []string{"ed"},
 		Short:   "Edit a Gloo resource",
+	}
+
+	OBSERVABILITY_COMMAND = cobra.Command{
+		Use:     "observability",
+		Aliases: []string{"o", "obs", "observe"},
+		Short:   "root command for observability functionality",
+	}
+
+	SETTINGS_COMMAND = cobra.Command{
+		Use:     "settings",
+		Aliases: []string{"st", "set"},
+		Short:   "root command for settings",
+	}
+
+	CONFIG_EXTAUTH_COMMAND = cobra.Command{
+		Use:     "externalauth",
+		Aliases: []string{"extauth"},
+		Short:   "root command for external auth functionality",
+	}
+
+	CONFIG_RATELIMIT_COMMAND = cobra.Command{
+		Use:   "ratelimit",
+		Short: "root command for rate limit functionality",
+	}
+
+	VERSION_COMMAND = cobra.Command{
+		Use:     "version",
+		Aliases: []string{"v"},
+		Short:   "Print current version",
+		Long:    "Get the version of Glooctl and Gloo",
 	}
 )

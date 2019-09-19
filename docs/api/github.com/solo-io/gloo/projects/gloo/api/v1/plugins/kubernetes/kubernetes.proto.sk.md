@@ -43,11 +43,11 @@ Kubernetes Upstreams are typically generated automatically by Gloo from the Kube
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `serviceName` | `string` | The name of the Kubernetes Service |  |
-| `serviceNamespace` | `string` | The namespace where the Service lives |  |
+| `serviceName` | `string` | The name of the Kubernetes Service. |  |
+| `serviceNamespace` | `string` | The namespace where the Service lives. |  |
 | `servicePort` | `int` | The access port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding port on the pod for routing. |  |
-| `selector` | `map<string, string>` | Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if any are provided here. (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) |  |
-| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address |  |
+| `selector` | `map<string, string>` | Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if any are provided here. (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). |  |
+| `serviceSpec` | [.plugins.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk#servicespec) | An optional Service Spec describing the service listening at this address. |  |
 | `subsetSpec` | [.plugins.gloo.solo.io.SubsetSpec](../../subset_spec.proto.sk#subsetspec) | Subset configuration. For discovery sources that has labels (like kubernetes). this configuration allows you to partition the upstream to a set of subsets. for each unique set of keys and values, a subset will be created. |  |
 
 

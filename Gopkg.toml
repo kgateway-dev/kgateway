@@ -28,11 +28,11 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.10.16"
+  version = "0.10.20"
 
 [[override]]
   name = "github.com/solo-io/go-utils"
-  version = "0.10.0"
+  version = "0.10.4"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"

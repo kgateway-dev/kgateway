@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -20,87 +19,83 @@ func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 
 func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 	if opts.Uninstall.DeleteNamespace || opts.Uninstall.DeleteAll {
-		if err := deleteNamespace(cli, opts.Uninstall.Namespace); err != nil {
-			return err
-		}
+		deleteNamespace(cli, opts.Uninstall.Namespace)
 	} else {
-		if err := deleteGlooSystem(cli, opts.Uninstall.Namespace); err != nil {
-			return err
-		}
+		deleteGlooSystem(cli, opts.Uninstall.Namespace)
 	}
 
 	if opts.Uninstall.DeleteCrds || opts.Uninstall.DeleteAll {
-		if err := deleteGlooCrds(cli); err != nil {
-			return err
-		}
+		deleteGlooCrds(cli)
 	}
 
 	if opts.Uninstall.DeleteAll {
-		if err := deleteRbac(cli); err != nil {
-			return err
-		}
+		deleteRbac(cli)
 	}
 
-	if err := uninstallKnativeIfNecessary(); err != nil {
-		return err
-	}
+	uninstallKnativeIfNecessary()
+
 	return nil
 }
 
-func deleteRbac(cli install.KubeCli) error {
+func deleteRbac(cli install.KubeCli) {
 	fmt.Printf("Removing Gloo RBAC configuration...\n")
+	failedRbacs := ""
 	for _, rbacKind := range GlooRbacKinds {
 		if err := cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo"); err != nil {
-			return errors.Wrapf(err, "deleting rbac failed")
+			failedRbacs += rbacKind + " "
 		}
 	}
-	return nil
+	if len(failedRbacs) > 0 {
+		fmt.Printf("Unable to delete Gloo RBACs: %s. Continuing...\n", failedRbacs)
+	}
 }
 
-func deleteGlooSystem(cli install.KubeCli, namespace string) error {
+func deleteGlooSystem(cli install.KubeCli, namespace string) {
 	fmt.Printf("Removing Gloo system components from namespace %s...\n", namespace)
+	failedComponents := ""
 	for _, kind := range GlooSystemKinds {
 		if err := cli.Kubectl(nil, "delete", kind, "-l", "app=gloo", "-n", namespace); err != nil {
-			return errors.Wrapf(err, "deleting gloo system failed")
+			failedComponents += kind + " "
 		}
 	}
-	return nil
+	if len(failedComponents) > 0 {
+		fmt.Printf("Unable to delete gloo system components: %s. Continuing...\n", failedComponents)
+	}
 }
 
-func deleteGlooCrds(cli install.KubeCli) error {
+func deleteGlooCrds(cli install.KubeCli) {
 	fmt.Printf("Removing Gloo CRDs...\n")
 	args := []string{"delete", "crd"}
 	for _, crd := range GlooCrdNames {
 		args = append(args, crd)
 	}
 	if err := cli.Kubectl(nil, args...); err != nil {
-		return errors.Wrapf(err, "deleting crds failed")
+		fmt.Printf("Unable to delete Gloo CRDs. Continuing...\n")
 	}
-	return nil
 }
 
-func deleteNamespace(cli install.KubeCli, namespace string) error {
+func deleteNamespace(cli install.KubeCli, namespace string) {
 	fmt.Printf("Removing namespace %s...\n", namespace)
 	if err := cli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
-		return errors.Wrapf(err, "deleting namespace %s failed", namespace)
+		fmt.Printf("Unable to delete namespace %s. Continuing...\n", namespace)
 	}
-	return nil
 }
 
-func uninstallKnativeIfNecessary() error {
+func uninstallKnativeIfNecessary() {
 	_, installOpts, err := checkKnativeInstallation()
 	if err != nil {
-		return errors.Wrapf(err, "finding knative installation")
+		fmt.Printf("Finding knative installation\n")
+		return
 	}
 	if installOpts != nil {
 		fmt.Printf("Removing knative components installed by Gloo %#v...\n", installOpts)
 		manifests, err := RenderKnativeManifests(*installOpts)
 		if err != nil {
-			return errors.Wrapf(err, "rendering knative manifests")
+			fmt.Printf("Could not determine which knative components to remove. Continuing...\n")
+			return
 		}
 		if err := install.KubectlDelete([]byte(manifests), "--ignore-not-found"); err != nil {
-			return errors.Wrapf(err, "deleting knative failed")
+			fmt.Printf("Unable to delete knative. Continuing...\n")
 		}
 	}
-	return nil
 }

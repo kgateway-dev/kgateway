@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add glooctl debug log command, which prints out all the gloo pod logs.
+    A --zip flag will save them in a tar file (location optionally specified by the --file flag).
+    A --errors-only flag will filter the logs for 'error' level logs.
+  issueLink: https://github.com/solo-io/gloo/issues/997

@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"net"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -25,19 +26,29 @@ type Opts struct {
 	Proxies           factory.ResourceClientFactory
 	Secrets           factory.ResourceClientFactory
 	Artifacts         factory.ResourceClientFactory
-	BindAddr          net.Addr
 	KubeClient        kubernetes.Interface
 	ConsulWatcher     consul.ConsulWatcher
 	WatchOpts         clients.WatchOpts
 	DevMode           bool
 	ControlPlane      ControlPlane
+	ValidationServer  ValidationServer
 	Settings          *v1.Settings
 	KubeCoreCache     corecache.KubeCoreCache
 }
 
 type ControlPlane struct {
+	*GrpcService
+	SnapshotCache cache.SnapshotCache
+	XDSServer     server.Server
+}
+
+type ValidationServer struct {
+	*GrpcService
+}
+
+type GrpcService struct {
+	Ctx             context.Context
+	BindAddr        net.Addr
 	GrpcServer      *grpc.Server
 	StartGrpcServer bool
-	SnapshotCache   cache.SnapshotCache
-	XDSServer       server.Server
 }

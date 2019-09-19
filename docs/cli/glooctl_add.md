@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl add
 
-Adds configuration to a top-level Gloo resource.
+Adds configuration to a top-level Gloo resource
 
 ### Synopsis
 
-Adds configuration to a top-level Gloo resource.
+Adds configuration to a top-level Gloo resource
 
 ```
 glooctl add [flags]
@@ -33,7 +33,8 @@ glooctl add [flags]
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive   use interactive mode
+  -i, --interactive         use interactive mode
+      --kubeconfig string   kubeconfig to use, if not standard one
 ```
 
 ### SEE ALSO

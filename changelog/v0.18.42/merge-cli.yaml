@@ -1,0 +1,16 @@
+changelog:
+- type: FIX
+  description: Add back the virtualservice create consul related flags.
+  issueLink: https://github.com/solo-io/gloo/issues/1172
+- type: FIX
+  description: If we run glooctl uninstall -all with a nonexistent namespace, still uninstall everything instead of erroring out.
+  issueLink: https://github.com/solo-io/gloo/issues/602
+- type: NEW_FEATURE
+  description: Modify glooctl version command to output both client and server versions
+  issueLink: https://github.com/solo-io/gloo/issues/722
+- type: FIX
+  description: For both glooctl add and glooctl create, a --dry-run will output a kube-yaml file unless the --output flag overrides it.
+  issueLink: https://github.com/solo-io/gloo/issues/907
+- type: NEW_FEATURE
+  description: Add support for add route query parameter matching.
+  issueLink: https://github.com/solo-io/gloo/issues/932

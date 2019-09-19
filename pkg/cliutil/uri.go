@@ -51,7 +51,7 @@ func GetResource(uri string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bool) (string, error) {
+func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bool, clusterName string) (string, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "getting kube rest config")
@@ -89,7 +89,7 @@ func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bo
 	if len(svc.Status.LoadBalancer.Ingress) == 0 || localCluster {
 		// assume nodeport on kubernetes
 		// TODO: support more types of NodePort services
-		host, err = getNodeIp(svc, kube)
+		host, err = getNodeIp(svc, kube, clusterName)
 		if err != nil {
 			return "", errors.Wrapf(err, "")
 		}
@@ -104,7 +104,7 @@ func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bo
 	return host + ":" + port, nil
 }
 
-func getNodeIp(svc *v1.Service, kube kubernetes.Interface) (string, error) {
+func getNodeIp(svc *v1.Service, kube kubernetes.Interface, clusterName string) (string, error) {
 	// pick a node where one of our pods is running
 	pods, err := kube.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(svc.Spec.Selector).String(),
@@ -127,7 +127,7 @@ func getNodeIp(svc *v1.Service, kube kubernetes.Interface) (string, error) {
 	// we run `minikube ip` which avoids an issue where
 	// we get a NAT network IP when the minikube provider is virtualbox
 	if nodeName == "minikube" {
-		return minikubeIp()
+		return minikubeIp(clusterName)
 	}
 
 	node, err := kube.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
@@ -142,8 +142,8 @@ func getNodeIp(svc *v1.Service, kube kubernetes.Interface) (string, error) {
 	return "", errors.Errorf("no active addresses found for node %v", node.Name)
 }
 
-func minikubeIp() (string, error) {
-	minikubeCmd := exec.Command("minikube", "ip")
+func minikubeIp(clusterName string) (string, error) {
+	minikubeCmd := exec.Command("minikube", "ip", "-p", clusterName)
 
 	hostname := &bytes.Buffer{}
 

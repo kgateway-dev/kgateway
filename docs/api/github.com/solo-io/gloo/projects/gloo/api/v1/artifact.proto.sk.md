@@ -44,8 +44,8 @@ Supported artifact backends can be selected in Gloo's boostrap options.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `data` | `map<string, string>` | Raw data data being stored |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource |  |
+| `data` | `map<string, string>` | Raw data data being stored. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 

@@ -3,6 +3,7 @@ package surveyutils_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
@@ -58,6 +59,33 @@ var _ = Describe("Route", func() {
 		}
 		_, err = usClient.Write(us, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
+
+		mockLambdaFunctions := []*aws.LambdaFunctionSpec{{
+			LogicalName:        "function1",
+			LambdaFunctionName: "function1",
+			Qualifier:          "",
+		}}
+		us2 := &v1.Upstream{
+			Metadata: core.Metadata{
+				Name:      "gloo-system.some-ns-test-svc-5678",
+				Namespace: "gloo-system",
+			},
+			UpstreamSpec: &v1.UpstreamSpec{
+				UpstreamType: &v1.UpstreamSpec_Aws{
+					Aws: &aws.UpstreamSpec{
+						Region: "some-region",
+						SecretRef: core.ResourceRef{
+							Name:      "some-name",
+							Namespace: "some-ns",
+						},
+						LambdaFunctions: mockLambdaFunctions,
+					},
+				},
+			},
+		}
+
+		_, err = usClient.Write(us2, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should select a route", func() {
@@ -105,6 +133,79 @@ var _ = Describe("Route", func() {
 			Expect(opts.Add.Route.Matcher.PathPrefix).To(Equal("/"))
 			Expect(opts.Add.Route.Destination.Upstream.Namespace).To(Equal("gloo-system"))
 			Expect(opts.Add.Route.Destination.Upstream.Name).To(Equal("gloo-system.some-ns-test-svc-1234"))
+
+		})
+	})
+
+	It("should allow you to choose a function", func() {
+		testutil.ExpectInteractive(func(c *testutil.Console) {
+			c.ExpectString("Choose a Virtual Service to add the route to")
+			c.PressDown()
+			c.SendLine("")
+			c.ExpectString("where do you want to insert the route in the virtual service's route list?")
+			c.SendLine("")
+			c.ExpectString("Choose a path match type")
+			c.SendLine("")
+			c.ExpectString("What path prefix should we match?")
+			c.SendLine("")
+			c.ExpectString("Add a header matcher for this function (empty to skip)?")
+			c.SendLine("")
+			c.ExpectString("HTTP Method to match for this route (empty to skip)?")
+			c.SendLine("")
+			c.ExpectString("Choose the upstream or upstream group to route to:")
+			c.SendLine("gloo-system.some-ns-test-svc-5678")
+			c.ExpectString("which function should this route invoke?")
+			c.SendLine("function1")
+			c.ExpectString("do you wish to add a prefix-rewrite transformation to the route")
+			c.SendLine("")
+			c.ExpectEOF()
+		}, func() {
+			var opts options.Options
+			err := AddRouteFlagsInteractive(&opts)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(opts.Metadata.Name).To(Equal("vs"))
+			Expect(opts.Metadata.Namespace).To(Equal("gloo-system"))
+			Expect(opts.Add.Route.Matcher.PathPrefix).To(Equal("/"))
+			Expect(opts.Add.Route.Destination.Upstream.Namespace).To(Equal("gloo-system"))
+			Expect(opts.Add.Route.Destination.Upstream.Name).To(Equal("gloo-system.some-ns-test-svc-5678"))
+			Expect(opts.Add.Route.Destination.DestinationSpec.Aws.LogicalName).To(Equal("function1"))
+
+		})
+	})
+
+	It("should allow you to skip choosing a function", func() {
+		testutil.ExpectInteractive(func(c *testutil.Console) {
+			c.ExpectString("Choose a Virtual Service to add the route to")
+			c.PressDown()
+			c.SendLine("")
+			c.ExpectString("where do you want to insert the route in the virtual service's route list?")
+			c.SendLine("")
+			c.ExpectString("Choose a path match type")
+			c.SendLine("")
+			c.ExpectString("What path prefix should we match?")
+			c.SendLine("")
+			c.ExpectString("Add a header matcher for this function (empty to skip)?")
+			c.SendLine("")
+			c.ExpectString("HTTP Method to match for this route (empty to skip)?")
+			c.SendLine("")
+			c.ExpectString("Choose the upstream or upstream group to route to:")
+			c.SendLine("gloo-system.some-ns-test-svc-5678")
+			c.ExpectString("which function should this route invoke?")
+			c.SendLine(NoneOfTheAbove)
+			c.ExpectString("do you wish to add a prefix-rewrite transformation to the route")
+			c.SendLine("/api/pets")
+			c.ExpectEOF()
+		}, func() {
+			var opts options.Options
+			err := AddRouteFlagsInteractive(&opts)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(opts.Metadata.Name).To(Equal("vs"))
+			Expect(opts.Metadata.Namespace).To(Equal("gloo-system"))
+			Expect(opts.Add.Route.Matcher.PathPrefix).To(Equal("/"))
+			Expect(opts.Add.Route.Destination.Upstream.Namespace).To(Equal("gloo-system"))
+			Expect(opts.Add.Route.Destination.Upstream.Name).To(Equal("gloo-system.some-ns-test-svc-5678"))
+			Expect(opts.Add.Route.Destination.DestinationSpec.Aws.LogicalName).To(Equal(NoneOfTheAbove))
+			Expect(opts.Add.Route.Plugins.PrefixRewrite.Value).NotTo(Equal(nil))
 
 		})
 	})

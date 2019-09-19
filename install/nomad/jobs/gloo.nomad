@@ -49,7 +49,8 @@ job "gloo" {
 
       template {
         data = <<EOF
-bindAddr: 0.0.0.0:[[.gloo.xdsPort]]
+gloo:
+  xdsBindAddr: 0.0.0.0:[[.gloo.xdsPort]]
 consul:
   address: [[.consul.address]]
   serviceDiscovery: {}
@@ -128,7 +129,8 @@ EOF
 
       template {
         data = <<EOF
-bindAddr: 0.0.0.0:[[.gloo.xdsPort]]
+gloo:
+  xdsBindAddr: 0.0.0.0:[[.gloo.xdsPort]]
 consul:
   address: [[.consul.address]]
   serviceDiscovery: {}
@@ -193,7 +195,8 @@ EOF
 
     template {
       data = <<EOF
-bindAddr: 0.0.0.0:[[.gloo.xdsPort]]
+gloo:
+  xdsBindAddr: 0.0.0.0:[[.gloo.xdsPort]]
 consul:
   address: [[.consul.address]]
   serviceDiscovery: {}

@@ -35,6 +35,8 @@ func (r *Settings) SetStatus(status core.Status) {
 func (r *Settings) Hash() uint64 {
 	metaCopy := r.GetMetadata()
 	metaCopy.ResourceVersion = ""
+	metaCopy.Generation = 0
+	// investigate zeroing out owner refs as well
 	return hashutils.HashAll(
 		metaCopy,
 		r.DiscoveryNamespace,
@@ -46,9 +48,13 @@ func (r *Settings) Hash() uint64 {
 		r.CircuitBreakers,
 		r.Knative,
 		r.Discovery,
+		r.Gloo,
+		r.Gateway,
 		r.Consul,
 		r.Kubernetes,
 		r.Extensions,
+		r.RatelimitDescriptors,
+		r.RatelimitServer,
 		r.ConfigSource,
 		r.SecretSource,
 		r.ArtifactSource,

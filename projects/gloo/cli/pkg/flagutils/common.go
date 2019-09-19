@@ -8,19 +8,30 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/pflag"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+const (
+	OutputFlag = "output"
+	FileFlag   = "file"
+	DryRunFlag = "dry-run"
 )
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
-	set.VarP(outputType, "output", "o", "output format: (yaml, json, table, kube-yaml, wide)")
+	set.VarP(outputType, OutputFlag, "o", "output format: (yaml, json, table, kube-yaml, wide)")
 }
 
 func AddFileFlag(set *pflag.FlagSet, strptr *string) {
-	set.StringVarP(strptr, "file", "f", "", "file to be read or written to")
+	set.StringVarP(strptr, FileFlag, "f", "", "file to be read or written to")
 }
 
 func AddDryRunFlag(set *pflag.FlagSet, dryRun *bool) {
-	set.BoolVarP(dryRun, "dry-run", "", false, "print kubernetes-formatted yaml "+
+	set.BoolVarP(dryRun, DryRunFlag, "", false, "print kubernetes-formatted yaml "+
 		"rather than creating or updating a resource")
+}
+
+func AddKubeConfigFlag(set *pflag.FlagSet, kubeConfig *string) {
+	set.StringVarP(kubeConfig, clientcmd.RecommendedConfigPathFlag, "", "", "kubeconfig to use, if not standard one")
 }
 
 func AddConsulConfigFlags(set *pflag.FlagSet, consul *options.Consul) {

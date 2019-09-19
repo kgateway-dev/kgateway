@@ -1,21 +1,19 @@
 package add
 
 import (
-	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )
 
-const RootAddError = "please select a subcommand"
-
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "add",
-		Aliases: []string{"a"},
-		Short:   "Adds configuration to a top-level Gloo resource.",
+		Use:     constants.ADD_COMMAND.Use,
+		Aliases: constants.ADD_COMMAND.Aliases,
+		Short:   constants.ADD_COMMAND.Short,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
@@ -23,10 +21,13 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			if err := prerun.EnableConsulClients(opts.Add.Consul); err != nil {
 				return err
 			}
+			if err := prerun.HarmonizeDryRunAndOutputFormat(opts, cmd); err != nil {
+				return err
+			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return errors.Errorf(RootAddError)
+			return constants.SubcommandError
 		},
 	}
 	pflags := cmd.PersistentFlags()

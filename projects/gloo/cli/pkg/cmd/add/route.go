@@ -133,6 +133,16 @@ func matcherFromInput(input options.RouteMatchers) (*v1.Matcher, error) {
 	default:
 		return nil, errors.Errorf("must provide path prefix, path exact, or path regex for route matcher")
 	}
+	for k, v := range input.QueryParameterMatcher.MustMap() {
+		m.QueryParameters = append(m.QueryParameters, &v1.QueryParameterMatcher{
+			Name:  k,
+			Value: v,
+			Regex: true,
+		})
+	}
+	sort.SliceStable(m.QueryParameters, func(i, j int) bool {
+		return m.QueryParameters[i].Name < m.QueryParameters[j].Name
+	})
 	if len(input.Methods) > 0 {
 		m.Methods = input.Methods
 	}
@@ -199,7 +209,7 @@ func pluginsFromInput(input options.RoutePlugins) (*v1.RoutePlugins, error) {
 
 func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, error) {
 	switch {
-	case input.Aws.LogicalName != "":
+	case input.Aws.LogicalName != "" && input.Aws.LogicalName != surveyutils.NoneOfTheAbove:
 		return &v1.DestinationSpec{
 			DestinationType: &v1.DestinationSpec_Aws{
 				Aws: &aws.DestinationSpec{
@@ -208,7 +218,7 @@ func destSpecFromInput(input options.DestinationSpec) (*v1.DestinationSpec, erro
 				},
 			},
 		}, nil
-	case input.Rest.FunctionName != "":
+	case input.Rest.FunctionName != "" && input.Rest.FunctionName != surveyutils.NoneOfTheAbove:
 		return &v1.DestinationSpec{
 			DestinationType: &v1.DestinationSpec_Rest{
 				Rest: &rest.DestinationSpec{
