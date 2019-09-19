@@ -52,8 +52,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		consulResources factory.ResourceClientFactory
 		vaultResources  factory.ResourceClientFactory
 
-		petstorePort int
-		glooPort     int
+		petstorePort   int
+		glooPort       int
+		validationPort int
 	)
 
 	const writeNamespace = defaults.GlooSystem
@@ -62,6 +63,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		glooPort = int(services.AllocateGlooPort())
+		validationPort = int(services.AllocateGlooPort())
 
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
@@ -82,7 +84,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		settingsDir, err = ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
-		settings, err := writeSettings(settingsDir, glooPort, writeNamespace)
+		settings, err := writeSettings(settingsDir, glooPort, validationPort, writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulClient, err = bootstrap.ConsulClientForSettings(settings)
@@ -338,7 +340,7 @@ func makeFunctionRoutingVirtualService(upstream core.ResourceRef, funcName strin
 	}
 }
 
-func writeSettings(settingsDir string, glooPort int, writeNamespace string) (*gloov1.Settings, error) {
+func writeSettings(settingsDir string, glooPort, validationPort int, writeNamespace string) (*gloov1.Settings, error) {
 	settings := &gloov1.Settings{
 		ConfigSource: &gloov1.Settings_ConsulKvSource{
 			ConsulKvSource: &gloov1.Settings_ConsulKv{},
@@ -358,7 +360,8 @@ func writeSettings(settingsDir string, glooPort int, writeNamespace string) (*gl
 			ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},
 		},
 		Gloo: &gloov1.GlooOptions{
-			XdsBindAddr: fmt.Sprintf("0.0.0.0:%v", glooPort),
+			XdsBindAddr:        fmt.Sprintf("0.0.0.0:%v", glooPort),
+			ValidationBindAddr: fmt.Sprintf("0.0.0.0:%v", validationPort),
 		},
 		RefreshRate:        types.DurationProto(time.Second * 1),
 		DiscoveryNamespace: writeNamespace,
