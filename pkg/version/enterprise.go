@@ -1,14 +1,11 @@
 package version
 
 const (
-	EnterpriseTag = "0.18.29"
+	// When updating the EnterpriseTag value, also update GlooTagInEnterprise
+	EnterpriseTag       = "0.18.29"
+	GlooTagInEnterprise = "0.18.43"
+	// TODO - util for synchronizing these versions
 
-	// This value may change with new Gloo releases
-	UiImageTag = EnterpriseTag
-
-	// The following values should not change frequently
-	UiImageRegistry        = "quay.io/solo-io"
-	UiImageRepositoryProxy = "grpcserver-envoy"
-	UiImageRepositoryFront = "grpcserver-ui"
-	UiImageRepositoryBack  = "grpcserver-ee"
+	UiImageTag    = EnterpriseTag
+	UiGlooVersion = GlooTagInEnterprise
 )

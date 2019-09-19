@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Option to install Gloo with a visual dashboard.
+    issueLink: https://github.com/solo-io/gloo/issues/1218
