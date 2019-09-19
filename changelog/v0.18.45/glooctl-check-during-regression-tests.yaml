@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Run glooctl check during regression tests to detect installation errors.
+    issueLink: https://github.com/solo-io/gloo/issues/1159
+  - type: NON_USER_FACING
+    description: Add cron job for CI cluster that deletes test namespaces that are more than 1 hour old.
+    issueLink: https://github.com/solo-io/gloo/issues/1179
+    resolvesIssue: false
