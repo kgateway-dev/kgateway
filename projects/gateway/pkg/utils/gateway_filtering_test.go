@@ -1,4 +1,4 @@
-package syncer
+package utils_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -6,10 +6,12 @@ import (
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	. "github.com/solo-io/gloo/projects/gateway/pkg/utils"
 )
 
 var _ = Describe("TranslatorSyncer unit tests", func() {
-	Describe("gatewaysByProxyName", func() {
+	Describe("GatewaysByProxyName", func() {
 		It("assigns each gateway once to each proxy by their proxyNames", func() {
 
 			gws := v2.GatewayList{
@@ -20,7 +22,7 @@ var _ = Describe("TranslatorSyncer unit tests", func() {
 
 			gw1, gw2, gw3 := gws[0], gws[1], gws[2]
 
-			byProxy := gatewaysByProxyName(gws)
+			byProxy := GatewaysByProxyName(gws)
 			Expect(byProxy).To(Equal(map[string]v2.GatewayList{
 				defaults.GatewayProxyName: {gw1, gw3},
 				"proxy1":                  {gw2, gw3},

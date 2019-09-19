@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Speed up the Helm tests.
+  issueLink: https://github.com/solo-io/gloo/issues/1226

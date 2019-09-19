@@ -881,7 +881,7 @@ var _ = Describe("Translator", func() {
 var expectedRouteMetadatas = [][]*RouteMetadata{
 	{
 		&RouteMetadata{
-			Source: []SourceRef{
+			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-1",
@@ -901,7 +901,7 @@ var expectedRouteMetadatas = [][]*RouteMetadata{
 			},
 		},
 		{
-			Source: []SourceRef{
+			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-2",
@@ -929,7 +929,7 @@ var expectedRouteMetadatas = [][]*RouteMetadata{
 			},
 		},
 		{
-			Source: []SourceRef{
+			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-2",
@@ -959,7 +959,7 @@ var expectedRouteMetadatas = [][]*RouteMetadata{
 	},
 	{
 		{
-			Source: []SourceRef{
+			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-2",
@@ -979,7 +979,7 @@ var expectedRouteMetadatas = [][]*RouteMetadata{
 			},
 		},
 		{
-			Source: []SourceRef{
+			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-2",

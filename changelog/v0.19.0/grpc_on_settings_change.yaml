@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Gloo will not re-start it's XDS service when settings change
+    issueLink: https://github.com/solo-io/gloo/issues/1191
+    resolvesIssue: false

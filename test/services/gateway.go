@@ -88,6 +88,7 @@ type RunOptions struct {
 	NsToWatch        []string
 	WhatToRun        What
 	GlooPort         int32
+	ValidationPort   int32
 	ExtensionConfigs *gloov1.Extensions
 	Extensions       syncer.Extensions
 	Cache            memory.InMemoryResourceCache
@@ -99,6 +100,9 @@ type RunOptions struct {
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	if runOptions.GlooPort == 0 {
 		runOptions.GlooPort = AllocateGlooPort()
+	}
+	if runOptions.ValidationPort == 0 {
+		runOptions.ValidationPort = AllocateGlooPort()
 	}
 
 	if runOptions.Cache == nil {
@@ -114,6 +118,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts := defaultGlooOpts(ctx, runOptions)
 
 	glooOpts.ControlPlane.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
+	glooOpts.ValidationServer.BindAddr.(*net.TCPAddr).Port = int(runOptions.ValidationPort)
 	if !runOptions.WhatToRun.DisableGateway {
 		opts := defaultTestConstructOpts(ctx, runOptions)
 		go gatewaysyncer.RunGateway(opts)
@@ -123,6 +128,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		Extensions: runOptions.ExtensionConfigs,
 	}
 	glooOpts.ControlPlane.StartGrpcServer = true
+	glooOpts.ValidationServer.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
@@ -205,6 +211,16 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			},
 		)),
 	)
+	grpcServerValidation := grpc.NewServer(grpc.StreamInterceptor(
+		grpc_middleware.ChainStreamServer(
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_zap.StreamServerInterceptor(zap.NewNop()),
+			func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+				logger.Infof("gRPC call: %v", info.FullMethod)
+				return handler(srv, ss)
+			},
+		)),
+	)
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
@@ -233,6 +249,11 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
 		}, nil, true),
+		ValidationServer: syncer.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
+			IP:   net.ParseIP("0.0.0.0"),
+			Port: 8081,
+		}, true),
+
 		KubeClient:    runOptions.KubeClient,
 		KubeCoreCache: kubeCoreCache,
 		DevMode:       true,
