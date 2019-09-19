@@ -1,13 +1,14 @@
 package test
 
 import (
-	"github.com/solo-io/go-utils/testutils"
 	"io/ioutil"
-	v1 "k8s.io/api/core/v1"
 	"os"
 	"os/exec"
 	"sync"
 	"testing"
+
+	"github.com/solo-io/go-utils/testutils"
+	v1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
