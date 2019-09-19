@@ -9,3 +9,4 @@ changelog:
     reducing the duplication of configuration, it guarantees the stability of secured upstreams between auth
     configuration updates.
   issueLink: https://github.com/solo-io/gloo/issues/1201
+  resolvesIssue: false
