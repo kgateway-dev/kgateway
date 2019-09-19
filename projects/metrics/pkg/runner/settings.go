@@ -5,9 +5,8 @@ import (
 )
 
 type Settings struct {
-	DebugPort   int    `envconfig:"DEBUG_PORT" default:"9091"`
-	ServerPort  int    `envconfig:"SERVER_PORT" default:"8083"`
-	ServiceName string `envconfig:"SERVICE_NAME" default:"Metrics"`
+	ServerPort  int    `envconfig:"SERVER_PORT" default:"9966"`
+	ServiceName string `envconfig:"SERVICE_NAME" default:"metrics"`
 }
 
 func NewSettings() Settings {

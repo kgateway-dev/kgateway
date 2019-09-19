@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
@@ -15,5 +16,5 @@ func main() {
 	if os.Getenv(START_STATS_SERVER) != "" {
 		stats.StartStatsServer()
 	}
-	runner.Run()
+	runner.Run(context.Background())
 }

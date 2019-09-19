@@ -17,5 +17,8 @@ spec:
   - name: grpc-validation
     port: {{ .Values.gloo.deployment.validationPort }}
     protocol: TCP
+  - name: metrics-grpc
+    port: 9966
+    protocol: TCP
   selector:
     gloo: gloo

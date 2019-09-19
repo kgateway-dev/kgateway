@@ -116,6 +116,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 ```yaml
 "tcpHosts": []gloo.solo.io.TcpHost
 "plugins": .gloo.solo.io.TcpListenerPlugins
+"statPrefix": string
 
 ```
 
@@ -159,6 +160,7 @@ Some plugins can be configured to work both on the listener and virtual host lev
 ```yaml
 "virtualHosts": []gloo.solo.io.VirtualHost
 "listenerPlugins": .gloo.solo.io.HttpListenerPlugins
+"statPrefix": string
 
 ```
 

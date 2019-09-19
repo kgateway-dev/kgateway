@@ -283,10 +283,12 @@ type TcpListener struct {
 	// Listener config is applied to traffic for the given listener.
 	// Some configuration here can be overridden in
 	// Virtual Host Plugin configuration or Route Plugin configuration
-	Plugins              *TcpListenerPlugins `protobuf:"bytes,8,opt,name=plugins,proto3" json:"plugins,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
+	Plugins *TcpListenerPlugins `protobuf:"bytes,8,opt,name=plugins,proto3" json:"plugins,omitempty"`
+	// prefix for addressing envoy stats for the tcp proxy
+	StatPrefix           string   `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *TcpListener) Reset()         { *m = TcpListener{} }
@@ -325,6 +327,13 @@ func (m *TcpListener) GetPlugins() *TcpListenerPlugins {
 		return m.Plugins
 	}
 	return nil
+}
+
+func (m *TcpListener) GetStatPrefix() string {
+	if m != nil {
+		return m.StatPrefix
+	}
+	return ""
 }
 
 type TcpHost struct {
@@ -397,10 +406,12 @@ type HttpListener struct {
 	// Listener config is applied to traffic for the given listener.
 	// Some configuration here can be overridden in
 	// Virtual Host Plugin configuration or Route Plugin configuration
-	ListenerPlugins      *HttpListenerPlugins `protobuf:"bytes,2,opt,name=listener_plugins,json=listenerPlugins,proto3" json:"listener_plugins,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	ListenerPlugins *HttpListenerPlugins `protobuf:"bytes,2,opt,name=listener_plugins,json=listenerPlugins,proto3" json:"listener_plugins,omitempty"`
+	// prefix for addressing envoy stats for the http connection manager
+	StatPrefix           string   `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *HttpListener) Reset()         { *m = HttpListener{} }
@@ -439,6 +450,13 @@ func (m *HttpListener) GetListenerPlugins() *HttpListenerPlugins {
 		return m.ListenerPlugins
 	}
 	return nil
+}
+
+func (m *HttpListener) GetStatPrefix() string {
+	if m != nil {
+		return m.StatPrefix
+	}
+	return ""
 }
 
 //
@@ -1999,6 +2017,9 @@ func (this *TcpListener) Equal(that interface{}) bool {
 	if !this.Plugins.Equal(that1.Plugins) {
 		return false
 	}
+	if this.StatPrefix != that1.StatPrefix {
+		return false
+	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
 	}
@@ -2065,6 +2086,9 @@ func (this *HttpListener) Equal(that interface{}) bool {
 		}
 	}
 	if !this.ListenerPlugins.Equal(that1.ListenerPlugins) {
+		return false
+	}
+	if this.StatPrefix != that1.StatPrefix {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
