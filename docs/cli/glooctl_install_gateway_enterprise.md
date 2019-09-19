@@ -32,6 +32,7 @@ glooctl install gateway enterprise [flags]
   -u, --upgrade             Upgrade an existing v1 gateway installation to use v2 CRDs. Set this when upgrading from v0.17.x or earlier versions of gloo
       --values string       Values for the Gloo Helm chart
   -v, --verbose             If true, output from kubectl commands will print to stdout/stderr
+      --with-console        install gloo and a read-only version of its console
 ```
 
 ### SEE ALSO
