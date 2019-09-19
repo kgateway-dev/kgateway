@@ -1,14 +1,13 @@
 package test
 
 import (
+	"github.com/solo-io/go-utils/testutils"
 	"io/ioutil"
+	v1 "k8s.io/api/core/v1"
 	"os"
 	"os/exec"
 	"sync"
 	"testing"
-
-	"github.com/solo-io/go-utils/testutils"
-	v1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -64,7 +63,7 @@ func renderManifest(helmFlags string) TestManifest {
 
 	f, err := ioutil.TempFile("", "*.yaml")
 	ExpectWithOffset(2, err).NotTo(HaveOccurred())
-	f.Close()
+	_ = f.Close()
 	manifestYaml := f.Name()
 	defer os.Remove(manifestYaml)
 
