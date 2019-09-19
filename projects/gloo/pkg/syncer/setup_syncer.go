@@ -409,7 +409,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			logger.Fatalw("failed warming up endpoints - consider adjusting endpointsWarmingTimeout", "warmTimeoutDuration", warmTimeoutDuration)
+			logger.Panicw("failed warming up endpoints - consider adjusting endpointsWarmingTimeout", "warmTimeoutDuration", warmTimeoutDuration)
 		}
 	}
 
