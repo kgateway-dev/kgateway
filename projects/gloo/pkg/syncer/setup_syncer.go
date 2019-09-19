@@ -5,7 +5,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -403,13 +403,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if warmTimeout != nil {
 		warmTimeoutDuration, err := types.DurationFromProto(warmTimeout)
 		ctx := opts.WatchOpts.Ctx
-		err = WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
+		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
 		if err != nil {
 			// make sure that the reason we got here is not context cancellation
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			panic("failed warming up endpoints - consider adjusting endpointsWarmingTimeout")
+			logger.Fatalw("failed warming up endpoints - consider adjusting endpointsWarmingTimeout", "warmTimeoutDuration", warmTimeoutDuration)
 		}
 	}
 
@@ -507,22 +507,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	return nil
-}
-
-func WaitForReady(ctx context.Context, timeout time.Duration, readychans ...<-chan struct{}) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	// wait for everything to finish warming up:
-	for _, chans := range readychans {
-		select {
-		case <-chans:
-			// wait for component to become ready
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
 	return nil
 }
 

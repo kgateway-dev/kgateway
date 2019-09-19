@@ -162,15 +162,17 @@ func setLabels(udsName string, upstreamList v1.UpstreamList) v1.UpstreamList {
 func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (chan error, error) {
 	aggregatedErrs := make(chan error)
 	endpointsByEds := make(map[DiscoveryPlugin]v1.EndpointList)
+	logger := contextutils.LoggerFrom(opts.Ctx)
 	lock := sync.Mutex{}
 	for _, eds := range d.discoveryPlugins {
 		endpoints, errs, err := eds.WatchEndpoints(d.writeNamespace, upstreamsToTrack, opts)
 		if err != nil {
-			contextutils.LoggerFrom(opts.Ctx).Warnw("initializing EDS plugin failed", "plugin", reflect.TypeOf(eds).String(), "error", err)
+			logger.Warnw("initializing EDS plugin failed", "plugin", reflect.TypeOf(eds).String(), "error", err)
 			continue
 		}
 
 		go func(eds DiscoveryPlugin) {
+			edsName := reflect.TypeOf(eds).Name()
 			for {
 				select {
 				case endpointList, ok := <-endpoints:
@@ -178,6 +180,9 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 						return
 					}
 					lock.Lock()
+					if _, ok := endpointsByEds[eds]; !ok {
+						logger.Infow("Received first EDS update from plugin", "plugin", edsName)
+					}
 					endpointsByEds[eds] = endpointList
 					desiredEndpoints := aggregateEndpoints(endpointsByEds)
 					if err := d.endpointReconciler.Reconcile(d.writeNamespace, desiredEndpoints, txnEndpoint, clients.ListOpts{
@@ -195,9 +200,9 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 						return
 					}
 					select {
-					case aggregatedErrs <- errors.Wrapf(err, "error in eds plugin %v", reflect.TypeOf(eds).Name()):
+					case aggregatedErrs <- errors.Wrapf(err, "error in eds plugin %v", edsName):
 					default:
-						contextutils.LoggerFrom(opts.Ctx).Desugar().Warn("received error and cannot aggregate it.", zap.Error(err))
+						logger.Desugar().Warn("received error and cannot aggregate it.", zap.Error(err))
 					}
 				case <-opts.Ctx.Done():
 					return
