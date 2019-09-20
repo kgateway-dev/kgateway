@@ -141,14 +141,18 @@ func setup(opts *options.Options) ([]*debugutils.LogsResponse, error) {
 	return logCollector.LogRequestBuilder.StreamLogs(logRequests)
 }
 
-func DebugLogErrors() {
-	// print out all the error logs from the gloo system
-	fmt.Println("*** Start Gloo pods debug logs ***")
-	opts := &options.Options{}
-	opts.Top.ErrorsOnly = true
-	err := DebugLogs(opts, os.Stdout)
-	if err != nil {
-		fmt.Printf("getting Gloo log errors failed: %v \n", err)
+func DebugLogErrors(namespace string) func() {
+	return func() {
+		// print out all the error logs from the gloo system
+		fmt.Println("*** Start Gloo pods debug logs ***")
+		opts := &options.Options{}
+		opts.Top.ErrorsOnly = true
+		opts.Metadata.Namespace = namespace
+		err := DebugLogs(opts, os.Stdout)
+		if err != nil {
+			fmt.Printf("getting Gloo log errors failed: %v \n", err)
+		}
+		fmt.Println("*** End Gloo pods debug logs ***")
 	}
-	fmt.Println("*** End Gloo pods debug logs ***")
+
 }
