@@ -45,7 +45,7 @@ func init() {
 		"ClusterRole",
 		"ClusterRoleBinding",
 	}
-	GlooPreInstallKinds = append(GlooPreInstallKinds, "ServiceAccount")
+	GlooPreInstallKinds = append(GlooPreInstallKinds, "ServiceAccount", "Gateway")
 	GlooPreInstallKinds = append(GlooPreInstallKinds, GlooRbacKinds...)
 	GlooInstallKinds = GlooSystemKinds
 
