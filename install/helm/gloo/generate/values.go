@@ -168,8 +168,8 @@ type GatewayProxy struct {
 type GatewayProxyGatewaySettings struct {
 	DisableGeneratedGateways bool   `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
 	UseProxyProto            bool   `json:"useProxyProto,omitempty" desc:"use proxy protocol"`
-	CustomHttpGateway        string `json:"customHttpGateway,omitempty"`
-	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty"`
+	CustomHttpGateway        string `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
+	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 }
 
 type GatewayProxyKind struct {
