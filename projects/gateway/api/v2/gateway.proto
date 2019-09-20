@@ -51,7 +51,7 @@ message Gateway {
     // HttpGateway creates a listener with an http_connection_manager
     // TcpGateway creates a listener with a tcp proxy filter
     oneof GatewayType {
-        HttpGateway  http_gateway= 9;
+        HttpGateway http_gateway = 9;
         TcpGateway tcp_gateway = 10;
     }
 
