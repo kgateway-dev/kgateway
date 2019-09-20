@@ -33,7 +33,7 @@ func TestIngress(t *testing.T) {
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
-	testutils.RegisterPreFailHandler(debug.DebugLogErrors)
+	testutils.RegisterPreFailHandler(debug.DebugLogErrors("gloo-system"))
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Ingress Suite")

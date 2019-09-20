@@ -65,7 +65,7 @@ func StartTestHelper() {
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	skhelpers.RegisterPreFailHandler(debug.DebugLogErrors)
+	skhelpers.RegisterPreFailHandler(debug.DebugLogErrors("gloo-system"))
 	testHelper.Verbose = true
 
 	values, err = ioutil.TempFile("", "*.yaml")
