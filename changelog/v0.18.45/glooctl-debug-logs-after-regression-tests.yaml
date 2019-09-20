@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Run glooctl debug with --errors-only after regression tests.
+    issueLink: https://github.com/solo-io/gloo/issues/1219

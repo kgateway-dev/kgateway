@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
+
 	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/avast/retry-go"
@@ -31,6 +33,7 @@ func TestIngress(t *testing.T) {
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
+	testutils.RegisterPreFailHandler(debug.DebugGlooSystemLogErrors)
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Ingress Suite")

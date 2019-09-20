@@ -30,7 +30,7 @@ func DebugLogCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *co
 		Aliases: constants.DEBUG_LOG_COMMAND.Aliases,
 		Short:   constants.DEBUG_LOG_COMMAND.Short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return DebugResources(opts, os.Stdout)
+			return DebugGlooSystemLogs(opts, os.Stdout)
 		},
 	}
 

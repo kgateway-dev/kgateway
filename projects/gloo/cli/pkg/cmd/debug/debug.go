@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/solo-io/go-utils/tarutils"
@@ -21,7 +22,7 @@ const (
 	Filename = "/tmp/gloo-system-logs.tgz"
 )
 
-func DebugResources(opts *options.Options, w io.Writer) error {
+func DebugGlooSystemLogs(opts *options.Options, w io.Writer) error {
 	responses, err := setup(opts)
 	if err != nil {
 		return err
@@ -138,4 +139,16 @@ func setup(opts *options.Options) ([]*debugutils.LogsResponse, error) {
 	}
 
 	return logCollector.LogRequestBuilder.StreamLogs(logRequests)
+}
+
+func DebugGlooSystemLogErrors() {
+	// print out all the error logs from the gloo system
+	fmt.Println("*** Start Gloo pods debug logs ***")
+	opts := &options.Options{}
+	opts.Top.ErrorsOnly = true
+	err := DebugGlooSystemLogs(opts, os.Stdout)
+	if err != nil {
+		fmt.Println("getting Gloo log errors failed: %v", err)
+	}
+	fmt.Println("*** End Gloo pods debug logs ***")
 }
