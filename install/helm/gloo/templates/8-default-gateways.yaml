@@ -2,6 +2,8 @@
 {{- if $spec.gatewaySettings}}
 {{$gatewaySettings := $spec.gatewaySettings}}
 {{- if not $gatewaySettings.disableGeneratedGateways}}
+
+---
 apiVersion: gateway.solo.io.v2/v2
 kind: Gateway
 metadata:

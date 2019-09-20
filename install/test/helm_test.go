@@ -240,6 +240,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can render with custom listener yaml", func() {
+					newGatewayProxyName := "test-name"
 					vsList := []core.ResourceRef{
 						{
 							Name:      "one",
@@ -247,21 +248,25 @@ var _ = Describe("Helm Test", func() {
 						},
 					}
 					prepareMakefileFromValuesFile("install/test/val_custom_gateways.yaml")
-					gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
-					var gateway1 v2.Gateway
-					ConvertKubeResource(gatewayUns, &gateway1)
-					Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
-						Value: true,
-					}))
-					httpGateway := gateway1.GetHttpGateway()
-					Expect(httpGateway).NotTo(BeNil())
-					Expect(httpGateway.VirtualServices).To(Equal(vsList))
-					gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-ssl")
-					ConvertKubeResource(gatewayUns, &gateway1)
-					Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
-						Value: true,
-					}))
-					Expect(httpGateway.VirtualServices).To(Equal(vsList))
+					for _, name := range []string{newGatewayProxyName, defaults.GatewayProxyName} {
+						name := name
+						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
+						var gateway1 v2.Gateway
+						ConvertKubeResource(gatewayUns, &gateway1)
+						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+							Value: true,
+						}))
+						httpGateway := gateway1.GetHttpGateway()
+						Expect(httpGateway).NotTo(BeNil())
+						Expect(httpGateway.VirtualServices).To(Equal(vsList))
+						gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, name+"-ssl")
+						ConvertKubeResource(gatewayUns, &gateway1)
+						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+							Value: true,
+						}))
+						Expect(httpGateway.VirtualServices).To(Equal(vsList))
+					}
+
 				})
 			})
 
