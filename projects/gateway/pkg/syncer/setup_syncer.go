@@ -97,7 +97,8 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
-		DevMode: true,
+		DevMode:                true,
+		DisableAutoGenGateways: settings.GetGateway().GetDisableAutoGenGateways(),
 	}
 
 	return RunGateway(opts)
@@ -139,13 +140,16 @@ func RunGateway(opts Opts) error {
 		return err
 	}
 
-	// the helm install should have created these, but go ahead and try again just in case
-	// installing through helm lets these be configurable
-	for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
-		if _, err := gatewayClient.Write(gw, clients.WriteOpts{
-			Ctx: opts.WatchOpts.Ctx,
-		}); err != nil && !errors.IsExist(err) {
-			return err
+	// The helm install should have created these, but go ahead and try again just in case
+	// installing through helm lets these be configurable.
+	// Added new setting to disable these gateways from ever being generated
+	if !opts.DisableAutoGenGateways {
+		for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
+			if _, err := gatewayClient.Write(gw, clients.WriteOpts{
+				Ctx: opts.WatchOpts.Ctx,
+			}); err != nil && !errors.IsExist(err) {
+				return err
+			}
 		}
 	}
 

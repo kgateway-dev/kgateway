@@ -48,6 +48,7 @@ gateway:
   proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxyV2:
+    gatewaySettings: {}
     stats: true
     kind:
        deployment:

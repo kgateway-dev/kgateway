@@ -1,0 +1,13 @@
+gatewayProxies:
+  gatewayProxyV2:
+    gatewaySettings:
+      useProxyProto: true
+      customHttpGateway:
+        virtualServices:
+        - name: one
+          namespace: one
+      customHttpsGateway:
+        virtualServices:
+        - name: one
+          namespace: one
+

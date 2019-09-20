@@ -15,4 +15,5 @@ type Opts struct {
 	WatchOpts               clients.WatchOpts
 	ValidationServerAddress string
 	DevMode                 bool
+	DisableAutoGenGateways  bool
 }

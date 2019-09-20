@@ -412,12 +412,14 @@ Settings specific to the Gateway controller
 
 ```yaml
 "validationServerAddr": string
+"disableAutoGenGateways": bool
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `validationServerAddr` | `string` | Address of the `gloo` config validation server. Defaults to `gloo:9988`. |  |
+| `disableAutoGenGateways` | `bool` | Disable auto generation of default gateways from gateway pod. |  |
 
 
 

@@ -1,8 +1,18 @@
 package test
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/gogo/protobuf/types"
+	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo"
@@ -33,6 +43,24 @@ func GetPodNameEnvVar() v1.EnvVar {
 				FieldPath: "metadata.name",
 			},
 		},
+	}
+}
+
+func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
+	byt, err := unst.MarshalJSON()
+	Expect(err).NotTo(HaveOccurred())
+	var skRes *skres.Resource
+	Expect(json.Unmarshal(byt, &skRes)).NotTo(HaveOccurred())
+	res.SetMetadata(kubeutils.FromKubeMeta(skRes.ObjectMeta))
+	if withStatus, ok := res.(resources.InputResource); ok {
+		resources.UpdateStatus(withStatus, func(status *core.Status) {
+			*status = skRes.Status
+		})
+	}
+	if skRes.Spec != nil {
+		if err := skprotoutils.UnmarshalMap(*skRes.Spec, res); err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
 	}
 }
 
@@ -177,6 +205,63 @@ var _ = Describe("Helm Test", func() {
 					}
 					proxy := cmRb.GetConfigMap()
 					testManifest.ExpectConfigMapWithYamlData(proxy)
+				})
+			})
+
+			Context("default gateways", func() {
+
+				var (
+					proxyNames = []string{defaults.GatewayProxyName}
+				)
+
+				It("renders with http/https gateways by default", func() {
+					prepareMakefile("--namespace " + namespace)
+					gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
+					var gateway1 v2.Gateway
+					ConvertKubeResource(gatewayUns, &gateway1)
+					Expect(gateway1.Ssl).To(BeFalse())
+					Expect(gateway1.BindPort).To(Equal(uint32(8080)))
+					Expect(gateway1.ProxyNames).To(Equal(proxyNames))
+					Expect(gateway1.UseProxyProto).To(BeNil())
+					Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
+					gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-ssl")
+					ConvertKubeResource(gatewayUns, &gateway1)
+					Expect(gateway1.Ssl).To(BeTrue())
+					Expect(gateway1.BindPort).To(Equal(uint32(8443)))
+					Expect(gateway1.ProxyNames).To(Equal(proxyNames))
+					Expect(gateway1.UseProxyProto).To(BeNil())
+					Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
+				})
+
+				It("can disable rendering http/https gateways", func() {
+					prepareMakefile("--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.gatewaySettings.disableGeneratedGateways=true")
+					testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+					testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
+				})
+
+				It("can render with custom listener yaml", func() {
+					vsList := []core.ResourceRef{
+						{
+							Name:      "one",
+							Namespace: "one",
+						},
+					}
+					prepareMakefileFromValuesFile("install/test/val_custom_gateways.yaml")
+					gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
+					var gateway1 v2.Gateway
+					ConvertKubeResource(gatewayUns, &gateway1)
+					Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+						Value: true,
+					}))
+					httpGateway := gateway1.GetHttpGateway()
+					Expect(httpGateway).NotTo(BeNil())
+					Expect(httpGateway.VirtualServices).To(Equal(vsList))
+					gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-ssl")
+					ConvertKubeResource(gatewayUns, &gateway1)
+					Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+						Value: true,
+					}))
+					Expect(httpGateway.VirtualServices).To(Equal(vsList))
 				})
 			})
 
