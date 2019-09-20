@@ -303,6 +303,12 @@ message GlooOptions {
     // Default circuit breaker configuration to use for upstream requests,
     // when not provided by specific upstream.
     CircuitBreakerConfig circuit_breakers = 3;
+
+    // Timeout to get initial snapshot of resources. If not set, Gloo will not wait for initial
+    // snapshot - if set and and gloo could not fetch it's initial snapshot before the timeout
+    // reached, gloo will panic.
+    google.protobuf.Duration endpoints_warming_timeout = 4;
+
 }
 
 // Settings specific to the Gateway controller

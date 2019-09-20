@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Gloo will optionally wait for EDS to be ready before continuing
+    issueLink: https://github.com/solo-io/gloo/issues/1191

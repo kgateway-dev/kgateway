@@ -61,6 +61,7 @@ Plugin-specific configuration that lives on http listeners
 ```yaml
 "grpcWeb": .grpc_web.plugins.gloo.solo.io.GrpcWeb
 "httpConnectionManagerSettings": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings
+"healthCheck": .healthcheck.plugins.gloo.solo.io.HealthCheck
 "extensions": .gloo.solo.io.Extensions
 
 ```
@@ -69,6 +70,7 @@ Plugin-specific configuration that lives on http listeners
 | ----- | ---- | ----------- |----------- | 
 | `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk#grpcweb) |  |  |
 | `httpConnectionManagerSettings` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings](../plugins/hcm/hcm.proto.sk#httpconnectionmanagersettings) |  |  |
+| `healthCheck` | [.healthcheck.plugins.gloo.solo.io.HealthCheck](../plugins/healthcheck/healthcheck.proto.sk#healthcheck) | enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener. |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
 
 
@@ -208,6 +210,7 @@ is selected for routing.
 ```yaml
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
+"extensions": .gloo.solo.io.Extensions
 
 ```
 
@@ -215,6 +218,7 @@ is selected for routing.
 | ----- | ---- | ----------- |----------- | 
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination. |  |
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
 
 
 

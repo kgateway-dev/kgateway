@@ -36,9 +36,10 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/pref
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/headers/headers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/healthcheck/healthcheck.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hostrewrite/hostrewrite.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/extauth.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/jwt/jwt.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto";
@@ -63,6 +64,8 @@ message ListenerPlugins {
 message HttpListenerPlugins {
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
     hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
+    // enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener
+    healthcheck.plugins.gloo.solo.io.HealthCheck health_check = 4;
     // Deprecated: Opaque config for Gloo plugins
     Extensions extensions = 3 [deprecated=true];
 }
@@ -158,6 +161,8 @@ message WeightedDestinationPlugins {
     headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 1;
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 2;
+    // Deprecated: Opaque config for Gloo plugins
+    Extensions extensions = 3 [deprecated=true];
 }
 
 // Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.

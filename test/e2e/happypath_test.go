@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/healthcheck"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
@@ -135,6 +139,52 @@ var _ = Describe("Happy path", func() {
 
 			// Verify that stats for the above virtual cluster are present
 			Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
+		})
+
+		It("passes a health check", func() {
+			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+			// Set a virtual cluster matching everything
+			proxy.Listeners[0].GetHttpListener().ListenerPlugins = &gloov1.HttpListenerPlugins{
+				HealthCheck: &healthcheck.HealthCheck{
+					Path: "/healthy",
+				},
+			}
+
+			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].Routes[0].Action = &gloov1.Route_DirectResponseAction{
+				DirectResponseAction: &gloov1.DirectResponseAction{
+					Status: 400,
+					Body:   "only health checks work on me. sorry!",
+				},
+			}
+			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() error {
+				res, err := http.Get(fmt.Sprintf("http://%s:%d/healthy", "localhost", envoyPort))
+				if err != nil {
+					return err
+				}
+				if res.StatusCode != 200 {
+					return errors.Errorf("bad status code: %v", res.StatusCode)
+				}
+				return nil
+			}, time.Second*10, time.Second/2).ShouldNot(HaveOccurred())
+
+			res, err := http.Post(fmt.Sprintf("http://localhost:%v/healthcheck/fail", envoyInstance.AdminPort), "", nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
+
+			Eventually(func() error {
+				res, err := http.Get(fmt.Sprintf("http://%s:%d/healthy", "localhost", envoyPort))
+				if err != nil {
+					return err
+				}
+				if res.StatusCode != 503 {
+					return errors.Errorf("bad status code: %v", res.StatusCode)
+				}
+				return nil
+			}, time.Second*10, time.Second/2).ShouldNot(HaveOccurred())
 		})
 
 		Context("ssl", func() {

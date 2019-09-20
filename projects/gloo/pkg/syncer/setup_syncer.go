@@ -10,6 +10,8 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -24,6 +26,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -356,6 +359,14 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	authConfigClient, err := extauth.NewAuthConfigClient(opts.AuthConfigs)
+	if err != nil {
+		return err
+	}
+	if err := authConfigClient.Register(); err != nil {
+		return err
+	}
+
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
@@ -389,7 +400,34 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	errs := make(chan error)
 
-	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient)
+	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
+	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
+	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
+	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
+	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
+	if err != nil {
+		return err
+	}
+
+	warmTimeout := opts.Settings.GetGloo().GetEndpointsWarmingTimeout()
+	if warmTimeout != nil {
+		warmTimeoutDuration, err := types.DurationFromProto(warmTimeout)
+		ctx := opts.WatchOpts.Ctx
+		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
+		if err != nil {
+			// make sure that the reason we got here is not context cancellation
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			logger.Panicw("failed warming up endpoints - consider adjusting endpointsWarmingTimeout", "warmTimeoutDuration", warmTimeoutDuration)
+		}
+	}
+
+	// We are ready!
+
+	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
+
+	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
 	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, allPlugins...)
@@ -409,16 +447,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, apiEventLoopErrs, "event_loop.gloo")
-
-	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
-	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
-	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
-	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
-	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
-	if err != nil {
-		return err
-	}
-	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
 	go func() {
 		for {
@@ -561,6 +589,12 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
+
+	authConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, extauth.AuthConfigCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
 		Upstreams:         upstreamFactory,
 		KubeServiceClient: kubeServiceClient,
@@ -568,6 +602,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		UpstreamGroups:    upstreamGroupFactory,
 		Secrets:           secretFactory,
 		Artifacts:         artifactFactory,
+		AuthConfigs:       authConfigFactory,
 		KubeCoreCache:     kubeCoreCache,
 	}, nil
 }

@@ -16,6 +16,7 @@ API Version: `gateway.solo.io.v2.v2`
 
 ### API Resources:
 - [Artifact](../github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto.sk#artifact)
+- [AuthConfig](../github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#authconfig)
 - [Endpoint](../github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk#endpoint)
 - [Gateway](../github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk#gateway)
 - [Gateway](../github.com/solo-io/gloo/projects/gateway/api/v2/gateway.proto.sk#gateway)

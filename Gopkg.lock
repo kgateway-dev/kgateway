@@ -293,7 +293,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:804fc6d7fa7cbe63ab06204ddcd7dc9aa316a246c362ee41f15200e1343fd544"
+  digest = "1:fe9e9f3c3b8fd35b5e1ed990ce28c26709bcc38ed605a2b5a483650c9df3bfd1"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -308,6 +308,7 @@
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/fault/v2",
     "envoy/config/filter/http/fault/v2",
+    "envoy/config/filter/http/health_check/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/config/filter/network/tcp_proxy/v2",
@@ -1360,7 +1361,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:d35859b2fc2c423ddaac22f9de90a657ce9bf6e470d73fba3f7901508c0377a8"
+  digest = "1:2b7ad368df1e8ff8d88f2a73e3504cdcb760213a0d63e0e12a64064c65e4b090"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1395,11 +1396,13 @@
     "testutils/kube",
     "versionutils",
     "versionutils/dep",
+    "versionutils/git",
     "versionutils/kubeapi",
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "20fbd9c963a115461680c736c3eba931f579a416"
+  revision = "2fff910b5b9a262eba3177f296923ac04887fa53"
+  version = "v0.10.9"
 
 [[projects]]
   digest = "1:6bf9bdcdfd28c7a913d5bcbef6717e53fc6f650560f0b4ffe663816b3e2245ec"
@@ -2685,6 +2688,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2",
@@ -2769,6 +2773,8 @@
     "github.com/solo-io/go-utils/testutils/exec",
     "github.com/solo-io/go-utils/testutils/helper",
     "github.com/solo-io/go-utils/versionutils",
+    "github.com/solo-io/go-utils/versionutils/dep",
+    "github.com/solo-io/go-utils/versionutils/git",
     "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",
@@ -2780,6 +2786,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
+    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/vault",

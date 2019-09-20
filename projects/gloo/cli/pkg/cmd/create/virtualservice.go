@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -177,8 +177,8 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 			return errors.Errorf("invalid client secret ref specified: %v.%v", oidc.ClientSecretRef.Namespace, oidc.ClientSecretRef.Name)
 		}
 		vhostAuth = &extauth.VhostExtension{
-			Configs: []*extauth.AuthConfig{{
-				AuthConfig: &extauth.AuthConfig_Oauth{
+			Configs: []*extauth.VhostExtension_AuthConfig{{
+				AuthConfig: &extauth.VhostExtension_AuthConfig_Oauth{
 					Oauth: &extauth.OAuth{
 						AppUrl:          oidc.AppUrl,
 						CallbackPath:    oidc.CallbackPath,
@@ -214,8 +214,8 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 		}
 
 		vhostAuth = &extauth.VhostExtension{
-			Configs: []*extauth.AuthConfig{{
-				AuthConfig: &extauth.AuthConfig_ApiKeyAuth{
+			Configs: []*extauth.VhostExtension_AuthConfig{{
+				AuthConfig: &extauth.VhostExtension_AuthConfig_ApiKeyAuth{
 					ApiKeyAuth: &extauth.ApiKeyAuth{
 						LabelSelector:    labelSelector,
 						ApiKeySecretRefs: secretRefs,
@@ -225,17 +225,17 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 		}
 	}
 
-	opauth := input.OpaAuth
-	if opauth.Enable {
+	opaAuth := input.OpaAuth
+	if opaAuth.Enable {
 
 		var modules []*core.ResourceRef
-		query := opauth.Query
+		query := opaAuth.Query
 
 		if len(query) == 0 {
 			return EmptyQueryError
 		}
 
-		for _, moduleRef := range opauth.Modules {
+		for _, moduleRef := range opaAuth.Modules {
 
 			splits := strings.Split(moduleRef, ".")
 			if len(splits) != 2 {
@@ -249,8 +249,8 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 		if vhostAuth == nil {
 			vhostAuth = &extauth.VhostExtension{}
 		}
-		cfg := &extauth.AuthConfig{
-			AuthConfig: &extauth.AuthConfig_OpaAuth{
+		cfg := &extauth.VhostExtension_AuthConfig{
+			AuthConfig: &extauth.VhostExtension_AuthConfig_OpaAuth{
 				OpaAuth: &extauth.OpaAuth{
 					Modules: modules,
 					Query:   query,
