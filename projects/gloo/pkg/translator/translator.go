@@ -208,8 +208,10 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
 	}
 
+	// if clusters are updated, provider a new version of the endpoints,
+	// so the clusters are warm
 	return xds.NewSnapshotFromResources(
-		envoycache.NewResources(fmt.Sprintf("%v", endpointsVersion), endpointsProto),
+		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
 		envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))

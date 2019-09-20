@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package healthcheck.plugins.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/healthcheck";
+
+import "gogoproto/gogo.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+
+option (gogoproto.equal_all) = true;
+
+import "google/protobuf/wrappers.proto";
+
+// Add this config to a Listener/Gateway to Enable Envoy Health Checks on that port
+message HealthCheck {
+    // match health check requests using this exact path
+    string path = 1;
+}

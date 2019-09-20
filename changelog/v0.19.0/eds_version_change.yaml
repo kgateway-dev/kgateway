@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Change EDS version if the CDS version changes
+    issueLink: https://github.com/solo-io/gloo/issues/1191

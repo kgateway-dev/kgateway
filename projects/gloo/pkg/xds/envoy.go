@@ -69,13 +69,16 @@ func (h *ProxyKeyHasher) SetKeysFromProxies(proxies v1.ProxyList) {
 	h.validKeysLock.Unlock()
 }
 
-func newNodeHasher() *ProxyKeyHasher {
+func NewNodeHasher() *ProxyKeyHasher {
 	return &ProxyKeyHasher{}
 }
 
-func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) *ProxyKeyHasher {
-	hasher := newNodeHasher()
+func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) {
 
+	// check if we need to register
+	if _, ok := grpcServer.GetServiceInfo()["envoy.api.v2.EndpointDiscoveryService"]; ok {
+		return
+	}
 	envoyServer := NewEnvoyServer(xdsServer)
 
 	v2.RegisterEndpointDiscoveryServiceServer(grpcServer, envoyServer)
@@ -84,5 +87,4 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 	v2.RegisterListenerDiscoveryServiceServer(grpcServer, envoyServer)
 	_ = envoyCache.SetSnapshot(fallbackNodeKey, fallbackSnapshot(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
 
-	return hasher
 }

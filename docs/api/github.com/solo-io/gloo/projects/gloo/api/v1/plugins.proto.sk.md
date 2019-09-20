@@ -61,7 +61,9 @@ Plugin-specific configuration that lives on http listeners
 ```yaml
 "grpcWeb": .grpc_web.plugins.gloo.solo.io.GrpcWeb
 "httpConnectionManagerSettings": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings
+"healthCheck": .healthcheck.plugins.gloo.solo.io.HealthCheck
 "extensions": .gloo.solo.io.Extensions
+"waf": .waf.plugins.gloo.solo.io.Settings
 
 ```
 
@@ -69,7 +71,9 @@ Plugin-specific configuration that lives on http listeners
 | ----- | ---- | ----------- |----------- | 
 | `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk#grpcweb) |  |  |
 | `httpConnectionManagerSettings` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings](../plugins/hcm/hcm.proto.sk#httpconnectionmanagersettings) |  |  |
+| `healthCheck` | [.healthcheck.plugins.gloo.solo.io.HealthCheck](../plugins/healthcheck/healthcheck.proto.sk#healthcheck) | enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener. |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 
 
 
@@ -110,6 +114,7 @@ to be usable by Gloo.
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
 "ratelimitGloo": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
 "ratelimitActions": .ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension
+"waf": .waf.plugins.gloo.solo.io.VhostSettings
 
 ```
 
@@ -123,6 +128,7 @@ to be usable by Gloo.
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
 | `ratelimitGloo` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
 | `ratelimitActions` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.VhostSettings](../enterprise/plugins/waf/waf.proto.sk#vhostsettings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 
 
 
@@ -151,6 +157,7 @@ to be usable by Gloo.
 "lbHash": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
 "ratelimitGloo": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
 "ratelimitActions": .ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension
+"waf": .waf.plugins.gloo.solo.io.RouteSettings
 
 ```
 
@@ -170,6 +177,7 @@ to be usable by Gloo.
 | `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service. |  |
 | `ratelimitGloo` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
 | `ratelimitActions` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.RouteSettings](../enterprise/plugins/waf/waf.proto.sk#routesettings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 
 
 
@@ -208,6 +216,7 @@ is selected for routing.
 ```yaml
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
+"extensions": .gloo.solo.io.Extensions
 
 ```
 
@@ -215,6 +224,7 @@ is selected for routing.
 | ----- | ---- | ----------- |----------- | 
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination. |  |
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
 
 
 

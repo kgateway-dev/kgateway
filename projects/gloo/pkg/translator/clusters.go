@@ -109,7 +109,7 @@ func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, e
 	}
 	result := make([]*envoycore.HealthCheck, 0, len(upstream.GetUpstreamSpec().GetHealthChecks()))
 	for i, hc := range upstream.GetUpstreamSpec().GetHealthChecks() {
-		// These values are required by envoy, but not explicityly
+		// These values are required by envoy, but not explicitly
 		if hc.HealthyThreshold == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthyThreshold", i))
 		}

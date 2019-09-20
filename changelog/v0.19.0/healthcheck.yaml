@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: add plugin to enable envoy health check filter
+    issueLink: https://github.com/solo-io/gloo/pull/1230

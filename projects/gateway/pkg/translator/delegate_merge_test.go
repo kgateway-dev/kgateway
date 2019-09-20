@@ -1,7 +1,7 @@
 package translator
 
 import (
-	"fmt"
+	"github.com/solo-io/gloo/test/samples"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,37 +20,7 @@ var _ = Describe("route merge util", func() {
 		)
 
 		BeforeEach(func() {
-			routeTables = v1.RouteTableList{
-				{
-					Metadata: core.Metadata{Name: "leaf"},
-					Routes: []*v1.Route{
-						{
-							Matcher: &gloov1.Matcher{
-								PathSpecifier: &gloov1.Matcher_Exact{
-									Exact: "/exact",
-								},
-							},
-							Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{}},
-						},
-					},
-				},
-			}
-			// create a chain of route tables
-			for i := 0; i < 5; i++ {
-				ref := routeTables[i].Metadata.Ref()
-				routeTables = append(routeTables, &v1.RouteTable{
-					Metadata: core.Metadata{Name: fmt.Sprintf("node-%v", i)},
-					Routes: []*v1.Route{{
-						Matcher: &gloov1.Matcher{
-							PathSpecifier: &gloov1.Matcher_Prefix{
-								Prefix: "/",
-							},
-						},
-						Action: &v1.Route_DelegateAction{
-							DelegateAction: &ref,
-						}},
-					}})
-			}
+			routeTables = samples.LinkedRouteTables("", "/", "/exact")
 			ref := routeTables[len(routeTables)-1].Metadata.Ref()
 
 			// create a vs to point to the last route table

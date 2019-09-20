@@ -350,8 +350,12 @@ INSTALL_NAMESPACE ?= gloo-system
 manifest: prepare-helm install/gloo-gateway.yaml install/gloo-knative.yaml update-helm-chart
 
 # creates Chart.yaml, values.yaml, values-knative.yaml, values-ingress.yaml. See install/helm/gloo/README.md for more info.
-prepare-helm:
+.PHONY: prepare-helm
+prepare-helm: $(OUTPUT_DIR)/.helm-prepared
+
+$(OUTPUT_DIR)/.helm-prepared:
 	go run install/helm/gloo/generate.go $(VERSION)
+	touch $@
 
 update-helm-chart:
 	mkdir -p $(HELM_SYNC_DIR)/charts

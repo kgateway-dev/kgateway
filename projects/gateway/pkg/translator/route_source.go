@@ -13,7 +13,7 @@ import (
 )
 
 type RouteMetadata struct {
-	Source []SourceRef `json:"sources"`
+	Sources []SourceRef `json:"sources"`
 }
 
 type SourceRef struct {
@@ -61,7 +61,7 @@ func appendSource(route *v1.Route, source resources.InputResource) error {
 	if err != nil {
 		return errors.Wrapf(err, "getting route metadata")
 	}
-	meta.Source = append(meta.Source, makeSourceRef(source))
+	meta.Sources = append(meta.Sources, makeSourceRef(source))
 	return setRouteMeta(route, meta)
 }
 

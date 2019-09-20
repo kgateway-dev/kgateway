@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Update enterprise API to have strongly-typed WAF config; deprecated opaque extensions WAF config still supported
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

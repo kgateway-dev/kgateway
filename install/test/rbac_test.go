@@ -168,8 +168,8 @@ var _ = Describe("RBAC Test", func() {
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
 					{
-						APIGroups: []string{"gloo.solo.io"},
-						Resources: []string{"upstreams", "upstreamgroups", "proxies"},
+						APIGroups: []string{"gloo.solo.io", "enterprise.gloo.solo.io"},
+						Resources: []string{"upstreams", "upstreamgroups", "proxies", "authconfigs"},
 						Verbs:     []string{"get", "list", "watch", "update"},
 					},
 				},

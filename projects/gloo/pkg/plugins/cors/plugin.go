@@ -12,7 +12,6 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -129,10 +128,7 @@ func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envo
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		{
-			HttpFilter: &envoyhttp.HttpFilter{Name: envoyutil.CORS},
-			Stage:      pluginStage,
-		},
+		plugins.NewStagedFilter(envoyutil.CORS, pluginStage),
 	}, nil
 }
 

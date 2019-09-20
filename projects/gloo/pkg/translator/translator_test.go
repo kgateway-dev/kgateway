@@ -66,6 +66,7 @@ var _ = Describe("Translator", func() {
 		snapshot           envoycache.Snapshot
 		cluster            *envoyapi.Cluster
 		listener           *envoyapi.Listener
+		endpoints          envoycache.Resources
 		hcmCfg             *envoyhttp.HttpConnectionManager
 		routeConfiguration *envoyapi.RouteConfiguration
 	)
@@ -110,6 +111,17 @@ var _ = Describe("Translator", func() {
 		params = plugins.Params{
 			Ctx: context.Background(),
 			Snapshot: &v1.ApiSnapshot{
+				Endpoints: v1.EndpointList{
+					{
+						Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(upName.Ref())},
+						Address:   "1.2.3.4",
+						Port:      32,
+						Metadata: core.Metadata{
+							Name:      "test-ep",
+							Namespace: "gloo-system",
+						},
+					},
+				},
 				Upstreams: v1.UpstreamList{
 					upstream,
 				},
@@ -223,6 +235,8 @@ var _ = Describe("Translator", func() {
 		routeResource := routes.Items["http-listener-routes"]
 		routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
 		Expect(routeConfiguration).NotTo(BeNil())
+
+		endpoints = snap.GetResources(xds.EndpointType)
 
 		snapshot = snap
 	}
@@ -558,7 +572,21 @@ var _ = Describe("Translator", func() {
 
 			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
 		})
+	})
 
+	Context("eds", func() {
+
+		It("should translate eds differently with different clusters", func() {
+			translate()
+			version1 := endpoints.Version
+			// change the cluster
+			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+				MaxRetries: &types.UInt32Value{Value: 5},
+			}
+			translate()
+			version2 := endpoints.Version
+			Expect(version2).ToNot(Equal(version1))
+		})
 	})
 
 	Context("when handling upstream groups", func() {

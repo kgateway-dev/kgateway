@@ -18,7 +18,7 @@ var _ = Describe("RouteSource", func() {
 		Expect(err).NotTo(HaveOccurred())
 		meta, err := getRouteMeta(route)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(meta.Source).To(Equal([]SourceRef{{
+		Expect(meta.Sources).To(Equal([]SourceRef{{
 			ResourceKind:       "*v1.VirtualService",
 			ResourceRef:        core.ResourceRef{Namespace: "pizza", Name: "taco"},
 			ObservedGeneration: 5,

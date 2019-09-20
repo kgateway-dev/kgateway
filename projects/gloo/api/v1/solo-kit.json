@@ -38,6 +38,10 @@
       {
         "name": "Upstream",
         "package": "gloo.solo.io"
+      },
+      {
+        "name": "AuthConfig",
+        "package": "enterprise.gloo.solo.io"
       }
     ],
     "eds.gloo.solo.io": [
