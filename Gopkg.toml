@@ -42,6 +42,10 @@
   name = "github.com/solo-io/go-checkpoint"
   version = "0.1.0"
 
+[[constraint]]
+  name = "github.com/onsi/gomega"
+  version = "1.5.0"
+
 # make sure all kubernetes code is the same version.
 # when updating, update all in the same time.
 
