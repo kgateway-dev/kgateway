@@ -14,12 +14,16 @@ var _ = Describe("Debug", func() {
 	})
 
 	It("should allow -l and -p flags after proxy url", func() {
-		err := testutils.Glooctl("proxy url -l -p test")
-		Expect(err).To(SatisfyAny(BeNil(), MatchError("host does not exist, unable to show an IP")))
+		output, err := testutils.GlooctlOut("proxy url -l -p test")
+		if err != nil {
+			Expect(output).To(ContainSubstring("host does not exist, unable to show an IP"))
+		}
 	})
 
 	It("should allow -l and -p flags after proxy url", func() {
-		err := testutils.Glooctl("proxy address -l -p test")
-		Expect(err).To(SatisfyAny(BeNil(), MatchError("host does not exist, unable to show an IP")))
+		output, err := testutils.GlooctlOut("proxy address -l -p test")
+		if err != nil {
+			Expect(output).To(ContainSubstring("host does not exist, unable to show an IP"))
+		}
 	})
 })
