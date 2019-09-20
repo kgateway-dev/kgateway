@@ -12,6 +12,7 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVarP(&install.HelmChartOverride, "file", "f", "", "Install Gloo from this Helm chart archive file rather than from a release")
 	set.StringVarP(&install.HelmChartValues, "values", "", "", "Values for the Gloo Helm chart")
 	set.StringVarP(&install.Namespace, "namespace", "n", defaults.GlooSystem, "namespace to install gloo into")
+	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 }
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {

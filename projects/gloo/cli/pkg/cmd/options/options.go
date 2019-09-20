@@ -48,6 +48,7 @@ type Install struct {
 	HelmChartValues   string
 	Knative           Knative
 	LicenseKey        string
+	WithUi            bool
 }
 
 type Knative struct {

@@ -92,9 +92,7 @@ type GlooInstallSpec struct {
 
 // Entry point for all three GLoo installation commands
 func installGloo(opts *options.Options, valueFileName string) error {
-	if !opts.Install.DryRun {
-		fmt.Printf("Starting Gloo installation...\n")
-	}
+	preInstallMessage(opts)
 	spec, err := GetInstallSpec(opts, valueFileName)
 	if err != nil {
 		return err
@@ -104,10 +102,21 @@ func installGloo(opts *options.Options, valueFileName string) error {
 		fmt.Fprintf(os.Stderr, "\nGloo failed to install! Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
-	if !opts.Install.DryRun {
-		fmt.Printf("\nGloo was successfully installed!\n")
-	}
+	postInstallMessage(opts)
 	return nil
+}
+
+func preInstallMessage(opts *options.Options) {
+	if opts.Install.DryRun {
+		return
+	}
+	fmt.Printf("Starting Gloo installation...\n")
+}
+func postInstallMessage(opts *options.Options) {
+	if opts.Install.DryRun {
+		return
+	}
+	fmt.Printf("\nGloo was successfully installed!\n")
 }
 
 func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSpec, error) {
@@ -119,6 +128,9 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 
 	// Get location of Gloo helm chart
 	helmChartArchiveUri := fmt.Sprintf(constants.GlooHelmRepoTemplate, glooVersion)
+	if opts.Install.WithUi {
+		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, glooVersion)
+	}
 	if helmChartOverride := opts.Install.HelmChartOverride; helmChartOverride != "" {
 		helmChartArchiveUri = helmChartOverride
 	}
