@@ -26,6 +26,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -399,6 +400,33 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	errs := make(chan error)
 
+	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
+	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
+	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
+	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
+	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
+	if err != nil {
+		return err
+	}
+
+	warmTimeout := opts.Settings.GetGloo().GetEndpointsWarmingTimeout()
+	if warmTimeout != nil {
+		warmTimeoutDuration, err := types.DurationFromProto(warmTimeout)
+		ctx := opts.WatchOpts.Ctx
+		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
+		if err != nil {
+			// make sure that the reason we got here is not context cancellation
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			logger.Panicw("failed warming up endpoints - consider adjusting endpointsWarmingTimeout", "warmTimeoutDuration", warmTimeoutDuration)
+		}
+	}
+
+	// We are ready!
+
+	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
+
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
 	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
 
@@ -419,16 +447,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, apiEventLoopErrs, "event_loop.gloo")
-
-	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
-	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
-	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
-	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
-	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
-	if err != nil {
-		return err
-	}
-	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
 	go func() {
 		for {
