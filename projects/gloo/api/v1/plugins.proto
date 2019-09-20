@@ -69,7 +69,7 @@ message HttpListenerPlugins {
     // Deprecated: Opaque config for Gloo plugins
     Extensions extensions = 3 [deprecated=true];
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
-    // the popular ModSecurity 3.0.3 ruleset
+    // the popular ModSecurity 3.0 ruleset
     waf.plugins.gloo.solo.io.Settings waf = 5;
 }
 
@@ -103,7 +103,7 @@ message VirtualHostPlugins {
     // their associated limits on the Gloo settings
     ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension ratelimit_actions = 7;
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
-    // the popular ModSecurity 3.0.3 ruleset
+    // the popular ModSecurity 3.0 ruleset
     waf.plugins.gloo.solo.io.VhostSettings waf = 8;
 }
 
@@ -147,7 +147,7 @@ message RoutePlugins {
     // their associated limits on the Gloo settings
     ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension ratelimit_actions = 14;
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
-    // the popular ModSecurity 3.0.3 ruleset
+    // the popular ModSecurity 3.0 ruleset
     waf.plugins.gloo.solo.io.RouteSettings waf = 15;
 }
 
