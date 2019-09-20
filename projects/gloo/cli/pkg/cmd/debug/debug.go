@@ -148,7 +148,7 @@ func DebugGlooSystemLogErrors() {
 	opts.Top.ErrorsOnly = true
 	err := DebugGlooSystemLogs(opts, os.Stdout)
 	if err != nil {
-		fmt.Println("getting Gloo log errors failed: %v", err)
+		fmt.Printf("getting Gloo log errors failed: %v \n", err)
 	}
 	fmt.Println("*** End Gloo pods debug logs ***")
 }
