@@ -59,6 +59,7 @@ func init() {
 		"upstreamgroups.gloo.solo.io",
 		"virtualservices.gateway.solo.io",
 		"routetables.gateway.solo.io",
+		"authconfigs.enterprise.gloo.solo.io",
 	}
 
 	KnativeCrdNames = []string{

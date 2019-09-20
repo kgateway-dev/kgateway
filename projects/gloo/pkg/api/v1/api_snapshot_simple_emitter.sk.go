@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+
 	"go.opencensus.io/stats"
 
 	"github.com/solo-io/go-utils/errutils"
@@ -95,6 +97,8 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					case *Upstream:
 						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
+					case *enterprise_gloo_solo_io.AuthConfig:
+						currentSnapshot.AuthConfigs = append(currentSnapshot.AuthConfigs, typed)
 					default:
 						select {
 						case errs <- fmt.Errorf("ApiSnapshotEmitter "+

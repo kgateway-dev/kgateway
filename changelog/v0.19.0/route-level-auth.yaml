@@ -1,0 +1,17 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: >
+    Update the external auth APIs to support configuring authentication/authorization on **routes and weighted
+    destinations**, in addition to virtual hosts. The auth configuration that currently is defined directly on the
+    virtual service/proxy resources (under virtualHostPlugins) will become a top-level solo-kit resource (in the
+    context of Kubernetes this means **a new CRD**). Resources that need to use a particular auth configuration can
+    now just reference the correspondent new `AuthConfig` resource. The advantages of this change are twofold: besides
+    reducing the duplication of configuration, it guarantees the stability of secured upstreams between auth
+    configuration updates.
+  issueLink: https://github.com/solo-io/gloo/issues/1201
+  resolvesIssue: false
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: go-utils
+  dependencyTag: v0.10.8
+  description: Update go-utils to version 0.10.8.
