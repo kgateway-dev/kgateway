@@ -1,8 +1,6 @@
 package gateway_test
 
 import (
-	"strings"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 
@@ -17,11 +15,11 @@ var _ = Describe("Debug", func() {
 
 	It("should allow -l and -p flags after proxy url", func() {
 		err := testutils.Glooctl("proxy url -l -p test")
-		Expect(strings.Contains(err.Error(), "unknown shorthand flag")).To(BeFalse())
+		Expect(err).To(SatisfyAny(BeNil(), MatchError("host does not exist, unable to show an IP")))
 	})
 
 	It("should allow -l and -p flags after proxy url", func() {
 		err := testutils.Glooctl("proxy address -l -p test")
-		Expect(strings.Contains(err.Error(), "unknown shorthand flag")).To(BeFalse())
+		Expect(err).To(SatisfyAny(BeNil(), MatchError("host does not exist, unable to show an IP")))
 	})
 })
