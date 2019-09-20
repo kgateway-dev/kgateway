@@ -211,6 +211,10 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
+			It("AWANG TEST - IS FALSE", func() {
+				Expect(false).To(BeFalse())
+			})
+
 			It("correctly routes to the service (http)", func() {
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 
