@@ -34,7 +34,7 @@ func TestKnative(t *testing.T) {
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
-	testutils.RegisterPreFailHandler(debug.DebugGlooSystemLogErrors)
+	testutils.RegisterPreFailHandler(debug.DebugLogErrors)
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	RunSpecs(t, "Knative Suite")

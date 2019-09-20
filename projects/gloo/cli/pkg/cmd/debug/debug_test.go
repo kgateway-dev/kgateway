@@ -27,7 +27,7 @@ var _ = Describe("Debug", func() {
 		opts.Metadata.Namespace = "gloo-system"
 		var b bytes.Buffer
 		w := bufio.NewWriter(&b)
-		err := DebugGlooSystemLogs(&opts, w)
+		err := DebugLogs(&opts, w)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = w.Flush()
@@ -39,7 +39,7 @@ var _ = Describe("Debug", func() {
 		opts.Metadata.Namespace = "gloo-system"
 		opts.Top.File = "/tmp/log.tgz"
 		opts.Top.Zip = true
-		err := DebugGlooSystemLogs(&opts, ioutil.Discard)
+		err := DebugLogs(&opts, ioutil.Discard)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = os.Stat(opts.Top.File)
