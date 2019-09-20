@@ -157,7 +157,7 @@ steps:
     - 'HELM_HOME=/root/.helm'
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['compile', 'docker-login']
+  waitFor: ['compile', 'docker-login', 'test']
   id: 'build-test-assets'
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
   env:
