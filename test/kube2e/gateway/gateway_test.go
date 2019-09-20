@@ -212,7 +212,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("AWANG TEST - IS FALSE", func() {
-				Expect(false).To(BeFalse())
+				Expect(false).To(BeTrue())
 			})
 
 			It("correctly routes to the service (http)", func() {
