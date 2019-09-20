@@ -2,7 +2,9 @@ package validation_test
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -201,8 +203,9 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = v.ValidateDeleteVirtualService(context.TODO(), ref)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Deletion blocked because active Gateways reference this Virtual Service. " +
-					"Remove refs to this virtual service from the gateways: [{gateway my-namespace} {gateway-ssl my-namespace}], then try again"))
+				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Deletion blocked because active Gateways reference this Virtual Service. "+
+					"Remove refs to this virtual service from the gateways: [{%s my-namespace} {%s-ssl my-namespace}], "+
+					"then try again", defaults.GatewayProxyName, defaults.GatewayProxyName)))
 			})
 		})
 		Context("has no parent gateways", func() {
