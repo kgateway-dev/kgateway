@@ -4,6 +4,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	evnoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -42,6 +43,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}
 
 	hc := &evnoyhealthcheck.HealthCheck{
+		PassThroughMode: &types.BoolValue{Value: false},
 		Headers: []*route.HeaderMatcher{{
 			Name: ":path",
 			HeaderMatchSpecifier: &route.HeaderMatcher_ExactMatch{
