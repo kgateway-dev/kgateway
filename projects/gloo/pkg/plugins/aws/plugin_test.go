@@ -41,8 +41,7 @@ var _ = Describe("Plugin", func() {
 		funcName := "foo"
 		upstream = &v1.Upstream{
 			Metadata: core.Metadata{
-				Name: upstreamName,
-				// TODO(yuval-k): namespace
+				Name:      upstreamName,
 				Namespace: "ns",
 			},
 			UpstreamSpec: &v1.UpstreamSpec{
@@ -100,8 +99,7 @@ var _ = Describe("Plugin", func() {
 		params.Snapshot = &v1.ApiSnapshot{
 			Secrets: v1.SecretList{{
 				Metadata: core.Metadata{
-					Name: "secretref",
-					// TODO(yuval-k): namespace
+					Name:      "secretref",
 					Namespace: "ns",
 				},
 				Kind: &v1.Secret_Aws{
