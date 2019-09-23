@@ -26,6 +26,7 @@ weight: 5
 - [KubernetesConfiguration](#kubernetesconfiguration)
 - [RateLimits](#ratelimits)
 - [GlooOptions](#gloooptions)
+- [AWSOptions](#awsoptions)
 - [GatewayOptions](#gatewayoptions)
   
 
@@ -393,6 +394,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "validationBindAddr": string
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "endpointsWarmingTimeout": .google.protobuf.Duration
+"awsOptions": .gloo.solo.io.GlooOptions.AWSOptions
 
 ```
 
@@ -402,6 +404,24 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `validationBindAddr` | `string` | Where the `gloo` validation server should bind. Defaults to `0.0.0.0:9988`. |  |
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breaker configuration to use for upstream requests, when not provided by specific upstream. |  |
 | `endpointsWarmingTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout to get initial snapshot of resources. If not set, Gloo will not wait for initial snapshot - if set and and gloo could not fetch it's initial snapshot before the timeout reached, gloo will panic. |  |
+| `awsOptions` | [.gloo.solo.io.GlooOptions.AWSOptions](../settings.proto.sk#awsoptions) |  |  |
+
+
+
+
+---
+### AWSOptions
+
+
+
+```yaml
+"enableCredentialsDiscovey": bool
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `enableCredentialsDiscovey` | `bool` | Enable credential discovery via IAM; when this is set, there's no need provide a secret on the upstream when running on AWS envrionment. |  |
 
 
 

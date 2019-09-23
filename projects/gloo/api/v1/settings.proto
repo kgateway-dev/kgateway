@@ -309,6 +309,13 @@ message GlooOptions {
     // reached, gloo will panic.
     google.protobuf.Duration endpoints_warming_timeout = 4;
 
+    message AWSOptions {
+        // Enable credential discovery via IAM; when this is set, there's no need provide a secret
+        // on the upstream when running on AWS envrionment.
+        bool enable_credentials_discovey = 1;
+    }
+
+    AWSOptions aws_options = 5;
 }
 
 // Settings specific to the Gateway controller

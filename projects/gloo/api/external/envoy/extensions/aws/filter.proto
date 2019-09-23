@@ -3,33 +3,53 @@ syntax = "proto3";
 // TODO(yuval-k): use submodule and not copy pasted version.
 
 
-package envoy.config.filter.http.aws.v2;
+package envoy.config.filter.http.aws_lambda.v2;
 
+option java_package = "io.envoyproxy.envoy.config.filter.http.aws_lambda.v2";
+option java_outer_classname = "AwsLambdaProto";
+option java_multiple_files = true;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws";
 
+import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
 // [#protodoc-title: AWS Lambda]
 // AWS Lambda
 
-// AWS Lambda contains the configuration necessary to perform transform regular http calls to
-// AWS Lambda invocations.
-message LambdaPerRoute {
+// AWS Lambda contains the configuration necessary to perform transform regular
+// http calls to AWS Lambda invocations.
+message AWSLambdaPerRoute {
   // The name of the function
   string name = 1 [ (validate.rules).string.min_bytes = 1 ];
   // The qualifier of the function (defaults to $LATEST if not specified)
   string qualifier = 2;
+
   // Invocation type - async or regular.
   bool async = 3;
+
+  // Optional default body if the body is empty. By default on default
+  // body is used if the body empty, and an empty body will be sent upstream.
+  google.protobuf.StringValue empty_body_override = 4;
 }
 
-message LambdaProtocolExtension {
-    // The host header for AWS this cluster
-    string host = 1 [ (validate.rules).string.min_bytes = 1 ];
-    // The region for this cluster
-    string region = 2 [ (validate.rules).string.min_bytes = 1 ];
-    // The access_key for AWS this cluster
-    string access_key = 3 [ (validate.rules).string.min_bytes = 1 ];
-    // The secret_key for AWS this cluster
-    string secret_key = 4 [ (validate.rules).string.min_bytes = 1 ];
+message AWSLambdaProtocolExtension {
+  // The host header for AWS this cluster
+  string host = 1 [ (validate.rules).string.min_bytes = 1 ];
+  // The region for this cluster
+  string region = 2 [ (validate.rules).string.min_bytes = 1 ];
+  // The access_key for AWS this cluster
+  string access_key = 3;
+  // The secret_key for AWS this cluster
+  string secret_key = 4;
+}
+
+message AWSLambdaConfig {
+  // Use AWS default credentials chain to get credentials.
+  // This will search environment variables, ECS metadata and instance metadata
+  // to get the credentials. credentials will be rotated automatically.
+  //
+  // If credentials are provided on the cluster (using the
+  // AWSLambdaProtocolExtension), it will override these credentials. This
+  // defaults to false, but may change in the future to true.
+  google.protobuf.BoolValue use_default_credentials = 1;
 }

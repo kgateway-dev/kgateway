@@ -27,7 +27,7 @@ var _ = Describe("UpstreamGroup", func() {
 				UpstreamType: &v1.UpstreamSpec_Aws{
 					Aws: &aws.UpstreamSpec{
 						Region: "test-region",
-						SecretRef: core.ResourceRef{
+						SecretRef: &core.ResourceRef{
 							Namespace: "gloo-system",
 							Name:      "test-aws-us",
 						},

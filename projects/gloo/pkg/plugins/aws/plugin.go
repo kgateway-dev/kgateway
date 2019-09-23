@@ -16,6 +16,7 @@ import (
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -47,14 +48,16 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 }
 
 type plugin struct {
-	recordedUpstreams map[core.ResourceRef]*aws.UpstreamSpec
-	ctx               context.Context
-	transformsAdded   *bool
+	recordedUpstreams         map[core.ResourceRef]*aws.UpstreamSpec
+	ctx                       context.Context
+	transformsAdded           *bool
+	enableCredentialsDiscovey bool
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[core.ResourceRef]*aws.UpstreamSpec)
+	p.enableCredentialsDiscovey = params.Settings.GetGloo().GetAwsOptions().GetEnableCredentialsDiscovey()
 	return nil
 }
 
@@ -82,40 +85,49 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Sni: lambdaHostname,
 	}
 
+	accessKey := ""
+	secretKey := ""
+
 	// TODO(ilacakrms): consider if secretRef should be namespace+name
-	secrets, err := params.Snapshot.Secrets.Find(upstreamSpec.Aws.SecretRef.Strings())
-	if err != nil {
-		return errors.Wrapf(err, "retrieving aws secret")
+	if upstreamSpec.Aws.SecretRef == nil && !p.enableCredentialsDiscovey {
+		return errors.Errorf("no aws secret provided. consider setting enableCredentialsDiscovey to true if you are running in AWS environment")
+	}
+	if upstreamSpec.Aws.SecretRef != nil {
+
+		secret, err := params.Snapshot.Secrets.Find(upstreamSpec.Aws.SecretRef.Strings())
+		if err != nil {
+			return errors.Wrapf(err, "retrieving aws secret")
+		}
+
+		awsSecrets, ok := secret.Kind.(*v1.Secret_Aws)
+		if !ok {
+			return errors.Errorf("secret %v is not an AWS secret", secret.GetMetadata().Ref())
+		}
+
+		var secretErrs error
+
+		accessKey = awsSecrets.Aws.AccessKey
+		secretKey = awsSecrets.Aws.SecretKey
+		if accessKey == "" || !utf8.Valid([]byte(accessKey)) {
+			secretErrs = multierror.Append(secretErrs, errors.Errorf("access_key is not a valid string"))
+		}
+		if secretKey == "" || !utf8.Valid([]byte(secretKey)) {
+			secretErrs = multierror.Append(secretErrs, errors.Errorf("secret_key is not a valid string"))
+		}
+
+		if secretErrs != nil {
+			return secretErrs
+		}
 	}
 
-	awsSecrets, ok := secrets.Kind.(*v1.Secret_Aws)
-	if !ok {
-		return errors.Errorf("secret %v is not an AWS secret", secrets.GetMetadata().Ref())
-	}
-
-	var secretErrs error
-
-	accessKey := awsSecrets.Aws.AccessKey
-	secretKey := awsSecrets.Aws.SecretKey
-	if accessKey == "" || !utf8.Valid([]byte(accessKey)) {
-		secretErrs = multierror.Append(secretErrs, errors.Errorf("access_key is not a valid string"))
-	}
-	if secretKey == "" || !utf8.Valid([]byte(secretKey)) {
-		secretErrs = multierror.Append(secretErrs, errors.Errorf("secret_key is not a valid string"))
-	}
-
-	if secretErrs != nil {
-		return secretErrs
-	}
-
-	lpe := &LambdaProtocolExtension{
+	lpe := &AWSLambdaProtocolExtension{
 		Host:      lambdaHostname,
 		Region:    upstreamSpec.Aws.Region,
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 	}
 
-	err = pluginutils.SetExtenstionProtocolOptions(out, filterName, lpe)
+	err := pluginutils.SetExtenstionProtocolOptions(out, filterName, lpe)
 	if err != nil {
 		return errors.Wrapf(err, "converting aws protocol options to struct")
 	}
@@ -153,7 +165,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		for _, lambdaFunc := range lambdaSpec.LambdaFunctions {
 			if lambdaFunc.LogicalName == logicalName {
 
-				lambdaRouteFunc := &LambdaPerRoute{
+				lambdaRouteFunc := &AWSLambdaPerRoute{
 					Async: awsDestinationSpec.Aws.InvocationStyle == aws.DestinationSpec_ASYNC,
 					// we need to query escape per AWS spec:
 					// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
@@ -211,7 +223,12 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		// no upstreams no filter
 		return nil, nil
 	}
+	filterconfig := &AWSLambdaConfig{UseDefaultCredentials: &types.BoolValue{Value: p.enableCredentialsDiscovey}}
+	f, err := plugins.NewStagedFilterWithConfig(filterName, filterconfig, pluginStage)
+	if err != nil {
+		return nil, err
+	}
 	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(filterName, pluginStage),
+		f,
 	}, nil
 }

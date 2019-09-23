@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow using IAM credentials with AWS Upstreams
+    issueLink: https://github.com/solo-io/gloo/issues/680
