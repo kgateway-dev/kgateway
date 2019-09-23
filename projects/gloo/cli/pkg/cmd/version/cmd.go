@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/proto"
@@ -21,7 +22,7 @@ import (
 )
 
 const (
-	undefinedServer = "\nServer: version undefined, could not find any version of gloo running"
+	undefinedServer = "Server: version undefined, could not find any version of gloo running"
 )
 
 var (
@@ -84,28 +85,31 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 	}
 	switch opts.Top.Output {
 	case printers.JSON:
-		clientVersionStr := GetJson(vrs.GetClient())
-		fmt.Fprintf(w, "Client: \n%s\n", string(clientVersionStr))
+		clientVersionStr := string(GetJson(vrs.GetClient()))
+		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
+		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
-		fmt.Fprintln(w, "Server:")
+		fmt.Fprint(w, "Server: ")
 		for _, v := range vrs.GetServer() {
 			serverVersionStr := GetJson(v)
 			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
 		}
 	case printers.YAML:
-		clientVersionStr := GetYaml(vrs.GetClient())
-		fmt.Fprintf(w, "Client: \n%s\n", string(clientVersionStr))
+		clientVersionStr := string(GetYaml(vrs.GetClient()))
+		clientVersionStr = strings.ReplaceAll(clientVersionStr, "\n", "")
+		fmt.Fprintf(w, "Client: %s\n", clientVersionStr)
 		if vrs.GetServer() == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil
 		}
 		fmt.Fprintln(w, "Server:")
 		for _, v := range vrs.GetServer() {
-			serverVersionStr := GetYaml(v)
-			fmt.Fprintf(w, "%s\n", string(serverVersionStr))
+			serverVersionStr := string(GetYaml(v))
+			clientVersionStr = strings.TrimRight(clientVersionStr, "\n")
+			fmt.Fprintf(w, "%s\n", serverVersionStr)
 		}
 	default:
 		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().Version)

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix glooctl version output formatting.
+    issueLink: https://github.com/solo-io/gloo/issues/1243
