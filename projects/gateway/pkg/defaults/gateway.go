@@ -9,12 +9,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-const GatewayProxyName = "gateway-proxy-v2"
+const (
+	GatewayProxyName   = "gateway-proxy-v2"
+	GatewayBindAddress = "::"
+)
 
 func DefaultGateway(writeNamespace string) *v2.Gateway {
 	return &v2.Gateway{
 		Metadata: core.Metadata{
-			Name:        "gateway",
+			Name:        GatewayProxyName,
 			Namespace:   writeNamespace,
 			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},
@@ -22,7 +25,7 @@ func DefaultGateway(writeNamespace string) *v2.Gateway {
 		GatewayType: &v2.Gateway_HttpGateway{
 			HttpGateway: &v2.HttpGateway{},
 		},
-		BindAddress:   "::",
+		BindAddress:   GatewayBindAddress,
 		BindPort:      defaults.HttpPort,
 		UseProxyProto: &types.BoolValue{Value: false},
 	}
@@ -50,7 +53,7 @@ func DefaultTcpGateway(writeNamespace string) *v2.Gateway {
 			TcpGateway: &v2.TcpGateway{},
 		},
 		ProxyNames:    []string{GatewayProxyName},
-		BindAddress:   "::",
+		BindAddress:   GatewayBindAddress,
 		BindPort:      defaults.TcpPort,
 		UseProxyProto: &types.BoolValue{Value: false},
 	}

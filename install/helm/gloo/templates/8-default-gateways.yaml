@@ -1,0 +1,58 @@
+{{- range $name, $spec := .Values.gatewayProxies }}
+{{- if $spec.gatewaySettings}}
+{{$gatewaySettings := $spec.gatewaySettings}}
+{{- if not $gatewaySettings.disableGeneratedGateways}}
+
+---
+apiVersion: gateway.solo.io.v2/v2
+kind: Gateway
+metadata:
+  name: {{ $name | kebabcase }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: gloo
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "5"
+spec:
+  bindAddress: "::"
+  bindPort: {{ $spec.podTemplate.httpPort }}
+{{- if $gatewaySettings.customHttpGateway}}
+  httpGateway:
+{{ toYaml $gatewaySettings.customHttpGateway | indent 4}}
+{{- else }}
+  httpGateway: {}
+{{- end }}
+  useProxyProto: {{ $gatewaySettings.useProxyProto }}
+  ssl: false
+  proxyNames:
+  - {{ $name | kebabcase }}
+
+---
+
+apiVersion: gateway.solo.io.v2/v2
+kind: Gateway
+metadata:
+  name: {{ $name | kebabcase }}-ssl
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: gloo
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "5"
+spec:
+  bindAddress: "::"
+  bindPort: {{ $spec.podTemplate.httpsPort }}
+{{- if $gatewaySettings.customHttpsGateway}}
+  httpGateway:
+{{ toYaml $gatewaySettings.customHttpsGateway | indent 6}}
+{{- else }}
+  httpGateway: {}
+{{- end }}
+  useProxyProto: {{ $gatewaySettings.useProxyProto }}
+  ssl: true
+  proxyNames:
+  - {{ $name | kebabcase }}
+{{- end }}
+{{- end }}
+{{- end }}

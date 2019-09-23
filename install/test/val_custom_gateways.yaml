@@ -1,0 +1,50 @@
+gatewayProxies:
+  gatewayProxyV2:
+    gatewaySettings:
+      useProxyProto: true
+      customHttpGateway:
+        virtualServices:
+        - name: one
+          namespace: one
+      customHttpsGateway:
+        virtualServices:
+        - name: one
+          namespace: one
+  testName:
+    gatewaySettings:
+      useProxyProto: true
+      customHttpGateway:
+        virtualServices:
+        - name: one
+          namespace: one
+      customHttpsGateway:
+        virtualServices:
+        - name: one
+          namespace: one
+    kind:
+      deployment:
+        antiAffinity: false
+        replicas: 1
+        resources: null
+    podTemplate:
+      disableNetBind: false
+      floatingUserId: false
+      httpPort: 8081
+      httpsPort: 8444
+      image:
+        pullPolicy: Always
+        repository: gloo-envoy-wrapper
+        tag: dev
+      probes: false
+      resources: null
+      runAsUser: 10101
+      runUnprivileged: false
+      tolerations: null
+    readConfig: false
+    service:
+      httpPort: 80
+      httpsPort: 443
+      type: LoadBalancer
+    stats: true
+    configMap:
+      data: null

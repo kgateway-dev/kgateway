@@ -116,8 +116,41 @@ func checkPods(opts *options.Options) (bool, error) {
 	}
 	for _, pod := range pods.Items {
 		for _, condition := range pod.Status.Conditions {
-			if condition.Type == corev1.PodReady && condition.Status != corev1.ConditionTrue {
-				fmt.Printf("Pod %s in namespace %s is not ready!\n", pod.Name, pod.Namespace)
+			var errorToPrint string
+			var message string
+
+			if condition.Message != "" {
+				message = fmt.Sprintf(" Message: %s", condition.Message)
+			}
+
+			// possible condition types listed at https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
+			switch condition.Type {
+			case corev1.PodScheduled:
+				if condition.Status != corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not yet scheduled!%s\n", pod.Name, pod.Namespace, message)
+				}
+			case corev1.PodReady:
+				if condition.Status != corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not ready!%s\n", pod.Name, pod.Namespace, message)
+				}
+			case corev1.PodInitialized:
+				if condition.Status != corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Pod %s in namespace %s is not yet initialized!%s\n", pod.Name, pod.Namespace, message)
+				}
+			case corev1.PodReasonUnschedulable:
+				if condition.Status == corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Pod %s in namespace %s is unschedulable!%s\n", pod.Name, pod.Namespace, message)
+				}
+			case corev1.ContainersReady:
+				if condition.Status != corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Not all containers in pod %s in namespace %s are ready!%s\n", pod.Name, pod.Namespace, message)
+				}
+			default:
+				fmt.Printf("Note: Unhandled pod condition %s", condition.Type)
+			}
+
+			if errorToPrint != "" {
+				fmt.Print(errorToPrint)
 				return false, err
 			}
 		}

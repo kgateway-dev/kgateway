@@ -1177,7 +1177,7 @@
   version = "v1.7.0"
 
 [[projects]]
-  digest = "1:28ec8420931441ba18ea81668a7c7b52212e00a656a268dd9fa8adaa710bb12e"
+  digest = "1:b5152532915a65c7a56f27315b3b1eecb9daaf48fa69e822e36bed28a9b73498"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -1198,8 +1198,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "65fb64232476ad9046e57c26cd0bff3d3a8dc6cd"
-  version = "v1.4.3"
+  revision = "bdebf9e0ece900259084cfa4121b97ce1a540939"
+  version = "v1.7.0"
 
 [[projects]]
   digest = "1:ee4d4af67d93cc7644157882329023ce9a7bcfce956a079069a9405521c7cc8d"
@@ -1361,7 +1361,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:c9d1d80ec1de75ea64ac931d4964372d3f3899c62b6bfc2bab401d6d930c9d9f"
+  digest = "1:2b7ad368df1e8ff8d88f2a73e3504cdcb760213a0d63e0e12a64064c65e4b090"
   name = "github.com/solo-io/go-utils"
   packages = [
     "changelogutils",
@@ -1401,8 +1401,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "5dc802895644ff6f736b11a64e54a06f3ba1dd5e"
-  version = "v0.10.8"
+  revision = "2fff910b5b9a262eba3177f296923ac04887fa53"
+  version = "v0.10.9"
 
 [[projects]]
   digest = "1:6bf9bdcdfd28c7a913d5bcbef6717e53fc6f650560f0b4ffe663816b3e2245ec"
@@ -2786,6 +2786,7 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd",
+    "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/memory",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients/vault",

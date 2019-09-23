@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Make sure that glooctl check catches all possible pod conditions
+    issueLink: https://github.com/solo-io/solo-projects/issues/1121
