@@ -21,7 +21,7 @@ const (
 	Filename = "/tmp/gloo-system-logs.tgz"
 )
 
-func DebugResources(opts *options.Options, w io.Writer) error {
+func DebugLogs(opts *options.Options, w io.Writer) error {
 	responses, err := setup(opts)
 	if err != nil {
 		return err
