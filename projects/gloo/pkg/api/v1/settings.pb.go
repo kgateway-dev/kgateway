@@ -1208,7 +1208,7 @@ func (m *GlooOptions) GetAwsOptions() *GlooOptions_AWSOptions {
 
 type GlooOptions_AWSOptions struct {
 	// Enable credential discovery via IAM; when this is set, there's no need provide a secret
-	// on the upstream when running on AWS envrionment.
+	// on the upstream when running on AWS environment.
 	EnableCredentialsDiscovey bool     `protobuf:"varint,1,opt,name=enable_credentials_discovey,json=enableCredentialsDiscovey,proto3" json:"enable_credentials_discovey,omitempty"`
 	XXX_NoUnkeyedLiteral      struct{} `json:"-"`
 	XXX_unrecognized          []byte   `json:"-"`

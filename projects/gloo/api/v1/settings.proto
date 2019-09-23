@@ -311,7 +311,7 @@ message GlooOptions {
 
     message AWSOptions {
         // Enable credential discovery via IAM; when this is set, there's no need provide a secret
-        // on the upstream when running on AWS envrionment.
+        // on the upstream when running on AWS environment.
         bool enable_credentials_discovey = 1;
     }
 
