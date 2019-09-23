@@ -17,7 +17,16 @@ const (
 	awsSecretKey = "secret_key"
 )
 
-func GetAwsSession(secretRef core.ResourceRef, secrets v1.SecretList, config *aws.Config) (*session.Session, error) {
+func GetAwsSession(secretRef *core.ResourceRef, secrets v1.SecretList, config *aws.Config) (*session.Session, error) {
+
+	if config == nil {
+		config = aws.NewConfig()
+	}
+
+	if secretRef == nil {
+		// no secret ref, return the default session
+		return session.NewSession(config)
+	}
 	awsSecrets, err := secrets.Find(secretRef.Namespace, secretRef.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "secrets not found for secret ref %v", secretRef)
@@ -36,9 +45,6 @@ func GetAwsSession(secretRef core.ResourceRef, secrets v1.SecretList, config *aw
 		return nil, errors.Errorf("%s not a valid string", awsSecretKey)
 	}
 
-	if config == nil {
-		config = aws.NewConfig()
-	}
 	sess, err := session.NewSession(config.
 		WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, "")))
 	if err != nil {
