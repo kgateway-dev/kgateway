@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: The grafana and prometheus pods are now installed to the correct gloo system namespace instead of default
+    issueLink: https://github.com/solo-io/solo-projects/issues/1146
