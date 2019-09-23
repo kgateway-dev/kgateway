@@ -5,16 +5,11 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-)
-
-const (
-	testLogLevels = "{\"level\":\"error\",\"ts\":1}\n{\"level\":\"info\",\"ts\":1}\n{\"level\":\"warn\",\"ts\":1}"
 )
 
 var _ = Describe("Debug", func() {
@@ -48,17 +43,4 @@ var _ = Describe("Debug", func() {
 		err = os.RemoveAll(opts.Top.File)
 		Expect(err).NotTo(HaveOccurred())
 	})
-
-	It("should be able to parse out all logs", func() {
-		logs := ioutil.NopCloser(strings.NewReader(testLogLevels))
-		filteredLogs := parseLogsFrom(logs, false)
-		Expect(filteredLogs.String()).To(Equal(testLogLevels + "\n"))
-	})
-
-	It("should be able to parse out error logs", func() {
-		logs := ioutil.NopCloser(strings.NewReader(testLogLevels))
-		filteredLogs := parseLogsFrom(logs, true)
-		Expect(filteredLogs.String()).To(Equal("{\"level\":\"error\",\"ts\":1}\n"))
-	})
-
 })

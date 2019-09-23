@@ -1,11 +1,11 @@
 package debug
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/solo-io/go-utils/tarutils"
 	"github.com/spf13/afero"
@@ -40,7 +40,12 @@ func DebugResources(opts *options.Options, w io.Writer) error {
 		response := response
 		eg.Go(func() error {
 			defer response.Response.Close()
-			logs := parseLogsFrom(response.Response, opts.Top.ErrorsOnly)
+			var logs strings.Builder
+			if opts.Top.ErrorsOnly {
+				logs = utils.FilterLogLevel(response.Response, "error")
+			} else {
+				logs = utils.FilterLogLevel(response.Response, "all")
+			}
 			if logs.Len() > 0 {
 				if opts.Top.Zip {
 					err = storageClient.Save(dir, &debugutils.StorageObject{
@@ -93,28 +98,6 @@ func zip(fs afero.Fs, dir string, file string) error {
 func displayLogs(w io.Writer, logs strings.Builder) error {
 	_, err := fmt.Fprintf(w, logs.String())
 	return err
-}
-
-func parseLogsFrom(r io.ReadCloser, errorsOnly bool) strings.Builder {
-	scanner := bufio.NewScanner(r)
-	logs := strings.Builder{}
-	for scanner.Scan() {
-		line := scanner.Text()
-		in := []byte(line)
-		var raw map[string]interface{}
-		if err := json.Unmarshal(in, &raw); err != nil {
-			// is an envoy log, ignore for now.
-			return strings.Builder{}
-		}
-		if errorsOnly {
-			if raw["level"] == "error" {
-				logs.WriteString(line + "\n")
-			}
-		} else {
-			logs.WriteString(line + "\n")
-		}
-	}
-	return logs
 }
 
 func setup(opts *options.Options) ([]*debugutils.LogsResponse, error) {
