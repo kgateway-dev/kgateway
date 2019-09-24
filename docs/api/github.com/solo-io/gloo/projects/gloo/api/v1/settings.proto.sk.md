@@ -421,7 +421,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `enableCredentialsDiscovey` | `bool` | Enable credential discovery via IAM; when this is set, there's no need provide a secret on the upstream when running on AWS environment. |  |
+| `enableCredentialsDiscovey` | `bool` | Enable credential discovery via IAM; when this is set, there's no need provide a secret on the upstream when running on AWS environment. Note: This should **ONLY** be enabled when running in an AWS environment, as the AWS code blocks the envoy main thread. This should be negligible when running inside AWS. |  |
 
 
 
