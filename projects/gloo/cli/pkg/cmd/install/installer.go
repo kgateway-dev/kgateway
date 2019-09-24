@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path"
 	"strings"
 
@@ -37,19 +38,20 @@ func (i *DefaultGlooKubeInstallClient) WaitForCrdsToBeRegistered(ctx context.Con
 }
 
 type NamespacedGlooKubeInstallClient struct {
-	namespace string
-	delegate  GlooKubeInstallClient
+	Namespace string
+	Delegate  GlooKubeInstallClient
+	Executor  func(stdin io.Reader, args ...string) error
 }
 
 func (i *NamespacedGlooKubeInstallClient) KubectlApply(manifest []byte) error {
-	if i.namespace == "" {
-		return i.delegate.KubectlApply(manifest)
+	if i.Namespace == "" {
+		return i.Delegate.KubectlApply(manifest)
 	}
-	return install.Kubectl(bytes.NewBuffer(manifest), "apply", "-n", i.namespace, "-f", "-")
+	return i.Executor(bytes.NewBuffer(manifest), "apply", "-n", i.Namespace, "-f", "-")
 }
 
 func (i *NamespacedGlooKubeInstallClient) WaitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
-	return i.delegate.WaitForCrdsToBeRegistered(ctx, crds)
+	return i.Delegate.WaitForCrdsToBeRegistered(ctx, crds)
 }
 
 func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {

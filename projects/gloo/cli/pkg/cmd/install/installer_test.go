@@ -2,6 +2,9 @@ package install_test
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os/exec"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -331,6 +334,35 @@ var _ = Describe("Install", func() {
 			Expect(validator.waited).To(BeFalse())
 			expectKinds(validator.resources, withSettings(install.GlooInstallKinds))
 			expectLabels(validator.resources, install.ExpectedLabels)
+		})
+
+	})
+
+	Context("Enterprise Gateway NamespacedGlooKubeInstallClient", func() {
+		var (
+			kubectlCmd        string
+			kubeInstallClient install.NamespacedGlooKubeInstallClient
+		)
+		BeforeEach(func() {
+
+			MockKubectl := func(stdin io.Reader, args ...string) error {
+				kubectl := exec.Command("kubectl", args...)
+				kubectlCmd = fmt.Sprintf("running kubectl command: %v\n", kubectl.Args)
+				return nil
+			}
+
+			opts.Install.Namespace = "gloo-system-test"
+			kubeInstallClient = install.NamespacedGlooKubeInstallClient{
+				Namespace: opts.Install.Namespace,
+				Delegate:  &MockInstallClient{},
+				Executor:  MockKubectl,
+			}
+		})
+
+		It("ensure namespace argument is passed into kubectl apply", func() {
+			err := kubeInstallClient.KubectlApply([]byte{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(kubectlCmd).To(Equal("running kubectl command: [kubectl apply -n gloo-system-test -f -]\n"))
 		})
 
 	})

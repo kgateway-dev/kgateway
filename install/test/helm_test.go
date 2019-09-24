@@ -17,7 +17,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -112,7 +111,7 @@ var _ = Describe("Helm Test", func() {
 				prepareMakefile(helmFlags)
 				rb := ResourceBuilder{
 					Namespace: namespace,
-					Name:      translator.GatewayProxyName,
+					Name:      defaults.GatewayProxyName,
 					Labels:    labels,
 					Service: ServiceSpec{
 						Ports: []PortSpec{

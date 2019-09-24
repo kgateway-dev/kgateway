@@ -49,8 +49,9 @@ func installGlooE(opts *options.Options) error {
 	}
 
 	kubeInstallClient := NamespacedGlooKubeInstallClient{
-		namespace: opts.Install.Namespace,
-		delegate:  &DefaultGlooKubeInstallClient{},
+		Namespace: opts.Install.Namespace,
+		Delegate:  &DefaultGlooKubeInstallClient{},
+		Executor:  install.Kubectl,
 	}
 	if err := InstallGloo(opts, *spec, &kubeInstallClient); err != nil {
 		fmt.Fprintf(os.Stderr, "\nGloo failed to install! Detailed logs available at %s.\n", cliutil.GetLogsPath())
