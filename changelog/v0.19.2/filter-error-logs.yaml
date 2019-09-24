@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: In regression tests, only print out error logs
-    issueLink: https://github.com/solo-io/gloo/issues/1219

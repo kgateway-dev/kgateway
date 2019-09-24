@@ -42,9 +42,9 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 			defer response.Response.Close()
 			var logs strings.Builder
 			if opts.Top.ErrorsOnly {
-				logs = utils.FilterLogLevel(response.Response, "error")
+				logs = utils.FilterLogLevel(response.Response, utils.LogLevelError)
 			} else {
-				logs = utils.FilterLogLevel(response.Response, "all")
+				logs = utils.FilterLogLevel(response.Response, utils.LogLevelAll)
 			}
 			if logs.Len() > 0 {
 				if opts.Top.Zip {
