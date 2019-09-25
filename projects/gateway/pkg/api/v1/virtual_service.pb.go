@@ -295,132 +295,16 @@ func (m *VirtualHost) GetCorsPolicy() *v1.CorsPolicy {
 
 //
 //
-// Routes declare the entry points on virtual hosts and the action to take for matched requests.
+// A route specifies how to match a request and what action to take when the request is matched.
 //
+//
+// When a request matches on a route, the route can perform one of the following actions:
+// - *Route* the request to an Upstream Endpoint
+// - Reply with a *Direct Response*
+// - Send a *Redirect* response to the client
+// - *Delegate* the action for the request to a top-level [`RouteTable`]({{< ref "/v1/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resource
 // DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
 // a top-level `RouteTable` resource.
-//
-// Routes specified in the RouteTable will have their paths prefixed by the prefix provided in the
-// parent's matcher.
-//
-// For example, the following configuration:
-//
-// ```
-// virtualService: mydomain.com
-// match: /a
-// delegate: a-routes
-// ---
-// routeTable: a-routes
-// match: /1
-// delegate: 1-routes
-// match: /2
-// delegate: 2-routes
-// ---
-// routeTable: 1-routes
-// match: /foo
-// destination: foo-svc
-// match: /bar
-// destination: bar-svc
-// ----
-// routeTable: 2-routes
-// match: /baz
-// destination: baz-svc
-// match: /qux
-// destination: qux-svc
-// ```
-//
-//
-// ```yaml
-// apiVersion: gateway.solo.io/v1
-// kind: VirtualService
-// metadata:
-//   name: 'any'
-//   namespace: 'any'
-// spec:
-//   virtualHost:
-//     domains:
-//     - 'any.com'
-//     routes:
-//     - matcher:
-//         prefix: '/a'
-//       delegateAction:
-//         name: 'a-routes'
-//         namespace: 'a'
-// ```
-//
-// ```yaml
-// apiVersion: gateway.solo.io/v1
-// kind: RouteTable
-// metadata:
-//   name: 'a-routes'
-//   namespace: 'a'
-// spec:
-//   routes:
-//     - matcher:
-//         prefix: '/1'
-//       delegateAction:
-//         name: 'one-routes'
-//         namespace: 'one'
-//     - matcher:
-//         prefix: '/2'
-//       delegateAction:
-//         name: 'two-routes'
-//         namespace: 'two'
-// ```
-//
-// ```yaml
-// apiVersion: gateway.solo.io/v1
-// kind: RouteTable
-// metadata:
-//   name: 'one-routes'
-//   namespace: 'one'
-// spec:
-//   routes:
-//     - matcher:
-//         prefix: '/foo'
-//       routeAction:
-//         single:
-//           upstream:
-//             name: 'foo-upstream'
-//     - matcher:
-//         prefix: '/bar'
-//       routeAction:
-//         single:
-//           upstream:
-//             name: 'bar-upstream'
-// ```
-//
-// ```yaml
-// apiVersion: gateway.solo.io/v1
-// kind: RouteTable
-// metadata:
-//   name: 'two-routes'
-//   namespace: 'two'
-// spec:
-//   routes:
-//     - matcher:
-//         prefix: '/baz'
-//       routeAction:
-//         single:
-//           upstream:
-//             name: 'baz-upstream'
-//     - matcher:
-//         prefix: '/qux'
-//       routeAction:
-//         single:
-//           upstream:
-//             name: 'qux-upstream'
-// ```
-//
-//
-// Would produce the following route config for `mydomain.com`:
-//
-// ```
-// /a/1/foo -> foo-svc
-// /a/1/bar -> bar-svc
-// /a/2/baz -> baz-svc
-// /a/2/qux -> qux-svc
-// ```
 //
 type Route struct {
 	// The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.)
