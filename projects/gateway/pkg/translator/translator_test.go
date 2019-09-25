@@ -430,9 +430,14 @@ var _ = Describe("Translator", func() {
 
 		Context("using RouteTables and delegation", func() {
 			Context("valid configuration", func() {
+				dur := time.Minute
+
 				rootLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: "root route plugin"}}
-				midLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: "mid level plugin"}}
+				midLevelRoutePlugins := &gloov1.RoutePlugins{Timeout: &dur}
 				leafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: "leaf level plugin"}}
+
+				mergedMidLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
+				mergedLeafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})
@@ -501,7 +506,7 @@ var _ = Describe("Translator", func() {
 									{
 										Matcher: &gloov1.Matcher{
 											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/1-upstream",
+												Prefix: "/a/1-upstream",
 											},
 										},
 										Action: &v1.Route_RouteAction{
@@ -522,12 +527,12 @@ var _ = Describe("Translator", func() {
 									{
 										Matcher: &gloov1.Matcher{
 											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/1-delegate",
+												Prefix: "/a/3-delegate",
 											},
 										},
 										Action: &v1.Route_DelegateAction{
 											DelegateAction: &core.ResourceRef{
-												Name:      "delegate-2",
+												Name:      "delegate-3",
 												Namespace: ns,
 											},
 										},
@@ -544,7 +549,7 @@ var _ = Describe("Translator", func() {
 									{
 										Matcher: &gloov1.Matcher{
 											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/2-upstream",
+												Prefix: "/b/2-upstream",
 											},
 										},
 										Action: &v1.Route_RouteAction{
@@ -565,7 +570,58 @@ var _ = Describe("Translator", func() {
 									{
 										Matcher: &gloov1.Matcher{
 											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/2-upstream-plugin-override",
+												Prefix: "/b/2-upstream-plugin-override",
+											},
+										},
+										Action: &v1.Route_RouteAction{
+											RouteAction: &gloov1.RouteAction{
+												Destination: &gloov1.RouteAction_Single{
+													Single: &gloov1.Destination{
+														DestinationType: &gloov1.Destination_Upstream{
+															Upstream: &core.ResourceRef{
+																Name:      "my-upstream",
+																Namespace: ns,
+															},
+														},
+													},
+												},
+											},
+										},
+										RoutePlugins: leafLevelRoutePlugins,
+									},
+								},
+							},
+							{
+								Metadata: core.Metadata{
+									Name:      "delegate-3",
+									Namespace: ns,
+								},
+								Routes: []*v1.Route{
+									{
+										Matcher: &gloov1.Matcher{
+											PathSpecifier: &gloov1.Matcher_Prefix{
+												Prefix: "/a/3-delegate/upstream1",
+											},
+										},
+										Action: &v1.Route_RouteAction{
+											RouteAction: &gloov1.RouteAction{
+												Destination: &gloov1.RouteAction_Single{
+													Single: &gloov1.Destination{
+														DestinationType: &gloov1.Destination_Upstream{
+															Upstream: &core.ResourceRef{
+																Name:      "my-upstream",
+																Namespace: ns,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									{
+										Matcher: &gloov1.Matcher{
+											PathSpecifier: &gloov1.Matcher_Prefix{
+												Prefix: "/a/3-delegate/upstream2",
 											},
 										},
 										Action: &v1.Route_RouteAction{
@@ -634,7 +690,7 @@ var _ = Describe("Translator", func() {
 						&gloov1.Route{
 							Matcher: &gloov1.Matcher{
 								PathSpecifier: &gloov1.Matcher_Prefix{
-									Prefix: "/a/1-delegate/2-upstream",
+									Prefix: "/a/3-delegate/upstream1",
 								},
 							},
 							Action: &gloov1.Route_RouteAction{
@@ -651,12 +707,12 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: midLevelRoutePlugins,
+							RoutePlugins: mergedMidLevelRoutePlugins,
 						},
 						&gloov1.Route{
 							Matcher: &gloov1.Matcher{
 								PathSpecifier: &gloov1.Matcher_Prefix{
-									Prefix: "/a/1-delegate/2-upstream-plugin-override",
+									Prefix: "/a/3-delegate/upstream2",
 								},
 							},
 							Action: &gloov1.Route_RouteAction{
@@ -673,7 +729,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: leafLevelRoutePlugins,
+							RoutePlugins: mergedLeafLevelRoutePlugins,
 						},
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
@@ -747,7 +803,7 @@ var _ = Describe("Translator", func() {
 										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Prefix{
-													Prefix: "/a",
+													Prefix: "/",
 												},
 											},
 											Action: &v1.Route_DelegateAction{
@@ -771,7 +827,7 @@ var _ = Describe("Translator", func() {
 									{
 										Matcher: &gloov1.Matcher{
 											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/1-delegate",
+												Prefix: "/",
 											},
 										},
 										Action: &v1.Route_DelegateAction{
@@ -792,7 +848,7 @@ var _ = Describe("Translator", func() {
 									{
 										Matcher: &gloov1.Matcher{
 											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/2-delegate",
+												Prefix: "/",
 											},
 										},
 										Action: &v1.Route_DelegateAction{
@@ -904,7 +960,7 @@ var expectedRouteMetadatas = [][]*RouteMetadata{
 			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
-						Name:      "delegate-2",
+						Name:      "delegate-3",
 						Namespace: "gloo-system",
 					},
 					ResourceKind:       "*v1.RouteTable",
@@ -932,7 +988,7 @@ var expectedRouteMetadatas = [][]*RouteMetadata{
 			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
-						Name:      "delegate-2",
+						Name:      "delegate-3",
 						Namespace: "gloo-system",
 					},
 					ResourceKind:       "*v1.RouteTable",
