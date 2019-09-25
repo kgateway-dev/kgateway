@@ -20,9 +20,10 @@ func main() {
 	if os.Getenv(START_STATS_SERVER) != "" {
 		stats.StartStatsServer()
 	}
+	podNamespace := os.Getenv("POD_NAMESPACE")
 	go func() {
 		ctx := context.Background()
-		if err := runner.RunE(ctx); err != nil {
+		if err := runner.RunE(ctx, podNamespace); err != nil {
 			contextutils.LoggerFrom(ctx).Errorw("err in metrics server", zap.Error(err))
 		}
 	}()

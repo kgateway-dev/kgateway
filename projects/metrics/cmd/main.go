@@ -16,5 +16,5 @@ func main() {
 	if os.Getenv(START_STATS_SERVER) != "" {
 		stats.StartStatsServer()
 	}
-	runner.Run(context.Background())
+	runner.Run(context.Background(), os.Getenv("POD_NAMESPACE"))
 }

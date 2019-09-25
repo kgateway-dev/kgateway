@@ -1,0 +1,10 @@
+# use this config map to record envoy usage stats
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gloo-usage
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: gloo-usage
+data:

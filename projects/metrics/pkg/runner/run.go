@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/solo-io/go-utils/kubeutils"
+	kubeclient "k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/go-utils/contextutils"
@@ -22,20 +26,27 @@ func init() {
 	view.Register(ocgrpc.DefaultServerViews...)
 }
 
-func RunE(parentCtx context.Context) error {
+func RunE(parentCtx context.Context, podNamespace string) error {
 	clientSettings := NewSettings()
 	ctx := contextutils.WithLogger(parentCtx, "metrics")
 
 	opts := metricsservice.Options{
 		Ctx: ctx,
 	}
-	service := metricsservice.NewServer(opts)
+
+	configMapClient, err := buildConfigMapClient(ctx, podNamespace)
+	if err != nil {
+		return err
+	}
+
+	configMapStorage := metricsservice.NewConfigMapStorage(podNamespace, configMapClient)
+	service := metricsservice.NewServer(opts, configMapStorage)
 
 	return RunWithSettings(ctx, service, clientSettings)
 }
 
-func Run(ctx context.Context) {
-	err := RunE(ctx)
+func Run(ctx context.Context, podNamespace string) {
+	err := RunE(ctx, podNamespace)
 	if err != nil {
 		if ctx.Err() == nil {
 			// not a context error - panic
@@ -80,4 +91,17 @@ func StartMetricsService(ctx context.Context, clientSettings Settings, service *
 	}()
 
 	return srv.Serve(lis)
+}
+
+func buildConfigMapClient(ctx context.Context, podNamespace string) (v1.ConfigMapInterface, error) {
+	restConfig, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, err
+	}
+	kubeClient, err := kubeclient.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return kubeClient.CoreV1().ConfigMaps(podNamespace), nil
 }
