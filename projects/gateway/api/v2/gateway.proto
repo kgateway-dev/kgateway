@@ -56,7 +56,7 @@ message Gateway {
     }
 
     // deprecated: use proxyNames
-    string gateway_proxy_name = 11;
+    string gateway_proxy_name = 11 [deprecated=true];
 
     /*
     * Names of the [`Proxy`](https://gloo.solo.io/v1/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
