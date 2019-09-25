@@ -58,7 +58,7 @@ message Settings {
 
     // Where the Gloo xDS server should bind (should not need configuration by user)
     // Deprecated: use gloo.xdsBindAddr
-    string bind_addr = 11;
+    string bind_addr = 11 [deprecated=true];
 
     // How frequently to resync watches, etc
     google.protobuf.Duration refresh_rate = 12;
@@ -135,7 +135,7 @@ message Settings {
 
     // Default circuit breakers when not set in a specific upstream.
     // Deprecated: use gloo.circuitBreakers
-    CircuitBreakerConfig circuit_breakers = 3;
+    CircuitBreakerConfig circuit_breakers = 3 [deprecated=true];
 
     message KnativeOptions {
         // Address of the clusteringress proxy.

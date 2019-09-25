@@ -150,7 +150,7 @@ message VirtualHost {
     // Defines a CORS policy for the virtual host
     // If a CORS policy is also defined on the route matched by the request, the policies are merged.
     // DEPRECATED set cors policy through the Virtual Host Plugin
-    CorsPolicy cors_policy = 5;
+    CorsPolicy cors_policy = 5 [deprecated=true];
 }
 
 /**
@@ -440,25 +440,25 @@ message CorsPolicy {
     // Specifies the origins that will be allowed to make CORS requests.
     //
     // An origin is allowed if either allow_origin or allow_origin_regex match.
-    repeated string allow_origin = 1;
+    repeated string allow_origin = 1 [deprecated=true];
 
     // Specifies regex patterns that match origins that will be allowed to make
     // CORS requests.
     //
     // An origin is allowed if either allow_origin or allow_origin_regex match.
-    repeated string allow_origin_regex = 2;
+    repeated string allow_origin_regex = 2 [deprecated=true];
 
     // Specifies the content for the *access-control-allow-methods* header.
-    repeated string allow_methods = 3;
+    repeated string allow_methods = 3 [deprecated=true];
 
     // Specifies the content for the *access-control-allow-headers* header.
-    repeated string allow_headers = 4;
+    repeated string allow_headers = 4 [deprecated=true];
 
     // Specifies the content for the *access-control-expose-headers* header.
-    repeated string expose_headers = 5;
+    repeated string expose_headers = 5 [deprecated=true];
 
     // Specifies the content for the *access-control-max-age* header.
-    string max_age = 6;
+    string max_age = 6 [deprecated=true];
 
     // Specifies whether the resource allows credentials.
     bool allow_credentials = 7;

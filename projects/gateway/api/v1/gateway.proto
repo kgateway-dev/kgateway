@@ -26,28 +26,28 @@ message Gateway {
     option (core.solo.io.resource).plural_name = "gateways";
     // if set to false, only use virtual services with no ssl configured.
     // if set to true, only use virtual services with ssl configured.
-    bool ssl = 1;
+    bool ssl = 1 [deprecated=true];
 
     // names of the the virtual services, which contain the actual routes for the gateway
     // if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above).
-    repeated core.solo.io.ResourceRef virtual_services = 2 [(gogoproto.nullable) = false];
+    repeated core.solo.io.ResourceRef virtual_services = 2 [(gogoproto.nullable) = false, deprecated=true];
 
     // the bind address the gateway should serve traffic on
-    string bind_address = 3;
+    string bind_address = 3 [deprecated=true];
 
     // bind ports must not conflict across gateways in a namespace
-    uint32 bind_port = 4;
+    uint32 bind_port = 4 [deprecated=true];
 
     // top level plugin configuration for all routes on the gateway
-    gloo.solo.io.HttpListenerPlugins plugins = 5;
+    gloo.solo.io.HttpListenerPlugins plugins = 5 [deprecated=true];
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", deprecated=true];
 
     // Metadata contains the object metadata for this resource
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false, deprecated=true];
 
     // Enable ProxyProtocol support for this listener
-    google.protobuf.BoolValue use_proxy_proto = 8;
+    google.protobuf.BoolValue use_proxy_proto = 8 [deprecated=true];
 }
