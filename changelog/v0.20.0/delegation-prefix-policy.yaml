@@ -1,0 +1,4 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: require parent route prefix to be present in delegated routes
+    issueLink: https://github.com/solo-io/gloo/pull/1262
