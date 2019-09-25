@@ -11,6 +11,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
@@ -283,6 +284,9 @@ message Settings {
 
     // Enterprise-only: Settings for the rate limiting server itself
     ratelimit.plugins.gloo.solo.io.Settings ratelimit_server = 27;
+
+    // Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.)
+    rbac.plugins.gloo.solo.io.Settings rbac = 28;
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 14 [(gogoproto.nullable) = false];

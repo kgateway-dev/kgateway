@@ -53,7 +53,7 @@ A JWT principal. To use this, JWT plugin MUST be enabled.
 ### Principal
 
  
-An RBAC principal - the identity enitity (usually a user or a service account).
+An RBAC principal - the identity entity (usually a user or a service account).
 
 ```yaml
 "jwtPrincipal": .rbac.plugins.gloo.solo.io.JWTPrincipal

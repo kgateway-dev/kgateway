@@ -144,7 +144,7 @@ Allows copying verified claims to headers sent upstream
 | ----- | ---- | ----------- |----------- | 
 | `claim` | `string` | Claim name. for example, "sub". |  |
 | `header` | `string` | The header the claim will be copied to. for example, "x-sub". |  |
-| `append` | `bool` | If header exist, append to it, or set it. |  |
+| `append` | `bool` | If the header exists, append to it (true), or overwrite it (false). |  |
 
 
 

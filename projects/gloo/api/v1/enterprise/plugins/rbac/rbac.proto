@@ -8,7 +8,7 @@ option (gogoproto.equal_all) = true;
 // TODO: should we add standard claims to the jwt principal?
 
 // A JWT principal. To use this, JWT plugin MUST be enabled.
-message JWTPrincipal{
+message JWTPrincipal {
     // Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used.
     // all claims must be present on the JWT.
     map<string, string> claims = 1;
@@ -17,7 +17,7 @@ message JWTPrincipal{
     string provider = 2;
 }
 
-// An RBAC principal - the identity enitity (usually a user or a service account).
+// An RBAC principal - the identity entity (usually a user or a service account).
 message Principal {
     JWTPrincipal jwt_principal = 1;
 }

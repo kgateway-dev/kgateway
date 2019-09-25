@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Update enterprise API to have strongly-typed JWT & RBAC config; deprecated opaque extensions config still supported
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false
