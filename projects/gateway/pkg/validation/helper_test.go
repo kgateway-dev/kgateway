@@ -9,8 +9,8 @@ import (
 
 var _ = Describe("virtualServicesForRouteTable", func() {
 	It("retrieves all virtual services containing the given route table", func() {
-		vs, routeTables := samples.LinkedRouteTablesWithVirtualService("vs1", "a", "/", "/exact")
-		vs2, routeTables2 := samples.LinkedRouteTablesWithVirtualService("v2", "b", "/", "/exact")
+		vs, routeTables := samples.LinkedRouteTablesWithVirtualService("vs1", "a")
+		vs2, routeTables2 := samples.LinkedRouteTablesWithVirtualService("v2", "b")
 		vss := v1.VirtualServiceList{vs, vs2}
 		rtts := append(routeTables, routeTables2...)
 

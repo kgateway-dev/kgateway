@@ -305,6 +305,7 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 var (
 	missingPrefixErr    = errors.Errorf("invalid route: routes with delegate actions must specify a prefix matcher")
 	invalidPrefixErr    = errors.Errorf("invalid route: routes within the route table must begin with the prefix of their parent")
+	invalidMatcherErr   = errors.Errorf("invalid route: matcher cannot be missing")
 	hasHeaderMatcherErr = errors.Errorf("invalid route: routes with delegate actions cannot use header matchers")
 	hasMethodMatcherErr = errors.Errorf("invalid route: routes with delegate actions cannot use method matchers")
 	hasQueryMatcherErr  = errors.Errorf("invalid route: routes with delegate actions cannot use query matchers")
@@ -368,8 +369,14 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		}
 		route.RoutePlugins = merged
 
+		match := route.GetMatcher()
+		if match == nil {
+			resourceErrs.AddError(routingResource, invalidMatcherErr)
+			continue
+		}
+
 		// ensure all subroutes in the delegated route table match the parent prefix
-		if pathString := glooutils.PathAsString(route.GetMatcher()); !strings.HasPrefix(pathString, prefix) {
+		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, prefix) {
 			err = errors.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", prefix, pathString)
 			resourceErrs.AddError(routingResource, err)
 			continue

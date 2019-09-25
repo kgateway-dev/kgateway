@@ -97,7 +97,7 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegateChain(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[0].Metadata.Ref())
+				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[1].Metadata.Ref())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Deletion blocked because active Routes delegate to this Route Table. " +
 					"Remove delegate actions to this route table the virtual services: [] and the route tables: [{node-0 my-namespace}], then try again"))
@@ -112,7 +112,7 @@ var _ = Describe("Validator", func() {
 				snap.RouteTables[1].Routes = nil
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[0].Metadata.Ref())
+				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[len(snap.RouteTables)-1].Metadata.Ref())
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
