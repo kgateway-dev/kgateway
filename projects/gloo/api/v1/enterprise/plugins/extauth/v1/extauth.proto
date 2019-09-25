@@ -96,7 +96,8 @@ message VhostExtension {
 
 // Deprecated: use ExtAuthExtension
 message RouteExtension {
-  bool disable = 1 [deprecated=true];
+  option deprecated = true;
+  bool disable = 1;
 }
 
 message Settings {
@@ -199,8 +200,8 @@ message CustomAuth {
 // Configures auth via dynamically loaded Go plugins.
 // Deprecated
 message PluginAuth {
-  // Deprecated
-  repeated AuthPlugin plugins = 1 [deprecated=true];
+  option deprecated = true;
+  repeated AuthPlugin plugins = 1;
 }
 
 message AuthPlugin {

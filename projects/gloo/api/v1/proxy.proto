@@ -437,28 +437,29 @@ message DirectResponseAction {
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 // DEPRECATED set cors policy through the Virtual Host Plugin
 message CorsPolicy {
+    option deprecated = true;
     // Specifies the origins that will be allowed to make CORS requests.
     //
     // An origin is allowed if either allow_origin or allow_origin_regex match.
-    repeated string allow_origin = 1 [deprecated=true];
+    repeated string allow_origin = 1;
 
     // Specifies regex patterns that match origins that will be allowed to make
     // CORS requests.
     //
     // An origin is allowed if either allow_origin or allow_origin_regex match.
-    repeated string allow_origin_regex = 2 [deprecated=true];
+    repeated string allow_origin_regex = 2;
 
     // Specifies the content for the *access-control-allow-methods* header.
-    repeated string allow_methods = 3 [deprecated=true];
+    repeated string allow_methods = 3;
 
     // Specifies the content for the *access-control-allow-headers* header.
-    repeated string allow_headers = 4 [deprecated=true];
+    repeated string allow_headers = 4;
 
     // Specifies the content for the *access-control-expose-headers* header.
-    repeated string expose_headers = 5 [deprecated=true];
+    repeated string expose_headers = 5;
 
     // Specifies the content for the *access-control-max-age* header.
-    string max_age = 6 [deprecated=true];
+    string max_age = 6;
 
     // Specifies whether the resource allows credentials.
     bool allow_credentials = 7;

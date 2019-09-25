@@ -339,7 +339,7 @@ Deprecated
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `plugins` | [[]enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) | Deprecated. |  |
+| `plugins` | [[]enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  |  |
 
 
 
