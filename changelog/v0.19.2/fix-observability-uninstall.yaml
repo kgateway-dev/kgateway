@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Remove the grafana and prometheus pods on uninstall
+    issueLink: https://github.com/solo-io/solo-projects/issues/1157

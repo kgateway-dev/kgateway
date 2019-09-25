@@ -54,8 +54,10 @@ func deleteGlooSystem(cli install.KubeCli, namespace string) {
 	fmt.Printf("Removing Gloo system components from namespace %s...\n", namespace)
 	failedComponents := ""
 	for _, kind := range GlooSystemKinds {
-		if err := cli.Kubectl(nil, "delete", kind, "-l", "app=gloo", "-n", namespace); err != nil {
-			failedComponents += kind + " "
+		for _, appName := range []string{"gloo", "glooe-grafana", "glooe-prometheus"} {
+			if err := cli.Kubectl(nil, "delete", kind, "-l", fmt.Sprintf("app=%s", appName), "-n", namespace); err != nil {
+				failedComponents += kind + " "
+			}
 		}
 	}
 	if len(failedComponents) > 0 {
