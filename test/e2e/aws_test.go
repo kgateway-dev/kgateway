@@ -89,7 +89,7 @@ var _ = Describe("AWS Lambda", func() {
 							},
 						},
 						Region:    region,
-						SecretRef: secret.Metadata.Ref(),
+						SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
 					},
 				},
 			},

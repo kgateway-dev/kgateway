@@ -112,11 +112,11 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 		return nil, errors.New("not a lambda upstream spec")
 	}
 	lambdaSpec := awsspec.Aws
-	sess, err := awsutils.GetAwsSession(lambdaSpec.SecretRef, secrets, nil)
+	sess, err := awsutils.GetAwsSession(lambdaSpec.SecretRef, secrets, &aws.Config{Region: aws.String(lambdaSpec.Region)})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
 	}
-	svc := lambda.New(sess, &aws.Config{Region: aws.String(lambdaSpec.Region)})
+	svc := lambda.New(sess)
 
 	var newfunctions []*glooaws.LambdaFunctionSpec
 

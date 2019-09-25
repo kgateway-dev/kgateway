@@ -197,7 +197,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		spec.UpstreamType = &v1.UpstreamSpec_Aws{
 			Aws: &aws.UpstreamSpec{
 				Region:    input.Aws.Region,
-				SecretRef: input.Aws.Secret,
+				SecretRef: &input.Aws.Secret,
 			},
 		}
 	case options.UpstreamType_AwsEc2:

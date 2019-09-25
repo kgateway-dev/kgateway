@@ -74,7 +74,7 @@ var _ = Describe("Route", func() {
 				UpstreamType: &v1.UpstreamSpec_Aws{
 					Aws: &aws.UpstreamSpec{
 						Region: "some-region",
-						SecretRef: core.ResourceRef{
+						SecretRef: &core.ResourceRef{
 							Name:      "some-name",
 							Namespace: "some-ns",
 						},
