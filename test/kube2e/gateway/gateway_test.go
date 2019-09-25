@@ -440,8 +440,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				},
 			}
 
-			rt2 := getRouteTable("rt2", getRouteWithDest(dest, "/rt2"))
-			rt1 := getRouteTable("rt1", getRouteWithDelegate(rt2.Metadata.Name, "/rt1"))
+			rt2 := getRouteTable("rt2", getRouteWithDest(dest, "/root/rt1/rt2"))
+			rt1 := getRouteTable("rt1", getRouteWithDelegate(rt2.Metadata.Name, "/root/rt1"))
 			vs := getVirtualServiceWithRoute(addPrefixRewrite(getRouteWithDelegate(rt1.Metadata.Name, "/root"), "/"), nil)
 
 			_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
