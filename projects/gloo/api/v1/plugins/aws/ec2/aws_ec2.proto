@@ -37,7 +37,7 @@ message UpstreamSpec {
     // a role.
     string role_arn = 7;
     // deprecated: use role_arn. If you do use this field, only the first element will be read
-    repeated string role_arns = 6;
+    repeated string role_arns = 6 [deprecated=true];
 
     // List of tag filters for selecting instances
     // An instance must match all the filters in order to be selected

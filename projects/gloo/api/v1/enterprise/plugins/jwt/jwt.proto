@@ -57,7 +57,7 @@ message ClaimToHeader {
     string claim = 1;
     // The header the claim will be copied to. for example, "x-sub".
     string header = 2;
-    // If header exist, append to it, or set it.
+    // If the header exists, append to it (true), or overwrite it (false).
     bool append = 4;
 }
 
@@ -83,17 +83,17 @@ message VhostExtension {
     // The source for the keys to validate JWTs.
     //
     // Deprecated: this field is deprecated, use `providers` instead.
-    Jwks jwks = 1;
+    Jwks jwks = 1 [deprecated=true];
 
     // An incoming JWT must have an 'aud' claim and it must be in this list.
     //
     // Deprecated: this field is deprecated, use `providers` instead.
-    repeated string audiences = 2;
+    repeated string audiences = 2 [deprecated=true];
 
     // Issuer of the JWT. the 'iss' claim of the JWT must match this.
     //
     // Deprecated: this field is deprecated, use `providers` instead.
-    string issuer = 3;
+    string issuer = 3 [deprecated=true];
 
     // Auth providers can be used instead of the fields above where more than one is required.
     // if this list is provided the fields above are ignored.

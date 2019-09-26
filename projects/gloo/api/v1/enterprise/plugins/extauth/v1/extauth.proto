@@ -63,15 +63,15 @@ message VhostExtension {
   // Deprecated: use `configs` field instead.
   oneof auth_config {
     // Deprecated: use `configs` field instead.
-    BasicAuth basic_auth = 1;
+    BasicAuth basic_auth = 1 [deprecated=true];
     // Deprecated: use `configs` field instead.
-    OAuth oauth = 2;
+    OAuth oauth = 2 [deprecated=true];
     // Deprecated: use `configs` field instead.
-    CustomAuth custom_auth = 3;
+    CustomAuth custom_auth = 3 [deprecated=true];
     // Deprecated: use `configs` field instead.
-    ApiKeyAuth api_key_auth = 4;
+    ApiKeyAuth api_key_auth = 4 [deprecated=true];
     // Deprecated: use `configs` field instead.
-    PluginAuth plugin_auth = 5;
+    PluginAuth plugin_auth = 5 [deprecated=true];
   }
 
   message AuthConfig {
@@ -96,6 +96,7 @@ message VhostExtension {
 
 // Deprecated: use ExtAuthExtension
 message RouteExtension {
+  option deprecated = true;
   bool disable = 1;
 }
 
@@ -199,7 +200,7 @@ message CustomAuth {
 // Configures auth via dynamically loaded Go plugins.
 // Deprecated
 message PluginAuth {
-  // Deprecated
+  option deprecated = true;
   repeated AuthPlugin plugins = 1;
 }
 
@@ -334,7 +335,7 @@ message ExtAuthConfig {
   string auth_config_ref_name = 1;
 
   // Deprecated: use auth_config_ref_name instead
-  string vhost = 2;
+  string vhost = 2 [deprecated=true];
 
   message OAuthConfig {
     // your client id as registered with the issuer
@@ -377,10 +378,10 @@ message ExtAuthConfig {
 
   // Deprecated
   oneof auth_config {
-    OAuthConfig oauth = 3;
-    BasicAuth basic_auth = 4;
-    ApiKeyAuthConfig api_key_auth = 5;
-    PluginAuth plugin_auth = 6;
+    OAuthConfig oauth = 3 [deprecated=true];
+    BasicAuth basic_auth = 4 [deprecated=true];
+    ApiKeyAuthConfig api_key_auth = 5 [deprecated=true];
+    PluginAuth plugin_auth = 6 [deprecated=true];
   }
 
   message Config {

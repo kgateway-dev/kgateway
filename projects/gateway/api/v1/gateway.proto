@@ -21,7 +21,7 @@ A gateway describes the routes to upstreams that are reachable via a specific po
 Deprecated: see gateway.solo.io.v2.Gateway
 */
 message Gateway {
-
+    option deprecated = true;
     option (core.solo.io.resource).short_name = "gw";
     option (core.solo.io.resource).plural_name = "gateways";
     // if set to false, only use virtual services with no ssl configured.

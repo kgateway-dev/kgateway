@@ -74,7 +74,7 @@ func (m *JWTPrincipal) GetProvider() string {
 	return ""
 }
 
-// An RBAC principal - the identity enitity (usually a user or a service account).
+// An RBAC principal - the identity entity (usually a user or a service account).
 type Principal struct {
 	JwtPrincipal         *JWTPrincipal `protobuf:"bytes,1,opt,name=jwt_principal,json=jwtPrincipal,proto3" json:"jwt_principal,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`

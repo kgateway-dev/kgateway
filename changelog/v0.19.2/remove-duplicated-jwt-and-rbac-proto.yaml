@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Remove duplicated jwt and rbac proto
+    issueLink: https://github.com/solo-io/gloo/issues/1258

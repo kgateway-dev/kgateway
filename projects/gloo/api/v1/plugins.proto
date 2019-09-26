@@ -105,6 +105,11 @@ message VirtualHostPlugins {
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
     // the popular ModSecurity 3.0 ruleset
     waf.plugins.gloo.solo.io.VhostSettings waf = 8;
+    // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
+    // headers to make routing decisions or combine with RBAC for fine-grained access control.
+    jwt.plugins.gloo.solo.io.VhostExtension jwt = 9;
+    // Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims)
+    rbac.plugins.gloo.solo.io.VhostExtension rbac = 11;
 }
 
 // Plugin-specific configuration that lives on routes
@@ -149,6 +154,11 @@ message RoutePlugins {
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
     // the popular ModSecurity 3.0 ruleset
     waf.plugins.gloo.solo.io.RouteSettings waf = 15;
+    // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
+    // headers to make routing decisions or combine with RBAC for fine-grained access control.
+    jwt.plugins.gloo.solo.io.RouteExtension jwt = 16;
+    // Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims)
+    rbac.plugins.gloo.solo.io.RouteExtension rbac = 17;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination

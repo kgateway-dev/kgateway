@@ -150,7 +150,7 @@ message VirtualHost {
     // Defines a CORS policy for the virtual host
     // If a CORS policy is also defined on the route matched by the request, the policies are merged.
     // DEPRECATED set cors policy through the Virtual Host Plugin
-    CorsPolicy cors_policy = 5;
+    CorsPolicy cors_policy = 5 [deprecated=true];
 }
 
 /**
@@ -437,6 +437,7 @@ message DirectResponseAction {
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 // DEPRECATED set cors policy through the Virtual Host Plugin
 message CorsPolicy {
+    option deprecated = true;
     // Specifies the origins that will be allowed to make CORS requests.
     //
     // An origin is allowed if either allow_origin or allow_origin_regex match.

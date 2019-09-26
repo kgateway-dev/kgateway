@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Mark deprecated protos and proto fields as deprecated to get IDE strikethrough
+    issueLink: https://github.com/solo-io/gloo/issues/1260

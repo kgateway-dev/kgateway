@@ -55,6 +55,7 @@ func (r *Settings) Hash() uint64 {
 		r.Extensions,
 		r.RatelimitDescriptors,
 		r.RatelimitServer,
+		r.Rbac,
 		r.ConfigSource,
 		r.SecretSource,
 		r.ArtifactSource,
