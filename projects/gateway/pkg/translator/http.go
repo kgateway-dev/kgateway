@@ -356,18 +356,18 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 	plugins := route.GetRoutePlugins()
 
 	var delegatedRoutes []*gloov1.Route
-	for _, route := range routeTable.Routes {
+	for _, routeTableRoute := range routeTable.Routes {
 		// clone route since we mutate
-		route := proto.Clone(route).(*v1.Route)
+		routeTableRoute := proto.Clone(routeTableRoute).(*v1.Route)
 
-		merged, err := mergeRoutePlugins(route.GetRoutePlugins(), plugins)
+		merged, err := mergeRoutePlugins(routeTableRoute.GetRoutePlugins(), plugins)
 		if err != nil {
 			// should never happen
 			return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
 		}
-		route.RoutePlugins = merged
+		routeTableRoute.RoutePlugins = merged
 
-		match := route.GetMatcher()
+		match := routeTableRoute.GetMatcher()
 		if match == nil {
 			resourceErrs.AddError(routingResource, invalidMatcherErr)
 			continue
@@ -380,14 +380,11 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 			continue
 		}
 
-		subRoutes, err := subRv.convertRoute(routeTable, route, resourceErrs)
+		subRoutes, err := subRv.convertRoute(routeTable, routeTableRoute, resourceErrs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "converting sub-route")
 		}
 		for _, sub := range subRoutes {
-			if sub.RoutePlugins == nil {
-				sub.RoutePlugins = proto.Clone(route.RoutePlugins).(*gloov1.RoutePlugins)
-			}
 			if err := appendSource(sub, routeTable); err != nil {
 				// should never happen
 				return nil, err
