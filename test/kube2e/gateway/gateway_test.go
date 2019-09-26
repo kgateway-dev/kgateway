@@ -176,7 +176,14 @@ var _ = Describe("Kube2e: gateway", func() {
 				return nil, err
 			}
 
-			return pods.Items, nil
+			var runningPods []corev1.Pod
+			for _, pod := range pods.Items {
+				// the test runner itself is a pod in the namespace- we don't expect that one to be deleted
+				if pod.ObjectMeta.Name != "testrunner" {
+					runningPods = append(runningPods, pod)
+				}
+			}
+			return runningPods, nil
 		}, time.Minute, time.Second).Should(BeEmpty(), "There should be no pods remaining after running glooctl uninstall")
 	})
 
