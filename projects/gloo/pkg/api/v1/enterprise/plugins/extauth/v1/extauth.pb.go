@@ -640,12 +640,12 @@ func (m *RouteExtension) GetDisable() bool {
 type Settings struct {
 	// The upstream to ask about auth decisions
 	ExtauthzServerRef *core.ResourceRef `protobuf:"bytes,1,opt,name=extauthz_server_ref,json=extauthzServerRef,proto3" json:"extauthz_server_ref,omitempty"`
-	// If this is set, communication to the upstream will be with HTTP and not GRPC.
+	// If this is set, communication to the upstream will be via HTTP and not GRPC.
 	HttpService *HttpService `protobuf:"bytes,2,opt,name=http_service,json=httpService,proto3" json:"http_service,omitempty"`
 	// If the auth server trusted id of the user, it will be set in this header.
 	// Specifically this means that this header will be sanitized form the incoming request.
 	UserIdHeader string `protobuf:"bytes,3,opt,name=user_id_header,json=userIdHeader,proto3" json:"user_id_header,omitempty"`
-	// Timeout for the ext auth service to respond. defaults to 200ms
+	// Timeout for the ext auth service to respond. Defaults to 200ms
 	RequestTimeout *time.Duration `protobuf:"bytes,4,opt,name=request_timeout,json=requestTimeout,proto3,stdduration" json:"request_timeout,omitempty"`
 	// In case of a failure or timeout querying the auth server, normally a request is denied.
 	// if this is set to true, the request will be allowed.

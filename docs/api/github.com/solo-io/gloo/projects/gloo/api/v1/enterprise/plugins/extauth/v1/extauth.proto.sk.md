@@ -218,9 +218,9 @@ Deprecated: use ExtAuthExtension
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `extauthzServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to ask about auth decisions. |  |
-| `httpService` | [.enterprise.gloo.solo.io.HttpService](../extauth.proto.sk#httpservice) | If this is set, communication to the upstream will be with HTTP and not GRPC. |  |
+| `httpService` | [.enterprise.gloo.solo.io.HttpService](../extauth.proto.sk#httpservice) | If this is set, communication to the upstream will be via HTTP and not GRPC. |  |
 | `userIdHeader` | `string` | If the auth server trusted id of the user, it will be set in this header. Specifically this means that this header will be sanitized form the incoming request. |  |
-| `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the ext auth service to respond. defaults to 200ms. |  |
+| `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the ext auth service to respond. Defaults to 200ms. |  |
 | `failureModeAllow` | `bool` | In case of a failure or timeout querying the auth server, normally a request is denied. if this is set to true, the request will be allowed. |  |
 | `requestBody` | [.enterprise.gloo.solo.io.BufferSettings](../extauth.proto.sk#buffersettings) | Set this if you also want to send the body of the request, and not just the headers. |  |
 | `clearRouteCache` | `bool` | Clears route cache in order to allow the external authorization service to correctly affect routing decisions. Filter clears all cached routes when: 1. The field is set to *true*. 2. The status returned from the authorization service is a HTTP 200 or gRPC 0. 3. At least one *authorization response header* is added to the client request, or is used for altering another client request header. |  |

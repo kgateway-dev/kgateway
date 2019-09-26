@@ -117,6 +117,7 @@ to be usable by Gloo.
 "waf": .waf.plugins.gloo.solo.io.VhostSettings
 "jwt": .jwt.plugins.gloo.solo.io.VhostExtension
 "rbac": .rbac.plugins.gloo.solo.io.VhostExtension
+"extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 
 ```
 
@@ -133,6 +134,7 @@ to be usable by Gloo.
 | `waf` | [.waf.plugins.gloo.solo.io.VhostSettings](../enterprise/plugins/waf/waf.proto.sk#vhostsettings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/jwt/jwt.proto.sk#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
 | `rbac` | [.rbac.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/rbac/rbac.proto.sk#vhostextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
 
@@ -164,6 +166,7 @@ to be usable by Gloo.
 "waf": .waf.plugins.gloo.solo.io.RouteSettings
 "jwt": .jwt.plugins.gloo.solo.io.RouteExtension
 "rbac": .rbac.plugins.gloo.solo.io.RouteExtension
+"extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 
 ```
 
@@ -186,6 +189,7 @@ to be usable by Gloo.
 | `waf` | [.waf.plugins.gloo.solo.io.RouteSettings](../enterprise/plugins/waf/waf.proto.sk#routesettings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/jwt/jwt.proto.sk#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
 | `rbac` | [.rbac.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/rbac/rbac.proto.sk#routeextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
 
@@ -225,6 +229,7 @@ is selected for routing.
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
 "extensions": .gloo.solo.io.Extensions
+"extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 
 ```
 
@@ -233,6 +238,7 @@ is selected for routing.
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination. |  |
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
+| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
 

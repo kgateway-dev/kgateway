@@ -103,14 +103,15 @@ message RouteExtension {
 message Settings {
   // The upstream to ask about auth decisions
   core.solo.io.ResourceRef extauthz_server_ref = 1;
-  // If this is set, communication to the upstream will be with HTTP and not GRPC.
+
+  // If this is set, communication to the upstream will be via HTTP and not GRPC.
   HttpService http_service = 2;
 
   // If the auth server trusted id of the user, it will be set in this header.
   // Specifically this means that this header will be sanitized form the incoming request.
   string user_id_header = 3;
 
-  // Timeout for the ext auth service to respond. defaults to 200ms
+  // Timeout for the ext auth service to respond. Defaults to 200ms
   google.protobuf.Duration request_timeout = 4 [(gogoproto.stdduration) = true];
 
   // In case of a failure or timeout querying the auth server, normally a request is denied.
