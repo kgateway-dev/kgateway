@@ -31,10 +31,10 @@ type Dependencies struct {
 type UpstreamFunctionDiscovery interface {
 	// if this returns true we can skip DetectUpstreamType and go straight to DetectFunctions
 	// if this returns false we should call detect upstream type.
-	// if detect upstream type retrurns true, we have the type!
+	// if detect upstream type returns true, we have the type!
 	// if it returns false and nil error, it means it was detected to not be of this type -
-	// ideally this means that this detector will no longer be used with this upstream. in practice this can be logged\ignored.
-	// if it returns false and some error, try again later with back-off \ timeout.
+	// ideally this means that this detector will no longer be used with this upstream. in practice this can be logged/ignored.
+	// if it returns false and some error, try again later with back-off/timeout.
 	IsFunctional() bool
 
 	// Returns
@@ -43,14 +43,14 @@ type UpstreamFunctionDiscovery interface {
 	// url is never nil
 	DetectType(ctx context.Context, url *url.URL) (*plugins.ServiceSpec, error)
 
-	// url maybe nil if it couldnt be resolved
+	// url maybe nil if it couldn't be resolved
 	DetectFunctions(ctx context.Context, url *url.URL, dependencies func() Dependencies, out func(UpstreamMutator) error) error
 }
 
 type Resolver interface {
 	/*
-		tcp if not known
-		http \ https if known or perhaps nats?
+		TCP if not known
+		HTTP/HTTPS if known or perhaps NATS?
 	*/
 	Resolve(us *v1.Upstream) (*url.URL, error)
 }
@@ -75,4 +75,4 @@ func (resolvers Resolvers) Resolve(us *v1.Upstream) (*url.URL, error) {
 
 // flow:
 // upstream type: aws
-// detector type: swagger (can only be used with upstreams that have a url that's resolavable)
+// detector type: swagger (can only be used with upstreams that have a url that's resolvable)

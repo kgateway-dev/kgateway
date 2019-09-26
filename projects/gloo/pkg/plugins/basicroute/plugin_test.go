@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
 )
@@ -28,9 +27,7 @@ var _ = Describe("prefix rewrite", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
-				PrefixRewrite: &transformation.PrefixRewrite{
-					PrefixRewrite: "/foo",
-				},
+				PrefixRewrite: "/foo",
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
@@ -108,5 +105,55 @@ var _ = Describe("retries", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.RetryPolicy).To(Equal(expectedRetryPolicy))
+	})
+})
+
+var _ = Describe("host rewrite", func() {
+	It("rewrites using provided string", func() {
+
+		p := NewPlugin()
+		routeAction := &envoyroute.RouteAction{
+			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite:"/"},
+		}
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{
+				HostRewriteType: &v1.RoutePlugins_HostRewrite{HostRewrite:"/foo"},
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.GetHostRewrite()).To(Equal("/foo"))
+	})
+
+	It("sets auto_host_rewrite", func() {
+
+		p := NewPlugin()
+		routeAction := &envoyroute.RouteAction{
+			HostRewriteSpecifier: &envoyroute.RouteAction_AutoHostRewrite{
+				AutoHostRewrite: &types.BoolValue{
+					Value: false,
+				},
+			},
+		}
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{
+				HostRewriteType: &v1.RoutePlugins_AutoHostRewrite{
+					AutoHostRewrite: &types.BoolValue{
+						Value: true,
+					},
+				},
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
 	})
 })

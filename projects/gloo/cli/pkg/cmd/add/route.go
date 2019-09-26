@@ -201,9 +201,7 @@ func pluginsFromInput(input options.RoutePlugins) (*v1.RoutePlugins, error) {
 		return nil, nil
 	}
 	return &v1.RoutePlugins{
-		PrefixRewrite: &transformation.PrefixRewrite{
-			PrefixRewrite: *input.PrefixRewrite.Value,
-		},
+		PrefixRewrite: *input.PrefixRewrite.Value,
 	}, nil
 }
 

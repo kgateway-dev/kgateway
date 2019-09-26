@@ -25,7 +25,6 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // if set, prefix_rewrite will be used to rewrite the matched HTTP Path prefix on requests to this value.
 type PrefixRewrite struct {
-	// Set to an empty string to remove the matched HTTP Path prefix
 	PrefixRewrite        string   `protobuf:"bytes,1,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

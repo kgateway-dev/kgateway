@@ -9,7 +9,7 @@ option (gogoproto.equal_all) = true;
 import "google/protobuf/wrappers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto";
 
-// Static upstreams are used to route request to services listening at fixed IP/Addresses.
+// Static upstreams are used to route request to services listening at fixed IP/Host & Port pairs.
 // Static upstreams can be used to proxy any kind of service, and therefore contain a ServiceSpec
 // for additional service-specific configuration.
 // Unlike upstreams created by service discovery, Static Upstreams must be created manually by users
@@ -21,13 +21,6 @@ message UpstreamSpec {
     // Attempt to use outbound TLS
     // Gloo will automatically set this to true for port 443
     bool use_tls = 3;
-
-    // Enable \ Disable auto host re-write.
-    // If not set, the default behavior is to enable auto host rewrite, if the first host in the
-    // list is not an IP address (i.e. it is a DNS address)
-    // If enabled (explicitly or by the default) auto_host_rewrite will be automatically added
-    // to routes that point to this upstream.
-    google.protobuf.BoolValue auto_host_rewrite = 6;
 
     // An optional Service Spec describing the service listening at this address
     .plugins.gloo.solo.io.ServiceSpec service_spec = 5;
