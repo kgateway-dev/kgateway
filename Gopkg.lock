@@ -2723,7 +2723,6 @@
     "github.com/hashicorp/vault/api",
     "github.com/helm/helm/pkg/hooks",
     "github.com/hinshun/vt10x",
-    "github.com/imdario/mergo",
     "github.com/inconshreveable/go-update",
     "github.com/jhump/protoreflect/desc",
     "github.com/jhump/protoreflect/grpcreflect",
