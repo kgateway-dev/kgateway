@@ -99,7 +99,6 @@ metadata:
   namespace: 'a'
 spec:
   routes:
-
     - matcher:
         # the path matchers in this RouteTable must begin with the prefix `/a/`
         prefix: '/a/1'
@@ -167,10 +166,10 @@ spec:
 Would produce the following route config for `mydomain.com`:
 
 ```
-/a/1 -> foo-svc
-/a/2 -> bar-svc
-/b/3 -> baz-svc
-/b/c/4 -> qux-svc
+/a/1 -> foo-upstream
+/a/2 -> bar-upstream
+/b/3 -> baz-upstream
+/b/c/4 -> qux-upstream
 ```
 
 ```yaml

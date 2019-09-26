@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/imdario/mergo"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -399,14 +397,4 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 	}
 
 	return delegatedRoutes, nil
-}
-
-func mergeRoutePlugins(dst, src *gloov1.RoutePlugins) (*gloov1.RoutePlugins, error) {
-	if src == nil {
-		return dst, nil
-	}
-	if dst != nil {
-		return dst, mergo.Merge(dst, *src)
-	}
-	return proto.Clone(src).(*gloov1.RoutePlugins), nil
 }

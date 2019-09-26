@@ -178,7 +178,7 @@ A route specifies how to match a request and what action to take when the reques
 
 
 When a request matches on a route, the route can perform one of the following actions:
-- *Route* the request to an Upstream Endpoint
+- *Route* the request to a destination
 - Reply with a *Direct Response*
 - Send a *Redirect* response to the client
 - *Delegate* the action for the request to a top-level [`RouteTable`]({{< ref "/v1/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resource
