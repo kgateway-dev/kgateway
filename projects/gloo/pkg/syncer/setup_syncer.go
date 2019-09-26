@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
@@ -386,7 +386,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	params := TranslatorSyncerExtensionParams{
 		SettingExtensions: opts.Settings.Extensions,
 		RateLimitDescriptorSettings: ratelimit.EnvoySettings{
-			CustomConfig: opts.Settings.GetRatelimitDescriptors().GetCustomConfig(),
+			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
 		},
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {

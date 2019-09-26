@@ -3,7 +3,7 @@ package syncer
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
 
 	"github.com/hashicorp/go-multierror"
 
