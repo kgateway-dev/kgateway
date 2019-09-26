@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/testutils/exec"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 
@@ -151,6 +155,29 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
+	})
+
+	It("removes all pods when uninstalled", func() {
+		kubeInterface := kube2e.MustKubeClient().CoreV1()
+		installedPods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
+		Expect(err).NotTo(HaveOccurred(), "Should be able to read pods in the namespace")
+		Expect(installedPods.Items).NotTo(BeEmpty(), "Should have a nonzero number of pods in the namespace")
+
+		cmdArgs := []string{
+			filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName), "uninstall", "-n", testHelper.InstallNamespace,
+		}
+
+		err = exec.RunCommand(testHelper.RootDir, true, cmdArgs...)
+		Expect(err).NotTo(HaveOccurred(), "The uninstall should be clean")
+
+		Eventually(func() ([]corev1.Pod, error) {
+			pods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
+			if err != nil {
+				return nil, err
+			}
+
+			return pods.Items, nil
+		}, time.Minute, time.Second).Should(BeEmpty(), "There should be no pods remaining after running glooctl uninstall")
 	})
 
 	Context("tests with virtual service", func() {
