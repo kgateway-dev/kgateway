@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    The default version of GlooE installed by the CLI is now 0.19.0.
+  issueLink: https://github.com/solo-io/gloo/issues/1272
