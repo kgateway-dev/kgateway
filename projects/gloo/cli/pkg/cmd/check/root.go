@@ -130,7 +130,8 @@ func checkDeployments(opts *options.Options) (bool, error) {
 
 	for _, deployment := range deployments.Items {
 		// possible condition types listed at https://godoc.org/k8s.io/api/apps/v1#DeploymentConditionType
-		// check for each condition independently because multiple conditions will be True
+		// check for each condition independently because multiple conditions will be True and DeploymentReplicaFailure
+		// tends to provide the most explicit error message.
 		for _, condition := range deployment.Status.Conditions {
 			setMessage(condition)
 			if condition.Type == appsv1.DeploymentReplicaFailure && condition.Status == corev1.ConditionTrue {
@@ -167,7 +168,9 @@ func checkDeployments(opts *options.Options) (bool, error) {
 		}
 
 		for _, condition := range deployment.Status.Conditions {
-			if condition.Type != appsv1.DeploymentAvailable && condition.Type != appsv1.DeploymentReplicaFailure && condition.Type != appsv1.DeploymentProgressing {
+			if condition.Type != appsv1.DeploymentAvailable &&
+				condition.Type != appsv1.DeploymentReplicaFailure &&
+				condition.Type != appsv1.DeploymentProgressing {
 				fmt.Printf("Note: Unhandled deployment condition %s", condition.Type)
 			}
 		}
