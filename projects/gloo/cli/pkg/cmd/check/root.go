@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -51,7 +52,11 @@ func CheckResources(opts *options.Options) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ok, err := checkPods(opts)
+	ok, err := checkDeployments(opts)
+	if !ok || err != nil {
+		return ok, err
+	}
+	ok, err = checkPods(opts)
 	if !ok || err != nil {
 		return ok, err
 	}
@@ -98,21 +103,65 @@ func CheckResources(opts *options.Options) (bool, error) {
 	return true, nil
 }
 
-func checkPods(opts *options.Options) (bool, error) {
-	fmt.Printf("Checking pods... ")
+func checkDeployments(opts *options.Options) (bool, error) {
+	fmt.Printf("Checking deployments... ")
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
 	if err != nil {
 		fmt.Printf("Gloo namespace does not exist\n")
 		return false, err
 	}
-	pods, err := client.CoreV1().Pods(opts.Metadata.Namespace).List(metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return false, err
 	}
-	if len(pods.Items) == 0 {
+	if len(deployments.Items) == 0 {
 		fmt.Printf("Gloo is not installed\n")
 		return false, nil
+	}
+	for _, deployment := range deployments.Items {
+		for _, condition := range deployment.Status.Conditions {
+			var errorToPrint string
+			var message string
+
+			if condition.Message != "" {
+				message = fmt.Sprintf(" Message: %s", condition.Message)
+			}
+			// possible condition types listed at https://godoc.org/k8s.io/api/apps/v1#DeploymentConditionType
+			switch condition.Type {
+			case appsv1.DeploymentAvailable:
+				if condition.Status != corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Deployment %s in namespace %s is not yet available!%s\n", deployment.Name, deployment.Namespace, message)
+				}
+			case appsv1.DeploymentProgressing:
+				if condition.Status != corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Deployment %s in namespace %s is not progressing!%s\n", deployment.Name, deployment.Namespace, message)
+				}
+			case appsv1.DeploymentReplicaFailure:
+				if condition.Status == corev1.ConditionTrue {
+					errorToPrint = fmt.Sprintf("Deployment %s in namespace %s failed to create pods!%s\n", deployment.Name, deployment.Namespace, message)
+				}
+			default:
+				fmt.Printf("Note: Unhandled deployment condition %s", condition.Type)
+			}
+
+			if errorToPrint != "" {
+				fmt.Print(errorToPrint)
+				return false, err
+			}
+
+		}
+	}
+	fmt.Printf("OK\n")
+	return true, nil
+}
+
+func checkPods(opts *options.Options) (bool, error) {
+	fmt.Printf("Checking pods... ")
+	client := helpers.MustKubeClient()
+	pods, err := client.CoreV1().Pods(opts.Metadata.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return false, err
 	}
 	for _, pod := range pods.Items {
 		for _, condition := range pod.Status.Conditions {
