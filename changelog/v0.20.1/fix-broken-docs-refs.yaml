@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Update broken links referencing `/v1` instead of `/api` as the API docs root.
