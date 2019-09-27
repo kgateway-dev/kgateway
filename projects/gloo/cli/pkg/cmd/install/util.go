@@ -170,6 +170,9 @@ func getGlooVersion(opts *options.Options) (string, error) {
 		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")
 	}
+	if opts.Install.WithUi {
+		return version.EnterpriseTag, nil
+	}
 	return version.Version, nil
 }
 

@@ -30,7 +30,7 @@ func GetResource(uri string) (io.ReadCloser, error) {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.Errorf("http GET returned status %d", resp.StatusCode)
+			return nil, errors.Errorf("http GET returned status %d for resource %s", resp.StatusCode, uri)
 		}
 
 		file = resp.Body
