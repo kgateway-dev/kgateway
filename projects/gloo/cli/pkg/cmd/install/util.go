@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/errors"
 	"os"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
@@ -11,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/go-utils/errors"
 )
 
 var (
@@ -138,6 +138,16 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 	var extraValues map[string]interface{}
 	if opts.Install.Upgrade {
 		extraValues = map[string]interface{}{"gateway": map[string]interface{}{"upgrade": true}}
+	} else if opts.Install.WithUi {
+		// need to make sure the ns is created when installing UI via passing this extra
+		// value through
+		extraValues = map[string]interface{}{
+			"gloo": map[string]interface{}{
+				"namespace": map[string]interface{}{
+					"create": "true",
+				},
+			},
+		}
 	}
 	var valueCallbacks []install.ValuesCallback
 	if opts.Install.Knative.InstallKnativeVersion != "" {
@@ -166,12 +176,12 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 }
 
 func getGlooVersion(opts *options.Options) (string, error) {
+	if opts.Install.WithUi {
+		return version.EnterpriseTag, nil
+	}
 	if !version.IsReleaseVersion() && opts.Install.HelmChartOverride == "" {
 		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")
-	}
-	if opts.Install.WithUi {
-		return version.EnterpriseTag, nil
 	}
 	return version.Version, nil
 }

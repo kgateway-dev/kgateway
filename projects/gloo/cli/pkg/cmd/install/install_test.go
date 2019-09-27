@@ -59,4 +59,9 @@ var _ = Describe("Install", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("installing gloo in gateway mode: retrieving gloo helm chart archive: opening file"))
 	})
+
+	It("should not error when providing the admin console flag", func() {
+		_, err := testutils.GlooctlOut("install gateway --dry-run --with-admin-console")
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
