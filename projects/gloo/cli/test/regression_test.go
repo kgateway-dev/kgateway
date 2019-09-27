@@ -43,7 +43,7 @@ var _ = Describe("Regression", func() {
 		preRunFuncs := []cmd.PreRunFunc{
 			prerun.HarmonizeDryRunAndOutputFormat,
 		}
-		app = cmd.App("0.1.0", opts, preRunFuncs)
+		app = cmd.App(opts, preRunFuncs)
 		output = &bytes.Buffer{}
 		app.SetOutput(output)
 	})

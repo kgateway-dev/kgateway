@@ -11,7 +11,7 @@ import (
 
 func main() {
 	check.NewUsageClient().Start("glooctl", version.Version)
-	app := cmd.GlooCli(version.Version)
+	app := cmd.GlooCli()
 	if err := app.Execute(); err != nil {
 		//fmt.Println(err)
 		os.Exit(1)
