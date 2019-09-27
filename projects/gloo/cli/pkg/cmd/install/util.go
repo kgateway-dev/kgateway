@@ -2,8 +2,9 @@ package install
 
 import (
 	"fmt"
-	"github.com/solo-io/go-utils/errors"
 	"os"
+
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
 
