@@ -61,7 +61,8 @@ var _ = Describe("Install", func() {
 	})
 
 	It("should not error when providing the admin console flag", func() {
-		_, err := testutils.GlooctlOut("install gateway --dry-run --with-admin-console")
+		out, err := testutils.GlooctlOut("install gateway --dry-run --with-admin-console")
 		Expect(err).NotTo(HaveOccurred())
+		Expect(out).To(ContainSubstring("kind: Namespace"))
 	})
 })
