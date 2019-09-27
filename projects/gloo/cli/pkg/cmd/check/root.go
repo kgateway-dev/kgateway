@@ -119,37 +119,57 @@ func checkDeployments(opts *options.Options) (bool, error) {
 		fmt.Printf("Gloo is not installed\n")
 		return false, nil
 	}
-	for _, deployment := range deployments.Items {
-		for _, condition := range deployment.Status.Conditions {
-			var errorToPrint string
-			var message string
 
-			if condition.Message != "" {
-				message = fmt.Sprintf(" Message: %s", condition.Message)
+	var errorToPrint string
+	var message string
+	setMessage := func(c appsv1.DeploymentCondition) {
+		if c.Message != "" {
+			message = fmt.Sprintf(" Message: %s", c.Message)
+		}
+	}
+
+	for _, deployment := range deployments.Items {
+		// possible condition types listed at https://godoc.org/k8s.io/api/apps/v1#DeploymentConditionType
+		// check for each condition independently because multiple conditions will be True
+		for _, condition := range deployment.Status.Conditions {
+			setMessage(condition)
+			if condition.Type == appsv1.DeploymentReplicaFailure && condition.Status == corev1.ConditionTrue {
+				errorToPrint = fmt.Sprintf("Deployment %s in namespace %s failed to create pods!%s\n", deployment.Name, deployment.Namespace, message)
 			}
-			// possible condition types listed at https://godoc.org/k8s.io/api/apps/v1#DeploymentConditionType
-			switch condition.Type {
-			case appsv1.DeploymentAvailable:
-				if condition.Status != corev1.ConditionTrue {
-					errorToPrint = fmt.Sprintf("Deployment %s in namespace %s is not yet available!%s\n", deployment.Name, deployment.Namespace, message)
-				}
-			case appsv1.DeploymentProgressing:
-				if condition.Status != corev1.ConditionTrue {
-					errorToPrint = fmt.Sprintf("Deployment %s in namespace %s is not progressing!%s\n", deployment.Name, deployment.Namespace, message)
-				}
-			case appsv1.DeploymentReplicaFailure:
-				if condition.Status == corev1.ConditionTrue {
-					errorToPrint = fmt.Sprintf("Deployment %s in namespace %s failed to create pods!%s\n", deployment.Name, deployment.Namespace, message)
-				}
-			default:
-				fmt.Printf("Note: Unhandled deployment condition %s", condition.Type)
+			if errorToPrint != "" {
+				fmt.Print(errorToPrint)
+				return false, err
+			}
+		}
+
+		for _, condition := range deployment.Status.Conditions {
+			setMessage(condition)
+			if condition.Type == appsv1.DeploymentProgressing && condition.Status != corev1.ConditionTrue {
+				errorToPrint = fmt.Sprintf("Deployment %s in namespace %s is not progressing!%s\n", deployment.Name, deployment.Namespace, message)
 			}
 
 			if errorToPrint != "" {
 				fmt.Print(errorToPrint)
 				return false, err
 			}
+		}
 
+		for _, condition := range deployment.Status.Conditions {
+			setMessage(condition)
+			if condition.Type == appsv1.DeploymentAvailable && condition.Status != corev1.ConditionTrue {
+				errorToPrint = fmt.Sprintf("Deployment %s in namespace %s is not available!%s\n", deployment.Name, deployment.Namespace, message)
+			}
+
+			if errorToPrint != "" {
+				fmt.Print(errorToPrint)
+				return false, err
+			}
+		}
+
+		for _, condition := range deployment.Status.Conditions {
+			if condition.Type != appsv1.DeploymentAvailable && condition.Type != appsv1.DeploymentReplicaFailure && condition.Type != appsv1.DeploymentProgressing {
+				fmt.Printf("Note: Unhandled deployment condition %s", condition.Type)
+			}
 		}
 	}
 	fmt.Printf("OK\n")
