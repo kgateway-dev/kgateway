@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("Metrics merger", func() {
 	var (
-		usageMerger             UsageMerger
+		usageMerger             *UsageMerger
 		currentTime             = time.Date(2019, 4, 20, 16, 20, 0, 0, time.UTC)
 		testCurrentTimeProvider = func() time.Time {
 			return currentTime

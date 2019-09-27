@@ -6,14 +6,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/go-utils/kubeutils"
+
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeclient "k8s.io/client-go/kubernetes"
 	k8s "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-//go:generate mockgen -destination mocks/mock_storage.go -package mocks github.com/solo-io/gloo/projects/metrics/pkg/metricsservice Storage
+//go:generate mockgen -destination mocks/mock_storage.go -package mocks github.com/solo-io/gloo/projects/metrics/pkg/metricsservice StorageClient
 
-type Storage interface {
+type StorageClient interface {
 	RecordUsage(ctx context.Context, usage *GlobalUsage) error
 	GetUsage(ctx context.Context) (*GlobalUsage, error)
 }
@@ -35,17 +38,16 @@ type GlobalUsage struct {
 	EnvoyIdToUsage map[string]*EnvoyUsage
 }
 
-type configMapStorage struct {
-	configMapClient     k8s.ConfigMapInterface
-	podNamespace        string
-	currentTimeProvider CurrentTimeProvider
+type configMapStorageClient struct {
+	configMapClient k8s.ConfigMapInterface
+	podNamespace    string
 
 	// we may be receiving metrics from several envoys at the same time
 	// be sure to lock appropriately to prevent data loss
 	mutex sync.RWMutex
 }
 
-var _ Storage = &configMapStorage{}
+var _ StorageClient = &configMapStorageClient{}
 
 const (
 	metricsConfigMapName = "gloo-usage"
@@ -61,29 +63,32 @@ const (
 
 //go:generate mockgen -destination mocks/mock_config_map_client.go -package mocks k8s.io/client-go/kubernetes/typed/core/v1 ConfigMapInterface
 
-func NewConfigMapStorage(podNamespace string, configMapClient k8s.ConfigMapInterface) Storage {
-	return &configMapStorage{
-		configMapClient:     configMapClient,
-		podNamespace:        podNamespace,
-		currentTimeProvider: time.Now,
-		mutex:               sync.RWMutex{},
+func NewConfigMapStorage(podNamespace string, configMapClient k8s.ConfigMapInterface) *configMapStorageClient {
+	return &configMapStorageClient{
+		configMapClient: configMapClient,
+		podNamespace:    podNamespace,
+		mutex:           sync.RWMutex{},
 	}
 }
 
-// visible for testing
-// provide a way to get the current time to make unit tests easier to write and more deterministic
-func newConfigMapStorageWithTime(podNamespace string, configMapClient k8s.ConfigMapInterface, currentTimeProvider CurrentTimeProvider) Storage {
-	return &configMapStorage{
-		configMapClient:     configMapClient,
-		podNamespace:        podNamespace,
-		currentTimeProvider: currentTimeProvider,
-		mutex:               sync.RWMutex{},
+func NewDefaultConfigMapStorage(podNamespace string) (*configMapStorageClient, error) {
+	restConfig, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, err
 	}
+	kubeClient, err := kubeclient.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	configMapInterface := kubeClient.CoreV1().ConfigMaps(podNamespace)
+
+	return NewConfigMapStorage(podNamespace, configMapInterface), nil
 }
 
 // Record a new set of metrics for the given envoy instance id
 // The envoy instance id template is set in the gateway proxy configmap: `envoy.yaml`.node.id
-func (s *configMapStorage) RecordUsage(ctx context.Context, usage *GlobalUsage) error {
+func (s *configMapStorageClient) RecordUsage(ctx context.Context, usage *GlobalUsage) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -102,7 +107,7 @@ func (s *configMapStorage) RecordUsage(ctx context.Context, usage *GlobalUsage) 
 	return err
 }
 
-func (s *configMapStorage) GetUsage(ctx context.Context) (*GlobalUsage, error) {
+func (s *configMapStorageClient) GetUsage(ctx context.Context) (*GlobalUsage, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -117,7 +122,7 @@ func (s *configMapStorage) GetUsage(ctx context.Context) (*GlobalUsage, error) {
 // returns the old usage, the config map it came from, and any error
 // the config map is nil if and only if an error occurs
 // the old usage is nil if it has not been written yet or if there was an error reading it
-func (s *configMapStorage) getExistingUsage(ctx context.Context) (*GlobalUsage, *corev1.ConfigMap, error) {
+func (s *configMapStorageClient) getExistingUsage(ctx context.Context) (*GlobalUsage, *corev1.ConfigMap, error) {
 	cm, err := s.configMapClient.Get(metricsConfigMapName, v1.GetOptions{})
 	if err != nil {
 		return nil, nil, err

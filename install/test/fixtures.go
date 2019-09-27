@@ -42,6 +42,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -136,6 +150,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -234,6 +262,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 1s
     lb_policy: round_robin
     load_assignment:
@@ -348,6 +390,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -484,6 +540,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     http2_protocol_options: {}
     load_assignment:

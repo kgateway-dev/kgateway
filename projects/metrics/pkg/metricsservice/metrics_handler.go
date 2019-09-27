@@ -3,8 +3,11 @@ package metricsservice
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 
 	envoymet "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
 	"github.com/solo-io/go-utils/contextutils"
@@ -15,16 +18,30 @@ type MetricsHandler interface {
 	HandleMetrics(context.Context, *envoymet.StreamMetricsMessage) error
 }
 
-func NewDefaultMetricsHandler(storage Storage, merger UsageMerger) MetricsHandler {
+func NewDefaultMetricsHandler(storage StorageClient, merger *UsageMerger) *metricsHandler {
 	return &metricsHandler{
 		storage:     storage,
 		usageMerger: merger,
 	}
 }
 
+// get the default metrics handler backed by a config map
+func NewConfigMapBackedDefaultHandler(ctx context.Context) (*metricsHandler, error) {
+	ns := os.Getenv("POD_NAMESPACE")
+	storageClient, err := NewDefaultConfigMapStorage(ns)
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Errorw("err starting up metrics watcher", zap.Error(err))
+		return nil, err
+	}
+
+	merger := NewUsageMerger(time.Now)
+
+	return NewDefaultMetricsHandler(storageClient, merger), nil
+}
+
 type metricsHandler struct {
-	storage     Storage
-	usageMerger UsageMerger
+	storage     StorageClient
+	usageMerger *UsageMerger
 }
 
 func (m *metricsHandler) HandleMetrics(ctx context.Context, met *envoymet.StreamMetricsMessage) error {

@@ -2,23 +2,19 @@ package metricsservice
 
 import "time"
 
-type UsageMerger interface {
-	MergeUsage(envoyInstanceId string, oldUsage *GlobalUsage, newMetrics *EnvoyMetrics) *GlobalUsage
-}
-
 type CurrentTimeProvider func() time.Time
 
-type usageMerger struct {
+type UsageMerger struct {
 	currentTimeProvider CurrentTimeProvider
 }
 
-func NewUsageMerger(currentTimeProvider CurrentTimeProvider) UsageMerger {
-	return &usageMerger{currentTimeProvider: currentTimeProvider}
+// provide a way to get the current time
+// used to make unit tests easier to write and more deterministic
+func NewUsageMerger(currentTimeProvider CurrentTimeProvider) *UsageMerger {
+	return &UsageMerger{currentTimeProvider: currentTimeProvider}
 }
 
-var _ UsageMerger = &usageMerger{}
-
-func (u *usageMerger) MergeUsage(envoyInstanceId string, oldUsage *GlobalUsage, newMetrics *EnvoyMetrics) *GlobalUsage {
+func (u *UsageMerger) MergeUsage(envoyInstanceId string, oldUsage *GlobalUsage, newMetrics *EnvoyMetrics) *GlobalUsage {
 	now := u.currentTimeProvider()
 	mergedUsage := &GlobalUsage{}
 
