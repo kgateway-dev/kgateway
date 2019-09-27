@@ -83,7 +83,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 func tcpProxyFilter(params plugins.Params, host *v1.TcpHost, plugins *v1.TcpListenerPlugins, statPrefix string) (*listener.Filter, error) {
 
 	cfg := &envoytcp.TcpProxy{
-		StatPrefix: "tcp",
+		StatPrefix: statPrefix,
 	}
 
 	if plugins != nil {

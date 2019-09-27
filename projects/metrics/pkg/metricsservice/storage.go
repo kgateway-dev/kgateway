@@ -11,8 +11,10 @@ import (
 	k8s "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+//go:generate mockgen -destination mocks/mock_storage.go -package mocks github.com/solo-io/gloo/projects/metrics/pkg/metricsservice Storage
+
 type Storage interface {
-	ReceiveMetrics(ctx context.Context, envoyInstanceId string, newMetrics *EnvoyMetrics) error
+	RecordUsage(ctx context.Context, usage *GlobalUsage) error
 	GetUsage(ctx context.Context) (*GlobalUsage, error)
 }
 
@@ -57,8 +59,6 @@ const (
 	envoyExpiryDuration = time.Second * 50
 )
 
-type CurrentTimeProvider func() time.Time
-
 //go:generate mockgen -destination mocks/mock_config_map_client.go -package mocks k8s.io/client-go/kubernetes/typed/core/v1 ConfigMapInterface
 
 func NewConfigMapStorage(podNamespace string, configMapClient k8s.ConfigMapInterface) Storage {
@@ -83,16 +83,23 @@ func newConfigMapStorageWithTime(podNamespace string, configMapClient k8s.Config
 
 // Record a new set of metrics for the given envoy instance id
 // The envoy instance id template is set in the gateway proxy configmap: `envoy.yaml`.node.id
-func (s *configMapStorage) ReceiveMetrics(ctx context.Context, envoyInstanceId string, newMetrics *EnvoyMetrics) error {
+func (s *configMapStorage) RecordUsage(ctx context.Context, usage *GlobalUsage) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	existingUsage, configMap, err := s.getExistingUsage(ctx)
+	_, configMap, err := s.getExistingUsage(ctx)
 	if err != nil {
 		return err
 	}
 
-	return s.writeUsage(ctx, existingUsage, envoyInstanceId, newMetrics, configMap)
+	bytes, err := json.Marshal(usage)
+	if err != nil {
+		return err
+	}
+	configMap.Data = map[string]string{usageDataKey: string(bytes)}
+
+	_, err = s.configMapClient.Update(configMap)
+	return err
 }
 
 func (s *configMapStorage) GetUsage(ctx context.Context) (*GlobalUsage, error) {
@@ -105,81 +112,6 @@ func (s *configMapStorage) GetUsage(ctx context.Context) (*GlobalUsage, error) {
 	}
 
 	return existingUsage, nil
-}
-
-func (s *configMapStorage) writeUsage(ctx context.Context, existingGlobalUsage *GlobalUsage, envoyInstanceId string, newMetrics *EnvoyMetrics, configMap *corev1.ConfigMap) error {
-	now := s.currentTimeProvider()
-	var dataToWrite GlobalUsage
-
-	if existingGlobalUsage == nil {
-		dataToWrite = GlobalUsage{
-			EnvoyIdToUsage: map[string]*EnvoyUsage{
-				envoyInstanceId: {
-					EnvoyMetrics:    newMetrics,
-					LastRecordedAt:  now,
-					FirstRecordedAt: now,
-				},
-			},
-		}
-	} else {
-		// make sure the map is the same at first
-		dataToWrite.EnvoyIdToUsage = existingGlobalUsage.EnvoyIdToUsage
-
-		oldUsage, ok := existingGlobalUsage.EnvoyIdToUsage[envoyInstanceId]
-		var mergedMetrics *EnvoyMetrics
-
-		// if envoy has restarted since the first time we logged any of its metrics, it will be reporting numbers for
-		// requests/connections that are unrelated to what we've already recorded, so we have to add it together with what we've already seen
-		if ok && s.hasEnvoyRestartedSinceFirstLog(ctx, oldUsage, newMetrics) {
-			mergedMetrics = &EnvoyMetrics{
-				HttpRequests:   oldUsage.EnvoyMetrics.HttpRequests + newMetrics.HttpRequests,
-				TcpConnections: oldUsage.EnvoyMetrics.TcpConnections + newMetrics.TcpConnections,
-				Uptime:         newMetrics.Uptime, // reset the uptime to the newer uptime - to ensure that we keep merging the stats in this way
-			}
-		} else {
-			// otherwise, we've seen a continuous stream of metrics, and the metrics being recorded now are
-			// actually correct as they are- so just record them as-is
-			mergedMetrics = newMetrics
-		}
-
-		firstRecordedTime := now
-		if ok {
-			firstRecordedTime = oldUsage.FirstRecordedAt
-		}
-
-		dataToWrite.EnvoyIdToUsage[envoyInstanceId] = &EnvoyUsage{
-			EnvoyMetrics:    mergedMetrics,
-			LastRecordedAt:  now,
-			FirstRecordedAt: firstRecordedTime,
-		}
-	}
-
-	// mark an envoy as inactive after a certain amount of time without a stats ping
-	for _, v := range dataToWrite.EnvoyIdToUsage {
-		v.Active = now.Sub(v.LastRecordedAt) <= envoyExpiryDuration
-	}
-
-	bytes, err := json.Marshal(dataToWrite)
-	if err != nil {
-		return err
-	}
-	configMap.Data = map[string]string{usageDataKey: string(bytes)}
-
-	_, err = s.configMapClient.Update(configMap)
-	return err
-}
-
-func (s *configMapStorage) hasEnvoyRestartedSinceFirstLog(ctx context.Context, oldUsage *EnvoyUsage, newMetrics *EnvoyMetrics) bool {
-	// if envoy has not restarted, then its uptime should be roughly:
-	// (the current time) minus (the time we first received metrics from envoy)
-	expectedUptime := s.currentTimeProvider().Sub(oldUsage.FirstRecordedAt)
-	actualUptime := newMetrics.Uptime
-
-	uptimeDiff := expectedUptime - actualUptime
-
-	// envoy has restarted if the difference between the expected uptime and the actual uptime
-	// is positive - within a small epsilon to account for things like a slow startup
-	return uptimeDiff >= uptimeDiffThreshold
 }
 
 // returns the old usage, the config map it came from, and any error

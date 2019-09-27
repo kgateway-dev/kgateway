@@ -3,6 +3,9 @@ package e2e_test
 import (
 	"context"
 	"sync/atomic"
+	"time"
+
+	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/fgrosse/zaptest"
 	. "github.com/onsi/ginkgo"
@@ -114,7 +117,10 @@ var _ = Describe("Gateway", func() {
 						Ctx: ctx,
 					}
 
-					service := metricsservice.NewServer(opts)
+					usageMerger := metricsservice.NewUsageMerger(time.Now)
+					storage := metricsservice.NewConfigMapStorage(writeNamespace, helpers.MustKubeClient().CoreV1().ConfigMaps(writeNamespace))
+
+					service := metricsservice.NewServer(opts, usageMerger, storage)
 					go func(testctx context.Context) {
 						defer GinkgoRecover()
 						err := runner.RunWithSettings(testctx, service, settings)

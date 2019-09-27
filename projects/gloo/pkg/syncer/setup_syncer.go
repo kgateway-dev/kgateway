@@ -4,10 +4,17 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
+	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
+	"github.com/solo-io/go-utils/kubeutils"
+	kubeclient "k8s.io/client-go/kubernetes"
+	kubev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
@@ -302,6 +309,9 @@ type Extensions struct {
 	PluginExtensions []plugins.Plugin
 	SyncerExtensions []TranslatorSyncerExtensionFactory
 	XdsCallbacks     xdsserver.Callbacks
+
+	// optional custom handler for envoy usage metrics that get pushed to the gloo pod
+	MetricsHandler metricsservice.MetricsHandler
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -505,6 +515,23 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	go func() {
+		var handler metricsservice.MetricsHandler
+
+		if extensions.MetricsHandler == nil {
+			handler, err = buildDefaultMetricsHandler(opts.WatchOpts.Ctx)
+			if err != nil {
+				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Fatalw("Error starting metrics watcher", zap.Error(err))
+			}
+		} else {
+			handler = extensions.MetricsHandler
+		}
+
+		if err := runner.RunE(opts.WatchOpts.Ctx, handler); err != nil {
+			contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorw("err in metrics server", zap.Error(err))
+		}
+	}()
+
+	go func() {
 		for {
 			select {
 			case err, ok := <-errs:
@@ -608,4 +635,31 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		AuthConfigs:       authConfigFactory,
 		KubeCoreCache:     kubeCoreCache,
 	}, nil
+}
+
+func buildDefaultMetricsHandler(ctx context.Context) (metricsservice.MetricsHandler, error) {
+	ns := os.Getenv("POD_NAMESPACE")
+	configMapClient, err := buildConfigMapClient(ctx, ns)
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Errorw("err starting up metrics watcher", zap.Error(err))
+		return nil, err
+	}
+	storage := metricsservice.NewConfigMapStorage(ns, configMapClient)
+	merger := metricsservice.NewUsageMerger(time.Now)
+
+	metricsHandler := metricsservice.NewDefaultMetricsHandler(storage, merger)
+	return metricsHandler, nil
+}
+
+func buildConfigMapClient(ctx context.Context, podNamespace string) (kubev1.ConfigMapInterface, error) {
+	restConfig, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, err
+	}
+	kubeClient, err := kubeclient.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return kubeClient.CoreV1().ConfigMaps(podNamespace), nil
 }
