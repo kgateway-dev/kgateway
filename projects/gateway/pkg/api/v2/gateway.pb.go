@@ -57,7 +57,7 @@ type Gateway struct {
 	// deprecated: use proxyNames
 	GatewayProxyName string `protobuf:"bytes,11,opt,name=gateway_proxy_name,json=gatewayProxyName,proto3" json:"gateway_proxy_name,omitempty"` // Deprecated: Do not use.
 	//
-	// Names of the [`Proxy`](https://gloo.solo.io/v1/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
+	// Names of the [`Proxy`](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
 	// resources to generate from this gateway. If other gateways exist which point to the same proxy,
 	// Gloo will join them together.
 	//
