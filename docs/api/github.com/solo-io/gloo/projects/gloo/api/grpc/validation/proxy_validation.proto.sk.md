@@ -26,6 +26,8 @@ weight: 5
 - [RouteReport](#routereport)
 - [Error](#error)
 - [Type](#type)
+- [Warning](#warning)
+- [Type](#type)
 - [TcpListenerReport](#tcplistenerreport)
 - [Error](#error)
 - [Type](#type)
@@ -265,12 +267,14 @@ error types for top-level virtual host config
 
 ```yaml
 "errors": []gloo.solo.io.RouteReport.Error
+"warnings": []gloo.solo.io.RouteReport.Warning
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `errors` | [[]gloo.solo.io.RouteReport.Error](../proxy_validation.proto.sk#error) | errors on the config of the route. |  |
+| `warnings` | [[]gloo.solo.io.RouteReport.Warning](../proxy_validation.proto.sk#warning) | warnings on the config of the route. |  |
 
 
 
@@ -303,8 +307,39 @@ error types for the given route config
 | Name | Description |
 | ----- | ----------- | 
 | `InvalidMatcherError` |  |
-| `InvalidDestinationError` |  |
 | `ProcessingError` |  |
+
+
+
+
+---
+### Warning
+
+ 
+warning types for the given route config
+
+```yaml
+"type": .gloo.solo.io.RouteReport.Warning.Type
+"reason": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `type` | [.gloo.solo.io.RouteReport.Warning.Type](../proxy_validation.proto.sk#type) | the type of the error. |  |
+| `reason` | `string` | any extra info as a string. |  |
+
+
+
+
+---
+### Type
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `InvalidDestinationWarning` |  |
 
 
 

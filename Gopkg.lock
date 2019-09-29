@@ -1405,7 +1405,7 @@
   version = "v0.10.9"
 
 [[projects]]
-  digest = "1:36e77df615a1965b96c5c8d2ce11386ebe8a3a1416521312aa4b4e996e052b47"
+  digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1442,7 +1442,6 @@
     "pkg/api/v1/eventloop",
     "pkg/api/v1/propagator",
     "pkg/api/v1/reconcile",
-    "pkg/api/v1/reporter",
     "pkg/api/v1/resources",
     "pkg/api/v1/resources/common/kubernetes",
     "pkg/api/v1/resources/core",
@@ -2799,7 +2798,6 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/eventloop",
     "github.com/solo-io/solo-kit/pkg/api/v1/propagator",
     "github.com/solo-io/solo-kit/pkg/api/v1/reconcile",
-    "github.com/solo-io/solo-kit/pkg/api/v1/reporter",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources/core",
