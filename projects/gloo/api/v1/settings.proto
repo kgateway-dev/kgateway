@@ -255,7 +255,6 @@ message Settings {
     // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
     ConsulConfiguration consul = 20;
 
-
     // Provides overrides for the default configuration parameters used to interact with Kubernetes.
     message KubernetesConfiguration {
 

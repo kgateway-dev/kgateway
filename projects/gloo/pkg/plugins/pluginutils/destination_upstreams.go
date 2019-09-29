@@ -1,8 +1,11 @@
 package pluginutils
 
 import (
+	"fmt"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -22,7 +25,7 @@ func DestinationUpstreams(snap *v1.ApiSnapshot, in *v1.RouteAction) ([]core.Reso
 
 		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
 		if err != nil {
-			return nil, err
+			return nil, NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
 		}
 		return destinationsToRefs(upstreamGroup.Destinations)
 	}
@@ -39,4 +42,33 @@ func destinationsToRefs(destinations []*v1.WeightedDestination) ([]core.Resource
 		upstreams = append(upstreams, *upstream)
 	}
 	return upstreams, nil
+}
+
+type DestinationNotFoundError struct {
+	Ref          core.ResourceRef
+	ResourceType resources.Resource
+}
+
+func NewUpstreamNotFoundErr(ref core.ResourceRef) *DestinationNotFoundError {
+	return &DestinationNotFoundError{Ref: ref, ResourceType: &v1.Upstream{}}
+}
+
+func NewUpstreamGroupNotFoundErr(ref core.ResourceRef) *DestinationNotFoundError {
+	return &DestinationNotFoundError{Ref: ref, ResourceType: &v1.UpstreamGroup{}}
+}
+
+func NewDestinationNotFoundErr(ref core.ResourceRef, resourceType resources.Resource) *DestinationNotFoundError {
+	return &DestinationNotFoundError{Ref: ref, ResourceType: resourceType}
+}
+
+func (e *DestinationNotFoundError) Error() string {
+	return fmt.Sprintf("%T %v not found", e.ResourceType, e.Ref)
+}
+
+func IsDestinationNotFoundErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	_, ok := err.(*DestinationNotFoundError)
+	return ok
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -93,9 +93,9 @@ type mockTranslator struct {
 	reportErrs bool
 }
 
-func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceErrors, *validation.ProxyReport, error) {
+func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validation.ProxyReport, error) {
 	if t.reportErrs {
-		return envoycache.NilSnapshot{}, reporter.ResourceErrors{proxy: errors.Errorf("hi, how ya doin'?")}, &validation.ProxyReport{}, nil
+		return envoycache.NilSnapshot{}, reporter.ResourceReports{proxy: errors.Errorf("hi, how ya doin'?")}, &validation.ProxyReport{}, nil
 	}
 	return envoycache.NilSnapshot{}, nil, &validation.ProxyReport{}, nil
 }

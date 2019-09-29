@@ -15,12 +15,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 )
 
 type Translator interface {
-	Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceErrors, *validationapi.ProxyReport, error)
+	Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
 }
 
 type translator struct {
@@ -39,7 +39,7 @@ func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.S
 	}
 }
 
-func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceErrors, *validationapi.ProxyReport, error) {
+func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
@@ -57,14 +57,14 @@ func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycac
 	}
 	logger := contextutils.LoggerFrom(params.Ctx)
 
-	resourceErrs := make(reporter.ResourceErrors)
+	reports := make(reporter.ResourceReports)
 
 	logger.Debugf("verifying upstream groups: %v", proxy.Metadata.Name)
-	t.verifyUpstreamGroups(params, resourceErrs)
+	t.verifyUpstreamGroups(params, reports)
 
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.Metadata.Name)
-	clusters := t.computeClusters(params, resourceErrs)
+	clusters := t.computeClusters(params, reports)
 	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.Metadata.Name)
 
 	endpoints := computeClusterEndpoints(params.Ctx, params.Snapshot.Upstreams, params.Snapshot.Endpoints)
@@ -117,7 +117,7 @@ ClusterLoop:
 		}
 		generated, err := clusterGeneratorPlugin.GeneratedClusters(params)
 		if err != nil {
-			resourceErrs.AddError(proxy, err)
+			reports.AddError(proxy, err)
 		}
 		clusters = append(clusters, generated...)
 	}
@@ -125,10 +125,17 @@ ClusterLoop:
 	xdsSnapshot := generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
 
 	if err := validation.GetProxyError(proxyRpt); err != nil {
-		resourceErrs.AddError(proxy, err)
+		reports.AddError(proxy, err)
 	}
 
-	return xdsSnapshot, resourceErrs, proxyRpt, nil
+	// TODO: add a settings flag to allow accepting proxy on warnings
+	if warnings := validation.GetProxyWarning(proxyRpt); len(warnings) > 0 {
+		for _, warning := range warnings {
+			reports.AddWarning(proxy, warning)
+		}
+	}
+
+	return xdsSnapshot, reports, proxyRpt, nil
 }
 
 // the set of resources returned by one iteration for a single v1.Listener

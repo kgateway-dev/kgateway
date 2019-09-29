@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+
 	"github.com/gogo/protobuf/proto"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
@@ -167,8 +169,8 @@ func (t *translator) setAction(params plugins.RouteParams, routeReport *validati
 	switch action := in.Action.(type) {
 	case *v1.Route_RouteAction:
 		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
-			validation.AppendRouteError(routeReport,
-				validationapi.RouteReport_Error_InvalidDestinationError,
+			validation.AppendRouteWarning(routeReport,
+				validationapi.RouteReport_Warning_InvalidDestinationWarning,
 				err.Error(),
 			)
 		}
@@ -177,10 +179,17 @@ func (t *translator) setAction(params plugins.RouteParams, routeReport *validati
 			Route: &envoyroute.RouteAction{},
 		}
 		if err := t.setRouteAction(params, action.RouteAction, out.Action.(*envoyroute.Route_Route).Route, routeReport); err != nil {
-			validation.AppendRouteError(routeReport,
-				validationapi.RouteReport_Error_InvalidDestinationError,
-				err.Error(),
-			)
+			if pluginutils.IsDestinationNotFoundErr(err) {
+				validation.AppendRouteWarning(routeReport,
+					validationapi.RouteReport_Warning_InvalidDestinationWarning,
+					err.Error(),
+				)
+			} else {
+				validation.AppendRouteError(routeReport,
+					validationapi.RouteReport_Error_ProcessingError,
+					err.Error(),
+				)
+			}
 		}
 
 		// run the plugins for RoutePlugin
@@ -190,9 +199,15 @@ func (t *translator) setAction(params plugins.RouteParams, routeReport *validati
 				continue
 			}
 			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
+				// plugins can return errors on missing upstream/upstream group
+				// we only want to report errors that are plugin-specific
+				// missing upstream(group) should produce a warning above
+				if pluginutils.IsDestinationNotFoundErr(err) {
+					continue
+				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
+					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
 				)
 			}
 		}
@@ -208,6 +223,10 @@ func (t *translator) setAction(params plugins.RouteParams, routeReport *validati
 				Route:       in,
 			}
 			if err := routePlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
+				// same as above
+				if pluginutils.IsDestinationNotFoundErr(err) {
+					continue
+				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
@@ -266,7 +285,7 @@ func (t *translator) setRouteAction(params plugins.RouteParams, in *v1.RouteActi
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
 		if err != nil {
-			return err
+			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.Destinations,
@@ -358,7 +377,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 
 	upstream, err := params.Snapshot.Upstreams.Find(ref.Namespace, ref.Name)
 	if err != nil {
-		return err
+		return pluginutils.NewUpstreamNotFoundErr(*ref)
 	}
 
 	subsetConfig := getSubsets(upstream)
@@ -526,7 +545,7 @@ func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
 
 	upstreamGroup, err := snap.UpstreamGroups.Find(ref.Namespace, ref.Name)
 	if err != nil {
-		return errors.Wrap(err, "invalid destination for upstream group")
+		return pluginutils.NewUpstreamGroupNotFoundErr(*ref)
 	}
 	upstreams := snap.Upstreams
 
@@ -552,7 +571,10 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 		return err
 	}
 	_, err = upstreams.Find(upstreamRef.Strings())
-	return err
+	if err != nil {
+		return pluginutils.NewUpstreamNotFoundErr(*upstreamRef)
+	}
+	return nil
 }
 
 func validateListenerSslConfig(params plugins.Params, listener *v1.Listener) error {
