@@ -65,7 +65,7 @@ var _ = Describe("Validation Server", func() {
 
 	It("validates the requested proxy", func() {
 		proxy := params.Snapshot.Proxies[0]
-		s := NewValidationServer(translator)
+		s := NewValidator(translator)
 		_ = s.Sync(context.TODO(), params.Snapshot)
 		rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
 		Expect(err).NotTo(HaveOccurred())
