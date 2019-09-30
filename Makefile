@@ -100,6 +100,8 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
+	# Clean up api docs before regenerating them to make sure we don't keep orphaned files around
+	rm -rf docs/api
 	go generate ./...
 	(rm docs/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go)
 	gofmt -w $(SUBDIRS)
