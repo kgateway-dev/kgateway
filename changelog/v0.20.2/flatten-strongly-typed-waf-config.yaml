@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    description: Flatten strongly-typed WAF config
+    resolvesIssue: false

@@ -39,9 +39,9 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | disable waf on this listener. |  |
-| `coreRuleSet` | [.waf.plugins.gloo.solo.io.CoreRuleSet](../waf.proto.sk#coreruleset) | Add owasp core rule set if nil will not be added. |  |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk#ruleset) | custom rule sets rules to add. |  |
+| `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |  |
+| `coreRuleSet` | [.waf.plugins.gloo.solo.io.CoreRuleSet](../waf.proto.sk#coreruleset) | Add OWASP core rule set if nil will not be added. |  |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk#ruleset) | Custom rule sets rules to add. |  |
 
 
 
@@ -68,7 +68,8 @@ weight: 5
 ---
 ### VhostSettings
 
-
+ 
+TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
 
 ```yaml
 "disabled": bool
@@ -78,7 +79,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | disable waf on this virtual host. |  |
+| `disabled` | `bool` | Disable waf on this virtual host. |  |
 | `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |  |  |
 
 
@@ -87,7 +88,8 @@ weight: 5
 ---
 ### RouteSettings
 
-
+ 
+TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
 
 ```yaml
 "disabled": bool
@@ -97,7 +99,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | disable waf on this route. |  |
+| `disabled` | `bool` | Disable waf on this route. |  |
 | `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |  |  |
 
 

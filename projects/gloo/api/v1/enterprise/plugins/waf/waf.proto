@@ -9,12 +9,14 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 message Settings {
-    // disable waf on this listener
+    // Disable waf on this resource (if omitted defaults to false).
+    // If a route/virtual host is configured with WAF, you must explicitly disable its WAF,
+    // i.e., it will not inherit the disabled status of its parent
     bool disabled = 1;
-    // Add owasp core rule set
+    // Add OWASP core rule set
     // if nil will not be added
     CoreRuleSet core_rule_set = 2;
-    // custom rule sets rules to add
+    // Custom rule sets rules to add
     repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 3;
 }
 
@@ -30,15 +32,18 @@ message CoreRuleSet {
     }
 }
 
-
+// TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
 message VhostSettings {
-    // disable waf on this virtual host
+    option deprecated = true;
+    // Disable waf on this virtual host
     bool disabled = 1;
     Settings settings = 2;
 }
 
+// TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
 message RouteSettings {
-    // disable waf on this route
+    option deprecated = true;
+    // Disable waf on this route
     bool disabled = 1;
     Settings settings = 2;
 }
