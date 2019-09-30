@@ -140,8 +140,7 @@ rules:
   verbs: ["get", "list", "watch", "create", "update"]
 
 
-{{- if .Values.gateway.validation }}
-{{- if .Values.gateway.certGenJob }}
+{{- if and .Values.gateway.validation .Values.gateway.certGenJob }}
 ---
 # this role requires access to cluster-scoped resources
 kind: ClusterRole
@@ -162,7 +161,6 @@ rules:
   resources: ["validatingwebhookconfigurations"]
   verbs: ["get", "update"]
 
-{{- end -}}
 {{- end -}}
 
 

@@ -143,9 +143,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 
-
-{{- if .Values.gateway.validation }}
-{{- if .Values.gateway.certGenJob }}
+{{- if and .Values.gateway.validation .Values.gateway.certGenJob }}
 ---
 # this role requires access to cluster-scoped resources
 kind: ClusterRoleBinding
@@ -167,7 +165,6 @@ roleRef:
   name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 
-{{- end -}}
 {{- end -}}
 
 
