@@ -17,6 +17,7 @@ message Endpoint {
 
     option (core.solo.io.resource).short_name = "ep";
     option (core.solo.io.resource).plural_name = "endpoints";
+    option (core.solo.io.resource).skip_hashing_annotations = true;
     // List of the upstreams the endpoint belongs to
     repeated core.solo.io.ResourceRef upstreams = 1;
     // Address of the endpoint (ip or hostname)

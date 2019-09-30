@@ -33,6 +33,7 @@ func (r *Artifact) Hash() uint64 {
 	metaCopy.ResourceVersion = ""
 	metaCopy.Generation = 0
 	// investigate zeroing out owner refs as well
+	metaCopy.Annotations = nil
 	return hashutils.HashAll(
 		metaCopy,
 		r.Data,
