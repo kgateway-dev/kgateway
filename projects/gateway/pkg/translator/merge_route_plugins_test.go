@@ -29,7 +29,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 				RetryOn:    "5XX",
 				NumRetries: 3, // do not overwrite 0 value above
 			},
-			RatelimitGloo: &ratelimit.IngressRateLimit{
+			RatelimitBasic: &ratelimit.IngressRateLimit{
 				AuthorizedLimits: &ratelimit.RateLimit{
 					Unit:            1,
 					RequestsPerUnit: 2,
@@ -45,7 +45,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 				RetryOn:    "5XX",
 				NumRetries: 0,
 			},
-			RatelimitGloo: &ratelimit.IngressRateLimit{
+			RatelimitBasic: &ratelimit.IngressRateLimit{
 				AuthorizedLimits: &ratelimit.RateLimit{
 					Unit:            1,
 					RequestsPerUnit: 2,
