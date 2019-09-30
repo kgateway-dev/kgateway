@@ -1,0 +1,13 @@
+syntax = "proto3";
+package ratelimit.gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit";
+
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+message EnvoySettings {
+    repeated ratelimit.plugins.gloo.solo.io.Descriptor descriptors = 1;
+}

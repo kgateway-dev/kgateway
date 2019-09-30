@@ -2,11 +2,12 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
@@ -42,7 +43,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -142,12 +143,13 @@ func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr 
 			BindAddr:        bindAddr,
 			Ctx:             ctx,
 		},
+		Server: validation.NewValidationServer(),
 	}
 }
 
-const (
-	DefaultXdsBindAddr        = "0.0.0.0:9977"
-	DefaultValidationBindAddr = "0.0.0.0:9988"
+var (
+	DefaultXdsBindAddr        = fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort)
+	DefaultValidationBindAddr = fmt.Sprintf("0.0.0.0:%v", defaults.GlooValidationPort)
 )
 
 func getAddr(addr string) (*net.TCPAddr, error) {
@@ -386,7 +388,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	params := TranslatorSyncerExtensionParams{
 		SettingExtensions: opts.Settings.Extensions,
 		RateLimitDescriptorSettings: ratelimit.EnvoySettings{
-			CustomConfig: opts.Settings.GetRatelimitDescriptors().GetCustomConfig(),
+			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
 		},
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
@@ -432,13 +434,16 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, allPlugins...)
 
-	validationServer := validation.NewValidationServer(t)
+	validator := validation.NewValidator(t)
+	if opts.ValidationServer.Server != nil {
+		opts.ValidationServer.Server.SetValidator(validator)
+	}
 
 	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
 
 	syncers := v1.ApiSyncers{
 		translationSync,
-		validationServer,
+		validator,
 	}
 
 	apiEventLoop := v1.NewApiEventLoop(apiCache, syncers)
@@ -479,22 +484,20 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	if opts.ValidationServer.StartGrpcServer {
-		validationServerCopy := opts.ValidationServer
-		lis, err := net.Listen(opts.ValidationServer.BindAddr.Network(), opts.ValidationServer.BindAddr.String())
+		validationServer := opts.ValidationServer
+		lis, err := net.Listen(validationServer.BindAddr.Network(), validationServer.BindAddr.String())
 		if err != nil {
 			return err
 		}
-		// TODO(yuval-k for ilackarms): we need to either restart the grpc service or shim the connection
-		// so that validation is restarted on the new validation server
-		validationServer.Register(validationServerCopy.GrpcServer)
+		validationServer.Server.Register(validationServer.GrpcServer)
 
 		go func() {
-			<-validationServerCopy.Ctx.Done()
-			validationServerCopy.GrpcServer.Stop()
+			<-validationServer.Ctx.Done()
+			validationServer.GrpcServer.Stop()
 		}()
 
 		go func() {
-			if err := validationServerCopy.GrpcServer.Serve(lis); err != nil {
+			if err := validationServer.GrpcServer.Serve(lis); err != nil {
 				logger.Errorf("validation grpc server failed to start")
 			}
 		}()

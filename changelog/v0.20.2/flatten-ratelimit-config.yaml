@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Flatten ratelimit config by creating v2 version of settings
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

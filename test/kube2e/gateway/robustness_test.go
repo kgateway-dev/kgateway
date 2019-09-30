@@ -200,16 +200,16 @@ var _ = Describe("Robustness tests", func() {
 		virtualService, err = virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("wait for proxy to be rejected")
+		By("wait for proxy to enter warning state")
 		Eventually(func() error {
 			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
-			if proxy.Status.State == core.Status_Rejected {
+			if proxy.Status.State == core.Status_Warning {
 				return nil
 			}
-			return errors.Errorf("waiting for proxy to be rejected, but status is %v", proxy.Status)
+			return errors.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
 		}, 20*time.Second, 1*time.Second).Should(BeNil())
 
 		By("force an update of the service endpoints")

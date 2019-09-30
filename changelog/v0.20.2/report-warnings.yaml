@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Gloo can now report warnings on resources for certain types of invalid configuration.
+    issueLink: https://github.com/solo-io/gloo/issues/1290
+  - type: FIX
+    description: Fix reporting on Route Tables
+    issueLink: https://github.com/solo-io/gloo/issues/1291

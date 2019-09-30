@@ -1,6 +1,8 @@
 package validation
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -98,6 +100,28 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 	return errs
 }
 
+func GetProxyWarning(proxyRpt *validation.ProxyReport) []string {
+	var warnings []string
+	appendWarning := func(level, errType, reason string) {
+		warnings = append(warnings, fmt.Sprintf("%v Warning: %v. Reason: %v", level, errType, reason))
+	}
+	for _, listener := range proxyRpt.GetListenerReports() {
+		switch listenerType := listener.ListenerTypeReport.(type) {
+		case *validation.ListenerReport_HttpListenerReport:
+			httpListener := listenerType.HttpListenerReport
+			for _, vhReport := range httpListener.GetVirtualHostReports() {
+				for _, routeReport := range vhReport.GetRouteReports() {
+					for _, warning := range routeReport.GetWarnings() {
+						appendWarning("Route", warning.Type.String(), warning.Reason)
+					}
+				}
+			}
+		}
+	}
+
+	return warnings
+}
+
 func AppendListenerError(listenerReport *validation.ListenerReport, errType validation.ListenerReport_Error_Type, reason string) {
 	listenerReport.Errors = append(listenerReport.Errors, &validation.ListenerReport_Error{
 		Type:   errType,
@@ -121,6 +145,13 @@ func AppendHTTPListenerError(httpListenerReport *validation.HttpListenerReport, 
 
 func AppendRouteError(routeReport *validation.RouteReport, errType validation.RouteReport_Error_Type, reason string) {
 	routeReport.Errors = append(routeReport.Errors, &validation.RouteReport_Error{
+		Type:   errType,
+		Reason: reason,
+	})
+}
+
+func AppendRouteWarning(routeReport *validation.RouteReport, errType validation.RouteReport_Warning_Type, reason string) {
+	routeReport.Warnings = append(routeReport.Warnings, &validation.RouteReport_Warning{
 		Type:   errType,
 		Reason: reason,
 	})

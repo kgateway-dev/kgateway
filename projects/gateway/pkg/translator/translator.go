@@ -12,19 +12,19 @@ import (
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 // deprecated, use defaults.GatewayProxyName
 const GatewayProxyName = defaults.GatewayProxyName
 
 type ListenerFactory interface {
-	GenerateListeners(ctx context.Context, snap *v2.ApiSnapshot, filteredGateways []*v2.Gateway, resourceErrs reporter.ResourceErrors) []*gloov1.Listener
+	GenerateListeners(ctx context.Context, snap *v2.ApiSnapshot, filteredGateways []*v2.Gateway, reports reporter.ResourceReports) []*gloov1.Listener
 }
 
 type Translator interface {
-	Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, filteredGateways v2.GatewayList) (*gloov1.Proxy, reporter.ResourceErrors)
+	Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, filteredGateways v2.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
 type translator struct {
@@ -39,25 +39,26 @@ func NewDefaultTranslator() *translator {
 	return NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}})
 }
 
-func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, gatewaysByProxy v2.GatewayList) (*gloov1.Proxy, reporter.ResourceErrors) {
+func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, gatewaysByProxy v2.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	filteredGateways := filterGatewaysForNamespace(gatewaysByProxy, namespace)
 
-	resourceErrs := make(reporter.ResourceErrors)
-	resourceErrs.Accept(filteredGateways.AsInputResources()...)
-	resourceErrs.Accept(snap.VirtualServices.AsInputResources()...)
+	reports := make(reporter.ResourceReports)
+	reports.Accept(snap.Gateways.AsInputResources()...)
+	reports.Accept(snap.VirtualServices.AsInputResources()...)
+	reports.Accept(snap.RouteTables.AsInputResources()...)
 	if len(filteredGateways) == 0 {
 		logger.Debugf("%v had no gateways", snap.Hash())
-		return nil, resourceErrs
+		return nil, reports
 	}
-	validateGateways(filteredGateways, snap.VirtualServices, resourceErrs)
+	validateGateways(filteredGateways, snap.VirtualServices, reports)
 	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
 	for _, factory := range t.factories {
-		listeners = append(listeners, factory.GenerateListeners(ctx, snap, filteredGateways, resourceErrs)...)
+		listeners = append(listeners, factory.GenerateListeners(ctx, snap, filteredGateways, reports)...)
 	}
 	if len(listeners) == 0 {
-		return nil, resourceErrs
+		return nil, reports
 	}
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
@@ -65,7 +66,7 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 			Namespace: namespace,
 		},
 		Listeners: listeners,
-	}, resourceErrs
+	}, reports
 }
 
 func standardListener(gateway *v2.Gateway) *gloov1.Listener {
@@ -82,7 +83,7 @@ func gatewayName(gateway *v2.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
 }
 
-func validateGateways(gateways v2.GatewayList, virtualServices v1.VirtualServiceList, resourceErrs reporter.ResourceErrors) {
+func validateGateways(gateways v2.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
 	bindAddresses := map[string]v2.GatewayList{}
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,
 	// they are invalid.
@@ -93,7 +94,7 @@ func validateGateways(gateways v2.GatewayList, virtualServices v1.VirtualService
 		if httpGw := gw.GetHttpGateway(); httpGw != nil {
 			for _, vs := range httpGw.VirtualServices {
 				if _, err := virtualServices.Find(vs.Strings()); err != nil {
-					resourceErrs.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
+					reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
 				}
 			}
 		}
@@ -102,7 +103,7 @@ func validateGateways(gateways v2.GatewayList, virtualServices v1.VirtualService
 	for addr, gateways := range bindAddresses {
 		if len(gateways) > 1 {
 			for _, gw := range gateways {
-				resourceErrs.AddError(gw, fmt.Errorf("bind-address %s is not unique in a proxy. gateways: %s", addr, strings.Join(gatewaysRefsToString(gateways), ",")))
+				reports.AddError(gw, fmt.Errorf("bind-address %s is not unique in a proxy. gateways: %s", addr, strings.Join(gatewaysRefsToString(gateways), ",")))
 			}
 		}
 	}

@@ -315,7 +315,7 @@ var _ = Describe("Translator", func() {
 			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("InvalidMatcherError. Reason: no path specifier provided; Route Error: ProcessingError. Reason: missing path for grpc route"))
+			Expect(errs.Validate().Error()).To(ContainSubstring("Route Error: InvalidMatcherError. Reason: no path specifier provided; Route Error: ProcessingError. Reason: *grpc.plugin: missing path for grpc route"))
 
 			expectedReport := validationutils.MakeReport(proxy)
 			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
@@ -325,7 +325,7 @@ var _ = Describe("Translator", func() {
 				},
 				{
 					Type:   validation.RouteReport_Error_ProcessingError,
-					Reason: "missing path for grpc route",
+					Reason: "*grpc.plugin: missing path for grpc route",
 				},
 			}
 			Expect(report).To(Equal(expectedReport))
@@ -679,10 +679,10 @@ var _ = Describe("Translator", func() {
 			Expect(err.Error()).To(ContainSubstring("destination # 1: upstream not found: list did not find upstream gloo-system.notexist"))
 
 			expectedReport := validationutils.MakeReport(proxy)
-			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
+			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Warnings = []*validation.RouteReport_Warning{
 				{
-					Type:   validation.RouteReport_Error_InvalidDestinationError,
-					Reason: "invalid destination in weighted destination list: list did not find upstream gloo-system.notexist",
+					Type:   validation.RouteReport_Warning_InvalidDestinationWarning,
+					Reason: "invalid destination in weighted destination list: *v1.Upstream {notexist gloo-system} not found",
 				},
 			}
 			Expect(report).To(Equal(expectedReport))
@@ -847,7 +847,8 @@ var _ = Describe("Translator", func() {
 			Expect(fields).To(HaveKeyWithValue("testkey", sv("")))
 		})
 
-		Context("bad route", func() {
+		Context("subset in route doesnt match subset in upstream", func() {
+
 			BeforeEach(func() {
 				routes = []*v1.Route{{
 					Matcher: matcher,
@@ -870,17 +871,55 @@ var _ = Describe("Translator", func() {
 				}}
 			})
 
-			It("should error a route when subset in route doesnt match subset in upstream", func() {
+			It("should error the route", func() {
 				_, errs, report, err := translator.Translate(params, proxy)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(errs.Validate()).To(HaveOccurred())
+				Expect(errs.Validate().Error()).To(ContainSubstring("route has a subset config, but none of the subsets in the upstream match it"))
 				expectedReport := validationutils.MakeReport(proxy)
 				expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
 					{
-						Type:   validation.RouteReport_Error_InvalidDestinationError,
+						Type:   validation.RouteReport_Error_ProcessingError,
 						Reason: "route has a subset config, but none of the subsets in the upstream match it.",
 					},
 				}
+				Expect(report).To(Equal(expectedReport))
+			})
+		})
+
+		Context("when a route table is missing", func() {
+
+			BeforeEach(func() {
+				routes = []*v1.Route{{
+					Matcher: matcher,
+					Action: &v1.Route_RouteAction{
+						RouteAction: &v1.RouteAction{
+							Destination: &v1.RouteAction_Single{
+								Single: &v1.Destination{
+									DestinationType: &v1.Destination_Upstream{
+										Upstream: &core.ResourceRef{"do", "notexist"},
+									},
+								},
+							},
+						},
+					},
+				}}
+			})
+
+			It("should warn a route when a destination is missing", func() {
+				_, errs, report, err := translator.Translate(params, proxy)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(errs.Validate()).NotTo(HaveOccurred())
+				Expect(errs.ValidateStrict()).To(HaveOccurred())
+				Expect(errs.ValidateStrict().Error()).To(ContainSubstring("*v1.Upstream {do notexist} not found"))
+				expectedReport := validationutils.MakeReport(proxy)
+				expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Warnings = []*validation.RouteReport_Warning{
+					{
+						Type:   validation.RouteReport_Warning_InvalidDestinationWarning,
+						Reason: "*v1.Upstream {do notexist} not found",
+					},
+				}
+
 				Expect(report).To(Equal(expectedReport))
 			})
 		})

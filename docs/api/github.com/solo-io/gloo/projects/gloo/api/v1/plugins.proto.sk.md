@@ -112,8 +112,8 @@ to be usable by Gloo.
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
-"ratelimitGloo": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
-"ratelimitActions": .ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension
+"ratelimitBasic": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
+"ratelimit": .ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension
 "waf": .waf.plugins.gloo.solo.io.Settings
 "jwt": .jwt.plugins.gloo.solo.io.VhostExtension
 "rbac": .rbac.plugins.gloo.solo.io.VhostExtension
@@ -129,8 +129,8 @@ to be usable by Gloo.
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host. |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. |  |
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
-| `ratelimitGloo` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
-| `ratelimitActions` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
+| `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
+| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
 | `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/jwt/jwt.proto.sk#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
 | `rbac` | [.rbac.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/rbac/rbac.proto.sk#vhostextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
@@ -161,8 +161,8 @@ to be usable by Gloo.
 "hostRewrite": .hostrewrite.plugins.gloo.solo.io.HostRewrite
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
 "lbHash": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
-"ratelimitGloo": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
-"ratelimitActions": .ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension
+"ratelimitBasic": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
+"ratelimit": .ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension
 "waf": .waf.plugins.gloo.solo.io.Settings
 "jwt": .jwt.plugins.gloo.solo.io.RouteExtension
 "rbac": .rbac.plugins.gloo.solo.io.RouteExtension
@@ -184,8 +184,8 @@ to be usable by Gloo.
 | `hostRewrite` | [.hostrewrite.plugins.gloo.solo.io.HostRewrite](../plugins/hostrewrite/hostrewrite.proto.sk#hostrewrite) | Rewrite the Host header for requests matched on this route. |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |  |
 | `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service. |  |
-| `ratelimitGloo` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
-| `ratelimitActions` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
+| `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
+| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
 | `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/jwt/jwt.proto.sk#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
 | `rbac` | [.rbac.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/rbac/rbac.proto.sk#routeextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |

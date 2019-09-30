@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix issue where gloo validation server does not restart properly
+    issueLink: https://github.com/solo-io/gloo/issues/1296

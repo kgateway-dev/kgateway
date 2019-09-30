@@ -25,6 +25,7 @@ message Artifact {
 
     option (core.solo.io.resource).short_name = "art";
     option (core.solo.io.resource).plural_name = "artifacts";
+    option (core.solo.io.resource).skip_hashing_annotations = true;
     // Raw data data being stored
     map<string,string> data = 1;
 

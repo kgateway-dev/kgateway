@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 )
 
-func (t *translator) computeClusters(params plugins.Params, resourceErrs reporter.ResourceErrors) []*envoyapi.Cluster {
+func (t *translator) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.Cluster {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
 	params.Ctx = ctx
@@ -30,15 +30,15 @@ func (t *translator) computeClusters(params plugins.Params, resourceErrs reporte
 
 	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range params.Snapshot.Upstreams {
-		cluster := t.computeCluster(params, upstream, resourceErrs)
+		cluster := t.computeCluster(params, upstream, reports)
 		clusters = append(clusters, cluster)
 	}
 	return clusters
 }
 
-func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream, resourceErrs reporter.ResourceErrors) *envoyapi.Cluster {
+func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
-	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, resourceErrs)
+	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports)
 
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
@@ -47,24 +47,24 @@ func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream
 		}
 
 		if err := upstreamPlugin.ProcessUpstream(params, upstream, out); err != nil {
-			resourceErrs.AddError(upstream, err)
+			reports.AddError(upstream, err)
 		}
 	}
 	if err := validateCluster(out); err != nil {
-		resourceErrs.AddError(upstream, errors.Wrapf(err, "cluster was configured improperly "+
+		reports.AddError(upstream, errors.Wrapf(err, "cluster was configured improperly "+
 			"by one or more plugins: %v", out))
 	}
 	return out
 }
 
-func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, resourceErrs reporter.ResourceErrors) *envoyapi.Cluster {
+func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoyapi.Cluster {
 	hcConfig, err := createHealthCheckConfig(upstream)
 	if err != nil {
-		resourceErrs.AddError(upstream, err)
+		reports.AddError(upstream, err)
 	}
 	detectCfg, err := createOutlierDetectionConfig(upstream)
 	if err != nil {
-		resourceErrs.AddError(upstream, err)
+		reports.AddError(upstream, err)
 	}
 
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()

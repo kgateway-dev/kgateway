@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -57,10 +57,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	defer logger.Infof("end sync %v", snap.Hash())
 
 	logger.Debugf("%v", snap)
-	allResourceErrs := make(reporter.ResourceErrors)
-	allResourceErrs.Accept(snap.Upstreams.AsInputResources()...)
-	allResourceErrs.Accept(snap.UpstreamGroups.AsInputResources()...)
-	allResourceErrs.Accept(snap.Proxies.AsInputResources()...)
+	allReports := make(reporter.ResourceReports)
+	allReports.Accept(snap.Upstreams.AsInputResources()...)
+	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
+	allReports.Accept(snap.Proxies.AsInputResources()...)
 
 	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
 
@@ -75,18 +75,18 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			Snapshot: snap,
 		}
 
-		xdsSnapshot, resourceErrs, _, err := s.translator.Translate(params, proxy)
+		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
 		if err != nil {
 			err := errors.Wrapf(err, "translation loop failed")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
 
-		allResourceErrs.Merge(resourceErrs)
+		allReports.Merge(reports)
 
 		key := xds.SnapshotKey(proxy)
 
-		xdsSnapshot, err = validateSnapshot(snap, xdsSnapshot, resourceErrs, logger)
+		xdsSnapshot, err = validateSnapshot(snap, xdsSnapshot, reports, logger)
 		if err != nil {
 			logger.Warnf("proxy %v was rejected due to invalid config: %v\n"+
 				"Attempting to update only EDS information", proxy.Metadata.Ref().Key(), err)
@@ -128,7 +128,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		logger.Debugf("Full snapshot for proxy %v: %v", proxy.Metadata.Name, xdsSnapshot)
 	}
 
-	if err := s.reporter.WriteReports(ctx, allResourceErrs, nil); err != nil {
+	if err := s.reporter.WriteReports(ctx, allReports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
 		return errors.Wrapf(err, "writing reports")
 	}
@@ -150,7 +150,7 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 // If there are any errors on upstreams, this function tries to remove the correspondent clusters and endpoints from
 // the xDS snapshot. If the snapshot is still consistent after these mutations and there are no errors related to other
 // resources, we are good to send it to Envoy.
-func validateSnapshot(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, errs reporter.ResourceErrors, logger *zap.SugaredLogger) (envoycache.Snapshot, error) {
+func validateSnapshot(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, errs reporter.ResourceReports, logger *zap.SugaredLogger) (envoycache.Snapshot, error) {
 	resourcesErr := errs.Validate()
 	if resourcesErr == nil {
 		return xdsSnapshot, nil
@@ -163,7 +163,7 @@ func validateSnapshot(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snaps
 
 	// Find all the errored upstreams and remove them from the xDS snapshot
 	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
-		if errs[up] != nil {
+		if errs[up].Errors != nil {
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 			// remove cluster and endpoints
 			delete(clusters.Items, clusterName)
@@ -188,7 +188,7 @@ func validateSnapshot(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snaps
 
 	// Remove errors related to upstreams
 	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
-		if errs[up] != nil {
+		if errs[up].Errors != nil {
 			delete(errs, up)
 		}
 	}
