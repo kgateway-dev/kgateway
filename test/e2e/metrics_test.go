@@ -2,9 +2,10 @@ package e2e_test
 
 import (
 	"context"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"sync/atomic"
 	"time"
+
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/solo-io/solo-kit/test/helpers"
 
