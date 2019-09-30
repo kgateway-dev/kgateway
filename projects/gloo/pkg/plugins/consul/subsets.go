@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/errors"
@@ -35,7 +36,7 @@ func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
 		if err != nil {
-			return err
+			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.Destinations,
@@ -53,7 +54,7 @@ func getMetadataMatch(dest *v1.Destination, allUpstreams v1.UpstreamList) (*envo
 
 	upstream, err := allUpstreams.Find(usRef.Namespace, usRef.Name)
 	if err != nil {
-		return nil, nil, err // should never happen, as we already validated the destination
+		return nil, nil, pluginutils.NewUpstreamNotFoundErr(*usRef) // should never happen, as we already validated the destination
 	}
 
 	return getSubsetMatch(dest, upstream), usRef, nil

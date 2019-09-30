@@ -3,7 +3,7 @@ package syncer
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 var (

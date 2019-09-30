@@ -11,6 +11,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v2/enterprise/plugins/ratelimit/ratelimit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
@@ -255,7 +256,6 @@ message Settings {
     // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
     ConsulConfiguration consul = 20;
 
-
     // Provides overrides for the default configuration parameters used to interact with Kubernetes.
     message KubernetesConfiguration {
 
@@ -281,7 +281,7 @@ message Settings {
     // Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors.
     // Configure rate-limit *actions*, which define how request characteristics get translated into descriptors,
     // on the VirtualHost or its routes
-    ratelimit.plugins.gloo.solo.io.EnvoySettings ratelimit_descriptors = 26;
+    ratelimit.gloo.solo.io.EnvoySettings ratelimit = 26;
 
     // Enterprise-only: Settings for the rate limiting server itself
     ratelimit.plugins.gloo.solo.io.Settings ratelimit_server = 27;

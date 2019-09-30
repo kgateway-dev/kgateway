@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Remove old docs directory roots (`v1` and `v2`) and orphaned docs pages (i.e. pages that are no longer generated).

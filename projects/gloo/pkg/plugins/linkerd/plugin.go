@@ -3,6 +3,8 @@ package linkerd
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -79,7 +81,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	case *v1.RouteAction_UpstreamGroup:
 		usg, err := upstreamGroups.Find(destType.UpstreamGroup.Namespace, destType.UpstreamGroup.Name)
 		if err != nil {
-			return err
+			return pluginutils.NewUpstreamGroupNotFoundErr(*destType.UpstreamGroup)
 		}
 		err = configForMultiDestination(usg.Destinations, upstreams, out)
 		if err != nil {

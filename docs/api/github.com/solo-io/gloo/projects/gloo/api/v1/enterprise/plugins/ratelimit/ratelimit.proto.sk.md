@@ -142,7 +142,8 @@ weight: 5
 ---
 ### EnvoySettings
 
-
+ 
+Deprecated: Use simplified v2 API, which removes RateLimitCustomConfig
 
 ```yaml
 "customConfig": .ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig
@@ -185,7 +186,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `actions` | [[]ratelimit.plugins.gloo.solo.io.Action](../ratelimit.proto.sk#action) |  |  |
+| `actions` | [[]ratelimit.plugins.gloo.solo.io.Action](../ratelimit.proto.sk#action) | descriptors: - key: account_id descriptors: - key: plan value: BASIC rateLimit: requestsPerUnit: 1 unit: MINUTE - key: plan value: PLUS rateLimit: requestsPerUnit: 20 unit: MINUTE. |  |
 
 
 
@@ -202,7 +203,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) |  |  |
+| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
 
 
 
@@ -220,8 +221,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `includeVhRateLimits` | `bool` |  |  |
-| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) |  |  |
+| `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |  |
+| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
 
 
 

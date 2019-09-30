@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
@@ -43,7 +43,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -388,7 +388,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	params := TranslatorSyncerExtensionParams{
 		SettingExtensions: opts.Settings.Extensions,
 		RateLimitDescriptorSettings: ratelimit.EnvoySettings{
-			CustomConfig: opts.Settings.GetRatelimitDescriptors().GetCustomConfig(),
+			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
 		},
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {

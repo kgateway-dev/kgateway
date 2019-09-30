@@ -1406,7 +1406,7 @@
   version = "v0.10.9"
 
 [[projects]]
-  digest = "1:6bf9bdcdfd28c7a913d5bcbef6717e53fc6f650560f0b4ffe663816b3e2245ec"
+  digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1443,15 +1443,16 @@
     "pkg/api/v1/eventloop",
     "pkg/api/v1/propagator",
     "pkg/api/v1/reconcile",
-    "pkg/api/v1/reporter",
     "pkg/api/v1/resources",
     "pkg/api/v1/resources/common/kubernetes",
     "pkg/api/v1/resources/core",
+    "pkg/api/v2/reporter",
     "pkg/code-generator",
     "pkg/code-generator/cmd",
     "pkg/code-generator/codegen",
     "pkg/code-generator/codegen/templates",
     "pkg/code-generator/docgen",
+    "pkg/code-generator/docgen/datafile",
     "pkg/code-generator/docgen/funcs",
     "pkg/code-generator/docgen/options",
     "pkg/code-generator/docgen/templates/markdown",
@@ -1468,8 +1469,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "60015bef6312a5178344b53743183c846d3cc534"
-  version = "v0.10.20"
+  revision = "43b06f6a734ec0ae67e2943976bf3a6f55418733"
+  version = "v0.10.23"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2799,10 +2800,10 @@
     "github.com/solo-io/solo-kit/pkg/api/v1/eventloop",
     "github.com/solo-io/solo-kit/pkg/api/v1/propagator",
     "github.com/solo-io/solo-kit/pkg/api/v1/reconcile",
-    "github.com/solo-io/solo-kit/pkg/api/v1/reporter",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes",
     "github.com/solo-io/solo-kit/pkg/api/v1/resources/core",
+    "github.com/solo-io/solo-kit/pkg/api/v2/reporter",
     "github.com/solo-io/solo-kit/pkg/code-generator/cmd",
     "github.com/solo-io/solo-kit/pkg/code-generator/docgen/options",
     "github.com/solo-io/solo-kit/pkg/errors",

@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	. "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 )
 
@@ -109,15 +108,15 @@ var _ = Describe("validation utils", func() {
 			)
 			routeReport := rpt.ListenerReports[1].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[3].RouteReports[2]
 
-			routeReport.Errors = append(routeReport.Errors,
-				&validation.RouteReport_Error{
-					Type:   validation.RouteReport_Error_InvalidDestinationError,
+			routeReport.Warnings = append(routeReport.Warnings,
+				&validation.RouteReport_Warning{
+					Type:   validation.RouteReport_Warning_InvalidDestinationWarning,
 					Reason: "bad destination",
 				},
 			)
 
 			err := GetProxyError(rpt)
-			Expect(err).To(MatchError("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; Route Error: InvalidDestinationError. Reason: bad destination; HTTP Plugin Error: plugin. Reason: bad http plugin"))
+			Expect(err).To(MatchError("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HTTP Plugin Error: plugin. Reason: bad http plugin"))
 		})
 	})
 })

@@ -3,6 +3,8 @@ package syncer
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
@@ -11,9 +13,9 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/reporter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -43,7 +45,7 @@ func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, 
 
 type proxyErrorTuple struct {
 	p *gloov1.Proxy
-	r reporter.ResourceErrors
+	r reporter.ResourceReports
 }
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
@@ -51,8 +53,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v virtual services, %v gateways)", snap.Hash(),
-		len(snap.VirtualServices), len(snap.Gateways))
+	logger.Debugw("begin sync", zap.Any("snapshot", snap.Stringer()))
+	logger.Infof("begin sync %v (%v virtual services, %v gateways, %v route tables)", snap.Hash(),
+		len(snap.VirtualServices), len(snap.Gateways), len(snap.RouteTables))
 	defer logger.Infof("end sync %v", snap.Hash())
 	logger.Debugf("%v", snap)
 
@@ -63,13 +66,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 	byProxy := utils.GatewaysByProxyName(snap.Gateways)
 	tuples := make([]*proxyErrorTuple, 0, len(byProxy))
 	for key, val := range byProxy {
-		proxy, resourceErrs := s.translator.Translate(ctx, key, s.writeNamespace, snap, val)
-		if err := resourceErrs.Validate(); err != nil {
-			if err := s.reporter.WriteReports(ctx, resourceErrs, nil); err != nil {
+		proxy, reports := s.translator.Translate(ctx, key, s.writeNamespace, snap, val)
+		if err := reports.ValidateStrict(); err != nil {
+			if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
 				contextutils.LoggerFrom(ctx).Errorf("failed to write reports: %v", err)
 			}
-			logger.Warnf("snapshot %v was rejected due to invalid config: %v\nxDS cache will not be updated.", snap.Hash(), err)
-			return err
+			logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
+				"proxy will not be updated.", snap.Hash(), err)
+			continue
 		}
 
 		if proxy != nil {
@@ -77,7 +81,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 			proxy.Metadata.Labels = labels
 			tuples = append(tuples, &proxyErrorTuple{
 				p: proxy,
-				r: resourceErrs,
+				r: reports,
 			})
 		}
 	}
@@ -105,7 +109,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 	return nil
 }
 
-func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloov1.Proxy, resourceErrs reporter.ResourceErrors) error {
+func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloov1.Proxy, reports reporter.ResourceReports) error {
 	if proxy == nil {
 		return nil
 	}
@@ -127,7 +131,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 				subresourceStatuses := map[string]*core.Status{
 					resources.Key(proxy): &status,
 				}
-				err := s.reporter.WriteReports(ctx, resourceErrs, subresourceStatuses)
+				err := s.reporter.WriteReports(ctx, reports, subresourceStatuses)
 				if err != nil {
 					contextutils.LoggerFrom(ctx).Errorf("err: updating dependent statuses: %v", err)
 				}
