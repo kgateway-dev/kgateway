@@ -120,7 +120,8 @@ var _ = Describe("Gateway", func() {
 					usageMerger := metricsservice.NewUsageMerger(time.Now)
 					storage := metricsservice.NewConfigMapStorage(writeNamespace, helpers.MustKubeClient().CoreV1().ConfigMaps(writeNamespace))
 
-					service := metricsservice.NewServer(opts, usageMerger, storage)
+					defaulthandler := metricsservice.NewDefaultMetricsHandler(storage, usageMerger)
+					service := metricsservice.NewServer(opts, defaulthandler)
 					go func(testctx context.Context) {
 						defer GinkgoRecover()
 						err := runner.RunWithSettings(testctx, service, settings)
