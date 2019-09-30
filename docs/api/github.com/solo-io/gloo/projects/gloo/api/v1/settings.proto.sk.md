@@ -68,7 +68,7 @@ Represents global settings for all the Gloo components.
 "consul": .gloo.solo.io.Settings.ConsulConfiguration
 "kubernetes": .gloo.solo.io.Settings.KubernetesConfiguration
 "extensions": .gloo.solo.io.Extensions
-"ratelimit": .ratelimit.gloo.solo.io.EnvoySettings
+"ratelimit": .ratelimit.plugins.gloo.solo.io.ServiceSettings
 "ratelimitServer": .ratelimit.plugins.gloo.solo.io.Settings
 "rbac": .rbac.plugins.gloo.solo.io.Settings
 "extauth": .enterprise.gloo.solo.io.Settings
@@ -102,7 +102,7 @@ Represents global settings for all the Gloo components.
 | `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
 | `kubernetes` | [.gloo.solo.io.Settings.KubernetesConfiguration](../settings.proto.sk#kubernetesconfiguration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque settings config for Gloo extensions. |  |
-| `ratelimit` | [.ratelimit.gloo.solo.io.EnvoySettings](../../v2/enterprise/plugins/ratelimit/ratelimit.proto.sk#envoysettings) | Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors. Configure rate-limit *actions*, which define how request characteristics get translated into descriptors, on the VirtualHost or its routes. |  |
+| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.ServiceSettings](../enterprise/plugins/ratelimit/ratelimit.proto.sk#servicesettings) | Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors. Configure rate-limit *actions*, which define how request characteristics get translated into descriptors, on the VirtualHost or its routes. |  |
 | `ratelimitServer` | [.ratelimit.plugins.gloo.solo.io.Settings](../enterprise/plugins/ratelimit/ratelimit.proto.sk#settings) | Enterprise-only: Settings for the rate limiting server itself. |  |
 | `rbac` | [.rbac.plugins.gloo.solo.io.Settings](../enterprise/plugins/rbac/rbac.proto.sk#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |  |
 | `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/plugins/extauth/v1/extauth.proto.sk#settings) | Enterprise-only: External auth related settings. |  |
