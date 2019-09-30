@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"sync/atomic"
 	"time"
 
@@ -106,7 +107,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
 					settings = runner.Settings{
@@ -134,7 +135,7 @@ var _ = Describe("Gateway", func() {
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", "gateway", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					gw.Plugins = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
