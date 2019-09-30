@@ -50,7 +50,7 @@ func (s *Server) StreamMetrics(envoyMetrics envoymet.MetricsService_StreamMetric
 		logger.Debugw("received error from metrics GRPC service")
 		return err
 	}
-	logger.Infow("successfully received metrics message from envoy",
+	logger.Debugw("successfully received metrics message from envoy",
 		zap.String("cluster.cluster", met.Identifier.Node.Cluster),
 		zap.String("cluster.id", met.Identifier.Node.Id),
 		zap.Any("cluster.metadata", met.Identifier.Node.Metadata),

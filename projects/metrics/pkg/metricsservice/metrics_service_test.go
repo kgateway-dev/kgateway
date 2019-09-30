@@ -19,7 +19,7 @@ var _ = Describe("Metrics service", func() {
 	var (
 		mockCtrl       *gomock.Controller
 		metricsService *metricsservice.Server
-		storage        *mocks.MockStorage
+		storage        *mocks.MockStorageClient
 		timeProvider   metricsservice.CurrentTimeProvider
 		metricsStream  *mocks.MockMetricsService_StreamMetricsServer
 	)
@@ -30,7 +30,7 @@ var _ = Describe("Metrics service", func() {
 			return time.Date(2019, 4, 20, 16, 20, 0, 0, time.UTC)
 		}
 		usageMerger := metricsservice.NewUsageMerger(timeProvider)
-		storage = mocks.NewMockStorage(mockCtrl)
+		storage = mocks.NewMockStorageClient(mockCtrl)
 		metricsStream = mocks.NewMockMetricsService_StreamMetricsServer(mockCtrl)
 		metricsHandler := metricsservice.NewDefaultMetricsHandler(storage, usageMerger)
 		metricsService = metricsservice.NewServer(metricsservice.Options{Ctx: context.TODO()}, metricsHandler)

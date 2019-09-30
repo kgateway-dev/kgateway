@@ -61,8 +61,6 @@ const (
 	envoyExpiryDuration = time.Second * 50
 )
 
-//go:generate mockgen -destination mocks/mock_config_map_client.go -package mocks k8s.io/client-go/kubernetes/typed/core/v1 ConfigMapInterface
-
 func NewConfigMapStorage(podNamespace string, configMapClient k8s.ConfigMapInterface) *configMapStorageClient {
 	return &configMapStorageClient{
 		configMapClient: configMapClient,
