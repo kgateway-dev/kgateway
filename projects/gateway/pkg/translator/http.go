@@ -6,11 +6,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/go-utils/errors"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
@@ -301,15 +302,15 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 }
 
 var (
-	missingPrefixErr    = errors.Errorf("invalid route: routes with delegate actions must specify a prefix matcher")
-	invalidPrefixErr    = errors.Errorf("invalid route: routes within the route table must begin with the prefix of their parent")
-	invalidMatcherErr   = errors.Errorf("invalid route: matcher cannot be missing")
-	hasHeaderMatcherErr = errors.Errorf("invalid route: routes with delegate actions cannot use header matchers")
-	hasMethodMatcherErr = errors.Errorf("invalid route: routes with delegate actions cannot use method matchers")
-	hasQueryMatcherErr  = errors.Errorf("invalid route: routes with delegate actions cannot use query matchers")
-	delegationCycleErr  = errors.Errorf("invalid route: delegation cycle detected")
+	missingPrefixErr    = errors.New("invalid route: routes with delegate actions must specify a prefix matcher")
+	invalidPrefixErr    = errors.New("invalid route: routes within the route table must begin with the prefix of their parent")
+	invalidMatcherErr   = errors.New("invalid route: matcher cannot be missing")
+	hasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
+	hasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
+	hasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
+	delegationCycleErr  = errors.New("invalid route: delegation cycle detected")
 
-	noDelegateActionErr = errors.Errorf("internal error: convertDelegateAction() called on route without delegate action")
+	noDelegateActionErr = errors.New("internal error: convertDelegateAction() called on route without delegate action")
 
 	routeTableMissingWarning = func(ref core.ResourceRef) string {
 		return fmt.Sprintf("route table %v.%v missing", ref.Namespace, ref.Name)
