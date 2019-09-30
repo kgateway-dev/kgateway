@@ -1,4 +1,4 @@
-{{ if .Values.settings.create }}
+{{ if (or .Values.settings.create .Values.gateway.validation ) }}
 
 apiVersion: gloo.solo.io/v1
 kind: Settings
@@ -29,6 +29,15 @@ spec:
 {{- else }}
     knativeExternalProxyAddress: "knative-external-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
     knativeInternalProxyAddress: "knative-internal-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
+{{- end }}
+{{- end }}
+
+{{- if .Values.gateway.validation }}
+  gateway:
+    validation:
+      proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}
+{{- if .Values.gateway.validation.alwaysAcceptResources }}
+      alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
 {{- end }}
 {{- end }}
 

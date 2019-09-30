@@ -181,7 +181,7 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 					}
 					lock.Lock()
 					if _, ok := endpointsByEds[eds]; !ok {
-						logger.Infow("Received first EDS update from plugin", "plugin", edsName)
+						logger.Infof("Received first EDS update from plugin: %T", eds)
 					}
 					endpointsByEds[eds] = endpointList
 					desiredEndpoints := aggregateEndpoints(endpointsByEds)

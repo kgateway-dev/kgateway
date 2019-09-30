@@ -16,4 +16,15 @@ type Opts struct {
 	ValidationServerAddress string
 	DevMode                 bool
 	DisableAutoGenGateways  bool
+	Validation              *ValidationOpts
+}
+
+type ValidationOpts struct {
+	ProxyValidationServerAddress string
+	ValidatingWebhookPort        int
+	ValidatingWebhookCertPath    string
+	ValidatingWebhookKeyPath     string
+	IgnoreProxyValidationFailure bool
+	AlwaysAcceptResources        bool
+	AllowMissingLinks            bool
 }

@@ -1,8 +1,10 @@
-package validation_test
+package validation
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -12,7 +14,6 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	. "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/samples"
@@ -24,20 +25,19 @@ var _ = Describe("Validator", func() {
 		t  translator.Translator
 		vc *mockValidationClient
 		ns string
-		v  Validator
+		v  *validator
 	)
 	BeforeEach(func() {
 		t = translator.NewDefaultTranslator()
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
-		v = NewValidator(t, vc, ns)
+		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
 	})
-	It("returns ready == false before sync called", func() {
-		Expect(v.Ready()).To(BeFalse())
-		Expect(v.ValidateVirtualService(nil, nil)).To(MatchError("Gateway validation is yet not available. Waiting for first snapshot"))
-		err := v.Sync(nil, &v2.ApiSnapshot{})
+	It("returns error before sync called", func() {
+		_, err := v.ValidateVirtualService(nil, nil)
+		Expect(err).To(MatchError("validation is yet not available. Waiting for first snapshot"))
+		err = v.Sync(nil, &v2.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(v.Ready()).To(BeTrue())
 	})
 
 	Context("validating a route table", func() {
@@ -48,8 +48,9 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
 				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
 
@@ -60,9 +61,74 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("rendered proxy had errors"))
+				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
+				Expect(proxyReports).To(HaveLen(1))
+			})
+		})
+
+		Context("proxy validation fails (bad connection)", func() {
+			Context("ignoreProxyValidation=false", func() {
+				It("rejects the rt", func() {
+					vc.validateProxy = communicationErr
+					us := samples.SimpleUpstream()
+					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
+					err := v.Sync(context.TODO(), snap)
+					Expect(err).NotTo(HaveOccurred())
+					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("failed to communicate with Gloo Proxy validation server"))
+					Expect(proxyReports).To(BeNil())
+				})
+			})
+			Context("ignoreProxyValidation=true", func() {
+				It("accepts the rt", func() {
+					vc.validateProxy = communicationErr
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+					us := samples.SimpleUpstream()
+					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
+					err := v.Sync(context.TODO(), snap)
+					Expect(err).NotTo(HaveOccurred())
+					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+					Expect(err).NotTo(HaveOccurred())
+					Expect(proxyReports).To(HaveLen(0))
+				})
+			})
+			Context("allowBrokenLinks=true", func() {
+				BeforeEach(func() {
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true))
+				})
+				It("accepts a vs with missing route table ref", func() {
+					vc.validateProxy = communicationErr
+					err := v.Sync(context.TODO(), &v2.ApiSnapshot{})
+					Expect(err).NotTo(HaveOccurred())
+					vs, _ := samples.LinkedRouteTablesWithVirtualService("vs", "ns")
+					proxyReports, err := v.ValidateVirtualService(context.TODO(), vs)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(proxyReports).To(HaveLen(0))
+				})
+				It("accepts a rt with missing route table ref", func() {
+					vc.validateProxy = communicationErr
+					err := v.Sync(context.TODO(), &v2.ApiSnapshot{})
+					Expect(err).NotTo(HaveOccurred())
+					_, rts := samples.LinkedRouteTablesWithVirtualService("vs", "ns")
+					proxyReports, err := v.ValidateRouteTable(context.TODO(), rts[1])
+					Expect(err).NotTo(HaveOccurred())
+					Expect(proxyReports).To(HaveLen(0))
+				})
+				It("accepts delete leaf route table", func() {
+					vc.validateProxy = communicationErr
+					us := samples.SimpleUpstream()
+					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
+					err := v.Sync(context.TODO(), snap)
+					Expect(err).NotTo(HaveOccurred())
+
+					ref := snap.RouteTables[len(snap.RouteTables)-1].Metadata.Ref()
+
+					err = v.ValidateDeleteRouteTable(context.TODO(), ref)
+					Expect(err).NotTo(HaveOccurred())
+				})
 			})
 		})
 
@@ -82,9 +148,10 @@ var _ = Describe("Validator", func() {
 				rt.Routes = append(rt.Routes, badRoute)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateRouteTable(context.TODO(), rt)
+				proxyReports, err := v.ValidateRouteTable(context.TODO(), rt)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
+				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
 	})
@@ -100,7 +167,7 @@ var _ = Describe("Validator", func() {
 				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[1].Metadata.Ref())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Deletion blocked because active Routes delegate to this Route Table. " +
-					"Remove delegate actions to this route table the virtual services: [] and the route tables: [{node-0 my-namespace}], then try again"))
+					"Remove delegate actions to this route table from the virtual services: [] and the route tables: [{node-0 my-namespace}], then try again"))
 			})
 		})
 		Context("has no parents", func() {
@@ -112,8 +179,13 @@ var _ = Describe("Validator", func() {
 				snap.RouteTables[1].Routes = nil
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[len(snap.RouteTables)-1].Metadata.Ref())
+				ref := snap.RouteTables[2].Metadata.Ref()
+				err = v.ValidateDeleteRouteTable(context.TODO(), ref)
 				Expect(err).NotTo(HaveOccurred())
+
+				// ensure route table was removed from validator internal snapshot
+				_, err = v.latestSnapshot.RouteTables.Find(ref.Strings())
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
@@ -127,9 +199,11 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("rendered proxy had errors"))
+				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
+				Expect(proxyReports).To(HaveLen(1))
+
 			})
 		})
 		Context("proxy validation accepted", func() {
@@ -139,8 +213,9 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
 				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
 		Context("no gateways for virtualservice", func() {
@@ -158,8 +233,9 @@ var _ = Describe("Validator", func() {
 				})
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
 				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
 		Context("virtual service rejected", func() {
@@ -176,11 +252,13 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				vs := snap.VirtualServices[0].DeepCopyObject().(*gatewayv1.VirtualService)
 				vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, badRoute)
+
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateVirtualService(context.TODO(), vs)
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), vs)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
+				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
 	})
@@ -218,6 +296,10 @@ var _ = Describe("Validator", func() {
 				ref := snap.VirtualServices[0].Metadata.Ref()
 				err = v.ValidateDeleteVirtualService(context.TODO(), ref)
 				Expect(err).NotTo(HaveOccurred())
+
+				// ensure vs was removed from validator internal snapshot
+				_, err = v.latestSnapshot.VirtualServices.Find(ref.Strings())
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
@@ -231,9 +313,10 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateGateway(context.TODO(), snap.Gateways[0])
+				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0])
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("rendered proxy had errors"))
+				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
+				Expect(proxyReports).To(HaveLen(1))
 			})
 		})
 		Context("proxy validation accepted", func() {
@@ -243,8 +326,9 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateGateway(context.TODO(), snap.Gateways[0])
+				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0])
 				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
 		Context("gw rejected", func() {
@@ -260,9 +344,10 @@ var _ = Describe("Validator", func() {
 				gw.GatewayType.(*v2.Gateway_HttpGateway).HttpGateway.VirtualServices = append(gw.GatewayType.(*v2.Gateway_HttpGateway).HttpGateway.VirtualServices, badRef)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateGateway(context.TODO(), gw)
+				proxyReports, err := v.ValidateGateway(context.TODO(), gw)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
+				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
 	})
@@ -274,6 +359,9 @@ type mockValidationClient struct {
 }
 
 func (c *mockValidationClient) ValidateProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+	if c.validateProxy == nil {
+		Fail("validateProxy was called unexpectedly")
+	}
 	return c.validateProxy(ctx, in, opts...)
 }
 
@@ -285,5 +373,8 @@ func failProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest
 	rpt := validationutils.MakeReport(in.Proxy)
 	validationutils.AppendListenerError(rpt.ListenerReports[0], validation.ListenerReport_Error_SSLConfigError, "you should try harder next time")
 	return &validation.ProxyValidationServiceResponse{ProxyReport: rpt}, nil
+}
 
+func communicationErr(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+	return nil, errors.Errorf("communication no good")
 }

@@ -14,6 +14,10 @@ func KubectlApply(manifest []byte, extraArgs ...string) error {
 	return Kubectl(bytes.NewBuffer(manifest), append([]string{"apply", "-f", "-"}, extraArgs...)...)
 }
 
+func KubectlApplyOut(manifest []byte, extraArgs ...string) ([]byte, error) {
+	return KubectlOut(bytes.NewBuffer(manifest), append([]string{"apply", "-f", "-"}, extraArgs...)...)
+}
+
 func KubectlDelete(manifest []byte, extraArgs ...string) error {
 	return Kubectl(bytes.NewBuffer(manifest), append([]string{"delete", "-f", "-"}, extraArgs...)...)
 }
@@ -50,4 +54,33 @@ func Kubectl(stdin io.Reader, args ...string) error {
 		kubectl.Stderr = cliutil.GetLogger()
 	}
 	return kubectl.Run()
+}
+
+func KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
+	kubectl := exec.Command("kubectl", args...)
+
+	if stdin != nil {
+		kubectl.Stdin = stdin
+	}
+
+	var stdout, stderr io.Writer
+	if verbose {
+		fmt.Fprintf(os.Stderr, "running kubectl command: %v\n", kubectl.Args)
+		stdout = os.Stdout
+		stderr = os.Stderr
+	} else {
+		// use logfile
+		cliutil.Initialize()
+		stdout = cliutil.GetLogger()
+		stderr = cliutil.GetLogger()
+	}
+
+	buf := &bytes.Buffer{}
+
+	kubectl.Stdout = io.MultiWriter(stdout, buf)
+	kubectl.Stderr = io.MultiWriter(stderr, buf)
+
+	err := kubectl.Run()
+
+	return buf.Bytes(), err
 }

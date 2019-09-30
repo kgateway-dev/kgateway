@@ -10,6 +10,10 @@ import (
 )
 
 func LinkedRouteTablesWithVirtualService(vsName, namespace string) (*v1.VirtualService, v1.RouteTableList) {
+	return LenLinkedRouteTablesWithVirtualService(3, vsName, namespace)
+}
+
+func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace string) (*v1.VirtualService, v1.RouteTableList) {
 	root := "/root"
 	prefix := root + "/0"
 
@@ -30,7 +34,7 @@ func LinkedRouteTablesWithVirtualService(vsName, namespace string) (*v1.VirtualS
 		makeRt(0),
 	}
 	// append a chain of route tables
-	for i := 1; i < 3; i++ {
+	for i := 1; i < lengthOfChain; i++ {
 		prefix += fmt.Sprintf("/%d", i)
 
 		routeTables = append(routeTables, makeRt(i))
@@ -42,8 +46,8 @@ func LinkedRouteTablesWithVirtualService(vsName, namespace string) (*v1.VirtualS
 		}
 	}
 
-	// append a leaf
-	routeTables = append(routeTables, &v1.RouteTable{
+	// append the leaf
+	leaf := &v1.RouteTable{
 		Metadata: core.Metadata{Name: "leaf", Namespace: namespace},
 		Routes: []*v1.Route{
 			{
@@ -55,7 +59,15 @@ func LinkedRouteTablesWithVirtualService(vsName, namespace string) (*v1.VirtualS
 				Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{}},
 			},
 		},
-	})
+	}
+
+	leafRef := leaf.Metadata.Ref()
+
+	routeTables[lengthOfChain-1].Routes[0].Action = &v1.Route_DelegateAction{
+		DelegateAction: &leafRef,
+	}
+
+	routeTables = append(routeTables, leaf)
 
 	ref := routeTables[0].Metadata.Ref()
 	vs := defaults.DefaultVirtualService(namespace, vsName)

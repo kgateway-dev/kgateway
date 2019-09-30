@@ -55,7 +55,10 @@ spec:
             - ALL
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
-          name: grpc
+          name: grpc-xds
+          protocol: TCP
+        - containerPort: {{ .Values.gloo.deployment.validationPort }}
+          name: grpc-validation
           protocol: TCP
         env:
           - name: POD_NAMESPACE

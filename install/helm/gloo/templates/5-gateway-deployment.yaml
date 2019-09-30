@@ -37,6 +37,13 @@ spec:
 {{ toYaml .Values.gateway.deployment.resources | indent 10}}
 {{- end}}
 
+{{- if .Values.gateway.validation }}
+        ports:
+          - containerPort: 8443
+            name: https
+            protocol: TCP
+{{- end}}
+
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -56,4 +63,15 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
+
+{{- if .Values.gateway.validation }}
+        volumeMounts:
+          - mountPath: /etc/gateway/validation-certs
+            name: validation-certs
+      volumes:
+        - name: validation-certs
+          secret:
+            defaultMode: 420
+            secretName: {{ .Values.gateway.validation.secretName }}
+{{- end}}
 {{- end }}

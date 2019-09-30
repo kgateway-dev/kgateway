@@ -1361,9 +1361,10 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:2b7ad368df1e8ff8d88f2a73e3504cdcb760213a0d63e0e12a64064c65e4b090"
+  digest = "1:675e88637f52e60444ff59ffe3b708e4fa74ae9f587dde5eb5d4eaa907d0664a"
   name = "github.com/solo-io/go-utils"
   packages = [
+    "certutils",
     "changelogutils",
     "clicore/constants",
     "clidoc",
@@ -2748,6 +2749,7 @@
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-checkpoint",
+    "github.com/solo-io/go-utils/certutils",
     "github.com/solo-io/go-utils/clidoc",
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/contextutils",
@@ -2830,6 +2832,8 @@
     "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/AlecAivazis/survey.v1/terminal",
+    "k8s.io/api/admission/v1beta1",
+    "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
@@ -2843,6 +2847,7 @@
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/watch",
@@ -2888,6 +2893,7 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
+    "k8s.io/client-go/util/cert",
     "k8s.io/client-go/util/homedir",
     "k8s.io/helm/pkg/chartutil",
     "k8s.io/helm/pkg/manifest",

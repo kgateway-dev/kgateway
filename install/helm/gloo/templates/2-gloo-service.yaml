@@ -11,8 +11,11 @@ spec:
   externalTrafficPolicy: {{ .Values.gloo.deployment.externalTrafficPolicy }}
 {{- end }}
   ports:
-  - name: grpc
+  - name: grpc-xds
     port: {{ .Values.gloo.deployment.xdsPort }}
+    protocol: TCP
+  - name: grpc-validation
+    port: {{ .Values.gloo.deployment.validationPort }}
     protocol: TCP
   selector:
     gloo: gloo

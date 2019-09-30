@@ -28,6 +28,7 @@ weight: 5
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
 - [GatewayOptions](#gatewayoptions)
+- [ValidationOptions](#validationoptions)
   
 
 
@@ -439,6 +440,7 @@ Settings specific to the Gateway controller
 ```yaml
 "validationServerAddr": string
 "disableAutoGenGateways": bool
+"validation": .gloo.solo.io.GatewayOptions.ValidationOptions
 
 ```
 
@@ -446,6 +448,33 @@ Settings specific to the Gateway controller
 | ----- | ---- | ----------- |----------- | 
 | `validationServerAddr` | `string` | Address of the `gloo` config validation server. Defaults to `gloo:9988`. |  |
 | `disableAutoGenGateways` | `bool` | Disable auto generation of default gateways from gateway pod. |  |
+| `validation` | [.gloo.solo.io.GatewayOptions.ValidationOptions](../settings.proto.sk#validationoptions) | if provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) of Gateways, Virtual Services, and Route Tables when running in Kubernetes. |  |
+
+
+
+
+---
+### ValidationOptions
+
+ 
+options for configuring admission control / validation
+
+```yaml
+"proxyValidationServerAddr": string
+"validationWebhookTlsCert": string
+"validationWebhookTlsKey": string
+"ignoreGlooValidationFailure": bool
+"alwaysAccept": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `proxyValidationServerAddr` | `string` | Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988` This field is required in order to enable fine-grained admission control. |  |
+| `validationWebhookTlsCert` | `string` | Path to TLS Certificate for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.crt`. |  |
+| `validationWebhookTlsKey` | `string` | Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`. |  |
+| `ignoreGlooValidationFailure` | `bool` | When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors. |  |
+| `alwaysAccept` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Always accept resources even if validation produced an error Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage. |  |
 
 
 

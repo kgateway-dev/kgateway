@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/cliutil/install"
+
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/testutils/exec"
 
@@ -204,8 +206,11 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				},
 			}
-			_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
+			// give proxy validation a chance to start
+			Eventually(func() error {
+				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
+				return err
+			}).ShouldNot(HaveOccurred())
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
@@ -333,8 +338,14 @@ var _ = Describe("Kube2e: gateway", func() {
 						},
 					},
 				}
+				vs := getVirtualService(dest, sslConfig)
 
-				_, err = virtualServiceClient.Write(getVirtualService(dest, sslConfig), clients.WriteOpts{})
+				// give Gloo a chance to pick up the secret
+				// required to allow validation to pass
+				Eventually(func() error {
+					_, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
+					return err
+				}, time.Second*5, time.Second).ShouldNot(HaveOccurred())
 				Expect(err).NotTo(HaveOccurred())
 
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
@@ -478,11 +489,12 @@ var _ = Describe("Kube2e: gateway", func() {
 			rt1 := getRouteTable("rt1", getRouteWithDelegate(rt2.Metadata.Name, "/root/rt1"))
 			vs := getVirtualServiceWithRoute(addPrefixRewrite(getRouteWithDelegate(rt1.Metadata.Name, "/root"), "/"), nil)
 
-			_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			_, err = routeTableClient.Write(rt1, clients.WriteOpts{})
+			_, err := routeTableClient.Write(rt1, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			_, err = routeTableClient.Write(rt2, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
@@ -993,6 +1005,86 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(res).To(ContainSubstring("red-pod"))
 			}
 		})
+	})
+
+	Context("tests for the validation server", func() {
+		testValidation := func(yam, expectedErr string) {
+			out, err := install.KubectlApplyOut([]byte(yam))
+			if expectedErr == "" {
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				return
+			}
+			ExpectWithOffset(1, err).To(HaveOccurred())
+			ExpectWithOffset(1, string(out)).To(ContainSubstring(expectedErr))
+		}
+
+		It("rejects bad resources", func() {
+			// specifically avoiding using a DescribeTable here in order to avoid reinstalling
+			// for every test case
+			type testCase struct {
+				resourceYaml, expectedErr string
+			}
+
+			for _, tc := range []testCase{
+				{
+					resourceYaml: `
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: ` + testHelper.InstallNamespace + `
+spec:
+  virtualHoost: {}
+`,
+					expectedErr: `could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in v1.VirtualService`,
+				},
+				{
+					resourceYaml: `
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: missing-upstream
+  namespace: ` + testHelper.InstallNamespace + `
+spec:
+  virtualHost:
+    routes:
+      - matcher:
+          methods:
+            - GET
+          prefix: /items/
+        routeAction:
+          single:
+            upstream:
+              name: does-not-exist
+              namespace: anywhere
+`,
+					expectedErr: "", // should not fail
+				},
+				{
+					resourceYaml: `
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: method-matcher
+  namespace: ` + testHelper.InstallNamespace + `
+spec:
+  virtualHost:
+    routes:
+      - matcher:
+          methods:
+            - GET # not allowed
+          prefix: /delegated-prefix
+        delegateAction:
+          name: does-not-exist # also not allowed, but caught later
+          namespace: anywhere
+`,
+					expectedErr: "routes with delegate actions cannot use method matchers", // should not fail
+				},
+			} {
+				testValidation(tc.resourceYaml, tc.expectedErr)
+			}
+		})
+
 	})
 })
 

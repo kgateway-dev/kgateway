@@ -1,0 +1,31 @@
+{{- if .Values.gateway.enabled }}
+{{- if .Values.gateway.validation }}
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: gateway
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "5" # should come before cert-gen job
+webhooks:
+  - name: gateway.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
+    clientConfig:
+      service:
+        name: gateway
+        namespace: {{ .Release.Namespace }}
+        path: "/validation"
+      caBundle: "" # update manually or use certgen job
+    rules:
+      - operations: [ "CREATE", "UPDATE", "DELETE" ]
+        apiGroups: ["gateway.solo.io", "gateway.solo.io.v2"]
+        apiVersions: ["v1", "v2"]
+        resources: ["*"]
+{{- if .Values.gateway.validation.failurePolicy }}
+    failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
+{{- end }}
+
+{{- end }}
+{{- end }}

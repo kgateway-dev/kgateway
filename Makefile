@@ -333,10 +333,34 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 
 
 #----------------------------------------------------------------------------------
+# Certgen - Job for creating TLS Secrets in Kubernetes
+#----------------------------------------------------------------------------------
+
+CERTGEN_DIR=jobs/certgen/cmd
+CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
+
+$(OUTPUT_DIR)/certgen-linux-amd64: $(CERTGEN_SOURCES)
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
+
+.PHONY: certgen
+certgen: $(OUTPUT_DIR)/certgen-linux-amd64
+
+
+$(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
+	cp $< $@
+
+.PHONY: certgen-docker
+certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.certgen \
+		-t quay.io/solo-io/certgen:$(VERSION) \
+		$(call get_test_tag,certgen)
+
+
+#----------------------------------------------------------------------------------
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl gateway gateway-conversion discovery envoyinit ingress
+build: gloo glooctl gateway gateway-conversion discovery envoyinit certgen ingress
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -418,7 +442,7 @@ ifeq ($(RELEASE),"true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gloo-envoy-wrapper-docker ingress-docker access-logger-docker
+docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gloo-envoy-wrapper-docker certgen-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -432,6 +456,7 @@ ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/discovery:$(VERSION) && \
 	docker push quay.io/solo-io/gloo:$(VERSION) && \
 	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
+	docker push quay.io/solo-io/certgen:$(VERSION) && \
 	docker push quay.io/solo-io/access-logger:$(VERSION)
 endif
 
@@ -442,6 +467,7 @@ push-kind-images: docker
 	kind load docker-image quay.io/solo-io/discovery:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/gloo:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/certgen:$(VERSION) --name $(CLUSTER_NAME)
 
 
 #----------------------------------------------------------------------------------
@@ -464,7 +490,7 @@ build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux
 .PHONY: build-kind-assets
 build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
 
-TEST_DOCKER_TARGETS := gateway-docker-test gateway-conversion-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test
+TEST_DOCKER_TARGETS := gateway-docker-test gateway-conversion-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test certgen-docker-test
 
 .PHONY: push-test-images $(TEST_DOCKER_TARGETS)
 push-test-images: $(TEST_DOCKER_TARGETS)
@@ -486,6 +512,9 @@ gloo-docker-test: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 
 gloo-envoy-wrapper-docker-test: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
 	docker push $(GCR_REPO_PREFIX)/gloo-envoy-wrapper:$(TEST_IMAGE_TAG)
+
+certgen-docker-test: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
+	docker push $(GCR_REPO_PREFIX)/certgen:$(TEST_IMAGE_TAG)
 
 .PHONY: build-test-chart
 build-test-chart:

@@ -141,5 +141,35 @@ roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: gateway-resource-reader
   apiGroup: rbac.authorization.k8s.io
+
+
+
+{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.certGenJob }}
+---
+# this role requires access to cluster-scoped resources
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "5"
+subjects:
+- kind: ServiceAccount
+  name: gateway-certgen
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
+  apiGroup: rbac.authorization.k8s.io
+
+{{- end -}}
+{{- end -}}
+
+
 {{- end -}}
 {{- end -}}

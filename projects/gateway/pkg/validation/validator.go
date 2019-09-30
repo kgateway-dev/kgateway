@@ -4,6 +4,12 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"time"
+
+	"github.com/avast/retry-go"
+
+	"github.com/solo-io/go-utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"go.uber.org/multierr"
 
@@ -19,11 +25,13 @@ import (
 	"go.uber.org/zap"
 )
 
+type ProxyReports []*validation.ProxyReport
+
 var (
 	NotReadyErr = errors.Errorf("validation is yet not available. Waiting for first snapshot")
 
 	RouteTableDeleteErr = func(parentVirtualServices, parentRouteTables []core.ResourceRef) error {
-		return errors.Errorf("Deletion blocked because active Routes delegate to this Route Table. Remove delegate actions to this route table the virtual services: %v and the route tables: %v, then try again", parentVirtualServices, parentRouteTables)
+		return errors.Errorf("Deletion blocked because active Routes delegate to this Route Table. Remove delegate actions to this route table from the virtual services: %v and the route tables: %v, then try again", parentVirtualServices, parentRouteTables)
 	}
 	VirtualServiceDeleteErr = func(parentGateways []core.ResourceRef) error {
 		return errors.Errorf("Deletion blocked because active Gateways reference this Virtual Service. Remove refs to this virtual service from the gateways: %v, then try again", parentGateways)
@@ -37,28 +45,41 @@ const (
 
 type Validator interface {
 	v2.ApiSyncer
-	Ready() bool
-	ValidateGateway(ctx context.Context, gw *v2.Gateway) error
-	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) error
+	ValidateGateway(ctx context.Context, gw *v2.Gateway) (ProxyReports, error)
+	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error)
 	ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef) error
-	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) error
+	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (ProxyReports, error)
 	ValidateDeleteRouteTable(ctx context.Context, rt core.ResourceRef) error
 }
 
 type validator struct {
-	l                 sync.RWMutex
-	latestSnapshot    *v2.ApiSnapshot
-	latestSnapshotErr error
-	translator        translator.Translator
-	validationClient  validation.ProxyValidationServiceClient
-	writeNamespace    string
+	lock                         sync.RWMutex
+	latestSnapshot               *v2.ApiSnapshot
+	latestSnapshotErr            error
+	translator                   translator.Translator
+	validationClient             validation.ProxyValidationServiceClient
+	ignoreProxyValidationFailure bool
+	allowBrokenLinks             bool
+	writeNamespace               string
 }
 
-func NewValidator(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string) *validator {
-	return &validator{translator: translator, validationClient: validationClient, writeNamespace: writeNamespace}
+type ValidatorConfig struct {
+	translator                   translator.Translator
+	validationClient             validation.ProxyValidationServiceClient
+	writeNamespace               string
+	ignoreProxyValidationFailure bool
+	allowBrokenLinks             bool
 }
 
-func (v *validator) Ready() bool {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowBrokenLinks bool) ValidatorConfig {
+	return ValidatorConfig{translator: translator, validationClient: validationClient, writeNamespace: writeNamespace, ignoreProxyValidationFailure: ignoreProxyValidationFailure, allowBrokenLinks: allowBrokenLinks}
+}
+
+func NewValidator(cfg ValidatorConfig) *validator {
+	return &validator{translator: cfg.translator, validationClient: cfg.validationClient, writeNamespace: cfg.writeNamespace, ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure, allowBrokenLinks: cfg.allowBrokenLinks}
+}
+
+func (v *validator) ready() bool {
 	return v.latestSnapshot != nil
 }
 
@@ -66,16 +87,15 @@ func (v *validator) Sync(ctx context.Context, snap *v2.ApiSnapshot) error {
 	snapCopy := snap.Clone()
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 	var errs error
-	for proxyName := range gatewaysByProxy {
-		gatewayList := gatewaysByProxy[proxyName]
-		_, resourceErrs := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
-		if err := resourceErrs.Validate(); err != nil {
+	for proxyName, gatewayList := range gatewaysByProxy {
+		_, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
+		if err := reports.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 
-	v.l.Lock()
-	defer v.l.Unlock()
+	v.lock.Lock()
+	defer v.lock.Unlock()
 
 	v.latestSnapshotErr = errs
 	v.latestSnapshot = &snapCopy
@@ -87,93 +107,154 @@ func (v *validator) Sync(ctx context.Context, snap *v2.ApiSnapshot) error {
 	return nil
 }
 
-func (v *validator) validateSnapshot(ctx context.Context, snap *v2.ApiSnapshot, proxyNames []string) error {
-	if !v.Ready() {
-		return NotReadyErr
+type applyResource func(snap *v2.ApiSnapshot) (proxyNames []string, resource resources.Resource, ref core.ResourceRef)
+
+// update internal snapshot to handle race where a lot of resources may be deleted at once, before syncer updates
+// should be called within a lock
+func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
+	ref := resource.GetMetadata().Ref()
+	switch resource.(type) {
+	case *v1.VirtualService:
+		for i, rt := range v.latestSnapshot.VirtualServices {
+			if rt.Metadata.Ref() == ref {
+				v.latestSnapshot.VirtualServices = append(v.latestSnapshot.VirtualServices[:i], v.latestSnapshot.VirtualServices[i+1:]...)
+				break
+			}
+		}
+	case *v1.RouteTable:
+		for i, rt := range v.latestSnapshot.RouteTables {
+			if rt.Metadata.Ref() == ref {
+				v.latestSnapshot.RouteTables = append(v.latestSnapshot.RouteTables[:i], v.latestSnapshot.RouteTables[i+1:]...)
+				break
+			}
+		}
 	}
+}
+
+func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (ProxyReports, error) {
+	if !v.ready() {
+		return nil, NotReadyErr
+	}
+
+	ctx = contextutils.WithLogger(ctx, "gateway-validator")
+
+	v.lock.RLock()
+	snap := v.latestSnapshot.Clone()
+	v.lock.RUnlock()
 
 	if v.latestSnapshotErr != nil {
 		contextutils.LoggerFrom(ctx).Errorw(InvalidSnapshotErrMessage, zap.Error(v.latestSnapshotErr))
 		// allow writes if storage is already broken
-		return nil
+		return nil, nil
 	}
+
+	proxyNames, resource, ref := apply(&snap)
 
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 
+	var (
+		errs         error
+		proxyReports ProxyReports
+	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
-		proxy, resourceErrs := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
-		if err := resourceErrs.Validate(); err != nil {
-			return errors.Wrapf(err, "could not render proxy")
+		proxy, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snap, gatewayList)
+		validate := reports.ValidateStrict
+		if v.allowBrokenLinks {
+			validate = reports.Validate
+		}
+		if err := validate(); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "could not render proxy"))
+			continue
 		}
 
 		if v.validationClient == nil {
 			contextutils.LoggerFrom(ctx).Warnf("skipping proxy validation check as the " +
 				"Proxy validation client has not been initialized. check to ensure that the gateway and gloo processes " +
 				"are configured to communicate.")
-			return nil
+			continue
 		}
 
 		// validate the proxy with gloo
-		proxyReport, err := v.validationClient.ValidateProxy(ctx, &validation.ProxyValidationServiceRequest{Proxy: proxy})
+		var proxyReport *validation.ProxyValidationServiceResponse
+		err := retry.Do(func() error {
+			rpt, err := v.validationClient.ValidateProxy(ctx, &validation.ProxyValidationServiceRequest{Proxy: proxy})
+			proxyReport = rpt
+			return err
+		},
+			retry.Attempts(4),
+			retry.Delay(250*time.Millisecond),
+		)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Errorw("failed to validate Proxy with Gloo validation server.", zap.Error(err))
-			return errors.Wrapf(err, "failed to validate Proxy with Gloo validation server")
+			err = errors.Wrapf(err, "failed to communicate with Gloo Proxy validation server")
+			if v.ignoreProxyValidationFailure {
+				contextutils.LoggerFrom(ctx).Error(err)
+			} else {
+				errs = multierr.Append(errs, err)
+			}
+			continue
 		}
 
-		if proxyErr := validationutils.GetProxyError(proxyReport.ProxyReport); proxyErr != nil {
-			return errors.Wrapf(proxyErr, "rendered proxy had errors")
+		if err := validationutils.GetProxyError(proxyReport.ProxyReport); err != nil {
+			proxyReports = append(proxyReports, proxyReport.ProxyReport)
+
+			if reportData, marshalErr := protoutils.MarshalBytes(proxyReport); marshalErr == nil {
+				err = errors.Wrapf(err, "%s", reportData)
+			}
+			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
+			continue
 		}
 	}
-	return nil
+
+	if errs != nil {
+		contextutils.LoggerFrom(ctx).Debugw("Rejected %T %v: %v", resource, ref, errs)
+		return proxyReports, errors.Wrapf(errs, "validating %T %v", resource, ref)
+	}
+
+	contextutils.LoggerFrom(ctx).Debugw("Accepted %T %v", resource, ref)
+
+	// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
+	v.lock.Lock()
+	apply(v.latestSnapshot)
+	v.lock.Unlock()
+
+	return nil, nil
 }
 
-func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) error {
-	if !v.Ready() {
-		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
-	}
-	v.l.RLock()
-	snap := v.latestSnapshot.Clone()
-	v.l.RUnlock()
+func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error) {
+	apply := func(snap *v2.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
+		vsRef := vs.GetMetadata().Ref()
 
-	vsRef := vs.GetMetadata().Ref()
-
-	// TODO: move this to a function when generics become a thing
-	var isUpdate bool
-	for i, existingVs := range snap.VirtualServices {
-		if vsRef == existingVs.GetMetadata().Ref() {
-			// replace the existing virtual service in the snapshot
-			snap.VirtualServices[i] = vs
-			isUpdate = true
-			break
+		// TODO: move this to a function when generics become a thing
+		var isUpdate bool
+		for i, existingVs := range snap.VirtualServices {
+			if vsRef == existingVs.GetMetadata().Ref() {
+				// replace the existing virtual service in the snapshot
+				snap.VirtualServices[i] = vs
+				isUpdate = true
+				break
+			}
 		}
-	}
-	if !isUpdate {
-		snap.VirtualServices = append(snap.VirtualServices, vs)
-		snap.VirtualServices.Sort()
-	}
+		if !isUpdate {
+			snap.VirtualServices = append(snap.VirtualServices, vs)
+			snap.VirtualServices.Sort()
+		}
 
-	proxiesToConsider := proxiesForVirtualService(snap.Gateways, vs)
-
-	if err := v.validateSnapshot(ctx, &snap, proxiesToConsider); err != nil {
-		contextutils.LoggerFrom(ctx).Debugw("Rejected %T %v: %v", vs, vsRef, err)
-		return errors.Wrapf(err, "validating %T %v", vs, vsRef)
+		return proxiesForVirtualService(snap.Gateways, vs), vs, vsRef
 	}
 
-	contextutils.LoggerFrom(ctx).Debugw("Accepted %T %v", vs, vsRef)
-
-	return nil
+	return v.validateSnapshot(ctx, apply)
 }
 
 func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core.ResourceRef) error {
-	if !v.Ready() {
+	if !v.ready() {
 		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
 	}
-	v.l.RLock()
+	v.lock.Lock()
+	defer v.lock.Unlock()
 	snap := v.latestSnapshot.Clone()
-	v.l.RUnlock()
 
-	_, err := snap.VirtualServices.Find(vsRef.Strings())
+	vs, err := snap.VirtualServices.Find(vsRef.Strings())
 	if err != nil {
 		// if it's not present in the snapshot, allow deletion
 		return nil
@@ -197,61 +278,56 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core
 
 	if len(parentGateways) > 0 {
 		err := VirtualServiceDeleteErr(parentGateways)
-		contextutils.LoggerFrom(ctx).Debugw("Rejected deletion of Virtual Service %v: %v", vsRef, err)
-		return err
+		if !v.allowBrokenLinks {
+			contextutils.LoggerFrom(ctx).Infof("Rejected deletion of Virtual Service %v: %v", vsRef, err)
+			return err
+		}
+		contextutils.LoggerFrom(ctx).Warn("Allowed deletion of Virtual Service %v with warning: %v", vsRef, err)
+	} else {
+		contextutils.LoggerFrom(ctx).Debugw("Accepted deletion of Virtual Service %v", vsRef)
 	}
 
-	contextutils.LoggerFrom(ctx).Debugw("Accepted deletion of Virtual Service %v", vsRef)
+	v.deleteFromLocalSnapshot(vs)
 
 	return nil
 }
 
-func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) error {
-	if !v.Ready() {
-		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
-	}
-	v.l.RLock()
-	snap := v.latestSnapshot.Clone()
-	v.l.RUnlock()
+func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (ProxyReports, error) {
+	apply := func(snap *v2.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
+		rtRef := rt.GetMetadata().Ref()
 
-	rtRef := rt.GetMetadata().Ref()
-
-	// TODO: move this to a function when generics become a thing
-	var isUpdate bool
-	for i, existingRt := range snap.RouteTables {
-		if rtRef == existingRt.GetMetadata().Ref() {
-			// replace the existing route table in the snapshot
-			snap.RouteTables[i] = rt
-			isUpdate = true
-			break
+		// TODO: move this to a function when generics become a thing
+		var isUpdate bool
+		for i, existingRt := range snap.RouteTables {
+			if rtRef == existingRt.GetMetadata().Ref() {
+				// replace the existing route table in the snapshot
+				snap.RouteTables[i] = rt
+				isUpdate = true
+				break
+			}
 		}
-	}
-	if !isUpdate {
-		snap.RouteTables = append(snap.RouteTables, rt)
-		snap.RouteTables.Sort()
-	}
+		if !isUpdate {
+			snap.RouteTables = append(snap.RouteTables, rt)
+			snap.RouteTables.Sort()
+		}
 
-	proxiesToConsider := proxiesForRouteTable(snap.Gateways, snap.VirtualServices, snap.RouteTables, rt)
+		proxiesToConsider := proxiesForRouteTable(snap.Gateways, snap.VirtualServices, snap.RouteTables, rt)
 
-	if err := v.validateSnapshot(ctx, &snap, proxiesToConsider); err != nil {
-		contextutils.LoggerFrom(ctx).Debugw("Rejected %T %v: %v", rt, rtRef, err)
-		return errors.Wrapf(err, "validating %T %v", rt, rtRef)
+		return proxiesToConsider, rt, rtRef
 	}
 
-	contextutils.LoggerFrom(ctx).Debugw("Accepted %T %v", rt, rtRef)
-
-	return nil
+	return v.validateSnapshot(ctx, apply)
 }
 
 func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.ResourceRef) error {
-	if !v.Ready() {
+	if !v.ready() {
 		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
 	}
-	v.l.RLock()
+	v.lock.Lock()
 	snap := v.latestSnapshot.Clone()
-	v.l.RUnlock()
+	defer v.lock.Unlock()
 
-	_, err := snap.RouteTables.Find(rtRef.Strings())
+	rt, err := snap.RouteTables.Find(rtRef.Strings())
 	if err != nil {
 		// if it's not present in the snapshot, allow deletion
 		return nil
@@ -275,50 +351,45 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.Res
 
 	if len(parentVirtualServices) > 0 || len(parentRouteTables) > 0 {
 		err := RouteTableDeleteErr(parentVirtualServices, parentRouteTables)
-		contextutils.LoggerFrom(ctx).Debugw("Rejected deletion of Route Table %v: %v", rtRef, err)
-		return err
+		if !v.allowBrokenLinks {
+			contextutils.LoggerFrom(ctx).Debugw("Rejected deletion of Route Table %v: %v", rtRef, err)
+			return err
+		}
+		contextutils.LoggerFrom(ctx).Warn("Allowed deletion of Route Table %v with warning: %v", rtRef, err)
+	} else {
+		contextutils.LoggerFrom(ctx).Debugw("Accepted Route Table deletion %v", rtRef)
 	}
 
-	contextutils.LoggerFrom(ctx).Debugw("Accepted Route Table deletion %v", rtRef)
+	v.deleteFromLocalSnapshot(rt)
 
 	return nil
 }
 
-func (v *validator) ValidateGateway(ctx context.Context, gw *v2.Gateway) error {
-	if !v.Ready() {
-		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
-	}
-	v.l.RLock()
-	snap := v.latestSnapshot.Clone()
-	v.l.RUnlock()
+func (v *validator) ValidateGateway(ctx context.Context, gw *v2.Gateway) (ProxyReports, error) {
+	apply := func(snap *v2.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
+		gwRef := gw.GetMetadata().Ref()
 
-	gwRef := gw.GetMetadata().Ref()
-
-	// TODO: move this to a function when generics become a thing
-	var isUpdate bool
-	for i, existingGw := range snap.Gateways {
-		if gwRef == existingGw.GetMetadata().Ref() {
-			// replace the existing gateway in the snapshot
-			snap.Gateways[i] = gw
-			isUpdate = true
-			break
+		// TODO: move this to a function when generics become a thing
+		var isUpdate bool
+		for i, existingGw := range snap.Gateways {
+			if gwRef == existingGw.GetMetadata().Ref() {
+				// replace the existing gateway in the snapshot
+				snap.Gateways[i] = gw
+				isUpdate = true
+				break
+			}
 		}
-	}
-	if !isUpdate {
-		snap.Gateways = append(snap.Gateways, gw)
-		snap.Gateways.Sort()
-	}
+		if !isUpdate {
+			snap.Gateways = append(snap.Gateways, gw)
+			snap.Gateways.Sort()
+		}
 
-	proxiesToConsider := utils.GetProxyNamesForGateway(gw)
+		proxiesToConsider := utils.GetProxyNamesForGateway(gw)
 
-	if err := v.validateSnapshot(ctx, &snap, proxiesToConsider); err != nil {
-		contextutils.LoggerFrom(ctx).Debugw("Rejected %T %v: %v", gw, gwRef, err)
-		return errors.Wrapf(err, "validating %T %v", gw, gwRef)
+		return proxiesToConsider, gw, gwRef
 	}
 
-	contextutils.LoggerFrom(ctx).Debugw("Accepted %T %v", gw, gwRef)
-
-	return nil
+	return v.validateSnapshot(ctx, apply)
 }
 
 func proxiesForVirtualService(gwList v2.GatewayList, vs *v1.VirtualService) []string {

@@ -8,6 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/types"
+	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -87,6 +91,20 @@ func StartTestHelper() {
 		}
 		return errors.New("glooctl check detected a problem with the installation")
 	}, "20s", "4s").Should(BeNil())
+
+	// enable strict validation
+	// this can be removed once we enable validation by default
+	// set projects/gateway/pkg/syncer.AcceptAllResourcesByDefault is set to false
+	settingsClient := clienthelpers.MustSettingsClient()
+	settings, err := settingsClient.Read(testHelper.InstallNamespace, "default", clients.ReadOpts{})
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(settings.Gateway).NotTo(BeNil())
+	Expect(settings.Gateway.Validation).NotTo(BeNil())
+	settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: false}
+
+	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func TearDownTestHelper() {

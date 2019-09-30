@@ -139,5 +139,33 @@ rules:
   # update is needed for status updates
   verbs: ["get", "list", "watch", "create", "update"]
 
+
+{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.certGenJob }}
+---
+# this role requires access to cluster-scoped resources
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
+    labels:
+        app: gloo
+        gloo: rbac
+    annotations:
+      "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "5"
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "update"]
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations"]
+  verbs: ["get", "update"]
+
+{{- end -}}
+{{- end -}}
+
+
+
 {{- end -}}
 {{- end -}}

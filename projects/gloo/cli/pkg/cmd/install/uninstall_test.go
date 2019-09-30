@@ -70,6 +70,9 @@ var _ = Describe("Uninstall", func() {
 			"delete ConfigMap -l app=gloo -n gloo-system",
 			"delete ConfigMap -l app=glooe-grafana -n gloo-system",
 			"delete ConfigMap -l app=glooe-prometheus -n gloo-system",
+			"delete Job -l app=gloo -n gloo-system",
+			"delete Job -l app=glooe-grafana -n gloo-system",
+			"delete Job -l app=glooe-prometheus -n gloo-system",
 		)
 		uninstall(cli)
 	})
@@ -89,6 +92,9 @@ var _ = Describe("Uninstall", func() {
 			"delete ConfigMap -l app=gloo -n foo",
 			"delete ConfigMap -l app=glooe-grafana -n foo",
 			"delete ConfigMap -l app=glooe-prometheus -n foo",
+			"delete Job -l app=gloo -n foo",
+			"delete Job -l app=glooe-grafana -n foo",
+			"delete Job -l app=glooe-prometheus -n foo",
 		)
 		uninstall(cli)
 	})
@@ -108,6 +114,9 @@ var _ = Describe("Uninstall", func() {
 			"delete ConfigMap -l app=gloo -n gloo-system",
 			"delete ConfigMap -l app=glooe-grafana -n gloo-system",
 			"delete ConfigMap -l app=glooe-prometheus -n gloo-system",
+			"delete Job -l app=gloo -n gloo-system",
+			"delete Job -l app=glooe-grafana -n gloo-system",
+			"delete Job -l app=glooe-prometheus -n gloo-system",
 			deleteCrds)
 		uninstall(cli)
 	})
@@ -127,6 +136,9 @@ var _ = Describe("Uninstall", func() {
 			"delete ConfigMap -l app=gloo -n foo",
 			"delete ConfigMap -l app=glooe-grafana -n foo",
 			"delete ConfigMap -l app=glooe-prometheus -n foo",
+			"delete Job -l app=gloo -n foo",
+			"delete Job -l app=glooe-grafana -n foo",
+			"delete Job -l app=glooe-prometheus -n foo",
 			deleteCrds)
 		uninstall(cli)
 	})

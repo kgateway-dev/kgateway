@@ -107,6 +107,9 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
+	if cfg.Gateway.CertGenJob != nil {
+		cfg.Gateway.CertGenJob.Image.Tag = version
+	}
 	cfg.Gateway.ConversionJob.Image.Tag = version
 	cfg.AccessLogger.Image.Tag = version
 
@@ -122,6 +125,9 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		cfg.AccessLogger.Image.PullPolicy = always
 		for _, v := range cfg.GatewayProxies {
 			v.PodTemplate.Image.PullPolicy = always
+		}
+		if cfg.Gateway.CertGenJob != nil {
+			cfg.Gateway.CertGenJob.Image.PullPolicy = always
 		}
 	}
 

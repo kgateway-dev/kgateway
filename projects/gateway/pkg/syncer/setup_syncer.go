@@ -2,12 +2,17 @@ package syncer
 
 import (
 	"context"
+	"net/http"
+	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gatewayvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	"github.com/gogo/protobuf/types"
@@ -29,7 +34,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const DefaultValidationServerAddress = "gloo:9988"
+// TODO: switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
+var AcceptAllResourcesByDefault = true
+
+// TODO: expose AllowMissingLinks as a setting
+var AllowMissingLinks = true
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
@@ -80,25 +89,51 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
 
-	validationServerAddress := settings.GetGateway().GetValidationServerAddr()
-	if validationServerAddress == "" {
-		validationServerAddress = DefaultValidationServerAddress
+	var validation *ValidationOpts
+	validationCfg := settings.GetGateway().GetValidation()
+	if validationCfg != nil {
+		alwaysAcceptResources := AcceptAllResourcesByDefault
+
+		if alwaysAccept := validationCfg.AlwaysAccept; alwaysAccept != nil {
+			alwaysAcceptResources = alwaysAccept.GetValue()
+		}
+
+		allowMissingLinks := AllowMissingLinks
+
+		validation = &ValidationOpts{
+			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
+			ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
+			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
+			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
+			IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
+			AlwaysAcceptResources:        alwaysAcceptResources,
+			AllowMissingLinks:            allowMissingLinks,
+		}
+		if validation.ProxyValidationServerAddress == "" {
+			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
+		}
+		if validation.ValidatingWebhookCertPath == "" {
+			validation.ValidatingWebhookCertPath = defaults.ValidationWebhookTlsCertPath
+		}
+		if validation.ValidatingWebhookKeyPath == "" {
+			validation.ValidatingWebhookKeyPath = defaults.ValidationWebhookTlsKeyPath
+		}
 	}
 
 	opts := Opts{
-		WriteNamespace:          writeNamespace,
-		WatchNamespaces:         watchNamespaces,
-		Gateways:                gatewayFactory,
-		VirtualServices:         virtualServiceFactory,
-		RouteTables:             routeTableFactory,
-		Proxies:                 proxyFactory,
-		ValidationServerAddress: validationServerAddress,
+		WriteNamespace:  writeNamespace,
+		WatchNamespaces: watchNamespaces,
+		Gateways:        gatewayFactory,
+		VirtualServices: virtualServiceFactory,
+		RouteTables:     routeTableFactory,
+		Proxies:         proxyFactory,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
 		DevMode:                true,
 		DisableAutoGenGateways: settings.GetGateway().GetDisableAutoGenGateways(),
+		Validation:             validation,
 	}
 
 	return RunGateway(opts)
@@ -107,6 +142,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 func RunGateway(opts Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
+	ctx := opts.WatchOpts.Ctx
 
 	gatewayClient, err := v2.NewGatewayClient(opts.Gateways)
 	if err != nil {
@@ -146,7 +182,7 @@ func RunGateway(opts Opts) error {
 	if !opts.DisableAutoGenGateways {
 		for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
 			if _, err := gatewayClient.Write(gw, clients.WriteOpts{
-				Ctx: opts.WatchOpts.Ctx,
+				Ctx: ctx,
 			}); err != nil && !errors.IsExist(err) {
 				return err
 			}
@@ -160,15 +196,7 @@ func RunGateway(opts Opts) error {
 
 	prop := propagator.NewPropagator("gateway", gatewayClient, virtualServiceClient, proxyClient, writeErrs)
 
-	var validationClient validation.ProxyValidationServiceClient
-	cc, err := grpc.DialContext(opts.WatchOpts.Ctx, opts.ValidationServerAddress, grpc.WithBlock())
-	if err == nil {
-		validationClient = validation.NewProxyValidationServiceClient(cc)
-	} else {
-		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorw("failed to initialize grpc connection to validation server. validation will not be enabled", zap.Error(err))
-	}
-
-	t := translator.NewDefaultTranslator()
+	txlator := translator.NewDefaultTranslator()
 
 	translatorSyncer := NewTranslatorSyncer(
 		opts.WriteNamespace,
@@ -177,9 +205,30 @@ func RunGateway(opts Opts) error {
 		virtualServiceClient,
 		rpt,
 		prop,
-		t)
+		txlator)
 
-	validationSyncer := gatewayvalidation.NewValidator(t, validationClient, opts.WriteNamespace)
+	var validationClient validation.ProxyValidationServiceClient
+	var ignoreProxyValidationFailure bool
+	var allowMissingLinks bool
+	if opts.Validation != nil {
+		contextutils.LoggerFrom(ctx).Infow("starting proxy validation client",
+			zap.String("validation_server", opts.Validation.ProxyValidationServerAddress))
+		cc, err := grpc.DialContext(ctx, opts.Validation.ProxyValidationServerAddress, grpc.WithInsecure())
+		if err != nil {
+			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
+		}
+		validationClient = validation.NewProxyValidationServiceClient(cc)
+		ignoreProxyValidationFailure = opts.Validation.IgnoreProxyValidationFailure
+		allowMissingLinks = opts.Validation.AllowMissingLinks
+	}
+
+	validationSyncer := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
+		txlator,
+		validationClient,
+		opts.WriteNamespace,
+		ignoreProxyValidationFailure,
+		allowMissingLinks,
+	))
 
 	gatewaySyncers := v2.ApiSyncers{
 		translatorSyncer,
@@ -191,19 +240,65 @@ func RunGateway(opts Opts) error {
 	if err != nil {
 		return err
 	}
-	go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, eventLoopErrs, "event_loop")
+	go errutils.AggregateErrs(ctx, writeErrs, eventLoopErrs, "event_loop")
 
-	logger := contextutils.LoggerFrom(opts.WatchOpts.Ctx)
+	logger := contextutils.LoggerFrom(ctx)
 
 	go func() {
 		for {
 			select {
 			case err := <-writeErrs:
 				logger.Errorf("error: %v", err)
-			case <-opts.WatchOpts.Ctx.Done():
+			case <-ctx.Done():
 				return
 			}
 		}
 	}()
+
+	validationServerErr := make(chan error, 1)
+	if opts.Validation != nil {
+		validationWebhook, err := k8sadmisssion.NewGatewayValidatingWebhook(
+			k8sadmisssion.NewWebhookConfig(
+				ctx,
+				validationSyncer,
+				opts.WatchNamespaces,
+				opts.Validation.ValidatingWebhookPort,
+				opts.Validation.ValidatingWebhookCertPath,
+				opts.Validation.ValidatingWebhookKeyPath,
+				opts.Validation.AlwaysAcceptResources,
+			),
+		)
+		if err != nil {
+			return errors.Wrapf(err, "creating validating webhook")
+		}
+
+		go func() {
+			// close out validation server when context is cancelled
+			<-ctx.Done()
+			validationWebhook.Close()
+		}()
+		go func() {
+			contextutils.LoggerFrom(ctx).Infow("starting gateway validation server",
+				zap.Int("port", opts.Validation.ValidatingWebhookPort),
+				zap.String("cert", opts.Validation.ValidatingWebhookCertPath),
+				zap.String("key", opts.Validation.ValidatingWebhookKeyPath),
+			)
+			if err := validationWebhook.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				select {
+				case validationServerErr <- err:
+				default:
+					logger.DPanicw("failed to start validation webhook server", zap.Error(err))
+				}
+			}
+		}()
+	}
+
+	// give the validation server 100ms to start
+	select {
+	case err := <-validationServerErr:
+		return errors.Wrapf(err, "failed to start validation webhook server")
+	case <-time.After(time.Millisecond * 100):
+	}
+
 	return nil
 }

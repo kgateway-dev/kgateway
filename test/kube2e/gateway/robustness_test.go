@@ -5,6 +5,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/go-utils/kubeutils"
@@ -197,6 +199,10 @@ var _ = Describe("Robustness tests", func() {
 				},
 			},
 		})
+
+		// required to prevent gateway webhook from rejecting
+		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
+
 		virtualService, err = virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 

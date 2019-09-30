@@ -81,7 +81,7 @@ func (t *TLSSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.
 	return nil, nil
 }
 
-func (t *TLSSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
 	if glooSecret, ok := resource.(*v1.Secret); ok {
 		if tlsGlooSecret, ok := glooSecret.Kind.(*v1.Secret_Tls); ok {
 			if glooSecret.Metadata.Annotations != nil {

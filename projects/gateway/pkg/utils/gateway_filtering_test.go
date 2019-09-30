@@ -10,7 +10,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway/pkg/utils"
 )
 
-var _ = Describe("TranslatorSyncer unit tests", func() {
+var _ = Describe("gateway util unit tests", func() {
 	Describe("GatewaysByProxyName", func() {
 		It("assigns each gateway once to each proxy by their proxyNames", func() {
 

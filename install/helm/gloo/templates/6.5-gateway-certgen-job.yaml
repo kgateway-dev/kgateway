@@ -1,0 +1,42 @@
+{{- if .Values.gateway.enabled }}
+{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.certGenJob }}
+{{- $image := .Values.gateway.certGenJob.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-certgen
+  name: gateway-certgen
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "10"
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: gateway-certgen
+    spec:
+      serviceAccountName: gateway-certgen
+      containers:
+        - image: {{template "gloo.image" $image}}
+          imagePullPolicy: {{ $image.pullPolicy }}
+          name: certgen
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          args:
+            - "--secret-name={{ .Values.gateway.validation.secretName }}"
+            - "--svc-name=gateway"
+            - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
+      restartPolicy: {{ .Values.gateway.certGenJob.restartPolicy }}
+{{- end }}
+{{- end }}
+{{- end }}
