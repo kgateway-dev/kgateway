@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+        Flatten enterprise RBAC config by removing useless 'config' nesting from new (not-yet documented/supported)
+        strongly-typed API; deprecated opaque RBAC API unchanged and still supported. Also add ability to disable
+        RBAC on vhosts in strongly-typed API (routes already supported in deprecated config)
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

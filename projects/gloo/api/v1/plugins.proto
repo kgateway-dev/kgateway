@@ -109,7 +109,7 @@ message VirtualHostPlugins {
     // headers to make routing decisions or combine with RBAC for fine-grained access control.
     jwt.plugins.gloo.solo.io.VhostExtension jwt = 9;
     // Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims)
-    rbac.plugins.gloo.solo.io.VhostExtension rbac = 11;
+    rbac.plugins.gloo.solo.io.ExtensionSettings rbac = 11;
     // Enterprise-only: Authentication configuration
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 12;
 }
@@ -160,7 +160,7 @@ message RoutePlugins {
     // headers to make routing decisions or combine with RBAC for fine-grained access control.
     jwt.plugins.gloo.solo.io.RouteExtension jwt = 16;
     // Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims)
-    rbac.plugins.gloo.solo.io.RouteExtension rbac = 17;
+    rbac.plugins.gloo.solo.io.ExtensionSettings rbac = 17;
     // Enterprise-only: Authentication configuration
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 18;
 }

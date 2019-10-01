@@ -116,7 +116,7 @@ to be usable by Gloo.
 "ratelimit": .ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension
 "waf": .waf.plugins.gloo.solo.io.Settings
 "jwt": .jwt.plugins.gloo.solo.io.VhostExtension
-"rbac": .rbac.plugins.gloo.solo.io.VhostExtension
+"rbac": .rbac.plugins.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 
 ```
@@ -133,7 +133,7 @@ to be usable by Gloo.
 | `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
 | `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/jwt/jwt.proto.sk#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/rbac/rbac.proto.sk#vhostextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
@@ -165,7 +165,7 @@ to be usable by Gloo.
 "ratelimit": .ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension
 "waf": .waf.plugins.gloo.solo.io.Settings
 "jwt": .jwt.plugins.gloo.solo.io.RouteExtension
-"rbac": .rbac.plugins.gloo.solo.io.RouteExtension
+"rbac": .rbac.plugins.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 
 ```
@@ -188,7 +188,7 @@ to be usable by Gloo.
 | `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
 | `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/jwt/jwt.proto.sk#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/rbac/rbac.proto.sk#routeextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
