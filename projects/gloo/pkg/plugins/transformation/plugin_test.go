@@ -34,7 +34,7 @@ var _ = Describe("Plugin", func() {
 	It("sets transformation config for weighted destinations", func() {
 		out := &envoyroute.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
-			WeighedDestinationPlugins: &v1.WeightedDestinationPlugins{
+			WeightedDestinationPlugins: &v1.WeightedDestinationPlugins{
 				Transformations: t,
 			},
 		}, out)

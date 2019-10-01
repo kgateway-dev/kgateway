@@ -27,7 +27,7 @@ var _ = Describe("Plugin", func() {
 	It("converts the header manipulation config for weighted destinations", func() {
 		out := &envoyroute.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
-			WeighedDestinationPlugins: &v1.WeightedDestinationPlugins{
+			WeightedDestinationPlugins: &v1.WeightedDestinationPlugins{
 				HeaderManipulation: testHeaderManip,
 			},
 		}, out)
