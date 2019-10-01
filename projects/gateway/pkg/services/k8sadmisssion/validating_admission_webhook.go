@@ -157,7 +157,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 		review            v1beta1.AdmissionReview
 	)
 	if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
-		admissionResponse = wh.validate(wh.ctx, &review)
+		admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
 	} else {
 		logger.Errorf("Can't decode body: %v", err)
 		admissionResponse = &v1beta1.AdmissionResponse{
@@ -189,21 +189,14 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	logger.Infof("responded with review: %s", resp)
 }
-func (wh *gatewayValidationWebhook) validate(ctx context.Context, review *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+
+func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, review *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	logger := contextutils.LoggerFrom(ctx)
 
 	req := review.Request
 
 	logger.Infof("AdmissionReview for Kind=%v, Namespace=%v Name=%v UID=%v patchOperation=%v UserInfo=%v",
 		req.Kind, req.Namespace, req.Name, req.UID, req.Operation, req.UserInfo)
-
-	gvk := schema.GroupVersionKind{
-		Group:   req.Kind.Group,
-		Version: req.Kind.Version,
-		Kind:    req.Kind.Kind,
-	}
-
-	isDelete := req.Operation == v1beta1.Delete
 
 	// ensure the request applies to a watched namespace, if watchNamespaces is set
 	var validatingForNamespace bool
@@ -225,33 +218,20 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, review *v1beta
 		}
 	}
 
+	gvk := schema.GroupVersionKind{
+		Group:   req.Kind.Group,
+		Version: req.Kind.Version,
+		Kind:    req.Kind.Kind,
+	}
+
 	ref := core.ResourceRef{
 		Namespace: req.Namespace,
 		Name:      req.Name,
 	}
 
-	var proxyReports validation.ProxyReports
-	var validationErr error
-	switch gvk {
-	case v2.GatewayGVK:
-		if isDelete {
-			// we don't validate gateway deletion
-			break
-		}
-		proxyReports, validationErr = wh.validateGateway(ctx, req.Object.Raw)
-	case gwv1.VirtualServiceGVK:
-		if isDelete {
-			validationErr = wh.validator.ValidateDeleteVirtualService(ctx, ref)
-		} else {
-			proxyReports, validationErr = wh.validateVirtualService(ctx, req.Object.Raw)
-		}
-	case gwv1.RouteTableGVK:
-		if isDelete {
-			validationErr = wh.validator.ValidateDeleteRouteTable(ctx, ref)
-		} else {
-			proxyReports, validationErr = wh.validateRouteTable(ctx, req.Object.Raw)
-		}
-	}
+	isDelete := req.Operation == v1beta1.Delete
+
+	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
 
 	success := &v1beta1.AdmissionResponse{
 		Allowed: true,
@@ -269,57 +249,6 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, review *v1beta
 
 	logger.Errorf("Validation failed: %v", validationErr)
 
-	details := &metav1.StatusDetails{
-		Name:  req.Name,
-		Group: gvk.Group,
-		Kind:  gvk.Kind,
-	}
-
-	for _, proxyReport := range proxyReports {
-		for _, listenerReport := range proxyReport.ListenerReports {
-			for _, err := range listenerReport.Errors {
-				details.Causes = append(details.Causes, metav1.StatusCause{
-					Message: fmt.Sprintf("Listener Error %v: %v", err.Type.String(), err.Reason),
-				})
-			}
-			switch listener := listenerReport.ListenerTypeReport.(type) {
-			case *validationapi.ListenerReport_HttpListenerReport:
-				for _, err := range listener.HttpListenerReport.Errors {
-					details.Causes = append(details.Causes, metav1.StatusCause{
-						Message: fmt.Sprintf("HTTPListener Error %v: %v", err.Type.String(), err.Reason),
-					})
-				}
-				for _, vh := range listener.HttpListenerReport.VirtualHostReports {
-					for _, err := range vh.Errors {
-						details.Causes = append(details.Causes, metav1.StatusCause{
-							Message: fmt.Sprintf("VirtualHost Error %v: %v", err.Type.String(), err.Reason),
-						})
-					}
-					for _, r := range vh.RouteReports {
-						for _, err := range r.Errors {
-							details.Causes = append(details.Causes, metav1.StatusCause{
-								Message: fmt.Sprintf("Route Error %v: %v", err.Type.String(), err.Reason),
-							})
-						}
-					}
-				}
-			case *validationapi.ListenerReport_TcpListenerReport:
-				for _, err := range listener.TcpListenerReport.Errors {
-					details.Causes = append(details.Causes, metav1.StatusCause{
-						Message: fmt.Sprintf("TCPListener Error %v: %v", err.Type.String(), err.Reason),
-					})
-				}
-				for _, host := range listener.TcpListenerReport.TcpHostReports {
-					for _, err := range host.Errors {
-						details.Causes = append(details.Causes, metav1.StatusCause{
-							Message: fmt.Sprintf("TcpHost Error %v: %v", err.Type.String(), err.Reason),
-						})
-					}
-				}
-			}
-		}
-	}
-
 	if len(proxyReports) > 0 {
 		var proxyErrs []error
 		for _, rpt := range proxyReports {
@@ -335,12 +264,94 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, review *v1beta
 		return success
 	}
 
+	details := &metav1.StatusDetails{
+		Name:   req.Name,
+		Group:  gvk.Group,
+		Kind:   gvk.Kind,
+		Causes: wh.getFailureCauses(proxyReports),
+	}
+
 	return &v1beta1.AdmissionResponse{
 		Result: &metav1.Status{
 			Message: validationErr.Error(),
 			Details: details,
 		},
 	}
+}
+
+func (wh *gatewayValidationWebhook) getFailureCauses(proxyReports validation.ProxyReports) []metav1.StatusCause {
+	var causes []metav1.StatusCause
+	for _, proxyReport := range proxyReports {
+		for _, listenerReport := range proxyReport.ListenerReports {
+			for _, err := range listenerReport.Errors {
+				causes = append(causes, metav1.StatusCause{
+					Message: fmt.Sprintf("Listener Error %v: %v", err.Type.String(), err.Reason),
+				})
+			}
+			switch listener := listenerReport.ListenerTypeReport.(type) {
+			case *validationapi.ListenerReport_HttpListenerReport:
+				for _, err := range listener.HttpListenerReport.Errors {
+					causes = append(causes, metav1.StatusCause{
+						Message: fmt.Sprintf("HTTPListener Error %v: %v", err.Type.String(), err.Reason),
+					})
+				}
+				for _, vh := range listener.HttpListenerReport.VirtualHostReports {
+					for _, err := range vh.Errors {
+						causes = append(causes, metav1.StatusCause{
+							Message: fmt.Sprintf("VirtualHost Error %v: %v", err.Type.String(), err.Reason),
+						})
+					}
+					for _, r := range vh.RouteReports {
+						for _, err := range r.Errors {
+							causes = append(causes, metav1.StatusCause{
+								Message: fmt.Sprintf("Route Error %v: %v", err.Type.String(), err.Reason),
+							})
+						}
+					}
+				}
+			case *validationapi.ListenerReport_TcpListenerReport:
+				for _, err := range listener.TcpListenerReport.Errors {
+					causes = append(causes, metav1.StatusCause{
+						Message: fmt.Sprintf("TCPListener Error %v: %v", err.Type.String(), err.Reason),
+					})
+				}
+				for _, host := range listener.TcpListenerReport.TcpHostReports {
+					for _, err := range host.Errors {
+						causes = append(causes, metav1.StatusCause{
+							Message: fmt.Sprintf("TcpHost Error %v: %v", err.Type.String(), err.Reason),
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return causes
+}
+
+func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, object runtime.RawExtension, isDelete bool) (validation.ProxyReports, error) {
+
+	switch gvk {
+	case v2.GatewayGVK:
+		if isDelete {
+			// we don't validate gateway deletion
+			break
+		}
+		return wh.validateGateway(ctx, object.Raw)
+	case gwv1.VirtualServiceGVK:
+		if isDelete {
+			return validation.ProxyReports{}, wh.validator.ValidateDeleteVirtualService(ctx, ref)
+		} else {
+			return wh.validateVirtualService(ctx, object.Raw)
+		}
+	case gwv1.RouteTableGVK:
+		if isDelete {
+			return validation.ProxyReports{}, wh.validator.ValidateDeleteRouteTable(ctx, ref)
+		} else {
+			return wh.validateRouteTable(ctx, object.Raw)
+		}
+	}
+	return validation.ProxyReports{}, nil
 
 }
 
