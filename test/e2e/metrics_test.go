@@ -2,18 +2,13 @@ package e2e_test
 
 import (
 	"context"
-	"sync/atomic"
-	"time"
-
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
-	"github.com/solo-io/solo-kit/test/helpers"
-
+	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
 	"github.com/fgrosse/zaptest"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
@@ -21,7 +16,20 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"sync/atomic"
 )
+
+type testMetricsHandler struct {
+	channel chan *struct{}
+}
+
+func (t *testMetricsHandler) HandleMetrics(context.Context, *v2.StreamMetricsMessage) error {
+	// just signal that we did receive metrics from envoy
+	t.channel <- &struct {
+
+	}{}
+	return nil
+}
 
 var _ = Describe("Gateway", func() {
 
@@ -96,6 +104,10 @@ var _ = Describe("Gateway", func() {
 			})
 
 			Context("Grpc", func() {
+				var (
+					channel chan *struct{}
+					testHandler *testMetricsHandler
+				)
 
 				BeforeEach(func() {
 					metricsPort := atomic.AddUint32(&baseMetricsPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
@@ -119,11 +131,14 @@ var _ = Describe("Gateway", func() {
 						Ctx: ctx,
 					}
 
-					usageMerger := metricsservice.NewUsageMerger(time.Now)
-					storage := metricsservice.NewConfigMapStorage(writeNamespace, helpers.MustKubeClient().CoreV1().ConfigMaps(writeNamespace))
+					//usageMerger := metricsservice.NewUsageMerger(time.Now)
+					//storage := metricsservice.NewConfigMapStorage(writeNamespace, helpers.MustKubeClient().CoreV1().ConfigMaps(writeNamespace))
+					//
+					//defaulthandler := metricsservice.NewDefaultMetricsHandler(storage, usageMerger)
 
-					defaulthandler := metricsservice.NewDefaultMetricsHandler(storage, usageMerger)
-					service := metricsservice.NewServer(opts, defaulthandler)
+					channel = make(chan *struct{}, 1000)
+					testHandler = &testMetricsHandler{channel: channel}
+					service := metricsservice.NewServer(opts, testHandler)
 					go func(testctx context.Context) {
 						defer GinkgoRecover()
 						err := runner.RunWithSettings(testctx, service, settings)
@@ -143,15 +158,16 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 
-				It("can stream access logs", func() {
+				It("can stream metrics", func() {
 					vs := getTrivialVirtualServiceForUpstream("default", tu.Upstream.Metadata.Ref())
 					_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					for {
-						TestUpstreamReachable()
-					}
-				})
+					TestUpstreamReachable()
+					Expect(<-channel).To(Equal(&struct {
+
+					}{}))
+				}, 20)
 			})
 		})
 	})
