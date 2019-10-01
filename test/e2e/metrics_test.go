@@ -2,6 +2,8 @@ package e2e_test
 
 import (
 	"context"
+	"sync/atomic"
+
 	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
 	"github.com/fgrosse/zaptest"
 	. "github.com/onsi/ginkgo"
@@ -16,7 +18,6 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"sync/atomic"
 )
 
 type testMetricsHandler struct {
@@ -26,7 +27,6 @@ type testMetricsHandler struct {
 func (t *testMetricsHandler) HandleMetrics(context.Context, *v2.StreamMetricsMessage) error {
 	// just signal that we did receive metrics from envoy
 	t.channel <- &struct {
-
 	}{}
 	return nil
 }
@@ -105,7 +105,7 @@ var _ = Describe("Gateway", func() {
 
 			Context("Grpc", func() {
 				var (
-					channel chan *struct{}
+					channel     chan *struct{}
 					testHandler *testMetricsHandler
 				)
 
@@ -165,7 +165,6 @@ var _ = Describe("Gateway", func() {
 
 					TestUpstreamReachable()
 					Expect(<-channel).To(Equal(&struct {
-
 					}{}))
 				}, 20)
 			})
