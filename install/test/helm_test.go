@@ -727,6 +727,8 @@ spec:
                 fieldPath: metadata.namespace
           - name: START_STATS_SERVER
             value: "true"
+          - name: VALIDATION_MUST_START
+            value: "true"
         volumeMounts:
           - mountPath: /etc/gateway/validation-certs
             name: validation-certs
@@ -989,6 +991,10 @@ metadata:
 						ContainerPort: 8443,
 						Protocol:      "TCP",
 					}}
+					deploy.Spec.Template.Spec.Containers[0].Env = append(deploy.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
+						Name:  "VALIDATION_MUST_START",
+						Value: "true",
+					})
 
 					gatewayDeployment = deploy
 				})
