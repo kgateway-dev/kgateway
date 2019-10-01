@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fail end to end tests early if the ENVOY_IMAGE_TAG env var is not set
+    issueLink: https://github.com/solo-io/gloo/issues/1311

@@ -333,7 +333,7 @@ func (ei *EnvoyInstance) Clean() error {
 func (ei *EnvoyInstance) runContainer() error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {
-		envoyImageTag = "latest"
+		return errors.New("Must set the ENVOY_IMAGE_TAG env var")
 	}
 
 	image := "quay.io/solo-io/gloo-envoy-wrapper:" + envoyImageTag
