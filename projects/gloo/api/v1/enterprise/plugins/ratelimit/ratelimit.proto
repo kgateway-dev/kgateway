@@ -8,11 +8,12 @@ import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
+// Descriptors can be nested for your convenience and flexibility
 message Descriptor {
     string key = 1;
     string value = 2;
    
-    ratelimit.plugins.gloo.solo.io.RateLimit rate_limit = 3;
+    RateLimit rate_limit = 3;
     repeated Descriptor descriptors = 4;
 }
 
@@ -28,6 +29,7 @@ message RateLimit {
     uint32 requests_per_unit = 2;
 }
 
+// Basic rate-limiting API
 message IngressRateLimit {
     RateLimit authorized_limits = 1;
     RateLimit anonymous_limits = 2;
@@ -40,13 +42,33 @@ message Settings {
   bool deny_on_fail = 3;
 }
 
-// Deprecated: Use simplified v2 API, which removes RateLimitCustomConfig
+// TODO(kdorosh) remove this when we stop supporting opaque rate limit configuration
 message EnvoySettings {
     option deprecated = true;
     message RateLimitCustomConfig {
       repeated Descriptor descriptors = 1;
     }
     RateLimitCustomConfig custom_config = 2;
+}
+
+// API based on Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+// Sample configuration below
+//
+// descriptors:
+//- key: account_id
+//  descriptors:
+//  - key: plan
+//    value: BASIC
+//    rateLimit:
+//      requestsPerUnit: 1
+//      unit: MINUTE
+//  - key: plan
+//    value: PLUS
+//    rateLimit:
+//      requestsPerUnit: 20
+//      unit: MINUTE
+message ServiceSettings {
+    repeated Descriptor descriptors = 1;
 }
 
 message RateLimitActions {

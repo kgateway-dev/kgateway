@@ -95,7 +95,7 @@ type Settings struct {
 	WatchNamespaces []string      `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
 	WriteNamespace  string        `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
 	Integrations    *Integrations `json:"integrations,omitempty"`
-	Create          bool          `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers. Created automatically if using Gateway validation"`
+	Create          bool          `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
 	Extensions      interface{}   `json:"extensions,omitempty"`
 	SingleNamespace bool          `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 }

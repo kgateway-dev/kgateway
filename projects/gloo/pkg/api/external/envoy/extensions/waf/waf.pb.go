@@ -24,7 +24,7 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ModSecurity struct {
-	// Disable all rules on the current route
+	// Disable all rules on the current http connection manager
 	Disabled bool `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
 	// Global rule sets for the current http connection manager
 	RuleSets             []*RuleSet `protobuf:"bytes,2,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
@@ -77,9 +77,9 @@ func (m *ModSecurity) GetRuleSets() []*RuleSet {
 //Any files referenced by this proto should be mounted into the relevant envoy pod prior to use or
 //the filter will fail to initialize and the configuration will be rejected
 type RuleSet struct {
-	// string of rules which are added directly
+	// String of rules which are added directly
 	RuleStr string `protobuf:"bytes,1,opt,name=rule_str,json=ruleStr,proto3" json:"rule_str,omitempty"`
-	// array of files to include
+	// Array of files to include
 	Files                []string `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -127,7 +127,7 @@ func (m *RuleSet) GetFiles() []string {
 type ModSecurityPerRoute struct {
 	// Disable all rules on the current route
 	Disabled bool `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
-	// Overwite the global rules on this route
+	// Overwrite the global rules on this route
 	RuleSets             []*RuleSet `protobuf:"bytes,2,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
 	XXX_unrecognized     []byte     `json:"-"`

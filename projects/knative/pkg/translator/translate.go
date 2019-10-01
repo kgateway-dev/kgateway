@@ -219,8 +219,8 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 			Destination: &gloov1.Destination{
 				DestinationType: serviceForSplit(split),
 			},
-			Weight:                    weight,
-			WeighedDestinationPlugins: weightedDestinationPlugins,
+			Weight:                     weight,
+			WeightedDestinationPlugins: weightedDestinationPlugins,
 		})
 	}
 	return &gloov1.RouteAction{

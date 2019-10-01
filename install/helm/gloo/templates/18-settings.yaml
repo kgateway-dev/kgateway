@@ -1,4 +1,4 @@
-{{ if (or .Values.settings.create .Values.gateway.validation ) }}
+{{ if .Values.settings.create }}
 
 apiVersion: gloo.solo.io/v1
 kind: Settings

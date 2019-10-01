@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Better implementation to flatten ratelimit API; use more intuitive name for service settings rather than a v2
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

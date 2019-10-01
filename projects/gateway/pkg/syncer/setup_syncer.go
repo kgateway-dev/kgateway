@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -117,6 +118,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		}
 		if validation.ValidatingWebhookKeyPath == "" {
 			validation.ValidatingWebhookKeyPath = defaults.ValidationWebhookTlsKeyPath
+		}
+	} else {
+		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" {
+			return errors.Errorf("VALIDATION_MUST_START was set to true, but no validation configuration was provided in the settings. "+
+				"Ensure the v1.Settings %v contains the spec.gateway.validation config", settings.GetMetadata().Ref())
 		}
 	}
 

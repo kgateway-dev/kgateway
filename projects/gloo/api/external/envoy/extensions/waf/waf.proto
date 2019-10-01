@@ -7,7 +7,7 @@ option (gogoproto.equal_all) = true;
 
 
 message ModSecurity {
-    // Disable all rules on the current route
+    // Disable all rules on the current http connection manager
     bool disabled = 1;
     // Global rule sets for the current http connection manager
     repeated RuleSet rule_sets = 2;
@@ -19,16 +19,16 @@ message ModSecurity {
     the filter will fail to initialize and the configuration will be rejected
 */
 message RuleSet {
-    // string of rules which are added directly
+    // String of rules which are added directly
     string rule_str = 1;
-    // array of files to include
+    // Array of files to include
     repeated string files = 3;
 }
 
 message ModSecurityPerRoute {
     // Disable all rules on the current route
     bool disabled = 1;
-    // Overwite the global rules on this route
+    // Overwrite the global rules on this route
     repeated RuleSet rule_sets = 2;
 }
 

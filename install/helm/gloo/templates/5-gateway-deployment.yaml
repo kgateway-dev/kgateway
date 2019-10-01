@@ -63,6 +63,10 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
+        {{- if .Values.gateway.validation }}
+          - name: VALIDATION_MUST_START
+            value: "true"
+        {{- end}}
 
 {{- if .Values.gateway.validation }}
         volumeMounts:
