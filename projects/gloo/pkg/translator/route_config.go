@@ -140,6 +140,12 @@ func (t *translator) envoyRoute(params plugins.RouteParams, routeReport *validat
 
 func setMatch(in *v1.Route, routeReport *validationapi.RouteReport, out *envoyroute.Route) {
 
+	if in.Matcher == nil {
+		validation.AppendRouteError(routeReport,
+			validationapi.RouteReport_Error_InvalidMatcherError,
+			"no matcher provided",
+		)
+	}
 	if in.Matcher.PathSpecifier == nil {
 		validation.AppendRouteError(routeReport,
 			validationapi.RouteReport_Error_InvalidMatcherError,
