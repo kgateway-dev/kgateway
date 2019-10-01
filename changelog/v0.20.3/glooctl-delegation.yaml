@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Glooctl can now add routes to Route Tables
+    issueLink: https://github.com/solo-io/gloo/issues/1320
+  - type: NEW_FEATURE
+    description: Glooctl can now add delegate action routes
+    issueLink: https://github.com/solo-io/gloo/issues/1319
+  - type: NEW_FEATURE
+    description: Glooctl can now get/list Route Tables
+    issueLink: https://github.com/solo-io/gloo/issues/1318

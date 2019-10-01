@@ -15,6 +15,11 @@ var (
 		Aliases: []string{"vs", "virtualservices"},
 	}
 
+	ROUTE_TABLE_COMMAND = cobra.Command{
+		Use:     "routetable",
+		Aliases: []string{"rt", "routetables"},
+	}
+
 	UPSTREAM_COMMAND = cobra.Command{
 		Use:     "upstream",
 		Aliases: []string{"u", "us", "upstreams"},

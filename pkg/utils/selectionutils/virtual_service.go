@@ -15,7 +15,7 @@ import (
 //go:generate mockgen -destination mocks/mock_virtual_service.go -package mocks github.com/solo-io/gloo/pkg/utils/selectionutils VirtualServiceSelector
 
 type VirtualServiceSelector interface {
-	SelectOrCreate(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error)
+	SelectOrCreateVirtualService(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error)
 }
 
 type virtualServiceSelector struct {
@@ -34,7 +34,7 @@ func NewVirtualServiceSelector(client gatewayv1.VirtualServiceClient, namespaceL
 	}
 }
 
-func (s *virtualServiceSelector) SelectOrCreate(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
+func (s *virtualServiceSelector) SelectOrCreateVirtualService(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
 	// Read or create virtual service as specified
 	if ref.GetNamespace() != "" && ref.GetName() != "" {
 		found, err := s.client.Read(ref.GetNamespace(), ref.GetName(), clients.ReadOpts{Ctx: ctx})
