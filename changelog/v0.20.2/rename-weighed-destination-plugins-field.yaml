@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  description: >
+    Add `weighted_destination_plugins` field to `WeightedDestination` object. The previous `weighed_destination_plugins` (no "t")
+    has been deprecated and is still supported.
+  issueLink: https://github.com/solo-io/gloo/issues/1307
