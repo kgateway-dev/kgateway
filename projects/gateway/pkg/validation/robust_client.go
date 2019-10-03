@@ -57,7 +57,7 @@ func NewConnectionRefreshingValidationClient(constructValidationClient func() (v
 }
 
 func (c *connectionRefreshingValidationClient) ValidateProxy(ctx context.Context, proxy *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
-	ctx =  contextutils.WithLogger(ctx, "robust-validation-client")
+	ctx = contextutils.WithLogger(ctx, "robust-validation-client")
 
 	var validationClient validation.ProxyValidationServiceClient
 	var proxyReport *validation.ProxyValidationServiceResponse
