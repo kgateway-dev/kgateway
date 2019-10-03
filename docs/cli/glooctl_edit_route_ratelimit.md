@@ -37,5 +37,5 @@ Configure rate-limits for requests that match this route. This is a Gloo Enterpr
 ### SEE ALSO
 
 * [glooctl edit route](../glooctl_edit_route)	 - 
-* [glooctl edit route ratelimit envoy-config](../glooctl_edit_route_ratelimit_envoy-config)	 - Add rate-limits (Enterprise)
+* [glooctl edit route ratelimit client-config](../glooctl_edit_route_ratelimit_client-config)	 - Add rate-limits (Enterprise)
 

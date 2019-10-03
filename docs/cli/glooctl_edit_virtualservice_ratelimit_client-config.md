@@ -1,8 +1,8 @@
 ---
-title: "glooctl edit virtualservice ratelimit envoy-config"
+title: "glooctl edit virtualservice ratelimit client-config"
 weight: 5
 ---
-## glooctl edit virtualservice ratelimit envoy-config
+## glooctl edit virtualservice ratelimit client-config
 
 Add rate-limits (Enterprise)
 
@@ -14,13 +14,13 @@ Configure rate-limits, which are composed of rate-limit actions that translate r
 		This is a Gloo Enterprise feature.
 
 ```
-glooctl edit virtualservice ratelimit envoy-config [flags]
+glooctl edit virtualservice ratelimit client-config [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for envoy-config
+  -h, --help   help for client-config
 ```
 
 ### Options inherited from parent commands
