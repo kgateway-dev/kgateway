@@ -16,13 +16,13 @@ import (
 
 type ClientConstructor func() (client validation.ProxyValidationServiceClient, e error)
 
-// robustValidationClient wraps a validation.ProxyValidationServiceClient (grpc Connection)
-// if a connection error occurs during an api call, the robustValidationClient
+// connectionRefreshingValidationClient wraps a validation.ProxyValidationServiceClient (grpc Connection)
+// if a connection error occurs during an api call, the connectionRefreshingValidationClient
 // attempts to reestablish the connection & retry the call before returning the error
-type robustValidationClient struct {
+type connectionRefreshingValidationClient struct {
 	lock                      sync.RWMutex
 	validationClient          validation.ProxyValidationServiceClient
-	constructValidationClient func() (validation.ProxyValidationServiceClient, error)
+	constructValidationClient ClientConstructor
 }
 
 // the constructor returned here is not threadsafe; call from a lock
@@ -45,18 +45,20 @@ func RetryOnUnavailableClientConstructor(ctx context.Context, serverAddress stri
 	}
 }
 
-func NewRobustValidationClient(constructValidationClient func() (validation.ProxyValidationServiceClient, error)) (*robustValidationClient, error) {
+func NewConnectionRefreshingValidationClient(constructValidationClient func() (validation.ProxyValidationServiceClient, error)) (*connectionRefreshingValidationClient, error) {
 	vc, err := constructValidationClient()
 	if err != nil {
 		return nil, err
 	}
-	return &robustValidationClient{
+	return &connectionRefreshingValidationClient{
 		constructValidationClient: constructValidationClient,
 		validationClient:          vc,
 	}, nil
 }
 
-func (c *robustValidationClient) ValidateProxy(ctx context.Context, proxy *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+func (c *connectionRefreshingValidationClient) ValidateProxy(ctx context.Context, proxy *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+	ctx =  contextutils.WithLogger(ctx, "robust-validation-client")
+
 	var validationClient validation.ProxyValidationServiceClient
 	var proxyReport *validation.ProxyValidationServiceResponse
 	var reinstantiateClientErr error
@@ -69,10 +71,14 @@ func (c *robustValidationClient) ValidateProxy(ctx context.Context, proxy *valid
 		return err
 	}, retry.RetryIf(func(e error) bool {
 		if reinstantiateClientErr != nil {
+			contextutils.LoggerFrom(ctx).Warnw("failed to create new validation client during retry", zap.Error(reinstantiateClientErr))
 			return false
 		}
 		return isUnavailableErr(e)
 	}), retry.OnRetry(func(n uint, err error) {
+		if !isUnavailableErr(err) {
+			return
+		}
 		c.lock.Lock()
 		defer c.lock.Unlock()
 		// if someone already changed my client, do not replace it
@@ -86,10 +92,6 @@ func (c *robustValidationClient) ValidateProxy(ctx context.Context, proxy *valid
 }
 
 func isUnavailableErr(err error) bool {
-	if err == nil {
-		return true
-	}
-
 	switch status.Code(err) {
 	case codes.Unavailable, codes.FailedPrecondition, codes.Aborted:
 		return true

@@ -102,7 +102,7 @@ func (c *mockWrappedValidationClient) ValidateProxy(ctx context.Context, in *val
 var _ = Describe("RobustClient", func() {
 	It("swaps out the client when it returns a connection error", func() {
 		original := &mockWrappedValidationClient{name: "original"}
-		robustClient, _ := NewRobustValidationClient(func() (client validation.ProxyValidationServiceClient, e error) {
+		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.ProxyValidationServiceClient, e error) {
 			return original, nil
 		})
 

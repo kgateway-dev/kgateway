@@ -218,7 +218,7 @@ func RunGateway(opts Opts) error {
 		allowMissingLinks            bool
 	)
 	if opts.Validation != nil {
-		validationClient, err = gatewayvalidation.NewRobustValidationClient(
+		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
 			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
 		)
 		if err != nil {
