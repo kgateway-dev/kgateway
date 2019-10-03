@@ -42,6 +42,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -92,6 +106,12 @@ static_resources:
           stat_prefix: prometheus
         name: envoy.http_connection_manager
     name: prometheus_listener
+stats_sinks:
+- config:
+    grpc_service:
+      envoy_grpc:
+        cluster_name: gloo.gloo-system.svc.cluster.local:9966
+  name: envoy.metrics_service
 `
 
 var confWithTracingProvider = `
@@ -136,6 +156,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -186,6 +220,12 @@ static_resources:
           stat_prefix: prometheus
         name: envoy.http_connection_manager
     name: prometheus_listener
+stats_sinks:
+- config:
+    grpc_service:
+      envoy_grpc:
+        cluster_name: gloo.gloo-system.svc.cluster.local:9966
+  name: envoy.metrics_service
 tracing:
   http:
     another: line
@@ -234,6 +274,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 1s
     lb_policy: round_robin
     load_assignment:
@@ -298,6 +352,12 @@ static_resources:
           stat_prefix: prometheus
         name: envoy.http_connection_manager
     name: prometheus_listener
+stats_sinks:
+- config:
+    grpc_service:
+      envoy_grpc:
+        cluster_name: gloo.gloo-system.svc.cluster.local:9966
+  name: envoy.metrics_service
 tracing:
   http:
     typed_config:
@@ -348,6 +408,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -440,6 +514,12 @@ static_resources:
           stat_prefix: read_config
         name: envoy.http_connection_manager
     name: read_config_listener
+stats_sinks:
+- config:
+    grpc_service:
+      envoy_grpc:
+        cluster_name: gloo.gloo-system.svc.cluster.local:9966
+  name: envoy.metrics_service
 `
 
 var confWithAccessLogger = `
@@ -484,6 +564,20 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: metrics_cluster
+    connect_timeout: 5.000s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: gloo.gloo-system.svc.cluster.local:9966
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9966
+    name: gloo.gloo-system.svc.cluster.local:9966
+    type: STRICT_DNS
   - connect_timeout: 5.000s
     http2_protocol_options: {}
     load_assignment:
@@ -547,4 +641,10 @@ static_resources:
           stat_prefix: prometheus
         name: envoy.http_connection_manager
     name: prometheus_listener
+stats_sinks:
+- config:
+    grpc_service:
+      envoy_grpc:
+        cluster_name: gloo.gloo-system.svc.cluster.local:9966
+  name: envoy.metrics_service
 `

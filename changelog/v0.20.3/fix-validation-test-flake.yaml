@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Gateway waits for Gloo validation server to become available during setup
+    issueLink: https://github.com/solo-io/gloo/issues/1322

@@ -293,7 +293,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:fe9e9f3c3b8fd35b5e1ed990ce28c26709bcc38ed605a2b5a483650c9df3bfd1"
+  digest = "1:180a8b7ca453d64029fcfc964291c957a70c1997f29b213bdd6404d6caed793a"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -319,6 +319,7 @@
     "envoy/data/accesslog/v2",
     "envoy/service/accesslog/v2",
     "envoy/service/discovery/v2",
+    "envoy/service/metrics/v2",
     "envoy/type",
     "envoy/type/matcher",
     "pkg/util",
@@ -527,12 +528,9 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -2039,9 +2037,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:525e411c9476f1a201efc22d7c4878002b001f20f241221c226a83ba654975e4"
+  digest = "1:cb1518c8b771f09b1fa0a6722601460e0c0262f564340bf2fb24947b9f662194"
   name = "istio.io/gogo-genproto"
-  packages = ["opencensus/proto/trace/v1"]
+  packages = [
+    "opencensus/proto/trace/v1",
+    "prometheus",
+  ]
   pruneopts = "UT"
   revision = "e88dc8b0e4dba2caf977ab9ec040cc2081db103f"
 
@@ -2698,6 +2699,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
     "github.com/envoyproxy/go-control-plane/pkg/util",
     "github.com/envoyproxy/protoc-gen-validate/validate",
@@ -2714,7 +2716,6 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2828,6 +2829,7 @@
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/health",
     "google.golang.org/grpc/health/grpc_health_v1",
+    "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/reflection/grpc_reflection_v1alpha",
     "google.golang.org/grpc/status",
@@ -2835,6 +2837,7 @@
     "gopkg.in/AlecAivazis/survey.v1/terminal",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
+    "istio.io/gogo-genproto/prometheus",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",

@@ -13,15 +13,13 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gatewayvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	"google.golang.org/grpc"
-
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -213,17 +211,20 @@ func RunGateway(opts Opts) error {
 		prop,
 		txlator)
 
-	var validationClient validation.ProxyValidationServiceClient
-	var ignoreProxyValidationFailure bool
-	var allowMissingLinks bool
+	var (
+		// this constructor should be called within a lock
+		validationClient             validation.ProxyValidationServiceClient
+		ignoreProxyValidationFailure bool
+		allowMissingLinks            bool
+	)
 	if opts.Validation != nil {
-		contextutils.LoggerFrom(ctx).Infow("starting proxy validation client",
-			zap.String("validation_server", opts.Validation.ProxyValidationServerAddress))
-		cc, err := grpc.DialContext(ctx, opts.Validation.ProxyValidationServerAddress, grpc.WithInsecure())
+		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
+			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
+		)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
 		}
-		validationClient = validation.NewProxyValidationServiceClient(cc)
+
 		ignoreProxyValidationFailure = opts.Validation.IgnoreProxyValidationFailure
 		allowMissingLinks = opts.Validation.AllowMissingLinks
 	}
