@@ -1,26 +1,26 @@
 ---
-title: "glooctl edit settings ratelimit custom-server-config"
+title: "glooctl edit virtualservice ratelimit envoy-config"
 weight: 5
 ---
-## glooctl edit settings ratelimit custom-server-config
+## glooctl edit virtualservice ratelimit envoy-config
 
-Add a custom rate limit settings (Enterprise)
+Add rate-limits (Enterprise)
 
 ### Synopsis
 
-This allows using lyft rate limit server configuration language to configure the rate limit server.
-		For more information see: https://github.com/lyft/ratelimit
-		Note: do not add the 'domain' configuration key.
+Configure rate-limits, which are composed of rate-limit actions that translate request characteristics to rate-limit descriptor tuples.
+		For available actions and more information see: https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action
+		
 		This is a Gloo Enterprise feature.
 
 ```
-glooctl edit settings ratelimit custom-server-config [flags]
+glooctl edit virtualservice ratelimit envoy-config [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for custom-server-config
+  -h, --help   help for envoy-config
 ```
 
 ### Options inherited from parent commands
@@ -42,5 +42,5 @@ glooctl edit settings ratelimit custom-server-config [flags]
 
 ### SEE ALSO
 
-* [glooctl edit settings ratelimit](../glooctl_edit_settings_ratelimit)	 - Configure rate limit settings (Enterprise)
+* [glooctl edit virtualservice ratelimit](../glooctl_edit_virtualservice_ratelimit)	 - Configure rate limit settings (Enterprise)
 

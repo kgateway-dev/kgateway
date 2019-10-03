@@ -1,5 +1,5 @@
 package constants
 
 const (
-	ExtAuthExtensionName        = "extauth"
+	ExtAuthExtensionName = "extauth"
 )

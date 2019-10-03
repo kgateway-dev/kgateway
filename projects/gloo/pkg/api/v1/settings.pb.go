@@ -131,8 +131,8 @@ type Settings struct {
 	// Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service;
 	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
 	// Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors.
-	// Configure rate-limit *actions*, which define how request characteristics get translated into descriptors,
-	// on the VirtualHost or its routes
+	// Configure rate-limits (composed of *actions*, which define how request characteristics get translated into
+	// descriptors) on the VirtualHost or its routes
 	Ratelimit *ratelimit.ServiceSettings `protobuf:"bytes,26,opt,name=ratelimit,proto3" json:"ratelimit,omitempty"`
 	// Enterprise-only: Settings for the rate limiting server itself
 	RatelimitServer *ratelimit.Settings `protobuf:"bytes,27,opt,name=ratelimit_server,json=ratelimitServer,proto3" json:"ratelimit_server,omitempty"`

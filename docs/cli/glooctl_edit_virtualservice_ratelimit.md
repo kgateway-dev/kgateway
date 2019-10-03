@@ -36,5 +36,5 @@ Let gloo know the location of the rate limit server. This is a Gloo Enterprise f
 ### SEE ALSO
 
 * [glooctl edit virtualservice](../glooctl_edit_virtualservice)	 - edit a virtualservice in a namespace
-* [glooctl edit virtualservice ratelimit custom-envoy-config](../glooctl_edit_virtualservice_ratelimit_custom-envoy-config)	 - Add a custom rate limit actions (Enterprise)
+* [glooctl edit virtualservice ratelimit envoy-config](../glooctl_edit_virtualservice_ratelimit_envoy-config)	 - Add rate-limits (Enterprise)
 

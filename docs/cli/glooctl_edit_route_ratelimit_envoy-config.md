@@ -1,26 +1,26 @@
 ---
-title: "glooctl edit route ratelimit custom-envoy-config"
+title: "glooctl edit route ratelimit envoy-config"
 weight: 5
 ---
-## glooctl edit route ratelimit custom-envoy-config
+## glooctl edit route ratelimit envoy-config
 
-Add a custom rate limit actions (Enterprise)
+Add rate-limits (Enterprise)
 
 ### Synopsis
 
-This allows using envoy actions to specify your rate limit descriptors.
+Configure rate-limits, which are composed of rate-limit actions that translate request characteristics to rate-limit descriptor tuples.
 		For available actions and more information see: https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action
 		
 		This is a Gloo Enterprise feature.
 
 ```
-glooctl edit route ratelimit custom-envoy-config [flags]
+glooctl edit route ratelimit envoy-config [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for custom-envoy-config
+  -h, --help   help for envoy-config
 ```
 
 ### Options inherited from parent commands
@@ -43,5 +43,5 @@ glooctl edit route ratelimit custom-envoy-config [flags]
 
 ### SEE ALSO
 
-* [glooctl edit route ratelimit](../glooctl_edit_route_ratelimit)	 - Configure rate limit settings (Enterprise)
+* [glooctl edit route ratelimit](../glooctl_edit_route_ratelimit)	 - Configure rate-limits (Enterprise)
 
