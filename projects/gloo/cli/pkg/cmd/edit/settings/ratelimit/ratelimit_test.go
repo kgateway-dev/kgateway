@@ -3,8 +3,6 @@ package ratelimit_test
 import (
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -14,12 +12,11 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Ratelimit", func() {
+var _ = Describe("RateLimit", func() {
 
 	var (
 		settings       *gloov1.Settings
@@ -48,9 +45,8 @@ var _ = Describe("Ratelimit", func() {
 		settings, err = settingsClient.Read(settings.Metadata.Namespace, settings.Metadata.Name, clients.ReadOpts{})
 		ExpectWithOffset(2, err).NotTo(HaveOccurred())
 
-		rlSettings = ratelimitpb.Settings{}
-		err = utils.UnmarshalExtension(settings, constants.RateLimitExtensionName, &rlSettings)
-		ExpectWithOffset(2, err).NotTo(HaveOccurred())
+		Expect(settings.GetRatelimitServer()).ToNot(BeNil())
+		rlSettings = *settings.GetRatelimitServer()
 	}
 
 	Run := func(cmd string) {

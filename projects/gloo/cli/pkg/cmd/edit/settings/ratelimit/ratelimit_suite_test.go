@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestRatelimit(t *testing.T) {
+func TestRateLimit(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Ratelimit Suite")
+	RunSpecs(t, "RateLimit Suite")
 }

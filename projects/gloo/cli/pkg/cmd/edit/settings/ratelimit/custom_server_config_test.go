@@ -3,8 +3,6 @@ package ratelimit_test
 import (
 	"io"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -13,7 +11,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -46,21 +43,17 @@ var _ = Describe("CustomServerConfig", func() {
 			return []byte(yaml), "", nil
 		}
 
-		return testutils.Glooctl("edit settings --name default --namespace gloo-system ratelimit custom-server-config")
+		return testutils.Glooctl("edit settings --name default --namespace gloo-system ratelimit server-config")
 	}
 
-	Validate := func(yaml string) *ratelimitpb.EnvoySettings_RateLimitCustomConfig {
+	Validate := func(yaml string) *ratelimitpb.ServiceSettings {
 		err := Run(yaml)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 		settings, err = settingsClient.Read(settings.Metadata.Namespace, settings.Metadata.Name, clients.ReadOpts{})
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		var rlSettings ratelimitpb.EnvoySettings
-		err = utils.UnmarshalExtension(settings, constants.EnvoyRateLimitExtensionName, &rlSettings)
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		return rlSettings.CustomConfig
+		return settings.Ratelimit
 	}
 
 	It("should parse example 1", func() {

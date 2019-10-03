@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestUpstream(t *testing.T) {
+func TestVirtualService(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Virtualservice Suite")
+	RunSpecs(t, "VirtualService Suite")
 }

@@ -3,17 +3,13 @@ package ratelimit
 import (
 	"time"
 
-	"github.com/gogo/protobuf/types"
 	editOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -60,12 +56,10 @@ func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, arg
 	}
 
 	var rlSettings ratelimitpb.Settings
-	err = utils.UnmarshalExtension(settings, constants.RateLimitExtensionName, &rlSettings)
-	if err != nil {
-		if err != utils.NotFoundError {
-			return err
-		}
+	if rls := settings.GetRatelimitServer(); rls != nil {
+		rlSettings = *rls
 	}
+
 	if rlSettings.RatelimitServerRef == nil {
 		rlSettings.RatelimitServerRef = new(core.ResourceRef)
 	}
@@ -76,28 +70,15 @@ func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, arg
 		rlSettings.RatelimitServerRef.Namespace = optsExt.RateLimitServerUpstreamRef.Namespace
 	}
 
-	var zeroduration time.Duration
-	if optsExt.RequestTimeout != zeroduration {
+	var zeroDuration time.Duration
+	if optsExt.RequestTimeout != zeroDuration {
 		rlSettings.RequestTimeout = &optsExt.RequestTimeout
 	}
 	if optsExt.DenyOnFailure != nil {
 		rlSettings.DenyOnFail = *optsExt.DenyOnFailure
 	}
 
-	if settings.Extensions == nil {
-		settings.Extensions = &gloov1.Extensions{}
-	}
-
-	if settings.Extensions.Configs == nil {
-		settings.Extensions.Configs = make(map[string]*types.Struct)
-	}
-
-	rlStruct, err := protoutils.MarshalStruct(&rlSettings)
-	if err != nil {
-		return err
-	}
-	settings.Extensions.Configs[constants.RateLimitExtensionName] = rlStruct
-
+	settings.RatelimitServer = &rlSettings
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	return err
 }

@@ -3,17 +3,12 @@ package virtualservice
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
-	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	editOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmdutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/go-utils/cliutils"
@@ -24,9 +19,9 @@ func RateLimitCustomConfig(opts *editOptions.EditOptions, optionsFunc ...cliutil
 
 	cmd := &cobra.Command{
 		// Use command constants to aid with replacement.
-		Use:   "custom-envoy-config",
-		Short: "Add a custom rate limit actions (Enterprise)",
-		Long: `This allows using envoy actions to specify your rate limit descriptors.
+		Use:   "envoy-config",
+		Short: "Add rate-limits (Enterprise)",
+		Long: `Configure rate-limits, which are composed of rate-limit actions that translate request characteristics to rate-limit descriptor tuples.
 		For available actions and more information see: https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action
 		
 		This is a Gloo Enterprise feature.`,
@@ -54,11 +49,8 @@ func editVhost(opts *editOptions.EditOptions) error {
 	}
 
 	ratelimitExtension := new(ratelimitpb.RateLimitVhostExtension)
-	err = utils.UnmarshalExtension(vs.VirtualHost.VirtualHostPlugins, constants.EnvoyRateLimitExtensionName, ratelimitExtension)
-	if err != nil {
-		if err != utils.NotFoundError {
-			return err
-		}
+	if rlExt := vs.VirtualHost.GetVirtualHostPlugins().GetRatelimit(); rlExt != nil {
+		ratelimitExtension = rlExt
 	}
 
 	var editor cmdutils.Editor
@@ -71,20 +63,7 @@ func editVhost(opts *editOptions.EditOptions) error {
 		vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
 	}
 
-	if vs.VirtualHost.VirtualHostPlugins.Extensions == nil {
-		vs.VirtualHost.VirtualHostPlugins.Extensions = &gloov1.Extensions{}
-	}
-
-	if vs.VirtualHost.VirtualHostPlugins.Extensions.Configs == nil {
-		vs.VirtualHost.VirtualHostPlugins.Extensions.Configs = make(map[string]*types.Struct)
-	}
-
-	extStruct, err := protoutils.MarshalStruct(ratelimitExtension)
-	if err != nil {
-		return err
-	}
-	vs.VirtualHost.VirtualHostPlugins.Extensions.Configs[constants.EnvoyRateLimitExtensionName] = extStruct
-
+	vs.VirtualHost.VirtualHostPlugins.Ratelimit = ratelimitExtension
 	_, err = vsClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
 	return err
 }

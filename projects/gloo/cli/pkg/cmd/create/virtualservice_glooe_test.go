@@ -20,7 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Virtualservice", func() {
+var _ = Describe("VirtualService", func() {
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 	})

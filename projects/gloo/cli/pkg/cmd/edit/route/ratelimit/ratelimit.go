@@ -13,8 +13,8 @@ func RateLimitConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ...cliut
 		// Use command constants to aid with replacement.
 		Use:     constants.CONFIG_RATELIMIT_COMMAND.Use,
 		Aliases: constants.CONFIG_RATELIMIT_COMMAND.Aliases,
-		Short:   "Configure rate limit settings (Enterprise)",
-		Long:    "Let gloo know the location of the rate limit server. This is a Gloo Enterprise feature.",
+		Short:   "Configure rate-limits (Enterprise)",
+		Long:    "Configure rate-limits for requests that match this route. This is a Gloo Enterprise feature.",
 	}
 
 	cliutils.ApplyOptions(cmd, optionsFunc)

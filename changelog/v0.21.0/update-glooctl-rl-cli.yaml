@@ -1,0 +1,5 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Update glooctl to write using the new strongly-typed API.
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false
