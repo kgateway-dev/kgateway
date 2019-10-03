@@ -139,6 +139,11 @@ func (o *AuthConfig) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*AuthConfig)
 }
 
+func (o *AuthConfig) DeepCopyInto(out *AuthConfig) {
+	clone := resources.Clone(o).(*AuthConfig)
+	*out = *clone
+}
+
 var (
 	AuthConfigCrd = crd.NewCrd(
 		"authconfigs",
