@@ -62,7 +62,7 @@ rate_limits:
 			return []byte(b), "", nil
 		}
 
-		err := testutils.Glooctl("edit virtualservice --name vs --namespace gloo-system ratelimit envoy-config")
+		err := testutils.Glooctl("edit virtualservice --name vs --namespace gloo-system ratelimit client-config")
 		Expect(err).NotTo(HaveOccurred())
 
 		ext := rateLimitExtension()

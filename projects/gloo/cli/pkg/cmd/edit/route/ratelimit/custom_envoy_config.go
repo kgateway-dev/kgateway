@@ -14,7 +14,7 @@ func RateLimitCustomConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ..
 
 	cmd := &cobra.Command{
 		// Use command constants to aid with replacement.
-		Use:   "envoy-config",
+		Use:   "client-config",
 		Short: "Add rate-limits (Enterprise)",
 		Long: `Configure rate-limits, which are composed of rate-limit actions that translate request characteristics to rate-limit descriptor tuples.
 		For available actions and more information see: https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action
