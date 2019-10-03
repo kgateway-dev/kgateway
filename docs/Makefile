@@ -50,7 +50,7 @@ site-test: site-common
 
 .PHONY: site-release
 site-release: site-common
-	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --call-latest
+	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
 	hugo --config docs.toml
 	mv site site-latest
 	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)

@@ -71,7 +71,12 @@ func changelogMdCmd(opts *options) *cobra.Command {
 }
 
 type HugoDataSoloYaml struct {
+	// this is the string that is used to scope the hosted docs' urls
+	// it can be either "latest" or a full semver version
 	DocsVersion string `yaml:"DocsVersion"`
+	// this is the string that tells the reader which version of code was used to publish the docs
+	// it can only be a full semver version, unless user passes the --no-scope flag, which indicates "dev" mode
+	CodeVersion string `yaml:"CodeVersion"`
 }
 
 const hugoDataSoloFilename = "data/Solo.yaml"
@@ -82,9 +87,7 @@ func writeVersionScopeDataForHugo(opts *options) *cobra.Command {
 		Short: "generate a data file for Hugo that indicates the docs version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			data := &HugoDataSoloYaml{}
-			var err error
-			data.DocsVersion, err = getDocsVersionFromOpts(opts.HugoDataSoloOpts)
-			if err != nil {
+			if err := getDocsVersionFromOpts(data, opts.HugoDataSoloOpts); err != nil {
 				return err
 			}
 			marshalled, err := yaml.Marshal(data)
@@ -101,21 +104,24 @@ const (
 	latestVersionPath = "latest"
 )
 
-func getDocsVersionFromOpts(hugoOpts HugoDataSoloOpts) (string, error) {
+func getDocsVersionFromOpts(soloData *HugoDataSoloYaml, hugoOpts HugoDataSoloOpts) error {
 	if hugoOpts.noScope {
-		return "", nil
+		soloData.CodeVersion = "dev"
+		return nil
 	}
+	if hugoOpts.version == "" {
+		return errors.New("must provide a version for scoped docs generation")
+	}
+	if hugoOpts.product == "" {
+		return errors.New("must provide a product for scoped docs generation")
+	}
+	soloData.CodeVersion = hugoOpts.version
 	version := hugoOpts.version
 	if hugoOpts.callLatest {
 		version = latestVersionPath
 	}
-	if version == "" {
-		return "", errors.New("must provide a version or specify that 'latest' should be used as the version for scoped docs generation")
-	}
-	if hugoOpts.product == "" {
-		return "", errors.New("must provide a product for scoped docs generation")
-	}
-	return fmt.Sprintf("/%v/%v", hugoOpts.product, version), nil
+	soloData.DocsVersion = fmt.Sprintf("/%v/%v", hugoOpts.product, version)
+	return nil
 }
 
 const (
