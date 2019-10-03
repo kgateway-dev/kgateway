@@ -16,8 +16,6 @@ weight: 5
 - [Unit](#unit)
 - [IngressRateLimit](#ingressratelimit)
 - [Settings](#settings)
-- [EnvoySettings](#envoysettings)
-- [RateLimitCustomConfig](#ratelimitcustomconfig)
 - [ServiceSettings](#servicesettings)
 - [RateLimitActions](#ratelimitactions)
 - [RateLimitVhostExtension](#ratelimitvhostextension)
@@ -138,41 +136,6 @@ Basic rate-limiting API
 | `ratelimitServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) |  |  |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `denyOnFail` | `bool` |  |  |
-
-
-
-
----
-### EnvoySettings
-
- 
-TODO(kdorosh) remove this when we stop supporting opaque rate limit configuration
-
-```yaml
-"customConfig": .ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `customConfig` | [.ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig](../ratelimit.proto.sk#ratelimitcustomconfig) |  |  |
-
-
-
-
----
-### RateLimitCustomConfig
-
-
-
-```yaml
-"descriptors": []ratelimit.plugins.gloo.solo.io.Descriptor
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk#descriptor) |  |  |
 
 
 
