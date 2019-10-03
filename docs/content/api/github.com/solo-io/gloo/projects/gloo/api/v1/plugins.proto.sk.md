@@ -114,9 +114,9 @@ to be usable by Gloo.
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
 "ratelimitBasic": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
 "ratelimit": .ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension
-"waf": .waf.plugins.gloo.solo.io.VhostSettings
+"waf": .waf.plugins.gloo.solo.io.Settings
 "jwt": .jwt.plugins.gloo.solo.io.VhostExtension
-"rbac": .rbac.plugins.gloo.solo.io.VhostExtension
+"rbac": .rbac.plugins.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 
 ```
@@ -131,9 +131,9 @@ to be usable by Gloo.
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
 | `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
 | `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
-| `waf` | [.waf.plugins.gloo.solo.io.VhostSettings](../enterprise/plugins/waf/waf.proto.sk#vhostsettings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/jwt/jwt.proto.sk#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/rbac/rbac.proto.sk#vhostextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
@@ -163,9 +163,9 @@ to be usable by Gloo.
 "lbHash": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
 "ratelimitBasic": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
 "ratelimit": .ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension
-"waf": .waf.plugins.gloo.solo.io.RouteSettings
+"waf": .waf.plugins.gloo.solo.io.Settings
 "jwt": .jwt.plugins.gloo.solo.io.RouteExtension
-"rbac": .rbac.plugins.gloo.solo.io.RouteExtension
+"rbac": .rbac.plugins.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 
 ```
@@ -186,9 +186,9 @@ to be usable by Gloo.
 | `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service. |  |
 | `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
 | `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
-| `waf` | [.waf.plugins.gloo.solo.io.RouteSettings](../enterprise/plugins/waf/waf.proto.sk#routesettings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `jwt` | [.jwt.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/jwt/jwt.proto.sk#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/rbac/rbac.proto.sk#routeextension) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 

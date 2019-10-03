@@ -18,6 +18,7 @@ weight: 5
 - [Settings](#settings)
 - [EnvoySettings](#envoysettings)
 - [RateLimitCustomConfig](#ratelimitcustomconfig)
+- [ServiceSettings](#servicesettings)
 - [RateLimitActions](#ratelimitactions)
 - [RateLimitVhostExtension](#ratelimitvhostextension)
 - [RateLimitRouteExtension](#ratelimitrouteextension)
@@ -44,7 +45,8 @@ weight: 5
 ---
 ### Descriptor
 
-
+ 
+Descriptors can be nested for your convenience and flexibility
 
 ```yaml
 "key": string
@@ -102,7 +104,8 @@ weight: 5
 ---
 ### IngressRateLimit
 
-
+ 
+Basic rate-limiting API
 
 ```yaml
 "authorizedLimits": .ratelimit.plugins.gloo.solo.io.RateLimit
@@ -143,7 +146,7 @@ weight: 5
 ### EnvoySettings
 
  
-Deprecated: Use simplified v2 API, which removes RateLimitCustomConfig
+TODO(kdorosh) remove this when we stop supporting opaque rate limit configuration
 
 ```yaml
 "customConfig": .ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig
@@ -161,6 +164,39 @@ Deprecated: Use simplified v2 API, which removes RateLimitCustomConfig
 ### RateLimitCustomConfig
 
 
+
+```yaml
+"descriptors": []ratelimit.plugins.gloo.solo.io.Descriptor
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk#descriptor) |  |  |
+
+
+
+
+---
+### ServiceSettings
+
+ 
+API based on Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
+Sample configuration below
+
+descriptors:
+- key: account_id
+ descriptors:
+ - key: plan
+   value: BASIC
+   rateLimit:
+     requestsPerUnit: 1
+     unit: MINUTE
+ - key: plan
+   value: PLUS
+   rateLimit:
+     requestsPerUnit: 20
+     unit: MINUTE
 
 ```yaml
 "descriptors": []ratelimit.plugins.gloo.solo.io.Descriptor

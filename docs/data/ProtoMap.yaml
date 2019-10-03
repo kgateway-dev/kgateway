@@ -653,9 +653,6 @@ apis:
   plugins.gloo.solo.io.SubsetSpec:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/subset_spec.proto.sk#SubsetSpec
     package: plugins.gloo.solo.io
-  ratelimit.gloo.solo.io.EnvoySettings:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v2/enterprise/plugins/ratelimit/ratelimit.proto.sk#EnvoySettings
-    package: ratelimit.gloo.solo.io
   ratelimit.plugins.gloo.solo.io.Action:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#Action
     package: ratelimit.plugins.gloo.solo.io
@@ -689,11 +686,17 @@ apis:
   ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#RateLimitVhostExtension
     package: ratelimit.plugins.gloo.solo.io
+  ratelimit.plugins.gloo.solo.io.ServiceSettings:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#ServiceSettings
+    package: ratelimit.plugins.gloo.solo.io
   ratelimit.plugins.gloo.solo.io.Settings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#Settings
     package: ratelimit.plugins.gloo.solo.io
   rbac.plugins.gloo.solo.io.Config:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#Config
+    package: rbac.plugins.gloo.solo.io
+  rbac.plugins.gloo.solo.io.ExtensionSettings:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#ExtensionSettings
     package: rbac.plugins.gloo.solo.io
   rbac.plugins.gloo.solo.io.JWTPrincipal:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#JWTPrincipal

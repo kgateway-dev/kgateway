@@ -17,6 +17,7 @@ weight: 5
 - [Policy](#policy)
 - [Settings](#settings)
 - [Config](#config)
+- [ExtensionSettings](#extensionsettings)
 - [VhostExtension](#vhostextension)
 - [RouteExtension](#routeextension)
   
@@ -119,7 +120,7 @@ If more than one field is added, all of them need to match.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `requireRbac` | `bool` | Require RBAC for all vhosts. A vhost without an RBAC policy set will fallback to a deny-all policy. |  |
+| `requireRbac` | `bool` | Require RBAC for all virtual hosts. A vhost without an RBAC policy set will fallback to a deny-all policy. |  |
 
 
 
@@ -127,7 +128,8 @@ If more than one field is added, all of them need to match.
 ---
 ### Config
 
-
+ 
+TODO(kdorosh) remove once we stop supporting opaque RBAC config
 
 ```yaml
 "policies": map<string, .rbac.plugins.gloo.solo.io.Policy>
@@ -142,9 +144,29 @@ If more than one field is added, all of them need to match.
 
 
 ---
+### ExtensionSettings
+
+
+
+```yaml
+"disable": bool
+"policies": map<string, .rbac.plugins.gloo.solo.io.Policy>
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `disable` | `bool` | Disable RBAC checks on this resource (default false). This is useful to allow access to static resources/login page without RBAC checks. If provided on a route, all route settings override any vhost settings. |  |
+| `policies` | `map<string, .rbac.plugins.gloo.solo.io.Policy>` | Named policies to apply. |  |
+
+
+
+
+---
 ### VhostExtension
 
-
+ 
+TODO(kdorosh) remove once we stop supporting opaque RBAC config
 
 ```yaml
 "config": .rbac.plugins.gloo.solo.io.Config
@@ -161,7 +183,8 @@ If more than one field is added, all of them need to match.
 ---
 ### RouteExtension
 
-
+ 
+TODO(kdorosh) remove once we stop supporting opaque RBAC config
 
 ```yaml
 "disable": bool
@@ -171,7 +194,7 @@ If more than one field is added, all of them need to match.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disable` | `bool` | Disable RBAC checks on this route. This is useful to allow access to static resources \ login page without RBAC checks. Only one of `disable` or `config` can be set. |  |
+| `disable` | `bool` | Disable RBAC checks on this route. This is useful to allow access to static resources/login page without RBAC checks. Only one of `disable` or `config` can be set. |  |
 | `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk#config) |  Only one of `config` or `disable` can be set. |  |
 
 
