@@ -432,11 +432,17 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("appends linkerd headers when linkerd is enabled", func() {
-				upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
-				Expect(err).NotTo(HaveOccurred())
-				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
-				us, err := upstreams.Find(testHelper.InstallNamespace, upstreamName)
-				Expect(err).NotTo(HaveOccurred())
+				var us *gloov1.Upstream
+				//give discovery time to write the upstream
+				Eventually(func() error {
+					upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+					if err != nil {
+						return err
+					}
+					upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
+					us, err = upstreams.Find(testHelper.InstallNamespace, upstreamName)
+					return err
+				}, time.Second*10, time.Second).ShouldNot(HaveOccurred())
 
 				dest := &gloov1.Destination{
 					DestinationType: &gloov1.Destination_Upstream{
@@ -444,7 +450,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				}
 
-				_, err = virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
+				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
 				responseString := fmt.Sprintf(`"%s":"%s.%s.svc.cluster.local:%v"`,

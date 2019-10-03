@@ -18,6 +18,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	DefaultTcpStatPrefix = "tcp"
+)
+
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
@@ -54,8 +58,11 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 	for _, tcpHost := range tcpListener.TcpHosts {
 
 		var listenerFilters []envoylistener.Filter
-
-		tcpFilter, err := tcpProxyFilter(params, tcpHost, tcpListener.GetPlugins())
+		statPrefix := tcpListener.GetStatPrefix()
+		if statPrefix == "" {
+			statPrefix = DefaultTcpStatPrefix
+		}
+		tcpFilter, err := tcpProxyFilter(params, tcpHost, tcpListener.GetPlugins(), statPrefix)
 		if err != nil {
 			logger.Errorw("could not compute tcp proxy filter", zap.Error(err), zap.Any("tcpHost", tcpHost))
 			continue
@@ -73,9 +80,10 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 	return filterChains, nil
 }
 
-func tcpProxyFilter(params plugins.Params, host *v1.TcpHost, plugins *v1.TcpListenerPlugins) (*listener.Filter, error) {
+func tcpProxyFilter(params plugins.Params, host *v1.TcpHost, plugins *v1.TcpListenerPlugins, statPrefix string) (*listener.Filter, error) {
+
 	cfg := &envoytcp.TcpProxy{
-		StatPrefix: "tcp",
+		StatPrefix: statPrefix,
 	}
 
 	if plugins != nil {

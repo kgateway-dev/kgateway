@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
+	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
@@ -302,6 +304,9 @@ type Extensions struct {
 	PluginExtensions []plugins.Plugin
 	SyncerExtensions []TranslatorSyncerExtensionFactory
 	XdsCallbacks     xdsserver.Callbacks
+
+	// optional custom handler for envoy usage metrics that get pushed to the gloo pod
+	MetricsHandler metricsservice.MetricsHandler
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -503,6 +508,23 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}()
 		opts.ValidationServer.StartGrpcServer = false
 	}
+
+	go func() {
+		var handler metricsservice.MetricsHandler
+
+		if extensions.MetricsHandler == nil {
+			handler, err = metricsservice.NewConfigMapBackedDefaultHandler(opts.WatchOpts.Ctx)
+			if err != nil {
+				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Fatalw("Error starting metrics watcher", zap.Error(err))
+			}
+		} else {
+			handler = extensions.MetricsHandler
+		}
+
+		if err := runner.RunE(opts.WatchOpts.Ctx, handler); err != nil {
+			contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorw("err in metrics server", zap.Error(err))
+		}
+	}()
 
 	go func() {
 		for {

@@ -4,6 +4,10 @@
 
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
+
+# Kind of a hack to make sure _output exists
+z := $(shell mkdir -p $(OUTPUT_DIR))
+
 SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
 RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)

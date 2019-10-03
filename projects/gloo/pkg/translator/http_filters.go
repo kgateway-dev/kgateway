@@ -18,12 +18,20 @@ import (
 	"github.com/solo-io/go-utils/log"
 )
 
-const webSocketUpgradeType = "websocket"
+const (
+	webSocketUpgradeType = "websocket"
 
-func NewHttpConnectionManager(httpFilters []*envoyhttp.HttpFilter, rdsName string) *envoyhttp.HttpConnectionManager {
+	DefaultHttpStatPrefix = "http"
+)
+
+func NewHttpConnectionManager(listener *v1.HttpListener, httpFilters []*envoyhttp.HttpFilter, rdsName string) *envoyhttp.HttpConnectionManager {
+	statPrefix := listener.GetStatPrefix()
+	if statPrefix == "" {
+		statPrefix = DefaultHttpStatPrefix
+	}
 	return &envoyhttp.HttpConnectionManager{
 		CodecType:  envoyhttp.AUTO,
-		StatPrefix: "http",
+		StatPrefix: statPrefix,
 		NormalizePath: &types.BoolValue{
 			Value: true,
 		},
@@ -48,7 +56,7 @@ func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, l
 	httpFilters := t.computeHttpFilters(params, listener, httpListenerReport)
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
 
-	httpConnMgr := NewHttpConnectionManager(httpFilters, rdsName)
+	httpConnMgr := NewHttpConnectionManager(listener, httpFilters, rdsName)
 
 	hcmFilter, err := NewFilterWithConfig(envoyutil.HTTPConnectionManager, httpConnMgr)
 	if err != nil {

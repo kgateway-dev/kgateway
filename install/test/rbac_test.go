@@ -172,6 +172,11 @@ var _ = Describe("RBAC Test", func() {
 						Resources: []string{"upstreams", "upstreamgroups", "proxies", "authconfigs"},
 						Verbs:     []string{"get", "list", "watch", "update"},
 					},
+					{
+						APIGroups: []string{""},
+						Resources: []string{"configmaps"},
+						Verbs:     []string{"get", "update"},
+					},
 				},
 				RoleRef: rbacv1.RoleRef{
 					APIGroup: "rbac.authorization.k8s.io",
