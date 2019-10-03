@@ -53,6 +53,9 @@ var (
 	randomNumber = time.Now().Unix() % 10000
 )
 
+var _ = BeforeSuite(StartTestHelper)
+var _ = AfterSuite(TearDownTestHelper)
+
 func StartTestHelper() {
 
 	testInstance += 1

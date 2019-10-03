@@ -78,10 +78,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		serviceClient        skkube.ServiceClient
 	)
 
-	var _ = BeforeEach(StartTestHelper)
-
-	var _ = AfterEach(TearDownTestHelper)
-
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 

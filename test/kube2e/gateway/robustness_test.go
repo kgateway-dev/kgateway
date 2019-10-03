@@ -59,10 +59,6 @@ var _ = Describe("Robustness tests", func() {
 		err error
 	)
 
-	var _ = BeforeEach(StartTestHelper)
-
-	var _ = AfterEach(TearDownTestHelper)
-
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
