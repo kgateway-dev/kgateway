@@ -73,7 +73,7 @@ var _ = Describe("Routes", func() {
 	})
 
 	It("should add route to route table", func() {
-		err := testutils.Glooctl("add route --path-exact /sample-route-a --dest-name default-petstore-8080 --name=my-routes --route-table")
+		err := testutils.Glooctl("add route --path-exact /sample-route-a --dest-name default-petstore-8080 --name=my-routes --to-route-table")
 		Expect(err).NotTo(HaveOccurred())
 
 		rt, err := helpers.MustRouteTableClient().Read("gloo-system", "my-routes", clients.ReadOpts{})

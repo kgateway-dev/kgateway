@@ -83,7 +83,7 @@ func addRoute(opts *options.Options) error {
 		}
 	}
 
-	if opts.Add.Route.RouteTable {
+	if opts.Add.Route.AddToRouteTable {
 		rtRef := &core.ResourceRef{
 			Namespace: opts.Metadata.Namespace,
 			Name:      opts.Metadata.Name,

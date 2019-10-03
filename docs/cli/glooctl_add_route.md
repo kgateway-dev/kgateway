@@ -42,7 +42,7 @@ glooctl add route [flags]
                                           
                                           For example, to extract the variable 'id' from the following request path /users/1, where 1 is the id:
                                           --rest-parameters ':path='/users/{id}'
-      --route-table                       insert the route into a route table rather than a virtual service
+      --to-route-table                    insert the route into a route table rather than a virtual service
       --upstream-group-name string        name of the upstream group destination for this route
       --upstream-group-namespace string   namespace of the upstream group destination for this route (default "gloo-system")
 ```

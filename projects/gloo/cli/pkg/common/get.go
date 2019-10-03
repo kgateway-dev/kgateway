@@ -32,26 +32,26 @@ func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceLi
 }
 
 func GetRouteTables(name string, opts *options.Options) (v1.RouteTableList, error) {
-	var virtualServiceList v1.RouteTableList
+	var routeTableList v1.RouteTableList
 
-	virtualServiceClient := helpers.MustRouteTableClient()
+	routeTableClient := helpers.MustRouteTableClient()
 	if name == "" {
-		virtualServices, err := virtualServiceClient.List(opts.Metadata.Namespace,
+		routeTables, err := routeTableClient.List(opts.Metadata.Namespace,
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
-		virtualServiceList = append(virtualServiceList, virtualServices...)
+		routeTableList = append(routeTableList, routeTables...)
 	} else {
-		virtualService, err := virtualServiceClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		routeTable, err := routeTableClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
 		opts.Metadata.Name = name
-		virtualServiceList = append(virtualServiceList, virtualService)
+		routeTableList = append(routeTableList, routeTable)
 	}
 
-	return virtualServiceList, nil
+	return routeTableList, nil
 }
 
 func GetUpstreams(name string, opts *options.Options) (gloov1.UpstreamList, error) {
