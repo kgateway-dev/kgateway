@@ -27,11 +27,11 @@ func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType Outp
 		}, os.Stdout)
 }
 
-func PrintRouteTables(virtualServices v1.RouteTableList, outputType OutputType) error {
+func PrintRouteTables(routeTables v1.RouteTableList, outputType OutputType) error {
 	if outputType == KUBE_YAML {
-		return PrintKubeCrdList(virtualServices.AsInputResources(), v1.RouteTableCrd)
+		return PrintKubeCrdList(routeTables.AsInputResources(), v1.RouteTableCrd)
 	}
-	return cliutils.PrintList(outputType.String(), "", virtualServices,
+	return cliutils.PrintList(outputType.String(), "", routeTables,
 		func(data interface{}, w io.Writer) error {
 			RouteTableTable(data.(v1.RouteTableList), w)
 			return nil
