@@ -20,6 +20,11 @@ data:
       metadata:
         # role's value is the key for the in-memory xds cache (projects/gloo/pkg/xds/envoy.go)
         role: "{{ `{{.PodNamespace}}` }}~{{ $name | kebabcase }}"
+    stats_sinks:
+      - name: envoy.metrics_service
+        config:
+          grpc_service:
+            envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966}
     static_resources:
 
 {{- if or ($spec.stats) ($spec.readConfig) }}
@@ -125,6 +130,20 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
+      - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966
+        alt_stat_name: metrics_cluster
+        connect_timeout: 5.000s
+        load_assignment:
+            cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966
+            endpoints:
+            - lb_endpoints:
+              - endpoint:
+                    address:
+                        socket_address:
+                            address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
+                            port_value: 9966
+        http2_protocol_options: {}
+        type: STRICT_DNS
 {{- if $.Values.accessLogger.enabled }}
       - name: access_log_cluster
         connect_timeout: 5.000s

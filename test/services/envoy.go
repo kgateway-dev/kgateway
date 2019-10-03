@@ -49,6 +49,13 @@ node:
  id: {{.ID}}
  metadata:
   role: {{.Role}}
+{{if .MetricsAddr}}
+stats_sinks:
+  - name: envoy.metrics_service
+    config:
+      grpc_service:
+        envoy_grpc: {cluster_name: metrics_cluster}
+{{end}}
 
 static_resources:
   clusters:
@@ -77,6 +84,16 @@ static_resources:
     - socket_address:
         address: {{.AccessLogAddr}}
         port_value: {{.AccessLogPort}}
+    http2_protocol_options: {}
+    type: STATIC
+{{end}}
+{{if .MetricsAddr}}
+  - name: metrics_cluster
+    connect_timeout: 5.000s
+    hosts:
+    - socket_address:
+        address: {{.MetricsAddr}}
+        port_value: {{.MetricsPort}}
     http2_protocol_options: {}
     type: STATIC
 {{end}}
@@ -200,6 +217,8 @@ func (ef *EnvoyFactory) Clean() error {
 }
 
 type EnvoyInstance struct {
+	MetricsAddr   string
+	MetricsPort   uint32
 	AccessLogAddr string
 	AccessLogPort uint32
 	RatelimitAddr string
@@ -235,6 +254,7 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		UseDocker:     ef.useDocker,
 		GlooAddr:      gloo,
 		AccessLogAddr: gloo,
+		MetricsAddr:   gloo,
 		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
 	}
 	ef.instances = append(ef.instances, ei)

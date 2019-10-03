@@ -116,6 +116,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 ```yaml
 "tcpHosts": []gloo.solo.io.TcpHost
 "plugins": .gloo.solo.io.TcpListenerPlugins
+"statPrefix": string
 
 ```
 
@@ -123,6 +124,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | ----- | ---- | ----------- |----------- | 
 | `tcpHosts` | [[]gloo.solo.io.TcpHost](../proxy.proto.sk#tcphost) | List of filter chains to match on for this listener. |  |
 | `plugins` | [.gloo.solo.io.TcpListenerPlugins](../plugins.proto.sk#tcplistenerplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration. |  |
+| `statPrefix` | `string` | prefix for addressing envoy stats for the tcp proxy. |  |
 
 
 
@@ -159,6 +161,7 @@ Some plugins can be configured to work both on the listener and virtual host lev
 ```yaml
 "virtualHosts": []gloo.solo.io.VirtualHost
 "listenerPlugins": .gloo.solo.io.HttpListenerPlugins
+"statPrefix": string
 
 ```
 
@@ -166,6 +169,7 @@ Some plugins can be configured to work both on the listener and virtual host lev
 | ----- | ---- | ----------- |----------- | 
 | `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid. |  |
 | `listenerPlugins` | [.gloo.solo.io.HttpListenerPlugins](../plugins.proto.sk#httplistenerplugins) | Listener Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration. |  |
+| `statPrefix` | `string` | prefix for addressing envoy stats for the http connection manager. |  |
 
 
 

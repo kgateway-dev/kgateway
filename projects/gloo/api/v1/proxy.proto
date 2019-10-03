@@ -93,6 +93,8 @@ message TcpListener {
     // Some configuration here can be overridden in
     // Virtual Host Plugin configuration or Route Plugin configuration
     TcpListenerPlugins plugins = 8;
+    // prefix for addressing envoy stats for the tcp proxy
+    string stat_prefix = 3;
 }
 
 message TcpHost {
@@ -118,6 +120,8 @@ message HttpListener {
     // Some configuration here can be overridden in
     // Virtual Host Plugin configuration or Route Plugin configuration
     HttpListenerPlugins listener_plugins = 2;
+    // prefix for addressing envoy stats for the http connection manager
+    string stat_prefix = 3;
 }
 
 /*

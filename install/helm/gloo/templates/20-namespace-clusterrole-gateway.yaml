@@ -74,6 +74,9 @@ rules:
   resources: ["upstreams","upstreamgroups", "proxies", "authconfigs"]
   # update is needed for status updates
   verbs: ["get", "list", "watch", "update"]
+- apiGroups: [""] # get/update on configmaps for recording envoy metrics
+  resources: ["configmaps"]
+  verbs: ["get", "update"]
 ---
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
