@@ -19,5 +19,6 @@
         "package": "gateway.solo.io.v2"
       }
     ]
-  }
+  },
+  "gen_kube_types": true
 }

@@ -528,9 +528,12 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1404,7 +1407,7 @@
   version = "v0.10.9"
 
 [[projects]]
-  digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
+  digest = "1:dfcf304320042b636a3c8cf5c8851bde50f9e919e097af840b0c89422b97a387"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1449,6 +1452,8 @@
     "pkg/code-generator/cmd",
     "pkg/code-generator/codegen",
     "pkg/code-generator/codegen/templates",
+    "pkg/code-generator/codegen/templates/kube",
+    "pkg/code-generator/codegen/utils",
     "pkg/code-generator/docgen",
     "pkg/code-generator/docgen/datafile",
     "pkg/code-generator/docgen/funcs",
@@ -1467,8 +1472,7 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "43b06f6a734ec0ae67e2943976bf3a6f55418733"
-  version = "v0.10.23"
+  revision = "dc479f62f67bedefb2cfe4cbc1963e744ce0c1ba"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2716,6 +2720,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2835,9 +2840,9 @@
     "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/AlecAivazis/survey.v1/terminal",
+    "istio.io/gogo-genproto/prometheus",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
-    "istio.io/gogo-genproto/prometheus",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
