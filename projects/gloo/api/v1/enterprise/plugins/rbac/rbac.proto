@@ -43,33 +43,10 @@ message Settings {
     bool require_rbac = 1;
 }
 
-// TODO(kdorosh) remove once we stop supporting opaque RBAC config
-message Config {
-    option deprecated = true;
-    // Named policies to apply.
-    map<string, Policy> policies = 1;
-}
-
 message ExtensionSettings {
     // Disable RBAC checks on this resource (default false). This is useful to allow access to static resources/login page without RBAC checks.
     // If provided on a route, all route settings override any vhost settings
     bool disable = 1;
     // Named policies to apply.
     map<string, Policy> policies = 2;
-}
-
-// TODO(kdorosh) remove once we stop supporting opaque RBAC config
-message VhostExtension {
-    option deprecated = true;
-    Config config = 1;
-}
-
-// TODO(kdorosh) remove once we stop supporting opaque RBAC config
-message RouteExtension {
-    option deprecated = true;
-    oneof route{
-        // Disable RBAC checks on this route. This is useful to allow access to static resources/login page without RBAC checks.
-        bool disable = 1;
-        Config config = 2;
-    }
 }
