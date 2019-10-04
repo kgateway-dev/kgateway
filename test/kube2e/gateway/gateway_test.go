@@ -26,7 +26,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/go-utils/errors"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/go-utils/testutils/helper"
 
@@ -428,21 +427,25 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("appends linkerd headers when linkerd is enabled", func() {
-				var us *gloov1.Upstream
+				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
+				var ref core.ResourceRef
 				//give discovery time to write the upstream
 				Eventually(func() error {
 					upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 					if err != nil {
 						return err
 					}
-					upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
-					us, err = upstreams.Find(testHelper.InstallNamespace, upstreamName)
-					return err
+					us, err := upstreams.Find(testHelper.InstallNamespace, upstreamName)
+					if err != nil {
+						return err
+					}
+					ref = us.Metadata.Ref()
+					return nil
 				}, time.Second*10, time.Second).ShouldNot(HaveOccurred())
 
 				dest := &gloov1.Destination{
 					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: utils.ResourceRefPtr(us.Metadata.Ref()),
+						Upstream: &ref,
 					},
 				}
 
