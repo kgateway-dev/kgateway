@@ -35,7 +35,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 		}
 		expected := &v1.RoutePlugins{
 			PrefixRewrite: "preserve-me",
-			Timeout: &d,
+			Timeout:       &d,
 			Retries: &retries.RetryPolicy{
 				RetryOn:    "5XX",
 				NumRetries: 0,
