@@ -13,8 +13,6 @@ import (
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/testutils/exec"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
-
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -58,7 +56,7 @@ import (
 var _ = Describe("Kube2e: gateway", func() {
 
 	const (
-		gatewayProxy = translator.GatewayProxyName
+		gatewayProxy = defaults.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -1167,6 +1165,6 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 }
 
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: rewrite}}
+	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: rewrite}
 	return route
 }
