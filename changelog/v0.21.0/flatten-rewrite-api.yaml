@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: BREAKING_CHANGE
     description: >
       Flatten prefix rewrite and host rewrite APIs. Move `auto_host_rewrite` from static upstream to route plugins since
       it's a route-level Envoy config; this fixes confusing behavior where a single static upstream on a route sets
