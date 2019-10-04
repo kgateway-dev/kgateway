@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestPrefixRewrite(t *testing.T) {
+func TestBasicRoute(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "BasicRoute Suite")
 }
