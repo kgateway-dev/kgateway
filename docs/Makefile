@@ -39,11 +39,8 @@ DOCS_VERSION := latest
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	# if [ ! -d layouts ]; then git --git-dir=themes/hugo-theme-soloio/.git checkout master; fi
-	# if [ ! -d layouts ]; then git --git-dir=themes/hugo-theme-soloio/.git checkout 3825cfd399ec8069e1823ad22f3c11fc415a3836; fi
-	# git --git-dir=themes/hugo-theme-soloio/.git checkout master
-	# git --git-dir=themes/hugo-theme-soloio/.git checkout 3825cfd399ec8069e1823ad22f3c11fc415a3836
-	git -C themes/hugo-theme-soloio checkout 3825cfd399ec8069e1823ad22f3c11fc415a3836
+	# TODO(mitchdraft) - update checkout to the sha when branch merges
+	git -C themes/hugo-theme-soloio checkout revise-theme-for-versions
 	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/changelog/gloo-changelog.sk.md
 	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/changelog/glooe-changelog.sk.md
 
