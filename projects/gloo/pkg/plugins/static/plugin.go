@@ -108,8 +108,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
-	// the upstream has a DNS name. to cover the case that it is an external service
-	// that requires the host header, we will add host rewrite.
+	// the upstream has a DNS name. We need Envoy to resolve the DNS name
 	if hostname != "" {
 		// set the type to strict dns
 		out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
