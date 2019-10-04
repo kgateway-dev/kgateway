@@ -113,7 +113,7 @@ var _ = Describe("host rewrite", func() {
 
 		p := NewPlugin()
 		routeAction := &envoyroute.RouteAction{
-			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite:"/"},
+			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite: "/"},
 		}
 		out := &envoyroute.Route{
 			Action: &envoyroute.Route_Route{
@@ -122,7 +122,7 @@ var _ = Describe("host rewrite", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
-				HostRewriteType: &v1.RoutePlugins_HostRewrite{HostRewrite:"/foo"},
+				HostRewriteType: &v1.RoutePlugins_HostRewrite{HostRewrite: "/foo"},
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())

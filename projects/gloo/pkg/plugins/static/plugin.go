@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-type plugin struct{ }
+type plugin struct{}
 
 func NewPlugin() plugins.Plugin {
 	return &plugin{}
