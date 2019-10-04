@@ -563,7 +563,10 @@ var _ = Describe("Kube2e: gateway", func() {
 				Eventually(func() (*gloov1.Upstream, error) { return getUpstream(svc) }, "15s", "0.5s").ShouldNot(BeNil())
 				// now set subset config on an upstream:
 				Eventually(func() error {
-					upstream, _ := getUpstream(svc)
+					upstream, err := getUpstream(svc)
+					if err != nil {
+						return err
+					}
 					upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
 						PluginType: &gloov1plugins.ServiceSpec_Grpc{
 							Grpc: &grpcv1.ServiceSpec{},
