@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,6 +27,17 @@ func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType Outp
 		}, os.Stdout)
 }
 
+func PrintRouteTables(routeTables v1.RouteTableList, outputType OutputType) error {
+	if outputType == KUBE_YAML {
+		return PrintKubeCrdList(routeTables.AsInputResources(), v1.RouteTableCrd)
+	}
+	return cliutils.PrintList(outputType.String(), "", routeTables,
+		func(data interface{}, w io.Writer) error {
+			RouteTableTable(data.(v1.RouteTableList), w)
+			return nil
+		}, os.Stdout)
+}
+
 // PrintTable prints virtual services using tables to io.Writer
 func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 	table := tablewriter.NewWriter(w)
@@ -35,8 +48,8 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 		displayName := v.GetDisplayName()
 		domains := domains(v)
 		ssl := sslConfig(v)
-		status := getVirtualServiceStatus(v)
-		routes := routeList(v)
+		status := getStatus(v)
+		routes := routeList(v.GetVirtualHost().GetRoutes())
 		plugins := vhPlugins(v)
 
 		if len(routes) == 0 {
@@ -55,7 +68,33 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 	table.Render()
 }
 
-func getVirtualServiceStatus(vs *v1.VirtualService) string {
+// PrintTable prints virtual services using tables to io.Writer
+func RouteTableTable(list []*v1.RouteTable, w io.Writer) {
+	table := tablewriter.NewWriter(w)
+	table.SetHeader([]string{"Route Table", "Routes", "Status"})
+
+	for _, rt := range list {
+		name := rt.GetMetadata().Name
+		routes := routeList(rt.GetRoutes())
+		status := getRouteTableStatus(rt)
+
+		if len(routes) == 0 {
+			routes = []string{""}
+		}
+		for i, line := range routes {
+			if i == 0 {
+				table.Append([]string{name, line, status})
+			} else {
+				table.Append([]string{"", line, ""})
+			}
+		}
+	}
+
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.Render()
+}
+
+func getRouteTableStatus(vs *v1.RouteTable) string {
 
 	// If the virtual service has not yet been accepted, don't clutter the status with the other errors.
 	resourceStatus := vs.Status.State
@@ -81,7 +120,40 @@ func getVirtualServiceStatus(vs *v1.VirtualService) string {
 		return resourceStatus.String()
 	case 1:
 		// there is one error, try to pass a friendly error message
-		return cleanVirtualServiceSubResourceError(subResourceErrorMessages[0])
+		return cleanSubResourceError(subResourceErrorMessages[0])
+	default:
+		// there are multiple errors, don't be fancy, just return list
+		return strings.Join(subResourceErrorMessages, "\n")
+	}
+}
+
+func getStatus(res resources.InputResource) string {
+
+	// If the virtual service has not yet been accepted, don't clutter the status with the other errors.
+	resourceStatus := res.GetStatus().State
+	if resourceStatus != core.Status_Accepted {
+		return resourceStatus.String()
+	}
+
+	// Subresource statuses are reported as a map[string]*Status
+	// At the moment, virtual services only have one subresource, the associated gateway.
+	// In the future, we may add more.
+	// Either way, we only care if a subresource is in a non-accepted state.
+	// Therefore, only report non-accepted states, include the subresource name.
+	subResourceErrorMessages := []string{}
+	for k, v := range res.GetStatus().SubresourceStatuses {
+		if v.State != core.Status_Accepted {
+			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
+		}
+	}
+
+	switch len(subResourceErrorMessages) {
+	case 0:
+		// there are no errors with the subresources, pass Accepted status
+		return resourceStatus.String()
+	case 1:
+		// there is one error, try to pass a friendly error message
+		return cleanSubResourceError(subResourceErrorMessages[0])
 	default:
 		// there are multiple errors, don't be fancy, just return list
 		return strings.Join(subResourceErrorMessages, "\n")
@@ -90,7 +162,7 @@ func getVirtualServiceStatus(vs *v1.VirtualService) string {
 
 // If we can identify the type of error on a virtual service subresource,
 // return a cleaner message. If not, default to the full error message.
-func cleanVirtualServiceSubResourceError(eMsg string) string {
+func cleanSubResourceError(eMsg string) string {
 	// If we add additional error scrubbers, we should use regexs
 	// For now, a simple way to test for the known error is to split the full error message by it
 	// If the split produced a list with two elements, then the error message is recognized
@@ -103,12 +175,12 @@ func cleanVirtualServiceSubResourceError(eMsg string) string {
 	return eMsg
 }
 
-func routeList(v *v1.VirtualService) []string {
-	if len(v.VirtualHost.Routes) == 0 {
+func routeList(routeList []*v1.Route) []string {
+	if len(routeList) == 0 {
 		return nil
 	}
 	var routes []string
-	for _, route := range v.VirtualHost.Routes {
+	for _, route := range routeList {
 		routes = append(routes, fmt.Sprintf("%v -> %v", matcherString(route.Matcher), destinationString(route)))
 	}
 	return routes
@@ -154,6 +226,9 @@ func destinationString(route *v1.Route) string {
 		return strconv.Itoa(int(action.DirectResponseAction.Status))
 	case *v1.Route_RedirectAction:
 		return action.RedirectAction.HostRedirect
+	case *v1.Route_DelegateAction:
+		return fmt.Sprintf("%s (route table)", action.DelegateAction.Key())
+
 	}
 	return ""
 }

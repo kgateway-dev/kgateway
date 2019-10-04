@@ -23,11 +23,13 @@ glooctl add route [flags]
 ```
   -a, --aws-function-name string          logical name of the AWS lambda to invoke with this route. use if destination is an AWS upstream
       --aws-unescape                      unescape JSON returned by this lambda function (useful if the response is not intended to be JSON formatted, e.g. in the case of static content (images, HTML, etc.) being served by Lambda
+      --delegate-name string              name of the delegated RouteTable for this route
+      --delegate-namespace string         namespace of the delegated RouteTable for this route (default "gloo-system")
   -u, --dest-name string                  name of the destination upstream for this route
   -s, --dest-namespace string             namespace of the destination upstream for this route (default "gloo-system")
   -d, --header strings                    headers to match on the request. values can be specified using regex strings
   -h, --help                              help for route
-  -x, --index uint32                      index in the virtual service route list where to insert this route. routes after it will be shifted back one
+  -x, --index uint32                      index in the virtual service's or route table'sroute list where to insert this route. routes after it will be shifted back one
   -m, --method strings                    the HTTP methods (GET, POST, etc.) to match on the request. if empty, all methods will match 
   -e, --path-exact string                 exact path to match route
   -p, --path-prefix string                path prefix to match route
@@ -40,6 +42,7 @@ glooctl add route [flags]
                                           
                                           For example, to extract the variable 'id' from the following request path /users/1, where 1 is the id:
                                           --rest-parameters ':path='/users/{id}'
+      --to-route-table                    insert the route into a route table rather than a virtual service
       --upstream-group-name string        name of the upstream group destination for this route
       --upstream-group-namespace string   namespace of the upstream group destination for this route (default "gloo-system")
 ```

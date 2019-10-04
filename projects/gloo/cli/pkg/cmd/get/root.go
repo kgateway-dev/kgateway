@@ -37,6 +37,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Get.Consul)
 
 	cmd.AddCommand(VirtualService(opts))
+	cmd.AddCommand(RouteTable(opts))
 	cmd.AddCommand(Proxy(opts))
 	cmd.AddCommand(Upstream(opts))
 	cmd.AddCommand(UpstreamGroup(opts))

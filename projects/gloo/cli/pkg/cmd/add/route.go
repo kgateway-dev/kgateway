@@ -62,10 +62,6 @@ func addRoute(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	action, err := actionFromInput(opts.Add.Route)
-	if err != nil {
-		return err
-	}
 	plugins, err := pluginsFromInput(opts.Add.Route.Plugins)
 	if err != nil {
 		return err
@@ -73,8 +69,48 @@ func addRoute(opts *options.Options) error {
 
 	v1Route := &gatewayv1.Route{
 		Matcher:      match,
-		Action:       action,
 		RoutePlugins: plugins,
+	}
+
+	if opts.Add.Route.Destination.Delegate.Name != "" {
+		v1Route.Action = &gatewayv1.Route_DelegateAction{
+			DelegateAction: &opts.Add.Route.Destination.Delegate,
+		}
+	} else {
+		v1Route.Action, err = routeActionFromInput(opts.Add.Route)
+		if err != nil {
+			return err
+		}
+	}
+
+	if opts.Add.Route.AddToRouteTable {
+		rtRef := &core.ResourceRef{
+			Namespace: opts.Metadata.Namespace,
+			Name:      opts.Metadata.Name,
+		}
+		selector := selectionutils.NewRouteTableSelector(helpers.MustRouteTableClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
+		routeTable, err := selector.SelectOrCreateRouteTable(opts.Top.Ctx, rtRef)
+		if err != nil {
+			return err
+		}
+
+		index := int(opts.Add.Route.InsertIndex)
+		routeTable.Routes = append(routeTable.Routes, nil)
+		copy(routeTable.Routes[index+1:], routeTable.Routes[index:])
+		routeTable.Routes[index] = v1Route
+
+		if !opts.Add.DryRun {
+			routeTable, err = helpers.MustRouteTableClient().Write(routeTable, clients.WriteOpts{
+				Ctx:               opts.Top.Ctx,
+				OverwriteExisting: true,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		_ = printers.PrintRouteTables(gatewayv1.RouteTableList{routeTable}, opts.Top.Output)
+		return nil
 	}
 
 	vsRef := &core.ResourceRef{
@@ -82,7 +118,7 @@ func addRoute(opts *options.Options) error {
 		Name:      opts.Metadata.Name,
 	}
 	selector := selectionutils.NewVirtualServiceSelector(helpers.MustVirtualServiceClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
-	virtualService, err := selector.SelectOrCreate(opts.Top.Ctx, vsRef)
+	virtualService, err := selector.SelectOrCreateVirtualService(opts.Top.Ctx, vsRef)
 	if err != nil {
 		return err
 	}
@@ -159,7 +195,7 @@ func matcherFromInput(input options.RouteMatchers) (*v1.Matcher, error) {
 	return m, nil
 }
 
-func actionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteAction, error) {
+func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteAction, error) {
 	a := &gatewayv1.Route_RouteAction{
 		RouteAction: &v1.RouteAction{},
 	}
