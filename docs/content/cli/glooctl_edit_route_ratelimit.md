@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl edit route ratelimit
 
-Configure rate limit settings (Enterprise)
+Configure rate-limits (Enterprise)
 
 ### Synopsis
 
-Let gloo know the location of the rate limit server. This is a Gloo Enterprise feature.
+Configure rate-limits for requests that match this route. This is a Gloo Enterprise feature.
 
 ### Options
 
@@ -37,5 +37,5 @@ Let gloo know the location of the rate limit server. This is a Gloo Enterprise f
 ### SEE ALSO
 
 * [glooctl edit route](../glooctl_edit_route)	 - 
-* [glooctl edit route ratelimit custom-envoy-config](../glooctl_edit_route_ratelimit_custom-envoy-config)	 - Add a custom rate limit actions (Enterprise)
+* [glooctl edit route ratelimit client-config](../glooctl_edit_route_ratelimit_client-config)	 - Add rate-limits (Enterprise)
 

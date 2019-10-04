@@ -42,15 +42,6 @@ message Settings {
   bool deny_on_fail = 3;
 }
 
-// TODO(kdorosh) remove this when we stop supporting opaque rate limit configuration
-message EnvoySettings {
-    option deprecated = true;
-    message RateLimitCustomConfig {
-      repeated Descriptor descriptors = 1;
-    }
-    RateLimitCustomConfig custom_config = 2;
-}
-
 // API based on Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
 // Sample configuration below
 //

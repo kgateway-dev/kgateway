@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/cliutil/install"
+
 	"github.com/gogo/protobuf/types"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -66,6 +68,14 @@ func StartTestHelper() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
+	RegisterFailHandler(func(message string, callerSkip ...int) {
+		glooLogs, _ := install.KubectlOut(nil, "logs", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo")
+		gwLogs, _ := install.KubectlOut(nil, "logs", "-n", testHelper.InstallNamespace, "-l", "gloo=gateway")
+
+		fmt.Fprintf(GinkgoWriter, "\n\n\n\nGLOO LOGS\n\n%s\n\n\n\n", glooLogs)
+		fmt.Fprintf(GinkgoWriter, "\n\n\n\nGATEWAY LOGS\n\n%s\n\n\n\n", gwLogs)
+	})
+
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
@@ -90,7 +100,7 @@ func StartTestHelper() {
 			return nil
 		}
 		return errors.New("glooctl check detected a problem with the installation")
-	}, "20s", "4s").Should(BeNil())
+	}, "40s", "4s").Should(BeNil())
 
 	// enable strict validation
 	// this can be removed once we enable validation by default

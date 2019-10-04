@@ -32,11 +32,8 @@ var (
 	ProvideNamespaceAndNameError = func(namespace, secretName string) error {
 		return errors.Errorf("provide both a secret namespace [%v] and secret name [%v]", namespace, secretName)
 	}
-	UnableToMarshalApiKeyConfig = func(err error) error {
-		return errors.Wrapf(err, "Error marshalling apikey config")
-	}
 	EmptyQueryError       = errors.Errorf("query must not be empty")
-	InvlaidRefFormatError = errors.Errorf("invalid format: provide namespaced names for config maps (namespace.configMapName)")
+	InvalidRefFormatError = errors.Errorf("invalid format: provide namespaced names for config maps (namespace.configMapName)")
 )
 
 func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -139,17 +136,7 @@ func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualServic
 				RequestsPerUnit: rl.RequestsPerTimeUnit,
 			},
 		}
-		ingressRateLimitStruct, err := envoyutil.MessageToStruct(ingressRateLimit)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Error marshalling ingress rate limit")
-		}
-		if vs.VirtualHost.VirtualHostPlugins.Extensions == nil {
-			vs.VirtualHost.VirtualHostPlugins.Extensions = new(gloov1.Extensions)
-		}
-		if vs.VirtualHost.VirtualHostPlugins.Extensions.Configs == nil {
-			vs.VirtualHost.VirtualHostPlugins.Extensions.Configs = make(map[string]*types.Struct)
-		}
-		vs.VirtualHost.VirtualHostPlugins.Extensions.Configs[constants.RateLimitExtensionName] = ingressRateLimitStruct
+		vs.VirtualHost.VirtualHostPlugins.RatelimitBasic = ingressRateLimit
 	}
 
 	return vs, authFromOpts(vs, input)
@@ -239,7 +226,7 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 
 			splits := strings.Split(moduleRef, ".")
 			if len(splits) != 2 {
-				return InvlaidRefFormatError
+				return InvalidRefFormatError
 			}
 			namespace := splits[0]
 			name := splits[1]

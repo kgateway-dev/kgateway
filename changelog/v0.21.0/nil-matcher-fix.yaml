@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix panic on nil route matcher
+    issueLink: https://github.com/solo-io/gloo/issues/1316

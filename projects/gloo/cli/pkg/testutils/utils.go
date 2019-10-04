@@ -20,7 +20,7 @@ import (
 )
 
 func Glooctl(args string) error {
-	app := cmd.GlooCli("test")
+	app := cmd.GlooCli()
 	return ExecuteCli(app, args)
 }
 
@@ -30,7 +30,7 @@ func ExecuteCli(command *cobra.Command, args string) error {
 }
 
 func GlooctlOut(args string) (string, error) {
-	app := cmd.GlooCli("test")
+	app := cmd.GlooCli()
 	return ExecuteCliOut(app, args)
 }
 

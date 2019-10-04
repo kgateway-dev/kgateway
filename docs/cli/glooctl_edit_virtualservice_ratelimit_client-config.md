@@ -1,27 +1,26 @@
 ---
-title: "glooctl edit settings ratelimit"
+title: "glooctl edit virtualservice ratelimit client-config"
 weight: 5
 ---
-## glooctl edit settings ratelimit
+## glooctl edit virtualservice ratelimit client-config
 
-Configure rate limit settings (Enterprise)
+Add rate-limits (Enterprise)
 
 ### Synopsis
 
-Let gloo know the location of the rate limit server. This is a Gloo Enterprise feature.
+Configure rate-limits, which are composed of rate-limit actions that translate request characteristics to rate-limit descriptor tuples.
+		For available actions and more information see: https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action
+		
+		This is a Gloo Enterprise feature.
 
 ```
-glooctl edit settings ratelimit [flags]
+glooctl edit virtualservice ratelimit client-config [flags]
 ```
 
 ### Options
 
 ```
-      --deny-on-failure                     On a failure to contact rate limit server, or on a timeout - deny the request (default is to allow) (default nil)
-  -h, --help                                help for ratelimit
-      --ratelimit-server-name string        name of the ext rate limit upstream
-      --ratelimit-server-namespace string   namespace of the ext rate limit upstream
-      --request-timeout duration            The timeout of the request to the rate limit server. set to 0 to use the default.
+  -h, --help   help for client-config
 ```
 
 ### Options inherited from parent commands
@@ -43,6 +42,5 @@ glooctl edit settings ratelimit [flags]
 
 ### SEE ALSO
 
-* [glooctl edit settings](../glooctl_edit_settings)	 - root command for settings
-* [glooctl edit settings ratelimit server-config](../glooctl_edit_settings_ratelimit_server-config)	 - Add rate-limit descriptor settings (Enterprise)
+* [glooctl edit virtualservice ratelimit](../glooctl_edit_virtualservice_ratelimit)	 - Configure rate limit settings (Enterprise)
 

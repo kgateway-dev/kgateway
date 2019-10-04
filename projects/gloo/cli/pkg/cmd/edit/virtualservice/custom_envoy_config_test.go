@@ -3,8 +3,6 @@ package virtualservice_test
 import (
 	"io"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -14,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -48,15 +45,11 @@ var _ = Describe("CustomEnvoyConfig", func() {
 	})
 
 	rateLimitExtension := func() *ratelimitpb.RateLimitVhostExtension {
-		var routeExt ratelimitpb.RateLimitVhostExtension
 		var err error
 		vsvc, err = vsClient.Read(vsvc.Metadata.Namespace, vsvc.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = utils.UnmarshalExtension(vsvc.VirtualHost.VirtualHostPlugins, constants.EnvoyRateLimitExtensionName, &routeExt)
-		Expect(err).NotTo(HaveOccurred())
-
-		return &routeExt
+		return vsvc.VirtualHost.VirtualHostPlugins.Ratelimit
 	}
 
 	It("should edit virtual service", func() {
@@ -69,7 +62,7 @@ rate_limits:
 			return []byte(b), "", nil
 		}
 
-		err := testutils.Glooctl("edit virtualservice --name vs --namespace gloo-system ratelimit custom-envoy-config")
+		err := testutils.Glooctl("edit virtualservice --name vs --namespace gloo-system ratelimit client-config")
 		Expect(err).NotTo(HaveOccurred())
 
 		ext := rateLimitExtension()

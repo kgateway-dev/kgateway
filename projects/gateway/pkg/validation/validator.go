@@ -72,11 +72,23 @@ type ValidatorConfig struct {
 }
 
 func NewValidatorConfig(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowBrokenLinks bool) ValidatorConfig {
-	return ValidatorConfig{translator: translator, validationClient: validationClient, writeNamespace: writeNamespace, ignoreProxyValidationFailure: ignoreProxyValidationFailure, allowBrokenLinks: allowBrokenLinks}
+	return ValidatorConfig{
+		translator:                   translator,
+		validationClient:             validationClient,
+		writeNamespace:               writeNamespace,
+		ignoreProxyValidationFailure: ignoreProxyValidationFailure,
+		allowBrokenLinks:             allowBrokenLinks,
+	}
 }
 
 func NewValidator(cfg ValidatorConfig) *validator {
-	return &validator{translator: cfg.translator, validationClient: cfg.validationClient, writeNamespace: cfg.writeNamespace, ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure, allowBrokenLinks: cfg.allowBrokenLinks}
+	return &validator{
+		translator:                   cfg.translator,
+		validationClient:             cfg.validationClient,
+		writeNamespace:               cfg.writeNamespace,
+		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
+		allowBrokenLinks:             cfg.allowBrokenLinks,
+	}
 }
 
 func (v *validator) ready() bool {

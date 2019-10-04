@@ -659,9 +659,6 @@ apis:
   ratelimit.plugins.gloo.solo.io.Descriptor:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#Descriptor
     package: ratelimit.plugins.gloo.solo.io
-  ratelimit.plugins.gloo.solo.io.EnvoySettings:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#EnvoySettings
-    package: ratelimit.plugins.gloo.solo.io
   ratelimit.plugins.gloo.solo.io.HeaderMatcher:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#HeaderMatcher
     package: ratelimit.plugins.gloo.solo.io

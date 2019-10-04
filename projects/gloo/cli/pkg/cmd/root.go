@@ -25,18 +25,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var versionTemplate = `{{with .Name}}{{printf "%s community edition " .}}{{end}}{{printf "version %s" .Version}}
-`
-
-func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+func App(opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 
 	app := &cobra.Command{
 		Use:   "glooctl",
 		Short: "CLI for Gloo",
 		Long: `glooctl is the unified CLI for Gloo.
 	Find more information at https://solo.io`,
-		// deprecated in favor of version command
-		Version: version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// persistent pre run is be called after flag parsing
 			// since this is the root of the cli app, it will be called regardless of the particular subcommand used
@@ -52,14 +47,13 @@ func App(version string, opts *options.Options, preRunFuncs []PreRunFunc, option
 	flagutils.AddKubeConfigFlag(app.PersistentFlags(), &opts.Top.KubeConfig)
 	app.PersistentFlags()
 
-	app.SetVersionTemplate(versionTemplate)
 	// Complete additional passed in setup
 	cliutils.ApplyOptions(app, optionsFunc)
 
 	return app
 }
 
-func GlooCli(version string) *cobra.Command {
+func GlooCli() *cobra.Command {
 	opts := &options.Options{
 		Top: options.Top{
 			Ctx: context.Background(),
@@ -94,7 +88,7 @@ func GlooCli(version string) *cobra.Command {
 		prerun.SetKubeConfigEnv,
 	}
 
-	return App(version, opts, preRunFuncs, optionsFunc)
+	return App(opts, preRunFuncs, optionsFunc)
 }
 
 type PreRunFunc func(*options.Options, *cobra.Command) error

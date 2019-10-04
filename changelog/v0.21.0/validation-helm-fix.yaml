@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix issue where validation cannot be enabled via helm due to treatment of zero values
+    issueLink: https://github.com/solo-io/gloo/issues/1314

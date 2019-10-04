@@ -1,27 +1,26 @@
 ---
-title: "glooctl edit settings ratelimit"
+title: "glooctl edit settings ratelimit server-config"
 weight: 5
 ---
-## glooctl edit settings ratelimit
+## glooctl edit settings ratelimit server-config
 
-Configure rate limit settings (Enterprise)
+Add rate-limit descriptor settings (Enterprise)
 
 ### Synopsis
 
-Let gloo know the location of the rate limit server. This is a Gloo Enterprise feature.
+This allows using lyft rate-limit server configuration language to configure the rate-limit server.
+		For more information see: https://github.com/lyft/ratelimit
+		Note: do not add the 'domain' configuration key.
+		This is a Gloo Enterprise feature.
 
 ```
-glooctl edit settings ratelimit [flags]
+glooctl edit settings ratelimit server-config [flags]
 ```
 
 ### Options
 
 ```
-      --deny-on-failure                     On a failure to contact rate limit server, or on a timeout - deny the request (default is to allow) (default nil)
-  -h, --help                                help for ratelimit
-      --ratelimit-server-name string        name of the ext rate limit upstream
-      --ratelimit-server-namespace string   namespace of the ext rate limit upstream
-      --request-timeout duration            The timeout of the request to the rate limit server. set to 0 to use the default.
+  -h, --help   help for server-config
 ```
 
 ### Options inherited from parent commands
@@ -43,6 +42,5 @@ glooctl edit settings ratelimit [flags]
 
 ### SEE ALSO
 
-* [glooctl edit settings](../glooctl_edit_settings)	 - root command for settings
-* [glooctl edit settings ratelimit server-config](../glooctl_edit_settings_ratelimit_server-config)	 - Add rate-limit descriptor settings (Enterprise)
+* [glooctl edit settings ratelimit](../glooctl_edit_settings_ratelimit)	 - Configure rate limit settings (Enterprise)
 
