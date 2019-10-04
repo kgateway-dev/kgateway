@@ -196,9 +196,15 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					TestUpstreamReachable()
-					var entry *envoy_data_accesslog_v2.HTTPAccessLogEntry
-					Eventually(msgChan).Should(Receive(&entry))
-					Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
+
+					Eventually(func() (string, error) {
+						select {
+						case entry := <-msgChan:
+							return entry.GetCommonProperties().GetUpstreamCluster(), nil
+						case <-time.After(time.Second):
+							return "", errors.New("timed out after 1s waiting for log entry")
+						}
+					}).ShouldNot(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
 				})
 			})
 
