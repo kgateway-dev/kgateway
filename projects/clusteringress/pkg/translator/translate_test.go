@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
 
@@ -170,14 +169,14 @@ var _ = Describe("Translate", func() {
 
 		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
-				&gloov1.Listener{
+				{
 					Name:        "http",
 					BindAddress: "::",
 					BindPort:    0x00000050,
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
-								&gloov1.VirtualHost{
+								{
 									Name: "example.ing-0",
 									Domains: []string{
 										"petes.com",
@@ -186,7 +185,7 @@ var _ = Describe("Translate", func() {
 										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
@@ -197,7 +196,7 @@ var _ = Describe("Translate", func() {
 													Destination: &gloov1.RouteAction_Multi{
 														Multi: &gloov1.MultiDestination{
 															Destinations: []*gloov1.WeightedDestination{
-																&gloov1.WeightedDestination{
+																{
 																	Destination: &gloov1.Destination{
 																		DestinationType: &gloov1.Destination_Kube{
 																			Kube: &gloov1.KubernetesServiceDestination{
@@ -230,9 +229,6 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
-												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
 													RetryOn:              "",
@@ -241,38 +237,19 @@ var _ = Describe("Translate", func() {
 													XXX_NoUnkeyedLiteral: struct{}{},
 													XXX_sizecache:        0,
 												},
-												Extensions: (*gloov1.Extensions)(nil),
-												Tracing:    (*tracing.RouteTracingSettings)(nil),
-												Shadowing:  (*shadowing.RouteShadowing)(nil),
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														&headers.HeaderValueOption{
+														{
 															Header: &headers.HeaderValue{
 																Key:                  "add",
 																Value:                "me",
-																XXX_NoUnkeyedLiteral: struct{}{},
-																XXX_sizecache:        0,
 															},
-															Append:               (*types.BoolValue)(nil),
-															XXX_NoUnkeyedLiteral: struct{}{},
-															XXX_sizecache:        0,
 														},
 													},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_sizecache:        0,
 												},
-												HostRewrite:          (*hostrewrite.HostRewrite)(nil),
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_sizecache:        0,
 											},
-											XXX_NoUnkeyedLiteral: struct{}{},
-											XXX_sizecache:        0,
 										},
 									},
-									VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
-									CorsPolicy:           (*gloov1.CorsPolicy)(nil),
-									XXX_NoUnkeyedLiteral: struct{}{},
-									XXX_sizecache:        0,
 								},
 								&gloov1.VirtualHost{
 									Name: "example.ing-1",
@@ -331,7 +308,7 @@ var _ = Describe("Translate", func() {
 											RoutePlugins: &gloov1.RoutePlugins{
 												Transformations: (*transformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												//PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
 													RetryOn:              "",
@@ -360,7 +337,7 @@ var _ = Describe("Translate", func() {
 													XXX_NoUnkeyedLiteral: struct{}{},
 													XXX_sizecache:        0,
 												},
-												HostRewrite:          (*hostrewrite.HostRewrite)(nil),
+												//HostRewrite:          (*hostrewrite.HostRewrite)(nil),
 												XXX_NoUnkeyedLiteral: struct{}{},
 												XXX_sizecache:        0,
 											},
@@ -446,7 +423,7 @@ var _ = Describe("Translate", func() {
 											RoutePlugins: &gloov1.RoutePlugins{
 												Transformations: (*transformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												//PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
 													RetryOn:              "",
@@ -475,7 +452,7 @@ var _ = Describe("Translate", func() {
 													XXX_NoUnkeyedLiteral: struct{}{},
 													XXX_sizecache:        0,
 												},
-												HostRewrite:          (*hostrewrite.HostRewrite)(nil),
+												//HostRewrite:          (*hostrewrite.HostRewrite)(nil),
 												XXX_NoUnkeyedLiteral: struct{}{},
 												XXX_sizecache:        0,
 											},
@@ -495,7 +472,7 @@ var _ = Describe("Translate", func() {
 						},
 					},
 					SslConfigurations: []*gloov1.SslConfig{
-						&gloov1.SslConfig{
+						{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "areallygreatsecret",
