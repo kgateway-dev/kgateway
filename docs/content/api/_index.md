@@ -16,37 +16,122 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
 
 
 ### API Resources:
-- [Overview](gloo.solo.io.project.sk)
-  - [Upstreams](github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk#Upstream)
-  - [Virtual Services](github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk#VirtualService)
-  - [Secrets](github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk#Secret)
-  - [Artifacts](github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto.sk#Artifact)
-  - [Ingress](github.com/solo-io/gloo/projects/ingress/api/v1/ingress.proto.sk#Ingress)
-  - [ClusterIngress](github.com/solo-io/gloo/projects/clusteringress/api/v1/cluster_ingress.proto.sk#ClusterIngress)
-  - [KubeService](github.com/solo-io/gloo/projects/ingress/api/v1/service.proto.sk#KubeService)
-- [Plugins](github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto.sk/)
-  - [Transformation](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto.sk/)
-  - [Transformation Parameters](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/parameters.proto.sk/)
-  - [Transformation Prefix Rewrite](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto.sk/)
-  - [Service Spec](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto.sk/)
-  - [AWS](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk/)
-  - [Azure](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto.sk/)
-  - [Rest](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto.sk/)
-  - [Static](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto.sk/)
-  - [Consul](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto.sk/)
-  - [Kubernetes](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto.sk/)
-  - [gRPC](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto.sk/)
-  - [Fault Injection](github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto.sk/)
-  - [External Auth (Enterprise)](github.com/solo-io/solo-projects/projects/gloo/api/v1/plugins/extauth/extauth.proto.sk/)
-  - [Rate Limiting (Enterprise)](github.com/solo-io/solo-projects/projects/gloo/api/v1/plugins/ratelimit/ratelimit.proto.sk/)
-- Core
-  - [Metadata](github.com/solo-io/solo-kit/api/v1/metadata.proto.sk/)
-  - [Status](github.com/solo-io/solo-kit/api/v1/status.proto.sk/)
-  - [ResourceRef](github.com/solo-io/solo-kit/api/v1/ref.proto.sk/)
-- Advanced
-  - [Settings](github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/)
-  - [Gateways](github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/)
-  - [Proxies](github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
+- Core Routing Configuration
+  - {{< protobuf name="gateway.solo.io.VirtualService" >}}
+  - {{< protobuf name="gloo.solo.io.Upstream" >}}
+  - {{< protobuf name="gloo.solo.io.Settings" >}}
+  - {{< protobuf name="gloo.solo.io.Proxy" >}}
+- Installation Modes
+  - {{< protobuf name="gateway.solo.io.v2.HttpGateway" >}}
+  - {{< protobuf name="gateway.solo.io.v2.TcpGateway" >}}
+  - {{< protobuf name="ingress.solo.io.Ingress" >}}
+- Application-Specific Configuration
+  - Access Logging
+      - {{< protobuf name="als.plugins.gloo.solo.io.AccessLog" >}}
+      - {{< protobuf name="als.plugins.gloo.solo.io.AccessLoggingService" >}}
+      - {{< protobuf name="als.plugins.gloo.solo.io.FileSink" >}}
+      - {{< protobuf name="als.plugins.gloo.solo.io.GrpcService" >}}
+  - AWS Lambda
+      - {{< protobuf name="aws.plugins.gloo.solo.io.DestinationSpec" >}}
+      - {{< protobuf name="aws.plugins.gloo.solo.io.LambdaFunctionSpec" >}}
+      - {{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec" >}}
+  - AWS EC2
+      - {{< protobuf name="aws_ec2.plugins.gloo.solo.io.TagFilter" >}}
+      - {{< protobuf name="aws_ec2.plugins.gloo.solo.io.UpstreamSpec" >}}
+  - Azure Functions
+      - {{< protobuf name="azure.plugins.gloo.solo.io.DestinationSpec" >}}
+      - {{< protobuf name="azure.plugins.gloo.solo.io.UpstreamSpec" >}}
+  - Consul Upstreams
+      - {{< protobuf name="consul.plugins.gloo.solo.io.UpstreamSpec" >}}
+  - CORS
+      - {{< protobuf name="cors.plugins.gloo.solo.io.CorsPolicy" >}}
+  - Fault Injection
+      - {{< protobuf name="fault.plugins.gloo.solo.io.RouteAbort" >}}
+      - {{< protobuf name="fault.plugins.gloo.solo.io.RouteDelay" >}}
+      - {{< protobuf name="fault.plugins.gloo.solo.io.RouteFaults" >}}
+  - gRPC
+      - {{< protobuf name="grpc.plugins.gloo.solo.io.DestinationSpec" >}}
+      - {{< protobuf name="grpc.plugins.gloo.solo.io.ServiceSpec" >}}
+      - {{< protobuf name="grpc_web.plugins.gloo.solo.io.GrpcWeb" >}}
+  - HTTP Connection Manager
+      - {{< protobuf name="hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings" >}}
+  - Header Manipulation
+      - {{< protobuf name="headers.plugins.gloo.solo.io.HeaderManipulation" >}}
+      - {{< protobuf name="headers.plugins.gloo.solo.io.HeaderValue" >}}
+      - {{< protobuf name="headers.plugins.gloo.solo.io.HeaderValueOption" >}}
+  - Health Check
+      - {{< protobuf name="healthcheck.plugins.gloo.solo.io.HealthCheck" >}}
+  - Host Rewrite
+      - {{< protobuf name="hostrewrite.plugins.gloo.solo.io.HostRewrite" >}}
+  - JSON Web Tokens (JWT)
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.ClaimToHeader" >}}
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.Jwks" >}}
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.LocalJwks" >}}
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.Provider" >}}
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.RemoteJwks" >}}
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.RouteExtension" >}}
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.TokenSource" >}}
+      - {{< protobuf name="jwt.plugins.gloo.solo.io.VhostExtension" >}}
+  - Kubernetes Upstreams
+      - {{< protobuf name="kubernetes.plugins.gloo.solo.io.UpstreamSpec" >}}
+      - {{< protobuf name="lbhash.plugins.gloo.solo.io.Cookie" >}}
+      - {{< protobuf name="lbhash.plugins.gloo.solo.io.HashPolicy" >}}
+      - {{< protobuf name="lbhash.plugins.gloo.solo.io.RouteActionHashConfig" >}}
+      - {{< protobuf name="pipe.plugins.gloo.solo.io.UpstreamSpec" >}}
+  - Grouping
+      - {{< protobuf name="plugins.gloo.solo.io.Selector" >}}
+      - {{< protobuf name="plugins.gloo.solo.io.ServiceSpec" >}}
+      - {{< protobuf name="plugins.gloo.solo.io.SubsetSpec" >}}
+  - Rate Limit
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.Action" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.Descriptor" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.HeaderMatcher" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.IngressRateLimit" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.Int64Range" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.QueryParameterMatcher" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.RateLimit" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.RateLimitActions" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.ServiceSettings" >}}
+      - {{< protobuf name="ratelimit.plugins.gloo.solo.io.Settings" >}}
+  - Role Based Access Control (RBAC)
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.Config" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.ExtensionSettings" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.JWTPrincipal" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.Permissions" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.Policy" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.Principal" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.RouteExtension" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.Settings" >}}
+      - {{< protobuf name="rbac.plugins.gloo.solo.io.VhostExtension" >}}
+      - {{< protobuf name="rest.plugins.gloo.solo.io.DestinationSpec" >}}
+  - REST Upstreams
+      - {{< protobuf name="rest.plugins.gloo.solo.io.ServiceSpec" >}}
+  - Retries
+      - {{< protobuf name="retries.plugins.gloo.solo.io.RetryPolicy" >}}
+  - Shadowing
+      - {{< protobuf name="shadowing.plugins.gloo.solo.io.RouteShadowing" >}}
+  - Static Upstreams
+      - {{< protobuf name="static.plugins.gloo.solo.io.Host" >}}
+      - {{< protobuf name="static.plugins.gloo.solo.io.UpstreamSpec" >}}
+  - Stats
+      - {{< protobuf name="stats.plugins.gloo.solo.io.Stats" >}}
+      - {{< protobuf name="stats.plugins.gloo.solo.io.VirtualCluster" >}}
+  - TCP
+      - {{< protobuf name="tcp.plugins.gloo.solo.io.TcpProxySettings" >}}
+  - Tracing
+      - {{< protobuf name="tracing.plugins.gloo.solo.io.ListenerTracingSettings" >}}
+      - {{< protobuf name="tracing.plugins.gloo.solo.io.RouteTracingSettings" >}}
+      - {{< protobuf name="tracing.plugins.gloo.solo.io.TracePercentages" >}}
+  - Request Transformation
+      - {{< protobuf name="transformation.plugins.gloo.solo.io.Parameters" >}}
+      - {{< protobuf name="transformation.plugins.gloo.solo.io.PrefixRewrite" >}}
+  - Web Application Firewall (WAF)
+      - {{< protobuf name="waf.plugins.gloo.solo.io.CoreRuleSet" >}}
+      - {{< protobuf name="waf.plugins.gloo.solo.io.RouteSettings" >}}
+      - {{< protobuf name="waf.plugins.gloo.solo.io.Settings" >}}
+      - {{< protobuf name="waf.plugins.gloo.solo.io.VhostSettings" >}}
 
 <!-- Start of HubSpot Embed Code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
