@@ -38,8 +38,12 @@ DOCS_VERSION := latest
 
 .PHONY: site-common
 site-common: clean
-	# if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio && git --git-dir=themes/hugo-theme-soloio/.git checkout 08931618d4fbe54b578240c60d563a819d9a8d09; fi
-	cp pending-theme/shortcodes/protobuf.html themes/hugo-theme-soloio/layouts/shortcodes/
+	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
+	# if [ ! -d layouts ]; then git --git-dir=themes/hugo-theme-soloio/.git checkout master; fi
+	# if [ ! -d layouts ]; then git --git-dir=themes/hugo-theme-soloio/.git checkout 3825cfd399ec8069e1823ad22f3c11fc415a3836; fi
+	# git --git-dir=themes/hugo-theme-soloio/.git checkout master
+	# git --git-dir=themes/hugo-theme-soloio/.git checkout 3825cfd399ec8069e1823ad22f3c11fc415a3836
+	git -C themes/hugo-theme-soloio checkout 3825cfd399ec8069e1823ad22f3c11fc415a3836
 	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/changelog/gloo-changelog.sk.md
 	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/changelog/glooe-changelog.sk.md
 
@@ -63,11 +67,11 @@ site-release: site-common
 
 .PHONY: serve-site
 serve-site: site-test
-	hugo --config docs.toml server -D
+	hugo --config docs.toml --themesDir themes server -D
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./site-latest ./site-versioned
+	rm -fr ./site ./resources ./layouts ./site-latest ./site-versioned
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it
