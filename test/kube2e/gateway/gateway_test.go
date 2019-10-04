@@ -572,7 +572,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							Grpc: &grpcv1.ServiceSpec{},
 						},
 					}
-					_, err := upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
+					_, err = upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
 					return err
 				}, "1s", "0.1s").ShouldNot(HaveOccurred())
 			}
