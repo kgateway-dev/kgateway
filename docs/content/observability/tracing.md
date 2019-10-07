@@ -1,6 +1,6 @@
 ---
 title: Tracing Setup
-weight: 45
+weight: 4
 description: Configure Gloo for tracing
 ---
 
@@ -153,7 +153,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     routes:
     - matcher:
         exact: /abc

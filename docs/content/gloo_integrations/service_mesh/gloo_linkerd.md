@@ -52,7 +52,7 @@ glooctl add route --path-prefix=/ --dest-name booksapp-webapp-7000
 
 ### Manual
 
-As explained in the beginning of this document, you'll need to instruct Gloo to
+As explained in the beggining of this document, you'll need to instruct Gloo to
 add a header which will allow Linkerd to identify where to send traffic to.
 
 ```yaml
@@ -70,7 +70,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.books
     routes:
     - matcher:
         prefix: /

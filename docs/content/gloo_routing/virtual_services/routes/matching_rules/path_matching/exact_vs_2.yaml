@@ -7,7 +7,6 @@ spec:
   virtualHost:
     domains:
       - 'foo'
-    name: gloo-system.default
     routes:
       - matcher:
           exact: /posts

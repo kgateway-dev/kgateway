@@ -1,6 +1,6 @@
 ---
 title: Observability
-weight: 3
+weight: 40
 ---
 
 > **Note**: Observability features are available only in enterprise Gloo

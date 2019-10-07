@@ -6,34 +6,36 @@ weight: 10
 
 ## Install command line tool (CLI)
 
-Download the CLI Command appropriate to your environment:
+The `glooctl` command line provides useful functions to install, configure, and debug Gloo, though it is not required to use Gloo.
 
-* [MacOs]( {{% siteparam "glooctl-darwin" %}})
-* [Linux]( {{% siteparam "glooctl-linux" %}})
-* [Windows]( {{% siteparam "glooctl-windows" %}})
+* To install `glooctl` using the [Homebrew](https://brew.sh) package manager, run the following.
 
-To get your trial license key, go to: https://www.solo.io/gloo-trial
+  ```shell
+  brew install solo-io/tap/glooctl
+  ```
 
-{{% notice note %}}
-To facilitate usage we recommend renaming the file to **`glooctl`** and adding the CLI to your PATH.
-{{% /notice %}}
+* To install on any platform run the following.
 
-If your are running Linux or MacOs, make sure the `glooctl` is an executable file by running:
+  ```bash
+  curl -sL https://run.solo.io/gloo/install | sh
 
+  export PATH=$HOME/.gloo/bin:$PATH
+  ```
+
+* You can download `glooctl` directly via the GitHub releases page. You need to add `glooctl` to your system's `PATH` after downloading.
+
+Verify the CLI is installed and running correctly with:
+
+```bash
+glooctl version
+```
+returns
 ```shell
-chmod +x glooctl
+Client: {"version":"0.18.43"}
+Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"0.18.29","Name":"grpcserver-ui","Registry":"quay.io/solo-io"},{"Tag":"0.18.29","Name":"grpcserver-ee","Registry":"quay.io/solo-io"},{"Tag":"0.18.29","Name":"grpcserver-envoy","Registry":"quay.io/solo-io"},{"Tag":"0.18.40","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.18.29","Name":"extauth-ee","Registry":"quay.io/solo-io"},{"Tag":"0.18.29","Name":"gloo-ee-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.18.40","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"0.18.29","Name":"gloo-ee","Registry":"quay.io/solo-io"},{"Tag":"0.18.29","Name":"observability-ee","Registry":"quay.io/solo-io"},{"Tag":"0.18.29","Name":"rate-limit-ee","Registry":"quay.io/solo-io"},{"Tag":"5","Name":"redis","Registry":"docker.io"}],"namespace":"gloo-system"}}
 ```
 
-Verify that you have the Enterprise version of the `glooctl` by running:
-
-```shell
-glooctl --version
-```
-
-```shell
-glooctl enterprise edition version 0.14.0
-```
-
+If you run `glooctl --version`, you may notice that glooctl reports as a community version, but it supports enterprise commands so long as a valid license key is provided.
 
 ## Installing Gloo Enterprise on Kubernetes
 
@@ -54,15 +56,12 @@ Before starting installation, please ensure that you've prepared your Kubernetes
 [Prep Kubernetes]({{< ref "/installation/cluster_setup" >}}) instructions.
 
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
-
 ### Installing on Kubernetes with `glooctl`
 
 Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Gateway to the `gloo-system` namespace:
 
 ```bash
-glooctl install gateway --license-key YOUR_LICENSE_KEY
+glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 ```
 
 > Note: You can run the command with the flag `--dry-run` to output 

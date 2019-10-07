@@ -28,7 +28,7 @@ great way to get a cluster up quickly.
 
     ```shell
     kubectl apply \
-      --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+      --filename https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
     ```
 
 1. The discovery services should have already created an Upstream for the petstore service.
@@ -72,12 +72,11 @@ Let's verify this:
     Digging a little deeper, we can verify that Gloo's function discovery populated our upstream with
     the available rest endpoints it implements. 
     
-    {{% notice note %}}
-    Note: the upstream was created in
-    the `gloo-system` namespace rather than `default` because it was created by a
-    discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system`
-    namespace to be processed by Gloo. 
-    {{% /notice %}}
+{{% notice note %}}
+The upstream was created in the `gloo-system` namespace rather than `default` because it was created by a
+discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system` namespace to be 
+processed by Gloo. 
+{{% /notice %}}
 
 1. Let's take a closer look at the upstream that Gloo's Discovery service created:
 
@@ -206,7 +205,6 @@ status:
 virtualHost:
   domains:
   - '*'
-  name: gloo-system.default
   routes:
   - matcher:
       exact: /sample-route-1
@@ -223,16 +221,15 @@ virtualHost:
 When a virtual service is created, Gloo immediately updates the proxy configuration. Since the 
 status of this virtual service is `Accepted`, we know this route is now active. 
 
-1. Let's test the route `/sample-route-1` using `curl`:
+Let's test the route `/sample-route-1` using `curl`:
 
-    ```shell
-    export GATEWAY_URL=$(glooctl proxy url)
-    curl ${GATEWAY_URL}/sample-route-1
-    ```
-
-    ```json
-    [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
-    ```
+```shell
+curl $(glooctl proxy url)/sample-route-1
+```
+returns
+```json
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
 
 The proxy has now been configured to route requests to this REST endpoint in Kubernetes. 
 

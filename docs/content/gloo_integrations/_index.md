@@ -1,6 +1,6 @@
 ---
 title: Gloo Integrations
-weight: 6
+weight: 60
 ---
 
 {{% children description="true" %}}

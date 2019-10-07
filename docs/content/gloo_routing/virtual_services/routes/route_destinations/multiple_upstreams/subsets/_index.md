@@ -78,7 +78,6 @@ apiVersion: gateway.solo.io/v1
     virtualHost:
       domains:
       - '*'
-      name: gloo-system.default
       routes:
       - matcher:
           prefix: /petstore/findPetById

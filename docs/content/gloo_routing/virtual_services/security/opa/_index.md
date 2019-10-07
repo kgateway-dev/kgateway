@@ -22,7 +22,7 @@ This also allows you to create more fine grained policies compared to RBAC autho
 That's easy!
 
 ```
-glooctl install gateway --license-key=$GLOO_KEY
+glooctl install gateway enterprise --license-key=$GLOO_KEY
 kubectl --namespace default apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 

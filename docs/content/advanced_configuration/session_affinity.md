@@ -5,7 +5,7 @@ description: Configure Gloo session affinity (sticky sessions)
 ---
 
 
-For certain applications deployed across multiple replicas, it may be desirable
+For certain applications deployed across multiple replicas, it may be desireable
 to route all traffic from a single client session to the same instance of the
 application. This can help reduce latency through better use of caches. This
 load balancer behavior is referred to as Session Affinity or Sticky Sessions.
@@ -112,7 +112,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     routes:
     - matcher:
         exact: /route1
@@ -338,7 +337,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     routes:
     - matcher:
         exact: /route1

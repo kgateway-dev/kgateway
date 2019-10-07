@@ -38,7 +38,6 @@ spec:
   virtualHost:
     domains:
     - example.com
-    name: gloo-system.myvs
     virtualHostPlugins:
       extensions:
         configs:

@@ -71,10 +71,8 @@ headers will be manipulated for all traffic handled by the virtual host.
 * When using `headerManipulation` in `weightedDestinationPlugins`,
 headers will be manipulated for all traffic that is sent to the specific destination when it is selected for load balancing.
 
-Envoy supports adding dynamic values to request and 
-response headers. The percent symbol (%) is used to 
-delimit variable names. See https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#custom-request-response-headers 
-for a list of the dynamic variables supported by Envoy.
+Envoy supports adding dynamic values to request and response headers. The percent symbol (%) is used to 
+delimit variable names. See a list of the dynamic variables supported by Envoy in the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers).
 
 ## Example: Manipulating Headers on a Route
 

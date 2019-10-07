@@ -1,7 +1,7 @@
 ---
 title: Gateway Configuration
 weight: 30
-description: Gloo allows you to configure properties of your listeners with the Gateway resource and accompnaying plugins. These guides show you how to apply these advanced listener configurations to refine your gateways' behavior.
+description: Gloo allows you to configure properties of your listeners with the Gateway resource and accompanying plugins. These guides show you how to apply these advanced listener configurations to refine your gateways' behavior.
 ---
 
 

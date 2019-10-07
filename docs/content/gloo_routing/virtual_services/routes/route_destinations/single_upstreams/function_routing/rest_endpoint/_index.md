@@ -170,7 +170,6 @@ status:
 virtualHost:
   domains:
   - '*'
-  name: gloo-system.default
   routes:
   - matcher:
       exact: /petstore/findPet

@@ -8,7 +8,7 @@ weight: 20
 
 In this document, we show how to use Gloo with [Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/rate_limit/v2/rate_limit.proto). We make the distinction here that this is "Envoy's" rate-limit API because Gloo [offers a much simpler rate-limit API](../simple) as an alternative.
 
-Gloo Enterprise includes a rate limit server based on [Lyft's Envoy rate-limit server](https://github.com/lyft/ratelimit). It is already installed when doing `glooctl install gateway --license-key=...` or using the [Helm install]({{% ref "/installation/enterprise#installing-on-kubernetes-with-helm" %}}). To get your trial license key, go to <https://www.solo.io/gloo-trial>
+Gloo Enterprise includes a rate limit server based on [Lyft's Envoy rate-limit server](https://github.com/lyft/ratelimit). It is already installed when doing `glooctl install gateway enterprise --license-key=...` or using the [Helm install]({{% ref "/installation/enterprise#installing-on-kubernetes-with-helm" %}}). To get your trial license key, go to <https://www.solo.io/gloo-trial>
 
 Two steps are needed to configure Gloo to leverage the full Envoy Rate Limiter.
 
@@ -88,7 +88,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     routes:
     - matcher:
         prefix: /service/service1

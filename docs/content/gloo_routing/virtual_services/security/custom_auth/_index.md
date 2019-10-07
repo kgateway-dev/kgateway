@@ -18,7 +18,7 @@ Let's get right to it!
 Install Gloo-enterprise (version v0.13.5 or above) and the petstore demo:
 
 ```shell
-glooctl install gateway --license-key <YOUR KEY>
+glooctl install gateway enterprise --license-key <YOUR KEY>
 kubectl apply --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 

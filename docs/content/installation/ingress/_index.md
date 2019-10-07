@@ -27,11 +27,12 @@ The `glooctl` command line provides useful functions to install, configure, and 
 Verify the CLI is installed and running correctly with:
 
 ```bash
-glooctl --version
+glooctl version
 ```
-
+returns
 ```shell
-glooctl community edition version 0.18.15
+Client: {"version":"0.18.43"}
+Server: {"type":"Knative","kubernetes":{"containers":[{"Tag":"0.18.43","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.18.43","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"0.18.43","Name":"ingress","Registry":"quay.io/solo-io"},{"Tag":"0.18.43","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
 ```
 
 ## Installing the Gloo Ingress Controller on Kubernetes

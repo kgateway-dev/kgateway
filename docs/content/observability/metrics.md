@@ -1,5 +1,5 @@
 ---
-title: Metrics
+title: Gloo Metrics
 weight: 40
 description: Configuring Gloo to ship telemetry/metrics to Prometheus
 ---
@@ -9,7 +9,7 @@ description: Configuring Gloo to ship telemetry/metrics to Prometheus
 All Gloo pods ship with optional [Prometheus](https://prometheus.io/) monitoring capabilities.
 
 This functionality is turned off by default, and can be turned on a couple of different ways: through [Helm chart install
-options](../../../../installation/gateway/kubernetes/#installing-on-kubernetes-with-helm); and through environment variables.
+options](../installation/gateway/kubernetes/#installing-on-kubernetes-with-helm); and through environment variables.
 
 ### Helm Chart Options
 
@@ -87,3 +87,5 @@ kubectl --namespace gloo-system port-forward deployment/discovery 9091:9091
 ```
 
 And then open <http://localhost:9091> for the admin page, including the Prometheus metrics at <http://localhost:9091/metrics>.
+
+More information on Gloo's admin ports can be found [here](../ports).

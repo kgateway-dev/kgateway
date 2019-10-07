@@ -89,7 +89,6 @@ metadata:
 virtualHost:
   domains:
   - '*'
-  name: gloo-system.default
   routes:
   - matcher:
       prefix: /petstore/findWithId

@@ -33,7 +33,7 @@ will work with user-provided certificates.
 That's easy!
 
 ```
-glooctl install gateway --license-key=$GLOO_KEY
+glooctl install gateway enterprise --license-key=$GLOO_KEY
 ```
 
 See more info [here](/installation/enterprise).

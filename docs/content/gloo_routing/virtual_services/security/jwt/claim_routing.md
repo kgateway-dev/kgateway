@@ -10,13 +10,13 @@ primary version.
 ## Prerequisites
 You will need:
 
-- gloo-e 0.14.0 or higher.
-- openssl
+- gloo-e 0.14.0 or higher installed.
+- `openssl`
 
 ## Setup
 
 ### Generate JWTs
-If you would like to generate your own JWTs, create a private\public key pair.
+If you would like to generate your own JWTs, create a private/public key pair.
 ```shell
 openssl genrsa 2048 > private-key.pem
 openssl rsa -in private-key.pem -pubout > public-key.pem
@@ -75,7 +75,7 @@ Only use above keys for testing purposes! They are publicly available and theref
 
 Similar to the [JWT and Access Control guide](../access_control/#create-the-json-web-token-jwt), using `jwt.io` we can generate two RS256 JWTs:
 
-One for solo.io employess with the following payload:
+One for solo.io employees with the following payload:
 ```json
 {
   "iss": "solo.io",
@@ -89,7 +89,7 @@ Save the resulting token to an variable:
 SOLO_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsIm9yZyI6InNvbG8uaW8ifQ.WeYtM17EBdQc5Ka9PHPseKhX96krnQSARN8dLA806FyKY2MKWzdlAQL0UYfFi1c2C8_4pW0taK2vwhmKU2zgCvLb-_5tkOXFbPzILucAUumqT079139Q34wR64xFr6jQp1hES97IYumWnHfZOaNR_fZ3q5EZkke3YrdGhHHfo1ze41w77QCV234eDi72RmSawEaKyEGevZev16iw3M7Gfk_cet05DHfn9CPFlbuc9DkU8-r2vE9nz8NP0JC77iQtZ0YFmmb3FGxrlPDmcqDte0F45rfz8TR7hve-zqCP5PJU_euBVsZ3ShlRANbCS02x8N_ocO9S8_aypkCQqKNIlw
 ```
 
-And another one for othercompany.com employess with the following payload:
+And another one for othercompany.com employees with the following payload:
 
 ```json
 {
@@ -105,8 +105,8 @@ OTHER_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjo
 ```
 
 ### Example app
-We will now create an example app. This app will simulate a primary\canary deployment mode. 
-We will use hashicorp's http-echo utility to send us a predefined response for demo purposes.
+We will now create an example app. This app will simulate a primary/canary deployment mode. 
+We will use Hashicorp's http-echo utility to send us a predefined response for demo purposes.
 To create the demo app, we will deploy a pod to simulate the primary deployment, a pod to simulate the canary deployment and a service to route to them:
 ```
 kubectl create ns echoapp
@@ -137,7 +137,7 @@ and JWTs from other orgs to go to the primary subset.
 To do that, we will use the `claimsToHeaders` field in the JWT extension, and copy the `org` claim
 to a header name `x-company`. Then we can use normal header matching to do the routing. 
 
-Our first route matches if the `x-company` header contrains the value solo.io and routes to the canary subset. If it doesn't, the second route (that routes to the primary subset) will be selected.
+Our first route matches if the `x-company` header contains the value solo.io and routes to the canary subset. If it doesn't, the second route (that routes to the primary subset) will be selected.
 
 Let's apply the following virtual host:
 
@@ -207,27 +207,27 @@ EOF
 ```
 
 {{% notice note %}}
-if you generated your own private\public key pair, replace this public key with yours.
+if you generated your own private/public key pair, replace this public key with yours.
 You can use the JWTs provided in this guide with the public key above.
 {{% /notice %}}
 
-For convience, we added the `tokenSource` settings so we can pass the token as a query parameter named `token`.
+For convenience, we added the `tokenSource` settings so we can pass the token as a query parameter named `token`.
 
 ## Time to test!
 
 get the url for the proxy
 ```
-URL=$(glooctl proxy url)
+GATEWAY_URL=$(glooctl proxy url)
 ```
 curl as a solo.io team member:
 ```
-curl $URL?token=$SOLO_TOKEN
+curl "$GATEWAY_URL?token=$SOLO_TOKEN"
 ```
 The output should be `canary`.
 
 curl as a othercompany.com team member:
 ```
-curl $URL?token=$OTHER_TOKEN
+curl "$GATEWAY_URL?token=$OTHER_TOKEN"
 ```
 The output should be `primary`.
 

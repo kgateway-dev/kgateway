@@ -8,11 +8,13 @@ Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cl
 objects with the `glooctl install ingress` command, Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users.
 
 {{% notice note %}}
-Note: if running multiple ingress controllers in cluster, Gloo can be configured to only process Ingress objects annotated with `kubernetes.io/ingress.class: gloo`. 
+Note: if running multiple ingress controllers in cluster, Gloo can be configured to only process Ingress objects annotated with `kubernetes.io/ingress.class: gloo` 
 
 This feature can be enabled one of the following:
+
 * Setting the `Values.ingress.requireIngressClass=true` in your Helm value overrides
 * Directly setting the environment variable `REQUIRE_INGRESS_CLASS=true` on the Gloo deployment
+
 {{% /notice %}}
 
 If you need more advanced routing capabilities, we encourage you to use Gloo `VirtualServices` by installing as

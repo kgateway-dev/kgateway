@@ -1,6 +1,6 @@
 ---
 title: Introduction
-weight: 1
+weight: 10
 ---
 
 ## Using Gloo

@@ -6,7 +6,7 @@ weight: 30
 ## **What is a Web Application Firewall (WAF)**
 A web application firewall (WAF) protects web applications by monitoring, filtering and blocking potentially harmful traffic and attacks that can overtake or exploit them. WAFs do this by intercepting and inspecting the network packets and uses a set of rules to determine access to the web application. In enterprise security infrastructure, WAFs can be deployed to an application or group of applications to provide a layer of protection between the applications and the end users.
 
-Gloo now suppports The popular Web Appplication Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
+Gloo now supports the popular Web Appplication Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
 
 ## **WAF in Gloo**
 Gloo Enterprise now includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. The OWASP Core Rule Set is included by default and can be toggled on and off easily, as well as the ability to add or create custom rule sets. More information on the rule sets, and the rules language generally can be found [here](https://www.modsecurity.org/rules.html).
@@ -72,7 +72,7 @@ The first option for configuring WAF is on the Http Gateway level on the Gateway
 
 Run the following command to edit the gateway object with the waf config:
 ```bash
-kubectl edit gateways.gateway.solo.io.v2 -n gloo-system gateway
+kubectl edit gateway -n gloo-system gateway-proxy-v2
 ```
 
 {{< highlight yaml "hl_lines=12-20" >}}
@@ -101,7 +101,7 @@ spec:
 
 Once this config has been accepted run the following to test that the rule has been applied
 ```bash
-curl -v -H user-agent:scammer ${GATEWAY_URL}/sample-route-1
+curl -v -H user-agent:scammer $(glooctl proxy url)/sample-route-1
 
 *   Trying IP_REDACTED...
 * TCP_NODELAY set
@@ -135,7 +135,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     virtualHostPlugins:
       extensions:
         configs:
@@ -198,7 +197,7 @@ spec:
 
 Once this config has been accepted run the following to test that it works.
 ```bash
-curl -v  ${GATEWAY_URL}/sample-route-1
+curl -v  $(glooctl proxy url)/sample-route-1
 *   Trying IP_REDACTED...
 * TCP_NODELAY set
 * Connected to IP_REDACTED (IP_REDACTED) port 80 (#0)

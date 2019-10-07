@@ -304,7 +304,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.echo
     routes:
     - matcher:
         prefix: /echo
