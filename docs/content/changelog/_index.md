@@ -1,6 +1,6 @@
 ---
 title: Changelog
-weight: 8
+weight: 80
 ---
 
 <br>

@@ -1,6 +1,6 @@
 ---
 title: Gloo Routing
-weight: 3
+weight: 30
 ---
 
 Gloo has a powerful routing engine that can handle simple use cases like API-to-API routing as well as more complex ones like HTTP to gRPC with body and header transformations. Gloo can also route natively to cloud-function providers like AWS Lambda, Google Cloud Functions and Azure Functions. 

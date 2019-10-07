@@ -1,6 +1,6 @@
 ---
 title: Installation
-weight: 2
+weight: 20
 ---
 
 # Gloo Open-Source
