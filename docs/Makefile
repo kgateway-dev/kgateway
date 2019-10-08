@@ -39,8 +39,8 @@ DOCS_VERSION := latest
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	# TODO(mitchdraft) - update checkout to the sha when branch merges
-	git -C themes/hugo-theme-soloio checkout revise-theme-for-versions
+	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/1fdc610ae7acc29738454276babb23c86917b4cf
+	git -C themes/hugo-theme-soloio checkout 1fdc610ae7acc29738454276babb23c86917b4cf
 	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/changelog/gloo-changelog.sk.md
 	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/changelog/glooe-changelog.sk.md
 
@@ -58,6 +58,7 @@ site-release: site-common
 	hugo --config docs.toml
 	mv site site-versioned
 
+## Old way of deploying site. TODO: remove when old hosting setup is disabled
 # .PHONY: deploy-site
 # deploy-site: site
 # 	firebase deploy --only hosting:gloo-docs
