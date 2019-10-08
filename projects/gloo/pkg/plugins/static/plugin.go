@@ -10,16 +10,12 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-type plugin struct{ hostRewriteUpstreams map[core.ResourceRef]bool }
+type plugin struct{}
 
 func NewPlugin() plugins.Plugin {
 	return &plugin{}
@@ -38,14 +34,13 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
-	p.hostRewriteUpstreams = make(map[core.ResourceRef]bool)
 	return nil
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	// not ours
 	staticSpec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static)
 	if !ok {
+		// not ours
 		return nil
 	}
 
@@ -113,9 +108,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
-	// the upstream has a DNS name. to cover the case that it is an external service
-	// that requires the host header, we will add host rewrite.
-	if (hostname != "" && spec.GetAutoHostRewrite() == nil) || spec.GetAutoHostRewrite().GetValue() {
+	// the upstream has a DNS name. We need Envoy to resolve the DNS name
+	if hostname != "" {
 		// set the type to strict dns
 		out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
 			Type: envoyapi.Cluster_STRICT_DNS,
@@ -123,38 +117,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		// fix issue where ipv6 addr cannot bind
 		out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
-
-		// cache the name of this upstream, we need to enable automatic host rewrite on routes
-		p.hostRewriteUpstreams[in.Metadata.Ref()] = true
 	}
 
-	return nil
-}
-
-func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, in *v1.RouteAction, out *envoyroute.RouteAction) error {
-
-	// if someone is trying to do a host re-write, nothing to do here.
-	if params.Route.GetRoutePlugins().GetHostRewrite() != nil {
-		return nil
-	}
-
-	upstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in)
-	if err != nil {
-		return err
-	}
-	for _, ref := range upstreams {
-		if _, ok := p.hostRewriteUpstreams[ref]; !ok {
-			continue
-		}
-		// this is a route to one of our ssl upstreams
-		// enable auto host rewrite
-		out.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{
-			AutoHostRewrite: &types.BoolValue{
-				Value: true,
-			},
-		}
-		// one is good enough
-		break
-	}
 	return nil
 }

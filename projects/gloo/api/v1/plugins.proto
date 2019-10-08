@@ -32,12 +32,10 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.pro
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/pipe/pipe.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/stats/stats.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/headers/headers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/healthcheck/healthcheck.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hostrewrite/hostrewrite.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/jwt/jwt.proto";
@@ -49,6 +47,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 
 // Plugin-specific configuration that lives on gateways
 // Each ListenerPlugin object contains configuration for a specific plugin
@@ -122,22 +121,31 @@ message RoutePlugins {
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 1;
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
-    transformation.plugins.gloo.solo.io.PrefixRewrite prefix_rewrite = 3;
+    // For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
+    string prefix_rewrite = 3;
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
     // Deprecated: Opaque config for Gloo plugins
     Extensions extensions = 6 [deprecated=true];
     // Defines route-specific tracing configuration.
     // See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
-    // See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
+    // See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/
     tracing.plugins.gloo.solo.io.RouteTracingSettings tracing = 7;
     // Specifies traffic shadowing configuration for the route.
     // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
     shadowing.plugins.gloo.solo.io.RouteShadowing shadowing = 8;
     // Append/Remove headers on Requests or Responses on this Route
     headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 9;
-    // Rewrite the Host header for requests matched on this route
-    hostrewrite.plugins.gloo.solo.io.HostRewrite host_rewrite = 10;
+    // For requests matched on this route, rewrite the Host header before forwarding upstream
+    oneof host_rewrite_type {
+        // Indicates that during forwarding, the host header will be swapped with this value.
+        string host_rewrite = 10;
+        // Enable/Disable auto host re-write.
+        // Indicates that the host header will be swapped with the hostname of the upstream host.
+        // This setting is only honored for upstreams that use DNS resolution (i.e., their generated Envoy cluster is
+        // of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames)
+        google.protobuf.BoolValue auto_host_rewrite = 19;
+    };
     // Defines a CORS policy for the route
     // If a CORS policy is also defined on the route's virtual host, the policies are merged.
     cors.plugins.gloo.solo.io.CorsPolicy cors = 11;
@@ -207,7 +215,7 @@ message UpstreamSpec {
 
     // Use http2 when communicating with this upstream
     // this field is evaluated `true` for upstreams
-    // with a grpc service spec
+    // with a grpc service spec. otherwise defaults to `false`
     bool use_http2 = 7;
 
     // Note to developers: new Upstream Plugins must be added to this oneof field

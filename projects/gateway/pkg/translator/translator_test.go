@@ -6,8 +6,6 @@ import (
 
 	"github.com/solo-io/gloo/test/samples"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
-
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -456,12 +454,12 @@ var _ = Describe("Translator", func() {
 			Context("valid configuration", func() {
 				dur := time.Minute
 
-				rootLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: "root route plugin"}}
+				rootLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: "root route plugin"}
 				midLevelRoutePlugins := &gloov1.RoutePlugins{Timeout: &dur}
-				leafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: "leaf level plugin"}}
+				leafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: "leaf level plugin"}
 
 				mergedMidLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
-				mergedLeafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &transformation.PrefixRewrite{PrefixRewrite: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
+				mergedLeafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: "leaf level plugin", Timeout: midLevelRoutePlugins.Timeout}
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})

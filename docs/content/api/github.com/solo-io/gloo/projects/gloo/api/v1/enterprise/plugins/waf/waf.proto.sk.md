@@ -13,8 +13,6 @@ weight: 5
 
 - [Settings](#settings)
 - [CoreRuleSet](#coreruleset)
-- [VhostSettings](#vhostsettings)
-- [RouteSettings](#routesettings)
   
 
 
@@ -61,46 +59,6 @@ weight: 5
 | ----- | ---- | ----------- |----------- | 
 | `customSettingsString` | `string` | String representing the core rule set custom config options. Only one of `customSettingsString` or `customSettingsFile` can be set. |  |
 | `customSettingsFile` | `string` | String representing the core rule set custom config options. Only one of `customSettingsFile` or `customSettingsString` can be set. |  |
-
-
-
-
----
-### VhostSettings
-
- 
-TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
-
-```yaml
-"disabled": bool
-"settings": .waf.plugins.gloo.solo.io.Settings
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | Disable waf on this virtual host. |  |
-| `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |  |  |
-
-
-
-
----
-### RouteSettings
-
- 
-TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
-
-```yaml
-"disabled": bool
-"settings": .waf.plugins.gloo.solo.io.Settings
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | Disable waf on this route. |  |
-| `settings` | [.waf.plugins.gloo.solo.io.Settings](../waf.proto.sk#settings) |  |  |
 
 
 

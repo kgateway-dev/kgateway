@@ -151,14 +151,15 @@ to be usable by Gloo.
 ```yaml
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
 "faults": .fault.plugins.gloo.solo.io.RouteFaults
-"prefixRewrite": .transformation.plugins.gloo.solo.io.PrefixRewrite
+"prefixRewrite": string
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "extensions": .gloo.solo.io.Extensions
 "tracing": .tracing.plugins.gloo.solo.io.RouteTracingSettings
 "shadowing": .shadowing.plugins.gloo.solo.io.RouteShadowing
 "headerManipulation": .headers.plugins.gloo.solo.io.HeaderManipulation
-"hostRewrite": .hostrewrite.plugins.gloo.solo.io.HostRewrite
+"hostRewrite": string
+"autoHostRewrite": .google.protobuf.BoolValue
 "cors": .cors.plugins.gloo.solo.io.CorsPolicy
 "lbHash": .lbhash.plugins.gloo.solo.io.RouteActionHashConfig
 "ratelimitBasic": .ratelimit.plugins.gloo.solo.io.IngressRateLimit
@@ -174,14 +175,15 @@ to be usable by Gloo.
 | ----- | ---- | ----------- |----------- | 
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
 | `faults` | [.fault.plugins.gloo.solo.io.RouteFaults](../plugins/faultinjection/fault.proto.sk#routefaults) |  |  |
-| `prefixRewrite` | [.transformation.plugins.gloo.solo.io.PrefixRewrite](../plugins/transformation/prefix_rewrite.proto.sk#prefixrewrite) |  |  |
+| `prefixRewrite` | `string` | For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream. |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
-| `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing. |  |
+| `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/. |  |
 | `shadowing` | [.shadowing.plugins.gloo.solo.io.RouteShadowing](../plugins/shadowing/shadowing.proto.sk#routeshadowing) | Specifies traffic shadowing configuration for the route. See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy. |  |
 | `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on this Route. |  |
-| `hostRewrite` | [.hostrewrite.plugins.gloo.solo.io.HostRewrite](../plugins/hostrewrite/hostrewrite.proto.sk#hostrewrite) | Rewrite the Host header for requests matched on this route. |  |
+| `hostRewrite` | `string` | Indicates that during forwarding, the host header will be swapped with this value. Only one of `hostRewrite` or `autoHostRewrite` can be set. |  |
+| `autoHostRewrite` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable/Disable auto host re-write. Indicates that the host header will be swapped with the hostname of the upstream host. This setting is only honored for upstreams that use DNS resolution (i.e., their generated Envoy cluster is of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames). Only one of `autoHostRewrite` or `hostRewrite` can be set. |  |
 | `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |  |
 | `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service. |  |
 | `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
@@ -276,7 +278,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 | `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk#connectionconfig) |  |  |
 | `healthChecks` | [[]envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk#healthcheck) |  |  |
 | `outlierDetection` | [.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk#outlierdetection) |  |  |
-| `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. |  |
+| `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`. |  |
 | `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
 | `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
 | `pipe` | [.pipe.plugins.gloo.solo.io.UpstreamSpec](../plugins/pipe/pipe.proto.sk#upstreamspec) |  Only one of `pipe`, `kube`, `static`, `aws`, `azure`, or `awsEc2` can be set. |  |

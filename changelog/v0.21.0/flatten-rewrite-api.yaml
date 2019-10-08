@@ -1,0 +1,8 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Flatten prefix rewrite and host rewrite APIs. Move `auto_host_rewrite` from static upstream to route plugins since
+      it's a route-level Envoy config; this fixes confusing behavior where a single static upstream on a route sets
+      `auto_host_rewrite` for the entire route.
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

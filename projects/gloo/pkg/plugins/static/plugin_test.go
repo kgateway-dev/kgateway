@@ -4,15 +4,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -117,73 +113,6 @@ var _ = Describe("Plugin", func() {
 			upstreamSpec.UseTls = true
 			p.ProcessUpstream(params, upstream, out)
 			Expect(out.TlsContext).To(BeIdenticalTo(existing))
-		})
-	})
-
-	Context("host re-write", func() {
-		var (
-			outRouteAction    *envoyroute.RouteAction
-			paramsRouteAction plugins.RouteActionParams
-			inRoute           *v1.Route
-			inRouteAction     *v1.RouteAction
-		)
-		BeforeEach(func() {
-			outRouteAction = new(envoyroute.RouteAction)
-			inRoute = &v1.Route{}
-			paramsRouteAction = plugins.RouteActionParams{Route: inRoute}
-			inRouteAction = &v1.RouteAction{
-				Destination: &v1.RouteAction_Single{
-					Single: &v1.Destination{
-						DestinationType: &v1.Destination_Upstream{
-							Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-						},
-					},
-				},
-			}
-
-		})
-		It("host rewrites with an address by default", func() {
-			p.ProcessUpstream(params, upstream, out)
-			p.ProcessRouteAction(paramsRouteAction, inRouteAction, outRouteAction)
-			Expect(outRouteAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
-		})
-		It("host rewrites address but disabled", func() {
-			upstreamSpec.AutoHostRewrite = &types.BoolValue{Value: false}
-			p.ProcessUpstream(params, upstream, out)
-			p.ProcessRouteAction(paramsRouteAction, inRouteAction, outRouteAction)
-			Expect(outRouteAction.GetAutoHostRewrite().GetValue()).To(Equal(false))
-		})
-		It("skips auto host rewrite with an ip by default", func() {
-			upstreamSpec.Hosts = []*v1static.Host{{
-				Addr: "1.2.3.4",
-				Port: 1234,
-			}}
-			p.ProcessUpstream(params, upstream, out)
-			p.ProcessRouteAction(paramsRouteAction, inRouteAction, outRouteAction)
-			Expect(outRouteAction.GetAutoHostRewrite().GetValue()).To(Equal(false))
-		})
-		It("host rewrites with an ip but enabled", func() {
-			upstreamSpec.Hosts = []*v1static.Host{{
-				Addr: "1.2.3.4",
-				Port: 1234,
-			}}
-			upstreamSpec.AutoHostRewrite = &types.BoolValue{Value: true}
-			p.ProcessUpstream(params, upstream, out)
-			p.ProcessRouteAction(paramsRouteAction, inRouteAction, outRouteAction)
-			Expect(outRouteAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
-		})
-		It("host rewrites enabled but route has a rewrite already set", func() {
-			inRoute.RoutePlugins = &v1.RoutePlugins{
-				HostRewrite: &hostrewrite.HostRewrite{
-					HostRewriteType: &hostrewrite.HostRewrite_HostRewrite{
-						HostRewrite: "test",
-					},
-				},
-			}
-			upstreamSpec.AutoHostRewrite = &types.BoolValue{Value: true}
-			p.ProcessUpstream(params, upstream, out)
-			p.ProcessRouteAction(paramsRouteAction, inRouteAction, outRouteAction)
-			Expect(outRouteAction.GetAutoHostRewrite().GetValue()).To(Equal(false))
 		})
 	})
 })

@@ -596,9 +596,6 @@ apis:
   healthcheck.plugins.gloo.solo.io.HealthCheck:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/healthcheck/healthcheck.proto.sk#HealthCheck
     package: healthcheck.plugins.gloo.solo.io
-  hostrewrite.plugins.gloo.solo.io.HostRewrite:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hostrewrite/hostrewrite.proto.sk#HostRewrite
-    package: hostrewrite.plugins.gloo.solo.io
   ingress.solo.io.Ingress:
     relativepath: api/github.com/solo-io/gloo/projects/ingress/api/v1/ingress.proto.sk#Ingress
     package: ingress.solo.io
@@ -689,9 +686,6 @@ apis:
   ratelimit.plugins.gloo.solo.io.Settings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto.sk#Settings
     package: ratelimit.plugins.gloo.solo.io
-  rbac.plugins.gloo.solo.io.Config:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#Config
-    package: rbac.plugins.gloo.solo.io
   rbac.plugins.gloo.solo.io.ExtensionSettings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#ExtensionSettings
     package: rbac.plugins.gloo.solo.io
@@ -707,14 +701,8 @@ apis:
   rbac.plugins.gloo.solo.io.Principal:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#Principal
     package: rbac.plugins.gloo.solo.io
-  rbac.plugins.gloo.solo.io.RouteExtension:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#RouteExtension
-    package: rbac.plugins.gloo.solo.io
   rbac.plugins.gloo.solo.io.Settings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#Settings
-    package: rbac.plugins.gloo.solo.io
-  rbac.plugins.gloo.solo.io.VhostExtension:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto.sk#VhostExtension
     package: rbac.plugins.gloo.solo.io
   rest.plugins.gloo.solo.io.DestinationSpec:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto.sk#DestinationSpec
@@ -754,9 +742,6 @@ apis:
     package: tracing.plugins.gloo.solo.io
   transformation.plugins.gloo.solo.io.Parameters:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/parameters.proto.sk#Parameters
-    package: transformation.plugins.gloo.solo.io
-  transformation.plugins.gloo.solo.io.PrefixRewrite:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto.sk#PrefixRewrite
     package: transformation.plugins.gloo.solo.io
   validate.AnyRules:
     relativepath: api/validate/validate.proto.sk#AnyRules
@@ -830,12 +815,6 @@ apis:
   waf.plugins.gloo.solo.io.CoreRuleSet:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/waf/waf.proto.sk#CoreRuleSet
     package: waf.plugins.gloo.solo.io
-  waf.plugins.gloo.solo.io.RouteSettings:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/waf/waf.proto.sk#RouteSettings
-    package: waf.plugins.gloo.solo.io
   waf.plugins.gloo.solo.io.Settings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/waf/waf.proto.sk#Settings
-    package: waf.plugins.gloo.solo.io
-  waf.plugins.gloo.solo.io.VhostSettings:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/waf/waf.proto.sk#VhostSettings
     package: waf.plugins.gloo.solo.io

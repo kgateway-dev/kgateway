@@ -8,15 +8,12 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 )
 
 var _ = Describe("MergeRoutePlugins", func() {
 	It("merges top-level route plugins fields", func() {
 		dst := &v1.RoutePlugins{
-			PrefixRewrite: &transformation.PrefixRewrite{
-				PrefixRewrite: "preserve-me",
-			},
+			PrefixRewrite: "preserve-me",
 			Retries: &retries.RetryPolicy{
 				RetryOn:    "5XX",
 				NumRetries: 0, // should not overwrite this field
@@ -37,10 +34,8 @@ var _ = Describe("MergeRoutePlugins", func() {
 			},
 		}
 		expected := &v1.RoutePlugins{
-			PrefixRewrite: &transformation.PrefixRewrite{
-				PrefixRewrite: "preserve-me",
-			},
-			Timeout: &d,
+			PrefixRewrite: "preserve-me",
+			Timeout:       &d,
 			Retries: &retries.RetryPolicy{
 				RetryOn:    "5XX",
 				NumRetries: 0,

@@ -182,18 +182,12 @@ Allows copying verified claims to headers sent upstream
 
 
 ```yaml
-"jwks": .jwt.plugins.gloo.solo.io.Jwks
-"audiences": []string
-"issuer": string
 "providers": map<string, .jwt.plugins.gloo.solo.io.Provider>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `jwks` | [.jwt.plugins.gloo.solo.io.Jwks](../jwt.proto.sk#jwks) | The source for the keys to validate JWTs. Deprecated: this field is deprecated, use `providers` instead. |  |
-| `audiences` | `[]string` | An incoming JWT must have an 'aud' claim and it must be in this list. Deprecated: this field is deprecated, use `providers` instead. |  |
-| `issuer` | `string` | Issuer of the JWT. the 'iss' claim of the JWT must match this. Deprecated: this field is deprecated, use `providers` instead. |  |
 | `providers` | `map<string, .jwt.plugins.gloo.solo.io.Provider>` | Auth providers can be used instead of the fields above where more than one is required. if this list is provided the fields above are ignored. |  |
 
 

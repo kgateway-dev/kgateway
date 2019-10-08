@@ -3,8 +3,6 @@ package basicroute
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -53,7 +51,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func applyPrefixRewrite(in *v1.Route, out *envoyroute.Route) error {
-	if in.RoutePlugins.PrefixRewrite == nil {
+	if in.RoutePlugins.PrefixRewrite == "" {
 		return nil
 	}
 	routeAction, ok := out.Action.(*envoyroute.Route_Route)
@@ -64,7 +62,7 @@ func applyPrefixRewrite(in *v1.Route, out *envoyroute.Route) error {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
 			"had nil route", in.Action)
 	}
-	routeAction.Route.PrefixRewrite = in.RoutePlugins.PrefixRewrite.PrefixRewrite
+	routeAction.Route.PrefixRewrite = in.RoutePlugins.PrefixRewrite
 	return nil
 }
 
@@ -104,8 +102,8 @@ func applyRetries(in *v1.Route, out *envoyroute.Route) error {
 }
 
 func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
-	hostRewrite := in.GetRoutePlugins().GetHostRewrite()
-	if hostRewrite == nil {
+	hostRewriteType := in.GetRoutePlugins().GetHostRewriteType()
+	if hostRewriteType == nil {
 		return nil
 	}
 	routeAction, ok := out.Action.(*envoyroute.Route_Route)
@@ -116,12 +114,13 @@ func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
 			"had nil route", in.Action)
 	}
-
-	switch rewriteType := hostRewrite.HostRewriteType.(type) {
+	switch rewriteType := hostRewriteType.(type) {
 	default:
-		return errors.Errorf("uninmplemented host rewrite type: %T", hostRewrite.HostRewriteType)
-	case *hostrewrite.HostRewrite_HostRewrite:
+		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
+	case *v1.RoutePlugins_HostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{HostRewrite: rewriteType.HostRewrite}
+	case *v1.RoutePlugins_AutoHostRewrite:
+		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{AutoHostRewrite: rewriteType.AutoHostRewrite}
 	}
 
 	return nil

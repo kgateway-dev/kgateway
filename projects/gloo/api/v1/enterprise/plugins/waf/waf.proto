@@ -31,19 +31,3 @@ message CoreRuleSet {
         string custom_settings_file = 3;
     }
 }
-
-// TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
-message VhostSettings {
-    option deprecated = true;
-    // Disable waf on this virtual host
-    bool disabled = 1;
-    Settings settings = 2;
-}
-
-// TODO(kdorosh) delete this once we stop supporting opaque configuration under extensions
-message RouteSettings {
-    option deprecated = true;
-    // Disable waf on this route
-    bool disabled = 1;
-    Settings settings = 2;
-}
