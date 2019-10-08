@@ -32,7 +32,7 @@ var routeActionType = struct {
 func PrintRoutes(routes []*v1.Route, outputType OutputType) error {
 	return cliutils.PrintList(outputType.String(), "", routes,
 		func(data interface{}, w io.Writer) error {
-			RouteTable(data.([]*gloov1.Route), w)
+			RouteTable(data.([]*v1.Route), w)
 			return nil
 		}, os.Stdout)
 }
@@ -41,7 +41,7 @@ func PrintRoutes(routes []*v1.Route, outputType OutputType) error {
 // It can be either an upstream or upstream-function pair
 
 // PrintTable prints the list of routes as a table
-func RouteTable(list []*gloov1.Route, w io.Writer) {
+func RouteTable(list []*v1.Route, w io.Writer) {
 
 	tables := make(map[string]*tablewriter.Table)
 	actionMap := splitByAction(list)
@@ -77,7 +77,7 @@ func routeDefaultTable(w io.Writer, customHeaders []string) *tablewriter.Table {
 	return table
 }
 
-func routeDefaultTableRow(r *gloov1.Route, index int, customItems []string) []string {
+func routeDefaultTableRow(r *v1.Route, index int, customItems []string) []string {
 	matcher, rType, verb, headers := Matcher(r)
 	act := Action(r)
 	defaultRow := []string{strconv.Itoa(index + 1), matcher, rType, verb, headers, act}
@@ -85,7 +85,7 @@ func routeDefaultTableRow(r *gloov1.Route, index int, customItems []string) []st
 }
 
 // Matcher extracts the parts of the matcher in the given route
-func Matcher(r *gloov1.Route) (string, string, string, string) {
+func Matcher(r *v1.Route) (string, string, string, string) {
 	var path string
 	var rType string
 	switch p := r.Matcher.PathSpecifier.(type) {
@@ -138,28 +138,28 @@ func Destinations(d *gloov1.Destination) string {
 }
 
 // Action extracts the action in a given route
-func Action(r *gloov1.Route) string {
+func Action(r *v1.Route) string {
 	switch r.Action.(type) {
-	case *gloov1.Route_RouteAction:
+	case *v1.Route_RouteAction:
 		return "route action"
-	case *gloov1.Route_DirectResponseAction:
+	case *v1.Route_DirectResponseAction:
 		return "direct response action"
-	case *gloov1.Route_RedirectAction:
+	case *v1.Route_RedirectAction:
 		return "redirect action"
 	default:
 		return "unknown"
 	}
 }
 
-func splitByAction(routes []*gloov1.Route) map[string][]*gloov1.Route {
-	actionMap := make(map[string][]*gloov1.Route)
+func splitByAction(routes []*v1.Route) map[string][]*v1.Route {
+	actionMap := make(map[string][]*v1.Route)
 	for _, r := range routes {
 		switch r.Action.(type) {
-		case *gloov1.Route_RouteAction:
+		case *v1.Route_RouteAction:
 			actionMap[routeActionType.routeAction] = append(actionMap[routeActionType.routeAction], r)
-		case *gloov1.Route_DirectResponseAction:
+		case *v1.Route_DirectResponseAction:
 			actionMap[routeActionType.directAction] = append(actionMap[routeActionType.directAction], r)
-		case *gloov1.Route_RedirectAction:
+		case *v1.Route_RedirectAction:
 			actionMap[routeActionType.redirectAction] = append(actionMap[routeActionType.redirectAction], r)
 		default:
 			actionMap[routeActionType.emptyAction] = append(actionMap[routeActionType.emptyAction], r)
@@ -168,9 +168,9 @@ func splitByAction(routes []*gloov1.Route) map[string][]*gloov1.Route {
 	return actionMap
 }
 
-type rowFactoryFunc func(r *gloov1.Route, index int) []string
+type rowFactoryFunc func(r *v1.Route, index int) []string
 
-func actionTable(rs []*gloov1.Route, w io.Writer, headers []string, rowFactory rowFactoryFunc) *tablewriter.Table {
+func actionTable(rs []*v1.Route, w io.Writer, headers []string, rowFactory rowFactoryFunc) *tablewriter.Table {
 	table := routeDefaultTable(w, headers)
 	for i, r := range rs {
 		table.Append(rowFactory(r, i))
@@ -178,22 +178,22 @@ func actionTable(rs []*gloov1.Route, w io.Writer, headers []string, rowFactory r
 	return table
 }
 
-func routeActionTable(r *gloov1.Route, index int) []string {
+func routeActionTable(r *v1.Route, index int) []string {
 	return routeDefaultTableRow(r, index, []string{})
 }
 
-func redirectActionTable(r *gloov1.Route, index int) []string {
+func redirectActionTable(r *v1.Route, index int) []string {
 	return routeDefaultTableRow(r, index, []string{})
 }
 
-func directActionTable(r *gloov1.Route, index int) []string {
-	if action, ok := r.Action.(*gloov1.Route_DirectResponseAction); ok {
+func directActionTable(r *v1.Route, index int) []string {
+	if action, ok := r.Action.(*v1.Route_DirectResponseAction); ok {
 		return routeDefaultTableRow(r, index, []string{strconv.FormatUint(uint64(action.DirectResponseAction.Status), 10), action.DirectResponseAction.Body})
 	}
 	return routeDefaultTableRow(r, index, []string{"unknown", "unknown"})
 }
 
-func emptyActionTable(r *gloov1.Route, index int) []string {
+func emptyActionTable(r *v1.Route, index int) []string {
 	return routeDefaultTableRow(r, index, []string{})
 }
 
