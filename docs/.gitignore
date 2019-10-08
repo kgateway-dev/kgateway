@@ -1,6 +1,7 @@
 install/manifest-versioned.yaml
 install/manifest-latest.yaml
 *.sk.md
+*.docgen
 
 site/*
 site-latest/*

@@ -6,4 +6,4 @@ weight: 7
 <br>
 
 ## Open Source Gloo
-{{< readfile file="changelog/gloo-changelog.sk.md" markdown="true" >}}
+{{< readfile file="static/content/gloo-changelog.docgen" markdown="true" >}}
