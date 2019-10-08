@@ -1,422 +1,216 @@
 ---
-title: LDAP
-weight: 60
-description: Authenticate and authorize requests using LDAP.
+title: Basic Auth
+weight: 10
+description: Authenticating using a dictionary of usernames and passwords on a virtual service. 
 ---
-
-The _Lightweight Directory Access Protocol_, commonly referred to as LDAP, is an open protocol used to store and retrieve 
-hierarchically structured data over a network. It has been widely adopted by enterprises to centrally store and secure 
-organizational information. A common use case for LDAP is to maintain information about members of an organization, 
-assign them to specific user groups, and give each of them access to resources based on their group memberships.
-
-In this guide we will deploy a simple LDAP server to your Kubernetes cluster and see how you can use it together with 
-Gloo to authenticate users and control access to a target service based on the user's group memberships.
 
 {{% notice note %}}
-We recommend that you check out [**this excellent tutorial**](https://www.digitalocean.com/community/tutorials/understanding-the-ldap-protocol-data-hierarchy-and-entry-components) 
-by Digital Ocean to familiarize yourself with the basic concepts and components of an LDAP server; although it is not 
-strictly necessary, it will help you better understand this guide.
+{{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
+In certain cases - such as during testing or when releasing a new API to a small number of known users - it may be 
+convenient to secure a Virtual Service using [**Basic Authentication**](https://en.wikipedia.org/wiki/Basic_access_authentication). 
+With this simple authentication mechanism the encoded user credentials are sent along with the request in a standard header.
 
-### Prerequisites
+To secure your Virtual Services using Basic Authentication, you first need to provide Gloo with a set of known users and 
+their passwords. You can then use this information to decide who is allowed to access which routes.
+If a request matches a route on which Basic Authentication is configured, Gloo will verify the credentials in the 
+standard `Authorization` header before sending the request to its destination. If the user associated with the credentials 
+is not explicitly allowed to access that route, Gloo will return a 401 response to the downstream client.
 
-{{% notice warning %}}
-LDAP authentication/authorization is a feature of **Gloo Enterprise**, release **0.18.27+**.
-If you are using Open Source Gloo, this tutorial will not work.
-{{% /notice %}}
+Be sure to check the external auth [configuration overview]({{< ref "gloo_routing/virtual_services/security#configuration-overview" >}}) 
+for detailed information about how authentication is configured on Virtual Services.
 
+## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-
-#### Create a simple Virtual Service
-Let's start by creating a simple service (an `Upstream`, in Gloo terminology) that will return "Hello World" when 
-receiving HTTP requests:
-
-```bash
-kubectl apply -f - <<EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: http-echo
-  name: http-echo
-spec:
-  selector:
-    matchLabels:
-      app: http-echo
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: http-echo
-    spec:
-      containers:
-      - image: hashicorp/http-echo:latest
-        name: http-echo
-        args: ["-text='Hello World!'"]
-        ports:
-        - containerPort: 5678
-          name: http
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: http-echo
-  labels:
-    service: http-echo
-spec:
-  ports:
-  - port: 5678
-    protocol: TCP
-  selector:
-    app: http-echo
-EOF
-```
-
-Now we can create a Virtual Service that routes any requests with the `/echo` prefix to the `echo` service.
+Let's start by creating a [Static Upstream]({{< ref "gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream" >}}) 
+that routes to a website; we will send requests to it during this tutorial.
 
 {{< tabs >}}
-{{< tab name="yaml" codelang="yaml">}}
-{{< readfile file="gloo_routing/virtual_services/security/ldap/vs-echo-no-auth.yaml">}}
+{{< tab name="kubectl" codelang="yaml">}}
+{{< readfile file="/static/content/upstream.yaml">}}
+{{< /tab >}}
+{{< tab name="glooctl" codelang="shell" >}}
+glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --name json-upstream
+{{< /tab >}}
+{{< /tabs >}}
+
+## Creating a Virtual Service
+Now let's configure Gloo to route requests to the upstream we just created. To do that, we define a simple Virtual 
+Service to match all requests that:
+
+- contain a `Host` header with value `foo` and
+- have a path that starts with `/` (this will match all requests).
+
+{{< tabs >}}
+{{< tab name="kubectl" codelang="yaml">}}
+{{< readfile file="gloo_routing/virtual_services/security/basic_auth/test-no-auth-vs.yaml">}}
 {{< /tab >}}
 {{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name http-echo --namespace gloo-system
-glooctl add route --path-prefix /echo --dest-name default-http-echo-5678
+glooctl create vs --name test-no-auth --namespace gloo-system --domains foo
+glooctl add route --name test-no-auth --path-prefix / --dest-name json-upstream
 {{< /tab >}}
 {{< /tabs >}} 
 
-To verify that the Virtual Service works, let's send a request to `/echo`:
-
-```bash
-curl $GATEWAY_URL/echo
-'Hello World!'
-```
-
-#### Deploy an LDAP server
-We also need to deploy an LDAP server to your cluster and configure it with a simple set of users and groups. This 
-information will be used to determine which requests can access the upstream we just defined. 
-
-We have prepared a [**shell script**](setup-ldap.sh) that takes care of setting up the necessary resources. It creates:
-
-1. a `configmap` with the LDAP server bootstrap configuration
-2. a `deployment` running OpenLDAP
-3. a `service` fronting the deployment
- 
-The script accepts an optional string argument, which determines the namespace in which the resources will be created 
-(`default` if not provided). After you have downloaded the script to your working directory, you can run the following 
-commands to execute it:
+Let's send a request that matches the above route to the Gloo Gateway and make sure it works:
 
 ```shell
-chmod +x setup-ldap.sh
-./setup-ldap.sh    
-
-No namespace provided, using default namespace
-Creating configmap with LDAP server bootstrap config...
-configmap/ldap created
-Creating LDAP service and deployment...
-deployment.apps/ldap created
-service/ldap created
+curl -H "Host: foo" $GATEWAY_URL/posts/1
 ```
 
-{{% expand "The details of the script are beyond the scope of this guide; if you are interested, you can inspect them by clicking on this paragraph." %}}
-```bash
-{{< readfile file="gloo_routing/virtual_services/security/ldap/setup-ldap.sh" >}}
-```
-{{% /expand %}}
+The above command should produce the following output:
 
-To understand the user configuration, it is worth looking at the last two data entries in the config map:
-
-```text
-03_people.ldif: |
-  # Create a parent 'people' entry
-  dn: ou=people,dc=solo,dc=io
-  objectClass: organizationalUnit
-  ou: people
-  description: All solo.io people
-
-  # Add 'marco'
-  dn: uid=marco,ou=people,dc=solo,dc=io
-  objectClass: inetOrgPerson
-  cn: Marco Schmidt
-  sn: Schmidt
-  uid: marco
-  userPassword: marcopwd
-  mail: marco.schmidt@solo.io
-
-  # Add 'rick'
-  dn: uid=rick,ou=people,dc=solo,dc=io
-  objectClass: inetOrgPerson
-  cn: Rick Ducott
-  sn: Ducott
-  uid: rick
-  userPassword: rickpwd
-  mail: rick.ducott@solo.io
-
-  # Add 'scottc'
-  dn: uid=scottc,ou=people,dc=solo,dc=io
-  objectClass: inetOrgPerson
-  cn: Scott Cranton
-  sn: Cranton
-  uid: scottc
-  userPassword: scottcpwd
-  mail: scott.cranton@solo.io
-04_groups.ldif: |+
-  # Create top level 'group' entry
-  dn: ou=groups,dc=solo,dc=io
-  objectClass: organizationalUnit
-  ou: groups
-  description: Generic parent entry for groups
-
-  # Create the 'developers' entry under 'groups'
-  dn: cn=developers,ou=groups,dc=solo,dc=io
-  objectClass: groupOfNames
-  cn: developers
-  description: Developers group
-  member: uid=marco,ou=people,dc=solo,dc=io
-  member: uid=rick,ou=people,dc=solo,dc=io
-  member: uid=scottc,ou=people,dc=solo,dc=io
-
-  # Create the 'sales' entry under 'groups'
-  dn: cn=sales,ou=groups,dc=solo,dc=io
-  objectClass: groupOfNames
-  cn: sales
-  description: Sales group
-  member: uid=scottc,ou=people,dc=solo,dc=io
-
-  # Create the 'managers' entry under 'groups'
-  dn: cn=managers,ou=groups,dc=solo,dc=io
-  objectClass: groupOfNames
-  cn: managers
-  description: Managers group
-  member: uid=rick,ou=people,dc=solo,dc=io
+```json
+{
+  "userId": 1,
+  "id": 1,
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+}
 ```
 
-We can see that the root of the LDAP directory hierarchy is the `dc=solo,dc=io` entry, which has two child entries:
+## Securing the Virtual Service
+{{% notice warning %}}
+{{< readfile file="/static/content/extauth_version_info_note" >}}
+{{% /notice %}}
 
-- `ou=groups,dc=solo,dc=io` is the parent entry for user groups in the organization. It contains three groups:
-    - cn=`developers`,ou=groups,dc=solo,dc=io
-    - cn=`sales`,ou=groups,dc=solo,dc=io
-    - cn=`managers`,ou=groups,dc=solo,dc=io
-    
-- `ou=people,dc=solo,dc=io` is the parent entry for people in the organization and in turn has the following entries:
-   - uid=`marco`,ou=people,dc=solo,dc=io
-   - uid=`rick`,ou=people,dc=solo,dc=io
-   - uid=`scott`,ou=people,dc=solo,dc=io
-   
-The user credentials and memberships are summarized in the following table:
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
+Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+We will update the Virtual Service so that only requests by the user `user` with password `password` are allowed.
+Gloo expects password to be hashed and [salted](https://en.wikipedia.org/wiki/Salt_(cryptography)) using the
+[APR1](https://httpd.apache.org/docs/2.4/misc/password_encryptions.html) format. Passwords in this format follow this pattern:
 
-|  username |   password   | member of developers | member of sales | member of managers |
-|-----------|--------------|----------------------|-----------------|--------------------|
-| marco     | marcopwd     | Y                    |  N              |   N               |
-| rick      | rickpwd      | Y                    |  N              |   Y               |
-| scott     | scottpwd     | Y                    |  Y              |   N               |
+> $apr1$**SALT**$**HASHED_PASSWORD**
 
-To test that the LDAP server has been correctly deployed, let's port-forward the corresponding deployment:
+To generate such a password you can use the `htpasswd` utility:
 
-```bash
-kubectl port-forward deployment/ldap 8088:389
+```shell
+htpasswd -nbm user password
 ```
 
-In a different terminal instance, run the following command (you must have `ldapsearch` installed):
+Running the above command returns a string like `user:$apr1$TYiryv0/$8BvzLUO9IfGPGGsPnAgSu1`, where:
 
-```bash
-ldapsearch -H ldap://localhost:8088 -D "cn=admin,dc=solo,dc=io" -w "solopwd" -b "dc=solo,dc=io" -LLL dn
-```
+- `TYiryv0/` is the salt and
+- `8BvzLUO9IfGPGGsPnAgSu1` is the hashed password.
 
-You should see the following output, listing the **distinguished names (DNs)** of all entries located in the subtree 
-rooted at `dc=solo,dc=io`:
+Now that we have a password in the required format, let's go ahead and create and `AuthConfig` CRD with our 
+Basic Authentication configuration:
 
-```text
-dn: dc=solo,dc=io
-
-dn: cn=admin,dc=solo,dc=io
-
-dn: ou=people,dc=solo,dc=io
-
-dn: uid=marco,ou=people,dc=solo,dc=io
-
-dn: uid=rick,ou=people,dc=solo,dc=io
-
-dn: uid=scottc,ou=people,dc=solo,dc=io
-
-dn: ou=groups,dc=solo,dc=io
-
-dn: cn=developers,ou=groups,dc=solo,dc=io
-
-dn: cn=sales,ou=groups,dc=solo,dc=io
-
-dn: cn=managers,ou=groups,dc=solo,dc=io
-```
-
-### Secure the Virtual Service
-Now that we have all the necessary components in place, let use the LDAP server to secure the Virtual Service we created 
-earlier .
-
-#### LDAP auth flow
-Before updating our Virtual Service, it is important to understand how Gloo interacts with the LDAP server. Let's first 
-look at the [LDAP auth configuration](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/extauth.proto.sk/#ldap):
-
-- `address`: this is the address of the LDAP server that Gloo will query when a request matches the Virtual Service.
-- `userDnTemplate`: this is a template string that Gloo uses to build the DNs of the user entry that 
-   needs to be authenticated and authorized. It must contains a single occurrence of the “%s” placeholder.
-- `membershipAttributeName`: case-insensitive name of the attribute that contains the names of the groups an entry is 
-   member of. Defaults to `memberOf` if not provided.
-- `allowedGroups`: DNs of the user groups that are allowed to access the secured upstream.
-
-To better understand how this configuration is used, let's go over the steps that Gloo performs when it detects a 
-request that needs to be authenticated with LDAP:
-
-1. Look for a [Basic Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) header on the request 
-   and extract the username and credentials
-2. If the header is not present, return a `401` response
-3. Try to perform a [BIND](https://ldap.com/the-ldap-bind-operation/) operation with the LDAP server. To do this, Gloo 
-   needs to know the DN of the user entry. It will build it by substituting the name of the user (extracted from the 
-   basic auth header) for the `%s` placeholder in the `userDnTemplate`. It is important to note that 
-   [special characters](https://ldapwiki.com/wiki/DN%20Escape%20Values) will be removed from the username before performing 
-   the bind operation; this is done to prevent injection attacks.
-4. If the operation fails, it means that the user is unknown or their credentials are incorrect; return a `401` response
-5. Issue a search operation for the user entry (with a [`base` scope](https://ldapwiki.com/wiki/BaseObject)) and look 
-   for an attribute with a name equal to `membershipAttributeName` on the user entry.
-6. Check if one of the values for the attribute matches one of the `allowedGroups`; if so, allow the request, otherwise return a `403` response.
-
-#### Update the Virtual Service
-Now that we have a good understanding of how Gloo interacts with the LDAP server, it's time to update our Virtual Service 
-definition. We need to add the following lines:
-
-{{< highlight yaml "hl_lines=20-29" >}}
-{{< readfile file="gloo_routing/virtual_services/security/ldap/vs-auth-ldap.yaml" >}}
+{{< highlight shell "hl_lines=13-14" >}}
+kubectl apply -f - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: basic-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - basicAuth:
+      apr:
+        users:
+          user:
+            salt: "TYiryv0/"
+            hashedPassword: "8BvzLUO9IfGPGGsPnAgSu1"
+EOF
 {{< /highlight >}}
 
-This configures the virtual host to authenticate requests using Gloo's `extauth` server. `configs` is an array of 
-[AuthConfig](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/extauth.proto.sk/#authconfig) 
-objects with a single entry, an instance of the 
-[LDAP auth configuration](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/extauth.proto.sk/#ldap).
-We can see that:
+Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
-- the configuration points to the Kubernetes DNS name  and port of our LDAP service (`ldap.default.svc.cluster.local:389` if 
-  you deployed it to the `default` namespace);
-- Gloo will look for user entries with DNs in the format `uid=<USERNAME_FROM_HEADER>,ou=people,dc=solo,dc=io`, which, 
-  if you recall, is the format of the user entry DNs we bootstrapped our server with;
-- only members of the `cn=managers,ou=groups,dc=solo,dc=io` group can access the upstream.
+{{< highlight shell "hl_lines=19-23" >}}
+kubectl apply -f - <<EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: auth-tutorial
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'foo'
+    routes:
+      - matcher:
+          prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: json-upstream
+              namespace: gloo-system
+    virtualHostPlugins:
+      extauth:
+        config_ref:
+          name: basic-auth
+          namespace: gloo-system
+EOF
+{{< /highlight >}}
 
-Let's verify that our Virtual Service behaves as expected. The basic auth headers requires credentials to be encoded, 
-so here are the `base64`-encoded credentials for some test users:
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "gloo_routing/virtual_services/security#inheritance-rules" >}}) it.
 
-| username | password | basic auth header                         | comments                                    |
-|----------|----------|-------------------------------------------|---------------------------------------------|
-| marco    | marcopwd | Authorization: Basic bWFyY286bWFyY29wd2Q= | Member of "developers" group                |
-| rick     | rickpwd  | Authorization: Basic cmljazpyaWNrcHdk     | Member of "developers" and "managers" group |
-| john     | doe      | Authorization: Basic am9objpkb2U=         | Unknown user                                |
+### Testing denied requests
+Let's try and resend the same request we sent earlier:
 
-##### No auth header
-To start with, let's send a request without any header:
+```shell
+curl -v -H "Host: foo" $GATEWAY_URL/posts/1
+```
 
-{{< highlight bash "hl_lines=11" >}}
-curl -v "$GATEWAY_URL"/echo 
+You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo denied the request.
 
-*   Trying 192.168.99.100...
-* TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
-> GET /echo HTTP/1.1
-> Host: 192.168.99.100:31940
+{{< highlight shell "hl_lines=6" >}}
+> GET /posts/1 HTTP/1.1
+> Host: foo
 > User-Agent: curl/7.54.0
 > Accept: */*
 >
 < HTTP/1.1 401 Unauthorized
-< date: Tue, 10 Sep 2019 17:14:39 GMT
+< www-authenticate: Basic realm=""
+< date: Mon, 07 Oct 2019 13:36:58 GMT
 < server: envoy
 < content-length: 0
-<
-* Connection #0 to host 192.168.99.100 left intact
 {{< /highlight >}}
 
-We can see that Gloo returned a `401` response.
+### Testing authenticated requests
+For a request to be allowed, it must now include the user credentials inside the expected header, which has the 
+following format:
 
-##### Unknown user
-Now let's try the unknown user, which will produce the same result:
+```
+Authorization: basic <base64_encoded_credentials>
+```
 
-{{< highlight bash "hl_lines=12" >}}
-curl -v -H "Authorization: Basic am9objpkb2U=" "$GATEWAY_URL"/echo
+To encode the credentials, just run:
 
-*   Trying 192.168.99.100...
-* TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
-> GET /echo HTTP/1.1
-> Host: 192.168.99.100:31940
-> User-Agent: curl/7.54.0
-> Accept: */*
-> Authorization: Basic am9objpkb2U=
->
-< HTTP/1.1 401 Unauthorized
-< date: Tue, 10 Sep 2019 17:25:21 GMT
-< server: envoy
-< content-length: 0
-<
-* Connection #0 to host 192.168.99.100 left intact
-{{< /highlight >}}
+```shell
+echo -n "user:password" | base64
+```
 
-##### Developer user
-If we try to authenticate as a user that belongs to the "developers" group, Gloo will return a `403` response, 
-indicating that the user was successfully authenticated, but lacks the permissions to access the resource.
+This outputs `dXNlcjpwYXNzd29yZA==`. Let's include the header with this value in our request:
 
-{{< highlight bash "hl_lines=12" >}}
-curl -v -H "Authorization: Basic bWFyY286bWFyY29wd2Q=" "$GATEWAY_URL"/echo
+```shell
+curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $GATEWAY_URL/posts/1
+```
 
-*   Trying 192.168.99.100...
-* TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
-> GET /echo HTTP/1.1
-> Host: 192.168.99.100:31940
-> User-Agent: curl/7.54.0
-> Accept: */*
-> Authorization: Basic bWFyY286bWFyY29wd2Q=
->
-< HTTP/1.1 403 Forbidden
-< date: Tue, 10 Sep 2019 17:29:12 GMT
-< server: envoy
-< content-length: 0
-<
-* Connection #0 to host 192.168.99.100 left intact
-{{< /highlight >}}
+We are now able to reach the upstream again!
 
-##### Manager user
-Finally, if we provide a user that belongs to the "managers" group, we will be able to access the upstream.
+```json
+{
+  "userId": 1,
+  "id": 1,
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+}
+```
 
-{{< highlight bash "hl_lines=12 21" >}}
-curl -v -H "Authorization: Basic cmljazpyaWNrcHdk" "$GATEWAY_URL"/echo
+## Summary
 
-*   Trying 192.168.99.100...
-* TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
-> GET /echo HTTP/1.1
-> Host: 192.168.99.100:31940
-> User-Agent: curl/7.54.0
-> Accept: */*
-> Authorization: Basic cmljazpyaWNrcHdk
->
-< HTTP/1.1 200 OK
-< x-app-name: http-echo
-< x-app-version: 0.2.3
-< date: Tue, 10 Sep 2019 17:30:12 GMT
-< content-length: 15
-< content-type: text/plain; charset=utf-8
-< x-envoy-upstream-service-time: 0
-< server: envoy
-<
-'Hello World!'
-* Connection #0 to host 192.168.99.100 left intact
-{{< /highlight >}}
+In this tutorial, we installed Gloo Enterprise and created an unauthenticated Virtual Service that routes requests to a 
+static upstream. We then created a Basic Authentication `AuthConfig` object and used it to secure our Virtual Service. 
+We first showed how unauthenticated requests fail with a `401 Unauthorized` response, and then showed how to send 
+authenticated requests successfully to the upstream. 
 
-### Summary 
-I this tutorial we have shown how Gloo can integrate with LDAP to authenticate incoming requests and authorize them based 
-on the group memberships of the user associated with the request credentials.
+Cleanup the resources by running:
 
-To clean up the resources we created, you can run the following commands:
-
-```bash
-glooctl uninstall
-kubectl delete configmap ldap
-kubectl delete deployment ldap http-echo
-kubectl delete service ldap http-echo
+```
+kubectl delete ac -n gloo-system basic-auth
+kubectl delete vs -n gloo-system auth-tutorial
+kubectl delete upstream -n gloo-system json-upstream
 ```
