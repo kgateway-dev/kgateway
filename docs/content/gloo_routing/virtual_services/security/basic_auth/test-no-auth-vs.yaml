@@ -1,10 +1,9 @@
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: test-no-auth
+  name: auth-tutorial
   namespace: gloo-system
 spec:
-  displayName: test-no-auth
   virtualHost:
     domains:
       - 'foo'

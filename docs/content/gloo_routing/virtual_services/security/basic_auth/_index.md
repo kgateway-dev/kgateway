@@ -4,23 +4,28 @@ weight: 10
 description: Authenticating using a dictionary of usernames and passwords on a virtual service. 
 ---
 
-There are a few different ways to use Gloo External Auth. In certain cases -- such as during testing, or when releasing 
-a new API to a small number of known users -- it may be desirable to secure a set of routes with **Basic Auth**. 
-
-In **BasicAuth**, the Gloo **VirtualService** containing the routes can be configured with a dictionary of 
-authenticated usernames and passwords. When the virtual service configuration changes, Gloo immediately updates the 
-external auth server with the new configuration. On the request path, Envoy asks the external auth service to check 
-the request; any request to a path on that virtual service must have a valid set of credentials or will be denied. 
-
-## Setup
-
 {{% notice note %}}
-Basic auth is a feature of **Gloo Enterprise**. If you are using Open Source Gloo, this tutorial will not work. 
+{{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
+In certain cases - such as during testing or when releasing a new API to a small number of known users - it may be 
+convenient to secure a Virtual Service using [**Basic Authentication**](https://en.wikipedia.org/wiki/Basic_access_authentication). 
+With this simple authentication mechanism the encoded user credentials are sent along with the request in a standard header.
+
+To secure your Virtual Services using Basic Authentication, you first need to provide Gloo with a set of known users and 
+their passwords. You can then use this information to decide who is allowed to access which routes.
+If a request matches a route on which Basic Authentication is configured, Gloo will verify the credentials in the 
+standard `Authorization` header before sending the request to its destination. If the user associated with the credentials 
+is not explicitly allowed to access that route, Gloo will return a 401 response to the downstream client.
+
+Be sure to check the external auth [configuration overview]({{< ref "gloo_routing/virtual_services/security#configuration-overview" >}}) 
+for detailed information about how authentication is configured on Virtual Services.
+
+## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-Let's create a simple upstream for testing called `json-upstream`, that routes to a static site:
+Let's start by creating a [Static Upstream]({{< ref "gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream" >}}) 
+that routes to a website; we will send requests to it during this tutorial.
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -31,9 +36,12 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tab >}}
 {{< /tabs >}}
 
-## Creating a virtual service
+## Creating a Virtual Service
+Now let's configure Gloo to route requests to the upstream we just created. To do that, we define a simple Virtual 
+Service to match all requests that:
 
-First, let's create a virtual service with no auth configured. 
+- contain a `Host` header with value `foo` and
+- have a path that starts with `/` (this will match all requests).
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -45,13 +53,13 @@ glooctl add route --name test-no-auth --path-prefix / --dest-name json-upstream
 {{< /tab >}}
 {{< /tabs >}} 
 
-Let's make a request to that route and make sure it works:
+Let's send a request that matches the above route to the Gloo Gateway and make sure it works:
 
 ```shell
 curl -H "Host: foo" $GATEWAY_URL/posts/1
 ```
 
-returns
+The above command should produce the following output:
 
 ```json
 {
@@ -62,54 +70,126 @@ returns
 }
 ```
 
-## Creating an authenticated virtual service
+## Securing the Virtual Service
+{{% notice warning %}}
+{{< readfile file="/static/content/extauth_version_info_note" >}}
+{{% /notice %}}
 
-Now let's create a virtual service that routes the same upstream, but with authentication for the user `user` with 
-password `password`. First, let's created a salted and hashed password:
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
+Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+We will update the Virtual Service so that only requests by the user `user` with password `password` are allowed.
+Gloo expects password to be hashed and [salted](https://en.wikipedia.org/wiki/Salt_(cryptography)) using the
+[APR1](https://httpd.apache.org/docs/2.4/misc/password_encryptions.html) format. Passwords in this format follow this pattern:
+
+> $apr1$**SALT**$**HASHED_PASSWORD**
+
+To generate such a password you can use the `htpasswd` utility:
 
 ```shell
 htpasswd -nbm user password
 ```
 
-This returns a string like: `user:$apr1$TYiryv0/$8BvzLUO9IfGPGGsPnAgSu1`. From this string, we can extract the 
-salt `TYiryv0/` and hashed password `8BvzLUO9IfGPGGsPnAgSu1`, and now we can construct our virtual service. 
+Running the above command returns a string like `user:$apr1$TYiryv0/$8BvzLUO9IfGPGGsPnAgSu1`, where:
 
-{{< tabs >}}
-{{< tab name="kubectl" codelang="yaml">}}
-{{< readfile file="gloo_routing/virtual_services/security/basic_auth/test-auth-vs.yaml">}}
-{{< /tab >}}
-{{< /tabs >}} 
+- `TYiryv0/` is the salt and
+- `8BvzLUO9IfGPGGsPnAgSu1` is the hashed password.
+
+Now that we have a password in the required format, let's go ahead and create and `AuthConfig` CRD with our 
+Basic Authentication configuration:
+
+{{< highlight shell "hl_lines=13-14" >}}
+kubectl apply -f - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: basic-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - basicAuth:
+      apr:
+        users:
+          user:
+            salt: "TYiryv0/"
+            hashedPassword: "8BvzLUO9IfGPGGsPnAgSu1"
+EOF
+{{< /highlight >}}
+
+Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
+
+{{< highlight shell "hl_lines=19-23" >}}
+kubectl apply -f - <<EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: auth-tutorial
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'foo'
+    routes:
+      - matcher:
+          prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: json-upstream
+              namespace: gloo-system
+    virtualHostPlugins:
+      extauth:
+        config_ref:
+          name: basic-auth
+          namespace: gloo-system
+EOF
+{{< /highlight >}}
+
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "gloo_routing/virtual_services/security#inheritance-rules" >}}) it.
 
 ### Testing denied requests
-
-Let's make a request to that route without auth and see that we get a 401 unauthorized response:
+Let's try and resend the same request we sent earlier:
 
 ```shell
-curl -v -H "Host: bar" $GATEWAY_URL/posts/1
+curl -v -H "Host: foo" $GATEWAY_URL/posts/1
 ```
 
-The response will contain this:
+You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo denied the request.
 
-```shell
+{{< highlight shell "hl_lines=6" >}}
+> GET /posts/1 HTTP/1.1
+> Host: foo
+> User-Agent: curl/7.54.0
+> Accept: */*
+>
 < HTTP/1.1 401 Unauthorized
-```
+< www-authenticate: Basic realm=""
+< date: Mon, 07 Oct 2019 13:36:58 GMT
+< server: envoy
+< content-length: 0
+{{< /highlight >}}
 
 ### Testing authenticated requests
+For a request to be allowed, it must now include the user credentials inside the expected header, which has the 
+following format:
 
-For a request to be authenticated with basic auth, it must include the `Authorization` header that looks like this:
-`Authorization: basic TOKEN`, where `TOKEN` is the base64-encoded user password:
+```
+Authorization: basic <base64_encoded_credentials>
+```
+
+To encode the credentials, just run:
 
 ```shell
 echo -n "user:password" | base64
 ```
 
-This outputs `dXNlcjpwYXNzd29yZA==`. Now let's add the authorization headers:
+This outputs `dXNlcjpwYXNzd29yZA==`. Let's include the header with this value in our request:
 
 ```shell
-curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: bar" $GATEWAY_URL/posts/1
+curl -H "Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $GATEWAY_URL/posts/1
 ```
 
-returns
+We are now able to reach the upstream again!
 
 ```json
 {
@@ -122,25 +202,15 @@ returns
 
 ## Summary
 
-In this tutorial, we installed Enterprise Gloo and created a static upstream. Then we created an unauthenticated 
-virtual service and saw requests get routed to it. Finally, we created a virtual service authenticated with 
-basic auth, and first showed how unauthenticated requests fail with a 401 Unauthorized response, and then showed how 
-to send authenticated requests successfully to the route. 
+In this tutorial, we installed Gloo Enterprise and created an unauthenticated Virtual Service that routes requests to a 
+static upstream. We then created a Basic Authentication `AuthConfig` object and used it to secure our Virtual Service. 
+We first showed how unauthenticated requests fail with a `401 Unauthorized` response, and then showed how to send 
+authenticated requests successfully to the upstream. 
 
 Cleanup the resources by running:
 
-{{< tabs >}}
-{{< tab name="kubectl" codelang="yaml">}}
-kubectl delete vs -n gloo-system test-no-auth
-kubectl delete vs -n gloo-system test-auth
+```
+kubectl delete ac -n gloo-system basic-auth
+kubectl delete vs -n gloo-system auth-tutorial
 kubectl delete upstream -n gloo-system json-upstream
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell" >}}
-glooctl delete vs test-no-auth
-glooctl delete vs test-auth
-glooctl delete upstream json-upstream
-{{< /tab >}}
-{{< /tabs >}}
-
-<br /> 
-<br /> 
+```
