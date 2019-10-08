@@ -4,7 +4,7 @@ weight: 30
 description: Prefix-rewriting when routing to upstreams
 ---
 
-[PrefixRewrite]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto.sk#prefixrewrite" >}})
+[PrefixRewrite]({{< protobuf name="gloo.solo.io.RoutePlugins" >}})
 is a route feature that allows you to replace (rewrite) the matched request path with a specified value before sending it upstream.
 
 Routes are processed in order, so the first matching request path is the only one that will be processed.
