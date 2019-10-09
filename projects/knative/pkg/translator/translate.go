@@ -145,11 +145,11 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 				}
 
 				route := &gloov1.Route{
-					Matcher: &gloov1.Matcher{
+					Matchers: []*gloov1.Matcher{{
 						PathSpecifier: &gloov1.Matcher_Regex{
 							Regex: pathRegex,
 						},
-					},
+					}},
 					Action: &gloov1.Route_RouteAction{
 						RouteAction: action,
 					},

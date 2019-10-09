@@ -188,9 +188,10 @@ message VirtualHost {
 *
 */
 message Route {
-    // The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.)
+    // Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
+    // If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
     // For delegated routes, the matcher must contain only a `prefix` path matcher and no other config
-    gloo.solo.io.Matcher matcher = 1;
+    repeated gloo.solo.io.Matcher matchers = 1;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {

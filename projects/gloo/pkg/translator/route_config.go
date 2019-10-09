@@ -93,8 +93,8 @@ func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtua
 			VirtualHost:       virtualHost,
 		}
 		routeReport := vhostReport.RouteReports[i]
-		envoyRoute := t.envoyRoute(routeParams, routeReport, route)
-		envoyRoutes = append(envoyRoutes, envoyRoute)
+		computedRoutes := t.envoyRoutes(routeParams, routeReport, route)
+		envoyRoutes = append(envoyRoutes, computedRoutes...)
 	}
 	domains := virtualHost.Domains
 	if len(domains) == 0 || (len(domains) == 1 && domains[0] == "") {
@@ -130,47 +130,55 @@ func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtua
 	return out
 }
 
-func (t *translator) envoyRoute(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route) envoyroute.Route {
-	out := &envoyroute.Route{}
+func (t *translator) envoyRoutes(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route) []envoyroute.Route {
 
-	setMatch(in, routeReport, out)
+	out := setMatch(in, routeReport)
 
-	t.setAction(params, routeReport, in, out)
+	for i := range in.Matchers {
+		t.setAction(params, routeReport, in, &out[i])
+	}
 
-	return *out
+	return out
 }
 
-func setMatch(in *v1.Route, routeReport *validationapi.RouteReport, out *envoyroute.Route) {
+func setMatch(in *v1.Route, routeReport *validationapi.RouteReport) []envoyroute.Route {
+	out := make([]envoyroute.Route, len(in.Matchers))
 
-	if in.Matcher == nil {
-		validation.AppendRouteError(routeReport,
-			validationapi.RouteReport_Error_InvalidMatcherError,
-			"no matcher provided",
-		)
-	}
-	if in.Matcher.PathSpecifier == nil {
-		validation.AppendRouteError(routeReport,
-			validationapi.RouteReport_Error_InvalidMatcherError,
-			"no path specifier provided",
-		)
-	}
-	match := envoyroute.RouteMatch{
-		Headers:         envoyHeaderMatcher(in.Matcher.Headers),
-		QueryParameters: envoyQueryMatcher(in.Matcher.QueryParameters),
-	}
-	if len(in.Matcher.Methods) > 0 {
-		match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
-			Name: ":method",
-			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_RegexMatch{
-				RegexMatch: strings.Join(in.Matcher.Methods, "|"),
+	if len(in.Matchers) == 0 {
+		out = []envoyroute.Route{
+			{
+				Match: envoyroute.RouteMatch{
+					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix: "/"},
+				},
 			},
-		})
+		}
 	}
-	// need to do this because Go's proto implementation makes oneofs private
-	// which genius thought of that?
-	setEnvoyPathMatcher(in.Matcher, &match)
+	for i, matcher := range in.Matchers {
+		if matcher.PathSpecifier == nil {
+			validation.AppendRouteError(routeReport,
+				validationapi.RouteReport_Error_InvalidMatcherError,
+				"no path specifier provided",
+			)
+		}
+		match := envoyroute.RouteMatch{
+			Headers:         envoyHeaderMatcher(matcher.Headers),
+			QueryParameters: envoyQueryMatcher(matcher.QueryParameters),
+		}
+		if len(matcher.Methods) > 0 {
+			match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
+				Name: ":method",
+				HeaderMatchSpecifier: &envoyroute.HeaderMatcher_RegexMatch{
+					RegexMatch: strings.Join(matcher.Methods, "|"),
+				},
+			})
+		}
+		// need to do this because Go's proto implementation makes oneofs private
+		// which genius thought of that?
+		setEnvoyPathMatcher(matcher, &match)
 
-	out.Match = match
+		out[i].Match = match
+	}
+	return out
 }
 
 func (t *translator) setAction(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route, out *envoyroute.Route) {

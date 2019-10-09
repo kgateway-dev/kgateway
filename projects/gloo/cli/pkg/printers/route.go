@@ -71,24 +71,37 @@ func RouteTable(list []*v1.Route, w io.Writer) {
 
 func routeDefaultTable(w io.Writer, customHeaders []string) *tablewriter.Table {
 	table := tablewriter.NewWriter(w)
-	headers := []string{"Id", "Matcher", "Type", "Verb", "Header", "Action"}
+	headers := []string{"Id", "Matchers", "Types", "Verbs", "Headers", "Action"}
 	table.SetHeader(append(headers, customHeaders...))
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	return table
 }
 
 func routeDefaultTableRow(r *v1.Route, index int, customItems []string) []string {
-	matcher, rType, verb, headers := Matcher(r)
+	matcher, rType, verb, headers := Matchers(r.Matchers)
 	act := Action(r)
 	defaultRow := []string{strconv.Itoa(index + 1), matcher, rType, verb, headers, act}
 	return append(defaultRow, customItems...)
 }
 
 // Matcher extracts the parts of the matcher in the given route
-func Matcher(r *v1.Route) (string, string, string, string) {
+func Matchers(ms []*gloov1.Matcher) (string, string, string, string) {
+	var matchers, rTypes, verbs, headers []string
+	for _, m := range ms {
+		matcher, rType, verb, header := Matcher(m)
+		matchers = append(matchers, matcher)
+		rTypes = append(rTypes, rType)
+		verbs = append(verbs, verb)
+		headers = append(headers, header)
+	}
+	return strings.Join(matchers, "\n"), strings.Join(rTypes, "\n"), strings.Join(verbs, "\n"), strings.Join(headers, "\n")
+}
+
+// Matcher extracts the parts of the matcher in the given route
+func Matcher(m *gloov1.Matcher) (string, string, string, string) {
 	var path string
 	var rType string
-	switch p := r.Matcher.PathSpecifier.(type) {
+	switch p := m.PathSpecifier.(type) {
 	case *gloov1.Matcher_Exact:
 		path = p.Exact
 		rType = "Exact Path"
@@ -103,13 +116,13 @@ func Matcher(r *v1.Route) (string, string, string, string) {
 		rType = "Unknown"
 	}
 	verb := "*"
-	if r.Matcher.Methods != nil {
-		verb = strings.Join(r.Matcher.Methods, " ")
+	if m.Methods != nil {
+		verb = strings.Join(m.Methods, " ")
 	}
 	headers := ""
-	if r.Matcher.Headers != nil {
+	if m.Headers != nil {
 		builder := bytes.Buffer{}
-		for _, v := range r.Matcher.Headers {
+		for _, v := range m.Headers {
 			header := *v
 			builder.WriteString(string(header.Name))
 			builder.WriteString(":")

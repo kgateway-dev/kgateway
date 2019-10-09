@@ -133,7 +133,7 @@ var _ = Describe("Translator", func() {
 			},
 		}
 		routes = []*v1.Route{{
-			Matcher: matcher,
+			Matchers: []*v1.Matcher{matcher},
 			Action: &v1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
@@ -379,13 +379,54 @@ var _ = Describe("Translator", func() {
 			Expect(regex).To(Equal("testvalue"))
 		})
 
+		It("should default to '/' prefix matcher if none is provided", func() {
+			matcher = nil
+			translate()
+
+			prefix := routeConfiguration.VirtualHosts[0].Routes[0].Match.GetPrefix()
+			Expect(prefix).To(Equal("/"))
+		})
+
+		Context("Multiple matchers", func() {
+			BeforeEach(func() {
+				routes[0].Matchers = []*v1.Matcher{
+					{
+						PathSpecifier: &v1.Matcher_Prefix{
+							Prefix: "/foo",
+						},
+					},
+					{
+						PathSpecifier: &v1.Matcher_Prefix{
+							Prefix: "/bar",
+						},
+					},
+				}
+			})
+
+			It("should translate multiple matchers on a single Gloo route to multiple Envoy routes", func() {
+				translate()
+				fooPrefix := routeConfiguration.VirtualHosts[0].Routes[0].Match.GetPrefix()
+				barPrefix := routeConfiguration.VirtualHosts[0].Routes[1].Match.GetPrefix()
+
+				Expect(fooPrefix).To(Equal("/foo"))
+				Expect(barPrefix).To(Equal("/bar"))
+
+				// the routes should be otherwise identical. wipe the matchers and compare them
+				fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
+				barRoute := routeConfiguration.VirtualHosts[0].Routes[1]
+				fooRoute.Match = envoyrouteapi.RouteMatch{}
+				barRoute.Match = envoyrouteapi.RouteMatch{}
+
+				Expect(fooRoute).To(Equal(barRoute))
+			})
+		})
+
 	})
 
 	Context("Health check config", func() {
 		It("will error if required field is nil", func() {
 			upstream.UpstreamSpec.HealthChecks = []*envoycore.HealthCheck{
 				{
-					// Timeout:  &defaultTimeout,
 					Interval: &DefaultHealthCheckInterval,
 				},
 			}
@@ -645,7 +686,7 @@ var _ = Describe("Translator", func() {
 			}
 			ref := upstreamGroup.Metadata.Ref()
 			routes = []*v1.Route{{
-				Matcher: matcher,
+				Matchers: []*v1.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_UpstreamGroup{
@@ -773,7 +814,7 @@ var _ = Describe("Translator", func() {
 			}
 
 			routes = []*v1.Route{{
-				Matcher: matcher,
+				Matchers: []*v1.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -851,7 +892,7 @@ var _ = Describe("Translator", func() {
 
 			BeforeEach(func() {
 				routes = []*v1.Route{{
-					Matcher: matcher,
+					Matchers: []*v1.Matcher{matcher},
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_Single{
@@ -891,7 +932,7 @@ var _ = Describe("Translator", func() {
 
 			BeforeEach(func() {
 				routes = []*v1.Route{{
-					Matcher: matcher,
+					Matchers: []*v1.Matcher{matcher},
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_Single{
@@ -987,7 +1028,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			routes = []*v1.Route{{
-				Matcher: matcher,
+				Matchers: []*v1.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -1140,7 +1181,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			routes = []*v1.Route{{
-				Matcher: matcher,
+				Matchers: []*v1.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{

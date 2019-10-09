@@ -181,7 +181,7 @@ func routeList(routeList []*v1.Route) []string {
 	}
 	var routes []string
 	for _, route := range routeList {
-		routes = append(routes, fmt.Sprintf("%v -> %v", matcherString(route.Matcher), destinationString(route)))
+		routes = append(routes, fmt.Sprintf("%v -> %v", matchersString(route.Matchers), destinationString(route)))
 	}
 	return routes
 }
@@ -192,6 +192,14 @@ func vhPlugins(v *v1.VirtualService) string {
 		// TODO: fill this when there are vhost plugins
 	}
 	return pluginStr
+}
+
+func matchersString(matchers []*gloov1.Matcher) string {
+	var matchersStrings []string
+	for _, matcher := range matchers {
+		matchersStrings = append(matchersStrings, matcherString(matcher))
+	}
+	return strings.Join(matchersStrings, ", ")
 }
 
 func matcherString(matcher *gloov1.Matcher) string {

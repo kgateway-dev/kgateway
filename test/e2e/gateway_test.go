@@ -284,11 +284,11 @@ func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 		VirtualHost: &gatewayv1.VirtualHost{
 			Domains: []string{"*"},
 			Routes: []*gatewayv1.Route{{
-				Matcher: &gloov1.Matcher{
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
-				},
+				}},
 				Action: &gatewayv1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{

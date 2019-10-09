@@ -35,7 +35,7 @@ var _ = Describe("Validator", func() {
 	})
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil)
-		Expect(err).To(MatchError("validation is yet not available. Waiting for first snapshot"))
+		Expect(err).To(MatchError(NotReadyErr))
 		err = v.Sync(nil, &v2.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -218,7 +218,7 @@ var _ = Describe("Validator", func() {
 				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
-		Context("no gateways for virtualservice", func() {
+		Context("no gateways for virtual service", func() {
 			It("accepts the vs", func() {
 				vc.validateProxy = failProxy
 				us := samples.SimpleUpstream()

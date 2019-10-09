@@ -22,7 +22,7 @@ var _ = Describe("Remove Route", func() {
 		helpers.UseMemoryClients()
 	})
 
-	It("should remove a route from a virtualservice", func() {
+	It("should remove a route from a virtual service", func() {
 		vs, err := helpers.MustVirtualServiceClient().Write(&gatewayv1.VirtualService{
 			Metadata: core.Metadata{Namespace: "gloo-system", Name: "tacos"},
 			VirtualHost: &gatewayv1.VirtualHost{

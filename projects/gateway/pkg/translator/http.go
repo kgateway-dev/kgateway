@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/solo-io/go-utils/errors"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -114,7 +116,7 @@ func validateAndMergeVirtualServices(gateway *v2.Gateway, virtualServices v1.Vir
 		glooutils.SortGatewayRoutesByPath(routes)
 
 		ref := core.Metadata{
-			// name shouldnt matter as it this object is ephemeral.
+			// name shouldn't matter as it this object is ephemeral.
 			Name:      getMergedName(k),
 			Namespace: ns,
 		}
@@ -278,8 +280,12 @@ type routeVisitor struct {
 }
 
 func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours *v1.Route, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
+	if ours.Matchers == nil || len(ours.Matchers) == 0 {
+		ours.Matchers = []*gloov1.Matcher{defaults.DefaultMatcher()}
+	}
+
 	route := &gloov1.Route{
-		Matcher:      ours.Matcher,
+		Matchers:     ours.Matchers,
 		RoutePlugins: ours.RoutePlugins,
 	}
 	switch action := ours.Action.(type) {
@@ -302,9 +308,9 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 }
 
 var (
-	missingPrefixErr    = errors.New("invalid route: routes with delegate actions must specify a prefix matcher")
+	matcherCountErr     = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
+	missingPrefixErr    = errors.New("invalid route: routes with delegate actions must use a prefix matcher")
 	invalidPrefixErr    = errors.New("invalid route: routes within the route table must begin with the prefix of their parent")
-	invalidMatcherErr   = errors.New("invalid route: matcher cannot be missing")
 	hasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
 	hasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
 	hasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
@@ -323,21 +329,9 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		return nil, noDelegateActionErr
 	}
 
-	matcher := route.GetMatcher()
-
-	prefix := matcher.GetPrefix()
-	if prefix == "" {
-		return nil, missingPrefixErr
-	}
-
-	if len(matcher.GetHeaders()) > 0 {
-		return nil, hasHeaderMatcherErr
-	}
-	if len(matcher.GetMethods()) > 0 {
-		return nil, hasMethodMatcherErr
-	}
-	if len(matcher.GetQueryParameters()) > 0 {
-		return nil, hasQueryMatcherErr
+	delegatePrefix, err := getFirstPrefixMatcher(route)
+	if err != nil {
+		return nil, err
 	}
 
 	// missing refs should only result in a warning
@@ -373,15 +367,14 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		}
 		routeTableRoute.RoutePlugins = merged
 
-		match := routeTableRoute.GetMatcher()
-		if match == nil {
-			reports.AddError(routingResource, invalidMatcherErr)
+		match, err := getFirstMatcher(routeTableRoute)
+		if err != nil {
+			reports.AddError(routingResource, err)
 			continue
 		}
-
 		// ensure all subroutes in the delegated route table match the parent prefix
-		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, prefix) {
-			err = errors.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", prefix, pathString)
+		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, delegatePrefix) {
+			err = errors.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
 			reports.AddError(routingResource, err)
 			continue
 		}
@@ -400,4 +393,50 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 	}
 
 	return delegatedRoutes, nil
+}
+
+func getFirstPrefixMatcher(route *v1.Route) (string, error) {
+	switch {
+	case route.GetMatchers() == nil || len(route.GetMatchers()) == 0:
+		return defaults.DefaultMatcher().GetPrefix(), nil
+	case len(route.GetMatchers()) == 1:
+		matcher := route.GetMatchers()[0]
+		var prefix string
+		if len(matcher.GetHeaders()) > 0 {
+			return prefix, hasHeaderMatcherErr
+		}
+		if len(matcher.GetMethods()) > 0 {
+			return prefix, hasMethodMatcherErr
+		}
+		if len(matcher.GetQueryParameters()) > 0 {
+			return prefix, hasQueryMatcherErr
+		}
+		if matcher.GetPathSpecifier() == nil {
+			return defaults.DefaultMatcher().GetPrefix(), nil // no path specifier provided, default to '/' prefix matcher
+		}
+		prefix = matcher.GetPrefix()
+		if prefix == "" {
+			return prefix, missingPrefixErr
+		}
+		return prefix, nil
+	case len(route.GetMatchers()) > 1:
+		return "", matcherCountErr
+	}
+	return "", errors.New("internal error: getFirstPrefixMatcher() called on malformed route") // should not happen
+}
+
+func getFirstMatcher(route *v1.Route) (*gloov1.Matcher, error) {
+	switch {
+	case route.GetMatchers() == nil || len(route.GetMatchers()) == 0:
+		return defaults.DefaultMatcher(), nil
+	case len(route.GetMatchers()) == 1:
+		matcher := route.GetMatchers()[0]
+		if matcher.GetPathSpecifier() == nil {
+			return defaults.DefaultMatcher(), nil // no path specifier provided, default to '/' prefix matcher
+		}
+		return matcher, nil
+	case len(route.GetMatchers()) > 1:
+		return nil, matcherCountErr
+	}
+	return nil, errors.New("internal error: getFirstMatcher() called on malformed route") // should not happen
 }

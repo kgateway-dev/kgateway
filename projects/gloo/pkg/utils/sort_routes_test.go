@@ -96,7 +96,7 @@ var _ = Describe("PathAsString", func() {
 			Expect(expectedRoutes).To(Equal(sortedRoutes))
 		}
 
-		for i, unsortedRoutes := range [][]*v1.Route{
+		for _, unsortedRoutes := range [][]*v1.Route{
 			makeSortedRoutes(),
 			makeUnSortedRoutesWrongPriority(),
 			makeUnSortedRoutesWrongPaths1(),
@@ -107,7 +107,48 @@ var _ = Describe("PathAsString", func() {
 		} {
 			SortRoutesByPath(unsortedRoutes)
 			Expect(unsortedRoutes).To(Equal(makeSortedRoutes()))
-			Expect(i).To(Equal(i))
+		}
+	})
+
+	// Creates a slice of routes, each with two matchers. The second matcher is always the "greater" one
+	// in this test to make sure we actually traverse the slice to find the largest matcher on each route
+	makeSortedMultiMatcherRoutes := func() []*v1.Route {
+		var routes []*v1.Route
+		for _, path := range []int{helpers.ExactPath, helpers.RegexPath, helpers.PrefixPath} {
+			for _, length := range []int{3, 2, 1} {
+				routes = append(routes, helpers.MakeMultiMatcherRoute((path+1)%3, length, path, length+3))
+			}
+		}
+		return routes
+	}
+
+	makeMultiMatcherRoutesWrongPathPriority := func() []*v1.Route {
+		var routes []*v1.Route
+		for _, path := range []int{helpers.ExactPath, helpers.PrefixPath, helpers.RegexPath} {
+			for _, length := range []int{3, 2, 1} {
+				routes = append(routes, helpers.MakeMultiMatcherRoute((path+1)%3, length, path, length+3))
+			}
+		}
+		return routes
+	}
+
+	It("sorts the routes by longest matcher found on the route", func() {
+		sortedRoutes := makeSortedMultiMatcherRoutes()
+		expectedRoutes := makeSortedMultiMatcherRoutes()
+		for count := 0; count < 100; count++ {
+			rand.Shuffle(len(expectedRoutes), func(i, j int) {
+				expectedRoutes[i], expectedRoutes[j] = expectedRoutes[j], expectedRoutes[i]
+			})
+			SortRoutesByPath(expectedRoutes)
+			Expect(expectedRoutes).To(Equal(sortedRoutes))
+		}
+
+		for _, unsortedRoutes := range [][]*v1.Route{
+			makeSortedMultiMatcherRoutes(),
+			makeMultiMatcherRoutesWrongPathPriority(),
+		} {
+			SortRoutesByPath(unsortedRoutes)
+			Expect(unsortedRoutes).To(Equal(makeSortedMultiMatcherRoutes()))
 		}
 	})
 })

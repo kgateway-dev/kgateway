@@ -33,12 +33,13 @@ var _ = Describe("Extauth", func() {
 			},
 			VirtualHost: &gatewayv1.VirtualHost{
 				Routes: []*gatewayv1.Route{{
-					Matcher: &v1.Matcher{
+					//TODO(kdorosh) we can probably simplify this
+					Matchers: []*v1.Matcher{{
 						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/"},
-					}}, {
-					Matcher: &v1.Matcher{
+					}}}, {
+					Matchers: []*v1.Matcher{{
 						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/r"},
-					}},
+					}}},
 				},
 			},
 		}

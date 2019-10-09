@@ -3,6 +3,7 @@ package surveyutils
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -321,7 +322,7 @@ func SelectRouteFromVirtualServiceInteractive(vs *gatewayv1.VirtualService, rout
 
 	var routes []string
 	for i, r := range vs.VirtualHost.Routes {
-		routes = append(routes, fmt.Sprintf("%v: %+v", i, r.Matcher.PathSpecifier))
+		routes = append(routes, fmt.Sprintf("%v: %+v", i, matchersString(r.Matchers)))
 	}
 
 	var chosenRoute string
@@ -339,6 +340,14 @@ func SelectRouteFromVirtualServiceInteractive(vs *gatewayv1.VirtualService, rout
 	}
 
 	return 0, errors.Errorf("can't find route")
+}
+
+func matchersString(matchers []*v1.Matcher) string {
+	var matchersStrings []string
+	for _, matcher := range matchers {
+		matchersStrings = append(matchersStrings, fmt.Sprintf("%+v", matcher))
+	}
+	return strings.Join(matchersStrings, ", ")
 }
 
 func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt string) (*gatewayv1.VirtualService, error) {

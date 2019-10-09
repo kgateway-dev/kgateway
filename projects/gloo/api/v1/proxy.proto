@@ -161,8 +161,9 @@ message VirtualHost {
  * Routes declare the entry points on virtual hosts and the action to take for matched requests.
  */
 message Route {
-    // The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.)
-    Matcher matcher = 1;
+    // Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
+    // If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
+    repeated Matcher matchers = 1;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {

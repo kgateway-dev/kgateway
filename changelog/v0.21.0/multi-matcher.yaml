@@ -1,0 +1,8 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Add support for multiple matchers on a Gateway/Gloo Route to reduce user duplication in yaml/user code. Also
+      allows users to omit matchers on routes (the `/` prefix matcher will be used) to allow all requests to match the
+      route.
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

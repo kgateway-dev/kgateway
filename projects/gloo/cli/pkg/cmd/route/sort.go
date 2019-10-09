@@ -22,7 +22,7 @@ func Sort(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Com
 		Aliases: []string{"s"},
 		Short:   "sort routes on an existing virtual service",
 		Long: "The order of routes matters. A route is selected for a request based on the first matching route " +
-			"matcher in the virtual serivce's list. sort automatically sorts the routes in the virtual service" +
+			"matcher in the virtual service's list. Sort automatically sorts the routes in the virtual service" +
 			"\n\n" +
 			"Usage: `glooctl route sort [--name virtual-service-name] [--namespace virtual-service-namespace]`",
 		PreRunE: func(cmd *cobra.Command, args []string) error {

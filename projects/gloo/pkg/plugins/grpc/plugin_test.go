@@ -85,9 +85,11 @@ var _ = Describe("Plugin", func() {
 
 			var routeParams plugins.RouteParams
 			routeIn := &v1.Route{
-				Matcher: &v1.Matcher{
-					PathSpecifier: &v1.Matcher_Prefix{
-						Prefix: "/",
+				Matchers: []*v1.Matcher{
+					{
+						PathSpecifier: &v1.Matcher_Prefix{
+							Prefix: "/",
+						},
 					},
 				},
 				Action: &v1.Route_RouteAction{

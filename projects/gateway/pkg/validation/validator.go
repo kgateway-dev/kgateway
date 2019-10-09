@@ -28,7 +28,7 @@ import (
 type ProxyReports []*validation.ProxyReport
 
 var (
-	NotReadyErr = errors.Errorf("validation is yet not available. Waiting for first snapshot")
+	NotReadyErr = errors.Errorf("validation is not yet available. Waiting for first snapshot")
 
 	RouteTableDeleteErr = func(parentVirtualServices, parentRouteTables []core.ResourceRef) error {
 		return errors.Errorf("Deletion blocked because active Routes delegate to this Route Table. Remove delegate actions to this route table from the virtual services: %v and the route tables: %v, then try again", parentVirtualServices, parentRouteTables)

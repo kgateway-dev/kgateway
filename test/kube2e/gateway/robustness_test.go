@@ -118,11 +118,11 @@ var _ = Describe("Robustness tests", func() {
 				Domains: []string{"*"},
 				Routes: []*gatewayv1.Route{
 					{
-						Matcher: &gloov1.Matcher{
+						Matchers: []*gloov1.Matcher{{
 							PathSpecifier: &gloov1.Matcher_Prefix{
 								Prefix: "/1",
 							},
-						},
+						}},
 						Action: &gatewayv1.Route_RouteAction{
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
@@ -176,11 +176,11 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
-			Matcher: &gloov1.Matcher{
+			Matchers: []*gloov1.Matcher{{
 				PathSpecifier: &gloov1.Matcher_Prefix{
 					Prefix: "/3",
 				},
-			},
+			}},
 			Action: &gatewayv1.Route_RouteAction{
 				RouteAction: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{

@@ -172,11 +172,12 @@ var _ = Describe("AWS Lambda", func() {
 							Name:    "virt1",
 							Domains: []string{"*"},
 							Routes: []*gloov1.Route{{
-								Matcher: &gloov1.Matcher{
+								// TODO(kdorosh) should be able to delete here
+								Matchers: []*gloov1.Matcher{{
 									PathSpecifier: &gloov1.Matcher_Prefix{
 										Prefix: "/",
 									},
-								},
+								}},
 								Action: &gloov1.Route_RouteAction{
 									RouteAction: &gloov1.RouteAction{
 										Destination: &gloov1.RouteAction_Single{
@@ -228,11 +229,12 @@ var _ = Describe("AWS Lambda", func() {
 							Name:    "virt1",
 							Domains: []string{"*"},
 							Routes: []*gloov1.Route{{
-								Matcher: &gloov1.Matcher{
+								// TODO(kdorosh) should be able to delete here
+								Matchers: []*gloov1.Matcher{{
 									PathSpecifier: &gloov1.Matcher_Prefix{
 										Prefix: "/",
 									},
-								},
+								}},
 								Action: &gloov1.Route_RouteAction{
 									RouteAction: &gloov1.RouteAction{
 										Destination: &gloov1.RouteAction_Single{
@@ -278,11 +280,12 @@ var _ = Describe("AWS Lambda", func() {
 			VirtualHost: &gw1.VirtualHost{
 				Domains: []string{"*"},
 				Routes: []*gw1.Route{{
-					Matcher: &gloov1.Matcher{
+					// TODO(kdorosh) should be able to delete here
+					Matchers: []*gloov1.Matcher{{
 						PathSpecifier: &gloov1.Matcher_Prefix{
 							Prefix: "/",
 						},
-					},
+					}},
 					Action: &gw1.Route_RouteAction{
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{

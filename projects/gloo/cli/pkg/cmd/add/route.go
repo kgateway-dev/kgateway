@@ -34,7 +34,7 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 			"The order of routes within a Virtual Service matters. The first route in the virtual service " +
 			"that matches a given request will be selected for routing. \n\n" +
 			"If no virtual service is specified for this command, glooctl add route will attempt to add it to a " +
-			"default virtualservice with domain '*'. if one does not exist, it will be created for you.\n\n" +
+			"default virtual service with domain '*'. if one does not exist, it will be created for you.\n\n" +
 			"" +
 			"Usage: `glooctl add route [--name virtual-service-name] [--namespace namespace] [--index x] ...`",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -68,7 +68,7 @@ func addRoute(opts *options.Options) error {
 	}
 
 	v1Route := &gatewayv1.Route{
-		Matcher:      match,
+		Matchers:     []*v1.Matcher{match}, // currently we only support adding a single matcher via glooctl
 		RoutePlugins: plugins,
 	}
 

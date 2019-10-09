@@ -11,26 +11,22 @@ const (
 	RegexPath
 )
 
-func MakeRoute(pathType int, length int) *v1.Route {
-	pathStr := "/"
-	for i := 0; i < length; i++ {
-		pathStr += "s/"
-	}
-	m := &v1.Matcher{}
-	switch pathType {
-	case ExactPath:
-		m.PathSpecifier = &v1.Matcher_Exact{pathStr}
-	case PrefixPath:
-		m.PathSpecifier = &v1.Matcher_Prefix{pathStr}
-	case RegexPath:
-		m.PathSpecifier = &v1.Matcher_Regex{pathStr}
-	default:
-		panic("bad test")
-	}
-	return &v1.Route{Matcher: m}
+func MakeMultiMatcherRoute(pathType1, length1, pathType2, length2 int) *v1.Route {
+	return &v1.Route{Matchers: []*v1.Matcher{
+		makeMatcher(pathType1, length1),
+		makeMatcher(pathType2, length2),
+	}}
 }
 
-func MakeGatewayRoute(pathType int, length int) *gatwayv1.Route {
+func MakeRoute(pathType, length int) *v1.Route {
+	return &v1.Route{Matchers: []*v1.Matcher{makeMatcher(pathType, length)}}
+}
+
+func MakeGatewayRoute(pathType, length int) *gatwayv1.Route {
+	return &gatwayv1.Route{Matchers: []*v1.Matcher{makeMatcher(pathType, length)}}
+}
+
+func makeMatcher(pathType, length int) *v1.Matcher {
 	pathStr := "/"
 	for i := 0; i < length; i++ {
 		pathStr += "s/"
@@ -46,5 +42,5 @@ func MakeGatewayRoute(pathType int, length int) *gatwayv1.Route {
 	default:
 		panic("bad test")
 	}
-	return &gatwayv1.Route{Matcher: m}
+	return m
 }

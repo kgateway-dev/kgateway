@@ -211,7 +211,7 @@ If a request is not matched to any virtual host or a route therein, the target p
 Routes declare the entry points on virtual hosts and the action to take for matched requests.
 
 ```yaml
-"matcher": .gloo.solo.io.Matcher
+"matchers": []gloo.solo.io.Matcher
 "routeAction": .gloo.solo.io.RouteAction
 "redirectAction": .gloo.solo.io.RedirectAction
 "directResponseAction": .gloo.solo.io.DirectResponseAction
@@ -222,7 +222,7 @@ Routes declare the entry points on virtual hosts and the action to take for matc
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk#matcher) | The matcher contains parameters for matching requests (i.e.: based on HTTP path, headers, etc.). |  |
+| `matchers` | [[]gloo.solo.io.Matcher](../proxy.proto.sk#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher). |  |
 | `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, or `directResponseAction` can be set. |  |
 | `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, or `directResponseAction` can be set. |  |
 | `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, or `redirectAction` can be set. |  |

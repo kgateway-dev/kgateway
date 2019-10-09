@@ -7,6 +7,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -21,13 +22,7 @@ var _ = Describe("VirtualService", func() {
 	})
 
 	getVs := func() *gatewayv1.VirtualService {
-		upstream := &gloov1.Upstream{
-			Metadata: core.Metadata{
-				Namespace: defaults.GlooSystem,
-				Name:      "us",
-			},
-		}
-
+		upstream := samples.SimpleUpstream()
 		return &gatewayv1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "default",
@@ -37,8 +32,9 @@ var _ = Describe("VirtualService", func() {
 				Domains: []string{"*"},
 				Routes: []*gatewayv1.Route{
 					{
-						Matcher: &gloov1.Matcher{
-							PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/"},
+						Matchers: []*gloov1.Matcher{
+							{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/foo"}},
+							{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/bar"}},
 						},
 						Action: &gatewayv1.Route_RouteAction{
 							RouteAction: &gloov1.RouteAction{
@@ -69,11 +65,12 @@ var _ = Describe("VirtualService", func() {
 			Expect(out).To(Equal(`+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS  | LISTENERPLUGINS |             ROUTES             |
 +-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
-| default         |              | *       | none | Pending |                 | / -> gloo-system.us (upstream) |
+| default         |              | *       | none | Pending |                 | /foo, /bar -> gloo-system.test |
+|                 |              |         |      |         |                 | (upstream)                     |
 +-----------------+--------------+---------+------+---------+-----------------+--------------------------------+`))
 		})
 
-		It("gets the virtual service", func() {
+		It("gets the virtual service routes", func() {
 			vsc := helpers.MustVirtualServiceClient()
 			_, err := vsc.Write(getVs(), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -81,11 +78,12 @@ var _ = Describe("VirtualService", func() {
 			out, err := testutils.GlooctlOut("get vs route default")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`Route Action
-+----+---------+-------------+------+--------+--------------+---------+---------+
-| ID | MATCHER |    TYPE     | VERB | HEADER |    ACTION    | CUSTOM1 | CUSTOM2 |
-+----+---------+-------------+------+--------+--------------+---------+---------+
-| 1  | /       | Path Prefix | *    |        | route action |
-+----+---------+-------------+------+--------+--------------+---------+---------+`))
++----+----------+-------------+-------+---------+--------------+---------+---------+
+| ID | MATCHERS |    TYPES    | VERBS | HEADERS |    ACTION    | CUSTOM1 | CUSTOM2 |
++----+----------+-------------+-------+---------+--------------+---------+---------+
+| 1  | /foo     | Path Prefix | *     |         | route action |
+|    | /bar     | Path Prefix | *     |         |              |
++----+----------+-------------+-------+---------+--------------+---------+---------+`))
 		})
 	})
 })

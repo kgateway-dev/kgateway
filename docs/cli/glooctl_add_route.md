@@ -10,7 +10,7 @@ Add a Route to a Virtual Service
 
 Routes match patterns on requests and indicate the type of action to take when a proxy receives a matching request. Requests can be broken down into their Match and Action components. The order of routes within a Virtual Service matters. The first route in the virtual service that matches a given request will be selected for routing. 
 
-If no virtual service is specified for this command, glooctl add route will attempt to add it to a default virtualservice with domain '*'. if one does not exist, it will be created for you.
+If no virtual service is specified for this command, glooctl add route will attempt to add it to a default virtual service with domain '*'. if one does not exist, it will be created for you.
 
 Usage: `glooctl add route [--name virtual-service-name] [--namespace namespace] [--index x] ...`
 

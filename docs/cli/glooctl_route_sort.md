@@ -8,7 +8,7 @@ sort routes on an existing virtual service
 
 ### Synopsis
 
-The order of routes matters. A route is selected for a request based on the first matching route matcher in the virtual serivce's list. sort automatically sorts the routes in the virtual service
+The order of routes matters. A route is selected for a request based on the first matching route matcher in the virtual service's list. Sort automatically sorts the routes in the virtual service
 
 Usage: `glooctl route sort [--name virtual-service-name] [--namespace virtual-service-namespace]`
 

@@ -271,11 +271,12 @@ func makeSslVirtualService(secret core.ResourceRef) *v1.VirtualService {
 		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
 			Routes: []*v1.Route{{
-				Matcher: &gloov1.Matcher{
+				// TODO(kdorosh) should be able to delete here
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
-				},
+				}},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{
@@ -312,11 +313,12 @@ func makeFunctionRoutingVirtualService(upstream core.ResourceRef, funcName strin
 		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
 			Routes: []*v1.Route{{
-				Matcher: &gloov1.Matcher{
+				// TODO(kdorosh) should be able to delete here
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
-				},
+				}},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{

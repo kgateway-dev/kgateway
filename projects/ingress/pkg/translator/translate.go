@@ -165,11 +165,11 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 					pathRegex = ".*"
 				}
 				route := &gloov1.Route{
-					Matcher: &gloov1.Matcher{
+					Matchers: []*gloov1.Matcher{{
 						PathSpecifier: &gloov1.Matcher_Regex{
 							Regex: pathRegex,
 						},
-					},
+					}},
 					Action: &gloov1.Route_RouteAction{
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{
@@ -230,7 +230,8 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 
 func sortByLongestPathName(routes []*gloov1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		return routes[i].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex > routes[j].Matcher.PathSpecifier.(*gloov1.Matcher_Regex).Regex
+		// TODO(kdorosh) fix function here :/
+		return routes[i].Matchers[0].PathSpecifier.(*gloov1.Matcher_Regex).Regex > routes[j].Matchers[0].PathSpecifier.(*gloov1.Matcher_Regex).Regex
 	})
 }
 

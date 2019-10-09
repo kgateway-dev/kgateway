@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSurveyutils(t *testing.T) {
+func TestSurveyUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Surveyutils Suite")
+	RunSpecs(t, "SurveyUtils Suite")
 }

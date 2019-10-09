@@ -183,11 +183,12 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matcher: &gloov1.Matcher{
+											// TODO(kdorosh) should be able to delete here
+											Matchers: []*gloov1.Matcher{{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
 												},
-											},
+											}},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Multi{
@@ -244,11 +245,11 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matcher: &gloov1.Matcher{
+											Matchers: []*gloov1.Matcher{{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/hay",
 												},
-											},
+											}},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Multi{
@@ -314,11 +315,12 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matcher: &gloov1.Matcher{
+											// TODO(kdorosh) should be able to delete here
+											Matchers: []*gloov1.Matcher{{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
 												},
-											},
+											}},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Multi{

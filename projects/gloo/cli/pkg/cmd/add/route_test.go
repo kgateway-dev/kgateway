@@ -48,7 +48,7 @@ var _ = Describe("Routes", func() {
 
 		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
 		Expect(vs.Metadata.Name).To(Equal("default"))
-		parameters := vs.VirtualHost.Routes[0].Matcher.Headers
+		parameters := vs.VirtualHost.Routes[0].Matchers[0].Headers
 		Expect(parameters[0].Name).To(Equal("param1"))
 		Expect(parameters[0].Value).To(Equal("value1"))
 		Expect(parameters[1].Name).To(Equal("param2"))
@@ -63,7 +63,7 @@ var _ = Describe("Routes", func() {
 
 		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
 		Expect(vs.Metadata.Name).To(Equal("default"))
-		parameters := vs.VirtualHost.Routes[0].Matcher.QueryParameters
+		parameters := vs.VirtualHost.Routes[0].Matchers[0].QueryParameters
 		Expect(parameters[0].Name).To(Equal("param1"))
 		Expect(parameters[0].Value).To(Equal("value1"))
 		Expect(parameters[1].Name).To(Equal("param2"))
@@ -79,11 +79,11 @@ var _ = Describe("Routes", func() {
 		rt, err := helpers.MustRouteTableClient().Read("gloo-system", "my-routes", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(rt.Routes[0]).To(Equal(&v1.Route{
-			Matcher: &gloov1.Matcher{
+			Matchers: []*gloov1.Matcher{{
 				PathSpecifier: &gloov1.Matcher_Exact{
 					Exact: "/sample-route-a",
 				},
-			},
+			}},
 			Action: &v1.Route_RouteAction{
 				RouteAction: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{
@@ -109,11 +109,11 @@ var _ = Describe("Routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.GetVirtualHost().GetRoutes()).To(Equal([]*v1.Route{
 			{
-				Matcher: &gloov1.Matcher{
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/a",
 					},
-				},
+				}},
 				Action: &v1.Route_DelegateAction{
 					DelegateAction: &core.ResourceRef{
 						Name:      "my-delegate",

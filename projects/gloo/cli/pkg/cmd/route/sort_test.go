@@ -21,7 +21,7 @@ var _ = Describe("Sort", func() {
 		helpers.UseMemoryClients()
 	})
 
-	It("should sort the routes on a virtualservice", func() {
+	It("should sort the routes on a virtual service", func() {
 		sortedRoutes := func() []*gatewayv1.Route {
 			var routes []*gatewayv1.Route
 			for _, path := range []int{routehelpers.ExactPath, routehelpers.RegexPath, routehelpers.PrefixPath} {

@@ -19,11 +19,11 @@ var _ = Describe("route merge util", func() {
 			for _, badRoute := range []routeErr{
 				{
 					route: &v1.Route{
-						Matcher: &gloov1.Matcher{
+						Matchers: []*gloov1.Matcher{{
 							PathSpecifier: &gloov1.Matcher_Regex{
 								Regex: "/any",
 							},
-						},
+						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &core.ResourceRef{
 								Name: "any",
@@ -34,11 +34,11 @@ var _ = Describe("route merge util", func() {
 				},
 				{
 					route: &v1.Route{
-						Matcher: &gloov1.Matcher{
+						Matchers: []*gloov1.Matcher{{
 							PathSpecifier: &gloov1.Matcher_Exact{
 								Exact: "/any",
 							},
-						},
+						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &core.ResourceRef{
 								Name: "any",
@@ -49,12 +49,12 @@ var _ = Describe("route merge util", func() {
 				},
 				{
 					route: &v1.Route{
-						Matcher: &gloov1.Matcher{
+						Matchers: []*gloov1.Matcher{{
 							PathSpecifier: &gloov1.Matcher_Prefix{
 								Prefix: "/any",
 							},
 							Headers: []*gloov1.HeaderMatcher{{}},
-						},
+						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &core.ResourceRef{
 								Name: "any",
@@ -65,12 +65,12 @@ var _ = Describe("route merge util", func() {
 				},
 				{
 					route: &v1.Route{
-						Matcher: &gloov1.Matcher{
+						Matchers: []*gloov1.Matcher{{
 							PathSpecifier: &gloov1.Matcher_Prefix{
 								Prefix: "/any",
 							},
 							Methods: []string{"any"},
-						},
+						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &core.ResourceRef{
 								Name: "any",
@@ -81,12 +81,12 @@ var _ = Describe("route merge util", func() {
 				},
 				{
 					route: &v1.Route{
-						Matcher: &gloov1.Matcher{
+						Matchers: []*gloov1.Matcher{{
 							PathSpecifier: &gloov1.Matcher_Prefix{
 								Prefix: "/any",
 							},
 							QueryParameters: []*gloov1.QueryParameterMatcher{{}},
-						},
+						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &core.ResourceRef{
 								Name: "any",
@@ -94,6 +94,28 @@ var _ = Describe("route merge util", func() {
 						},
 					},
 					expectedErr: hasQueryMatcherErr,
+				},
+				{
+					route: &v1.Route{
+						Matchers: []*gloov1.Matcher{
+							{
+								PathSpecifier: &gloov1.Matcher_Prefix{
+									Prefix: "/foo",
+								},
+							},
+							{
+								PathSpecifier: &gloov1.Matcher_Prefix{
+									Prefix: "/bar",
+								},
+							},
+						},
+						Action: &v1.Route_DelegateAction{
+							DelegateAction: &core.ResourceRef{
+								Name: "foo",
+							},
+						},
+					},
+					expectedErr: matcherCountErr,
 				},
 			} {
 				rv := &routeVisitor{}
@@ -108,11 +130,11 @@ var _ = Describe("route merge util", func() {
 				Name: "any",
 			}
 			route := &v1.Route{
-				Matcher: &gloov1.Matcher{
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/any",
 					},
-				},
+				}},
 				Action: &v1.Route_DelegateAction{
 					DelegateAction: &ref,
 				},
@@ -131,4 +153,34 @@ var _ = Describe("route merge util", func() {
 			}}))
 		})
 	})
+
+	Context("valid config", func() {
+		It("uses '/' prefix matcher as default if matchers are omitted", func() {
+			ref := core.ResourceRef{
+				Name: "any",
+			}
+			route := &v1.Route{
+				Matchers: []*gloov1.Matcher{{}}, // empty struct in list of size one should default to '/'
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &ref,
+				},
+			}
+			rt := v1.RouteTable{
+				Routes: []*v1.Route{{
+					Matchers: []*gloov1.Matcher{}, // empty list should default to '/'
+				}},
+				Metadata: core.Metadata{
+					Name: "any",
+				},
+			}
+
+			rpt := reporter.ResourceReports{}
+			vs := &v1.VirtualService{}
+			rv := &routeVisitor{tables: v1.RouteTableList{&rt}}
+			converted, err := rv.convertDelegateAction(vs, route, rpt)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(converted[0].Matchers[0].GetPrefix()).To(Equal("/"))
+		})
+	})
+
 })

@@ -195,24 +195,24 @@ var _ = Describe("Translate", func() {
 			}
 			proxy, errs := translateProxy(namespace, snap, requireIngressClass)
 			Expect(errs).NotTo(HaveOccurred())
-			//log.Printf("%v", proxy)
 			Expect(proxy.String()).To(Equal((&gloov1.Proxy{
 				Listeners: []*gloov1.Listener{
-					&gloov1.Listener{
+					{
 						Name:        "http",
 						BindAddress: "::",
 						BindPort:    0x00000050,
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
-									&gloov1.VirtualHost{
+									{
 										Name: "wow.com-http",
 										Domains: []string{
 											"wow.com",
 										},
 										Routes: []*gloov1.Route{
-											&gloov1.Route{
-												Matcher: &gloov1.Matcher{
+											{
+												// TODO(kdorosh) should be able to delete here
+												Matchers: []*gloov1.Matcher{{
 													PathSpecifier: &gloov1.Matcher_Regex{
 														Regex: "/",
 													},
@@ -222,7 +222,7 @@ var _ = Describe("Translate", func() {
 													XXX_NoUnkeyedLiteral: struct{}{},
 													XXX_unrecognized:     []uint8{},
 													XXX_sizecache:        0,
-												},
+												}},
 												Action: &gloov1.Route_RouteAction{
 													RouteAction: &gloov1.RouteAction{
 														Destination: &gloov1.RouteAction_Single{
@@ -281,7 +281,7 @@ var _ = Describe("Translate", func() {
 										},
 										Routes: []*gloov1.Route{
 											&gloov1.Route{
-												Matcher: &gloov1.Matcher{
+												Matchers: []*gloov1.Matcher{{
 													PathSpecifier: &gloov1.Matcher_Regex{
 														Regex: "/longestpathshouldcomesecond",
 													},
@@ -291,7 +291,7 @@ var _ = Describe("Translate", func() {
 													XXX_NoUnkeyedLiteral: struct{}{},
 													XXX_unrecognized:     []uint8{},
 													XXX_sizecache:        0,
-												},
+												}},
 												Action: &gloov1.Route_RouteAction{
 													RouteAction: &gloov1.RouteAction{
 														Destination: &gloov1.RouteAction_Single{
@@ -319,7 +319,7 @@ var _ = Describe("Translate", func() {
 												XXX_sizecache:        0,
 											},
 											&gloov1.Route{
-												Matcher: &gloov1.Matcher{
+												Matchers: []*gloov1.Matcher{{
 													PathSpecifier: &gloov1.Matcher_Regex{
 														Regex: "/basic",
 													},
@@ -329,7 +329,7 @@ var _ = Describe("Translate", func() {
 													XXX_NoUnkeyedLiteral: struct{}{},
 													XXX_unrecognized:     []uint8{},
 													XXX_sizecache:        0,
-												},
+												}},
 												Action: &gloov1.Route_RouteAction{
 													RouteAction: &gloov1.RouteAction{
 														Destination: &gloov1.RouteAction_Single{

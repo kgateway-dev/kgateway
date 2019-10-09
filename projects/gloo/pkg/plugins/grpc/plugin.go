@@ -5,10 +5,10 @@ import (
 	"crypto/sha1"
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -147,10 +147,17 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		grpcDestinationSpec := *grpcDestinationSpecWrapper.Grpc
 
 		if grpcDestinationSpec.Parameters == nil {
-			if in.Matcher.PathSpecifier == nil {
+			pathSpecifier := ""
+			for _, matcher := range in.Matchers {
+				if matcher.PathSpecifier != nil {
+					pathSpecifier = utils.PathAsString(matcher)
+					break
+				}
+			}
+			if pathSpecifier == "" {
 				return nil, errors.New("missing path for grpc route")
 			}
-			path := utils.PathAsString(in.Matcher) + "?{query_string}"
+			path := pathSpecifier + "?{query_string}"
 
 			grpcDestinationSpec.Parameters = &transformapi.Parameters{
 				Path: &types.StringValue{Value: path},

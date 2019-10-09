@@ -32,9 +32,10 @@ var _ = Describe("CustomEnvoyConfig", func() {
 			},
 			VirtualHost: &gatewayv1.VirtualHost{
 				Routes: []*gatewayv1.Route{{
-					Matcher: &v1.Matcher{
+					// TODO(kdorosh) should be able to delete here
+					Matchers: []*v1.Matcher{{
 						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/"},
-					}}},
+					}}}},
 			},
 		}
 

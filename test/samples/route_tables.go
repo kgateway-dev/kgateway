@@ -21,11 +21,11 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		return &v1.RouteTable{
 			Metadata: core.Metadata{Name: fmt.Sprintf("node-%d", i), Namespace: namespace},
 			Routes: []*v1.Route{{
-				Matcher: &gloov1.Matcher{
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: prefix,
 					},
-				},
+				}},
 			},
 			}}
 	}
@@ -51,11 +51,11 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		Metadata: core.Metadata{Name: "leaf", Namespace: namespace},
 		Routes: []*v1.Route{
 			{
-				Matcher: &gloov1.Matcher{
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Exact{
 						Exact: prefix + "/exact",
 					},
-				},
+				}},
 				Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{}},
 			},
 		},
@@ -72,11 +72,11 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 	ref := routeTables[0].Metadata.Ref()
 	vs := defaults.DefaultVirtualService(namespace, vsName)
 	vs.VirtualHost.Routes = []*v1.Route{{
-		Matcher: &gloov1.Matcher{
+		Matchers: []*gloov1.Matcher{{
 			PathSpecifier: &gloov1.Matcher_Prefix{
 				Prefix: root,
 			},
-		},
+		}},
 		Action: &v1.Route_DelegateAction{
 			DelegateAction: &ref,
 		},

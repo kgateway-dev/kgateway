@@ -74,8 +74,6 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
-			Matcher: nil,
-			Action:  nil,
 			RoutePlugins: &v1.RoutePlugins{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
@@ -99,8 +97,6 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
-			Matcher: nil,
-			Action:  nil,
 			RoutePlugins: &v1.RoutePlugins{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",

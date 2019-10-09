@@ -146,11 +146,12 @@ var _ = Describe("Transformations", func() {
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
-				Matcher: &gloov1.Matcher{
+				// TODO(kdorosh) should be able to delete!
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
-				},
+				}},
 				Action: &gloov1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{
@@ -176,11 +177,12 @@ var _ = Describe("Transformations", func() {
 				RoutePlugins: &gloov1.RoutePlugins{
 					Transformations: transform,
 				},
-				Matcher: &gloov1.Matcher{
+				// TODO(kdorosh) should be able to delete!
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
-				},
+				}},
 				Action: &gloov1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{
@@ -203,11 +205,12 @@ var _ = Describe("Transformations", func() {
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
-				Matcher: &gloov1.Matcher{
+				// TODO(kdorosh) should be able to delete here
+				Matchers: []*gloov1.Matcher{{
 					PathSpecifier: &gloov1.Matcher_Prefix{
 						Prefix: "/",
 					},
-				},
+				}},
 				Action: &gloov1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Multi{

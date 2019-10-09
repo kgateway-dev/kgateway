@@ -495,11 +495,11 @@ func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 						Name:    "virt1",
 						Domains: []string{"*"},
 						Routes: []*gloov1.Route{{
-							Matcher: &gloov1.Matcher{
+							Matchers: []*gloov1.Matcher{{
 								PathSpecifier: &gloov1.Matcher_Prefix{
 									Prefix: "/",
 								},
-							},
+							}},
 							Action: &gloov1.Route_RouteAction{
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
