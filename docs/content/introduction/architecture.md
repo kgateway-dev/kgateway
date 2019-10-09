@@ -37,7 +37,7 @@ providing advanced configuration for Envoy (including Gloo's custom Envoy filter
 ![Component Architecture](../component_architecture.png "Component Architecture")
 
 * The **Config Watcher** watches the storage layer for updates to user configuration objects ([Upstreams](../concepts#upstreams) and [Virtual Services](../concepts#virtual-services)).
-* The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the [AWS Lambda Plugin](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk)).
+* The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the [AWS Lambda Plugin]({{% protobuf name="aws.plugins.gloo.solo.io.DestinationSpec" %}}).
 * **Endpoint Discovery** watches service registries such as Kubernetes, Cloud Foundry, and Consul for IPs associated with services.
 Endpoint Discovery is plugin-specific. For example, the [Kubernetes Plugin](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto.sk) runs its own Endpoint Discovery goroutine.
 * The **Translator** receives snapshots of the entire state, composed of user configuration, secrets, and discovery information

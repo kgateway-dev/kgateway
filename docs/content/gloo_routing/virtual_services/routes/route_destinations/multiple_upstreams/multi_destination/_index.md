@@ -4,8 +4,8 @@ weight: 10
 description: This is where multiple upstreams are configured on a route, with weights associated with them. 
 ---
 
-The [MultiDestination]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#multidestination" %}})
-has an array of one or more [WeightedDestination]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#weighteddestination" %}})
+The [MultiDestination]({{% protobuf name="gloo.solo.io.MultiDestination" %}})
+has an array of one or more [WeightedDestination]({{% protobuf name="gloo.solo.io.WeightedDestination" %}})
 specs that are a single destination plus a `weight`. The weight is the percentage of request traffic forwarded to that
 destination where the percentage is: `weight` divided by sum of all weights in `MultiDestination`.
 
