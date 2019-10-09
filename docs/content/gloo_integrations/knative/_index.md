@@ -8,7 +8,7 @@ For the purpose of running Knative, Gloo can function as a complete replacement 
 
 This guide walks you through running a serverless app with Knative, using Gloo as your ingress.
  
-It assumes you've already followed the [installation guide for Gloo and Knative]({{< ref "/installation/knative" >}}). 
+It assumes you've already followed the [installation guide for Gloo and Knative]({{% versioned_link_path fromRoot="/installation/knative" %}}). 
 
 ### Before you start
 
@@ -28,7 +28,7 @@ run `glooctl proxy url --name knative-external-proxy`
 
 ### Steps
 
-1. First, [ensure Knative is installed with Gloo]({{< ref "/installation/knative" >}}). 
+1. First, [ensure Knative is installed with Gloo]({{% versioned_link_path fromRoot="/installation/knative" %}}). 
  
 1. Next, create a `Knative Service`
 
@@ -82,4 +82,4 @@ run `glooctl proxy url --name knative-external-proxy`
      Hello Go Sample v1!
      ```
 
-Congratulations! You have successfully installed Knative with Gloo to manage and route to serverless applications! Try out some of the more advanced tutorials for Knative in [the Knative documentation](https://knative.dev/docs/https://www.ibogainealliance.org/guidelines/other-medications/).
+Congratulations! You have successfully installed Knative with Gloo to manage and route to serverless applications! Try out some of the more advanced tutorials for Knative in [the Knative documentation](https://knative.dev/docs/).

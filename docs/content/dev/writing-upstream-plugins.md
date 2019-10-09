@@ -6,7 +6,7 @@ weight: 5
 
 ## Intro
 
-Gloo uses the [v1.Upstream]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md">}}) config object to define routable destinations for Gloo. These are converted inside Gloo
+Gloo uses the [v1.Upstream]({{% versioned_link_path fromRoot="/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" %}}) config object to define routable destinations for Gloo. These are converted inside Gloo
 
 This tutorial will show how we can add an *Upstream Plugin* to Gloo to extend Gloo with service discovery data.
 
@@ -25,7 +25,7 @@ To see the completed code for this tutorial:
 
 ## Environment Setup
 
-To set up a development environment for Gloo including installing prerequisites to generate code and build docker images, [see the dev setup guide]({{< ref "setting-up-dev-environment.md">}}). Make sure you 
+To set up a development environment for Gloo including installing prerequisites to generate code and build docker images, [see the dev setup guide]({{% versioned_link_path fromRoot="/dev/setting-up-dev-environment.md" %}}). Make sure you 
 include the **Enabling Code Generation** section of that tutorial.
 
 ## Upstream Plugin
@@ -39,7 +39,7 @@ Let's begin.
 
 ## Adding the new Upstream Type to Gloo's API
 
-The first step we'll take will be to add a new [**UpstreamType**]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md#upstreamspec" >}}) to Gloo. 
+The first step we'll take will be to add a new [**UpstreamType**]({{% protobuf name="gloo.solo.io.Upstream" %}}) to Gloo. 
 
 All of Gloo's APIs are defined as protobuf files (`.proto`). The list of Upstream Types live in the [plugins.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/plugins.proto) file, where Gloo's core API objects (Upstream, Virtual Service, Proxy, Gateway) are bound to plugin-specific configuration.
 
@@ -192,7 +192,7 @@ Great! We're all set to run code generation on Gloo and begin writing our plugin
 
 ## Running the Code Generation
 
-To regenerate code in the project, we will need `go`, `make`, `dep`, and `protoc` installed. If they aren't already, [see the dev setup guide]({{< ref "setting-up-dev-environment.md">}}).
+To regenerate code in the project, we will need `go`, `make`, `dep`, and `protoc` installed. If they aren't already, [see the dev setup guide]({{% versioned_link_path fromRoot="/dev/setting-up-dev-environment.md" %}}).
 
 To (re)generate code:
 
@@ -847,8 +847,7 @@ Code changes are now complete. You can view the all of the code here:
 ## Build and Deploy from Source
 
 To see our new and improved Gloo in action, follow the 
-[building and deploying Gloo from source tutorial]({{< ref 
-"/dev/building-and-deploying-gloo.md" >}}).
+[building and deploying Gloo from source tutorial]({{% versioned_link_path fromRoot="/dev/building-and-deploying-gloo.md" %}}).
 
 ## Conclusions
 
