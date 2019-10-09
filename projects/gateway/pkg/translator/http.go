@@ -396,10 +396,10 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 }
 
 func getFirstPrefixMatcher(route *v1.Route) (string, error) {
-	switch {
-	case len(route.GetMatchers()) == 0:
+	switch len(route.GetMatchers()) {
+	case 0:
 		return defaults.DefaultMatcher().GetPrefix(), nil
-	case len(route.GetMatchers()) == 1:
+	case 1:
 		matcher := route.GetMatchers()[0]
 		var prefix string
 		if len(matcher.GetHeaders()) > 0 {
@@ -419,24 +419,22 @@ func getFirstPrefixMatcher(route *v1.Route) (string, error) {
 			return prefix, missingPrefixErr
 		}
 		return prefix, nil
-	case len(route.GetMatchers()) > 1:
+	default:
 		return "", matcherCountErr
 	}
-	return "", errors.New("internal error: getFirstPrefixMatcher() called on malformed route") // should not happen
 }
 
 func getFirstMatcher(route *v1.Route) (*gloov1.Matcher, error) {
-	switch {
-	case len(route.GetMatchers()) == 0:
+	switch len(route.GetMatchers()) {
+	case 0:
 		return defaults.DefaultMatcher(), nil
-	case len(route.GetMatchers()) == 1:
+	case 1:
 		matcher := route.GetMatchers()[0]
 		if matcher.GetPathSpecifier() == nil {
 			return defaults.DefaultMatcher(), nil // no path specifier provided, default to '/' prefix matcher
 		}
 		return matcher, nil
-	case len(route.GetMatchers()) > 1:
+	default:
 		return nil, matcherCountErr
 	}
-	return nil, errors.New("internal error: getFirstMatcher() called on malformed route") // should not happen
 }
