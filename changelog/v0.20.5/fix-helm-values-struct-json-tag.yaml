@@ -2,5 +2,5 @@ changelog:
 - type: NON_USER_FACING
   description: >
     The `create` field of the `settings` Helm value struct has an `omitempty` json tag. This causes the JSON encoder to
-    considered the whole struct empty in cases where we only set `settings.create` to false and prevent us from
+    consider the whole struct empty in cases where we only set `settings.create` to false and prevents us from
     overriding this field in the GlooE Helm value generation.
