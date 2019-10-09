@@ -19,61 +19,40 @@ import (
 // 2. longer path string < shorter path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		// make deep copy of matchers before we sort!
-		var matchers1 []*v1.Matcher
+		smallest1 := *routes[i].Matchers[0] // bounds error not possible within a slice sort function
 		for _, m := range routes[i].Matchers {
-			tmp := *m
-			matchers1 = append(matchers1, &tmp)
+			if lessMatcher(m, &smallest1) {
+				smallest1 = *m
+			}
 		}
 
-		sort.SliceStable(matchers1, func(x, y int) bool {
-			return lessMatcher(matchers1[x], matchers1[y])
-		})
-		smallest1 := matchers1[0] // bounds error not possible within a slice sort function
-
-		// make deep copy of matchers before we sort!
-		var matchers2 []*v1.Matcher
+		smallest2 := *routes[j].Matchers[0] // bounds error not possible within a slice sort function
 		for _, m := range routes[j].Matchers {
-			tmp := *m
-			matchers2 = append(matchers2, &tmp)
+			if lessMatcher(m, &smallest2) {
+				smallest2 = *m
+			}
 		}
 
-		sort.SliceStable(matchers2, func(x, y int) bool {
-			return lessMatcher(matchers2[x], matchers2[y])
-		})
-		smallest2 := matchers2[0] // bounds error not possible within a slice sort function
-
-		return lessMatcher(smallest1, smallest2)
+		return lessMatcher(&smallest1, &smallest2)
 	})
 }
 
 func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		// make deep copy of matchers before we sort!
-		var matchers1 []*v1.Matcher
+		smallest1 := *routes[i].Matchers[0] // bounds error not possible within a slice sort function
 		for _, m := range routes[i].Matchers {
-			tmp := *m
-			matchers1 = append(matchers1, &tmp)
+			if lessMatcher(m, &smallest1) {
+				smallest1 = *m
+			}
 		}
 
-		sort.SliceStable(matchers1, func(x, y int) bool {
-			return lessMatcher(matchers1[x], matchers1[y])
-		})
-		smallest1 := matchers1[0] // bounds error not possible within a slice sort function
-
-		// make deep copy of matchers before we sort!
-		var matchers2 []*v1.Matcher
+		smallest2 := *routes[j].Matchers[0] // bounds error not possible within a slice sort function
 		for _, m := range routes[j].Matchers {
-			tmp := *m
-			matchers2 = append(matchers2, &tmp)
+			if lessMatcher(m, &smallest2) {
+				smallest2 = *m
+			}
 		}
-
-		sort.SliceStable(matchers2, func(x, y int) bool {
-			return lessMatcher(matchers2[x], matchers2[y])
-		})
-		smallest2 := matchers2[0] // bounds error not possible within a slice sort function
-
-		return lessMatcher(smallest1, smallest2)
+		return lessMatcher(&smallest1, &smallest2)
 	})
 }
 
