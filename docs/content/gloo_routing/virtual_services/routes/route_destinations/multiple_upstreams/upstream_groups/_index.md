@@ -4,7 +4,7 @@ weight: 20
 description: This is an abstraction where the upstreams and weights are stored in a separate UpstreamGroup CRD. This makes it easier to reuse the same set of upstreams across multiple routes, and modify the membership of the group without changing the VirtualService definition. 
 ---
 
-An [UpstreamGroup]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#upstreamgroup" %}}) addresses
+An [UpstreamGroup]({{< protobuf name="gloo.solo.io.UpstreamGroup">}}) addresses
 an issue of how do you have multiple routes or virtual services referencing the same multiple weighted destinations where
 you want to change the weighting consistently for all calling routes. This is a common need for Canary deployments
 where you want all calling routes to forward traffic consistently across the two service versions.

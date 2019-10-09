@@ -5,7 +5,7 @@ description: Matching based on incoming or generated headers
 ---
 
 When configuring the matcher on a route, you may want to specify one or more 
-[Header Matchers]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#headermatcher" %}}) to require headers 
+[Header Matchers]({{< protobuf name="gloo.solo.io.HeaderMatcher">}}) to require headers 
 with matching values be present on the request. Each header matcher has three attributes:
 
 * `name` - the name of the request header. Note: Gloo/Envoy use HTTP/2 so if you want to match against HTTP/1 `Host`,

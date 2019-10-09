@@ -47,7 +47,7 @@ get when querying Consul for a service with a given name:
 ]
 ```
 
-The [`consul` destination type]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#consulservicedestination" %}}) 
+The [`consul` destination type]({{< protobuf name="gloo.solo.io.ConsulServiceDestination">}}) 
 allows you to target a subset of these service instances via the optional `tags` and `dataCenters` fields. Gloo will 
 detect the correspondent IP addresses and ports and load balance traffic between them. 
 

@@ -24,7 +24,7 @@ of a *matcher*, which specifies the kind of function calls to match (requests an
 and the name of the destination (or destinations) to route them to.
 
 - **Upstreams** define destinations for routes. Upstreams tell Gloo what to route to. Upstreams may also define
-[functions](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk#LambdaFunctionSpec)
+[functions]({{< protobuf name="aws.plugins.gloo.solo.io.LambdaFunctionSpec">}}).)
 and [service specs](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto.sk) for *function-level routing*.
 
 ## Gateways
@@ -145,7 +145,7 @@ be used to provide routing information to Gloo.
 
 The most basic upstream type is the [`static` upstream type](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto.sk), which tells Gloo
 a list of static hosts or dns names logically grouped together for an upstream. More sophisticated upstream types
-include the kubernetes upstream and the [AWS Lambda upstream](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk).
+include the kubernetes upstream and the [AWS Lambda upstream]({{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec">}}).
 
 Let's walk through an example of a kubernetes upstream in order to understand how this works.
 
@@ -214,7 +214,7 @@ section.
 
 ## Secrets
 
-Certain plugins such as the [AWS Lambda Plugin](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto.sk)
+Certain plugins such as the [AWS Lambda Plugin]({{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec">}})
 require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be
 stored in plaintext configuration.
 

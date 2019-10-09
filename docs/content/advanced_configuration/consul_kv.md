@@ -158,7 +158,7 @@ The paths for Gloo's API objects are as follows:
 | [Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) | `gloo/gloo.solo.io/v1/Upstream/<namespace>/<name>`  |
 | [Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).) | `gloo/gateway.solo.io/v1/VirtualService/<namespace>/<name>`  |
 | [Gateways]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v2/gateway.proto.sk.md" >}}) | `gloo/gateway.solo.io.v2/v2/Gateway/<namespace>/<name>`  |
-| [Proxies]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk.md" >}}) | `gloo/gloo.solo.io/v1/Proxy/<namespace>/<name>`  |
+| [Proxies]({{< protobuf name="gloo.solo.io.Proxy">}}) | `gloo/gloo.solo.io/v1/Proxy/<namespace>/<name>`  |
 
 To store a Gloo resource in Consul, one can use `curl` or the `consul` CLI:
 

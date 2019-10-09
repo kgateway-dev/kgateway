@@ -5,7 +5,7 @@ description: Request to route matching based on query parameters
 ---
 
 When configuring the matcher on a route, you may want to specify one or more 
-[Query Parameter Matcher]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#queryparametermatcher" %}})
+[Query Parameter Matcher]({{< protobuf name="gloo.solo.io.QueryParameterMatcher">}})
 to require query parameters with matching values be present on the request. Each query parameter matcher has three attributes:
 
 * `name` - the name of the query parameter

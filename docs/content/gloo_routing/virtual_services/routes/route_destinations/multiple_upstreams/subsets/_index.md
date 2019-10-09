@@ -33,7 +33,7 @@ that it needs to compute. The [Envoy documentation](https://github.com/envoyprox
 contains a great explanation of how on subset load balancing works and we strongly recommend that you read it if you plan to use this feature.
 
 **Second**, you need to add a [`subset`]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto.sk#subset" %}})
-within the [`Destination` spec]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#destination" %}})
+within the [`Destination` spec]({{< protobuf name="gloo.solo.io.Destination">}})
 of the Route Action. This will determine which of the upstream subsets should be selected as destination for this route.
 
 Following is an example of using a label, e.g. `color: blue`, to subset pods handling requests.
