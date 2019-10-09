@@ -17,7 +17,7 @@ In this document, we will review how to deploy multiple instances of Gloo to the
 
 When using the default installation, Gloo will watch all namespaces for Kubernetes services and Gloo CRDs. This means that any Kubernetes service can be a destination for any VirtualService in the cluster.
 
-Gloo can be configured to only watch specific namespaces, meaning Gloo will not see services and CRDs in any namespaces other than those provided in the [`watchNamespaces` setting]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk.md#settings" >}}).
+Gloo can be configured to only watch specific namespaces, meaning Gloo will not see services and CRDs in any namespaces other than those provided in the [`watchNamespaces` setting]({{< protobuf name="gloo.solo.io.Settings">}}).
 
 By leveraging this option, we can install Gloo to as many namespaces we need, ensuring that the `watchNamespaces` do not overlap.
 

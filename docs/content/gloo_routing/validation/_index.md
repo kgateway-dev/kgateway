@@ -27,7 +27,7 @@ not be updated until the errors are resolved.
 
 Each *Proxy* gets its own configuration; if config for an individual proxy is invalid, it does not affect the other proxies.
 The proxy that *Gateways* and their *Virtual Services* will be applied to can be configured via the `proxyNames` option on 
-  the [`Gateway` resource]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v2/gateway.proto.sk.md">}}).
+  the [`Gateway` resource]({{< protobuf name="gateway.solo.io.v2.Gateway">}}).
 
 {{% notice note %}}
 
@@ -53,7 +53,7 @@ API Server before it is written to persistent storage.
 
 Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
-[Gateways]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v2/gateway.proto.sk.md">}}), 
+[Gateways]({{< protobuf name="gateway.solo.io.v2.Gateway">}}), 
 [Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).),
 and [Route Tables]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md">}}).
 
@@ -61,7 +61,7 @@ The [validating webhook configuration](https://github.com/solo-io/gloo/blob/mast
 by removing the `ValidatingWebhookConfiguration`.
 
 The webhook can be configured to perform strict or permissive validation, depending on the `gateay.validation.alwaysAccept` setting in the 
-[Settings]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk.md">}}) resource.
+[Settings]({{< protobuf name="gloo.solo.io.Settings">}}) resource.
 
 When `alwaysAccept` is `true` (currently the default is `true`), resources will only be rejected when Gloo fails to 
 deserialize them (due to invalid JSON/YAML).
@@ -78,7 +78,7 @@ By default, the Validation Webhook only logs the validation result, but always a
 configuration options are inconsistent/invalid).
 
 The webhook can be configured to reject invalid resources via the 
-[Settings]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk.md">}}) resource.
+[Settings]({{< protobuf name="gloo.solo.io.Settings">}}) resource.
 
 If using Helm to manage settings, set the following value:
 
