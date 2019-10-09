@@ -155,7 +155,7 @@ The paths for Gloo's API objects are as follows:
 
 | Resource | Key |
 | ----- | ---- | 
-| [Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) | `gloo/gloo.solo.io/v1/Upstream/<namespace>/<name>`  |
+| [Upstreams]({{< protobuf name="gloo.solo.io.Upstream">}}) | `gloo/gloo.solo.io/v1/Upstream/<namespace>/<name>`  |
 | [Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).) | `gloo/gateway.solo.io/v1/VirtualService/<namespace>/<name>`  |
 | [Gateways]({{< protobuf name="gateway.solo.io.v2.Gateway">}}) | `gloo/gateway.solo.io.v2/v2/Gateway/<namespace>/<name>`  |
 | [Proxies]({{< protobuf name="gloo.solo.io.Proxy">}}) | `gloo/gloo.solo.io/v1/Proxy/<namespace>/<name>`  |

@@ -308,7 +308,7 @@ Explore Gloo's Routing API in the API documentation:
 
 - [Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).)
 
-- [Route Tables]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}})
+- [Route Tables]({{< protobuf name="gateway.solo.io.RouteTable">}})
 
 Please submit questions and feedback to [the solo.io slack channel](https://slack.solo.io/), or [open an issue on GitHub](https://github.com/solo-io/gloo).
 

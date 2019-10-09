@@ -11,7 +11,7 @@ provide a Kubernetes selector to allow request forwarding to a subset of Kuberne
 Kubernetes Service. There are currently two steps required to get subsetting to work for Kubernetes upstreams, which are
 the only upstream type currently supported. 
 
-**First**, you need to edit the [Spec]({{% ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto.sk" %}})
+**First**, you need to edit the [Spec]({{< protobuf name="kubernetes.plugins.gloo.solo.io.UpstreamSpec">}})
 of the Kubernetes Upstream that you want to define subsets for by adding a [`subsetSpec`]({{< protobuf name="plugins.gloo.solo.io.SubsetSpec">}}). 
 The `subsetSpec` contains a list of `selectors`, each of which consist of a set of `keys`. Each key represents a Kubernetes 
 label key. These selectors determine how the subsets for the upstream are to be calculated. For example, the following 

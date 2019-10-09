@@ -40,7 +40,7 @@ and providing the following value override:
 {{< readfile file="/static/content/extauth_version_info_note" >}}
 {{% /notice %}}
 
-Authentication configuration is defined in [AuthConfig]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#authconfig" >}}) resources. 
+Authentication configuration is defined in [AuthConfig]({{< protobuf name="enterprise.gloo.solo.io.AuthConfig">}}) resources. 
 `AuthConfig`s are top-level resources, which means that if you are running in Kubernetes, they will be stored in a dedicated CRD.
 Here is an example of a simple `AuthConfig` CRD:
 

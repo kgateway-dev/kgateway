@@ -55,7 +55,7 @@ Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
 [Gateways]({{< protobuf name="gateway.solo.io.v2.Gateway">}}), 
 [Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).),
-and [Route Tables]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md">}}).
+and [Route Tables]({{< protobuf name="gateway.solo.io.RouteTable">}}).
 
 The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
 by removing the `ValidatingWebhookConfiguration`.
