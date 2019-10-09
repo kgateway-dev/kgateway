@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -179,7 +180,7 @@ var _ = Describe("route merge util", func() {
 			rv := &routeVisitor{tables: v1.RouteTableList{&rt}}
 			converted, err := rv.convertDelegateAction(vs, route, rpt)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(converted[0].Matchers[0].GetPrefix()).To(Equal("/"))
+			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
 	})
 

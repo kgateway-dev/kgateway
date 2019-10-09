@@ -182,7 +182,6 @@ var _ = Describe("Translator", func() {
 		It("should warn on vs with missing delegate action", func() {
 
 			badRoute := &v1.Route{
-				Matchers: []*gloov1.Matcher{{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/"}}},
 				Action: &v1.Route_DelegateAction{
 					DelegateAction: &core.ResourceRef{"don't", "exist"},
 				},
@@ -285,8 +284,8 @@ var _ = Describe("Translator", func() {
 				Expect(listener.VirtualHosts).To(HaveLen(2))
 				Expect(listener.VirtualHosts[0].Routes[0].Matchers).To(HaveLen(1))
 				Expect(listener.VirtualHosts[1].Routes[0].Matchers).To(HaveLen(1))
-				Expect(listener.VirtualHosts[0].Routes[0].Matchers[0].GetPrefix()).To(Equal("/"))
-				Expect(listener.VirtualHosts[1].Routes[0].Matchers[0].GetPrefix()).To(Equal("/"))
+				Expect(listener.VirtualHosts[0].Routes[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
+				Expect(listener.VirtualHosts[1].Routes[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 			})
 
 			It("should have no ssl config", func() {
@@ -840,11 +839,6 @@ var _ = Describe("Translator", func() {
 									Domains: []string{"d1.com"},
 									Routes: []*v1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Prefix{
-													Prefix: "/",
-												},
-											}},
 											Action: &v1.Route_DelegateAction{
 												DelegateAction: &core.ResourceRef{
 													Name:      "delegate-1",
@@ -864,11 +858,6 @@ var _ = Describe("Translator", func() {
 								},
 								Routes: []*v1.Route{
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/",
-											},
-										}},
 										Action: &v1.Route_DelegateAction{
 											DelegateAction: &core.ResourceRef{
 												Name:      "delegate-2",
@@ -885,11 +874,6 @@ var _ = Describe("Translator", func() {
 								},
 								Routes: []*v1.Route{
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
-												Prefix: "/",
-											},
-										}},
 										Action: &v1.Route_DelegateAction{
 											DelegateAction: &core.ResourceRef{
 												Name:      "delegate-1",

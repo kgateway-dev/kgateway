@@ -34,13 +34,7 @@ func SimpleUpstream() *v1.Upstream {
 
 func SimpleGlooSnapshot() *v1.ApiSnapshot {
 	us := SimpleUpstream()
-	matcher := &v1.Matcher{
-		PathSpecifier: &v1.Matcher_Prefix{
-			Prefix: "/",
-		},
-	}
 	routes := []*v1.Route{{
-		Matchers: []*v1.Matcher{matcher},
 		Action: &v1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{
 				Destination: &v1.RouteAction_Single{
@@ -113,11 +107,6 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 
 func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *v2.ApiSnapshot {
 	routes := []*gwv1.Route{{
-		Matchers: []*v1.Matcher{{
-			PathSpecifier: &v1.Matcher_Prefix{
-				Prefix: "/",
-			},
-		}},
 		Action: &gwv1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{
 				Destination: &v1.RouteAction_Single{
@@ -178,11 +167,6 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *v2.ApiSnapsho
 func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *v2.ApiSnapshot {
 	rtRoutes := []*gwv1.Route{
 		{
-			Matchers: []*v1.Matcher{{
-				PathSpecifier: &v1.Matcher_Prefix{
-					Prefix: "/",
-				},
-			}},
 			Action: &gwv1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
@@ -204,11 +188,6 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *v2.Api
 
 	vsRoutes := []*gwv1.Route{
 		{
-			Matchers: []*v1.Matcher{{
-				PathSpecifier: &v1.Matcher_Prefix{
-					Prefix: "/",
-				},
-			}},
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: utils.ResourceRefPtr(rt.Metadata.Ref()),
 			},
@@ -225,11 +204,6 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *v2.Api
 func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *v2.ApiSnapshot {
 	rtLeafRoutes := []*gwv1.Route{
 		{
-			Matchers: []*v1.Matcher{{
-				PathSpecifier: &v1.Matcher_Prefix{
-					Prefix: "/",
-				},
-			}},
 			Action: &gwv1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
@@ -251,11 +225,6 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *v
 
 	rtRoutes := []*gwv1.Route{
 		{
-			Matchers: []*v1.Matcher{{
-				PathSpecifier: &v1.Matcher_Prefix{
-					Prefix: "/",
-				},
-			}},
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: utils.ResourceRefPtr(rtLeaf.Metadata.Ref()),
 			},
@@ -269,11 +238,6 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *v
 
 	vsRoutes := []*gwv1.Route{
 		{
-			Matchers: []*v1.Matcher{{
-				PathSpecifier: &v1.Matcher_Prefix{
-					Prefix: "/",
-				},
-			}},
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: utils.ResourceRefPtr(rt.Metadata.Ref()),
 			},
