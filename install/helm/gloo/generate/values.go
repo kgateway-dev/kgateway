@@ -97,7 +97,7 @@ type Settings struct {
 	Integrations    *Integrations `json:"integrations,omitempty"`
 	Create          bool          `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
 	Extensions      interface{}   `json:"extensions,omitempty"`
-	SingleNamespace bool          `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	SingleNamespace bool          `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 }
 
 type Gloo struct {
@@ -176,7 +176,7 @@ type GatewayProxy struct {
 
 type GatewayProxyGatewaySettings struct {
 	DisableGeneratedGateways bool   `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
-	UseProxyProto            bool   `json:"useProxyProto,omitempty" desc:"use proxy protocol"`
+	UseProxyProto            bool   `json:"useProxyProto" desc:"use proxy protocol"`
 	CustomHttpGateway        string `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
 	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 }
@@ -229,7 +229,7 @@ type AccessLogger struct {
 	Image       *Image `json:"image,omitempty"`
 	Port        uint   `json:"port,omitempty"`
 	ServiceName string `json:"serviceName,omitempty"`
-	Enabled     bool   `json:"enabled,omitempty"`
+	Enabled     bool   `json:"enableds"`
 	*DeploymentSpec
 }
 
@@ -240,7 +240,7 @@ type GatewayProxyConfigMap struct {
 type Ingress struct {
 	Enabled             *bool              `json:"enabled"`
 	Deployment          *IngressDeployment `json:"deployment,omitempty"`
-	RequireIngressClass *bool              `json:"requireIngressClass,omitempty" desc:"only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''"`
+	RequireIngressClass *bool              `json:"requireIngressClass" desc:"only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''"`
 }
 
 type IngressDeployment struct {

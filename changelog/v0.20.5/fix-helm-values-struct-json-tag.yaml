@@ -1,6 +1,7 @@
 changelog:
-- type: NON_USER_FACING
+- type: FIX
   description: >
-    The `create` field of the `settings` Helm value struct has an `omitempty` json tag. This causes the JSON encoder to
-    consider the whole struct empty in cases where we only set `settings.create` to false and prevents us from
-    overriding this field in the GlooE Helm value generation.
+    Some boolean fields on Helm value structs have an `omitempty` json tag. This causes the JSON encoder to
+    considered the whole struct empty in cases where we only the boolean field is set to false and might lead to
+    unexpected behavior.
+  issueLink: https://github.com/solo-io/gloo/issues/1360
