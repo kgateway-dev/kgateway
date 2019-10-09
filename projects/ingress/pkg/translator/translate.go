@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"
@@ -195,7 +196,7 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 	var virtualHostsHttps []secureVirtualHost
 
 	for host, routes := range routesByHostHttp {
-		sortByLongestPathName(routes)
+		glooutils.SortRoutesByPath(routes)
 		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
 			Name:    host + "-http",
 			Domains: []string{host},
@@ -204,7 +205,7 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 	}
 
 	for host, routes := range routesByHostHttps {
-		sortByLongestPathName(routes)
+		glooutils.SortRoutesByPath(routes)
 		secret, ok := secretsByHost[host]
 		if !ok {
 			return nil, nil, errors.Errorf("internal error: secret not found for host %v after processing ingresses", host)
@@ -226,13 +227,6 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 		return virtualHostsHttps[i].vh.Name < virtualHostsHttps[j].vh.Name
 	})
 	return virtualHostsHttp, virtualHostsHttps, nil
-}
-
-func sortByLongestPathName(routes []*gloov1.Route) {
-	sort.SliceStable(routes, func(i, j int) bool {
-		// TODO(kdorosh) fix function here :/
-		return routes[i].Matchers[0].PathSpecifier.(*gloov1.Matcher_Regex).Regex > routes[j].Matchers[0].PathSpecifier.(*gloov1.Matcher_Regex).Regex
-	})
 }
 
 func isOurIngress(ingress *v1beta1.Ingress) bool {
