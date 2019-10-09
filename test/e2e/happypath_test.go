@@ -62,7 +62,7 @@ var _ = Describe("Happy path", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = uint32(defaults.HttpPort)
+		envoyPort = defaults.HttpPort
 	})
 
 	AfterEach(func() {
@@ -495,11 +495,6 @@ func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 						Name:    "virt1",
 						Domains: []string{"*"},
 						Routes: []*gloov1.Route{{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
-									Prefix: "/",
-								},
-							}},
 							Action: &gloov1.Route_RouteAction{
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{

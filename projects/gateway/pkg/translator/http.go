@@ -280,7 +280,7 @@ type routeVisitor struct {
 }
 
 func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours *v1.Route, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
-	if ours.Matchers == nil || len(ours.Matchers) == 0 {
+	if len(ours.Matchers) == 0 {
 		ours.Matchers = []*gloov1.Matcher{defaults.DefaultMatcher()}
 	}
 
@@ -397,7 +397,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 
 func getFirstPrefixMatcher(route *v1.Route) (string, error) {
 	switch {
-	case route.GetMatchers() == nil || len(route.GetMatchers()) == 0:
+	case len(route.GetMatchers()) == 0:
 		return defaults.DefaultMatcher().GetPrefix(), nil
 	case len(route.GetMatchers()) == 1:
 		matcher := route.GetMatchers()[0]
@@ -427,7 +427,7 @@ func getFirstPrefixMatcher(route *v1.Route) (string, error) {
 
 func getFirstMatcher(route *v1.Route) (*gloov1.Matcher, error) {
 	switch {
-	case route.GetMatchers() == nil || len(route.GetMatchers()) == 0:
+	case len(route.GetMatchers()) == 0:
 		return defaults.DefaultMatcher(), nil
 	case len(route.GetMatchers()) == 1:
 		matcher := route.GetMatchers()[0]

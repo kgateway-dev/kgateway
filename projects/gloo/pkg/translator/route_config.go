@@ -134,7 +134,7 @@ func (t *translator) envoyRoutes(params plugins.RouteParams, routeReport *valida
 
 	out := setMatch(in, routeReport)
 
-	for i := range in.Matchers {
+	for i := range out {
 		t.setAction(params, routeReport, in, &out[i])
 	}
 
