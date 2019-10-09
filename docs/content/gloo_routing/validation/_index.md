@@ -54,7 +54,7 @@ API Server before it is written to persistent storage.
 Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
 [Gateways]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v2/gateway.proto.sk.md">}}), 
-[Virtual Services]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk.md">}}),
+[Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).),
 and [Route Tables]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md">}}).
 
 The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
