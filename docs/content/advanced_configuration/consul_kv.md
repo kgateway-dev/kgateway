@@ -45,7 +45,7 @@ The default namespace for Gloo is `gloo-system`. This can be overridden with the
 ## Customizing the Gloo Settings file
 
 The full list of options for Gloo Settings, including the ability to set auth/TLS parameters for Consul can be found
-[`in the v1.Settings API reference`]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk.md" >}}).
+[`in the v1.Settings API reference`]({{< protobuf name="gloo.solo.io.Settings" >}}).
 
 Here is provided an example Settings so Gloo will read config from Consul Key-Value store:
 
@@ -96,7 +96,7 @@ status: {}
 
 ## Writing Config Objects to Consul
 
-Consul Values should be written using Gloo-style YAML, whose structure is described in the [`API Reference`]({{< ref "/api" >}}).
+Consul Values should be written using Gloo-style YAML, whose structure is described in the [`API Reference`]({{< versioned_link_path fromRoot="/api" >}}).
 
 `glooctl` provides a convenience to get started writing Gloo resources for use with Consul.
 

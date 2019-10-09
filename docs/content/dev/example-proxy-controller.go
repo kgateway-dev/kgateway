@@ -2,16 +2,15 @@ package main
 
 import (
 	"context"
-	"log"
-	"os"
-	"time"
-
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"log"
+	"os"
+	"time"
 
 	// import for GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -90,6 +89,7 @@ func resync(ctx context.Context, upstreams v1.UpstreamList, client v1.ProxyClien
 		desiredProxy.Metadata.Namespace,
 		desiredProxy.Metadata.Name,
 		clients.ReadOpts{Ctx: ctx})
+
 
 	// proxy exists! this is an update, not a create
 	if err == nil {
