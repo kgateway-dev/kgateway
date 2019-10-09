@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmdutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -32,11 +31,7 @@ var _ = Describe("CustomEnvoyConfig", func() {
 				Namespace: "gloo-system",
 			},
 			VirtualHost: &gatewayv1.VirtualHost{
-				Routes: []*gatewayv1.Route{{
-					// TODO(kdorosh) should be able to delete here
-					Matchers: []*v1.Matcher{{
-						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/"},
-					}}}},
+				Routes: []*gatewayv1.Route{{}},
 			},
 		}
 

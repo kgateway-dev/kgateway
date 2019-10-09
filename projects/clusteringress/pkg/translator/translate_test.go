@@ -176,7 +176,6 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											// TODO(kdorosh) we should be able to delete this
 											Matchers: []*gloov1.Matcher{{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
@@ -308,7 +307,6 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											// TODO(kdorosh) we should be able to delete this
 											Matchers: []*gloov1.Matcher{{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",

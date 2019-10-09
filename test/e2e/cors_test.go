@@ -152,12 +152,6 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 						Name:    "virt1",
 						Domains: []string{"*"},
 						Routes: []*gloov1.Route{{
-							// TODO(kdorosh) should be able to delete here
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
-									Prefix: "/",
-								},
-							}},
 							Action: &gloov1.Route_RouteAction{
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_Single{
