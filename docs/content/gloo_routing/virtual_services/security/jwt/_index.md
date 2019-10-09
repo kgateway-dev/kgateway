@@ -54,7 +54,7 @@ and cannot be used to sign new JWTs. The JWT can be independently verified by an
 ## JWTs in Gloo
 Gloo supports JWT verification using the JWT extension. You can define multiple JWT providers.
 In each provider you can specify where to find the keys required for JWT verification, the 
-values for the issuer and audience claims to verify, as well as [other settings](../../../../api/github.com/solo-io/solo-projects/projects/gloo/api/v1/plugins/jwt/jwt.proto.sk/#provider).
+values for the issuer and audience claims to verify, as well as [other settings]({{< protobuf name="jwt.plugins.gloo.solo.io.Provider">}}).
 
 We have a few guides that go into more detail:
 

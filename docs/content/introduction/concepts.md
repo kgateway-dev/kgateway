@@ -25,7 +25,7 @@ and the name of the destination (or destinations) to route them to.
 
 - **Upstreams** define destinations for routes. Upstreams tell Gloo what to route to. Upstreams may also define
 [functions]({{< protobuf name="aws.plugins.gloo.solo.io.LambdaFunctionSpec">}}).)
-and [service specs](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/service_spec.proto.sk) for *function-level routing*.
+and [service specs]({{< protobuf name="plugins.gloo.solo.io.ServiceSpec">}}) for *function-level routing*.
 
 ## Gateways
 
@@ -143,7 +143,7 @@ types as well as new function types through our plugin interface.
 how to handle routing for the upstream based on its `spec` field. Upstreams have a type-specific `spec` field which must
 be used to provide routing information to Gloo.
 
-The most basic upstream type is the [`static` upstream type](../../api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto.sk), which tells Gloo
+The most basic upstream type is the [`static` upstream type]({{< protobuf name="static.plugins.gloo.solo.io.UpstreamSpec">}}), which tells Gloo
 a list of static hosts or dns names logically grouped together for an upstream. More sophisticated upstream types
 include the kubernetes upstream and the [AWS Lambda upstream]({{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec">}}).
 
