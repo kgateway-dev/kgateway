@@ -10,7 +10,7 @@ import (
 
 // opinionated method to sort routes by convention
 //
-// for each route, find the "largest" matcher
+// for each route, find the "smallest" matcher
 // (i.e., the most-specific one) and use that
 // to sort the entire route
 

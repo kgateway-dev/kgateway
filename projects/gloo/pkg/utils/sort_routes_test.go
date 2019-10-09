@@ -110,8 +110,8 @@ var _ = Describe("PathAsString", func() {
 		}
 	})
 
-	// Creates a slice of routes, each with two matchers. The second matcher is always the "greater" one
-	// in this test to make sure we actually traverse the slice to find the largest matcher on each route
+	// Creates a slice of routes, each with two matchers. The second matcher is always the "smaller" one
+	// in this test to make sure we actually traverse the slice to find the most-specific matcher on each route
 	makeSortedMultiMatcherRoutes := func() []*v1.Route {
 		var routes []*v1.Route
 		for _, path := range []int{helpers.ExactPath, helpers.RegexPath, helpers.PrefixPath} {
