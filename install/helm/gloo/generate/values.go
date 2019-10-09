@@ -97,7 +97,7 @@ type Settings struct {
 	Integrations    *Integrations `json:"integrations,omitempty"`
 	Create          bool          `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
 	Extensions      interface{}   `json:"extensions,omitempty"`
-	SingleNamespace bool          `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	SingleNamespace bool          `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 }
 
 type Gloo struct {
