@@ -35,8 +35,9 @@ func TestGateway(t *testing.T) {
 	if testutils.AreTestsDisabled() {
 		return
 	}
+
 	if os.Getenv("CLUSTER_LOCK_TESTS") == "1" {
-		log.Warnf("This test does not require using a cluster lock. cluster lock is enabled so this test is disabled. " +
+		log.Warnf("This test does not require using a cluster lock. Cluster lock is enabled so this test is disabled. " +
 			"To enable, unset CLUSTER_LOCK_TESTS in your env.")
 		return
 	}
@@ -46,49 +47,42 @@ func TestGateway(t *testing.T) {
 	RunSpecs(t, "Gateway Suite")
 }
 
-var (
-	testHelper   *helper.SoloTestHelper
-	testInstance int
-	values       *os.File
-	randomNumber = time.Now().Unix() % 10000
-)
+var testHelper *helper.SoloTestHelper
 
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
-
-	testInstance += 1
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
+	randomNumber := time.Now().Unix() % 10000
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		// TODO: include build id?
-		defaults.InstallNamespace = "gateway-test-" + fmt.Sprintf("%d-%d-%d", randomNumber, GinkgoParallelNode(), testInstance)
+		defaults.InstallNamespace = "gateway-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.Verbose = true
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	RegisterFailHandler(func(message string, callerSkip ...int) {
+	// Register additional fail handlers
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
+	RegisterFailHandler(func(_ string, _ ...int) {
 		glooLogs, _ := install.KubectlOut(nil, "logs", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo")
 		gwLogs, _ := install.KubectlOut(nil, "logs", "-n", testHelper.InstallNamespace, "-l", "gloo=gateway")
 
-		fmt.Fprintf(GinkgoWriter, "\n\n\n\nGLOO LOGS\n\n%s\n\n\n\n", glooLogs)
-		fmt.Fprintf(GinkgoWriter, "\n\n\n\nGATEWAY LOGS\n\n%s\n\n\n\n", gwLogs)
+		_, _ = fmt.Fprintf(GinkgoWriter, "\n\nGLOO LOGS\n\n%s\n\n", glooLogs)
+		_, _ = fmt.Fprintf(GinkgoWriter, "\n\nGATEWAY LOGS\n\n%s\n\n", gwLogs)
 	})
 
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	testHelper.Verbose = true
+	valueOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
+	defer cleanupFunc()
 
-	values, err = ioutil.TempFile("", "*.yaml")
+	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))
 	Expect(err).NotTo(HaveOccurred())
-	values.Write([]byte("global:\n  glooRbac:\n    namespaced: true\nsettings:\n  singleNamespace: true\n  create: true\n"))
-	values.Close()
 
-	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values.Name()))
-	Expect(err).NotTo(HaveOccurred())
+	// Check that everything is OK
 	Eventually(func() error {
 		opts := &options.Options{
 			Metadata: core.Metadata{
@@ -103,11 +97,42 @@ func StartTestHelper() {
 			return nil
 		}
 		return errors.New("glooctl check detected a problem with the installation")
-	}, "40s", "4s").Should(BeNil())
+	}, "40s", "5s").Should(BeNil())
 
-	// enable strict validation
-	// this can be removed once we enable validation by default
-	// set projects/gateway/pkg/syncer.AcceptAllResourcesByDefault is set to false
+	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
+	// See https://github.com/solo-io/gloo/issues/1374
+	enableStrictValidation()
+}
+
+func TearDownTestHelper() {
+	if testHelper != nil {
+		err := testHelper.UninstallGloo()
+		Expect(err).NotTo(HaveOccurred())
+		_ = testutils.Kubectl("delete", "--wait=false", "namespace", testHelper.InstallNamespace)
+	}
+}
+
+func getHelmValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := ioutil.TempFile("", "*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = values.Write([]byte(`
+global:
+  glooRbac:
+    namespaced: true
+settings:
+  singleNamespace: true
+  create: true
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
+}
+
+func enableStrictValidation() {
 	settingsClient := clienthelpers.MustSettingsClient()
 	settings, err := settingsClient.Read(testHelper.InstallNamespace, "default", clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
@@ -118,15 +143,4 @@ func StartTestHelper() {
 
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	Expect(err).NotTo(HaveOccurred())
-}
-
-func TearDownTestHelper() {
-	if values != nil {
-		os.Remove(values.Name())
-	}
-	if testHelper != nil {
-		err := testHelper.UninstallGloo()
-		Expect(err).NotTo(HaveOccurred())
-		_ = testutils.Kubectl("delete", "--wait=false", "namespace", testHelper.InstallNamespace)
-	}
 }
