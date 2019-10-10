@@ -8,7 +8,7 @@ get a list of routes for a given virtual service
 
 ### Synopsis
 
-usage: glooctl get virtualservice [virtual service name] routes
+usage: glooctl get virtualservice route [virtual service name]
 
 ```
 glooctl get virtualservice route [flags]

@@ -1531,7 +1531,7 @@ func (m *OpaAuth) GetQuery() string {
 //  * Your LDAP server is configured so that each entry you want to authorize has an attribute that indicates its group
 //    memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
 type Ldap struct {
-	// Address of the LDAP server to query. Should be in the form: <address>:<port>.
+	// Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder.
 	// When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the

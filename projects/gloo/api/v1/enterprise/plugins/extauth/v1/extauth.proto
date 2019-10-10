@@ -301,7 +301,7 @@ message Ldap {
     google.protobuf.UInt32Value initialSize = 2;
   }
 
-  // Address of the LDAP server to query. Should be in the form: <address>:<port>.
+  // Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
   string address = 1;
 
   // Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder.
