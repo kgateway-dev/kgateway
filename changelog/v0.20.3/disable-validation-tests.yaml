@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: install gloo once per suite rather than once per test in gateway kube2e
