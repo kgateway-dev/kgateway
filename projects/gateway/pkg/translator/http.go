@@ -280,12 +280,13 @@ type routeVisitor struct {
 }
 
 func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours *v1.Route, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
-	if len(ours.Matchers) == 0 {
-		ours.Matchers = []*gloov1.Matcher{defaults.DefaultMatcher()}
+	matchers := []*gloov1.Matcher{defaults.DefaultMatcher()}
+	if len(ours.Matchers) > 0 {
+		matchers = ours.Matchers
 	}
 
 	route := &gloov1.Route{
-		Matchers:     ours.Matchers,
+		Matchers:     matchers,
 		RoutePlugins: ours.RoutePlugins,
 	}
 	switch action := ours.Action.(type) {
