@@ -9,7 +9,7 @@ In this document we will review how to prepare different Kubernetes environments
 Details for specific Kubernetes distributions:
 
 - [Minikube](#minikube)
-- [Minishift](#minishift)
+- [Minishift](#minishift-openshift)
 - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
 - [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
 - [Amazon Elastic Container Service for Kubernetes (EKS)](#amazon-elastic-container-service-for-kubernetes-eks)
