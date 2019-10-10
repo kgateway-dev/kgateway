@@ -110,7 +110,7 @@ var _ = Describe("Plugin", func() {
 
 			routeOut := &envoyroute.Route{
 				Match: envoyroute.RouteMatch{
-					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix:"/"},
+					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix: "/"},
 				},
 				Action: &envoyroute.Route_Route{
 					Route: &envoyroute.RouteAction{},
