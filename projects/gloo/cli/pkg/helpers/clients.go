@@ -339,6 +339,39 @@ func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
 	return virtualServiceClient, nil
 }
 
+func MustRouteTableClient() gatewayv1.RouteTableClient {
+	routeTableClient, err := RouteTableClient()
+	if err != nil {
+		log.Fatalf("failed to create routeTable client: %v", err)
+	}
+	return routeTableClient
+}
+
+func RouteTableClient() (gatewayv1.RouteTableClient, error) {
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return gatewayv1.NewRouteTableClient(customFactory)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache(context.TODO())
+	routeTableClient, err := gatewayv1.NewRouteTableClient(&factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.RouteTableCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating routeTables client")
+	}
+	if err := routeTableClient.Register(); err != nil {
+		return nil, err
+	}
+	return routeTableClient, nil
+}
+
 func MustSettingsClient() v1.SettingsClient {
 	client, err := SettingsClient()
 	if err != nil {

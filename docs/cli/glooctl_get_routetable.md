@@ -1,23 +1,23 @@
 ---
-title: "glooctl get virtualservice route"
+title: "glooctl get routetable"
 weight: 5
 ---
-## glooctl get virtualservice route
+## glooctl get routetable
 
-get a list of routes for a given virtual service
+read a route table or list route tables in a namespace
 
 ### Synopsis
 
-usage: glooctl get virtualservice route [virtual service name]
+usage: glooctl get routetable [NAME] [--namespace=namespace] [-o FORMAT]
 
 ```
-glooctl get virtualservice route [flags]
+glooctl get routetable [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for route
+  -h, --help   help for routetable
 ```
 
 ### Options inherited from parent commands
@@ -38,5 +38,5 @@ glooctl get virtualservice route [flags]
 
 ### SEE ALSO
 
-* [glooctl get virtualservice](../glooctl_get_virtualservice)	 - read a virtualservice or list virtualservices in a namespace
+* [glooctl get](../glooctl_get)	 - Display one or a list of Gloo resources
 

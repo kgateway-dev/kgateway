@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix interface conversion panic on glooctl command to print route table for a virtual service
+    issueLink: https://github.com/solo-io/gloo/issues/1350
