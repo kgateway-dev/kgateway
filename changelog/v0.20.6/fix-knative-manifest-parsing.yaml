@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix parsing 'null' in knative manifest
+    issueLink: https://github.com/solo-io/gloo/issues/1367
