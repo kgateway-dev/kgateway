@@ -229,7 +229,7 @@ type AccessLogger struct {
 	Image       *Image `json:"image,omitempty"`
 	Port        uint   `json:"port,omitempty"`
 	ServiceName string `json:"serviceName,omitempty"`
-	Enabled     bool   `json:"enableds"`
+	Enabled     bool   `json:"enabled"`
 	*DeploymentSpec
 }
 
