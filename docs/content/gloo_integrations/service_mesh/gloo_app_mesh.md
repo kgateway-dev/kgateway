@@ -151,7 +151,7 @@ In our above example, the `colorgateway` service calls the `colorteller` service
 2. Create a Gloo VirtualService
 3. Create a Route to where we want to bring traffic into the mesh
 
-Installing Gloo is [covered adequately in other sections]({{% versioned_link_path fromRoot="/installation/_index.md" %}}) of the documentation.
+Installing Gloo is [covered adequately in other sections]({{% versioned_link_path fromRoot="/installation" %}}) of the documentation.
 
 To accomplish steps 2 and 3, run the following command:
 
