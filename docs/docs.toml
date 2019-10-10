@@ -1,5 +1,4 @@
-# baseURL = "https://docs.solo.io"
-baseURL = "localhost:1313"
+baseURL = "https://docs.solo.io"
 languageCode = "en-us"
 title = "Gloo Docs"
 theme = "hugo-theme-soloio"

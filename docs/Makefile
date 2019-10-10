@@ -39,9 +39,8 @@ DOCS_VERSION := latest
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/1fdc610ae7acc29738454276babb23c86917b4cf
-	### TODO(merge branch and pin hash)
-	git -C themes/hugo-theme-soloio checkout remove-revealjs-demo
+	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/9b57b5456c58fe284f80c4ebd4d083064b9020f9
+	git -C themes/hugo-theme-soloio checkout 9b57b5456c58fe284f80c4ebd4d083064b9020f9
 	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
