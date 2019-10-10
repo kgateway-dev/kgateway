@@ -104,7 +104,7 @@ curl -v \
 {{% notice note %}}
 Note: Consul Keys for Gloo resources follow the following format: 
 `gloo/<resource group>/<group version>/<resource kind>/<resource namespace>/<resource name>`. 
-See [the Consul Key-Value configuration guide]({{< ref "/advanced_configuration/consul_kv.md" >}})
+See [the Consul Key-Value configuration guide]({{< versioned_link_path fromRoot="/advanced_configuration/consul_kv.md" >}})
 for more information.
 {{% /notice %}}
 

@@ -22,7 +22,7 @@ great way to get a cluster up quickly.
 
 ### Steps
 
-1. Start by [installing]({{< ref "/installation" >}}) the Gloo Gateway on Kubernetes to the default `gloo-system` namespace.
+1. Start by [installing]({{< versioned_link_path fromRoot="/installation" >}}) the Gloo Gateway on Kubernetes to the default `gloo-system` namespace.
 
 1. Next, deploy the Pet Store app to kubernetes:
 

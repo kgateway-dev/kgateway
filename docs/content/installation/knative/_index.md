@@ -12,7 +12,7 @@ This guide walks you through installing Gloo and Knative using `glooctl`, the Gl
 
 {{% notice note %}}
 `glooctl` generates a manifest which can be piped to stdout or a file using the `--dry-run` flag. Alternatively,
-Gloo can be installed via its [Helm Chart]({{< ref "/installation/gateway/kubernetes#installing-on-kubernetes-with-helm" >}}), which will permit fine-grained configuration of installation parameters.
+Gloo can be installed via its [Helm Chart]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes#installing-on-kubernetes-with-helm" >}}), which will permit fine-grained configuration of installation parameters.
 {{% /notice %}}
 
 
@@ -152,4 +152,4 @@ glooctl uninstall -n my-namespace
 
 ## Next Steps
 
-To begin using Gloo with Knative, check out the [Knative User Guide]({{< ref "/gloo_integrations/knative" >}}).
+To begin using Gloo with Knative, check out the [Knative User Guide]({{< versioned_link_path fromRoot="/gloo_integrations/knative" >}}).

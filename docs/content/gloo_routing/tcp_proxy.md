@@ -18,7 +18,7 @@ For reference on  the
 ### What you'll need
 
 You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the
-[Gloo installation]({{< ref "/installation" >}}) for guidance on installing Gloo into Kubernetes.
+[Gloo installation]({{< versioned_link_path fromRoot="/installation" >}}) for guidance on installing Gloo into Kubernetes.
 
 You'll also need access from the Kubernetes cluster to an external API. You will also need an accessible TCP service running 
 in cluster, this may be anything, for the purposes of this tutorial we will use a basic tcp-echo pod.

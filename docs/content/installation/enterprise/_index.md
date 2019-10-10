@@ -53,7 +53,7 @@ your unique key.
 {{% /notice %}}
 
 Before starting installation, please ensure that you've prepared your Kubernetes cluster per the community
-[Prep Kubernetes]({{< ref "/installation/cluster_setup" >}}) instructions.
+[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/cluster_setup" >}}) instructions.
 
 
 ### Installing on Kubernetes with `glooctl`
@@ -209,4 +209,4 @@ glooctl uninstall -n my-namespace
 
 ## Next Steps
 
-After you've installed Gloo, please check out our [User Guides]({{< ref "/gloo_routing" >}}).
+After you've installed Gloo, please check out our [User Guides]({{< versioned_link_path fromRoot="/gloo_routing" >}}).
