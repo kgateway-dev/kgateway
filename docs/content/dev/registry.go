@@ -1,4 +1,6 @@
-package registry
+package docs_demo
+
+// package registry
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"

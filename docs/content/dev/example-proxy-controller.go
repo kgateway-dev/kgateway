@@ -1,16 +1,19 @@
-package main
+package docs_demo
+
+// package main
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"log"
+	"os"
+	"time"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"log"
-	"os"
-	"time"
 
 	// import for GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

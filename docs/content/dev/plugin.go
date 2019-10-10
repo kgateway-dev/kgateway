@@ -1,4 +1,6 @@
-package gce
+package docs_demo
+
+// package gce
 
 import (
 	"context"
