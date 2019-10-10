@@ -151,4 +151,17 @@ var _ = Describe("PathAsString", func() {
 			Expect(unsortedRoutes).To(Equal(makeSortedMultiMatcherRoutes()))
 		}
 	})
+
+	It("sorts routes with nil matchers (they default to `/` prefix matcher) as largest", func() {
+		routes := []*v1.Route{
+			{Matchers: nil},
+			{Matchers: []*v1.Matcher{helpers.MakeMatcher(helpers.ExactPath, 10)}},
+		}
+		sortedRoutes := []*v1.Route{
+			{Matchers: []*v1.Matcher{helpers.MakeMatcher(helpers.ExactPath, 10)}},
+			{Matchers: nil},
+		}
+		SortRoutesByPath(routes)
+		Expect(routes).To(Equal(sortedRoutes))
+	})
 })

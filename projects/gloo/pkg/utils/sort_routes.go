@@ -3,6 +3,8 @@ package utils
 import (
 	"sort"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -19,34 +21,43 @@ import (
 // 2. longer path string < shorter path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := *routes[i].Matchers[0] // bounds error not possible within a slice sort function
+		smallest1 := *defaults.DefaultMatcher()
+		if len(routes[i].Matchers) > 0 {
+			smallest1 = *routes[i].Matchers[0]
+		}
 		for _, m := range routes[i].Matchers {
 			if lessMatcher(m, &smallest1) {
 				smallest1 = *m
 			}
 		}
-
-		smallest2 := *routes[j].Matchers[0] // bounds error not possible within a slice sort function
+		smallest2 := *defaults.DefaultMatcher()
+		if len(routes[j].Matchers) > 0 {
+			smallest2 = *routes[j].Matchers[0]
+		}
 		for _, m := range routes[j].Matchers {
 			if lessMatcher(m, &smallest2) {
 				smallest2 = *m
 			}
 		}
-
 		return lessMatcher(&smallest1, &smallest2)
 	})
 }
 
 func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := *routes[i].Matchers[0] // bounds error not possible within a slice sort function
+		smallest1 := *defaults.DefaultMatcher()
+		if len(routes[i].Matchers) > 0 {
+			smallest1 = *routes[i].Matchers[0]
+		}
 		for _, m := range routes[i].Matchers {
 			if lessMatcher(m, &smallest1) {
 				smallest1 = *m
 			}
 		}
-
-		smallest2 := *routes[j].Matchers[0] // bounds error not possible within a slice sort function
+		smallest2 := *defaults.DefaultMatcher()
+		if len(routes[j].Matchers) > 0 {
+			smallest2 = *routes[j].Matchers[0]
+		}
 		for _, m := range routes[j].Matchers {
 			if lessMatcher(m, &smallest2) {
 				smallest2 = *m
