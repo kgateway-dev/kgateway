@@ -8,7 +8,7 @@ ARG FROM_DIR
 RUN rm -rf /etc/nginx/conf.d
 COPY conf /etc/nginx
 
-# Copy over both regular an no_auth bundles
+# Copy over both regular and no_auth bundles
 COPY $FROM_DIR /usr/share/nginx/html/no_auth/$PRODUCT_SCOPE/$VERSION
 
 EXPOSE 8080

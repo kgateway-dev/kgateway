@@ -3,5 +3,5 @@ changelog:
     description: Move documentation and tutorials into Gloo repo for tighter coupling and easier discoverability.
     issueLink: https://github.com/solo-io/gloo/issues/1221
   - type: NON_USER_FACING
-    description: Use hugo data file to coordinate links to our api docs.jk
+    description: Use hugo data file to coordinate links to our api docs.
     issueLink: https://github.com/solo-io/gloo/issues/1248
