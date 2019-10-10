@@ -132,7 +132,7 @@ func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtua
 
 func (t *translator) envoyRoutes(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route) []envoyroute.Route {
 
-	out := setMatch(in, routeReport)
+	out := initRoutes(in, routeReport)
 
 	for i := range out {
 		t.setAction(params, routeReport, in, &out[i])
@@ -141,7 +141,8 @@ func (t *translator) envoyRoutes(params plugins.RouteParams, routeReport *valida
 	return out
 }
 
-func setMatch(in *v1.Route, routeReport *validationapi.RouteReport) []envoyroute.Route {
+// creates Envoy routes for each matcher provided on our Gateway route
+func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []envoyroute.Route {
 	out := make([]envoyroute.Route, len(in.Matchers))
 
 	if len(in.Matchers) == 0 {
