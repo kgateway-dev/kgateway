@@ -26,6 +26,11 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 					Domains: []string{"*"},
 					Routes: []envoyroute.Route{
 						{
+							Match: envoyroute.RouteMatch{
+								PathSpecifier: &envoyroute.RouteMatch_Prefix{
+									Prefix: "/",
+								},
+							},
 							Action: &envoyroute.Route_DirectResponse{
 								DirectResponse: &envoyroute.DirectResponseAction{
 									Status: invalidConfigStatusCode,
