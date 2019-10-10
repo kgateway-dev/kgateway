@@ -330,7 +330,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		return nil, noDelegateActionErr
 	}
 
-	delegatePrefix, err := getFirstPrefixMatcher(route)
+	delegatePrefix, err := getDelegateRoutePrefix(route)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 	return delegatedRoutes, nil
 }
 
-func getFirstPrefixMatcher(route *v1.Route) (string, error) {
+func getDelegateRoutePrefix(route *v1.Route) (string, error) {
 	switch len(route.GetMatchers()) {
 	case 0:
 		return defaults.DefaultMatcher().GetPrefix(), nil
