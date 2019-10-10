@@ -154,36 +154,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 	})
 
-	It("removes all pods when uninstalled", func() {
-		kubeInterface := kube2e.MustKubeClient().CoreV1()
-		installedPods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
-		Expect(err).NotTo(HaveOccurred(), "Should be able to read pods in the namespace")
-		Expect(installedPods.Items).NotTo(BeEmpty(), "Should have a nonzero number of pods in the namespace")
-
-		cmdArgs := []string{
-			filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName), "uninstall", "-n", testHelper.InstallNamespace,
-		}
-
-		err = exec.RunCommand(testHelper.RootDir, true, cmdArgs...)
-		Expect(err).NotTo(HaveOccurred(), "The uninstall should be clean")
-
-		Eventually(func() ([]corev1.Pod, error) {
-			pods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
-			if err != nil {
-				return nil, err
-			}
-
-			var runningPods []corev1.Pod
-			for _, pod := range pods.Items {
-				// the test runner itself is a pod in the namespace- we don't expect that one to be deleted
-				if pod.ObjectMeta.Name != "testrunner" {
-					runningPods = append(runningPods, pod)
-				}
-			}
-			return runningPods, nil
-		}, time.Minute, time.Second).Should(BeEmpty(), "There should be no pods remaining after running glooctl uninstall")
-	})
-
 	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
@@ -1092,7 +1062,37 @@ spec:
 				testValidation(tc.resourceYaml, tc.expectedErr)
 			}
 		})
+	})
 
+	// This has to run as last test in this suite, as it uninstalls Gloo!
+	It("removes all pods when uninstalled", func() {
+		kubeInterface := kube2e.MustKubeClient().CoreV1()
+		installedPods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
+		Expect(err).NotTo(HaveOccurred(), "Should be able to read pods in the namespace")
+		Expect(installedPods.Items).NotTo(BeEmpty(), "Should have a nonzero number of pods in the namespace")
+
+		cmdArgs := []string{
+			filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName), "uninstall", "-n", testHelper.InstallNamespace,
+		}
+
+		err = exec.RunCommand(testHelper.RootDir, true, cmdArgs...)
+		Expect(err).NotTo(HaveOccurred(), "The uninstall should be clean")
+
+		Eventually(func() ([]corev1.Pod, error) {
+			pods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
+			if err != nil {
+				return nil, err
+			}
+
+			var runningPods []corev1.Pod
+			for _, pod := range pods.Items {
+				// the test runner itself is a pod in the namespace- we don't expect that one to be deleted
+				if pod.ObjectMeta.Name != "testrunner" {
+					runningPods = append(runningPods, pod)
+				}
+			}
+			return runningPods, nil
+		}, time.Minute, time.Second).Should(BeEmpty(), "There should be no pods remaining after running glooctl uninstall")
 	})
 })
 
