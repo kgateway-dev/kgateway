@@ -244,7 +244,7 @@ dn: cn=managers,ou=groups,dc=solo,dc=io
 
 ### Secure the Virtual Service
 {{% notice warning %}}
-{{< readfile file="/static/content/extauth_version_info_note" >}}
+{{% extauth_version_info_note %}}
 {{% /notice %}}
 
 Now that we have all the necessary components in place, let use the LDAP server to secure the Virtual Service we created 

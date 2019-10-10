@@ -72,7 +72,7 @@ The above command should produce the following output:
 
 ## Securing the Virtual Service
 {{% notice warning %}}
-{{< readfile file="/static/content/extauth_version_info_note" >}}
+{{% extauth_version_info_note %}}
 {{% /notice %}}
 
 As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 

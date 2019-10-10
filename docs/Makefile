@@ -40,7 +40,8 @@ DOCS_VERSION := latest
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/1fdc610ae7acc29738454276babb23c86917b4cf
-	git -C themes/hugo-theme-soloio checkout 1fdc610ae7acc29738454276babb23c86917b4cf
+	### TODO(merge branch and pin hash)
+	git -C themes/hugo-theme-soloio checkout remove-revealjs-demo
 	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
@@ -69,7 +70,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./layouts ./site-latest ./site-versioned
+	rm -fr ./site ./resources ./site-latest ./site-versioned
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it

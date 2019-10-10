@@ -29,3 +29,8 @@ GCLOUD_PROJECT_ID=<project-id> TAGGED_VERSION=<some-version> make publish-docs -
 ```
 
 
+
+# Shortcode/Hugo tips
+- Shortcodes cannot be embedded in other shortcodes
+  - This means the "readfile" shortcode does not interpolate shortcodes embedded within the file
+  - "Nesting" is different and allowed: you can "nest" short codes in the same manner that you can nest html tags

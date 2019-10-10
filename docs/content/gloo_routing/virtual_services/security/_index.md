@@ -37,7 +37,7 @@ and providing the following value override:
 #### Configuration overview
 
 {{% notice info %}}
-{{< readfile file="/static/content/extauth_version_info_note" >}}
+{{% extauth_version_info_note %}}
 {{% /notice %}}
 
 Authentication configuration is defined in [AuthConfig]({{< protobuf name="enterprise.gloo.solo.io.AuthConfig">}}) resources. 
