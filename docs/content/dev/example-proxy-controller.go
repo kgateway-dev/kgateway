@@ -90,7 +90,6 @@ func resync(ctx context.Context, upstreams v1.UpstreamList, client v1.ProxyClien
 		desiredProxy.Metadata.Name,
 		clients.ReadOpts{Ctx: ctx})
 
-
 	// proxy exists! this is an update, not a create
 	if err == nil {
 
