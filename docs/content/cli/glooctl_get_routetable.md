@@ -1,26 +1,23 @@
 ---
-title: "glooctl edit settings ratelimit custom-server-config"
+title: "glooctl get routetable"
 weight: 5
 ---
-## glooctl edit settings ratelimit custom-server-config
+## glooctl get routetable
 
-Add a custom rate limit settings (Enterprise)
+read a route table or list route tables in a namespace
 
 ### Synopsis
 
-This allows using lyft rate limit server configuration language to configure the rate limit server.
-		For more information see: https://github.com/lyft/ratelimit
-		Note: do not add the 'domain' configuration key.
-		This is a Gloo Enterprise feature.
+usage: glooctl get routetable [NAME] [--namespace=namespace] [-o FORMAT]
 
 ```
-glooctl edit settings ratelimit custom-server-config [flags]
+glooctl get routetable [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for custom-server-config
+  -h, --help   help for routetable
 ```
 
 ### Options inherited from parent commands
@@ -36,11 +33,10 @@ glooctl edit settings ratelimit custom-server-config [flags]
       --name string                name of the resource to read or write
   -n, --namespace string           namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType          output format: (yaml, json, table, kube-yaml, wide) (default table)
-      --resource-version string    the resource version of the resource we are editing. if not empty, resource will only be changed if the resource version matches
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
 ```
 
 ### SEE ALSO
 
-* [glooctl edit settings ratelimit](../glooctl_edit_settings_ratelimit)	 - Configure rate limit settings (Enterprise)
+* [glooctl get](../glooctl_get)	 - Display one or a list of Gloo resources
 

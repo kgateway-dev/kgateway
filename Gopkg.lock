@@ -1362,7 +1362,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:ebe970f3d10ef83379c15630f072b95d74762770f5bcb086cd12bbe201682b43"
+  digest = "1:30d12500ff14fd6945d4451146adb4fa6e62019c7164070924ccf4ec787e4a92"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1401,8 +1401,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "86832286d96eaa9ebd296b7e279c7884eec08888"
-  version = "v0.10.16"
+  revision = "5f542d97aa0fb3d28d29ff9e2e21cef390ea3f80"
+  version = "v0.10.18"
 
 [[projects]]
   digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
