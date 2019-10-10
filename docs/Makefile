@@ -37,11 +37,16 @@ site-common: clean
 site-test: site-common
 	go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
 	hugo --config docs.toml
+	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
+	cat site/index.json | jq "." > /dev/null
 
 .PHONY: site-release
 site-release: site-common
 	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
 	hugo --config docs.toml
+	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
+	# (if it passes here, it will pass on the subsequent generation so no need to check both hugo calls)
+	cat site/index.json | jq "." > /dev/null
 	mv site site-latest
 	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)
 	hugo --config docs.toml
