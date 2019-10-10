@@ -66,8 +66,4 @@ var _ = Describe("Install", func() {
 		Expect(out).To(ContainSubstring("kind: Namespace"))
 	})
 
-	It("should not error when setting eventing version 0.9.0", func() {
-		err := testutils.Glooctl("install knative --install-knative=true --install-knative-version=0.9.0 --install-eventing=true --install-eventing-version=0.9.0 -v --dry-run")
-		Expect(err).NotTo(HaveOccurred())
-	})
 })
