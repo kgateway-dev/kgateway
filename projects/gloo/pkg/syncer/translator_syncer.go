@@ -3,17 +3,14 @@ package syncer
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
-
 	"github.com/hashicorp/go-multierror"
-
-	"go.opencensus.io/tag"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"go.opencensus.io/tag"
 )
 
 var (
@@ -32,7 +29,7 @@ type translatorSyncer struct {
 
 type TranslatorSyncerExtensionParams struct {
 	SettingExtensions           *v1.Extensions
-	RateLimitDescriptorSettings ratelimit.EnvoySettings // Enterprise-only, used by GlooE code (lives outside this repo)
+	RateLimitDescriptorSettings ratelimit.EnvoySettings
 }
 
 type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
