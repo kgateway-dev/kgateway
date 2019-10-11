@@ -7,15 +7,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/usage"
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/reporting-client/pkg/client"
+
 	"go.uber.org/zap"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	check "github.com/solo-io/go-checkpoint"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -31,13 +33,18 @@ type SetupOpts struct {
 	SetupFunc     SetupFunc
 	ExitOnError   bool
 	CustomCtx     context.Context
+
+	// optional- if present, report usage with the payload this discovers
+	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
+	// otherwise, we'll provide redundant copies of the usage data
+	UsageReporter client.UsagePayloadReader
 }
 
 var once sync.Once
 
 func Main(opts SetupOpts) error {
 	loggingPrefix := opts.LoggingPrefix
-	check.NewUsageClient().Start(loggingPrefix, version.Version)
+
 	// prevent panic if multiple flag.Parse called concurrently
 	once.Do(func() {
 		flag.Parse()
@@ -48,6 +55,15 @@ func Main(opts SetupOpts) error {
 		ctx = context.Background()
 	}
 	ctx = contextutils.WithLogger(ctx, loggingPrefix)
+
+	if opts.UsageReporter != nil {
+		go func() {
+			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggingPrefix)
+			for err := range errs {
+				contextutils.LoggerFrom(ctx).Errorf("Error while reporting usage: %s", err.Error())
+			}
+		}()
+	}
 
 	settingsClient, err := kubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
@@ -124,4 +140,9 @@ func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) 
 		return errors.Wrapf(err, "failed to create default settings")
 	}
 	return nil
+}
+
+func StartReportingUsage(ctx context.Context, usagePayloadReader client.UsagePayloadReader, product string) <-chan error {
+	usageClient := client.NewUsageClient(usage.ReportingServiceUrl, usagePayloadReader, usage.LoadInstanceMetadata(product, version.Version))
+	return usageClient.StartReportingUsage(ctx, usage.ReportingDuration)
 }

@@ -1405,7 +1405,19 @@
   version = "v0.10.18"
 
 [[projects]]
-  digest = "1:a816c3c4ab0bb06663d8d4ea44d979ba0d0f323260b541c6fd2533fb8211660a"
+  digest = "1:4d1097e99437dae9af7b00925d9067a54afd2200f725013326cd159ef74e15c1"
+  name = "github.com/solo-io/reporting-client"
+  packages = [
+    ".",
+    "pkg/api/v1",
+    "pkg/client",
+  ]
+  pruneopts = "UT"
+  revision = "7ef898bc3df32db0e1ed2dee70a838c955a7b422"
+  version = "v0.0.1"
+
+[[projects]]
+  digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -2784,6 +2796,7 @@
     "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/go-utils/versionutils/dep",
     "github.com/solo-io/go-utils/versionutils/git",
+    "github.com/solo-io/reporting-client",
     "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",
