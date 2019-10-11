@@ -5,7 +5,6 @@
 package mocks
 
 import (
-	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -36,30 +35,30 @@ func (m *MockStorageClient) EXPECT() *MockStorageClientMockRecorder {
 }
 
 // GetUsage mocks base method
-func (m *MockStorageClient) GetUsage(arg0 context.Context) (*metricsservice.GlobalUsage, error) {
+func (m *MockStorageClient) GetUsage() (*metricsservice.GlobalUsage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUsage", arg0)
+	ret := m.ctrl.Call(m, "GetUsage")
 	ret0, _ := ret[0].(*metricsservice.GlobalUsage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUsage indicates an expected call of GetUsage
-func (mr *MockStorageClientMockRecorder) GetUsage(arg0 interface{}) *gomock.Call {
+func (mr *MockStorageClientMockRecorder) GetUsage() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsage", reflect.TypeOf((*MockStorageClient)(nil).GetUsage), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsage", reflect.TypeOf((*MockStorageClient)(nil).GetUsage))
 }
 
 // RecordUsage mocks base method
-func (m *MockStorageClient) RecordUsage(arg0 context.Context, arg1 *metricsservice.GlobalUsage) error {
+func (m *MockStorageClient) RecordUsage(arg0 *metricsservice.GlobalUsage) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RecordUsage", arg0, arg1)
+	ret := m.ctrl.Call(m, "RecordUsage", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RecordUsage indicates an expected call of RecordUsage
-func (mr *MockStorageClientMockRecorder) RecordUsage(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockStorageClientMockRecorder) RecordUsage(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordUsage", reflect.TypeOf((*MockStorageClient)(nil).RecordUsage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordUsage", reflect.TypeOf((*MockStorageClient)(nil).RecordUsage), arg0)
 }
