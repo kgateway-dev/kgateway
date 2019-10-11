@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: fix nil pointer when validating nil proxy
+    issueLink: https://github.com/solo-io/gloo/issues/1369
+  - type: FIX
+    description: check resource hash in validator (prevents validating status updates)
+    issueLink: https://github.com/solo-io/gloo/issues/1368
