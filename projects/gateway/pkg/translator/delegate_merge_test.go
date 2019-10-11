@@ -183,5 +183,48 @@ var _ = Describe("route merge util", func() {
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
 	})
+	Context("bad route table config", func() {
+		It("returns error if route table has a matcher that doesn't have the delegate prefix", func() {
+			ref := core.ResourceRef{
+				Name: "rt",
+			}
+			route := &v1.Route{
+				Matchers: []*gloov1.Matcher{{
+					PathSpecifier: &gloov1.Matcher_Prefix{
+						Prefix: "/foo",
+					},
+				}},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &ref,
+				},
+			}
+			rt := v1.RouteTable{
+				Routes: []*v1.Route{{
+					Matchers: []*gloov1.Matcher{
+						{
+							PathSpecifier: &gloov1.Matcher_Prefix{
+								Prefix: "/foo/bar",
+							},
+						},
+						{
+							PathSpecifier: &gloov1.Matcher_Prefix{
+								Prefix: "/invalid",
+							},
+						}},
+				}},
+				Metadata: core.Metadata{
+					Name: "rt",
+				},
+			}
 
+			rpt := reporter.ResourceReports{}
+			vs := &v1.VirtualService{}
+			rv := &routeVisitor{tables: v1.RouteTableList{&rt}}
+			converted, err := rv.convertDelegateAction(vs, route, rpt)
+			Expect(err).NotTo(HaveOccurred())
+			expectedErr := invalidRouteTableForDelegateErr("/foo", "/invalid").Error()
+			Expect(rpt.Validate().Error()).To(ContainSubstring(expectedErr))
+			Expect(converted).To(BeNil())
+		})
+	})
 })

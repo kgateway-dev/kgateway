@@ -311,7 +311,7 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 var (
 	matcherCountErr     = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
 	missingPrefixErr    = errors.New("invalid route: routes with delegate actions must use a prefix matcher")
-	invalidPrefixErr    = errors.New("invalid route: routes within the route table must begin with the prefix of their parent")
+	invalidPrefixErr    = errors.New("invalid route: route table matchers must begin with the prefix of their parent route's matcher")
 	hasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
 	hasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
 	hasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
@@ -321,6 +321,9 @@ var (
 
 	routeTableMissingWarning = func(ref core.ResourceRef) string {
 		return fmt.Sprintf("route table %v.%v missing", ref.Namespace, ref.Name)
+	}
+	invalidRouteTableForDelegateErr = func(delegatePrefix, pathString string) error {
+		return errors.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
 	}
 )
 
@@ -368,14 +371,8 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		}
 		routeTableRoute.RoutePlugins = merged
 
-		match, err := getFirstMatcher(routeTableRoute)
+		err = isRouteTableValidForDelegatePrefix(delegatePrefix, routeTableRoute)
 		if err != nil {
-			reports.AddError(routingResource, err)
-			continue
-		}
-		// ensure all subroutes in the delegated route table match the parent prefix
-		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, delegatePrefix) {
-			err = errors.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
 			reports.AddError(routingResource, err)
 			continue
 		}
@@ -425,17 +422,12 @@ func getDelegateRoutePrefix(route *v1.Route) (string, error) {
 	}
 }
 
-func getFirstMatcher(route *v1.Route) (*gloov1.Matcher, error) {
-	switch len(route.GetMatchers()) {
-	case 0:
-		return defaults.DefaultMatcher(), nil
-	case 1:
-		matcher := route.GetMatchers()[0]
-		if matcher.GetPathSpecifier() == nil {
-			return defaults.DefaultMatcher(), nil // no path specifier provided, default to '/' prefix matcher
+func isRouteTableValidForDelegatePrefix(delegatePrefix string, routeTable *v1.Route) error {
+	for _, match := range routeTable.Matchers {
+		// ensure all subroutes in the delegated route table match the parent prefix
+		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, delegatePrefix) {
+			return invalidRouteTableForDelegateErr(delegatePrefix, pathString)
 		}
-		return matcher, nil
-	default:
-		return nil, matcherCountErr
 	}
+	return nil
 }
