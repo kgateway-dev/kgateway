@@ -224,7 +224,7 @@ func desiredListenerForHttp(gateway *v2.Gateway, virtualServicesForGateway v1.Vi
 	if httpGateway := gateway.GetHttpGateway(); httpGateway != nil {
 		httpPlugins = httpGateway.Plugins
 	}
-	listener := standardListener(gateway)
+	listener := makeListener(gateway)
 	listener.ListenerType = &gloov1.Listener_HttpListener{
 		HttpListener: &gloov1.HttpListener{
 			VirtualHosts:    virtualHosts,
@@ -232,6 +232,12 @@ func desiredListenerForHttp(gateway *v2.Gateway, virtualServicesForGateway v1.Vi
 		},
 	}
 	listener.SslConfigurations = sslConfigs
+
+	if err := appendSource(listener, gateway); err != nil {
+		// should never happen
+		reports.AddError(gateway, err)
+	}
+
 	return listener
 }
 
@@ -242,7 +248,7 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 	}
 
 	vh := &gloov1.VirtualHost{
-		Name:               fmt.Sprintf("%v.%v", vs.Metadata.Namespace, vs.Metadata.Name),
+		Name:               VirtualHostName(vs),
 		Domains:            vs.VirtualHost.Domains,
 		Routes:             routes,
 		VirtualHostPlugins: vs.VirtualHost.VirtualHostPlugins,
@@ -250,7 +256,16 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 		CorsPolicy: vs.VirtualHost.CorsPolicy,
 	}
 
+	if err := appendSource(vh, vs); err != nil {
+		// should never happen
+		return nil, err
+	}
+
 	return vh, nil
+}
+
+func VirtualHostName(vs *v1.VirtualService) string {
+	return fmt.Sprintf("%v.%v", vs.Metadata.Namespace, vs.Metadata.Name)
 }
 
 func convertRoutes(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) ([]*gloov1.Route, error) {

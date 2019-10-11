@@ -593,6 +593,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    discovery.solo.io/function_discovery: disabled
     app: gloo
     gloo: gateway
   name: gateway

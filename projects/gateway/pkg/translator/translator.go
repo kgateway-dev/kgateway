@@ -28,11 +28,11 @@ type Translator interface {
 }
 
 type translator struct {
-	factories []ListenerFactory
+	listenerTypes []ListenerFactory
 }
 
 func NewTranslator(factories []ListenerFactory) *translator {
-	return &translator{factories: factories}
+	return &translator{listenerTypes: factories}
 }
 
 func NewDefaultTranslator() *translator {
@@ -49,13 +49,13 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	reports.Accept(snap.VirtualServices.AsInputResources()...)
 	reports.Accept(snap.RouteTables.AsInputResources()...)
 	if len(filteredGateways) == 0 {
-		logger.Debugf("%v had no gateways", snap.Hash())
+		logger.Infof("%v had no gateways", snap.Hash())
 		return nil, reports
 	}
 	validateGateways(filteredGateways, snap.VirtualServices, reports)
 	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
-	for _, factory := range t.factories {
-		listeners = append(listeners, factory.GenerateListeners(ctx, snap, filteredGateways, reports)...)
+	for _, listenerFactory := range t.listenerTypes {
+		listeners = append(listeners, listenerFactory.GenerateListeners(ctx, snap, filteredGateways, reports)...)
 	}
 	if len(listeners) == 0 {
 		return nil, reports
@@ -69,9 +69,9 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	}, reports
 }
 
-func standardListener(gateway *v2.Gateway) *gloov1.Listener {
+func makeListener(gateway *v2.Gateway) *gloov1.Listener {
 	return &gloov1.Listener{
-		Name:          gatewayName(gateway),
+		Name:          ListenerName(gateway),
 		BindAddress:   gateway.BindAddress,
 		BindPort:      gateway.BindPort,
 		Plugins:       gateway.Plugins,
@@ -79,7 +79,7 @@ func standardListener(gateway *v2.Gateway) *gloov1.Listener {
 	}
 }
 
-func gatewayName(gateway *v2.Gateway) string {
+func ListenerName(gateway *v2.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
 }
 

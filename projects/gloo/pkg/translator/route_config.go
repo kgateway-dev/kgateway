@@ -154,6 +154,7 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []envoyrou
 			},
 		}
 	}
+
 	for i, matcher := range in.Matchers {
 		if matcher.PathSpecifier == nil {
 			validation.AppendRouteError(routeReport,
@@ -179,6 +180,7 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []envoyrou
 
 		out[i].Match = match
 	}
+
 	return out
 }
 
