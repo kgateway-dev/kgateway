@@ -65,4 +65,5 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out).To(ContainSubstring("kind: Namespace"))
 	})
+
 })

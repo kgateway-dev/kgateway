@@ -326,7 +326,8 @@ func isEmptyYamlSnippet(objYaml string) bool {
 	removeNewlines := strings.Replace(removeComments, "\n", "", -1)
 	removeDashes := strings.Replace(removeNewlines, "---", "", -1)
 	removeSpaces := strings.Replace(removeDashes, " ", "", -1)
-	return removeSpaces == ""
+	removeNull := strings.Replace(removeSpaces, "null", "", -1)
+	return removeNull == ""
 }
 
 func getCrdManifests(manifests string) ([]string, string, error) {
