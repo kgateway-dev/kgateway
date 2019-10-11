@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: support propagating partial config from gateway to proxy
+    issueLink: https://github.com/solo-io/gloo/issues/1366

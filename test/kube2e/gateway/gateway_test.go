@@ -150,6 +150,17 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
+
+		//give discovery time to write the upstream
+		Eventually(func() error {
+			upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+			if err != nil {
+				return err
+			}
+			upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
+			_, err = upstreams.Find(testHelper.InstallNamespace, upstreamName)
+			return err
+		}, time.Second*10, time.Second).ShouldNot(HaveOccurred())
 	})
 
 	Context("tests with virtual service", func() {
@@ -350,7 +361,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				settingsClientFactory := &factory.KubeResourceClientFactory{
 					Crd:         gloov1.SettingsCrd,
 					Cfg:         cfg,
-					SharedCache: cache,
+					SharedCache: kube.NewKubeCache(ctx),
 				}
 
 				settingsClient, err = gloov1.NewSettingsClient(settingsClientFactory)
@@ -432,6 +443,113 @@ var _ = Describe("Kube2e: gateway", func() {
 					ConnectionTimeout: 1,
 					WithoutStats:      true,
 				}, responseString, 1, 60*time.Second, 1*time.Second)
+			})
+		})
+
+		Context("with a mix of valid and invalid virtual services", func() {
+			var (
+				validVs, inValidVs *gatewayv1.VirtualService
+			)
+			BeforeEach(func() {
+
+				validVs = withName("i-am-valid", withDomains([]string{"valid.com"},
+					getVirtualService(&gloov1.Destination{
+						DestinationType: &gloov1.Destination_Upstream{
+							Upstream: &core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+							},
+						},
+					}, nil)))
+				inValidVs = withName("i-am-invalid", withDomains([]string{"invalid.com"},
+					getVirtualServiceWithRoute(&gatewayv1.Route{
+						Matchers: []*gloov1.Matcher{{}},
+						RoutePlugins: &gloov1.RoutePlugins{
+							PrefixRewrite: "matcher and action are missing",
+						},
+					}, nil)))
+
+				var err error
+
+				validVs, err = virtualServiceClient.Write(validVs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// sanity check that validation is enabled/strict
+				_, err = virtualServiceClient.Write(inValidVs, clients.WriteOpts{})
+				Expect(err).To(HaveOccurred())
+
+				// disable strict validation
+				UpdateAlwaysAcceptSetting(true)
+
+				Eventually(func() (*gatewayv1.VirtualService, error) {
+					inValidVs, err = virtualServiceClient.Write(inValidVs, clients.WriteOpts{})
+					return inValidVs, err
+				}, time.Second*10).ShouldNot(BeNil())
+			})
+			AfterEach(func() {
+				UpdateAlwaysAcceptSetting(false)
+			})
+			It("propagates the valid virtual services to envoy", func() {
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              "valid.com",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              "invalid.com",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+					Verbose:           true,
+				}, `HTTP/1.1 404 Not Found`, 1, 60*time.Second, 1*time.Second)
+			})
+
+			It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {
+				// make the invalid vs valid and the valid vs invalid
+				invalidVh := inValidVs.VirtualHost
+				validVh := validVs.VirtualHost
+				validVh.Domains = []string{"all-good-in-the-hood.com"}
+
+				inValidVs.VirtualHost = validVh
+				validVs.VirtualHost = invalidVh
+
+				_, err := virtualServiceClient.Write(validVs, clients.WriteOpts{OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+				_, err = virtualServiceClient.Write(inValidVs, clients.WriteOpts{OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				// the original virtual service should work
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              "valid.com",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+
+				// the fixed virtualservice should also work
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              "all-good-in-the-hood.com",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 		})
 	})
@@ -1097,6 +1215,16 @@ func ToFile(content string) string {
 	ExpectWithOffset(1, n).To(Equal(len(content)))
 	_ = f.Close()
 	return f.Name()
+}
+
+func withName(name string, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
+	vs.Metadata.Name = name
+	return vs
+}
+
+func withDomains(domains []string, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
+	vs.VirtualHost.Domains = domains
+	return vs
 }
 
 func getVirtualService(dest *gloov1.Destination, sslConfig *gloov1.SslConfig) *gatewayv1.VirtualService {
