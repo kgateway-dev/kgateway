@@ -471,8 +471,10 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				var err error
 
-				validVs, err = virtualServiceClient.Write(validVs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() (*gatewayv1.VirtualService, error) {
+					validVs, err = virtualServiceClient.Write(validVs, clients.WriteOpts{})
+					return validVs, err
+				}, time.Second*10).ShouldNot(BeNil())
 
 				// sanity check that validation is enabled/strict
 				_, err = virtualServiceClient.Write(inValidVs, clients.WriteOpts{})
