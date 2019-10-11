@@ -89,7 +89,9 @@ check-spelling:
 clean:
 	rm -rf _output
 	rm -rf _test
-	rm -fr site
+	rm -rf docs/site*
+	rm -rf docs/themes
+	rm -rf docs/resources
 	git clean -f -X install
 
 #----------------------------------------------------------------------------------
@@ -104,10 +106,9 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	# Clean up api docs before regenerating them to make sure we don't keep orphaned files around
-	rm -rf docs/api
+	find . -name *.sk.md | xargs rm
+	rm docs/content/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go
 	go generate ./...
-	(rm docs/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go)
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
@@ -158,7 +159,6 @@ CLI_DIR=projects/gloo/cli
 
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
 	go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
-
 
 $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
@@ -430,9 +430,15 @@ fetch-helm:
 upload-github-release-assets: build-cli render-yaml
 	go run ci/upload_github_release_assets.go
 
-.PHONY: push-docs
-push-docs:
-	go run ci/push_docs.go
+.PHONY: publish-docs
+publish-docs:
+ifeq ($(RELEASE),"true")
+	cd docs && make docker-push-docs \
+		VERSION=$(VERSION) \
+		TAGGED_VERSION=$(TAGGED_VERSION) \
+		GCLOUD_PROJECT_ID=$(GCLOUD_PROJECT_ID) \
+		RELEASE=$(RELEASE)
+endif
 
 #----------------------------------------------------------------------------------
 # Docker

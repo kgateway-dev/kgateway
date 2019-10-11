@@ -1,0 +1,29 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    name: gloo-system.default
+    routes:
+    - matcher:
+        exact: /p1
+      routeAction:
+        single:
+          upstream:
+            name: default-session-affinity-app-80
+            namespace: gloo-system
+      routePlugins:
+        ### The session-affinity LB config starts here
+        lbHash:
+          hashPolicies:
+          - cookie:
+              name: gloo
+              path: /abc
+              ttl: 1s
+        ### (end)
+        prefixRewrite:
+          prefixRewrite: /count

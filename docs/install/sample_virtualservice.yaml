@@ -1,0 +1,24 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: docsmgmt
+  namespace: docs
+spec:
+  virtualHost:
+    domains:
+    - 'docs.solo.io'
+    routes:
+    - matcher:
+        prefix: /vabc10/
+      routeAction:
+        single:
+          upstream:
+            name: docs-gloo-docs-vabc10-80
+            namespace: gloo-system
+    - matcher:
+        prefix: /vabc11/
+      routeAction:
+        single:
+          upstream:
+            name: docs-gloo-docs-vabc11-80
+            namespace: gloo-system

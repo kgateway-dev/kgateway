@@ -1,0 +1,44 @@
+.col-md-9 img {
+    border: 0px;
+    background:rgba(0,0,0,0);
+}
+
+img {
+    border: 0px;
+    background:rgba(0,0,0,0);
+}
+
+p {
+    font-size: 20px;
+    line-height: 1.6;
+}
+
+div[role=main] ul li {
+    font-size: 20px;
+    line-height: 1.6;
+}
+
+code {
+    border-radius: 2px;
+    color: #5e5e5e;
+    background: rgba(27,31,35,.05);
+    padding: 0px 3px;
+}
+
+pre {
+    overflow: auto;
+    background: #fff;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;  
+}
+
+.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 1.5em;
+    background: rgba(27,31,35,.05);
+    color: #333;
+  }

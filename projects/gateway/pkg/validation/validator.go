@@ -187,6 +187,11 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 			continue
 		}
 
+		// a nil proxy may have been returned if 0 listeners were created
+		if proxy == nil {
+			continue
+		}
+
 		// validate the proxy with gloo
 		var proxyReport *validation.ProxyValidationServiceResponse
 		err := retry.Do(func() error {
@@ -241,6 +246,11 @@ func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualSe
 		var isUpdate bool
 		for i, existingVs := range snap.VirtualServices {
 			if vsRef == existingVs.GetMetadata().Ref() {
+				// check that the hash has changed; ignore irrelevant update such as status
+				if vs.Hash() == existingVs.Hash() {
+					return nil, nil, core.ResourceRef{}
+				}
+
 				// replace the existing virtual service in the snapshot
 				snap.VirtualServices[i] = vs
 				isUpdate = true
@@ -312,6 +322,11 @@ func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (
 		var isUpdate bool
 		for i, existingRt := range snap.RouteTables {
 			if rtRef == existingRt.GetMetadata().Ref() {
+				// check that the hash has changed; ignore irrelevant update such as status
+				if rt.Hash() == existingRt.Hash() {
+					return nil, nil, core.ResourceRef{}
+				}
+
 				// replace the existing route table in the snapshot
 				snap.RouteTables[i] = rt
 				isUpdate = true
@@ -385,6 +400,11 @@ func (v *validator) ValidateGateway(ctx context.Context, gw *v2.Gateway) (ProxyR
 		var isUpdate bool
 		for i, existingGw := range snap.Gateways {
 			if gwRef == existingGw.GetMetadata().Ref() {
+				// check that the hash has changed; ignore irrelevant update such as status
+				if gw.Hash() == existingGw.Hash() {
+					return nil, nil, core.ResourceRef{}
+				}
+
 				// replace the existing gateway in the snapshot
 				snap.Gateways[i] = gw
 				isUpdate = true

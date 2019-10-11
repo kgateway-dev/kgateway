@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: session-affinity-app
+spec:
+  selector:
+    matchLabels:
+      name: session-affinity-app
+      app: session-affinity-app
+  template:
+    metadata:
+      labels:
+        name: session-affinity-app
+        app: session-affinity-app
+    spec:
+      containers:
+      - name: session-affinity-app
+        image: soloio/session-affinity-app:0.0.3
+        resources:
+          limits:
+            memory: 10Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: session-affinity-app
+spec:
+  selector:
+    name: session-affinity-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

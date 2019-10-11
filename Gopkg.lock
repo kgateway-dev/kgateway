@@ -1359,7 +1359,7 @@
   version = "0.1.0"
 
 [[projects]]
-  digest = "1:675e88637f52e60444ff59ffe3b708e4fa74ae9f587dde5eb5d4eaa907d0664a"
+  digest = "1:30d12500ff14fd6945d4451146adb4fa6e62019c7164070924ccf4ec787e4a92"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1369,7 +1369,6 @@
     "cliutils",
     "contextutils",
     "debugutils",
-    "docsutils",
     "envutils",
     "errors",
     "errutils",
@@ -1384,7 +1383,6 @@
     "manifesttestutils",
     "pkgmgmtutils",
     "protoutils",
-    "randutils",
     "stats",
     "stringutils",
     "tarutils",
@@ -1400,8 +1398,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "2fff910b5b9a262eba3177f296923ac04887fa53"
-  version = "v0.10.9"
+  revision = "5f542d97aa0fb3d28d29ff9e2e21cef390ea3f80"
+  version = "v0.10.18"
 
 [[projects]]
   digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
@@ -1774,9 +1772,10 @@
   revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
 
 [[projects]]
-  digest = "1:deedfa6fd63a3ab08bcdb6b84de7342a1dbcdb02150c5f6cdb50d2098ecb8e75"
+  digest = "1:bb533ccc3d271b79ca611125beaff2ec3f06c003174849531be262a64a58953e"
   name = "google.golang.org/api"
   packages = [
+    "compute/v1",
     "gensupport",
     "googleapi",
     "googleapi/internal/uritemplates",
@@ -2752,11 +2751,11 @@
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/go-utils/certutils",
+    "github.com/solo-io/go-utils/changelogutils",
     "github.com/solo-io/go-utils/clidoc",
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/debugutils",
-    "github.com/solo-io/go-utils/docsutils",
     "github.com/solo-io/go-utils/envutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/errutils",
@@ -2823,7 +2822,10 @@
     "go.opencensus.io/trace",
     "go.uber.org/multierr",
     "go.uber.org/zap",
+    "golang.org/x/oauth2/google",
     "golang.org/x/sync/errgroup",
+    "google.golang.org/api/compute/v1",
+    "google.golang.org/api/option",
     "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
@@ -2835,6 +2837,7 @@
     "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/AlecAivazis/survey.v1/terminal",
+    "gopkg.in/yaml.v2",
     "istio.io/gogo-genproto/prometheus",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",

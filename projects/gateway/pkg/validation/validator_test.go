@@ -61,6 +61,10 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
+
+				// change something to change the hash
+				snap.RouteTables[0].Metadata.Labels = map[string]string{"change": "my mind"}
+
 				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
@@ -76,6 +80,10 @@ var _ = Describe("Validator", func() {
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 					err := v.Sync(context.TODO(), snap)
 					Expect(err).NotTo(HaveOccurred())
+
+					// change something to change the hash
+					snap.RouteTables[0].Metadata.Labels = map[string]string{"change": "my mind"}
+
 					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("failed to communicate with Gloo Proxy validation server"))
@@ -199,6 +207,10 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
+
+				// change something to change the hash
+				snap.VirtualServices[0].Metadata.Labels = map[string]string{"change": "my mind"}
+
 				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
@@ -313,6 +325,10 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
+
+				// change something to change the hash
+				snap.Gateways[0].Metadata.Labels = map[string]string{"change": "my mind"}
+
 				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0])
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))

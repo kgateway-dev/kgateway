@@ -1,0 +1,22 @@
+syntax = "proto3";
+package gce.plugins.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Upstream Spec for Google Compute Engine Upstreams
+// GCE Upstreams represent a set of one or more addressable VM instances with
+// a shared set of tags
+message UpstreamSpec {
+    // get endpoints from instances whose labels match this selector
+    map<string, string> selector = 1;
+    // zone in which the instances live
+    string zone = 2;
+    // the GCP project to which the instances belong
+    string project_id = 3;
+    // the port on which the instances are listening
+    // create multiple upstreams to support multiple ports
+    uint32 port = 4;
+}

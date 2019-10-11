@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/solo-io/go-utils/clidoc"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
@@ -8,5 +10,9 @@ import (
 
 func main() {
 	app := cmd.GlooCli()
-	clidoc.MustGenerateCliDocs(app)
+	err := clidoc.GenerateCliDocsWithConfig(app, clidoc.LatestConfig)
+	if err != nil {
+		log.Fatalf("error generating docs: %b", err)
+	}
+
 }

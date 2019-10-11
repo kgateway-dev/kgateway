@@ -22,11 +22,17 @@ func main() {
 			"projects/gloo/api/grpc",
 		},
 		SkipGeneratedTests: true,
-		SkipDirs:           nil,
-		RelativeRoot:       "",
-		CompileProtos:      true,
+		SkipDirs: []string{
+			"docs",
+		},
+		RelativeRoot:  "",
+		CompileProtos: true,
 		GenDocs: &cmd.DocsOptions{
 			Output: options.Hugo,
+			HugoOptions: &options.HugoOptions{
+				DataDir: "/docs/data",
+				ApiDir:  "api",
+			},
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {

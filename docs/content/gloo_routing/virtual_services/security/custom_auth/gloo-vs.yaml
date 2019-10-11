@@ -1,0 +1,49 @@
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  bindAddr: 0.0.0.0:9977
+  discoveryNamespace: gloo-system
+  extensions:
+    configs:
+      extauth:
+        extauthzServerRef:
+          name: auth-server
+          namespace: gloo-system
+        httpService: {}
+        requestBody:
+          maxRequestBytes: 10240
+        requestTimeout: 0.5s
+      rate-limit:
+        ratelimit_server_ref:
+          name: rate-limit
+          namespace: gloo-system
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+---
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    virtualHostPlugins:
+      extensions:
+        configs:
+          extauth:
+            customAuth: {}
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system

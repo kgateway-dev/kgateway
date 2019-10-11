@@ -1,0 +1,19 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: test-post
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'foo'
+    routes:
+      - matcher:
+          methods:
+            - POST
+          prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: json-upstream
+              namespace: gloo-system

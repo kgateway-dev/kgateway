@@ -1,0 +1,14 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: test-redirect
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'foo'
+    routes:
+      - matcher:
+          prefix: /
+        redirectAction:
+          hostRedirect: "google.com"

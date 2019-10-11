@@ -1,0 +1,15 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: test-direct-response
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'foo'
+    routes:
+      - matcher:
+          prefix: /
+        directResponseAction:
+          status: 200
+          body: "Hello, world!"

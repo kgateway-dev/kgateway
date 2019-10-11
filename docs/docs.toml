@@ -1,0 +1,65 @@
+baseURL = "https://docs.solo.io"
+languageCode = "en-us"
+title = "Gloo Docs"
+theme = "hugo-theme-soloio"
+
+contentDir = "content"
+publishDir = "site"
+
+googleAnalytics = "UA-101654320-1"
+ignoreFiles = [ "README.md$"]
+
+# Highlighting config (Pygments)
+# It is (currently) not in use, but you can do ```go in a content file if you want to.
+pygmentsCodeFences = true
+
+pygmentsOptions = "nowrap=true"
+
+# Use the Chroma stylesheet
+pygmentsUseClasses = true
+pygmentsUseClassic = false
+
+# See https://help.farbox.com/pygments.html
+pygmentsStyle = "manni"
+
+# dev only! (useful for viewing site while some links are broken during an update)
+# refLinksErrorLevel = "warning"
+
+# For search functionality
+[outputs]
+home = [ "HTML", "JSON"]
+
+[params]
+author = "Solo.io"
+description = "Documentation for Solo.io Gloo"
+disableSearch = false
+disableAssetsBusting = false
+disableInlineCopyToClipBoard = true
+disableShortcutsTitle = false
+disableLanguageSwitchingButton = false
+disableBreadcrumb = true
+ordersectionsby = "weight"
+themeStyle = "flex" # "original" or "flex" # default "flex"
+disableNavChevron = true # set true to hide next/prev chevron, default is false
+highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
+menushortcutsnewtab = false # set true to open shortcuts links to a new tab/window
+enableGitInfo = true
+glooctl-windows="https://storage.googleapis.com/glooctl-enterprise/051F7858-30A6-42CA-8EF2-9012D521358A/glooctl-windows-amd64.exe"
+glooctl-darwin="https://storage.googleapis.com/glooctl-enterprise/051F7858-30A6-42CA-8EF2-9012D521358A/glooctl-darwin-amd64"
+glooctl-linux="https://storage.googleapis.com/glooctl-enterprise/051F7858-30A6-42CA-8EF2-9012D521358A/glooctl-linux-amd64"
+logoPath="/img/Gloo-01.png"
+
+[[menu.shortcuts]]
+name = "<i class='fa fa-github'></i> Github Repo"
+identifier = "ds"
+url = "https://github.com/solo-io/gloo"
+weight = 10
+
+# [[menu.shortcuts]]
+# name = "<i class='fas fa-bullhorn'></i> Credits"
+# url = "/credits"
+# weight = 30
+
+# remove the default hugo taxonomies (tag and category directories)
+disableKinds = ["taxonomy", "taxonomyTerm"]
+[taxonomies]
