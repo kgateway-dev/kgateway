@@ -6,7 +6,7 @@ import (
 )
 
 func PathAsString(matcher *v1.Matcher) string {
-	switch path := matcher.PathSpecifier.(type) {
+	switch path := matcher.GetPathSpecifier().(type) {
 	case *v1.Matcher_Prefix:
 		return path.Prefix
 	case *v1.Matcher_Exact:
@@ -18,7 +18,7 @@ func PathAsString(matcher *v1.Matcher) string {
 }
 
 func EnvoyPathAsString(matcher route.RouteMatch) string {
-	switch path := matcher.PathSpecifier.(type) {
+	switch path := matcher.GetPathSpecifier().(type) {
 	case *route.RouteMatch_Prefix:
 		return path.Prefix
 	case *route.RouteMatch_Path:
