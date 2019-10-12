@@ -448,11 +448,12 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		Context("with a mix of valid and invalid virtual services", func() {
 			var (
-				validVs, inValidVs *gatewayv1.VirtualService
+				validVsName = "i-am-valid"
+				invalidVsName = "i-am-invalid"
 			)
 			BeforeEach(func() {
 
-				validVs = withName("i-am-valid", withDomains([]string{"valid.com"},
+				valid := withName(validVsName, withDomains([]string{"valid.com"},
 					getVirtualService(&gloov1.Destination{
 						DestinationType: &gloov1.Destination_Upstream{
 							Upstream: &core.ResourceRef{
@@ -461,7 +462,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							},
 						},
 					}, nil)))
-				inValidVs = withName("i-am-invalid", withDomains([]string{"invalid.com"},
+				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
 					getVirtualServiceWithRoute(&gatewayv1.Route{
 						Matchers: []*gloov1.Matcher{{}},
 						RoutePlugins: &gloov1.RoutePlugins{
@@ -469,27 +470,28 @@ var _ = Describe("Kube2e: gateway", func() {
 						},
 					}, nil)))
 
-				var err error
 
-				Eventually(func() (*gatewayv1.VirtualService, error) {
-					validVs, err = virtualServiceClient.Write(validVs, clients.WriteOpts{})
-					return validVs, err
-				}, time.Second*10).ShouldNot(BeNil())
+				Eventually(func() error {
+					_, err := virtualServiceClient.Write(valid, clients.WriteOpts{})
+					return err
+				}, time.Second*10).ShouldNot(HaveOccurred())
 
 				// sanity check that validation is enabled/strict
-				_, err = virtualServiceClient.Write(inValidVs, clients.WriteOpts{})
+				_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
 				Expect(err).To(HaveOccurred())
 
 				// disable strict validation
 				UpdateAlwaysAcceptSetting(true)
 
-				Eventually(func() (*gatewayv1.VirtualService, error) {
-					inValidVs, err = virtualServiceClient.Write(inValidVs, clients.WriteOpts{})
-					return inValidVs, err
-				}, time.Second*10).ShouldNot(BeNil())
+				Eventually(func() error {
+					_, err = virtualServiceClient.Write(inValid, clients.WriteOpts{})
+					return err
+				}, time.Second*10).ShouldNot(HaveOccurred())
 			})
 			AfterEach(func() {
 				UpdateAlwaysAcceptSetting(false)
+				virtualServiceClient.Delete(testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{})
+				virtualServiceClient.Delete(testHelper.InstallNamespace, validVsName, clients.DeleteOpts{})
 			})
 			It("propagates the valid virtual services to envoy", func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -516,17 +518,23 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {
+				invalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				validVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, validVsName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
 				// make the invalid vs valid and the valid vs invalid
-				invalidVh := inValidVs.VirtualHost
+				invalidVh := invalidVs.VirtualHost
 				validVh := validVs.VirtualHost
 				validVh.Domains = []string{"all-good-in-the-hood.com"}
 
-				inValidVs.VirtualHost = validVh
+				invalidVs.VirtualHost = validVh
 				validVs.VirtualHost = invalidVh
 
-				_, err := virtualServiceClient.Write(validVs, clients.WriteOpts{OverwriteExisting: true})
+				_, err = virtualServiceClient.Write(validVs, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
-				_, err = virtualServiceClient.Write(inValidVs, clients.WriteOpts{OverwriteExisting: true})
+				_, err = virtualServiceClient.Write(invalidVs, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
 				// the original virtual service should work

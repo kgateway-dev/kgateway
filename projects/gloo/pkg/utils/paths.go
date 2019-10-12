@@ -14,7 +14,7 @@ func PathAsString(matcher *v1.Matcher) string {
 	case *v1.Matcher_Regex:
 		return path.Regex
 	}
-	panic("invalid matcher path type, must be one of: {Matcher_Regex, Matcher_Exact, Matcher_Prefix}")
+	return ""
 }
 
 func EnvoyPathAsString(matcher route.RouteMatch) string {
@@ -26,5 +26,5 @@ func EnvoyPathAsString(matcher route.RouteMatch) string {
 	case *route.RouteMatch_Regex:
 		return path.Regex
 	}
-	panic("invalid matcher path type, must be one of: {RouteMatch_Prefix, RouteMatch_Path, RouteMatch_Regex}")
+	return ""
 }
