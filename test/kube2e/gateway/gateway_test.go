@@ -448,7 +448,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		Context("with a mix of valid and invalid virtual services", func() {
 			var (
-				validVsName = "i-am-valid"
+				validVsName   = "i-am-valid"
 				invalidVsName = "i-am-invalid"
 			)
 			BeforeEach(func() {
@@ -469,7 +469,6 @@ var _ = Describe("Kube2e: gateway", func() {
 							PrefixRewrite: "matcher and action are missing",
 						},
 					}, nil)))
-
 
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(valid, clients.WriteOpts{})
