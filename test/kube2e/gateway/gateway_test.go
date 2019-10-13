@@ -906,7 +906,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				if err != nil {
 					return err
 				}
-				vsList, err := virtualServiceClient.List(vs.Metadata.Namespace, clients.ListOpts{Ctx: ctx})
+				vsList, err := virtualServiceClient.List(vs.GetMetadata().Namespace, clients.ListOpts{Ctx: ctx})
 				if err != nil {
 					return err
 				}
