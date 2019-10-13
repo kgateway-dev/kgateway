@@ -679,7 +679,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			for _, svc := range createdServices {
 				// now set subset config on an upstream:
 				up, _ := getUpstream(svc)
-				spec := up.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec
+				spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
 				Expect(spec).ToNot(BeNil())
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
