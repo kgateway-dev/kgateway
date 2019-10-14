@@ -1,6 +1,7 @@
 package services
 
 import (
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"net"
 	"time"
 
@@ -94,6 +95,7 @@ type RunOptions struct {
 	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
 	ConsulClient     consul.ConsulWatcher
+	ExtauthSettings  *extauthv1.Settings
 }
 
 //noinspection GoUnhandledErrorResult
@@ -112,6 +114,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	settings := &gloov1.Settings{
 		WatchNamespaces:    runOptions.NsToWatch,
 		DiscoveryNamespace: runOptions.NsToWrite,
+		Extauth:            runOptions.ExtauthSettings,
 	}
 	ctx = settingsutil.WithSettings(ctx, settings)
 
@@ -126,6 +129,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.Settings = &gloov1.Settings{
 		Extensions: runOptions.ExtensionConfigs,
+		Extauth:    runOptions.ExtauthSettings,
 	}
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
