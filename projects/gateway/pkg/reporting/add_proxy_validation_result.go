@@ -36,7 +36,7 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 		}
 
 		if httpListenerReport := listenerReport.GetHttpListenerReport(); httpListenerReport != nil {
-			vhReports := httpListenerType.HttpListenerReport.GetVirtualHostReports()
+			vhReports := httpListenerReport.GetVirtualHostReports()
 			virtualHosts := listener.GetHttpListener().GetVirtualHosts()
 
 			if len(vhReports) != len(virtualHosts) {
