@@ -3,10 +3,11 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
