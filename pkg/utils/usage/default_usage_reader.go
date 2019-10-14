@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	ReportingServiceUrl = "reporting.solo.io:443"
+	ReportingServiceUrl = "reporting.corp.solo.io:443"
 	ReportingDuration   = time.Hour * 24
 
 	numEnvoys        = "numActiveEnvoys"
@@ -30,6 +30,10 @@ func (d *DefaultUsageReader) GetPayload() (map[string]string, error) {
 	}
 
 	payload := map[string]string{}
+
+	if usage == nil || usage.EnvoyIdToUsage == nil {
+		return payload, nil
+	}
 
 	envoys := 0
 	requestsCount := uint64(0)
