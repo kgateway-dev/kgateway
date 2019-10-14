@@ -32,7 +32,7 @@ var _ = Describe("RawUtil", func() {
 			}}
 			ExpectActionsSame(inactions)
 		})
-		It("should convert dest cluster", func() {
+		It("should convert generic key", func() {
 			inactions := []*gloorl.Action{{
 				ActionSpecifier: &gloorl.Action_GenericKey_{
 					GenericKey: &gloorl.Action_GenericKey{
@@ -42,7 +42,7 @@ var _ = Describe("RawUtil", func() {
 			}}
 			ExpectActionsSame(inactions)
 		})
-		It("should convert dest cluster", func() {
+		It("should convert remote address", func() {
 			inactions := []*gloorl.Action{{
 				ActionSpecifier: &gloorl.Action_RemoteAddress_{
 					RemoteAddress: &gloorl.Action_RemoteAddress{},
@@ -50,7 +50,7 @@ var _ = Describe("RawUtil", func() {
 			}}
 			ExpectActionsSame(inactions)
 		})
-		It("should convert dest cluster", func() {
+		It("should convert request headers", func() {
 			inactions := []*gloorl.Action{{
 				ActionSpecifier: &gloorl.Action_RequestHeaders_{
 					RequestHeaders: &gloorl.Action_RequestHeaders{

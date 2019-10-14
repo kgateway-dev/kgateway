@@ -53,8 +53,8 @@ func convertAction(action *gloorl.Action) *envoyvhostratelimit.RateLimit_Action 
 	case *gloorl.Action_RequestHeaders_:
 		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_RequestHeaders_{
 			RequestHeaders: &envoyvhostratelimit.RateLimit_Action_RequestHeaders{
-				HeaderName:    specificAction.RequestHeaders.HeaderName,
-				DescriptorKey: specificAction.RequestHeaders.DescriptorKey,
+				HeaderName:    specificAction.RequestHeaders.GetHeaderName(),
+				DescriptorKey: specificAction.RequestHeaders.GetDescriptorKey(),
 			},
 		}
 
@@ -66,16 +66,16 @@ func convertAction(action *gloorl.Action) *envoyvhostratelimit.RateLimit_Action 
 	case *gloorl.Action_GenericKey_:
 		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_GenericKey_{
 			GenericKey: &envoyvhostratelimit.RateLimit_Action_GenericKey{
-				DescriptorValue: specificAction.GenericKey.DescriptorValue,
+				DescriptorValue: specificAction.GenericKey.GetDescriptorValue(),
 			},
 		}
 
 	case *gloorl.Action_HeaderValueMatch_:
 		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_HeaderValueMatch_{
 			HeaderValueMatch: &envoyvhostratelimit.RateLimit_Action_HeaderValueMatch{
-				ExpectMatch:     specificAction.HeaderValueMatch.ExpectMatch,
-				DescriptorValue: specificAction.HeaderValueMatch.DescriptorValue,
-				Headers:         convertHeaders(specificAction.HeaderValueMatch.Headers),
+				ExpectMatch:     specificAction.HeaderValueMatch.GetExpectMatch(),
+				DescriptorValue: specificAction.HeaderValueMatch.GetDescriptorValue(),
+				Headers:         convertHeaders(specificAction.HeaderValueMatch.GetHeaders()),
 			},
 		}
 
