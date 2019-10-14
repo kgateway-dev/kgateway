@@ -326,6 +326,28 @@ message GlooOptions {
     }
 
     AWSOptions aws_options = 5;
+
+    // policy for how Gloo should handle invalid config
+    message InvalidConfigPolicy {
+
+        // set replaceInvalidRoutes to `true`, Gloo remove any routes from the provided configuration
+        // which point to a missing destination. Routes that are removed in this way
+        // will instead return a configurable direct response to clients.
+        //
+        // Note: enabling this option allows Gloo to accept partially valid proxy configurations
+        bool replace_invalid_routes = 1;
+
+        // if invalidRouteResponseCode is set to `true`, reply to clients with this response code
+        // default is 404
+        uint32 invalid_route_response_code = 2;
+
+        // if replaceInvalidRoutes is set to `true`, reply to clients with this body
+        // default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
+        string invalid_route_response_body = 3;
+    }
+
+    // set these options to fine-tune the way Gloo handles invalid user configuration
+    InvalidConfigPolicy invalid_config_policy = 6;
 }
 
 // Settings specific to the Gateway controller
