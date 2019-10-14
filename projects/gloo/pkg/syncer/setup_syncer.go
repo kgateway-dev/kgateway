@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"net"
 	"strconv"
 	"strings"
@@ -444,7 +445,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
 
-	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, rpt, opts.DevMode, syncerExtensions)
+	xdsSanitizer := sanitizer.XdsSanitizers{
+		sanitizer.NewInvalidUpstreamRemovingSanitizer(),
+	}
+
+	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions)
 
 	syncers := v1.ApiSyncers{
 		translationSync,

@@ -1,7 +1,7 @@
 package syncer_test
 
 import (
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -37,15 +37,17 @@ var _ = Describe("Translate Proxy", func() {
 		proxy := &v1.Proxy{
 			Metadata: core.Metadata{
 				Namespace: "gloo-system",
-				Name:      translator.GatewayProxyName,
+				Name:      defaults.GatewayProxyName,
 			},
 		}
 
 		c := &mockXdsCache{}
 		rep := reporter.NewReporter(ref, proxyClient, upstreamClient)
 
+		sanitizer := &mockXdsSanitizer{}
+
 		xdsHasher := &xds.ProxyKeyHasher{}
-		s := NewTranslatorSyncer(&mockTranslator{true}, c, xdsHasher, rep, false, nil)
+		s := NewTranslatorSyncer(&mockTranslator{true}, c, xdsHasher, sanitizer, rep, false, nil)
 		snap := &v1.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -72,7 +74,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[0] = p1.(*v1.Proxy)
 
-		s = NewTranslatorSyncer(&mockTranslator{false}, c, xdsHasher, rep, false, nil)
+		s = NewTranslatorSyncer(&mockTranslator{false}, c, xdsHasher, sanitizer, rep, false, nil)
 		err = s.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -86,6 +88,7 @@ var _ = Describe("Translate Proxy", func() {
 		}))
 
 		Expect(c.called).To(BeTrue())
+		Expect(sanitizer.called).To(BeTrue())
 	})
 })
 
@@ -135,4 +138,13 @@ func (c *mockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
 
 func (*mockXdsCache) ClearSnapshot(node string) {
 	panic("implement me")
+}
+
+type mockXdsSanitizer struct {
+	called bool
+}
+
+func (s *mockXdsSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
+	s.called = true
+	return xdsSnapshot, nil
 }

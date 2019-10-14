@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
@@ -86,7 +85,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 		key := xds.SnapshotKey(proxy)
 
-		xdsSnapshot, err = validateSnapshot(snap, xdsSnapshot, reports, logger)
+		xdsSnapshot, err = s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
 		if err != nil {
 			logger.Warnf("proxy %v was rejected due to invalid config: %v\n"+
 				"Attempting to update only EDS information", proxy.Metadata.Ref().Key(), err)
@@ -145,58 +144,6 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.latestSnap))
 	})
 	return http.ListenAndServe(":10010", r)
-}
-
-// If there are any errors on upstreams, this function tries to remove the correspondent clusters and endpoints from
-// the xDS snapshot. If the snapshot is still consistent after these mutations and there are no errors related to other
-// resources, we are good to send it to Envoy.
-func validateSnapshot(glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, errs reporter.ResourceReports, logger *zap.SugaredLogger) (envoycache.Snapshot, error) {
-	resourcesErr := errs.Validate()
-	if resourcesErr == nil {
-		return xdsSnapshot, nil
-	}
-
-	logger.Debug("removing errored upstreams and checking consistency")
-
-	clusters := xdsSnapshot.GetResources(xds.ClusterType)
-	endpoints := xdsSnapshot.GetResources(xds.EndpointType)
-
-	// Find all the errored upstreams and remove them from the xDS snapshot
-	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
-		if errs[up].Errors != nil {
-			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
-			// remove cluster and endpoints
-			delete(clusters.Items, clusterName)
-			delete(endpoints.Items, clusterName)
-		}
-	}
-
-	// TODO(marco): the function accepts and return a Snapshot interface, but then swaps in its own implementation.
-	//  This breaks the abstraction and mocking the snapshot becomes impossible. We should have a generic way of
-	//  creating snapshots.
-	xdsSnapshot = xds.NewSnapshotFromResources(
-		endpoints,
-		clusters,
-		xdsSnapshot.GetResources(xds.RouteType),
-		xdsSnapshot.GetResources(xds.ListenerType),
-	)
-
-	// If the snapshot is not consistent,
-	if xdsSnapshot.Consistent() != nil {
-		return xdsSnapshot, resourcesErr
-	}
-
-	// Remove errors related to upstreams
-	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
-		if errs[up].Errors != nil {
-			delete(errs, up)
-		}
-	}
-
-	// Snapshot is consistent, so check if we have errors not related to the upstreams
-	resourcesErr = errs.Validate()
-
-	return xdsSnapshot, resourcesErr
 }
 
 // TODO(marco): should we update CDS resources as well?
