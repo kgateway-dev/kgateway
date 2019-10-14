@@ -8,23 +8,21 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v2/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	"github.com/gogo/protobuf/types"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"

@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pipe"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/shadowing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
@@ -65,6 +66,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		headers.NewPlugin(),
 		healthcheck.NewPlugin(),
 		extauth.NewCustomAuthPlugin(),
+		ratelimit.NewPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
