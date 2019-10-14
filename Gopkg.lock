@@ -293,7 +293,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:180a8b7ca453d64029fcfc964291c957a70c1997f29b213bdd6404d6caed793a"
+  digest = "1:b044f730db1f35d92efe54ed4642a6a904ed58611db43c6cb038dc3ac51e1584"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -302,6 +302,7 @@
     "envoy/api/v2/core",
     "envoy/api/v2/endpoint",
     "envoy/api/v2/listener",
+    "envoy/api/v2/ratelimit",
     "envoy/api/v2/route",
     "envoy/config/accesslog/v2",
     "envoy/config/bootstrap/v2",
@@ -309,17 +310,20 @@
     "envoy/config/filter/fault/v2",
     "envoy/config/filter/http/fault/v2",
     "envoy/config/filter/http/health_check/v2",
+    "envoy/config/filter/http/rate_limit/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/config/filter/network/tcp_proxy/v2",
     "envoy/config/grpc_credential/v2alpha",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
+    "envoy/config/ratelimit/v2",
     "envoy/config/trace/v2",
     "envoy/data/accesslog/v2",
     "envoy/service/accesslog/v2",
     "envoy/service/discovery/v2",
     "envoy/service/metrics/v2",
+    "envoy/service/ratelimit/v2",
     "envoy/type",
     "envoy/type/matcher",
     "pkg/util",
@@ -2697,14 +2701,17 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
+    "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2",
     "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
     "github.com/envoyproxy/go-control-plane/pkg/util",
     "github.com/envoyproxy/protoc-gen-validate/validate",
