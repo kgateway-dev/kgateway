@@ -2,3 +2,4 @@ changelog:
 - type: NON_USER_FACING
   description: Provide a clear distinction between the two extauth options (Gloo extauth and custom extauth).
   issueLink: https://github.com/solo-io/gloo/issues/1396
+  resolvesIssue: false
