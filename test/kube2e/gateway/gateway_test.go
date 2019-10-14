@@ -517,11 +517,17 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {
-				invalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
+				invalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName,
+					clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
+				// we should not need this
+				Expect(invalidVs).NotTo(BeNil())
 
-				validVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, validVsName, clients.ReadOpts{})
+				validVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, validVsName,
+					clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
+				// we should not need this
+				Expect(validVs).NotTo(BeNil())
 
 				// make the invalid vs valid and the valid vs invalid
 				invalidVh := invalidVs.VirtualHost
