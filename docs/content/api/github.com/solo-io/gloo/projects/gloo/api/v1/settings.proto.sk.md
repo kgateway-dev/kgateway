@@ -27,6 +27,7 @@ weight: 5
 - [RateLimits](#ratelimits)
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
+- [InvalidConfigPolicy](#invalidconfigpolicy)
 - [GatewayOptions](#gatewayoptions)
 - [ValidationOptions](#validationoptions)
   
@@ -400,6 +401,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "endpointsWarmingTimeout": .google.protobuf.Duration
 "awsOptions": .gloo.solo.io.GlooOptions.AWSOptions
+"invalidConfigPolicy": .gloo.solo.io.GlooOptions.InvalidConfigPolicy
 
 ```
 
@@ -410,6 +412,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breaker configuration to use for upstream requests, when not provided by specific upstream. |  |
 | `endpointsWarmingTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout to get initial snapshot of resources. If not set, Gloo will not wait for initial snapshot - if set and and gloo could not fetch it's initial snapshot before the timeout reached, gloo will panic. |  |
 | `awsOptions` | [.gloo.solo.io.GlooOptions.AWSOptions](../settings.proto.sk#awsoptions) |  |  |
+| `invalidConfigPolicy` | [.gloo.solo.io.GlooOptions.InvalidConfigPolicy](../settings.proto.sk#invalidconfigpolicy) | set these options to fine-tune the way Gloo handles invalid user configuration. |  |
 
 
 
@@ -427,6 +430,28 @@ Settings specific to the gloo (Envoy xDS server) controller
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `enableCredentialsDiscovey` | `bool` | Enable credential discovery via IAM; when this is set, there's no need provide a secret on the upstream when running on AWS environment. Note: This should **ONLY** be enabled when running in an AWS environment, as the AWS code blocks the envoy main thread. This should be negligible when running inside AWS. |  |
+
+
+
+
+---
+### InvalidConfigPolicy
+
+ 
+policy for how Gloo should handle invalid config
+
+```yaml
+"replaceInvalidRoutes": bool
+"invalidRouteResponseCode": int
+"invalidRouteResponseBody": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `replaceInvalidRoutes` | `bool` | set replaceInvalidRoutes to `true`, Gloo remove any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |  |
+| `invalidRouteResponseCode` | `int` | if invalidRouteResponseCode is set to `true`, reply to clients with this response code default is 404. |  |
+| `invalidRouteResponseBody` | `string` | if replaceInvalidRoutes is set to `true`, reply to clients with this body default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |  |
 
 
 

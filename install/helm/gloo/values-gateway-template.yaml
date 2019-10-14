@@ -8,6 +8,10 @@ k8s:
 settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
+  invalidConfigPolicy:
+    enableFallbackResponse: false
+    fallbackResponseCode: 404
+    fallbackResponseBody: 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
   integrations:
     knative:
       enabled: false

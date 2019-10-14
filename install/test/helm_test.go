@@ -632,6 +632,11 @@ spec:
       proxyValidationServerAddr: gloo:9988
   gloo:
     xdsBindAddr: 0.0.0.0:9977
+    invalidConfigPolicy:
+      fallbackResponseBody: Gateway has invalid configuration. Administrators should run
+        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+      fallbackResponseCode: 404
+
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}

@@ -447,6 +447,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	xdsSanitizer := sanitizer.XdsSanitizers{
 		sanitizer.NewInvalidUpstreamRemovingSanitizer(),
+		sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy()),
 	}
 
 	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions)

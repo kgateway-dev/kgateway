@@ -92,12 +92,19 @@ type KnativeProxy struct {
 }
 
 type Settings struct {
-	WatchNamespaces []string      `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
-	WriteNamespace  string        `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
-	Integrations    *Integrations `json:"integrations,omitempty"`
-	Create          bool          `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
-	Extensions      interface{}   `json:"extensions,omitempty"`
-	SingleNamespace bool          `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	WatchNamespaces     []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
+	WriteNamespace      string               `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
+	Integrations        *Integrations        `json:"integrations,omitempty"`
+	Create              bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
+	Extensions          interface{}          `json:"extensions,omitempty"`
+	SingleNamespace     bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy" desc:"Define policies for Gloo to handle invalid configuration"`
+}
+
+type InvalidConfigPolicy struct {
+	EnableFallbackResponse bool   `json:"enableFallbackResponse,omitempty"`
+	FallbackResponseCode   int64  `json:"fallbackResponseCode,omitempty"`
+	FallbackResponseBody   string `json:"fallbackResponseBody,omitempty"`
 }
 
 type Gloo struct {
