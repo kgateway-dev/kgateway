@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
@@ -63,6 +64,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		shadowing.NewPlugin(),
 		headers.NewPlugin(),
 		healthcheck.NewPlugin(),
+		extauth.NewCustomAuthPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))

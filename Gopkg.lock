@@ -293,7 +293,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:2695bddd58c6dafde2d0cc89255214c5e273ccb34dfec353e0f843e9c5cf9831"
+  digest = "1:4c866af489df27390e3a4dd51ad42d40f3fef1838de424793067f2c0cd6ce18f"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -319,6 +319,7 @@
     "envoy/config/trace/v2",
     "envoy/data/accesslog/v2",
     "envoy/service/accesslog/v2",
+    "envoy/service/auth/v2",
     "envoy/service/discovery/v2",
     "envoy/service/metrics/v2",
     "envoy/type",
@@ -2700,6 +2701,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
     "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
@@ -2713,6 +2715,7 @@
     "github.com/go-openapi/swag",
     "github.com/go-swagger/go-swagger/examples/2.0/petstore/server/api",
     "github.com/gogo/googleapis/google/api",
+    "github.com/gogo/googleapis/google/rpc",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/jsonpb",
     "github.com/gogo/protobuf/proto",
