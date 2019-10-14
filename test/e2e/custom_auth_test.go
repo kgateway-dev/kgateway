@@ -3,6 +3,9 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
 	. "github.com/onsi/ginkgo"
@@ -19,8 +22,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/grpc"
-	"net"
-	"net/http"
 )
 
 var _ = Describe("CustomAuth", func() {
