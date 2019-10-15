@@ -534,9 +534,12 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1357,14 +1360,6 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:c5673cbf44dc752b282c962f514b0cc1b64d0d253cc64dba53b123a8e4bc3c4f"
-  name = "github.com/solo-io/go-checkpoint"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "b56cd9c812e84da93eb577054ebdf60a27487acb"
-  version = "0.1.0"
-
-[[projects]]
   digest = "1:675e88637f52e60444ff59ffe3b708e4fa74ae9f587dde5eb5d4eaa907d0664a"
   name = "github.com/solo-io/go-utils"
   packages = [
@@ -1408,6 +1403,17 @@
   pruneopts = "UT"
   revision = "2fff910b5b9a262eba3177f296923ac04887fa53"
   version = "v0.10.9"
+
+[[projects]]
+  digest = "1:a2922a665903e4336f9e8b13eb9134bdda25ed984b3966159d4aa2bf9c5b0e28"
+  name = "github.com/solo-io/reporting-client"
+  packages = [
+    "pkg/api/v1",
+    "pkg/client",
+  ]
+  pruneopts = "UT"
+  revision = "f47eacc21bd62e6bc8bb8954af0dc1817079af0d"
+  version = "v0.0.2"
 
 [[projects]]
   digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
@@ -2729,6 +2735,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2763,7 +2770,6 @@
     "github.com/prometheus/client_golang/api/prometheus/v1",
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
-    "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/go-utils/certutils",
     "github.com/solo-io/go-utils/clidoc",
     "github.com/solo-io/go-utils/cliutils",
@@ -2792,6 +2798,8 @@
     "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/go-utils/versionutils/dep",
     "github.com/solo-io/go-utils/versionutils/git",
+    "github.com/solo-io/reporting-client/pkg/api/v1",
+    "github.com/solo-io/reporting-client/pkg/client",
     "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",

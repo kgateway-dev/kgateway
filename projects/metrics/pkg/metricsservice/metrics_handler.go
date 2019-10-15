@@ -51,7 +51,7 @@ func (m *metricsHandler) HandleMetrics(ctx context.Context, met *envoymet.Stream
 		return err
 	}
 
-	existingUsage, err := m.storage.GetUsage(ctx)
+	existingUsage, err := m.storage.GetUsage()
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Errorf("Error while retrieving old usage: %s", err.Error())
 		return err
@@ -59,7 +59,7 @@ func (m *metricsHandler) HandleMetrics(ctx context.Context, met *envoymet.Stream
 
 	mergedUsage := m.usageMerger.MergeUsage(met.Identifier.Node.Id, existingUsage, newMetrics)
 
-	err = m.storage.RecordUsage(ctx, mergedUsage)
+	err = m.storage.RecordUsage(mergedUsage)
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Errorf("Error while storing new usage: %s", err.Error())
 		return err

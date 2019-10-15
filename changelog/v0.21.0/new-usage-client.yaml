@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Switch checkpoint client to new reporting service client
+    issueLink: https://github.com/solo-io/solo-projects/issues/1199
