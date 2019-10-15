@@ -174,7 +174,7 @@ func stripInvalidListenersAndVirtualHosts(proxiesToWrite GeneratedProxies) (Gene
 	return strippedProxies, nil
 }
 
-// this funciton is called by the base reconciler to update an existing proxy
+// this function is called by the base reconciler to update an existing proxy
 // persists listeners and virtual hosts from the existing proxy
 // it is necessary to call this transition function *after*
 // stripping invalid virtual hosts / listeners from the desired proxy,
