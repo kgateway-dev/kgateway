@@ -12,7 +12,6 @@ import (
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2"
-	"github.com/gogo/protobuf/types"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -28,11 +27,10 @@ var _ = Describe("Plugin", func() {
 		initParams plugins.InitParams
 		params     plugins.Params
 		rlPlugin   *Plugin
-		extensions *gloov1.Extensions
 		ref        core.ResourceRef
 	)
 
-	beforeEach := func() {
+	BeforeEach(func() {
 		rlPlugin = NewPlugin()
 		ref = core.ResourceRef{
 			Name:      "test",
@@ -43,118 +41,89 @@ var _ = Describe("Plugin", func() {
 			RatelimitServerRef: &ref,
 		}
 		initParams = plugins.InitParams{}
-	}
-
-	allTests := func() {
-		It("should fave fail mode deny off by default", func() {
-
-			filters, err := rlPlugin.HttpFilters(params, nil)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(filters).To(HaveLen(1))
-			for _, f := range filters {
-				cfg := getConfig(f.HttpFilter)
-				Expect(cfg.FailureModeDeny).To(BeFalse())
-			}
-
-			hundredms := DefaultTimeout
-			expectedConfig := &envoyratelimit.RateLimit{
-				Domain:          "custom",
-				FailureModeDeny: false,
-				Stage:           1,
-				Timeout:         &hundredms,
-				RequestType:     "both",
-				RateLimitService: &rlconfig.RateLimitServiceConfig{
-					GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-						EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-							ClusterName: translator.UpstreamToClusterName(ref),
-						},
-					}},
-				},
-			}
-
-			cfg := getConfig(filters[0].HttpFilter)
-			Expect(cfg).To(BeEquivalentTo(expectedConfig))
-		})
-
-		It("default timeout is 100ms", func() {
-			filters, err := rlPlugin.HttpFilters(params, nil)
-			Expect(err).NotTo(HaveOccurred())
-			timeout := DefaultTimeout
-			Expect(filters).To(HaveLen(1))
-			for _, f := range filters {
-				cfg := getConfig(f.HttpFilter)
-				Expect(*cfg.Timeout).To(Equal(timeout))
-			}
-		})
-
-		Context("fail mode deny", func() {
-
-			BeforeEach(func() {
-				rlSettings.DenyOnFail = true
-			})
-
-			It("should fave fail mode deny on", func() {
-				filters, err := rlPlugin.HttpFilters(params, nil)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(filters).To(HaveLen(1))
-				for _, f := range filters {
-					cfg := getConfig(f.HttpFilter)
-					Expect(cfg.FailureModeDeny).To(BeTrue())
-				}
-			})
-		})
-
-		Context("timeout", func() {
-
-			BeforeEach(func() {
-				s := time.Second
-				rlSettings.RequestTimeout = &s
-			})
-
-			It("should custom timeout set", func() {
-				filters, err := rlPlugin.HttpFilters(params, nil)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(filters).To(HaveLen(1))
-				for _, f := range filters {
-					cfg := getConfig(f.HttpFilter)
-					Expect(*cfg.Timeout).To(Equal(time.Second))
-				}
-			})
-		})
-	}
-
-	// TODO(kdorosh) remove this once we stop supporting opaque rate limiting config
-	Context("deprecated config", func() {
-		BeforeEach(beforeEach)
-
-		JustBeforeEach(func() {
-			settingsStruct, err := util.MessageToStruct(rlSettings)
-			Expect(err).NotTo(HaveOccurred())
-
-			glooExtensions := map[string]*types.Struct{
-				ExtensionName: settingsStruct,
-			}
-			extensions = &gloov1.Extensions{
-				Configs: glooExtensions,
-			}
-			initParams.ExtensionsSettings = extensions
-			rlPlugin.Init(initParams)
-		})
-		allTests()
 	})
 
-	// TODO(kdorosh) clean this up and remove this higher level context when we stop supporting opaque rate-limiting config
-	Context("strongly-typed config", func() {
-		BeforeEach(beforeEach)
+	JustBeforeEach(func() {
+		initParams.Settings = &gloov1.Settings{RatelimitServer: rlSettings}
+		rlPlugin.Init(initParams)
+	})
+	It("should fave fail mode deny off by default", func() {
 
-		JustBeforeEach(func() {
-			initParams.Settings = &gloov1.Settings{RatelimitServer: rlSettings}
-			rlPlugin.Init(initParams)
+		filters, err := rlPlugin.HttpFilters(params, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(filters).To(HaveLen(1))
+		for _, f := range filters {
+			cfg := getConfig(f.HttpFilter)
+			Expect(cfg.FailureModeDeny).To(BeFalse())
+		}
+
+		hundredms := DefaultTimeout
+		expectedConfig := &envoyratelimit.RateLimit{
+			Domain:          "custom",
+			FailureModeDeny: false,
+			Stage:           1,
+			Timeout:         &hundredms,
+			RequestType:     "both",
+			RateLimitService: &rlconfig.RateLimitServiceConfig{
+				GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+						ClusterName: translator.UpstreamToClusterName(ref),
+					},
+				}},
+			},
+		}
+
+		cfg := getConfig(filters[0].HttpFilter)
+		Expect(cfg).To(BeEquivalentTo(expectedConfig))
+	})
+
+	It("default timeout is 100ms", func() {
+		filters, err := rlPlugin.HttpFilters(params, nil)
+		Expect(err).NotTo(HaveOccurred())
+		timeout := DefaultTimeout
+		Expect(filters).To(HaveLen(1))
+		for _, f := range filters {
+			cfg := getConfig(f.HttpFilter)
+			Expect(*cfg.Timeout).To(Equal(timeout))
+		}
+	})
+
+	Context("fail mode deny", func() {
+
+		BeforeEach(func() {
+			rlSettings.DenyOnFail = true
 		})
-		allTests()
+
+		It("should fave fail mode deny on", func() {
+			filters, err := rlPlugin.HttpFilters(params, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(filters).To(HaveLen(1))
+			for _, f := range filters {
+				cfg := getConfig(f.HttpFilter)
+				Expect(cfg.FailureModeDeny).To(BeTrue())
+			}
+		})
+	})
+
+	Context("timeout", func() {
+
+		BeforeEach(func() {
+			s := time.Second
+			rlSettings.RequestTimeout = &s
+		})
+
+		It("should custom timeout set", func() {
+			filters, err := rlPlugin.HttpFilters(params, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(filters).To(HaveLen(1))
+			for _, f := range filters {
+				cfg := getConfig(f.HttpFilter)
+				Expect(*cfg.Timeout).To(Equal(time.Second))
+			}
+		})
 	})
 
 })

@@ -9,8 +9,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -41,29 +39,7 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-//TODO(kdorosh) delete once support for old config is dropped
-func (p *Plugin) handleDeprecatedPluginConfig(params plugins.InitParams) error {
-	var settings ratelimit.Settings
-	p.upstreamRef = nil
-	err := utils.ExtensionsToProto(params.ExtensionsSettings, ExtensionName, &settings)
-	if err != nil {
-		if err == utils.NotFoundError {
-			return nil
-		}
-		return err
-	}
-
-	p.upstreamRef = settings.RatelimitServerRef
-	p.timeout = settings.RequestTimeout
-	p.denyOnFail = settings.DenyOnFail
-	return nil
-}
-
 func (p *Plugin) Init(params plugins.InitParams) error {
-	if err := p.handleDeprecatedPluginConfig(params); err != nil {
-		return err
-	}
-
 	if rlServer := params.Settings.GetRatelimitServer(); rlServer != nil {
 		p.upstreamRef = rlServer.RatelimitServerRef
 		p.timeout = rlServer.RequestTimeout
@@ -74,49 +50,17 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	rateLimit, err := p.handleDeprecatedVirtualHostCustom(params, in)
-	if err != nil {
-		return err
-	}
-
 	if rl := in.GetVirtualHostPlugins().GetRatelimit(); rl != nil {
-		rateLimit = rl
+		out.RateLimits = generateCustomEnvoyConfigForVhost(rl.RateLimits)
 	}
-
-	if rateLimit == nil {
-		// no rate limit virtual host config found, nothing to do here
-		return nil
-	}
-
-	out.RateLimits = generateCustomEnvoyConfigForVhost(rateLimit.RateLimits)
-
 	return nil
 }
 
-//TODO(kdorosh) delete once support for old config is dropped
-func (p *Plugin) handleDeprecatedVirtualHostCustom(params plugins.VirtualHostParams, in *v1.VirtualHost) (*ratelimit.RateLimitVhostExtension, error) {
-	var rateLimit ratelimit.RateLimitVhostExtension
-	err := utils.UnmarshalExtension(in.VirtualHostPlugins, EnvoyExtensionName, &rateLimit)
-	if err != nil {
-		if err == utils.NotFoundError {
-			return nil, nil
-		}
-		return nil, errors.Wrapf(err, "Error converting proto to vhost rate limit plugin")
-	}
-	return &rateLimit, nil
-}
-
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	rateLimit, err := p.handleDeprecatedProcessRoute(params, in)
-	if err != nil {
-		return err
-	}
-
+	var rateLimit *ratelimit.RateLimitRouteExtension
 	if rl := in.GetRoutePlugins().GetRatelimit(); rl != nil {
 		rateLimit = rl
-	}
-
-	if rateLimit == nil {
+	} else {
 		// no rate limit route config found, nothing to do here
 		return nil
 	}
@@ -131,19 +75,6 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	return nil
-}
-
-//TODO(kdorosh) delete once support for old config is dropped
-func (p *Plugin) handleDeprecatedProcessRoute(params plugins.RouteParams, in *v1.Route) (*ratelimit.RateLimitRouteExtension, error) {
-	var rateLimit ratelimit.RateLimitRouteExtension
-	err := utils.UnmarshalExtension(in.RoutePlugins, EnvoyExtensionName, &rateLimit)
-	if err != nil {
-		if err == utils.NotFoundError {
-			return nil, nil
-		}
-		return nil, errors.Wrapf(err, "Error converting proto any to vhost rate limit plugin")
-	}
-	return &rateLimit, nil
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
