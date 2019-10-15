@@ -3,6 +3,8 @@ package syncer
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 
 	"github.com/hashicorp/go-multierror"
@@ -22,6 +24,7 @@ var (
 
 type translatorSyncer struct {
 	translator translator.Translator
+	sanitizer  sanitizer.XdsSanitizer
 	xdsCache   envoycache.SnapshotCache
 	xdsHasher  *xds.ProxyKeyHasher
 	reporter   reporter.Reporter
@@ -41,13 +44,14 @@ type TranslatorSyncerExtension interface {
 	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) error
 }
 
-func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension) v1.ApiSyncer {
+func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, sanitizer sanitizer.XdsSanitizer, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension) v1.ApiSyncer {
 	s := &translatorSyncer{
 		translator: translator,
 		xdsCache:   xdsCache,
 		xdsHasher:  xdsHasher,
 		reporter:   reporter,
 		extensions: extensions,
+		sanitizer:  sanitizer,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?

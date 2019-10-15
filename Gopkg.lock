@@ -1354,14 +1354,6 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:c5673cbf44dc752b282c962f514b0cc1b64d0d253cc64dba53b123a8e4bc3c4f"
-  name = "github.com/solo-io/go-checkpoint"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "b56cd9c812e84da93eb577054ebdf60a27487acb"
-  version = "0.1.0"
-
-[[projects]]
   digest = "1:30d12500ff14fd6945d4451146adb4fa6e62019c7164070924ccf4ec787e4a92"
   name = "github.com/solo-io/go-utils"
   packages = [
@@ -1405,7 +1397,18 @@
   version = "v0.10.18"
 
 [[projects]]
-  digest = "1:a816c3c4ab0bb06663d8d4ea44d979ba0d0f323260b541c6fd2533fb8211660a"
+  digest = "1:a2922a665903e4336f9e8b13eb9134bdda25ed984b3966159d4aa2bf9c5b0e28"
+  name = "github.com/solo-io/reporting-client"
+  packages = [
+    "pkg/api/v1",
+    "pkg/client",
+  ]
+  pruneopts = "UT"
+  revision = "f47eacc21bd62e6bc8bb8954af0dc1817079af0d"
+  version = "v0.0.2"
+
+[[projects]]
+  digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -2755,7 +2758,6 @@
     "github.com/prometheus/client_golang/api/prometheus/v1",
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
-    "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/go-utils/certutils",
     "github.com/solo-io/go-utils/changelogutils",
     "github.com/solo-io/go-utils/clidoc",
@@ -2784,6 +2786,8 @@
     "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/go-utils/versionutils/dep",
     "github.com/solo-io/go-utils/versionutils/git",
+    "github.com/solo-io/reporting-client/pkg/api/v1",
+    "github.com/solo-io/reporting-client/pkg/client",
     "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",
