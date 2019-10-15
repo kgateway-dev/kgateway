@@ -72,7 +72,7 @@ var _ = Describe("Metrics service", func() {
 			Recv().
 			Return(metrics, nil)
 		storage.EXPECT().
-			GetUsage(context.TODO()).
+			GetUsage().
 			Return(nil, nil)
 
 		expectedUsage := &metricsservice.GlobalUsage{
@@ -91,7 +91,7 @@ var _ = Describe("Metrics service", func() {
 		}
 
 		storage.EXPECT().
-			RecordUsage(context.TODO(), expectedUsage).
+			RecordUsage(expectedUsage).
 			Return(nil)
 
 		err := metricsService.StreamMetrics(metricsStream)
@@ -143,7 +143,7 @@ var _ = Describe("Metrics service", func() {
 			},
 		}
 		storage.EXPECT().
-			GetUsage(context.TODO()).
+			GetUsage().
 			Return(existingUsage, nil)
 
 		expectedUsage := &metricsservice.GlobalUsage{
@@ -162,7 +162,7 @@ var _ = Describe("Metrics service", func() {
 		}
 
 		storage.EXPECT().
-			RecordUsage(context.TODO(), expectedUsage).
+			RecordUsage(expectedUsage).
 			Return(nil)
 
 		err := metricsService.StreamMetrics(metricsStream)

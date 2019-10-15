@@ -1,7 +1,6 @@
 package metricsservice
 
 import (
-	"context"
 	"encoding/json"
 	"sync"
 	"time"
@@ -17,8 +16,8 @@ import (
 //go:generate mockgen -destination mocks/mock_storage.go -package mocks github.com/solo-io/gloo/projects/metrics/pkg/metricsservice StorageClient
 
 type StorageClient interface {
-	RecordUsage(ctx context.Context, usage *GlobalUsage) error
-	GetUsage(ctx context.Context) (*GlobalUsage, error)
+	RecordUsage(usage *GlobalUsage) error
+	GetUsage() (*GlobalUsage, error)
 }
 
 type EnvoyMetrics struct {
@@ -86,11 +85,11 @@ func NewDefaultConfigMapStorage(podNamespace string) (*configMapStorageClient, e
 
 // Record a new set of metrics for the given envoy instance id
 // The envoy instance id template is set in the gateway proxy configmap: `envoy.yaml`.node.id
-func (s *configMapStorageClient) RecordUsage(ctx context.Context, usage *GlobalUsage) error {
+func (s *configMapStorageClient) RecordUsage(usage *GlobalUsage) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	_, configMap, err := s.getExistingUsage(ctx)
+	_, configMap, err := s.getExistingUsage()
 	if err != nil {
 		return err
 	}
@@ -105,11 +104,11 @@ func (s *configMapStorageClient) RecordUsage(ctx context.Context, usage *GlobalU
 	return err
 }
 
-func (s *configMapStorageClient) GetUsage(ctx context.Context) (*GlobalUsage, error) {
+func (s *configMapStorageClient) GetUsage() (*GlobalUsage, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	existingUsage, _, err := s.getExistingUsage(ctx)
+	existingUsage, _, err := s.getExistingUsage()
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,7 @@ func (s *configMapStorageClient) GetUsage(ctx context.Context) (*GlobalUsage, er
 // returns the old usage, the config map it came from, and any error
 // the config map is nil if and only if an error occurs
 // the old usage is nil if it has not been written yet or if there was an error reading it
-func (s *configMapStorageClient) getExistingUsage(ctx context.Context) (*GlobalUsage, *corev1.ConfigMap, error) {
+func (s *configMapStorageClient) getExistingUsage() (*GlobalUsage, *corev1.ConfigMap, error) {
 	cm, err := s.configMapClient.Get(metricsConfigMapName, v1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
