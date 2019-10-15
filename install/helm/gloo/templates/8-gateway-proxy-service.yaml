@@ -17,6 +17,9 @@ metadata:
   {{- end }}
 {{- end }}
 spec:
+{{- if $spec.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
+{{- end }}
   ports:
   - port: {{ $spec.service.httpPort }}
     targetPort: {{ $spec.podTemplate.httpPort }}
