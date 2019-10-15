@@ -9,8 +9,13 @@ import (
 )
 
 const (
+	// this is the url for a grpc service
+	// note that grpc name resolution is a little different than for a normal HTTP/1.1 service
+	// https://github.com/grpc/grpc/blob/master/doc/naming.md
 	ReportingServiceUrl = "reporting.corp.solo.io:443"
-	ReportingDuration   = time.Hour * 24
+
+	// report once per period
+	ReportingPeriod = time.Hour * 24
 
 	numEnvoys        = "numActiveEnvoys"
 	totalRequests    = "totalRequests"

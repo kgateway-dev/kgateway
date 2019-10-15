@@ -27,6 +27,7 @@ func main() {
 type cliUsageReader struct {
 }
 
+// when reporting usage, also include the args that glooctl was invoked with
 func (c *cliUsageReader) GetPayload() (map[string]string, error) {
 	return map[string]string{
 		args: strings.Join(os.Args, "|"),
