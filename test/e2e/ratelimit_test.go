@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -18,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	ratelimit2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -53,7 +50,6 @@ var _ = Describe("Rate Limit", func() {
 	var (
 		ctx            context.Context
 		testClients    services.TestClients
-		glooExtensions map[string]*types.Struct
 		cache          memory.InMemoryResourceCache
 	)
 
@@ -99,16 +95,7 @@ var _ = Describe("Rate Limit", func() {
 			rlSettings := &ratelimit.Settings{
 				RatelimitServerRef: &ref,
 			}
-			settingsStruct, err := envoyutil.MessageToStruct(rlSettings)
-			Expect(err).NotTo(HaveOccurred())
 
-			glooExtensions = map[string]*types.Struct{
-				ratelimit2.ExtensionName: settingsStruct,
-			}
-
-			extensions := &gloov1.Extensions{
-				Configs: glooExtensions,
-			}
 			ctx, _ = context.WithCancel(context.Background())
 			cache = memory.NewInMemoryResourceCache()
 			ro := &services.RunOptions{
@@ -119,11 +106,14 @@ var _ = Describe("Rate Limit", func() {
 					DisableUds:     true,
 					DisableFds:     true,
 				},
-				ExtensionConfigs: extensions,
 				Cache:            cache,
+				Settings: &gloov1.Settings{
+					RatelimitServer: rlSettings,
+				},
 			}
+
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			_, err = testClients.UpstreamClient.Write(rlserver, clients.WriteOpts{})
+			_, err := testClients.UpstreamClient.Write(rlserver, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			err = envoyInstance.Run(testClients.GlooPort)
@@ -278,18 +268,6 @@ type RlProxyBuilder struct {
 }
 
 func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
-	var extensions *gloov1.Extensions
-
-	rateLimitStruct, err := envoyutil.MessageToStruct(b.customRateLimit)
-	Expect(err).NotTo(HaveOccurred())
-	protos := map[string]*types.Struct{
-		ratelimit2.EnvoyExtensionName: rateLimitStruct,
-	}
-
-	extensions = &gloov1.Extensions{
-		Configs: protos,
-	}
-
 	var vhosts []*gloov1.VirtualHost
 
 	for hostname, enableRateLimits := range b.hostsToRateLimits {
@@ -298,11 +276,6 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 			Domains: []string{hostname},
 			Routes: []*gloov1.Route{
 				{
-					Matcher: &gloov1.Matcher{
-						PathSpecifier: &gloov1.Matcher_Prefix{
-							Prefix: "/",
-						},
-					},
 					Action: &gloov1.Route_RouteAction{
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{
@@ -320,7 +293,7 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 
 		if enableRateLimits {
 			vhost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{
-				Extensions: extensions,
+				Ratelimit: b.customRateLimit,
 			}
 		}
 		vhosts = append(vhosts, vhost)
