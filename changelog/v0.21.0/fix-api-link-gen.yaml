@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix generated api links in docs.
+    issueLink: https://github.com/solo-io/gloo/issues/1413
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.11.0

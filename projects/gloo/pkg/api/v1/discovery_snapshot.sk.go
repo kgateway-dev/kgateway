@@ -86,7 +86,7 @@ func (s DiscoverySnapshot) Stringer() DiscoverySnapshotStringer {
 	return DiscoverySnapshotStringer{
 		Version:        s.Hash(),
 		Upstreams:      s.Upstreams.NamespacesDotNames(),
-		Kubenamespaces: s.Kubenamespaces.NamespacesDotNames(),
+		Kubenamespaces: s.Kubenamespaces.Names(),
 		Secrets:        s.Secrets.NamespacesDotNames(),
 	}
 }
