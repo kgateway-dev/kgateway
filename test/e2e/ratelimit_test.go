@@ -48,9 +48,9 @@ func (this *acceptOrDenyRateLimitServer) ShouldRateLimit(ctx context.Context, re
 var _ = Describe("Rate Limit", func() {
 
 	var (
-		ctx            context.Context
-		testClients    services.TestClients
-		cache          memory.InMemoryResourceCache
+		ctx         context.Context
+		testClients services.TestClients
+		cache       memory.InMemoryResourceCache
 	)
 
 	const (
@@ -106,7 +106,7 @@ var _ = Describe("Rate Limit", func() {
 					DisableUds:     true,
 					DisableFds:     true,
 				},
-				Cache:            cache,
+				Cache: cache,
 				Settings: &gloov1.Settings{
 					RatelimitServer: rlSettings,
 				},
