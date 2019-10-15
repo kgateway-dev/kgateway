@@ -633,9 +633,9 @@ spec:
   gloo:
     xdsBindAddr: 0.0.0.0:9977
     invalidConfigPolicy:
-      fallbackResponseBody: Gateway has invalid configuration. Administrators should run
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
         ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-      fallbackResponseCode: 404
+      invalidRouteResponseCode: 404
 
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
