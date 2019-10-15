@@ -9,25 +9,38 @@ import (
 	"go.opencensus.io/tag"
 )
 
-func MakeCounter(name, description string, tags ...tag.Mutator) *stats.Int64Measure {
+func MakeSumCounter(name, description string, tagKeys ...tag.Key) *stats.Int64Measure {
+	return MakeCounter(name, description, view.Sum(), tagKeys...)
+}
+
+func MakeLastValueCounter(name, description string, tagKeys ...tag.Key) *stats.Int64Measure {
+	return MakeCounter(name, description, view.LastValue(), tagKeys...)
+}
+
+func MakeCounter(name, description string, aggregation *view.Aggregation, tagKeys ...tag.Key) *stats.Int64Measure {
 	counter := stats.Int64(name, description, "1")
 
 	_ = view.Register(&view.View{
 		Name:        counter.Name(),
 		Measure:     counter,
 		Description: counter.Description(),
-		Aggregation: view.LastValue(),
+		Aggregation: aggregation,
+		TagKeys:     tagKeys,
 	})
 
 	return counter
 }
 
-func Increment(ctx context.Context, counter *stats.Int64Measure, tags ...tag.Mutator) {
+func MeasureOne(ctx context.Context, counter *stats.Int64Measure, tags ...tag.Mutator) {
+	Measure(ctx, counter, 1, tags...)
+}
+
+func Measure(ctx context.Context, counter *stats.Int64Measure, val int64, tags ...tag.Mutator) {
 	if err := stats.RecordWithTags(
 		ctx,
 		tags,
-		counter.M(1),
+		counter.M(val),
 	); err != nil {
-		contextutils.LoggerFrom(ctx).Errorf("incrementing counter %v: %v", counter.Name(), err)
+		contextutils.LoggerFrom(ctx).Errorf("setting counter %v: %v", counter.Name(), err)
 	}
 }

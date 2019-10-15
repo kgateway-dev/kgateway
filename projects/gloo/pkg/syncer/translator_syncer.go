@@ -18,10 +18,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-var (
-	proxyNameKey, _ = tag.NewKey("proxyname")
-)
-
 type translatorSyncer struct {
 	translator translator.Translator
 	sanitizer  sanitizer.XdsSanitizer

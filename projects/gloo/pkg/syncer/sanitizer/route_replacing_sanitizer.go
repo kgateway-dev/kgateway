@@ -2,6 +2,9 @@ package sanitizer
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+	"go.opencensus.io/tag"
 	"sort"
 
 	"go.uber.org/zap"
@@ -17,6 +20,12 @@ import (
 	"github.com/solo-io/go-utils/errors"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+)
+
+var (
+	routeConfigKey, _ = tag.NewKey("route_config_name")
+
+	mRoutesReplaced = utils.MakeLastValueCounter("gloo.solo.io/sanitizer/routes_replaced", "The number routes replaced in the sanitized xds snapshot", stats.ProxyNameKey, routeConfigKey)
 )
 
 type RouteReplacingSanitizer struct {
@@ -116,6 +125,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 
 	// replace any routes which do not point to a valid destination cluster
 	for _, cfg := range routeConfigs {
+		var replaced int64
 		sanitizedRouteConfig := proto.Clone(cfg).(*envoyapi.RouteConfiguration)
 
 		for i, vh := range sanitizedRouteConfig.GetVirtualHosts() {
@@ -130,6 +140,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 						debugW("replacing route in virtual host with invalid cluster",
 							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
 						s.replaceRouteAction(&route)
+						replaced++
 					}
 				case *envoyroute.RouteAction_WeightedClusters:
 					for _, weightedCluster := range action.WeightedClusters.GetClusters() {
@@ -138,6 +149,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 								zap.Any("cluster", weightedCluster.GetName()), zap.Any("route", j), zap.Any("virtualhost", i))
 
 							s.replaceRouteAction(&route)
+							replaced++
 							break // only need to have one invalid cluster to get replaced
 						}
 					}
@@ -149,8 +161,10 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 			sanitizedRouteConfig.VirtualHosts[i] = vh
 		}
 
+		utils.Measure(ctx, mRoutesReplaced, replaced, tag.Insert(routeConfigKey, sanitizedRouteConfig.GetName()))
 		sanitizedRouteConfigs = append(sanitizedRouteConfigs, sanitizedRouteConfig)
 	}
+
 	return sanitizedRouteConfigs
 }
 

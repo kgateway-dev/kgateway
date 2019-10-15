@@ -47,12 +47,12 @@ var (
 	resourceTypeKey, _ = tag.NewKey("resource_type")
 	resourceRefKey, _  = tag.NewKey("resource_ref")
 
-	mGatewayResourcesAccepted = utils.MakeCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
-	mGatewayResourcesRejected = utils.MakeCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
+	mGatewayResourcesAccepted = utils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
+	mGatewayResourcesRejected = utils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
 )
 
 func incrementMetric(ctx context.Context, resource string, ref core.ResourceRef, m *stats.Int64Measure) {
-	utils.Increment(
+	utils.MeasureOne(
 		ctx,
 		m,
 		tag.Insert(resourceTypeKey, resource),
