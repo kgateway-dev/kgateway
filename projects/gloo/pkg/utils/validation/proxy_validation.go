@@ -57,62 +57,125 @@ func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 	}
 }
 
-func GetProxyError(proxyRpt *validation.ProxyReport) error {
-	var errs error
-	appendErr := func(level, errType, reason string) {
-		errs = multierr.Append(errs, errors.Errorf("%v Error: %v. Reason: %v", level, errType, reason))
+func mkErr(level, errType, reason string) error {
+	return errors.Errorf("%v Error: %v. Reason: %v", level, errType, reason)
+}
 
+func GetListenerErr(listener *validation.ListenerReport) []error {
+	var errs []error
+	for _, errReport := range listener.GetErrors() {
+		errs = append(errs, mkErr("Listener", errReport.Type.String(), errReport.Reason))
 	}
+	return errs
+}
+
+func GetHttpListenerErr(httpListener *validation.HttpListenerReport) []error {
+	var errs []error
+	for _, errReport := range httpListener.GetErrors() {
+		errs = append(errs, mkErr("HttpListener", errReport.Type.String(), errReport.Reason))
+	}
+	return errs
+}
+
+func GetVirtualHostErr(virtualHost *validation.VirtualHostReport) []error {
+	var errs []error
+	for _, errReport := range virtualHost.GetErrors() {
+		errs = append(errs, mkErr("VirtualHost", errReport.Type.String(), errReport.Reason))
+	}
+	return errs
+}
+
+func GetRouteErr(route *validation.RouteReport) []error {
+	var errs []error
+	for _, errReport := range route.GetErrors() {
+		errs = append(errs, mkErr("Route", errReport.Type.String(), errReport.Reason))
+	}
+	return errs
+}
+
+func GetRouteWarning(route *validation.RouteReport) []string {
+	var warnings []string
+	appendWarning := func(level, errType, reason string) {
+		warnings = append(warnings, fmt.Sprintf("%v Warning: %v. Reason: %v", level, errType, reason))
+	}
+
+	for _, warning := range route.GetWarnings() {
+		appendWarning("Route", warning.Type.String(), warning.Reason)
+	}
+
+	return warnings
+}
+
+func GetTcpListenerErr(tcpListener *validation.TcpListenerReport) []error {
+	var errs []error
+	for _, errReport := range tcpListener.GetErrors() {
+		errs = append(errs, mkErr("TcpListener", errReport.Type.String(), errReport.Reason))
+	}
+	return errs
+}
+
+func GetTcpHostErr(tcpHost *validation.TcpHostReport) []error {
+	var errs []error
+	for _, errReport := range tcpHost.GetErrors() {
+		errs = append(errs, mkErr("TcpHost", errReport.Type.String(), errReport.Reason))
+	}
+	return errs
+}
+
+func GetProxyError(proxyRpt *validation.ProxyReport) error {
+	var errs []error
 	for _, listener := range proxyRpt.GetListenerReports() {
-		for _, errReport := range listener.GetErrors() {
-			appendErr("Listener", errReport.Type.String(), errReport.Reason)
+		if err := GetListenerErr(listener); err != nil {
+			errs = append(errs, err...)
 		}
 		switch listenerType := listener.ListenerTypeReport.(type) {
 		case *validation.ListenerReport_HttpListenerReport:
 			httpListener := listenerType.HttpListenerReport
-			for _, errReport := range httpListener.GetErrors() {
-				appendErr("HTTP Plugin", "plugin", errReport.Reason)
+			if err := GetHttpListenerErr(httpListener); err != nil {
+				errs = append(errs, err...)
 			}
 			for _, vhReport := range httpListener.GetVirtualHostReports() {
-				for _, errReport := range vhReport.GetErrors() {
-					appendErr("VirtualHost", errReport.Type.String(), errReport.Reason)
+				if err := GetVirtualHostErr(vhReport); err != nil {
+					errs = append(errs, err...)
 				}
 				for _, routeReport := range vhReport.GetRouteReports() {
-					for _, errReport := range routeReport.GetErrors() {
-						appendErr("Route", errReport.Type.String(), errReport.Reason)
+					if err := GetRouteErr(routeReport); err != nil {
+						errs = append(errs, err...)
 					}
 				}
 			}
 		case *validation.ListenerReport_TcpListenerReport:
 			tcpListener := listenerType.TcpListenerReport
-			for _, errReport := range tcpListener.GetErrors() {
-				appendErr("TCP Listener", errReport.Type.String(), errReport.Reason)
+			if err := GetTcpListenerErr(tcpListener); err != nil {
+				errs = append(errs, err...)
 			}
-
 			for _, hostReport := range tcpListener.GetTcpHostReports() {
-				for _, errReport := range hostReport.GetErrors() {
-					appendErr("TCP Host", errReport.Type.String(), errReport.Reason)
+				if err := GetTcpHostErr(hostReport); err != nil {
+					errs = append(errs, err...)
 				}
 			}
 		}
 	}
 
-	return errs
+	var combinedErr error
+	for _, err := range errs {
+		combinedErr = multierr.Append(combinedErr, err)
+	}
+
+	return combinedErr
 }
 
 func GetProxyWarning(proxyRpt *validation.ProxyReport) []string {
 	var warnings []string
-	appendWarning := func(level, errType, reason string) {
-		warnings = append(warnings, fmt.Sprintf("%v Warning: %v. Reason: %v", level, errType, reason))
-	}
+
 	for _, listener := range proxyRpt.GetListenerReports() {
 		switch listenerType := listener.ListenerTypeReport.(type) {
 		case *validation.ListenerReport_HttpListenerReport:
 			httpListener := listenerType.HttpListenerReport
 			for _, vhReport := range httpListener.GetVirtualHostReports() {
 				for _, routeReport := range vhReport.GetRouteReports() {
-					for _, warning := range routeReport.GetWarnings() {
-						appendWarning("Route", warning.Type.String(), warning.Reason)
+					if warns := GetRouteWarning(routeReport); len(warns) > 0 {
+						warnings = append(warnings, warns...)
 					}
 				}
 			}

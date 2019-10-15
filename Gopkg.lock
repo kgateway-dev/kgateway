@@ -1405,7 +1405,7 @@
   version = "v0.10.18"
 
 [[projects]]
-  digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
+  digest = "1:a816c3c4ab0bb06663d8d4ea44d979ba0d0f323260b541c6fd2533fb8211660a"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1468,8 +1468,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "43b06f6a734ec0ae67e2943976bf3a6f55418733"
-  version = "v0.10.23"
+  revision = "f73a630e3957f0643ddab630a1c7b0ab9d2130ba"
+  version = "v0.10.25"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2745,9 +2745,11 @@
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
+    "github.com/onsi/gomega/format",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
     "github.com/onsi/gomega/gstruct",
+    "github.com/onsi/gomega/types",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/api",
     "github.com/prometheus/client_golang/api/prometheus/v1",

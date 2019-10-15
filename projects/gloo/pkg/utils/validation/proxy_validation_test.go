@@ -116,7 +116,8 @@ var _ = Describe("validation utils", func() {
 			)
 
 			err := GetProxyError(rpt)
-			Expect(err).To(MatchError("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HTTP Plugin Error: plugin. Reason: bad http plugin"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
 	})
 })
