@@ -1,6 +1,7 @@
 package debugprint
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -8,12 +9,17 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/onsi/ginkgo"
 	"github.com/solo-io/go-utils/protoutils"
 	"sigs.k8s.io/yaml"
 )
 
 func PrintYaml(ress ...proto.Message) {
 	log.Printf(SprintYaml(ress...))
+}
+
+func GinkgoPrintYaml(ress ...proto.Message) {
+	fmt.Fprint(ginkgo.GinkgoWriter, SprintYaml(ress...))
 }
 
 func PrintKube(crd crd.Crd, ress ...resources.InputResource) {
