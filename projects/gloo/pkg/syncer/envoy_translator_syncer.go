@@ -3,8 +3,9 @@ package syncer
 import (
 	"context"
 	"fmt"
-	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"net/http"
+
+	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 
 	"github.com/gorilla/mux"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

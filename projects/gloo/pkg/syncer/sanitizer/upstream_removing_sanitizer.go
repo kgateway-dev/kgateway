@@ -2,6 +2,7 @@ package sanitizer
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 

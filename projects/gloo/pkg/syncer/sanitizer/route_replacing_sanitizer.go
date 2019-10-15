@@ -2,10 +2,11 @@ package sanitizer
 
 import (
 	"context"
+	"sort"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"go.opencensus.io/tag"
-	"sort"
 
 	"go.uber.org/zap"
 

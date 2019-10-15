@@ -9,8 +9,6 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"go.opencensus.io/tag"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
