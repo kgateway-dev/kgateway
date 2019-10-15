@@ -249,7 +249,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		}
 
 		glooSnapshot := &v1.ApiSnapshot{
-			Upstreams: v1.UpstreamList{us},
+			Upstreams: v1.UpstreamList{us, badUs},
 		}
 
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
