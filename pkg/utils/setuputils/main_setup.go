@@ -60,7 +60,7 @@ func Main(opts SetupOpts) error {
 		go func() {
 			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggingPrefix)
 			for err := range errs {
-				contextutils.LoggerFrom(ctx).Errorf("Error while reporting usage: %s", err.Error())
+				contextutils.LoggerFrom(ctx).Errorw("Error while reporting usage", zap.Error(err))
 			}
 		}()
 	}

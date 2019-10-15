@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/solo-io/gloo/pkg/utils/usage"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/go-utils/contextutils"
@@ -17,7 +19,7 @@ func Main(customCtx context.Context) error {
 	var usageReporter client.UsagePayloadReader
 	metricsStorage, err := metricsservice.NewDefaultConfigMapStorage(os.Getenv("POD_NAMESPACE"))
 	if err != nil {
-		contextutils.LoggerFrom(customCtx).Warnf("Could not create metrics storage loader - will not report usage: %s", err.Error())
+		contextutils.LoggerFrom(customCtx).Warnw("Could not create metrics storage loader - will not report usage: %s", zap.Error(err))
 	} else {
 		usageReporter = &usage.DefaultUsageReader{MetricsStorage: metricsStorage}
 	}
