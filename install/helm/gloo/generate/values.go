@@ -102,9 +102,9 @@ type Settings struct {
 }
 
 type InvalidConfigPolicy struct {
-	EnableFallbackResponse bool   `json:"enableFallbackResponse,omitempty"`
-	FallbackResponseCode   int64  `json:"fallbackResponseCode,omitempty"`
-	FallbackResponseBody   string `json:"fallbackResponseBody,omitempty"`
+	ReplaceInvalidRoutes     bool   `json:"replaceInvalidRoutes,omitempty"`
+	InvalidRouteResponseCode int64  `json:"invalidRouteResponseCode,omitempty"`
+	InvalidRouteResponseBody string `json:"invalidRouteResponseBody,omitempty"`
 }
 
 type Gloo struct {
