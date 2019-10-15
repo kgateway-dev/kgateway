@@ -50,7 +50,8 @@ func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) *RouteR
 
 func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
 	if !s.enabled {
-		return xdsSnapshot, nil
+		// if if the route sanitizer is not enabled, enforce strict validation of routes (warnings are treated as errors)
+		return xdsSnapshot, reports.ValidateStrict()
 	}
 
 	ctx = contextutils.WithLogger(ctx, "invalid-route-replacer")
