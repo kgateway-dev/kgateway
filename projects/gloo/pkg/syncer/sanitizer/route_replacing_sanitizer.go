@@ -4,6 +4,8 @@ import (
 	"context"
 	"sort"
 
+	"go.uber.org/zap"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -43,11 +45,6 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 
 	ctx = contextutils.WithLogger(ctx, "invalid-route-replacer")
 
-	resourcesErr := reports.ValidateStrict()
-	if resourcesErr == nil {
-		return xdsSnapshot, nil
-	}
-
 	contextutils.LoggerFrom(ctx).Debug("replacing routes which point to missing or errored upstreams with a direct response action")
 
 	routeConfigs, err := getRoutes(xdsSnapshot)
@@ -58,7 +55,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 	// mark all valid destination clusters
 	validClusters := getValidClusters(glooSnapshot, reports)
 
-	replacedRouteConfigs := s.replaceMissingClusterRoutes(validClusters, routeConfigs)
+	replacedRouteConfigs := s.replaceMissingClusterRoutes(ctx, validClusters, routeConfigs)
 
 	xdsSnapshot = xds.NewSnapshotFromResources(
 		xdsSnapshot.GetResources(xds.EndpointType),
@@ -68,14 +65,11 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 	)
 
 	// If the snapshot is not consistent, error
-	if xdsSnapshot.Consistent() != nil {
-		return xdsSnapshot, resourcesErr
+	if err := xdsSnapshot.Consistent(); err != nil {
+		return xdsSnapshot, err
 	}
 
-	// Snapshot is consistent, so check if we have errors not related to the upstreams
-	resourcesErr = reports.Validate()
-
-	return xdsSnapshot, resourcesErr
+	return xdsSnapshot, nil
 }
 
 func getRoutes(snap envoycache.Snapshot) ([]*envoyapi.RouteConfiguration, error) {
@@ -110,13 +104,15 @@ func getValidClusters(snap *v1.ApiSnapshot, reports reporter.ResourceReports) ma
 	return validClusters
 }
 
-func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(validClusters map[string]struct{}, routeConfigs []*envoyapi.RouteConfiguration) []*envoyapi.RouteConfiguration {
+func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Context, validClusters map[string]struct{}, routeConfigs []*envoyapi.RouteConfiguration) []*envoyapi.RouteConfiguration {
 	var sanitizedRouteConfigs []*envoyapi.RouteConfiguration
 
 	isInvalid := func(cluster string) bool {
 		_, ok := validClusters[cluster]
 		return !ok
 	}
+
+	debugW := contextutils.LoggerFrom(ctx).Debugw
 
 	// replace any routes which do not point to a valid destination cluster
 	for _, cfg := range routeConfigs {
@@ -128,14 +124,19 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(validClusters map[
 				if routeAction == nil {
 					continue
 				}
-				switch action := routeAction.ClusterSpecifier.(type) {
+				switch action := routeAction.GetClusterSpecifier().(type) {
 				case *envoyroute.RouteAction_Cluster:
 					if isInvalid(action.Cluster) {
+						debugW("replacing route in virtual host with invalid cluster",
+							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
 						s.replaceRouteAction(&route)
 					}
 				case *envoyroute.RouteAction_WeightedClusters:
 					for _, weightedCluster := range action.WeightedClusters.GetClusters() {
 						if isInvalid(weightedCluster.GetName()) {
+							debugW("replacing route in virtual host with invalid weighted cluster",
+								zap.Any("cluster", weightedCluster.GetName()), zap.Any("route", j), zap.Any("virtualhost", i))
+
 							s.replaceRouteAction(&route)
 							break // only need to have one invalid cluster to get replaced
 						}
@@ -147,6 +148,8 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(validClusters map[
 			}
 			sanitizedRouteConfig.VirtualHosts[i] = vh
 		}
+
+		sanitizedRouteConfigs = append(sanitizedRouteConfigs, sanitizedRouteConfig)
 	}
 	return sanitizedRouteConfigs
 }

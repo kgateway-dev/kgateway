@@ -24,7 +24,7 @@ func NewInvalidUpstreamRemovingSanitizer() *InvalidUpstreamRemovingSanitizer {
 func (s *InvalidUpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
 	ctx = contextutils.WithLogger(ctx, "invalid-upstream-remover")
 
-	resourcesErr := reports.ValidateStrict()
+	resourcesErr := reports.Validate()
 	if resourcesErr == nil {
 		return xdsSnapshot, nil
 	}
@@ -57,6 +57,15 @@ func (s *InvalidUpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context,
 	// If the snapshot is not consistent,
 	if xdsSnapshot.Consistent() != nil {
 		return xdsSnapshot, resourcesErr
+	}
+
+	// Convert errors related to upstreams to warnings
+	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
+		if upReport := reports[up]; upReport.Errors != nil {
+			upReport.Warnings = []string{upReport.Errors.Error()}
+			upReport.Errors = nil
+			reports[up] = upReport
+		}
 	}
 
 	// Snapshot is consistent, so check if we have errors not related to the upstreams
