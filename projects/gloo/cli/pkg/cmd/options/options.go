@@ -30,14 +30,15 @@ type Options struct {
 }
 
 type Top struct {
-	Interactive bool
-	File        string
-	Output      printTypes.OutputType
-	Ctx         context.Context
-	Verbose     bool   // currently only used by install and uninstall, sends kubectl command output to terminal
-	KubeConfig  string // file to use for kube config, if not standard one.
-	Zip         bool
-	ErrorsOnly  bool
+	Interactive            bool
+	File                   string
+	Output                 printTypes.OutputType
+	Ctx                    context.Context
+	Verbose                bool   // currently only used by install and uninstall, sends kubectl command output to terminal
+	KubeConfig             string // file to use for kube config, if not standard one.
+	Zip                    bool
+	ErrorsOnly             bool
+	DisableUsageStatistics bool
 }
 
 type Install struct {

@@ -63,6 +63,7 @@ func GlooCli() *cobra.Command {
 	optionsFunc := func(app *cobra.Command) {
 		pflags := app.PersistentFlags()
 		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
+		pflags.BoolVarP(&opts.Top.DisableUsageStatistics, "disable-usage-statistics", "x", false, "disable the sending of anonymous usage statistics (https://gloo.solo.io/observability/usage_statistics/)")
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(
@@ -86,6 +87,7 @@ func GlooCli() *cobra.Command {
 
 	preRunFuncs := []PreRunFunc{
 		prerun.SetKubeConfigEnv,
+		prerun.ReportUsage,
 	}
 
 	return App(opts, preRunFuncs, optionsFunc)

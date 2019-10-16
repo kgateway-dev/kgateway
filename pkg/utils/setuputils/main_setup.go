@@ -142,6 +142,7 @@ func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) 
 	return nil
 }
 
+// does not block the current goroutine
 func StartReportingUsage(ctx context.Context, usagePayloadReader client.UsagePayloadReader, product string) <-chan error {
 	usageClient := client.NewUsageClient(usage.ReportingServiceUrl, usagePayloadReader, usage.LoadInstanceMetadata(product, version.Version))
 	return usageClient.StartReportingUsage(ctx, usage.ReportingPeriod)
