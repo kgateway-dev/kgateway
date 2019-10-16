@@ -161,11 +161,11 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 	// Route
 	// ----------------------------------------------------------------------------
 	route := &gloov1.Route{
-		Matcher: &gloov1.Matcher{
+		Matchers: []*gloov1.Matcher{{
 			PathSpecifier: &gloov1.Matcher_Prefix{
 				Prefix: "/",
 			},
-		},
+		}},
 		Action: &gloov1.Route_RouteAction{
 			RouteAction: &gloov1.RouteAction{
 				Destination: &gloov1.RouteAction_Multi{
