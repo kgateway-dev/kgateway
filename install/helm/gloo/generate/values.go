@@ -102,7 +102,7 @@ type Settings struct {
 }
 
 type InvalidConfigPolicy struct {
-	ReplaceInvalidRoutes     bool   `json:"replaceInvalidRoutes,omitempty" desc:"Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo will the serve route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid."`
+	ReplaceInvalidRoutes     bool   `json:"replaceInvalidRoutes,omitempty" desc:"Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid."`
 	InvalidRouteResponseCode int64  `json:"invalidRouteResponseCode,omitempty" desc:"the response code for the direct response"`
 	InvalidRouteResponseBody string `json:"invalidRouteResponseBody,omitempty" desc:"the response body for the direct response"`
 }
