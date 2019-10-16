@@ -438,7 +438,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 ### InvalidConfigPolicy
 
  
-policy for how Gloo should handle invalid config
+Policy for how Gloo should handle invalid config
 
 ```yaml
 "replaceInvalidRoutes": bool
@@ -449,9 +449,9 @@ policy for how Gloo should handle invalid config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `replaceInvalidRoutes` | `bool` | set replaceInvalidRoutes to `true`, Gloo remove any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |  |
-| `invalidRouteResponseCode` | `int` | if invalidRouteResponseCode is set to `true`, reply to clients with this response code default is 404. |  |
-| `invalidRouteResponseBody` | `string` | if replaceInvalidRoutes is set to `true`, reply to clients with this body default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |  |
+| `replaceInvalidRoutes` | `bool` | if set to `true`, Gloo removes any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |  |
+| `invalidRouteResponseCode` | `int` | replaced routes reply to clients with this response code default is 404. |  |
+| `invalidRouteResponseBody` | `string` | replaced routes reply to clients with this response body default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |  |
 
 
 
