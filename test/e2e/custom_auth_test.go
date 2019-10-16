@@ -15,7 +15,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -75,8 +74,10 @@ var _ = Describe("CustomAuth", func() {
 				DisableFds:     true,
 				DisableUds:     true,
 			},
-			ExtauthSettings: &v1.Settings{
-				ExtauthzServerRef: &authUsRef,
+			Settings: &gloov1.Settings{
+				Extauth: &v1.Settings{
+					ExtauthzServerRef: &authUsRef,
+				},
 			},
 		})
 
@@ -193,15 +194,13 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 							},
 							Routes: []*gloov1.Route{
 								{ // This route can be accessed by users
-									Matcher: &gloov1.Matcher{
+									Matchers: []*gloov1.Matcher{{
 										PathSpecifier: &gloov1.Matcher_Prefix{
 											Prefix: "/user",
 										},
-									},
+									}},
 									RoutePlugins: &gloov1.RoutePlugins{
-										PrefixRewrite: &transformation.PrefixRewrite{
-											PrefixRewrite: "/",
-										},
+										PrefixRewrite: "/",
 									},
 									Action: &gloov1.Route_RouteAction{
 										RouteAction: &gloov1.RouteAction{
@@ -216,15 +215,13 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 									},
 								},
 								{ // This route can be accessed only by admins
-									Matcher: &gloov1.Matcher{
+									Matchers: []*gloov1.Matcher{{
 										PathSpecifier: &gloov1.Matcher_Prefix{
 											Prefix: "/admin",
 										},
-									},
+									}},
 									RoutePlugins: &gloov1.RoutePlugins{
-										PrefixRewrite: &transformation.PrefixRewrite{
-											PrefixRewrite: "/",
-										},
+										PrefixRewrite: "/",
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_CustomAuth{
 												CustomAuth: &v1.CustomAuth{
@@ -248,15 +245,13 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 									},
 								},
 								{ // This route can be accessed by anyone
-									Matcher: &gloov1.Matcher{
+									Matchers: []*gloov1.Matcher{{
 										PathSpecifier: &gloov1.Matcher_Prefix{
 											Prefix: "/public",
 										},
-									},
+									}},
 									RoutePlugins: &gloov1.RoutePlugins{
-										PrefixRewrite: &transformation.PrefixRewrite{
-											PrefixRewrite: "/",
-										},
+										PrefixRewrite: "/",
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_Disable{
 												Disable: true,
