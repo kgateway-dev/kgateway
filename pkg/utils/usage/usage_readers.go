@@ -74,7 +74,11 @@ var _ client.UsagePayloadReader = &CliUsageReader{}
 
 // when reporting usage, also include the args that glooctl was invoked with
 func (c *CliUsageReader) GetPayload() (map[string]string, error) {
-	return map[string]string{
-		args: strings.Join(os.Args, "|"),
-	}, nil
+	argsMap := map[string]string{}
+
+	if len(os.Args) > 1 {
+		argsMap[args] = strings.Join(os.Args[1:], "|")
+	}
+
+	return argsMap, nil
 }
