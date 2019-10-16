@@ -69,6 +69,10 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
+        {{- if .Values.gloo.deployment.disableUsageStatistics }}
+          - name: USAGE_REPORTING_DISABLE
+            value: "true"
+        {{- end}}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}

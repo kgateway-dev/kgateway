@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/solo-io/reporting-client/pkg/client"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 
@@ -992,6 +994,18 @@ metadata:
 				It("should create a deployment", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
 					prepareMakefile(helmFlags)
+					testManifest.ExpectDeploymentAppsV1(glooDeployment)
+				})
+
+				It("should disable usage stats collection when appropriate", func() {
+					helmFlags := fmt.Sprintf("--namespace %s --set namespace.create=true --set gloo.deployment.disableUsageStatistics=true", namespace)
+					prepareMakefile(helmFlags)
+
+					glooDeployment.Spec.Template.Spec.Containers[0].Env = append(glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
+						Name:  client.DisableUsageVar,
+						Value: "true",
+					})
+
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
 				})
 

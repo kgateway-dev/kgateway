@@ -105,13 +105,14 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	Image                 *Image  `json:"image,omitempty"`
-	XdsPort               int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
-	ValidationPort        int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	Stats                 bool    `json:"stats" desc:"enable prometheus stats"`
-	FloatingUserId        bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser             float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	ExternalTrafficPolicy string  `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
+	Image                  *Image  `json:"image,omitempty"`
+	XdsPort                int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	ValidationPort         int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
+	Stats                  bool    `json:"stats" desc:"enable prometheus stats"`
+	FloatingUserId         bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser              float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	ExternalTrafficPolicy  string  `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
+	DisableUsageStatistics bool    `json:"disableUsageStatistics" desc:"Disable the collection of gloo usage statistics"`
 	*DeploymentSpec
 }
 
