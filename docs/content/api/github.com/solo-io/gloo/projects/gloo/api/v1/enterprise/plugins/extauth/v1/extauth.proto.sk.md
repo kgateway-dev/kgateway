@@ -94,7 +94,7 @@ format that will be included in the extauth snapshot.
 | ----- | ---- | ----------- |----------- | 
 | `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk#basicauth) |  Only one of `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk#oauth) |  Only one of `oauth`, `basicAuth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk#customauth) |  Only one of `customAuth`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk#customauth) | Deprecated: use ExtAuthExtension.CustomAuth. Only one of `customAuth`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk#apikeyauth) |  Only one of `apiKeyAuth`, `basicAuth`, `oauth`, `customAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  Only one of `pluginAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
 | `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
@@ -107,18 +107,20 @@ format that will be included in the extauth snapshot.
 ### ExtAuthExtension
 
  
-Auth configurations defined on virtual hosts and routes will be unmarshalled to this message.
+Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.
 
 ```yaml
 "disable": bool
 "configRef": .core.solo.io.ResourceRef
+"customAuth": .enterprise.gloo.solo.io.CustomAuth
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disable` | `bool` | Set to true to disable auth on the virtual host/route. Only one of `disable` or `configRef` can be set. |  |
-| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A reference to an AuthConfig. Only one of `configRef` or `disable` can be set. |  |
+| `disable` | `bool` | Set to true to disable auth on the virtual host/route. Only one of `disable`, or `customAuth` can be set. |  |
+| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A reference to an AuthConfig. This is used to configure the GlooE extauth server. Only one of `configRef`, or `customAuth` can be set. |  |
+| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk#customauth) | Use this field if you are running your own custom extauth server. Only one of `customAuth`, or `configRef` can be set. |  |
 
 
 
@@ -316,11 +318,13 @@ Gloo is not expected to configure the ext auth server in this case.
 This is used with custom auth servers.
 
 ```yaml
+"contextExtensions": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `contextExtensions` | `map<string, string>` | When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request. This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings) for more details. |  |
 
 
 

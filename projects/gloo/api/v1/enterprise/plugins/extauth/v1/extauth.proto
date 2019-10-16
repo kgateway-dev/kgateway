@@ -37,7 +37,8 @@ message AuthConfig {
     oneof auth_config {
       BasicAuth basic_auth = 1;
       OAuth oauth = 2;
-      CustomAuth custom_auth = 3;
+      // Deprecated: use ExtAuthExtension.CustomAuth
+      CustomAuth custom_auth = 3 [deprecated=true];
       ApiKeyAuth api_key_auth = 4;
       AuthPlugin plugin_auth = 5;
       OpaAuth opa_auth = 6;
@@ -48,18 +49,22 @@ message AuthConfig {
   repeated Config configs = 3;
 }
 
-// Auth configurations defined on virtual hosts and routes will be unmarshalled to this message.
+// Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.
 message ExtAuthExtension {
   oneof spec {
     //  Set to true to disable auth on the virtual host/route.
     bool disable = 1;
-    // A reference to an AuthConfig.
+    // A reference to an AuthConfig. This is used to configure the GlooE extauth server.
     core.solo.io.ResourceRef config_ref = 2;
+    // Use this field if you are running your own custom extauth server.
+    CustomAuth custom_auth = 3;
   }
 }
 
 // Deprecated: use ExtAuthExtension
 message VhostExtension {
+  option deprecated = true;
+
   // Deprecated: use `configs` field instead.
   oneof auth_config {
     // Deprecated: use `configs` field instead.
@@ -196,6 +201,14 @@ message BufferSettings {
 // Gloo is not expected to configure the ext auth server in this case.
 // This is used with custom auth servers.
 message CustomAuth {
+  // When a request matches the virtual host, route, or weighted destination on which this configuration is defined,
+  // Gloo will add the given context_extensions to the request that is sent to the external authorization server.
+  // This allows the server to base the auth decision on metadata that you define on the source of the request.
+  //
+  // This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official
+  // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings)
+  // for more details.
+  map<string,string> context_extensions = 1;
 }
 
 // Configures auth via dynamically loaded Go plugins.

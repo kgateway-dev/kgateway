@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: Add utility function to build an `ext_authz` filter configuration from Gloo ExtAuth settings.
+  issueLink: https://github.com/solo-io/gloo/issues/1396
+  resolvesIssue: false

@@ -28,7 +28,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.10.25"
+  version = "0.11.0"
 
 [[override]]
   name = "github.com/solo-io/go-utils"
@@ -39,8 +39,8 @@
   version = "1.5.2"
 
 [[constraint]]
-  name = "github.com/solo-io/go-checkpoint"
-  version = "0.1.0"
+  name = "github.com/solo-io/reporting-client"
+  version = "0.0.2"
 
 [[constraint]]
   name = "github.com/onsi/gomega"

@@ -89,6 +89,7 @@ type RunOptions struct {
 	WhatToRun        What
 	GlooPort         int32
 	ValidationPort   int32
+	Settings         *gloov1.Settings
 	ExtensionConfigs *gloov1.Extensions
 	Extensions       syncer.Extensions
 	Cache            memory.InMemoryResourceCache
@@ -124,9 +125,12 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go gatewaysyncer.RunGateway(opts)
 	}
 
-	glooOpts.Settings = &gloov1.Settings{
-		Extensions: runOptions.ExtensionConfigs,
+	glooOpts.Settings = runOptions.Settings
+	if glooOpts.Settings == nil {
+		glooOpts.Settings = &gloov1.Settings{}
 	}
+	glooOpts.Settings.Extensions = runOptions.ExtensionConfigs
+
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)

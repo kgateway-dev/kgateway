@@ -3,12 +3,10 @@ package syncer
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
-
 	"github.com/hashicorp/go-multierror"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -29,7 +27,7 @@ type translatorSyncer struct {
 
 type TranslatorSyncerExtensionParams struct {
 	SettingExtensions        *v1.Extensions
-	RateLimitServiceSettings ratelimit.ServiceSettings // Enterprise-only, used by GlooE code (lives outside this repo)
+	RateLimitServiceSettings ratelimit.ServiceSettings
 }
 
 type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
