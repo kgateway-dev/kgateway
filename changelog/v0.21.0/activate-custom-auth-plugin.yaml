@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Add support for custom authentication. You can now provide your own external authentication/authorization server and
+    configure Gloo to call it on the virtual hosts, routes, and weighted destinations that you want to secure.
+  issueLink: https://github.com/solo-io/gloo/issues/1396

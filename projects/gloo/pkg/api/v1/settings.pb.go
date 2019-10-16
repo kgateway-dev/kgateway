@@ -1280,18 +1280,18 @@ func (m *GlooOptions_AWSOptions) GetEnableCredentialsDiscovey() bool {
 	return false
 }
 
-// policy for how Gloo should handle invalid config
+// Policy for how Gloo should handle invalid config
 type GlooOptions_InvalidConfigPolicy struct {
-	// set replaceInvalidRoutes to `true`, Gloo remove any routes from the provided configuration
+	// if set to `true`, Gloo removes any routes from the provided configuration
 	// which point to a missing destination. Routes that are removed in this way
 	// will instead return a configurable direct response to clients.
 	//
 	// Note: enabling this option allows Gloo to accept partially valid proxy configurations
 	ReplaceInvalidRoutes bool `protobuf:"varint,1,opt,name=replace_invalid_routes,json=replaceInvalidRoutes,proto3" json:"replace_invalid_routes,omitempty"`
-	// if invalidRouteResponseCode is set to `true`, reply to clients with this response code
+	// replaced routes reply to clients with this response code
 	// default is 404
 	InvalidRouteResponseCode uint32 `protobuf:"varint,2,opt,name=invalid_route_response_code,json=invalidRouteResponseCode,proto3" json:"invalid_route_response_code,omitempty"`
-	// if replaceInvalidRoutes is set to `true`, reply to clients with this body
+	// replaced routes reply to clients with this response body
 	// default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
 	InvalidRouteResponseBody string   `protobuf:"bytes,3,opt,name=invalid_route_response_body,json=invalidRouteResponseBody,proto3" json:"invalid_route_response_body,omitempty"`
 	XXX_NoUnkeyedLiteral     struct{} `json:"-"`
