@@ -1402,15 +1402,15 @@
   version = "v0.10.19"
 
 [[projects]]
-  digest = "1:a2922a665903e4336f9e8b13eb9134bdda25ed984b3966159d4aa2bf9c5b0e28"
+  digest = "1:f35421a8443efa2170aa6dadad19ba11cfc52f72fb0bb04f8eace6b60cb29ef9"
   name = "github.com/solo-io/reporting-client"
   packages = [
     "pkg/api/v1",
     "pkg/client",
   ]
   pruneopts = "UT"
-  revision = "f47eacc21bd62e6bc8bb8954af0dc1817079af0d"
-  version = "v0.0.2"
+  revision = "36dd39d2795b04bae1e8a3482da6c4a27ce721b7"
+  version = "v0.0.3"
 
 [[projects]]
   digest = "1:df93a6697867045de75247ce33d1c528cc0ff50a2dd2084d7d816efbd64ee5ed"

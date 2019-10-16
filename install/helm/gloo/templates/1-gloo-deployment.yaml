@@ -70,7 +70,7 @@ spec:
             value: "true"
         {{- end}}
         {{- if .Values.gloo.deployment.disableUsageStatistics }}
-          - name: USAGE_REPORTING_DISABLE
+          - name: DISABLE_USAGE_REPORTING
             value: "true"
         {{- end}}
         readinessProbe:
