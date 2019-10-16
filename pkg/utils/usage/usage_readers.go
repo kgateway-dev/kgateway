@@ -77,6 +77,8 @@ func (c *CliUsageReader) GetPayload() (map[string]string, error) {
 	argsMap := map[string]string{}
 
 	if len(os.Args) > 1 {
+		// don't report the binary name, which will be the first arg
+		// it may contain paths on the user's computer
 		argsMap[args] = strings.Join(os.Args[1:], "|")
 	}
 
