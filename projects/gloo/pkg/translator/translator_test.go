@@ -342,6 +342,7 @@ var _ = Describe("Translator", func() {
 			translate()
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			presentMatch := headerMatch.GetPresentMatch()
 			Expect(presentMatch).To(BeTrue())
 		})
@@ -358,6 +359,7 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			exactMatch := headerMatch.GetExactMatch()
 			Expect(exactMatch).To(Equal("testvalue"))
 		})
@@ -375,8 +377,23 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			regex := headerMatch.GetRegexMatch()
 			Expect(regex).To(Equal("testvalue"))
+		})
+
+		It("should translate header matcher logic inversion flag", func() {
+
+			matcher.Headers = []*v1.HeaderMatcher{
+				{
+					Name:        "test",
+					InvertMatch: true,
+				},
+			}
+			translate()
+
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.InvertMatch).To(Equal(true))
 		})
 
 	})
