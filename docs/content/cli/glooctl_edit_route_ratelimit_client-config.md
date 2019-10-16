@@ -31,6 +31,7 @@ glooctl edit route ratelimit client-config [flags]
       --consul-root-key string     key prefix for for Consul key-value storage. (default "gloo")
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
+      --disable-usage-statistics   disable the sending of anonymous usage statistics (https://gloo.solo.io/observability/usage_statistics/)
   -x, --index uint32               edit the route with this index in the virtual service route list
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one

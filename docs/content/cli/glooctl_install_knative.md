@@ -37,9 +37,10 @@ glooctl install knative [flags]
 ### Options inherited from parent commands
 
 ```
-  -i, --interactive         use interactive mode
-      --kubeconfig string   kubeconfig to use, if not standard one
-  -v, --verbose             If true, output from kubectl commands will print to stdout/stderr
+      --disable-usage-statistics   disable the sending of anonymous usage statistics (https://gloo.solo.io/observability/usage_statistics/)
+  -i, --interactive                use interactive mode
+      --kubeconfig string          kubeconfig to use, if not standard one
+  -v, --verbose                    If true, output from kubectl commands will print to stdout/stderr
 ```
 
 ### SEE ALSO

@@ -28,6 +28,7 @@ glooctl delete upstreamgroup [flags]
       --consul-root-key string     key prefix for for Consul key-value storage. (default "gloo")
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
+      --disable-usage-statistics   disable the sending of anonymous usage statistics (https://gloo.solo.io/observability/usage_statistics/)
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
       --name string                name of the resource to read or write
