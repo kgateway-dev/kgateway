@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/gogo/protobuf/types"
+
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 
 	"github.com/solo-io/gloo/test/kube2e"
@@ -1162,6 +1164,6 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 }
 
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: rewrite}
+	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: rewrite}}
 	return route
 }

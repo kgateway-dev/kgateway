@@ -27,11 +27,39 @@ var _ = Describe("prefix rewrite", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			RoutePlugins: &v1.RoutePlugins{
-				PrefixRewrite: "/foo",
+				PrefixRewrite: &types.StringValue{Value: "/foo"},
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.PrefixRewrite).To(Equal("/foo"))
+	})
+
+	It("distinguishes between empty string and nil", func() {
+		p := NewPlugin()
+		routeAction := &envoyroute.RouteAction{
+			PrefixRewrite: "/",
+		}
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		// should be no-op
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.PrefixRewrite).To(Equal("/"))
+
+		// should rewrite prefix rewrite
+		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{
+				PrefixRewrite: &types.StringValue{Value: ""},
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.PrefixRewrite).To(BeEmpty())
 	})
 })
 
@@ -127,6 +155,34 @@ var _ = Describe("host rewrite", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetHostRewrite()).To(Equal("/foo"))
+	})
+
+	It("distinguishes between empty string and nil", func() {
+		p := NewPlugin()
+		routeAction := &envoyroute.RouteAction{
+			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite: "/"},
+		}
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		// should be no-op
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.GetHostRewrite()).To(Equal("/"))
+
+		// should rewrite host rewrite
+		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			RoutePlugins: &v1.RoutePlugins{
+				HostRewriteType: &v1.RoutePlugins_HostRewrite{HostRewrite: ""},
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.GetHostRewrite()).To(BeEmpty())
 	})
 
 	It("sets auto_host_rewrite", func() {
