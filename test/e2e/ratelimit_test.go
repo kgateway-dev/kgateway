@@ -54,7 +54,7 @@ var _ = Describe("Rate Limit", func() {
 	)
 
 	const (
-		rlport = uint32(18081)
+		rlPort = uint32(18081)
 	)
 
 	Context("with envoy", func() {
@@ -85,7 +85,7 @@ var _ = Describe("Rate Limit", func() {
 						Static: &gloov1static.UpstreamSpec{
 							Hosts: []*gloov1static.Host{{
 								Addr: envoyInstance.GlooAddr,
-								Port: rlport,
+								Port: rlPort,
 							}},
 						},
 					},
@@ -128,13 +128,14 @@ var _ = Describe("Rate Limit", func() {
 
 		AfterEach(func() {
 			if envoyInstance != nil {
-				envoyInstance.Clean()
+				err := envoyInstance.Clean()
+				Expect(err).NotTo(HaveOccurred())
 			}
 			srv.GracefulStop()
 		})
 
 		It("should rate limit", func() {
-			srv = startSimpleRateLimitServer(false, rlport)
+			srv = startSimpleRateLimitServer(false, rlPort)
 
 			hosts := map[string]bool{"host1": true}
 			proxy := getProxy(envoyPort, testUpstream.Upstream.Metadata.Ref(), hosts)
@@ -145,14 +146,14 @@ var _ = Describe("Rate Limit", func() {
 		})
 
 		It("shouldn't rate limit", func() {
-			srv = startSimpleRateLimitServer(true, rlport)
+			srv = startSimpleRateLimitServer(true, rlPort)
 
 			hosts := map[string]bool{"host1": true}
 			proxy := getProxy(envoyPort, testUpstream.Upstream.Metadata.Ref(), hosts)
 			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// waiting for envoy to start, so that consistently works
+			// waiting for envoy to start, so that consistently not rate limited works
 			EventuallyOk("host1", envoyPort)
 
 			ConsistentlyNotRateLimited("host1", envoyPort)
@@ -173,7 +174,6 @@ func startSimpleRateLimitServer(acceptAll bool, rlport uint32) *grpc.Server {
 		err := srv.Serve(lis)
 		Expect(err).ToNot(HaveOccurred())
 	}()
-	Expect(err).To(BeNil())
 	return srv
 }
 
