@@ -567,4 +567,5 @@ save-tagged-helm:
 
 .PHONY: fetch-tagged-helm
 fetch-tagged-helm:
+	mkdir -p $(HELM_SYNC_DIR)
 	gsutil -m rsync -r gs://solo-public-tagged-helm/ './_output/helm'
