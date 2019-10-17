@@ -544,11 +544,15 @@ build-kind-chart:
 
 
 #----------------------------------------------------------------------------------
-# Build assets for non-release charts (meant to be invoked locally)
+# Build assets for non-release charts (meant to be invoked on your dev machine)
 #----------------------------------------------------------------------------------
 
-# Must be run locally because TAGGED_VERSION depends on `git describe --tags`, and CI doesn't have git locally
-# Sample invocation: TAGGED_VERSION=$(git describe --tags) GCLOUD_PROJECT_ID=solo-public make clean build-tagged-chart
+# Must be run on your dev machine because TAGGED_VERSION depends on `git describe --tags`, and our CI doesn't clone
+# the repo or have any git context
+
+# Sample invocation:
+# TAGGED_VERSION=$(git describe --tags) GCLOUD_PROJECT_ID=solo-public make clean fetch-tagged-helm build-tagged-chart save-tagged-helm
+
 .PHONY: build-tagged-chart
 build-tagged-chart:
 	mkdir -p $(TEST_ASSET_DIR)

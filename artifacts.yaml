@@ -1,26 +1,13 @@
 # For building Gloo artifacts with Valet
-# From the root of the repo:
-# valet build -v $(git describe --tags --dirty | cut -c 2-)
 
-
-# Code is commented out so that we only build required components for
-# GlooE to depend on a hash/revision of Gloo
-
-# Make sure repo is clean (git status returns clean) and run:
-# valet build -v $(git describe --tags --dirty)
+# Make sure repo is clean (`git status` returns clean) and run:
+# valet build -v $(git describe --tags)
 
 build:
   go:
     version: github.com/solo-io/gloo/pkg/version.Version
     gcFlags: "all=-N -l"
     binaries:
-      - name: glooctl
-        #os: [linux, darwin, windows]
-        os: [linux]
-        entrypoint: projects/gloo/cli/cmd/main.go
-        upload: true
-        #tests:
-        #  - path: install/test
       - name: gloo
         entrypoint: projects/gloo/cmd/main.go
       - name: gateway
@@ -29,10 +16,6 @@ build:
         entrypoint: jobs/certgen/cmd/main.go
       - name: discovery
         entrypoint: projects/discovery/cmd/main.go
-#      - name: envoyinit
-#        entrypoint: projects/envoyinit/cmd/main.go
-#      - name: ingress
-#        entrypoint: projects/ingress/cmd/main.go
       - name: gateway-conversion
         entrypoint: projects/gateway/pkg/conversion/cmd/main.go
       - name: access-logger
@@ -49,24 +32,9 @@ docker:
       dockerfile: jobs/certgen/cmd/Dockerfile
     - name: discovery
       dockerfile: projects/discovery/cmd/Dockerfile
-    #- name: gloo-envoy-wrapper
-    #  dockerfile: projects/envoyinit/cmd/Dockerfile
     - name: gateway-conversion
       dockerfile: projects/gateway/pkg/conversion/cmd/Dockerfile
     - name: access-logger
       dockerfile: projects/accesslogger/cmd/Dockerfile
-
-#helm:
-#  charts:
-#    - name: gloo
-#      directory: install/helm/gloo
-#      generator: install/helm/gloo/generate.go
-#      manifests:
-#        - name: gloo-gateway.yaml
-#        - name: gloo-ingress.yaml
-#          values: values-ingress.yaml
-#        - name: gloo-knative.yaml
-#          values: values-knative.yaml
-#      upload: true
 
 productName: gloo
