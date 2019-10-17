@@ -346,6 +346,9 @@ func writeSettings(settingsDir string, glooPort, validationPort int, writeNamesp
 				Directory: settingsDir,
 			},
 		},
+		Discovery: &gloov1.Settings_DiscoveryOptions{
+			FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
+		},
 		Consul: &gloov1.Settings_ConsulConfiguration{
 			ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},
 		},
