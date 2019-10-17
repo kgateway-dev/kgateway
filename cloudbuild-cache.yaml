@@ -6,10 +6,10 @@ steps:
 
 - name: 'gcr.io/$PROJECT_ID/go-make'
   entrypoint: 'bash'
-  args: ['-c', 'tar -zvcf gloo-dep.tar.gz ./gopath/pkg/dep']
+  args: ['-c', 'tar -zvcf gloo-dep-${BRANCH_NAME}.tar.gz ./gopath/pkg/dep']
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
 
 - name: gcr.io/cloud-builders/gsutil
-  args: ['cp', 'gloo-dep.tar.gz', 'gs://solo-public-cache/gloo']
+  args: ['cp', 'gloo-dep-${BRANCH_NAME}.tar.gz', 'gs://solo-public-cache/gloo']

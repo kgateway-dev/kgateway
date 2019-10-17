@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Build a dedicated dep cache for the feature-rc1 branch.
