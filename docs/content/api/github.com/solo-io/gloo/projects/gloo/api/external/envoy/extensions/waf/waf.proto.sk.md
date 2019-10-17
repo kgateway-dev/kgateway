@@ -38,7 +38,7 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | Disable all rules on the current http connection manager. |  |
+| `disabled` | `bool` | Disable all rules on the current route. |  |
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk#ruleset) | Global rule sets for the current http connection manager. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 
@@ -58,8 +58,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `ruleStr` | `string` | string of rules which are added directly. |  |
-| `files` | `[]string` | array of files to include. |  |
+| `ruleStr` | `string` | String of rules which are added directly. |  |
+| `files` | `[]string` | Array of files to include. |  |
 
 
 
@@ -79,7 +79,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disabled` | `bool` | Disable all rules on the current route. |  |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk#ruleset) | Overwite the global rules on this route. |  |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk#ruleset) | Overwrite the global rules on this route. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 
 
