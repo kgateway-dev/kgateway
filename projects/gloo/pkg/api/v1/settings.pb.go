@@ -645,7 +645,7 @@ func (m *Settings_VaultSecrets) GetRootKey() string {
 	return ""
 }
 
-// Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
+// Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html) as storage for config data.
 // Configuration options for connecting to Consul can be configured in the Settings' root
 // `consul` field
 type Settings_ConsulKv struct {
