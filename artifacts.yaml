@@ -21,8 +21,8 @@ build:
         upload: true
         #tests:
         #  - path: install/test
-#      - name: gloo
-#        entrypoint: projects/gloo/cmd/main.go
+      - name: gloo
+        entrypoint: projects/gloo/cmd/main.go
       - name: gateway
         entrypoint: projects/gateway/cmd/main.go
       - name: certgen
@@ -33,14 +33,16 @@ build:
 #        entrypoint: projects/envoyinit/cmd/main.go
 #      - name: ingress
 #        entrypoint: projects/ingress/cmd/main.go
-#      - name: gateway-conversion
-#        entrypoint: projects/gateway/pkg/conversion/cmd/main.go
+      - name: gateway-conversion
+        entrypoint: projects/gateway/pkg/conversion/cmd/main.go
+      - name: access-logger
+        entrypoint: projects/accesslogger/cmd/main.go
 
 docker:
   registries: [quay.io/solo-io]
   containers:
-    #- name: gloo
-    #  dockerfile: projects/gloo/cmd/Dockerfile
+    - name: gloo
+      dockerfile: projects/gloo/cmd/Dockerfile
     - name: gateway
       dockerfile: projects/gateway/cmd/Dockerfile
     - name: certgen
@@ -49,8 +51,10 @@ docker:
       dockerfile: projects/discovery/cmd/Dockerfile
     #- name: gloo-envoy-wrapper
     #  dockerfile: projects/envoyinit/cmd/Dockerfile
-    #- name: gateway-conversion
-    #  dockerfile: projects/gateway/pkg/conversion/cmd/Dockerfile
+    - name: gateway-conversion
+      dockerfile: projects/gateway/pkg/conversion/cmd/Dockerfile
+    - name: access-logger
+      dockerfile: projects/accesslogger/cmd/Dockerfile
 
 #helm:
 #  charts:
