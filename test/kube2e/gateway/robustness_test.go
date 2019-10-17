@@ -2,10 +2,11 @@ package gateway_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	"sort"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
 

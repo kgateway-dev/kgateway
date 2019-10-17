@@ -23,7 +23,6 @@ import (
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/go-utils/errors"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
@@ -57,7 +56,7 @@ import (
 var _ = Describe("Kube2e: gateway", func() {
 
 	const (
-		gatewayProxy = translator.GatewayProxyName
+		gatewayProxy = defaults.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -226,7 +225,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// wait for the expected proxy configuration to be accepted
 				Eventually(func() error {
-					proxy, err := proxyClient.Read(testHelper.InstallNamespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 					if err != nil {
 						return err
 					}
@@ -331,8 +330,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Protocol:          "https",
 					Path:              "/",
 					Method:            "GET",
-					Host:              translator.GatewayProxyName,
-					Service:           translator.GatewayProxyName,
+					Host:              defaults.GatewayProxyName,
+					Service:           defaults.GatewayProxyName,
 					Port:              gatewayPort,
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
@@ -647,7 +646,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// wait for the expected proxy configuration to be accepted
 			Eventually(func() error {
-				proxy, err := proxyClient.Read(testHelper.InstallNamespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 				if err != nil {
 					return err
 				}

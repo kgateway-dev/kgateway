@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/healthcheck"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 
@@ -482,7 +482,7 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      translator.GatewayProxyName,
+			Name:      gatewaydefaults.GatewayProxyName,
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{

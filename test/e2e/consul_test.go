@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/solo-io/go-utils/errors"
 
 	"github.com/hashicorp/consul/api"
@@ -15,7 +17,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -93,7 +94,7 @@ var _ = Describe("Consul e2e", func() {
 		envoyPort = uint32(defaults.HttpPort)
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+translator.GatewayProxyName, testClients.GlooPort)
+		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run two simple web applications locally
