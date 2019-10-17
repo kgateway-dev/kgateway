@@ -1357,7 +1357,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:675e88637f52e60444ff59ffe3b708e4fa74ae9f587dde5eb5d4eaa907d0664a"
+  digest = "1:ad4681c2ac6e9017882421da2b288ea198003ffbbf342b1bb140209ba1bcea7a"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1391,6 +1391,7 @@
     "testutils/exec",
     "testutils/helper",
     "testutils/kube",
+    "threadsafe",
     "versionutils",
     "versionutils/dep",
     "versionutils/git",
@@ -1398,8 +1399,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "2fff910b5b9a262eba3177f296923ac04887fa53"
-  version = "v0.10.9"
+  revision = "68c84e0981898f92f0d7c7a846d8f0d82dd4fd9a"
+  version = "v0.10.20"
 
 [[projects]]
   digest = "1:a2922a665903e4336f9e8b13eb9134bdda25ed984b3966159d4aa2bf9c5b0e28"
