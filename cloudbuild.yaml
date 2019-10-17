@@ -11,7 +11,8 @@ steps:
 # These two steps should populate the cache
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
-  args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -']
+  # TODO: This is currently hardcoded to get the dep cache for the feature-rc1 branch
+  args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep-feature-rc1.tar.gz | tar -xzf -']
   id: 'download-untar-dep-cache'
   waitFor: ['-']
 
