@@ -24,7 +24,7 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ModSecurity struct {
-	// Disable all rules on the current route
+	// Disable all rules on the current http connection manager
 	Disabled bool `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
 	// Global rule sets for the current http connection manager
 	RuleSets []*RuleSet `protobuf:"bytes,2,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
