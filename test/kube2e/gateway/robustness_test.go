@@ -2,12 +2,12 @@ package gateway_test
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	"sort"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/testutils/helper"
@@ -36,7 +36,7 @@ import (
 var _ = Describe("Robustness tests", func() {
 
 	const (
-		gatewayProxy = translator.GatewayProxyName
+		gatewayProxy = defaults.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -95,6 +95,18 @@ var _ = Describe("Robustness tests", func() {
 	})
 
 	AfterEach(func() {
+		if virtualService != nil {
+			_ = virtualServiceClient.Delete(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+
+			Eventually(func() bool {
+				_, err := virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+				if err != nil && skerrors.IsNotExist(err) {
+					return true
+				}
+				return false
+			}, "15s", "0.5s").Should(BeTrue())
+		}
+
 		cancel()
 	})
 
@@ -144,7 +156,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to be accepted")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
@@ -204,7 +216,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("wait for proxy to enter warning state")
 		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
