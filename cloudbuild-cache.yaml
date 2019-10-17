@@ -13,3 +13,5 @@ steps:
 
 - name: gcr.io/cloud-builders/gsutil
   args: ['cp', 'gloo-dep-${BRANCH_NAME}.tar.gz', 'gs://solo-public-cache/gloo']
+
+timeout: 1800s
