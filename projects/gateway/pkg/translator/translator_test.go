@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
 	"github.com/solo-io/gloo/test/samples"
 
 	"github.com/gogo/protobuf/types"
@@ -183,7 +182,7 @@ var _ = Describe("Translator", func() {
 
 			badRoute := &v1.Route{
 				Action: &v1.Route_DelegateAction{
-					DelegateAction: &core.ResourceRef{"don't", "exist"},
+					DelegateAction: &core.ResourceRef{Name: "don't", Namespace: "exist"},
 				},
 			}
 
