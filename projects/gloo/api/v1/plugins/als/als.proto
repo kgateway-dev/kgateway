@@ -12,7 +12,7 @@ import "google/protobuf/struct.proto";
 option (gogoproto.equal_all) = true;
 
 // Contains various settings for Envoy's access logging service.
-// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.11.2/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
+// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
 message AccessLoggingService {
     repeated AccessLog access_log = 1;
 }
@@ -34,10 +34,10 @@ message FileSink {
     // the format which the logs should be outputted by
     oneof output_format {
         // the format string by which envoy will format the log lines
-        // https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/access_log#config-access-log-format-strings
+        // https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings
         string string_format = 2;
         // the format object by which to envoy will emit the logs in a structured way.
-        // https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/access_log#config-access-log-format-dictionaries
+        // https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries
         google.protobuf.Struct json_format = 3;
 
     }

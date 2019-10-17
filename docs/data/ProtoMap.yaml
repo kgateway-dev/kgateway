@@ -185,6 +185,54 @@ apis:
   envoy.api.v2.filter.http.TransformationTemplate:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto.sk/#TransformationTemplate
     package: envoy.api.v2.filter.http
+  envoy.api.v2.route.CorsPolicy:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#CorsPolicy
+    package: envoy.api.v2.route
+  envoy.api.v2.route.Decorator:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#Decorator
+    package: envoy.api.v2.route
+  envoy.api.v2.route.DirectResponseAction:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#DirectResponseAction
+    package: envoy.api.v2.route
+  envoy.api.v2.route.HeaderMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#HeaderMatcher
+    package: envoy.api.v2.route
+  envoy.api.v2.route.HedgePolicy:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#HedgePolicy
+    package: envoy.api.v2.route
+  envoy.api.v2.route.QueryParameterMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#QueryParameterMatcher
+    package: envoy.api.v2.route
+  envoy.api.v2.route.RateLimit:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#RateLimit
+    package: envoy.api.v2.route
+  envoy.api.v2.route.RedirectAction:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#RedirectAction
+    package: envoy.api.v2.route
+  envoy.api.v2.route.RetryPolicy:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#RetryPolicy
+    package: envoy.api.v2.route
+  envoy.api.v2.route.Route:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#Route
+    package: envoy.api.v2.route
+  envoy.api.v2.route.RouteAction:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#RouteAction
+    package: envoy.api.v2.route
+  envoy.api.v2.route.RouteMatch:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#RouteMatch
+    package: envoy.api.v2.route
+  envoy.api.v2.route.Tracing:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#Tracing
+    package: envoy.api.v2.route
+  envoy.api.v2.route.VirtualCluster:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#VirtualCluster
+    package: envoy.api.v2.route
+  envoy.api.v2.route.VirtualHost:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#VirtualHost
+    package: envoy.api.v2.route
+  envoy.api.v2.route.WeightedCluster:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/route/route.proto.sk/#WeightedCluster
+    package: envoy.api.v2.route
   envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaConfig
     package: envoy.config.filter.http.aws_lambda.v2
@@ -209,6 +257,21 @@ apis:
   envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#SoloJwtAuthnPerRoute
     package: envoy.config.filter.http.solo_jwt_authn.v2
+  envoy.config.filter.http.transformation_ee.v2.Action:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Action
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.DlpTransformation:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#DlpTransformation
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.FilterTransformations:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#FilterTransformations
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.RouteTransformations:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#RouteTransformations
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.Transformation:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Transformation
+    package: envoy.config.filter.http.transformation_ee.v2
   envoy.type.DoubleRange:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto.sk/#DoubleRange
     package: envoy.type

@@ -184,7 +184,7 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 ### ConsulKv
 
  
-Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html) as storage for config data.
+Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
 Configuration options for connecting to Consul can be configured in the Settings' root
 `consul` field
 

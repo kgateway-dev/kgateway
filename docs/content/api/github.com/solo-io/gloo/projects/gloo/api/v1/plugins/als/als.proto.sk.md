@@ -30,7 +30,7 @@ weight: 5
 
  
 Contains various settings for Envoy's access logging service.
-See here for more information: https://www.envoyproxy.io/docs/envoy/v1.11.2/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
+See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
 
 ```yaml
 "accessLog": []als.plugins.gloo.solo.io.AccessLog
@@ -78,8 +78,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.11.2/api-
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `path` | `string` | the file path to which the file access logging service will sink. |  |
-| `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/access_log#config-access-log-format-strings. Only one of `stringFormat` or `jsonFormat` can be set. |  |
-| `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/access_log#config-access-log-format-dictionaries. Only one of `jsonFormat` or `stringFormat` can be set. |  |
+| `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings. Only one of `stringFormat` or `jsonFormat` can be set. |  |
+| `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries. Only one of `jsonFormat` or `stringFormat` can be set. |  |
 
 
 
