@@ -5,30 +5,27 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envo
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-
 message ModSecurity {
-    // Disable all rules on the current http connection manager
+    // Disable all rules on the current route
     bool disabled = 1;
     // Global rule sets for the current http connection manager
     repeated RuleSet rule_sets = 2;
+    // Custom message to display when an intervention occurs
+    string custom_intervention_message = 3;
 }
-/*
-    String options are not recommended unless they are relatively short as they will be sent over the wire quite often.
 
-    Any files referenced by this proto should be mounted into the relevant envoy pod prior to use or
-    the filter will fail to initialize and the configuration will be rejected
-*/
 message RuleSet {
-    // String of rules which are added directly
+    // string of rules which are added directly
     string rule_str = 1;
-    // Array of files to include
+    // array of files to include
     repeated string files = 3;
 }
 
 message ModSecurityPerRoute {
     // Disable all rules on the current route
     bool disabled = 1;
-    // Overwrite the global rules on this route
+    // Overwite the global rules on this route
     repeated RuleSet rule_sets = 2;
+    // Custom message to display when an intervention occurs
+    string custom_intervention_message = 3;
 }
-
