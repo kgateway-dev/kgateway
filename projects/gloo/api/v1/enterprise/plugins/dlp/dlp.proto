@@ -38,7 +38,7 @@ message Action {
 
 message CustomAction {
     string name = 1;
-    string regex = 2;
+    repeated string regex = 2;
     string mask_char = 3;
     envoy.type.Percent percent = 4;
 }
