@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
+
 	kubev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -108,7 +110,7 @@ var _ = Describe("UdsConvert", func() {
 				Spec: kubev1.ServiceSpec{},
 			}
 			svc.Annotations = make(map[string]string)
-			svc.Annotations[GlooH2Annotation] = "true"
+			svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
 			svc.Name = "test"
 			svc.Namespace = "test"
 
