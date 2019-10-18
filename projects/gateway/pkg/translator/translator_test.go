@@ -100,7 +100,7 @@ var _ = Describe("Translator", func() {
 
 		It("should properly translate listener plugins to proxy listener", func() {
 			extensions := map[string]*types.Struct{
-				"plugin": &types.Struct{},
+				"plugin": {},
 			}
 
 			snap.Gateways[0].Plugins = &gloov1.ListenerPlugins{
@@ -203,6 +203,15 @@ var _ = Describe("Translator", func() {
 			Expect(err.Error()).To(ContainSubstring("route table exist.don't missing"))
 		})
 
+		It("should error on route with missing matcher", func() {
+			snap := samples.SimpleGatewaySnapshot(samples.SimpleUpstream().GetMetadata().Ref(), ns)
+			snap.VirtualServices[0].VirtualHost.Routes[0].Matcher = nil
+
+			_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			err := reports.Validate()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid route: matcher cannot be missing"))
+		})
 	})
 
 	Context("http", func() {
