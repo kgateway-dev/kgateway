@@ -16,7 +16,7 @@ request limits to these varied services in one place.
 
 Gloo exposes Envoy's rate-limit API, which allows users to provide their own implementation of an Envoy gRPC rate-limit
 service. Lyft provides an example implementation of this gRPC rate-limit service 
-[here]((https://github.com/lyft/ratelimit)). To configure Gloo to use your rate-limit server implementation,
+[here](https://github.com/lyft/ratelimit). To configure Gloo to use your rate-limit server implementation,
 install Gloo gateway with helm and provide the following `.Values.settings.extensions` values override:
 
 ```yaml

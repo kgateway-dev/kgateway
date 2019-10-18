@@ -6,7 +6,7 @@ description: Understanding how to set up Server-side TLS for Gloo
 
 ## Configuring TLS for Gloo
 
-Gloo can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo to do mTLS with external clients as well](client_tls.md). In this document, we'll explore configuring Gloo for server TLS.
+Gloo can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo to do mTLS with external clients as well](../client_tls). In this document, we'll explore configuring Gloo for server TLS.
 
 ## Server TLS
 
@@ -30,9 +30,9 @@ glooctl get upstream default-petstore-8080
 ```
 
 ```noop
-+-----------------------+------------+----------+-------------------------+
++-----------------------|------------|----------|-------------------------+
 |       UPSTREAM        |    TYPE    |  STATUS  |         DETAILS         |
-+-----------------------+------------+----------+-------------------------+
++-----------------------|------------|----------|-------------------------+
 | default-petstore-8080 | Kubernetes | Accepted | svc name:      petstore |
 |                       |            |          | svc namespace: default  |
 |                       |            |          | port:          8080     |
@@ -43,10 +43,10 @@ glooctl get upstream default-petstore-8080
 |                       |            |          | - findPetById           |
 |                       |            |          | - findPets              |
 |                       |            |          |                         |
-+-----------------------+------------+----------+-------------------------+
++-----------------------|------------|----------|-------------------------+
 ```
 
-Now let's create a route to the petstore like [we did in the hello world tutorial](../../gloo_routing/hello_world/ )
+Now let's create a route to the petstore like [we did in the hello world tutorial](../../../gloo_routing/hello_world/ )
 
 ```bash
 glooctl add route \

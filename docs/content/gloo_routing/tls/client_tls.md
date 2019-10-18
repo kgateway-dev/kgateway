@@ -65,18 +65,18 @@ glooctl get upstream default-example-tls-server-8080
 ```
 
 ```noop
-+---------------------------------+------------+----------+--------------------------------+
++---------------------------------|------------|----------|--------------------------------+
 |            UPSTREAM             |    TYPE    |  STATUS  |            DETAILS             |
-+---------------------------------+------------+----------+--------------------------------+
++---------------------------------|------------|----------|--------------------------------+
 | default-example-tls-server-8080 | Kubernetes | Accepted | svc name:                      |
 |                                 |            |          | example-tls-server             |
 |                                 |            |          | svc namespace: default         |
 |                                 |            |          | port:          8080            |
 |                                 |            |          |                                |
-+---------------------------------+------------+----------+--------------------------------+
++---------------------------------|------------|----------|--------------------------------+
 ```
 
-Now let's create a route to the example tls server like [we did in the hello world tutorial](../../gloo_routing/hello_world/ )
+Now let's create a route to the example tls server like [we did in the hello world tutorial](../../../gloo_routing/hello_world/ )
 
 ```bash
 glooctl add route \
