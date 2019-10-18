@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -44,7 +46,7 @@ func (c *kubernetesUpstreamClient) List(namespace string, opts skclients.ListOpt
 	if err != nil {
 		return nil, err
 	}
-	return KubeServicesToUpstreams(services), nil
+	return KubeServicesToUpstreams(opts.Ctx, services), nil
 }
 
 func (c *kubernetesUpstreamClient) Watch(namespace string, opts skclients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
@@ -52,10 +54,10 @@ func (c *kubernetesUpstreamClient) Watch(namespace string, opts skclients.WatchO
 	if err != nil {
 		return nil, nil, err
 	}
-	return transform(servicesChan), errChan, nil
+	return transform(opts.Ctx, servicesChan), errChan, nil
 }
 
-func transform(src <-chan skkube.ServiceList) <-chan v1.UpstreamList {
+func transform(ctx context.Context, src <-chan skkube.ServiceList) <-chan v1.UpstreamList {
 	upstreams := make(chan v1.UpstreamList)
 
 	go func() {
@@ -66,7 +68,7 @@ func transform(src <-chan skkube.ServiceList) <-chan v1.UpstreamList {
 					close(upstreams)
 					return
 				}
-				upstreams <- KubeServicesToUpstreams(services)
+				upstreams <- KubeServicesToUpstreams(ctx, services)
 			}
 		}
 	}()

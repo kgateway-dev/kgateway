@@ -989,7 +989,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			// These are the "fake" upstreams that represent the above service in the snapshot
-			fakeUsList = kubernetes.KubeServicesToUpstreams(skkube.ServiceList{svc})
+			fakeUsList = kubernetes.KubeServicesToUpstreams(context.TODO(), skkube.ServiceList{svc})
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, fakeUsList...)
 
 			// We need to manually add some fake endpoints for the above kubernetes services to the snapshot

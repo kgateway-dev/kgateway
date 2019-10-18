@@ -32,6 +32,8 @@ func UpstreamNameOld(serviceNamespace, serviceName string, servicePort int32, ex
 }
 
 var _ = Describe("UdsConvert", func() {
+	createUpstream := (&KubeUpstreamConverter{}).CreateUpstream
+
 	It("should get uniq label set", func() {
 
 		svcSelector := map[string]string{"app": "foo"}
@@ -47,7 +49,9 @@ var _ = Describe("UdsConvert", func() {
 			{"app": "foo", "env": "dev"},
 		}
 		Expect(result).To(Equal(expected))
+
 	})
+
 	It("should truncate long names", func() {
 		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
 		Expect(name).To(HaveLen(63))
