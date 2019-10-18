@@ -14,10 +14,10 @@ glooctl is the unified CLI for Gloo.
 ### Options
 
 ```
-      --disable-usage-statistics   disable the sending of anonymous usage statistics (https://gloo.solo.io/observability/usage_statistics/)
-  -h, --help                       help for glooctl
-  -i, --interactive                use interactive mode
-      --kubeconfig string          kubeconfig to use, if not standard one
+  -c, --config string       set the path to the glooctl config file (default "/Users/grahamgoudeau/.gloo/glooctl-config.yaml")
+  -h, --help                help for glooctl
+  -i, --interactive         use interactive mode
+      --kubeconfig string   kubeconfig to use, if not standard one
 ```
 
 ### SEE ALSO

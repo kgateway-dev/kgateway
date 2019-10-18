@@ -22,9 +22,9 @@ these commands can be used to interact directly with the Proxies Gloo is managin
 ### Options inherited from parent commands
 
 ```
-      --disable-usage-statistics   disable the sending of anonymous usage statistics (https://gloo.solo.io/observability/usage_statistics/)
-  -i, --interactive                use interactive mode
-      --kubeconfig string          kubeconfig to use, if not standard one
+  -c, --config string       set the path to the glooctl config file (default "/Users/grahamgoudeau/.gloo/glooctl-config.yaml")
+  -i, --interactive         use interactive mode
+      --kubeconfig string   kubeconfig to use, if not standard one
 ```
 
 ### SEE ALSO
