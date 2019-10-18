@@ -168,7 +168,7 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `token` | `string` | the Token used to authenticate to Vault. |  |
-| `address` | `string` | address is the address of the Vault server. This should be a complete URL such as "http://vault.example.com". |  |
+| `address` | `string` | address is the address of the Vault server. This should be a complete URL such as http://solo.io. |  |
 | `caCert` | `string` | caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |  |
 | `caPath` | `string` | caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |  |
 | `clientCert` | `string` | clientCert is the path to the certificate for Vault communication. |  |
