@@ -103,3 +103,6 @@
   name = "k8s.io/klog"
   revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
   source = "github.com/stefanprodan/klog"
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.4.0"

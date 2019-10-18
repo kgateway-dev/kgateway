@@ -39,6 +39,7 @@ type Top struct {
 	Zip                    bool
 	ErrorsOnly             bool
 	DisableUsageStatistics bool
+	ConfigFilePath         string
 }
 
 type Install struct {

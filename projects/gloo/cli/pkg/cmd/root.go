@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"path"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
 
@@ -60,10 +62,13 @@ func GlooCli() *cobra.Command {
 		},
 	}
 
+	home, _ := os.UserHomeDir()
+	defaultConfigPath := path.Join(home, ConfigDirName, ConfigFileName)
+
 	optionsFunc := func(app *cobra.Command) {
 		pflags := app.PersistentFlags()
 		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
-		pflags.BoolVarP(&opts.Top.DisableUsageStatistics, "disable-usage-statistics", "", false, "disable the sending of anonymous usage statistics (https://gloo.solo.io/observability/usage_statistics/)")
+		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "f", defaultConfigPath, "set the path to the glooctl config file")
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(
@@ -86,6 +91,8 @@ func GlooCli() *cobra.Command {
 	}
 
 	preRunFuncs := []PreRunFunc{
+		// should make sure to read the config file first
+		ReadConfigFile,
 		prerun.SetKubeConfigEnv,
 		prerun.ReportUsage,
 	}
