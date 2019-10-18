@@ -31,7 +31,7 @@ Envoy Proxy is a data-plane component with powerful routing, observability, and 
 * Out of the box caching filters - enterprise feature
 * [Rate-limiting service]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/rate_limiting/simple">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/rate_limiting/envoy">}}), depending on what you need) - enterprise feature
 * [OIDC integration]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/oauth/oidc" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security" >}}) - enterprise feature
-* [Web console to manage the control plane]TODO - enterprise feature
+
 
 #### What's the difference between Gloo and Istio
 
