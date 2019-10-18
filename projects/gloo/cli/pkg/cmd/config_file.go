@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
@@ -22,7 +21,12 @@ const (
 `
 	dirPermissions  = 0755
 	filePermissions = 0644
-	homeDir         = "<home_directory>"
+
+	// this is kind of weird- we can't set cobra's default arg to "$HOME/..." and have it just work, because
+	// it doesn't expand $HOME. We also can't set the default value to the expanded value of $HOME, ie something like
+	// os.UserHomeDir(), because that will change the content of our generated docs/ directory based on whatever system
+	// built glooctl last. So we settle for this placeholder.
+	homeDir = "<home_directory>"
 
 	// note that the available keys in this config file should be kept up to date in our public docs
 	disableUsageReporting = "disableUsageReporting"
@@ -33,11 +37,17 @@ var DefaultConfigPath = path.Join(homeDir, ConfigDirName, ConfigFileName)
 func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 	configFilePathArg := opts.Top.ConfigFilePath
 
-	// this is kind of weird- we can't set cobra's default arg to "$HOME/..." and just have it work, because
-	// it doesn't expand $HOME. We also can't set the default value to the expanded value of $HOME, ie something like
-	// os.UserHomeDir(), because that will change the content of our generated docs/ directory based on whatever system
-	// built glooctl last. So we settle for a kind of janky manual evaluation of the HOME env var
-	configFilePath := strings.ReplaceAll(configFilePathArg, homeDir, os.Getenv("HOME"))
+	configFilePath := ""
+	if configFilePathArg == DefaultConfigPath {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+
+		configFilePath = path.Join(homeDir, ConfigDirName, ConfigFileName)
+	} else {
+		configFilePath = configFilePathArg
+	}
 
 	err := ensureExists(configFilePath)
 	if err != nil {
