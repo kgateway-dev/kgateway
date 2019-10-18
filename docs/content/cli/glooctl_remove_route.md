@@ -29,7 +29,7 @@ glooctl remove route [flags]
 ### Options inherited from parent commands
 
 ```
-  -c, --config string              set the path to the glooctl config file (default "/Users/grahamgoudeau/.gloo/glooctl-config.yaml")
+  -c, --config string              set the path to the glooctl config file (default "$HOME/.gloo/glooctl-config.yaml")
       --consul-address string      address of the Consul server. Use with --use-consul (default "127.0.0.1:8500")
       --consul-datacenter string   Datacenter to use. If not provided, the default agent datacenter is used. Use with --use-consul
       --consul-root-key string     key prefix for for Consul key-value storage. (default "gloo")

@@ -26,7 +26,7 @@ glooctl create secret apikey [flags]
 ### Options inherited from parent commands
 
 ```
-  -c, --config string                  set the path to the glooctl config file (default "/Users/grahamgoudeau/.gloo/glooctl-config.yaml")
+  -c, --config string                  set the path to the glooctl config file (default "$HOME/.gloo/glooctl-config.yaml")
       --dry-run                        print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                    use interactive mode
       --kubeconfig string              kubeconfig to use, if not standard one
