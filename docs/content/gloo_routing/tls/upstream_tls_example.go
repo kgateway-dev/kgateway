@@ -16,5 +16,5 @@ func main() {
 
 	log.Println("started")
 	// Listen to port 8080 and wait
-	log.Fatal(http.ListenAndServeTLS(":8080",  "/cert.pem", "/key.pem", nil))
+	log.Fatal(http.ListenAndServeTLS(":8080", "/cert.pem", "/key.pem", nil))
 }
