@@ -2,6 +2,7 @@ syntax = "proto3";
 package dlp.plugins.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/dlp";
 
+import "envoy/type/percent.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
@@ -38,6 +39,8 @@ message Action {
 message CustomAction {
     string name = 1;
     string regex = 2;
+    string mask_char = 3;
+    envoy.type.Percent percent = 4;
 }
 
 message DlpMatcher {
