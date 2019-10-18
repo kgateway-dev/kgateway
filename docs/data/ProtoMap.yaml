@@ -50,6 +50,24 @@ apis:
   cors.plugins.gloo.solo.io.CorsPolicy:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/cors/cors.proto.sk/#CorsPolicy
     package: cors.plugins.gloo.solo.io
+  dlp.plugins.gloo.solo.io.Action:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#Action
+    package: dlp.plugins.gloo.solo.io
+  dlp.plugins.gloo.solo.io.CustomAction:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#CustomAction
+    package: dlp.plugins.gloo.solo.io
+  dlp.plugins.gloo.solo.io.DlpMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#DlpMatcher
+    package: dlp.plugins.gloo.solo.io
+  dlp.plugins.gloo.solo.io.HeaderMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#HeaderMatcher
+    package: dlp.plugins.gloo.solo.io
+  dlp.plugins.gloo.solo.io.PathMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#PathMatcher
+    package: dlp.plugins.gloo.solo.io
+  dlp.plugins.gloo.solo.io.Settings:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#Settings
+    package: dlp.plugins.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyAuth:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk/#ApiKeyAuth
     package: enterprise.gloo.solo.io
