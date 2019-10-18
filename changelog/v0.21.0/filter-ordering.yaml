@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow running the rate limit filter before the auth filters
+    issueLink: https://github.com/solo-io/gloo/issues/1445
