@@ -24,7 +24,7 @@ glooctl install gateway enterprise [flags]
 ### Options inherited from parent commands
 
 ```
-  -c, --config string        set the path to the glooctl config file (default "$HOME/.gloo/glooctl-config.yaml")
+  -c, --config string        set the path to the glooctl config file (default "<home_directory>/.gloo/glooctl-config.yaml")
   -d, --dry-run              Dump the raw installation yaml instead of applying it to kubernetes
   -f, --file string          Install Gloo from this Helm chart archive file rather than from a release
   -i, --interactive          use interactive mode

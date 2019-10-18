@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"os"
-	"path"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
 
@@ -62,13 +60,10 @@ func GlooCli() *cobra.Command {
 		},
 	}
 
-	home, _ := os.UserHomeDir()
-	defaultConfigPath := path.Join(home, ConfigDirName, ConfigFileName)
-
 	optionsFunc := func(app *cobra.Command) {
 		pflags := app.PersistentFlags()
 		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
-		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "c", defaultConfigPath, "set the path to the glooctl config file")
+		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "c", DefaultConfigPath, "set the path to the glooctl config file")
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(
