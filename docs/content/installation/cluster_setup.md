@@ -37,9 +37,9 @@ You're all set. Gloo install guide [here](../).
 
 ---
 
-## Minishift / OpenShift
+## Minishift
 
-Ensure you're running a standard Minishift cluster or OpenShift cluster, e.g. `minishift start`, and verify that your `kubectl` context is
+Ensure you're running a standard Minishift cluster, e.g. `minishift start`, and verify that your `kubectl` context is
 correctly pointing to it. More details on Minishift [here](https://github.com/minishift/minishift).
 
 ```bash
