@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+
 	"go.uber.org/zap"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
@@ -111,6 +113,9 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		if validation.ProxyValidationServerAddress == "" {
 			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
 		}
+		if overrideAddr := os.Getenv("PROXY_VALIDATION_ADDR"); overrideAddr != "" {
+			validation.ProxyValidationServerAddress = overrideAddr
+		}
 		if validation.ValidatingWebhookCertPath == "" {
 			validation.ValidatingWebhookCertPath = defaults.ValidationWebhookTlsCertPath
 		}
@@ -202,15 +207,6 @@ func RunGateway(opts Opts) error {
 
 	txlator := translator.NewDefaultTranslator()
 
-	translatorSyncer := NewTranslatorSyncer(
-		opts.WriteNamespace,
-		proxyClient,
-		gatewayClient,
-		virtualServiceClient,
-		rpt,
-		prop,
-		txlator)
-
 	var (
 		// this constructor should be called within a lock
 		validationClient             validation.ProxyValidationServiceClient
@@ -236,6 +232,18 @@ func RunGateway(opts Opts) error {
 		ignoreProxyValidationFailure,
 		allowMissingLinks,
 	))
+
+	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient)
+
+	translatorSyncer := NewTranslatorSyncer(
+		opts.WriteNamespace,
+		proxyClient,
+		proxyReconciler,
+		gatewayClient,
+		virtualServiceClient,
+		rpt,
+		prop,
+		txlator)
 
 	gatewaySyncers := v2.ApiSyncers{
 		translatorSyncer,

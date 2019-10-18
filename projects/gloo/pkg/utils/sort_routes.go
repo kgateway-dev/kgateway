@@ -80,7 +80,8 @@ func lessMatcher(m1, m2 *v1.Matcher) bool {
 
 const (
 	// order matters here. iota assigns each const = 0, 1, 2 etc.
-	pathPriorityExact = iota
+	pathPriorityEmpty = iota
+	pathPriorityExact
 	pathPriorityRegex
 	pathPriorityPrefix
 )
@@ -94,6 +95,6 @@ func pathTypePriority(m *v1.Matcher) int {
 	case *v1.Matcher_Prefix:
 		return pathPriorityPrefix
 	default:
-		panic("invalid matcher path type, must be one of: {Matcher_Regex, Matcher_Exact, Matcher_Prefix}")
+		return pathPriorityEmpty
 	}
 }
