@@ -34,9 +34,9 @@ var (
 )
 
 type Plugin struct {
-	upstreamRef *core.ResourceRef
-	timeout     *time.Duration
-	denyOnFail  bool
+	upstreamRef         *core.ResourceRef
+	timeout             *time.Duration
+	denyOnFail          bool
 	rateLimitBeforeAuth bool
 }
 
