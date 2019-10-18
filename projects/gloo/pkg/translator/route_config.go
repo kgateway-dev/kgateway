@@ -147,12 +147,14 @@ func setMatch(in *v1.Route, routeReport *validationapi.RouteReport, out *envoyro
 			validationapi.RouteReport_Error_InvalidMatcherError,
 			"no matcher provided",
 		)
+		return
 	}
 	if in.Matcher.PathSpecifier == nil {
 		validation.AppendRouteError(routeReport,
 			validationapi.RouteReport_Error_InvalidMatcherError,
 			"no path specifier provided",
 		)
+		return
 	}
 	match := envoyroute.RouteMatch{
 		Headers:         envoyHeaderMatcher(in.Matcher.Headers),

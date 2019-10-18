@@ -331,6 +331,27 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(expectedReport))
 		})
 	})
+
+	Context("route without a matcher", func() {
+		BeforeEach(func() {
+			routes[0].Matcher = nil
+		})
+		It("should error when a route is missing a matcher", func() {
+			_, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("Route Error: InvalidMatcherError. Reason: no matcher provided"))
+			expectedReport := validationutils.MakeReport(proxy)
+			expectedReport.ListenerReports[0].GetHttpListenerReport().VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
+				{
+					Type:   validation.RouteReport_Error_InvalidMatcherError,
+					Reason: "no matcher provided",
+				},
+			}
+			Expect(report).To(Equal(expectedReport))
+		})
+	})
+
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
