@@ -5,8 +5,13 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-message Settings {
+message Config {
     repeated Action actions = 1;
+}
+
+message FilterConfig {
+    repeated Action actions = 1;
+    DlpMatcher matcher = 2;
 }
 
 message Action {
@@ -26,6 +31,8 @@ message Action {
     ActionType action_type = 1;
 
     CustomAction custom_action = 2;
+
+    bool shadow = 3;
 }
 
 message CustomAction {
