@@ -62,16 +62,16 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, us
 			return nil, errors.Errorf("could not find value file [%s] in Helm chart archive", fileName)
 		}
 	}
+	
+	// Namespace creation is disabled by default, otherwise install with helm will fail
+	// (`helm install --namespace=<namespace_name>` creates the given namespace)
+	valueStruct.Namespace = &generate.Namespace{Create: true}
 
 	// Convert value file content to struct
 	valueStruct := &generate.HelmConfig{}
 	if err := yaml.Unmarshal([]byte(rawAdditionalValues), valueStruct); err != nil {
 		return nil, errors.Errorf("invalid format for value file [%s] in Helm chart archive", fileName)
 	}
-
-	// Namespace creation is disabled by default, otherwise install with helm will fail
-	// (`helm install --namespace=<namespace_name>` creates the given namespace)
-	valueStruct.Namespace = &generate.Namespace{Create: true}
 
 	for _, opt := range valueOptions {
 		opt(valueStruct)
