@@ -532,7 +532,7 @@ type Settings_VaultSecrets struct {
 	// the Token used to authenticate to Vault
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	// address is the address of the Vault server. This should be a complete
-	// URL such as "http://vault.example.com".
+	// URL such as http://solo.io
 	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	// caCert is the path to a PEM-encoded CA cert file to use to verify the
 	// Vault server SSL certificate.
@@ -645,7 +645,7 @@ func (m *Settings_VaultSecrets) GetRootKey() string {
 	return ""
 }
 
-// Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
+// Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html) as storage for config data.
 // Configuration options for connecting to Consul can be configured in the Settings' root
 // `consul` field
 type Settings_ConsulKv struct {

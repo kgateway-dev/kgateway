@@ -375,6 +375,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
   digest = "1:2cd7915ab26ede7d95b8749e6b1f933f1c6d5398030684e6505940a10f31cfda"
   name = "github.com/ghodss/yaml"
   packages = ["."]
@@ -534,9 +542,12 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -813,12 +824,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:12247a2e99a060cc692f6680e5272c8adf0b8f572e6bce0d7095e624c958a240"
+  digest = "1:a361611b8c8c75a1091f00027767f7779b29cb37c456a71b8f2604c88057ab40"
   name = "github.com/hashicorp/hcl"
   packages = [
     ".",
     "hcl/ast",
     "hcl/parser",
+    "hcl/printer",
     "hcl/scanner",
     "hcl/strconv",
     "hcl/token",
@@ -1035,6 +1047,14 @@
   pruneopts = "UT"
   revision = "db8e3cd836b82e82e0a9c8edc6896967dd31374f"
   version = "v1.1.3"
+
+[[projects]]
+  digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
+  name = "github.com/magiconair/properties"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "de8848e004dd33dc07a2947b3d76f618a7fc7ef1"
+  version = "v1.8.1"
 
 [[projects]]
   branch = "master"
@@ -1400,18 +1420,19 @@
   version = "v0.10.19"
 
 [[projects]]
-  digest = "1:a2922a665903e4336f9e8b13eb9134bdda25ed984b3966159d4aa2bf9c5b0e28"
+  digest = "1:792aa5d91a415b803d0e64834fed0c730050fd93707709a5e55b68937510ce00"
   name = "github.com/solo-io/reporting-client"
   packages = [
     "pkg/api/v1",
     "pkg/client",
+    "pkg/signature",
   ]
   pruneopts = "UT"
-  revision = "f47eacc21bd62e6bc8bb8954af0dc1817079af0d"
-  version = "v0.0.2"
+  revision = "53c000c6023e718380ded876e15c2ec0eebc34e5"
+  version = "v0.1.0"
 
 [[projects]]
-  digest = "1:df93a6697867045de75247ce33d1c528cc0ff50a2dd2084d7d816efbd64ee5ed"
+  digest = "1:c9ce049431f21580765d40a86a021597023fd2b9128d7fd77bafb2b7d1a4a1c7"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1438,6 +1459,7 @@
     "pkg/api/v1/clients/kube/crd/solo.io/v1",
     "pkg/api/v1/clients/kubesecret",
     "pkg/api/v1/clients/memory",
+    "pkg/api/v1/clients/multicluster",
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/clients/wrapper",
     "pkg/api/v1/control-plane/cache",
@@ -1465,6 +1487,8 @@
     "pkg/code-generator/model",
     "pkg/code-generator/parser",
     "pkg/errors",
+    "pkg/multicluster/clustercache",
+    "pkg/multicluster/handler",
     "pkg/stats",
     "pkg/utils/fileutils",
     "pkg/utils/kubeutils",
@@ -1474,8 +1498,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "d91e21c0b9708a02e6e436fdae2d14f67491e847"
-  version = "v0.11.0"
+  revision = "78c3732f8fbe19283f7b3379ed4e525eb776e87b"
+  version = "v0.11.2"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -1489,6 +1513,14 @@
   version = "v1.2.1"
 
 [[projects]]
+  digest = "1:08d65904057412fc0270fc4812a1c90c594186819243160dc779a402d4b6d0bc"
+  name = "github.com/spf13/cast"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8c9545af88b134710ab1cd196795e7f2388358d7"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:e01b05ba901239c783dfe56450bcde607fc858908529868259c9a8765dc176d0"
   name = "github.com/spf13/cobra"
   packages = [
@@ -1500,12 +1532,28 @@
   version = "v0.0.3"
 
 [[projects]]
+  digest = "1:1b753ec16506f5864d26a28b43703c58831255059644351bbcb019b843950900"
+  name = "github.com/spf13/jwalterweatherman"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "94f6ae3ed3bceceafa716478c5fbf8d29ca601a1"
+  version = "v1.1.0"
+
+[[projects]]
   digest = "1:9424f440bba8f7508b69414634aef3b2b3a877e522d8a4624692412805407bb7"
   name = "github.com/spf13/pflag"
   packages = ["."]
   pruneopts = "UT"
   revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
   version = "v1.0.1"
+
+[[projects]]
+  digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
+  name = "github.com/spf13/viper"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:e4ed0afd67bf7be353921665cdac50834c867ff1bba153efc0745b755a7f5905"
@@ -2731,6 +2779,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2757,9 +2806,11 @@
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
+    "github.com/onsi/gomega/format",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
     "github.com/onsi/gomega/gstruct",
+    "github.com/onsi/gomega/types",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/api",
     "github.com/prometheus/client_golang/api/prometheus/v1",
@@ -2832,6 +2883,7 @@
     "github.com/spf13/afero",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
+    "github.com/spf13/viper",
     "go.opencensus.io/plugin/ocgrpc",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",

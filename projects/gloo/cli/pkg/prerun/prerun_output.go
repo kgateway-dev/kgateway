@@ -1,7 +1,11 @@
 package prerun
 
 import (
+	"context"
 	"os"
+
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/solo-io/gloo/pkg/utils/usage"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -24,5 +28,14 @@ func SetKubeConfigEnv(opts *options.Options, cmd *cobra.Command) error {
 	if opts.Top.KubeConfig != "" {
 		return os.Setenv("KUBECONFIG", opts.Top.KubeConfig)
 	}
+	return nil
+}
+
+func ReportUsage(opts *options.Options, cmd *cobra.Command) error {
+	if opts.Top.DisableUsageStatistics {
+		return nil
+	}
+
+	_ = setuputils.StartReportingUsage(context.Background(), &usage.CliUsageReader{}, "glooctl")
 	return nil
 }

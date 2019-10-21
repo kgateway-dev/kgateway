@@ -19,8 +19,8 @@ var _ = Describe("PathAsString", func() {
 			PathSpecifier: &v1.Matcher_Regex{"howsitgoin"},
 		})).To(Equal("howsitgoin"))
 	})
-	It("panics if an invalid matcher is passed", func() {
-		Expect(func() { PathAsString(&v1.Matcher{}) }).To(Panic())
-		Expect(func() { PathAsString(nil) }).To(Panic())
+	It("returns empty string for empty matcher", func() {
+		Expect(PathAsString(&v1.Matcher{})).To(Equal(""))
+		Expect(PathAsString(nil)).To(Equal(""))
 	})
 })

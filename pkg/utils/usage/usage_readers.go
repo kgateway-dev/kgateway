@@ -2,6 +2,8 @@ package usage
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
@@ -20,6 +22,7 @@ const (
 	numEnvoys        = "numActiveEnvoys"
 	totalRequests    = "totalRequests"
 	totalConnections = "totalConnections"
+	args             = "args"
 )
 
 type DefaultUsageReader struct {
@@ -62,4 +65,22 @@ func (d *DefaultUsageReader) GetPayload() (map[string]string, error) {
 	}
 
 	return payload, nil
+}
+
+type CliUsageReader struct {
+}
+
+var _ client.UsagePayloadReader = &CliUsageReader{}
+
+// when reporting usage, also include the args that glooctl was invoked with
+func (c *CliUsageReader) GetPayload() (map[string]string, error) {
+	argsMap := map[string]string{}
+
+	if len(os.Args) > 1 {
+		// don't report the binary name, which will be the first arg
+		// it may contain paths on the user's computer
+		argsMap[args] = strings.Join(os.Args[1:], "|")
+	}
+
+	return argsMap, nil
 }

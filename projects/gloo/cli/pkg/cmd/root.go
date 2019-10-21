@@ -63,6 +63,7 @@ func GlooCli() *cobra.Command {
 	optionsFunc := func(app *cobra.Command) {
 		pflags := app.PersistentFlags()
 		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
+		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "c", DefaultConfigPath, "set the path to the glooctl config file")
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(
@@ -85,7 +86,10 @@ func GlooCli() *cobra.Command {
 	}
 
 	preRunFuncs := []PreRunFunc{
+		// should make sure to read the config file first
+		ReadConfigFile,
 		prerun.SetKubeConfigEnv,
+		prerun.ReportUsage,
 	}
 
 	return App(opts, preRunFuncs, optionsFunc)

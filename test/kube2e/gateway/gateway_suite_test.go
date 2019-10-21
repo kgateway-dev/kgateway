@@ -101,7 +101,7 @@ func StartTestHelper() {
 
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
 	// See https://github.com/solo-io/gloo/issues/1374
-	enableStrictValidation()
+	UpdateAlwaysAcceptSetting(false)
 }
 
 func TearDownTestHelper() {
@@ -110,6 +110,20 @@ func TearDownTestHelper() {
 		Expect(err).NotTo(HaveOccurred())
 		_ = testutils.Kubectl("delete", "--wait=false", "namespace", testHelper.InstallNamespace)
 	}
+}
+
+// enable/disable strict validation
+func UpdateAlwaysAcceptSetting(alwaysAccept bool) {
+	settingsClient := clienthelpers.MustSettingsClient()
+	settings, err := settingsClient.Read(testHelper.InstallNamespace, "default", clients.ReadOpts{})
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(settings.Gateway).NotTo(BeNil())
+	Expect(settings.Gateway.Validation).NotTo(BeNil())
+	settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: alwaysAccept}
+
+	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
@@ -130,17 +144,4 @@ settings:
 	Expect(err).NotTo(HaveOccurred())
 
 	return values.Name(), func() { _ = os.Remove(values.Name()) }
-}
-
-func enableStrictValidation() {
-	settingsClient := clienthelpers.MustSettingsClient()
-	settings, err := settingsClient.Read(testHelper.InstallNamespace, "default", clients.ReadOpts{})
-	Expect(err).NotTo(HaveOccurred())
-
-	Expect(settings.Gateway).NotTo(BeNil())
-	Expect(settings.Gateway.Validation).NotTo(BeNil())
-	settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: false}
-
-	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
-	Expect(err).NotTo(HaveOccurred())
 }

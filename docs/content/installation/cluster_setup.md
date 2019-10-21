@@ -9,7 +9,7 @@ In this document we will review how to prepare different Kubernetes environments
 Details for specific Kubernetes distributions:
 
 - [Minikube](#minikube)
-- [Minishift](#minishift-openshift)
+- [Minishift](#minishift)
 - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
 - [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
 - [Amazon Elastic Container Service for Kubernetes (EKS)](#amazon-elastic-container-service-for-kubernetes-eks)
@@ -37,9 +37,9 @@ You're all set. Gloo install guide [here](../).
 
 ---
 
-## Minishift / OpenShift
+## Minishift
 
-Ensure you're running a standard Minishift cluster or OpenShift cluster, e.g. `minishift start`, and verify that your `kubectl` context is
+Ensure you're running a standard Minishift cluster, e.g. `minishift start`, and verify that your `kubectl` context is
 correctly pointing to it. More details on Minishift [here](https://github.com/minishift/minishift).
 
 ```bash

@@ -30,6 +30,7 @@ weight: 5
 
 ```yaml
 "disabled": bool
+"customInterventionMessage": string
 "coreRuleSet": .waf.plugins.gloo.solo.io.CoreRuleSet
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
 
@@ -38,6 +39,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |  |
+| `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |  |
 | `coreRuleSet` | [.waf.plugins.gloo.solo.io.CoreRuleSet](../waf.proto.sk#coreruleset) | Add OWASP core rule set if nil will not be added. |  |
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk#ruleset) | Custom rule sets rules to add. |  |
 
