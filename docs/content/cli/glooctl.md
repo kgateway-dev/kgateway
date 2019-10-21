@@ -14,6 +14,7 @@ glooctl is the unified CLI for Gloo.
 ### Options
 
 ```
+  -c, --config string       set the path to the glooctl config file (default "<home_directory>/.gloo/glooctl-config.yaml")
   -h, --help                help for glooctl
   -i, --interactive         use interactive mode
       --kubeconfig string   kubeconfig to use, if not standard one

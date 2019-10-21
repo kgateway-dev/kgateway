@@ -22,6 +22,7 @@ these commands can be used to interact directly with the Proxies Gloo is managin
 ### Options inherited from parent commands
 
 ```
+  -c, --config string       set the path to the glooctl config file (default "<home_directory>/.gloo/glooctl-config.yaml")
   -i, --interactive         use interactive mode
       --kubeconfig string   kubeconfig to use, if not standard one
 ```
