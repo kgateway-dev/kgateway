@@ -38,12 +38,12 @@ curl localhost:8080/?time=100s
 
 #### Steps for demonstrating this behavior
 
-1. Apply [config A](#route-config-a)
-1. Issue [request](#curl-command)
-  1. expect to wait 10 seconds and then see the response from the sleep server
-1. In a separate terminal, before 10 seconds elapse, apply [config B](#route-config-b) and re-issue the [request](#curl-command)
-  1. expect to see the redirect response, from the new config
-  1. when 10 seconds have elapsed since the first request, expect to see the response from the sleep server
+- Apply [config A](#route-config-a)
+- Issue [request](#curl-command)
+  - expect to wait 10 seconds and then see the response from the sleep server
+- In a separate terminal, before 10 seconds elapse, apply [config B](#route-config-b) and re-issue the [request](#curl-command)
+  - expect to see the redirect response, from the new config
+  - when 10 seconds have elapsed since the first request, expect to see the response from the sleep server
 
 ##### Route Config A
 
