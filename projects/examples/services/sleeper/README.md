@@ -40,10 +40,10 @@ curl localhost:8080/?time=100s
 
 1. Apply [config A](#route-config-a)
 1. Issue [request](#curl-command)
-  - expect to wait 10 seconds and then see the response from the sleep server
+  1. expect to wait 10 seconds and then see the response from the sleep server
 1. In a separate terminal, before 10 seconds elapse, apply [config B](#route-config-b) and re-issue the [request](#curl-command)
-  - expect to see the redirect response, from the new config
-  - when 10 seconds have elapsed since the first request, expect to see the response from the sleep server
+  1. expect to see the redirect response, from the new config
+  1. when 10 seconds have elapsed since the first request, expect to see the response from the sleep server
 
 ##### Route Config A
 
@@ -72,7 +72,7 @@ curl localhost:8080/?time=100s
         prefix: /sleep
       redirectAction:
         hostRedirect: solo.io
-``**
+```
 
 ##### Curl command
 
