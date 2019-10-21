@@ -528,12 +528,9 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1407,7 +1404,7 @@
   version = "v0.10.9"
 
 [[projects]]
-  digest = "1:dfcf304320042b636a3c8cf5c8851bde50f9e919e097af840b0c89422b97a387"
+  digest = "1:ffa5a38a93e40c722b1cc4513d77395612835254d35d3ededaf5cb24fc1ff9ee"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1434,6 +1431,7 @@
     "pkg/api/v1/clients/kube/crd/solo.io/v1",
     "pkg/api/v1/clients/kubesecret",
     "pkg/api/v1/clients/memory",
+    "pkg/api/v1/clients/multicluster",
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/clients/wrapper",
     "pkg/api/v1/control-plane/cache",
@@ -1463,6 +1461,8 @@
     "pkg/code-generator/model",
     "pkg/code-generator/parser",
     "pkg/errors",
+    "pkg/multicluster/clustercache",
+    "pkg/multicluster/handler",
     "pkg/stats",
     "pkg/utils/fileutils",
     "pkg/utils/kubeutils",
@@ -1472,7 +1472,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "dc479f62f67bedefb2cfe4cbc1963e744ce0c1ba"
+  revision = "a2cfa3fe8e030ddd94643671f30cebd1280c4fb8"
+  version = "v0.11.3"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2720,7 +2721,6 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2859,8 +2859,10 @@
     "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/intstr",
+    "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
+    "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/informers",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
@@ -2900,9 +2902,11 @@
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/rest",
+    "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/util/cert",
+    "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/homedir",
     "k8s.io/helm/pkg/chartutil",
     "k8s.io/helm/pkg/manifest",

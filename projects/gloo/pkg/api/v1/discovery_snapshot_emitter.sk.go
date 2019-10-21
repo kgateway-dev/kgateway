@@ -155,13 +155,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 
 	var initialUpstreamList UpstreamList
 	/* Create channel for KubeNamespace */
-	type kubeNamespaceListWithNamespace struct {
-		list      github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
-		namespace string
-	}
-	kubeNamespaceChan := make(chan kubeNamespaceListWithNamespace)
-
-	var initialKubeNamespaceList github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
 	/* Create channel for Secret */
 	type secretListWithNamespace struct {
 		list      SecretList
@@ -191,24 +184,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 		go func(namespace string) {
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
-		}(namespace)
-		/* Setup namespaced watch for KubeNamespace */
-		{
-			kubenamespaces, err := c.kubeNamespace.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "initial KubeNamespace list")
-			}
-			initialKubeNamespaceList = append(initialKubeNamespaceList, kubenamespaces...)
-		}
-		kubeNamespaceNamespacesChan, kubeNamespaceErrs, err := c.kubeNamespace.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting KubeNamespace watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, kubeNamespaceErrs, namespace+"-kubenamespaces")
 		}(namespace)
 		/* Setup namespaced watch for Secret */
 		{
@@ -241,12 +216,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 						return
 					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
 					}
-				case kubeNamespaceList := <-kubeNamespaceNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case kubeNamespaceChan <- kubeNamespaceListWithNamespace{list: kubeNamespaceList, namespace: namespace}:
-					}
 				case secretList := <-secretNamespacesChan:
 					select {
 					case <-ctx.Done():
@@ -259,8 +228,21 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 	}
 	/* Initialize snapshot for Upstreams */
 	currentSnapshot.Upstreams = initialUpstreamList.Sort()
-	/* Initialize snapshot for Kubenamespaces */
-	currentSnapshot.Kubenamespaces = initialKubeNamespaceList.Sort()
+	/* Setup cluster-wide watch for KubeNamespace */
+	var err error
+	currentSnapshot.Kubenamespaces, err = c.kubeNamespace.List(clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "initial KubeNamespace list")
+	}
+	kubeNamespaceChan, kubeNamespaceErrs, err := c.kubeNamespace.Watch(opts)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "starting KubeNamespace watch")
+	}
+	done.Add(1)
+	go func() {
+		defer done.Done()
+		errutils.AggregateErrs(ctx, errs, kubeNamespaceErrs, "kubenamespaces")
+	}()
 	/* Initialize snapshot for Secrets */
 	currentSnapshot.Secrets = initialSecretList.Sort()
 
@@ -288,7 +270,6 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 			}
 		}
 		upstreamsByNamespace := make(map[string]UpstreamList)
-		kubenamespacesByNamespace := make(map[string]github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList)
 		secretsByNamespace := make(map[string]SecretList)
 
 		for {
@@ -324,25 +305,17 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 					upstreamList = append(upstreamList, upstreams...)
 				}
 				currentSnapshot.Upstreams = upstreamList.Sort()
-			case kubeNamespaceNamespacedList := <-kubeNamespaceChan:
+			case kubeNamespaceList := <-kubeNamespaceChan:
 				record()
-
-				namespace := kubeNamespaceNamespacedList.namespace
 
 				skstats.IncrementResourceCount(
 					ctx,
-					namespace,
+					"<all>",
 					"kube_namespace",
 					mDiscoveryResourcesIn,
 				)
 
-				// merge lists by namespace
-				kubenamespacesByNamespace[namespace] = kubeNamespaceNamespacedList.list
-				var kubeNamespaceList github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceList
-				for _, kubenamespaces := range kubenamespacesByNamespace {
-					kubeNamespaceList = append(kubeNamespaceList, kubenamespaces...)
-				}
-				currentSnapshot.Kubenamespaces = kubeNamespaceList.Sort()
+				currentSnapshot.Kubenamespaces = kubeNamespaceList
 			case secretNamespacedList := <-secretChan:
 				record()
 
