@@ -16,41 +16,13 @@ Gloo can be installed via its [Helm Chart]({{< versioned_link_path fromRoot="/in
 {{% /notice %}}
 
 
-## Install command line tool (CLI)
-
-The `glooctl` command line provides useful functions to install, configure, and debug Gloo, though it is not required to use Gloo.
-
-* To install `glooctl` using the [Homebrew](https://brew.sh) package manager, run the following.
-
-  ```shell
-  brew install solo-io/tap/glooctl
-  ```
-
-* To install on any platform run the following.
-
-  ```bash
-  curl -sL https://run.solo.io/gloo/install | sh
-
-  export PATH=$HOME/.gloo/bin:$PATH
-  ```
-
-* You can download `glooctl` directly via the GitHub releases page. You need to add `glooctl` to your system's `PATH` after downloading.
-
-Verify the CLI is installed and running correctly with:
-
-```bash
-glooctl version
-```
-returns
-```shell
-Client: {"version":"0.18.43"}
-Server: {"type":"Knative","kubernetes":{"containers":[{"Tag":"0.18.43","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.18.43","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"0.18.43","Name":"ingress","Registry":"quay.io/solo-io"},{"Tag":"0.18.43","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.18.43","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
-```
 
 ## Installing the Gloo Knative Ingress on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
 Kubernetes cluster [here](../cluster_setup).
+
+{{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
 ### Installing on Kubernetes with `glooctl`
 

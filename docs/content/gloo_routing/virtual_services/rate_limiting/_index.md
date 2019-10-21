@@ -1,5 +1,5 @@
 ---
-title: Rate Limiting (Enterprise)
+title: Rate Limiting
 weight: 40
 description: Gloo offers a rate-limiting service based on the Envoy API or an optional simplified API for specifying limits
 ---
@@ -13,44 +13,31 @@ can become incredibly complex being handled at the application level. Using an A
 request limits to these varied services in one place.
 
 #### Rate Limiting in Gloo
-Gloo Enterprise provides two rate rate-limiting APIs to meet the needs of your environment: an enhanced version of
-[Lyft's rate limit service](https://github.com/lyft/ratelimit) that supports the full Envoy rate limit server API, as
-well as a simplified API built on top of this service. Gloo uses this rate-limit service to enforce rate-limits. The
-rate-limit service can work in tandem with the Gloo external auth service to define separate rate-limit policies for
-authorized/unauthorized users.
 
-##### DynamoDB-backed Rate Limit Service
-By default, Gloo's built-in Rate-Limit service is backed by Redis. Redis is a good choice for a global rate-limit data
-store because of its small latency. Unfortunately, it can fall short in cases when users desire cross data center
-rate-limiting, as Redis doesn't support replication or multi-master configurations.
+Gloo exposes Envoy's rate-limit API, which allows users to provide their own implementation of an Envoy gRPC rate-limit
+service. Lyft provides an example implementation of this gRPC rate-limit service 
+[here](https://github.com/lyft/ratelimit). To configure Gloo to use your rate-limit server implementation,
+install Gloo gateway with helm and provide the following `.Values.settings.extensions` values override:
 
-DynamoDB can pickup the slack here by leveraging its built-in replication 
-([DynamoDB Global Tables](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html)). DynamoDB
-is built for single-millisecond latencies, so you can trade some performance in exchange for truly global rate limiting.
+```yaml
+configs:
+  rate-limit:
+    ratelimit_server_ref:
+      name: ...      # rate-limit upstream name
+      namespace: ... # rate-limit upstream namespace
+    request_timeout: ...  # optional, default 100ms
+    deny_on_fail: ...     # optional, default false
+```
 
-{{% notice note %}}
-DynamoDB rate-limiting is a feature of **Gloo Enterprise**, release 0.18.29+
-{{% /notice %}}
+Gloo Enterprise provides an enhanced version of [Lyft's rate limit service](https://github.com/lyft/ratelimit) that
+supports the full Envoy rate limit server API, as well as a simplified API built on top of this service. Gloo uses
+this rate-limit service to enforce rate-limits. The rate-limit service can work in tandem with the Gloo external auth
+service to define separate rate-limit policies for authorized & unauthorized users. The Gloo Enteprise rate-limit service
+enabled and configured by default, no configuration is needed to point Gloo toward the rate-limit service.
 
-To enable DynamoDB rate-limiting (disables Redis), install Gloo with helm and provide an override for 
-`rateLimit.deployment.dynamodb.secretName`. This secret can be generated using `glooctl create secret aws`.
+### Rate Limit Configuration
 
-Once deployed, the rate limit service will create the rate limits DynamoDB table (default `rate-limits`) in the
-provided aws region using the provided creds. If you want to turn the table into a globally replicated table, you
-will need to select which regions to replicate to in the DynamoDB aws console UI.
-
-The full set of DynamoDB related config follows:
-
-| option                                                    | type     | description                                                                                                                                                                                                                                                    |
-| --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| rateLimit.deployment.dynamodb.secretName                  | string   | Required: name of the aws secret in gloo's installation namespace that has aws creds |
-| rateLimit.deployment.dynamodb.region                      | string   | aws region to run DynamoDB requests in (default `us-east-2`) |
-| rateLimit.deployment.dynamodb.tableName                   | string   | DynamoDB table name used to back rate limit service (default `rate-limits`) |
-| rateLimit.deployment.dynamodb.consistentReads             | bool     | if true, reads from DynamoDB will be strongly consistent (default `false`) |
-| rateLimit.deployment.dynamodb.batchSize                   | uint8    | batch size for get requests to DynamoDB (max `100`, default `100`) |
-
-### Rate Limit Models
-
-Check out the individual guides for each of the Gloo rate-limit paradigms:
+Check out the guides for each of the Gloo rate-limit APIs and configuration options for Gloo Enterprise's rate-limit
+service:
 
 {{% children description="true" %}}

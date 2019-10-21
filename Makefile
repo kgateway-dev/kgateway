@@ -541,3 +541,31 @@ build-kind-chart:
 	go run install/helm/gloo/generate.go $(VERSION)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
 	helm repo index $(TEST_ASSET_DIR)
+
+
+#----------------------------------------------------------------------------------
+# Build assets for non-release charts (meant to be invoked on your dev machine)
+#----------------------------------------------------------------------------------
+
+# Must be run on your dev machine because TAGGED_VERSION depends on `git describe --tags`, and our CI doesn't clone
+# the repo or have any git context
+
+# Sample invocation:
+# TAGGED_VERSION=$(git describe --tags) GCLOUD_PROJECT_ID=solo-public make clean fetch-tagged-helm build-tagged-chart save-tagged-helm
+
+.PHONY: build-tagged-chart
+build-tagged-chart:
+	mkdir -p $(TEST_ASSET_DIR)
+	go run install/helm/gloo/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
+	mkdir -p $(HELM_SYNC_DIR)/charts
+	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
+	helm repo index $(HELM_SYNC_DIR)
+
+.PHONY: save-tagged-helm
+save-tagged-helm:
+	gsutil -m rsync -r './_output/helm' gs://solo-public-tagged-helm/
+
+.PHONY: fetch-tagged-helm
+fetch-tagged-helm:
+	mkdir -p $(HELM_SYNC_DIR)
+	gsutil -m rsync -r gs://solo-public-tagged-helm/ './_output/helm'

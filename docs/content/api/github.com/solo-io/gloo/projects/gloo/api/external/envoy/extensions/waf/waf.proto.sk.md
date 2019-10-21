@@ -32,13 +32,15 @@ weight: 5
 ```yaml
 "disabled": bool
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
+"customInterventionMessage": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | Disable all rules on the current http connection manager. |  |
+| `disabled` | `bool` | Disable all rules on the current route. |  |
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk#ruleset) | Global rule sets for the current http connection manager. |  |
+| `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 
 
 
@@ -46,11 +48,7 @@ weight: 5
 ---
 ### RuleSet
 
- 
-String options are not recommended unless they are relatively short as they will be sent over the wire quite often.
 
-Any files referenced by this proto should be mounted into the relevant envoy pod prior to use or
-the filter will fail to initialize and the configuration will be rejected
 
 ```yaml
 "ruleStr": string
@@ -74,6 +72,7 @@ the filter will fail to initialize and the configuration will be rejected
 ```yaml
 "disabled": bool
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
+"customInterventionMessage": string
 
 ```
 
@@ -81,6 +80,7 @@ the filter will fail to initialize and the configuration will be rejected
 | ----- | ---- | ----------- |----------- | 
 | `disabled` | `bool` | Disable all rules on the current route. |  |
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk#ruleset) | Overwrite the global rules on this route. |  |
+| `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 
 
 

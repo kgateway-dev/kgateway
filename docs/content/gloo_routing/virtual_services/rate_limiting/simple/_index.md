@@ -1,7 +1,7 @@
 ---
-title: Gloo Rate Limiting
+title: Gloo API (Enterprise)
 weight: 1
-description: Simplified Rate Limit that covers most use cases.
+description: Simplified rate-limit API that covers most use cases.
 ---
 
 ## Overview
@@ -45,7 +45,7 @@ Refer to the [Gloo external authentication]({{% versioned_link_path fromRoot="/g
 
 In this example, we restrict authorized users to 200 requests per minute and anonymous users to 1000 requests per hour.
 
-{{< highlight yaml "hl_lines=23-29" >}}
+{{< highlight yaml "hl_lines=22-28" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

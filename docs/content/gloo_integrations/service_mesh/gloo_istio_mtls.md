@@ -159,7 +159,7 @@ $([ "$(uname -s)" = "Linux" ] && echo xdg-open || echo open) $HTTP_GW
 
 ## Istio 1.1.x
 
-With Istio 1.1, a new option to configure certificates and keys was introduced based on [Envoy Proxy's Secret Discovery Service](https://www.envoyproxy.io/docs/envoy/latest/configuration/secret). This mode enables Istio to deliver the secrets via an API instead of mounting to the file system as we saw in the previous section. This has two big benefits:
+With Istio 1.1, a new option to configure certificates and keys was introduced based on [Envoy Proxy's Secret Discovery Service](https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/secret.html#secret-discovery-service-sds). This mode enables Istio to deliver the secrets via an API instead of mounting to the file system as we saw in the previous section. This has two big benefits:
 
 * We don't need to hot-restart the proxy when certificates are rotated
 * The keys for the services never travel over the network; they stay on a single node and are delivered to the service. 

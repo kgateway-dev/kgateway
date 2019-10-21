@@ -1,6 +1,6 @@
 ---
-title: Envoy Rate Limiting
-description: Fine-grained Rate Limit configuration using all of the options available in Envoy.
+title: Envoy API
+description: Fine-grained rate limit API.
 weight: 20
 ---
 
@@ -78,7 +78,7 @@ This action says to pass in the request header values as the descriptor values. 
 
 Rate limit actions can be specified both at the Virtual Service level and on a per route basis. For example, the look at the following:
 
-{{< highlight yaml "hl_lines=22-31 42-50" >}}
+{{< highlight yaml "hl_lines=21-30 42-50" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -26,11 +27,11 @@ type translatorSyncer struct {
 	proxyClient     gloov1.ProxyClient
 	gwClient        v2.GatewayClient
 	vsClient        v1.VirtualServiceClient
-	proxyReconciler gloov1.ProxyReconciler
+	proxyReconciler reconciler.ProxyReconciler
 	translator      translator.Translator
 }
 
-func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, gwClient v2.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator, translator translator.Translator) v2.ApiSyncer {
+func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v2.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator, translator translator.Translator) v2.ApiSyncer {
 	return &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
@@ -38,14 +39,9 @@ func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, 
 		proxyClient:     proxyClient,
 		gwClient:        gwClient,
 		vsClient:        vsClient,
-		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		proxyReconciler: proxyReconciler,
 		translator:      translator,
 	}
-}
-
-type proxyErrorTuple struct {
-	p *gloov1.Proxy
-	r reporter.ResourceReports
 }
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
@@ -63,45 +59,28 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 		"created_by": "gateway-v2",
 	}
 
-	byProxy := utils.GatewaysByProxyName(snap.Gateways)
-	tuples := make([]*proxyErrorTuple, 0, len(byProxy))
-	for key, val := range byProxy {
-		proxy, reports := s.translator.Translate(ctx, key, s.writeNamespace, snap, val)
-		if err := reports.ValidateStrict(); err != nil {
-			if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
-				contextutils.LoggerFrom(ctx).Errorf("failed to write reports: %v", err)
-			}
-			logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-				"proxy will not be updated.", snap.Hash(), err)
-			continue
-		}
+	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
+
+	desiredProxies := make(reconciler.GeneratedProxies)
+
+	for proxyName, gatewayList := range gatewaysByProxy {
+		proxy, reports := s.translator.Translate(ctx, proxyName, s.writeNamespace, snap, gatewayList)
 
 		if proxy != nil {
-			logger.Infof("creating proxy %v", proxy.Metadata.Ref())
+			logger.Infof("desired proxy %v", proxy.Metadata.Ref())
 			proxy.Metadata.Labels = labels
-			tuples = append(tuples, &proxyErrorTuple{
-				p: proxy,
-				r: reports,
-			})
+			desiredProxies[proxy] = reports
 		}
 	}
 
-	var allProxies gloov1.ProxyList
-	for _, v := range tuples {
-		allProxies = append(allProxies, v.p)
-	}
-
-	if err := s.proxyReconciler.Reconcile(s.writeNamespace, allProxies, utils.TransitionFunction, clients.ListOpts{
-		Ctx:      ctx,
-		Selector: labels,
-	}); err != nil {
+	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, labels); err != nil {
 		return err
 	}
 
 	// repeat for all resources
-	for _, v := range tuples {
+	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
-		if err := s.propagateProxyStatus(ctx, v.p, v.r); err != nil {
+		if err := s.propagateProxyStatus(ctx, proxy, reports); err != nil {
 			return err
 		}
 	}

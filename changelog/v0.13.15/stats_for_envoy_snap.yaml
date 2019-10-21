@@ -1,4 +1,4 @@
 changelog:
   - type: NEW_FEATURE
     description: Update knative-serving installation to version 0.5.1
-    issueLink: https://github.com/solo-io/gloo/673
+    issueLink: https://github.com/solo-io/gloo/issues/673
