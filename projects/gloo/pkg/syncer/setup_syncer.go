@@ -328,7 +328,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, opts.KubeServiceClient, opts.ConsulWatcher)
+	kubeServiceClient := opts.KubeServiceClient
+	if opts.Settings.GetGloo().GetDisableKubernetesDestinations() {
+		kubeServiceClient = nil
+	}
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.ConsulWatcher)
 	if err != nil {
 		return err
 	}
