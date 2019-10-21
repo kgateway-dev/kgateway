@@ -105,8 +105,13 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 	}
 }
 
-func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *v2.ApiSnapshot {
-	routes := []*gwv1.Route{{
+func SimpleRoute(us core.ResourceRef) []*gwv1.Route {
+	return []*gwv1.Route{{
+		Matchers: []*v1.Matcher{{
+			PathSpecifier: &v1.Matcher_Prefix{
+				Prefix: "/",
+			},
+		}},
 		Action: &gwv1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{
 				Destination: &v1.RouteAction_Single{
@@ -119,6 +124,10 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *v2.ApiSnapsho
 			},
 		},
 	}}
+}
+
+func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *v2.ApiSnapshot {
+	routes := SimpleRoute(us)
 	return &v2.ApiSnapshot{
 		Gateways: []*v2.Gateway{
 			defaults.DefaultGateway(namespace),
@@ -162,6 +171,17 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *v2.ApiSnapsho
 			},
 		},
 	}
+}
+
+func AddVsToSnap(snap *v2.ApiSnapshot, us core.ResourceRef, namespace string) *v2.ApiSnapshot {
+	snap.VirtualServices = append(snap.VirtualServices, &gwv1.VirtualService{
+		Metadata: core.Metadata{Namespace: namespace, Name: "secondary-vs"},
+		VirtualHost: &gwv1.VirtualHost{
+			Domains: []string{"secondary-vs.com"},
+			Routes:  SimpleRoute(us),
+		},
+	})
+	return snap
 }
 
 func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *v2.ApiSnapshot {

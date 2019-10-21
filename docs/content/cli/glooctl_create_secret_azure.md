@@ -24,6 +24,7 @@ glooctl create secret azure [flags]
 ### Options inherited from parent commands
 
 ```
+  -c, --config string                  set the path to the glooctl config file (default "<home_directory>/.gloo/glooctl-config.yaml")
       --dry-run                        print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                    use interactive mode
       --kubeconfig string              kubeconfig to use, if not standard one

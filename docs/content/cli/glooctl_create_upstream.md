@@ -9,7 +9,7 @@ Create an Upstream
 ### Synopsis
 
 Upstreams represent destination for routing HTTP requests. Upstreams can be compared to 
-[clusters](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/cluster_manager) in Envoy terminology. 
+[clusters](https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/upstream/cluster_manager#cluster-manager) in Envoy terminology. 
 Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more. 
 Each upstream type is handled by a corresponding Gloo plugin. 
 
@@ -33,6 +33,7 @@ glooctl create upstream [flags]
 ### Options inherited from parent commands
 
 ```
+  -c, --config string       set the path to the glooctl config file (default "<home_directory>/.gloo/glooctl-config.yaml")
       --dry-run             print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive         use interactive mode
       --kubeconfig string   kubeconfig to use, if not standard one

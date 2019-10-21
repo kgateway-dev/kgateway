@@ -51,7 +51,7 @@ and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
   1. The next step generates all of the **[Envoy routes](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto.html?highlight=route)**
   via the route plugins . Routes are generated for each route rule defined on the [virtual service objects]({{< protobuf name="gateway.solo.io.VirtualService">}}). When all of the routes are created, the translator aggregates them into
   [Envoy virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-virtualhost)
-  and adds them to a new [Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/http_conn_man)
+  and adds them to a new [Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/http/http_connection_management.html#http-connection-management)
   configuration.
   1. Filter plugins are queried for their filter configurations, generating the list of HTTP Filters that will go on the
   [Envoy listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners).
