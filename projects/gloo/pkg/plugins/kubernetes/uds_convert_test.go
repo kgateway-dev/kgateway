@@ -34,7 +34,7 @@ func UpstreamNameOld(serviceNamespace, serviceName string, servicePort int32, ex
 }
 
 var _ = Describe("UdsConvert", func() {
-	createUpstream := (&KubeUpstreamConverter{}).CreateUpstream
+	createUpstream := DefaultUpstreamConverter().CreateUpstream
 
 	It("should get uniq label set", func() {
 
