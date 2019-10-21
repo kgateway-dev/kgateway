@@ -265,7 +265,7 @@ message Settings {
             // this is an additional number of allowed, to allow for short bursts.
             uint32 burst = 2;
         }
-        // Rate limits for the kuberentes clients
+        // Rate limits for the kubernetes clients
         RateLimits rate_limits = 1;
     }
 
@@ -326,6 +326,12 @@ message GlooOptions {
     }
 
     AWSOptions aws_options = 5;
+
+    // Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature,
+    // Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them.
+    // If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
+    // in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
+    bool disable_kubernetes_destinations = 6;
 }
 
 // Settings specific to the Gateway controller
