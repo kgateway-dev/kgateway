@@ -5,19 +5,42 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
 func main() {
 	ctx := context.Background()
+
 	if err := run(ctx); err != nil {
 		log.Fatalf("unable to run: %v", err)
 	}
 }
 
+type envConfig struct {
+	port string
+}
+
+const (
+	envPort = "PORT"
+)
+
+func getEnvConfig() (*envConfig, error) {
+	ec := &envConfig{}
+	ec.port = os.Getenv(envPort)
+	if ec.port == "" {
+		return nil, fmt.Errorf("must specify a port with %v", envPort)
+	}
+	return ec, nil
+}
+
 func run(ctx context.Context) error {
+	ec, err := getEnvConfig()
+	if err != nil {
+		return err
+	}
 	sleepServer := &sleeper{}
-	return http.ListenAndServe("0.0.0.0:8081", sleepServer)
+	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%v", ec.port), sleepServer)
 }
 
 type sleeper struct{}
@@ -40,7 +63,7 @@ func (s *sleeper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	time.Sleep(sleepDuration)
 	if _, err := fmt.Fprintf(w, "slept for %v", sleepDuration.String()); err != nil {
-		log.Printf("unable to respond with sleeep time: %v", err)
+		log.Printf("unable to respond with sleep time: %v", err)
 	}
 
 }
