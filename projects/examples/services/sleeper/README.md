@@ -33,7 +33,7 @@ curl localhost:8080/?time=100s
 
 ### How does Envoy handle config updates during long-running requests
 
-- Summary: Envoy will continue to service long-running requests even after the config has changed. New requests (issued after the config change** will be handled according to the new configuration.
+- Summary: Envoy will continue to service long-running requests even after the config has changed. New requests (issued after the config change) will be handled according to the new configuration.
 - This makes sense, because for busy servers, Envoy may never see a moment where there are no active requests. If Envoy had to wait for all requests to drain, it would never be able to route new requests according to the updated config.
 
 #### Steps for demonstrating this behavior
