@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
@@ -27,7 +29,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
@@ -135,7 +136,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+translator.GatewayProxyName, glooPort)
+		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run a simple web application locally
@@ -345,6 +346,9 @@ func writeSettings(settingsDir string, glooPort, validationPort int, writeNamesp
 			DirectoryArtifactSource: &gloov1.Settings_Directory{
 				Directory: settingsDir,
 			},
+		},
+		Discovery: &gloov1.Settings_DiscoveryOptions{
+			FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
 		},
 		Consul: &gloov1.Settings_ConsulConfiguration{
 			ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{},

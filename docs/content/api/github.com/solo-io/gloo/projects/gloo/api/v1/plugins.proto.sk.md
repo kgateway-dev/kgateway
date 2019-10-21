@@ -151,7 +151,7 @@ to be usable by Gloo.
 ```yaml
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
 "faults": .fault.plugins.gloo.solo.io.RouteFaults
-"prefixRewrite": string
+"prefixRewrite": .google.protobuf.StringValue
 "timeout": .google.protobuf.Duration
 "retries": .retries.plugins.gloo.solo.io.RetryPolicy
 "extensions": .gloo.solo.io.Extensions
@@ -175,7 +175,7 @@ to be usable by Gloo.
 | ----- | ---- | ----------- |----------- | 
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../plugins/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
 | `faults` | [.fault.plugins.gloo.solo.io.RouteFaults](../plugins/faultinjection/fault.proto.sk#routefaults) |  |  |
-| `prefixRewrite` | `string` | For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream. |  |
+| `prefixRewrite` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream. |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
