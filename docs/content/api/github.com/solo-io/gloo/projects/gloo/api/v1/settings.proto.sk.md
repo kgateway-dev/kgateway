@@ -449,7 +449,7 @@ Policy for how Gloo should handle invalid config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `replaceInvalidRoutes` | `bool` | if set to `true`, Gloo removes any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |  |
+| `replaceInvalidRoutes` | `bool` | if set to `true`, Gloo removes any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. When routes are replaced, Gloo will configure Envoy with a special listener which serves direct responses. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |  |
 | `invalidRouteResponseCode` | `int` | replaced routes reply to clients with this response code default is 404. |  |
 | `invalidRouteResponseBody` | `string` | replaced routes reply to clients with this response body default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |  |
 

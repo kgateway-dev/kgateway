@@ -1284,7 +1284,8 @@ func (m *GlooOptions_AWSOptions) GetEnableCredentialsDiscovey() bool {
 type GlooOptions_InvalidConfigPolicy struct {
 	// if set to `true`, Gloo removes any routes from the provided configuration
 	// which point to a missing destination. Routes that are removed in this way
-	// will instead return a configurable direct response to clients.
+	// will instead return a configurable direct response to clients. When routes are replaced,
+	// Gloo will configure Envoy with a special listener which serves direct responses.
 	//
 	// Note: enabling this option allows Gloo to accept partially valid proxy configurations
 	ReplaceInvalidRoutes bool `protobuf:"varint,1,opt,name=replace_invalid_routes,json=replaceInvalidRoutes,proto3" json:"replace_invalid_routes,omitempty"`
