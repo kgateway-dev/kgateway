@@ -11,3 +11,16 @@ curl localhost:8080/?time=1ms
 curl localhost:8080/?time=1s
 curl localhost:8080/?time=100s
 ```
+
+- sample route config for use with gloo:
+  - after creating this route, you can access it with `curl $(glooctl proxy url)/sleep?time=1s`
+
+```yaml
+    - matcher:
+        prefix: /sleep
+      routeAction:
+        single:
+          upstream:
+            name: default-sleeper-80
+            namespace: gloo-system
+```
