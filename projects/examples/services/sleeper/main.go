@@ -29,7 +29,7 @@ func getEnvConfig() (*envConfig, error) {
 	ec := &envConfig{}
 	ec.port = os.Getenv(envPort)
 	if ec.port == "" {
-		return nil, fmt.Errorf("must specify a port with %v", envPort)
+		return nil, fmt.Errorf("must specify a port using the %v environment variable", envPort)
 	}
 	return ec, nil
 }
@@ -57,13 +57,13 @@ func (s *sleeper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		sleepDuration, err = time.ParseDuration(sleepDurationSpec)
 		if err != nil {
 			if _, wErr := fmt.Fprintf(w, "could not parse duration request: %v", sleepDurationSpec); wErr != nil {
-				log.Printf("unable to write error message: %v", wErr)
+				log.Printf("unable to write error message: %v\n", wErr)
 			}
 		}
 	}
 	time.Sleep(sleepDuration)
 	if _, err := fmt.Fprintf(w, "slept for %v", sleepDuration.String()); err != nil {
-		log.Printf("unable to respond with sleep time: %v", err)
+		log.Printf("unable to respond with sleep time: %v\n", err)
 	}
 
 }
