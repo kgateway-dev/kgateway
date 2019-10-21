@@ -29,7 +29,7 @@ type Settings struct {
 	// If a route/virtual host is configured with WAF, you must explicitly disable its WAF,
 	// i.e., it will not inherit the disabled status of its parent
 	Disabled bool `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
-	// Custom massage to display if an intervention occurs.
+	// Custom message to display if an intervention occurs.
 	CustomInterventionMessage string `protobuf:"bytes,2,opt,name=custom_intervention_message,json=customInterventionMessage,proto3" json:"custom_intervention_message,omitempty"`
 	// Add OWASP core rule set
 	// if nil will not be added

@@ -13,7 +13,7 @@ message Settings {
     // If a route/virtual host is configured with WAF, you must explicitly disable its WAF,
     // i.e., it will not inherit the disabled status of its parent
     bool disabled = 1;
-    // Custom massage to display if an intervention occurs.
+    // Custom message to display if an intervention occurs.
     string custom_intervention_message = 2;
     // Add OWASP core rule set
     // if nil will not be added
