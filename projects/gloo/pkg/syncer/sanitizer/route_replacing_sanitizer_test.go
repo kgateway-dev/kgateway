@@ -1,11 +1,10 @@
-package sanitizer_test
+package sanitizer
 
 import (
 	"context"
 	"net/http"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
@@ -15,13 +14,10 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/go-utils/errors"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-
-	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 )
 
 var _ = Describe("RouteReplacingSanitizer", func() {
@@ -33,14 +29,6 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 		clusterName = translator.UpstreamToClusterName(us.Metadata.Ref())
-
-		badUs = &v1.Upstream{
-			Metadata: core.Metadata{
-				Name:      "bad",
-				Namespace: "upstream",
-			},
-		}
-		badCluster = translator.UpstreamToClusterName(badUs.Metadata.Ref())
 
 		missingCluster = "missing_cluster"
 
@@ -83,6 +71,16 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
+		fixedRouteSingle = route.Route{
+			Action: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: fallbackClusterName,
+					},
+				},
+			},
+		}
+
 		missingRouteMulti = route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
@@ -102,17 +100,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		badRouteSingle = route.Route{
-			Action: &route.Route_Route{
-				Route: &route.RouteAction{
-					ClusterSpecifier: &route.RouteAction_Cluster{
-						Cluster: badCluster,
-					},
-				},
-			},
-		}
-
-		badRouteMulti = route.Route{
+		fixedRouteMulti = route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_WeightedClusters{
@@ -122,7 +110,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 									Name: clusterName,
 								},
 								{
-									Name: badCluster,
+									Name: fallbackClusterName,
 								},
 							},
 						},
@@ -135,19 +123,6 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			ReplaceInvalidRoutes:     true,
 			InvalidRouteResponseCode: http.StatusTeapot,
 			InvalidRouteResponseBody: "out of coffee T_T",
-		}
-
-		fixedRoute = route.Route{
-			Action: &route.Route_DirectResponse{
-				DirectResponse: &route.DirectResponseAction{
-					Status: invalidCfgPolicy.GetInvalidRouteResponseCode(),
-					Body: &envoycore.DataSource{
-						Specifier: &envoycore.DataSource_InlineString{
-							InlineString: invalidCfgPolicy.GetInvalidRouteResponseBody(),
-						},
-					},
-				},
-			},
 		}
 
 		routeCfgName = "some dirty routes"
@@ -191,34 +166,22 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 						validRouteMulti,
 					},
 				},
-				{
-					Routes: []route.Route{
-						badRouteSingle,
-						badRouteMulti,
-					},
-				},
 			},
 		}
 
-		expectedCfg := &envoyapi.RouteConfiguration{
+		expectedRoutes := &envoyapi.RouteConfiguration{
 			Name: routeCfgName,
 			VirtualHosts: []route.VirtualHost{
 				{
 					Routes: []route.Route{
 						validRouteSingle,
-						fixedRoute,
+						fixedRouteSingle,
 					},
 				},
 				{
 					Routes: []route.Route{
-						fixedRoute,
+						fixedRouteMulti,
 						validRouteMulti,
-					},
-				},
-				{
-					Routes: []route.Route{
-						fixedRoute,
-						fixedRoute,
 					},
 				},
 			},
@@ -235,30 +198,33 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			}),
 		)
 
-		sanitizer := NewRouteReplacingSanitizer(invalidCfgPolicy)
+		sanitizer, err := NewRouteReplacingSanitizer(invalidCfgPolicy)
+		Expect(err).NotTo(HaveOccurred())
 
-		// should have a warning
+		// should have a warning to trigger this sanitizer
 		reports := reporter.ResourceReports{
 			&v1.Proxy{}: {
 				Warnings: []string{"route with missing upstream"},
 			},
-			us: {},
-			badUs: {
-				Errors: errors.Errorf("don't get me started"),
-			},
 		}
 
 		glooSnapshot := &v1.ApiSnapshot{
-			Upstreams: v1.UpstreamList{us, badUs},
+			Upstreams: v1.UpstreamList{us},
 		}
 
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
 		routeCfgs := snap.GetResources(xds.RouteType)
+		listeners := snap.GetResources(xds.ListenerType)
+		clusters := snap.GetResources(xds.ClusterType)
 
-		sanitizedCfg := routeCfgs.Items[routeCfg.GetName()]
+		sanitizedRoutes := routeCfgs.Items[routeCfg.GetName()]
+		listenersWithFallback := listeners.Items[fallbackListenerName]
+		clustersWithFallback := clusters.Items[fallbackClusterName]
 
-		Expect(sanitizedCfg.ResourceProto()).To(Equal(expectedCfg))
+		Expect(sanitizedRoutes.ResourceProto()).To(Equal(expectedRoutes))
+		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
+		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
 	})
 })

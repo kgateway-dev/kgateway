@@ -4,6 +4,12 @@ import (
 	"context"
 	"sort"
 
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/gogo/protobuf/types"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"go.opencensus.io/tag"
@@ -23,6 +29,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
+const (
+	fallbackListenerName   = "fallback_listener_for_invalid_routes"
+	fallbackListenerSocket = "@" + fallbackListenerName
+	fallbackClusterName    = "fallback_cluster_for_invalid_routes"
+)
+
 var (
 	routeConfigKey, _ = tag.NewKey("route_config_name")
 
@@ -30,22 +42,109 @@ var (
 )
 
 type RouteReplacingSanitizer struct {
-	enabled                bool
-	replacementRouteAction *envoyroute.DirectResponseAction
+	enabled          bool
+	fallbackListener *envoyapi.Listener
+	fallbackCluster  *envoyapi.Cluster
 }
 
-func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) *RouteReplacingSanitizer {
+func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) (*RouteReplacingSanitizer, error) {
+
+	responseCode := cfg.GetInvalidRouteResponseCode()
+	responseBody := cfg.GetInvalidRouteResponseBody()
+
+	listener, cluster, err := makeFallbackListenerAndCluster(responseCode, responseBody)
+	if err != nil {
+		return nil, err
+	}
+
 	return &RouteReplacingSanitizer{
-		enabled: cfg.GetReplaceInvalidRoutes(),
-		replacementRouteAction: &envoyroute.DirectResponseAction{
-			Status: cfg.GetInvalidRouteResponseCode(),
-			Body: &core.DataSource{
-				Specifier: &core.DataSource_InlineString{
-					InlineString: cfg.GetInvalidRouteResponseBody(),
+		enabled:          cfg.GetReplaceInvalidRoutes(),
+		fallbackListener: listener,
+		fallbackCluster:  cluster,
+	}, nil
+}
+
+func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*envoyapi.Listener, *envoyapi.Cluster, error) {
+	hcmConfig := &v2.HttpConnectionManager{
+		CodecType:  v2.AUTO,
+		StatPrefix: fallbackListenerName,
+		RouteSpecifier: &v2.HttpConnectionManager_RouteConfig{
+			RouteConfig: &envoyapi.RouteConfiguration{
+				Name: "fallback_routes",
+				VirtualHosts: []envoyroute.VirtualHost{{
+					Domains: []string{"*"},
+					Routes: []envoyroute.Route{{
+						Match: envoyroute.RouteMatch{
+							PathSpecifier: &envoyroute.RouteMatch_Prefix{
+								Prefix: "/",
+							},
+						},
+						Action: &envoyroute.Route_DirectResponse{
+							DirectResponse: &envoyroute.DirectResponseAction{
+								Status: responseCode,
+								Body: &core.DataSource{
+									Specifier: &core.DataSource_InlineString{
+										InlineString: responseBody,
+									},
+								},
+							},
+						},
+					}},
+				}},
+			},
+		},
+		HttpFilters: []*v2.HttpFilter{{
+			Name: util.Router,
+		}},
+	}
+
+	typedHcmConfig, err := types.MarshalAny(hcmConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fallbackListener := &envoyapi.Listener{
+		Name: fallbackListenerName,
+		Address: core.Address{
+			Address: &core.Address_Pipe{
+				Pipe: &core.Pipe{
+					Path: fallbackListenerSocket,
 				},
 			},
 		},
+		FilterChains: []listener.FilterChain{{
+			Filters: []listener.Filter{{
+				Name: util.HTTPConnectionManager,
+				ConfigType: &listener.Filter_TypedConfig{
+					TypedConfig: typedHcmConfig,
+				},
+			}},
+		}},
 	}
+
+	fallbackCluster := &envoyapi.Cluster{
+		Name: fallbackClusterName,
+		LoadAssignment: &envoyapi.ClusterLoadAssignment{
+			ClusterName: fallbackClusterName,
+			Endpoints: []endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []endpoint.LbEndpoint{{
+					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
+						Endpoint: &endpoint.Endpoint{
+							Address: &core.Address{
+								Address: &core.Address_Pipe{
+									Pipe: &core.Pipe{
+										Path: fallbackListenerSocket,
+									},
+								},
+							},
+						},
+					},
+				}},
+			}},
+		},
+	}
+
+	return fallbackListener, fallbackCluster, nil
 }
 
 func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
@@ -64,15 +163,23 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 	}
 
 	// mark all valid destination clusters
-	validClusters := getValidClusters(glooSnapshot, reports)
+	validClusters := getClusters(glooSnapshot)
 
-	replacedRouteConfigs := s.replaceMissingClusterRoutes(ctx, validClusters, routeConfigs)
+	replacedRouteConfigs, needsListener := s.replaceMissingClusterRoutes(ctx, validClusters, routeConfigs)
+
+	clusters := xdsSnapshot.GetResources(xds.ClusterType)
+	listeners := xdsSnapshot.GetResources(xds.ListenerType)
+
+	if needsListener {
+		s.insertFallbackListener(&listeners)
+		s.insertFallbackCluster(&clusters)
+	}
 
 	xdsSnapshot = xds.NewSnapshotFromResources(
 		xdsSnapshot.GetResources(xds.EndpointType),
-		xdsSnapshot.GetResources(xds.ClusterType),
+		clusters,
 		translator.MakeRdsResources(replacedRouteConfigs),
-		xdsSnapshot.GetResources(xds.ListenerType),
+		listeners,
 	)
 
 	// If the snapshot is not consistent, error
@@ -102,20 +209,17 @@ func getRoutes(snap envoycache.Snapshot) ([]*envoyapi.RouteConfiguration, error)
 	return routeConfigs, nil
 }
 
-func getValidClusters(snap *v1.ApiSnapshot, reports reporter.ResourceReports) map[string]struct{} {
+func getClusters(snap *v1.ApiSnapshot) map[string]struct{} {
 	// mark all valid destination clusters
 	validClusters := make(map[string]struct{})
 	for _, up := range snap.Upstreams.AsInputResources() {
-		if reports[up].Errors != nil {
-			continue
-		}
 		clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 		validClusters[clusterName] = struct{}{}
 	}
 	return validClusters
 }
 
-func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Context, validClusters map[string]struct{}, routeConfigs []*envoyapi.RouteConfiguration) []*envoyapi.RouteConfiguration {
+func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Context, validClusters map[string]struct{}, routeConfigs []*envoyapi.RouteConfiguration) ([]*envoyapi.RouteConfiguration, bool) {
 	var sanitizedRouteConfigs []*envoyapi.RouteConfiguration
 
 	isInvalid := func(cluster string) bool {
@@ -124,6 +228,8 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 	}
 
 	debugW := contextutils.LoggerFrom(ctx).Debugw
+
+	var anyRoutesReplaced bool
 
 	// replace any routes which do not point to a valid destination cluster
 	for _, cfg := range routeConfigs {
@@ -141,8 +247,9 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 					if isInvalid(action.Cluster) {
 						debugW("replacing route in virtual host with invalid cluster",
 							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
-						s.replaceRouteAction(&route)
+						action.Cluster = s.fallbackCluster.Name
 						replaced++
+						anyRoutesReplaced = true
 					}
 				case *envoyroute.RouteAction_WeightedClusters:
 					for _, weightedCluster := range action.WeightedClusters.GetClusters() {
@@ -150,9 +257,9 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 							debugW("replacing route in virtual host with invalid weighted cluster",
 								zap.Any("cluster", weightedCluster.GetName()), zap.Any("route", j), zap.Any("virtualhost", i))
 
-							s.replaceRouteAction(&route)
+							weightedCluster.Name = s.fallbackCluster.Name
 							replaced++
-							break // only need to have one invalid cluster to get replaced
+							anyRoutesReplaced = true
 						}
 					}
 				default:
@@ -167,11 +274,27 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 		sanitizedRouteConfigs = append(sanitizedRouteConfigs, sanitizedRouteConfig)
 	}
 
-	return sanitizedRouteConfigs
+	return sanitizedRouteConfigs, anyRoutesReplaced
 }
 
-func (s *RouteReplacingSanitizer) replaceRouteAction(route *envoyroute.Route) {
-	route.Action = &envoyroute.Route_DirectResponse{
-		DirectResponse: s.replacementRouteAction,
+func (s *RouteReplacingSanitizer) insertFallbackListener(listeners *envoycache.Resources) {
+	if listeners.Items == nil {
+		listeners.Items = map[string]envoycache.Resource{}
 	}
+
+	listener := xds.NewEnvoyResource(s.fallbackListener)
+
+	listeners.Items[listener.Self().Name] = listener
+	listeners.Version += "-with-fallback-listener"
+}
+
+func (s *RouteReplacingSanitizer) insertFallbackCluster(clusters *envoycache.Resources) {
+	if clusters.Items == nil {
+		clusters.Items = map[string]envoycache.Resource{}
+	}
+
+	cluster := xds.NewEnvoyResource(s.fallbackCluster)
+
+	clusters.Items[cluster.Self().Name] = cluster
+	clusters.Version += "-with-fallback-cluster"
 }
