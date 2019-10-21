@@ -1420,15 +1420,16 @@
   version = "v0.10.19"
 
 [[projects]]
-  digest = "1:f35421a8443efa2170aa6dadad19ba11cfc52f72fb0bb04f8eace6b60cb29ef9"
+  digest = "1:792aa5d91a415b803d0e64834fed0c730050fd93707709a5e55b68937510ce00"
   name = "github.com/solo-io/reporting-client"
   packages = [
     "pkg/api/v1",
     "pkg/client",
+    "pkg/signature",
   ]
   pruneopts = "UT"
-  revision = "36dd39d2795b04bae1e8a3482da6c4a27ce721b7"
-  version = "v0.0.3"
+  revision = "53c000c6023e718380ded876e15c2ec0eebc34e5"
+  version = "v0.1.0"
 
 [[projects]]
   digest = "1:df93a6697867045de75247ce33d1c528cc0ff50a2dd2084d7d816efbd64ee5ed"
@@ -2802,9 +2803,11 @@
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
+    "github.com/onsi/gomega/format",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
     "github.com/onsi/gomega/gstruct",
+    "github.com/onsi/gomega/types",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/api",
     "github.com/prometheus/client_golang/api/prometheus/v1",

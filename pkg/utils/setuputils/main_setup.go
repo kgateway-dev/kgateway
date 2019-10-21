@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/reporting-client/pkg/signature"
+
 	"github.com/solo-io/gloo/pkg/utils/usage"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/reporting-client/pkg/client"
@@ -144,6 +146,12 @@ func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) 
 
 // does not block the current goroutine
 func StartReportingUsage(ctx context.Context, usagePayloadReader client.UsagePayloadReader, product string) <-chan error {
-	usageClient := client.NewUsageClient(usage.ReportingServiceUrl, usagePayloadReader, usage.LoadInstanceMetadata(product, version.Version))
+	signatureManager := signature.NewSignatureManager()
+	usageClient := client.NewUsageClient(
+		usage.ReportingServiceUrl,
+		usagePayloadReader,
+		usage.BuildProductMetadata(product, version.Version),
+		signatureManager)
+
 	return usageClient.StartReportingUsage(ctx, usage.ReportingPeriod)
 }

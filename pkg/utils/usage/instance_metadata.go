@@ -6,8 +6,8 @@ import (
 	reportingapi "github.com/solo-io/reporting-client/pkg/api/v1"
 )
 
-func LoadInstanceMetadata(product, version string) *reportingapi.InstanceMetadata {
-	return &reportingapi.InstanceMetadata{
+func BuildProductMetadata(product, version string) *reportingapi.Product {
+	return &reportingapi.Product{
 		Product: product,
 		Version: version,
 		Arch:    runtime.GOARCH,
