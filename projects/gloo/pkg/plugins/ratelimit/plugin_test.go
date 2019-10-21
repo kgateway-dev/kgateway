@@ -109,11 +109,11 @@ var _ = Describe("Plugin", func() {
 			initParams.Settings = &gloov1.Settings{
 				RatelimitServer: rlSettings,
 				Extauth: &extauthv1.Settings{
-					ExtauthzServerRef:    &core.ResourceRef{
+					ExtauthzServerRef: &core.ResourceRef{
 						Name:      "extauth-upstream",
 						Namespace: "ns",
 					},
-					RequestTimeout:       &timeout,
+					RequestTimeout: &timeout,
 				},
 			}
 			rlPlugin.Init(initParams)
