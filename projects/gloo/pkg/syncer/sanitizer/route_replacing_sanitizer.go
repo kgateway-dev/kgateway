@@ -72,6 +72,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 			RouteConfig: &envoyapi.RouteConfiguration{
 				Name: "fallback_routes",
 				VirtualHosts: []envoyroute.VirtualHost{{
+					Name:    "fallback_virtualhost",
 					Domains: []string{"*"},
 					Routes: []envoyroute.Route{{
 						Match: envoyroute.RouteMatch{
@@ -123,7 +124,8 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 	}
 
 	fallbackCluster := &envoyapi.Cluster{
-		Name: fallbackClusterName,
+		Name:           fallbackClusterName,
+		ConnectTimeout: translator.ClusterConnectionTimeout,
 		LoadAssignment: &envoyapi.ClusterLoadAssignment{
 			ClusterName: fallbackClusterName,
 			Endpoints: []endpoint.LocalityLbEndpoints{{
