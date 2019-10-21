@@ -56,13 +56,13 @@ func (s *sleeper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var err error
 		sleepDuration, err = time.ParseDuration(sleepDurationSpec)
 		if err != nil {
-			if _, wErr := fmt.Fprintf(w, "could not parse duration request: %v", sleepDurationSpec); wErr != nil {
+			if _, wErr := fmt.Fprintf(w, "could not parse duration request: %v\n", sleepDurationSpec); wErr != nil {
 				log.Printf("unable to write error message: %v\n", wErr)
 			}
 		}
 	}
 	time.Sleep(sleepDuration)
-	if _, err := fmt.Fprintf(w, "slept for %v", sleepDuration.String()); err != nil {
+	if _, err := fmt.Fprintf(w, "slept for %v\n", sleepDuration.String()); err != nil {
 		log.Printf("unable to respond with sleep time: %v\n", err)
 	}
 
