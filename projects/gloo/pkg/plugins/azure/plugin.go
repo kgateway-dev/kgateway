@@ -13,7 +13,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
-	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"

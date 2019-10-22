@@ -26,6 +26,7 @@ import (
 	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	grpcapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -180,7 +181,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outPath += `?{{ default(query_string, "")}}`
 
 		// Add param extractors back
-		var extractors map[string]*transformapi.Extraction
+		var extractors map[string]*envoy_transform.Extraction
 		if grpcDestinationSpec.Parameters != nil {
 			extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.Parameters)
 			if err != nil {
@@ -190,17 +191,17 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 		// we always choose post
 		httpMethod := "POST"
-		return &transformapi.RouteTransformations{
-			RequestTransformation: &transformapi.Transformation{
-				TransformationType: &transformapi.Transformation_TransformationTemplate{
-					TransformationTemplate: &transformapi.TransformationTemplate{
+		return &envoy_transform.RouteTransformations{
+			RequestTransformation: &envoy_transform.Transformation{
+				TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+					TransformationTemplate: &envoy_transform.TransformationTemplate{
 						Extractors: extractors,
-						Headers: map[string]*transformapi.InjaTemplate{
+						Headers: map[string]*envoy_transform.InjaTemplate{
 							":method": {Text: httpMethod},
 							":path":   {Text: outPath},
 						},
-						BodyTransformation: &transformapi.TransformationTemplate_MergeExtractorsToBody{
-							MergeExtractorsToBody: &transformapi.MergeExtractorsToBody{},
+						BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
+							MergeExtractorsToBody: &envoy_transform.MergeExtractorsToBody{},
 						},
 					},
 				},

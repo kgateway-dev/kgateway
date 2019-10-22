@@ -17,7 +17,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
 	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
