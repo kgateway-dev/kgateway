@@ -18,10 +18,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
+	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	rest_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
-	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 )
 
 var commonSwaggerURIs = []string{
