@@ -220,7 +220,7 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 
 	utils.UpdateUpstreamSpec(original.UpstreamSpec, desired.UpstreamSpec)
 
-	if originalSpec.Equal(desiredSpec) {
+	if original.GetUpstreamSpec().Equal(desired.GetUpstreamSpec()) {
 		return false, nil
 	}
 
