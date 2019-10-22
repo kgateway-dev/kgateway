@@ -331,6 +331,9 @@ func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 				},
 				Matchers: []*gloov1.Matcher{
 					{
+						PathSpecifier: &gloov1.Matcher_Prefix{
+							Prefix: "/",
+						},
 						Headers: []*gloov1.HeaderMatcher{
 							{
 								Name:        "this-header-must-not-be-present",
