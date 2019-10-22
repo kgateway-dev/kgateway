@@ -16,7 +16,7 @@ that is collected includes:
 * CLI args, in the case of `glooctl`
 
 Usage statistics collection can be disabled in Gloo by setting the 
-`USAGE_REPORTING_DISABLE` environment variable on the `gloo` pod. This can be done at install 
+`DISABLE_USAGE_REPORTING` environment variable on the `gloo` pod. This can be done at install 
 time by setting the helm value `gloo.deployment.disableUsageStatistics` to `true`.
 
 For `glooctl`, providing the `--disable-usage-statistics` flag serves the same purpose, and disables
