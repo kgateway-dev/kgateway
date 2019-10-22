@@ -51,7 +51,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func applyPrefixRewrite(in *v1.Route, out *envoyroute.Route) error {
-	if in.RoutePlugins.PrefixRewrite == "" {
+	if in.RoutePlugins.PrefixRewrite == nil {
 		return nil
 	}
 	routeAction, ok := out.Action.(*envoyroute.Route_Route)
@@ -62,7 +62,7 @@ func applyPrefixRewrite(in *v1.Route, out *envoyroute.Route) error {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
 			"had nil route", in.Action)
 	}
-	routeAction.Route.PrefixRewrite = in.RoutePlugins.PrefixRewrite
+	routeAction.Route.PrefixRewrite = in.RoutePlugins.PrefixRewrite.Value
 	return nil
 }
 

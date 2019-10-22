@@ -55,6 +55,11 @@ var _ = Describe("GRPC Plugin", func() {
 				// test relies on FDS to discover the grpc spec via reflection
 				DisableFds: false,
 			},
+			Settings: &gloov1.Settings{
+				Discovery: &gloov1.Settings_DiscoveryOptions{
+					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
+				},
+			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 		err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)

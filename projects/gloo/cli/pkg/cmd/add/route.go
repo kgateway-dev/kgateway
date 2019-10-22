@@ -3,6 +3,8 @@ package add
 import (
 	"sort"
 
+	"github.com/gogo/protobuf/types"
+
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/go-utils/cliutils"
@@ -237,7 +239,7 @@ func pluginsFromInput(input options.RoutePlugins) (*v1.RoutePlugins, error) {
 		return nil, nil
 	}
 	return &v1.RoutePlugins{
-		PrefixRewrite: *input.PrefixRewrite.Value,
+		PrefixRewrite: &types.StringValue{Value: *input.PrefixRewrite.Value},
 	}, nil
 }
 

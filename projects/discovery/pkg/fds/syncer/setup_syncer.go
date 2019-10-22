@@ -109,7 +109,7 @@ func RunFDS(opts bootstrap.Opts) error {
 
 func getFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
 	if settings == nil || settings.GetDiscovery() == nil {
-		return v1.Settings_DiscoveryOptions_BLACKLIST
+		return v1.Settings_DiscoveryOptions_WHITELIST
 	}
 	return settings.GetDiscovery().GetFdsMode()
 }

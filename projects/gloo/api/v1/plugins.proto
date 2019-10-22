@@ -122,7 +122,7 @@ message RoutePlugins {
     envoy.api.v2.filter.http.RouteTransformations transformations = 1;
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
     // For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
-    string prefix_rewrite = 3;
+    google.protobuf.StringValue prefix_rewrite = 3;
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
     // Deprecated: Opaque config for Gloo plugins

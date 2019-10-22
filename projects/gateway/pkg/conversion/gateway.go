@@ -3,7 +3,7 @@ package conversion
 import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -45,6 +45,6 @@ func (c *gatewayConverter) FromV1ToV2(src *gatewayv1.Gateway) *gatewayv2.Gateway
 				Plugins:         src.Plugins,
 			},
 		},
-		GatewayProxyName: translator.GatewayProxyName,
+		GatewayProxyName: gatewaydefaults.GatewayProxyName,
 	}
 }
