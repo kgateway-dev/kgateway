@@ -24,7 +24,6 @@ gloo.solo.io/sslService.secret = 443:mysecret
 
 The former will use ssl on all ports for the service
 The latter will use ssl only on port 443 of the service
-The latter also supports named ports
 
 */
 
@@ -37,11 +36,8 @@ const GlooSslRootCaAnnotation = "gloo.solo.io/sslService.rootCa"
 type UseSslConverter struct{}
 
 func (u *UseSslConverter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, spec *v1.UpstreamSpec) error {
-	if svc.Annotations == nil {
-		return nil
-	}
 
-	upstreamSslConfig := upstreamSslConfigFromAnnotations(svc, port)
+	upstreamSslConfig := upstreamSslConfigFromService(svc, port)
 
 	if upstreamSslConfig != nil {
 		spec.SslConfig = upstreamSslConfig
@@ -50,7 +46,7 @@ func (u *UseSslConverter) ConvertService(svc *kubev1.Service, port kubev1.Servic
 	return nil
 }
 
-func upstreamSslConfigFromAnnotations(svc *kubev1.Service, svcPort kubev1.ServicePort) *v1.UpstreamSslConfig {
+func upstreamSslConfigFromService(svc *kubev1.Service, svcPort kubev1.ServicePort) *v1.UpstreamSslConfig {
 
 	if svc.Annotations == nil {
 		return nil
