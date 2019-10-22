@@ -467,7 +467,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					getVirtualServiceWithRoute(&gatewayv1.Route{
 						Matchers: []*gloov1.Matcher{{}},
 						RoutePlugins: &gloov1.RoutePlugins{
-							PrefixRewrite: "matcher and action are missing",
+							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
 						},
 					}, nil)))
 
