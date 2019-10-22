@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	"github.com/solo-io/go-utils/protoutils"
 
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/log"
@@ -13,6 +18,14 @@ import (
 )
 
 func main() {
+	assetsOnly := false
+	if len(os.Args) > 1 {
+		var err error
+		assetsOnly, err = strconv.ParseBool(os.Args[1])
+		if err != nil {
+			log.Fatalf("Unable to parse `assets_only` boolean argument, was provided %v", os.Args[1])
+		}
+	}
 	const buildDir = "_output"
 	const repoOwner = "solo-io"
 	const repoName = "gloo"
@@ -56,6 +69,15 @@ func main() {
 	}
 	githubutils.UploadReleaseAssetCli(&spec)
 
+	if assetsOnly {
+		log.Warnf("Not creating PRs to update homebrew formulas or fish food because this was an assets_only release")
+		return
+	}
+	mustUpdateFormulas(buildDir, repoOwner, repoName)
+
+}
+
+func mustUpdateFormulas(buildDir, repoOwner, repoName string) {
 	fOpts := []pkgmgmtutils.FormulaOptions{
 		{
 			Name:           "homebrew-tap/glooctl",
@@ -134,12 +156,23 @@ func main() {
 func validateReleaseVersionOfCli() {
 	releaseVersion := versionutils.GetReleaseVersionOrExitGracefully().String()[1:]
 	name := fmt.Sprintf("_output/glooctl-%s-amd64", runtime.GOOS)
-	cmd := exec.Command(name, "--version")
+	cmd := exec.Command(name, "version")
 	bytes, err := cmd.Output()
 	if err != nil {
 		log.Fatalf("Error while trying to validate artifact version. Error was: %s", err.Error())
 	}
-	if !strings.HasSuffix(string(bytes), fmt.Sprintf("version %s\n", releaseVersion)) {
+	if !strings.HasPrefix(string(bytes), "Client: ") {
 		log.Fatalf("Unexpected version output for glooctl: %s", string(bytes))
+	}
+	clientVersionStr := strings.TrimPrefix(string(bytes), "Client: ")
+
+	expectedVersion := version.ClientVersion{Version: releaseVersion}
+	var foundVersion version.ClientVersion
+	err = protoutils.UnmarshalBytes([]byte(clientVersionStr), &foundVersion)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal version output from glooctl into `ClientVersion` struct: %s", string(bytes))
+	}
+	if !expectedVersion.Equal(foundVersion) {
+		log.Fatalf("Expected to release artifacts for version %s, glooctl binary reported version %s", expectedVersion, foundVersion)
 	}
 }
