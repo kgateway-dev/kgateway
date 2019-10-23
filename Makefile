@@ -424,6 +424,17 @@ fetch-helm:
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
+GLOOE_CHANGELOGS_BUCKET=gloo-ee-changelogs
+
+.PHONY: download-glooe-changelog
+download-glooe-changelog:
+ifeq ($(RELEASE),"true")
+	# ensure dir exists and that we don't overwrite !
+	mkdir -p '../solo-projects/changelog'
+	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(VERSION)/* '../solo-projects/changelog'
+endif
+
+
 ASSETS_ONLY := true
 
 # The code does the proper checking for a TAGGED_VERSION

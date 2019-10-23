@@ -151,6 +151,7 @@ func generateChangelogMd(opts *options, args []string) error {
 		repo = "gloo"
 		changelogDirPath = "../changelog"
 	case glooEDocGen:
+		// files should already be there because we download them in CI, via `download-glooe-changelog` make target
 		repoRootPath = "../../solo-projects"
 		repo = "solo-projects"
 		changelogDirPath = "../../solo-projects/changelog"
