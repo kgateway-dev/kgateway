@@ -212,6 +212,7 @@ steps:
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
+  - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   - 'HELM_HOME=/root/.helm' # tell helm where to find data
   dir: './gopath/src/github.com/solo-io/gloo'
   secretEnv: ['GITHUB_TOKEN']
