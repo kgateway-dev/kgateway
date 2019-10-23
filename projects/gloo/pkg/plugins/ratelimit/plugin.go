@@ -49,7 +49,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 		p.upstreamRef = rlServer.RatelimitServerRef
 		p.timeout = rlServer.RequestTimeout
 		p.denyOnFail = rlServer.DenyOnFail
-		p.rateLimitBeforeAuth = params.Settings.GetRatelimitServer().RateLimitBeforeAuth
+		p.rateLimitBeforeAuth = rlServer.RateLimitBeforeAuth
 	}
 
 	return nil
