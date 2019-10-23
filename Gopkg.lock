@@ -1377,6 +1377,16 @@
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:a6e1711629c0835845c38d1251254ef8fbdc114916a982f5cfecf9e111f04d0e"
+  name = "github.com/solo-io/go-list-licenses"
+  packages = [
+    "assets",
+    "pkg/license",
+  ]
+  pruneopts = "UT"
+  revision = "4c41cd98c1fb2c13f2dcade0c75ad64aaf615f1b"
+
+[[projects]]
   digest = "1:3c22eb15e732e1bc71a679cca21d33f1f074f7cd94cc3dbd69efa74f4c0c5181"
   name = "github.com/solo-io/go-utils"
   packages = [
@@ -2817,6 +2827,7 @@
     "github.com/prometheus/client_golang/api/prometheus/v1",
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
+    "github.com/solo-io/go-list-licenses/pkg/license",
     "github.com/solo-io/go-utils/certutils",
     "github.com/solo-io/go-utils/changelogutils",
     "github.com/solo-io/go-utils/clidoc",

@@ -307,6 +307,7 @@ $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
 gloo: $(OUTPUT_DIR)/gloo-linux-amd64
 
 $(OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
+	cp hack/utils/oss_compliance/third_party_licenses.txt $(OUTPUT_DIR)/third_party_licenses.txt
 	cp $< $@
 
 gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
