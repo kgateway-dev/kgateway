@@ -449,7 +449,7 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 }
 
 func setEnvoyPathMatcher(in *matchers.Matcher, out *envoyroute.RouteMatch) {
-	switch path := in.PathSpecifier.(type) {
+	switch path := in.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		out.PathSpecifier = &envoyroute.RouteMatch_Path{
 			Path: path.Exact,
