@@ -268,17 +268,14 @@ Parameters for matching routes to requests received by a Gloo-managed proxy
 ### HeaderMatcher
 
  
-Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
-  header. Thus, if attempting to match on *Host*, match on *:authority* instead.
-
-  In the absence of any header match specifier, match will default to `present_match`
-  i.e, a request that has the `name` header will match, regardless of the header's
-  value.
+Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host* header.
+Thus, if attempting to match on *Host*, match on *:authority* instead.
 
 ```yaml
 "name": string
 "value": string
 "regex": bool
+"invertMatch": bool
 
 ```
 
@@ -287,6 +284,7 @@ Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTT
 | `name` | `string` | Specifies the name of the header in the request. |  |
 | `value` | `string` | Specifies the value of the header. If the value is absent a request that has the name header will match, regardless of the header’s value. |  |
 | `regex` | `bool` | Specifies whether the header value should be treated as regex or not. |  |
+| `invertMatch` | `bool` | If set to true, the result of the match will be inverted. Defaults to false. Examples: * name=foo, invert_match=true: matches if no header named `foo` is present * name=foo, value=bar, invert_match=true: matches if no header named `foo` with value `bar` is present * name=foo, value=``\d{3}``, regex=true, invert_match=true: matches if no header named `foo` with a value consisting of three integers is present. |  |
 
 
 

@@ -365,7 +365,7 @@ Provides overrides for the default configuration parameters used to interact wit
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [.gloo.solo.io.Settings.KubernetesConfiguration.RateLimits](../settings.proto.sk#ratelimits) | Rate limits for the kuberentes clients. |  |
+| `rateLimits` | [.gloo.solo.io.Settings.KubernetesConfiguration.RateLimits](../settings.proto.sk#ratelimits) | Rate limits for the kubernetes clients. |  |
 
 
 
@@ -402,6 +402,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "endpointsWarmingTimeout": .google.protobuf.Duration
 "awsOptions": .gloo.solo.io.GlooOptions.AWSOptions
 "invalidConfigPolicy": .gloo.solo.io.GlooOptions.InvalidConfigPolicy
+"disableKubernetesDestinations": bool
 
 ```
 
@@ -413,6 +414,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `endpointsWarmingTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout to get initial snapshot of resources. If not set, Gloo will not wait for initial snapshot - if set and and gloo could not fetch it's initial snapshot before the timeout reached, gloo will panic. |  |
 | `awsOptions` | [.gloo.solo.io.GlooOptions.AWSOptions](../settings.proto.sk#awsoptions) |  |  |
 | `invalidConfigPolicy` | [.gloo.solo.io.GlooOptions.InvalidConfigPolicy](../settings.proto.sk#invalidconfigpolicy) | set these options to fine-tune the way Gloo handles invalid user configuration. |  |
+| `disableKubernetesDestinations` | `bool` | Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off. |  |
 
 
 

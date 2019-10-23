@@ -424,11 +424,12 @@ fetch-helm:
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
+ASSETS_ONLY := true
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
 upload-github-release-assets: build-cli render-yaml
-	go run ci/upload_github_release_assets.go
+	go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
 
 .PHONY: publish-docs
 publish-docs:

@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"strings"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
+
 	kubev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -32,6 +38,8 @@ func UpstreamNameOld(serviceNamespace, serviceName string, servicePort int32, ex
 }
 
 var _ = Describe("UdsConvert", func() {
+	createUpstream := DefaultUpstreamConverter().CreateUpstream
+
 	It("should get uniq label set", func() {
 
 		svcSelector := map[string]string{"app": "foo"}
@@ -47,7 +55,9 @@ var _ = Describe("UdsConvert", func() {
 			{"app": "foo", "env": "dev"},
 		}
 		Expect(result).To(Equal(expected))
+
 	})
+
 	It("should truncate long names", func() {
 		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
 		Expect(name).To(HaveLen(63))
@@ -104,7 +114,7 @@ var _ = Describe("UdsConvert", func() {
 				Spec: kubev1.ServiceSpec{},
 			}
 			svc.Annotations = make(map[string]string)
-			svc.Annotations[GlooH2Annotation] = "true"
+			svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
 			svc.Name = "test"
 			svc.Namespace = "test"
 
@@ -134,6 +144,73 @@ var _ = Describe("UdsConvert", func() {
 			Entry("exactly h2", "h2"),
 			Entry("prefix h2", "h2-test"),
 			Entry("exactly http2", "http2"),
+		)
+
+		DescribeTable("should create upstream with upstreamSslConfig when SSL annotations are present", func(annotations map[string]string, expectedCfg *v1.UpstreamSslConfig) {
+			svc := &kubev1.Service{
+				Spec: kubev1.ServiceSpec{},
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: annotations,
+				},
+			}
+			svc.Name = "test"
+			svc.Namespace = "test"
+
+			port := kubev1.ServicePort{
+				Port: 123,
+			}
+
+			up := createUpstream(context.TODO(), svc, port, nil)
+			Expect(up.GetUpstreamSpec().GetSslConfig()).To(Equal(expectedCfg))
+		},
+			Entry("using ssl secret", map[string]string{
+				serviceconverter.GlooSslSecretAnnotation: "mysecret",
+			}, &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
+				},
+			}),
+			Entry("using ssl secret on the target port", map[string]string{
+				serviceconverter.GlooSslSecretAnnotation: "123:mysecret",
+			}, &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
+				},
+			}),
+			Entry("using ssl secret on a different target port", map[string]string{
+				serviceconverter.GlooSslSecretAnnotation: "456:mysecret",
+			}, nil),
+			Entry("using ssl files", map[string]string{
+				serviceconverter.GlooSslTlsCertAnnotation: "cert",
+				serviceconverter.GlooSslTlsKeyAnnotation:  "key",
+				serviceconverter.GlooSslRootCaAnnotation:  "ca",
+			}, &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+					SslFiles: &v1.SSLFiles{
+						TlsCert: "cert",
+						TlsKey:  "key",
+						RootCa:  "ca",
+					},
+				},
+			}),
+			Entry("using ssl files on the target port", map[string]string{
+				serviceconverter.GlooSslTlsCertAnnotation: "123:cert",
+				serviceconverter.GlooSslTlsKeyAnnotation:  "123:key",
+				serviceconverter.GlooSslRootCaAnnotation:  "123:ca",
+			}, &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+					SslFiles: &v1.SSLFiles{
+						TlsCert: "cert",
+						TlsKey:  "key",
+						RootCa:  "ca",
+					},
+				},
+			}),
+			Entry("using ssl files on a different target port", map[string]string{
+				serviceconverter.GlooSslTlsCertAnnotation: "456:cert",
+				serviceconverter.GlooSslTlsKeyAnnotation:  "456:key",
+				serviceconverter.GlooSslRootCaAnnotation:  "456:ca",
+			}, nil),
 		)
 	})
 })

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/spec"
-	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/go-utils/log"
 )
 

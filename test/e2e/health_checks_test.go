@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/test/services"
@@ -50,6 +51,11 @@ var _ = Describe("Health Checks", func() {
 				DisableUds:     true,
 				// test relies on FDS to discover the grpc spec via reflection
 				DisableFds: false,
+			},
+			Settings: &gloov1.Settings{
+				Discovery: &gloov1.Settings_DiscoveryOptions{
+					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
+				},
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)

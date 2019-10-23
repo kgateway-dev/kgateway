@@ -13,7 +13,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"

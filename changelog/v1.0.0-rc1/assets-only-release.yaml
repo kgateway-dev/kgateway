@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Support "asset-only" releases, which don't update homebrew formulas or fish food. Also updates release script
+      to use the new `glooctl version` command now that `glooctl --version` has been removed.
+    issueLink: https://github.com/solo-io/gloo/issues/1476

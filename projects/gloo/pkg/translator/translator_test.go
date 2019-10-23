@@ -342,6 +342,7 @@ var _ = Describe("Translator", func() {
 			translate()
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			presentMatch := headerMatch.GetPresentMatch()
 			Expect(presentMatch).To(BeTrue())
 		})
@@ -358,6 +359,7 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			exactMatch := headerMatch.GetExactMatch()
 			Expect(exactMatch).To(Equal("testvalue"))
 		})
@@ -375,8 +377,23 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			regex := headerMatch.GetRegexMatch()
 			Expect(regex).To(Equal("testvalue"))
+		})
+
+		It("should translate header matcher logic inversion flag", func() {
+
+			matcher.Headers = []*v1.HeaderMatcher{
+				{
+					Name:        "test",
+					InvertMatch: true,
+				},
+			}
+			translate()
+
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.InvertMatch).To(Equal(true))
 		})
 
 		It("should default to '/' prefix matcher if none is provided", func() {
@@ -420,7 +437,6 @@ var _ = Describe("Translator", func() {
 				Expect(fooRoute).To(Equal(barRoute))
 			})
 		})
-
 	})
 
 	Context("Health check config", func() {
@@ -989,7 +1005,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			// These are the "fake" upstreams that represent the above service in the snapshot
-			fakeUsList = kubernetes.KubeServicesToUpstreams(skkube.ServiceList{svc})
+			fakeUsList = kubernetes.KubeServicesToUpstreams(context.TODO(), skkube.ServiceList{svc})
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, fakeUsList...)
 
 			// We need to manually add some fake endpoints for the above kubernetes services to the snapshot

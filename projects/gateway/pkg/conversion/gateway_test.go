@@ -6,7 +6,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/conversion"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
@@ -67,7 +67,7 @@ var _ = Describe("Gateway Conversion", func() {
 						Plugins:         plugins,
 					},
 				},
-				GatewayProxyName: translator.GatewayProxyName,
+				GatewayProxyName: defaults2.GatewayProxyName,
 			}
 		}
 
