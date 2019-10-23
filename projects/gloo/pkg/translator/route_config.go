@@ -176,7 +176,7 @@ func GlooMatcherToEnvoyMatcher(matcher *matchers.Matcher) envoyroute.RouteMatch 
 		Headers:         envoyHeaderMatcher(matcher.GetHeaders()),
 		QueryParameters: envoyQueryMatcher(matcher.GetQueryParameters()),
 	}
-	if len(matcher.Methods) > 0 {
+	if len(matcher.GetMethods()) > 0 {
 		match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
 			Name: ":method",
 			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_RegexMatch{
