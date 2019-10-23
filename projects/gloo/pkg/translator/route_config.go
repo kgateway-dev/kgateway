@@ -173,8 +173,8 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []envoyrou
 // utility function to transform gloo matcher to envoy route matcher
 func GlooMatcherToEnvoyMatcher(matcher *matchers.Matcher) envoyroute.RouteMatch {
 	match := envoyroute.RouteMatch{
-		Headers:         envoyHeaderMatcher(matcher.Headers),
-		QueryParameters: envoyQueryMatcher(matcher.QueryParameters),
+		Headers:         envoyHeaderMatcher(matcher.GetHeaders()),
+		QueryParameters: envoyQueryMatcher(matcher.GetQueryParameters()),
 	}
 	if len(matcher.Methods) > 0 {
 		match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
