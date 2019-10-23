@@ -2,6 +2,8 @@ syntax = "proto3";
 package dlp.plugins.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/dlp";
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+
 import "envoy/type/percent.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
@@ -11,8 +13,13 @@ message Config {
 }
 
 message FilterConfig {
-    repeated Action actions = 1;
-    DlpMatcher matcher = 2;
+    repeated DlpRule dlp_rules = 1;
+}
+
+message DlpRule {
+    core.matchers.gloo.solo.io.Matcher matcher = 1;
+
+    repeated Action actions = 2;
 }
 
 message Action {
@@ -41,38 +48,4 @@ message CustomAction {
     repeated string regex = 2;
     string mask_char = 3;
     envoy.type.Percent percent = 4;
-}
-
-message DlpMatcher {
-    repeated PathMatcher path_matchers = 1;
-
-    repeated HeaderMatcher header_matchers = 2;
-}
-
-// standalone path matcher to be used in repeated use case
-// functions same as the above one
-message PathMatcher {
-    oneof path_specifier {
-        string prefix = 1;
-        string exact = 2;
-        string regex = 3;
-    }
-}
-
-//   Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
-//   header. Thus, if attempting to match on *Host*, match on *:authority* instead.
-//
-//   In the absence of any header match specifier, match will default to `present_match`
-//   i.e, a request that has the `name` header will match, regardless of the header's
-//   value.
-message HeaderMatcher {
-    // Specifies the name of the header in the request.
-    string name = 1;
-
-    // Specifies the value of the header. If the value is absent a request that
-    // has the name header will match, regardless of the header’s value.
-    string value = 2;
-
-    // Specifies whether the header value should be treated as regex or not.
-    bool regex = 3;
 }

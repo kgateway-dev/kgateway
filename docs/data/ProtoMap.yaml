@@ -68,17 +68,11 @@ apis:
   dlp.plugins.gloo.solo.io.CustomAction:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#CustomAction
     package: dlp.plugins.gloo.solo.io
-  dlp.plugins.gloo.solo.io.DlpMatcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#DlpMatcher
+  dlp.plugins.gloo.solo.io.DlpRule:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#DlpRule
     package: dlp.plugins.gloo.solo.io
   dlp.plugins.gloo.solo.io.FilterConfig:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#FilterConfig
-    package: dlp.plugins.gloo.solo.io
-  dlp.plugins.gloo.solo.io.HeaderMatcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#HeaderMatcher
-    package: dlp.plugins.gloo.solo.io
-  dlp.plugins.gloo.solo.io.PathMatcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/dlp/dlp.proto.sk/#PathMatcher
     package: dlp.plugins.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyAuth:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk/#ApiKeyAuth
