@@ -571,3 +571,11 @@ save-tagged-helm:
 fetch-tagged-helm:
 	mkdir -p $(HELM_SYNC_DIR)
 	gsutil -m rsync -r gs://solo-public-tagged-helm/ './_output/helm'
+
+#----------------------------------------------------------------------------------
+# Third Party License Management
+#----------------------------------------------------------------------------------
+# Run this target any time dependencies or their licenses change
+.PHONY: update-licenses
+update-licenses:
+	cd hack/utils/oss_compliance && go run main.go
