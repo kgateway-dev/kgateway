@@ -6,6 +6,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -32,9 +33,9 @@ var _ = Describe("VirtualService", func() {
 				Domains: []string{"*"},
 				Routes: []*gatewayv1.Route{
 					{
-						Matchers: []*gloov1.Matcher{
-							{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/foo"}},
-							{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/bar"}},
+						Matchers: []*matchers.Matcher{
+							{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"}},
+							{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/bar"}},
 						},
 						Action: &gatewayv1.Route_RouteAction{
 							RouteAction: &gloov1.RouteAction{

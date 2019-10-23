@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/olekukonko/tablewriter"
@@ -194,7 +195,7 @@ func vhPlugins(v *v1.VirtualService) string {
 	return pluginStr
 }
 
-func matchersString(matchers []*gloov1.Matcher) string {
+func matchersString(matchers []*matchers.Matcher) string {
 	var matchersStrings []string
 	for _, matcher := range matchers {
 		matchersStrings = append(matchersStrings, matcherString(matcher))
@@ -202,13 +203,13 @@ func matchersString(matchers []*gloov1.Matcher) string {
 	return strings.Join(matchersStrings, ", ")
 }
 
-func matcherString(matcher *gloov1.Matcher) string {
+func matcherString(matcher *matchers.Matcher) string {
 	switch ps := matcher.PathSpecifier.(type) {
-	case *gloov1.Matcher_Exact:
+	case *matchers.Matcher_Exact:
 		return ps.Exact
-	case *gloov1.Matcher_Prefix:
+	case *matchers.Matcher_Prefix:
 		return ps.Prefix
-	case *gloov1.Matcher_Regex:
+	case *matchers.Matcher_Regex:
 		return ps.Regex
 	}
 	return ""

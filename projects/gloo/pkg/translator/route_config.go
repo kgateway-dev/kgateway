@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	"github.com/gogo/protobuf/proto"
@@ -442,24 +443,24 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
 }
 
-func setEnvoyPathMatcher(in *v1.Matcher, out *envoyroute.RouteMatch) {
+func setEnvoyPathMatcher(in *matchers.Matcher, out *envoyroute.RouteMatch) {
 	switch path := in.PathSpecifier.(type) {
-	case *v1.Matcher_Exact:
+	case *matchers.Matcher_Exact:
 		out.PathSpecifier = &envoyroute.RouteMatch_Path{
 			Path: path.Exact,
 		}
-	case *v1.Matcher_Regex:
+	case *matchers.Matcher_Regex:
 		out.PathSpecifier = &envoyroute.RouteMatch_Regex{
 			Regex: path.Regex,
 		}
-	case *v1.Matcher_Prefix:
+	case *matchers.Matcher_Prefix:
 		out.PathSpecifier = &envoyroute.RouteMatch_Prefix{
 			Prefix: path.Prefix,
 		}
 	}
 }
 
-func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
+func envoyHeaderMatcher(in []*matchers.HeaderMatcher) []*envoyroute.HeaderMatcher {
 	var out []*envoyroute.HeaderMatcher
 	for _, matcher := range in {
 
@@ -491,7 +492,7 @@ func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
 	return out
 }
 
-func envoyQueryMatcher(in []*v1.QueryParameterMatcher) []*envoyroute.QueryParameterMatcher {
+func envoyQueryMatcher(in []*matchers.QueryParameterMatcher) []*envoyroute.QueryParameterMatcher {
 	var out []*envoyroute.QueryParameterMatcher
 	for _, matcher := range in {
 		envoyMatch := &envoyroute.QueryParameterMatcher{

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -329,12 +330,12 @@ func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 						},
 					},
 				},
-				Matchers: []*gloov1.Matcher{
+				Matchers: []*matchers.Matcher{
 					{
-						PathSpecifier: &gloov1.Matcher_Prefix{
+						PathSpecifier: &matchers.Matcher_Prefix{
 							Prefix: "/",
 						},
-						Headers: []*gloov1.HeaderMatcher{
+						Headers: []*matchers.HeaderMatcher{
 							{
 								Name:        "this-header-must-not-be-present",
 								InvertMatch: true,

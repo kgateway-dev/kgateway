@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 
@@ -152,7 +153,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
-		//give discovery time to write the upstream
+		// give discovery time to write the upstream
 		Eventually(func() error {
 			upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 			if err != nil {
@@ -409,7 +410,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("appends linkerd headers when linkerd is enabled", func() {
 				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
 				var ref core.ResourceRef
-				//give discovery time to write the upstream
+				// give discovery time to write the upstream
 				Eventually(func() error {
 					upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 					if err != nil {
@@ -465,7 +466,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}, nil)))
 				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
 					getVirtualServiceWithRoute(&gatewayv1.Route{
-						Matchers: []*gloov1.Matcher{{}},
+						Matchers: []*matchers.Matcher{{}},
 						RoutePlugins: &gloov1.RoutePlugins{
 							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
 						},
@@ -1014,8 +1015,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Domains: []string{"*"},
 					Routes: []*gatewayv1.Route{
 						{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/red",
 								},
 							}},
@@ -1274,8 +1275,8 @@ func getRouteTable(name string, route *gatewayv1.Route) *gatewayv1.RouteTable {
 
 func getRouteWithDest(dest *gloov1.Destination, path string) *gatewayv1.Route {
 	return &gatewayv1.Route{
-		Matchers: []*gloov1.Matcher{{
-			PathSpecifier: &gloov1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: path,
 			},
 		}},
@@ -1291,8 +1292,8 @@ func getRouteWithDest(dest *gloov1.Destination, path string) *gatewayv1.Route {
 
 func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 	return &gatewayv1.Route{
-		Matchers: []*gloov1.Matcher{{
-			PathSpecifier: &gloov1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: path,
 			},
 		}},

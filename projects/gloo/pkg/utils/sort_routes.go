@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 
@@ -67,7 +68,7 @@ func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	})
 }
 
-func lessMatcher(m1, m2 *v1.Matcher) bool {
+func lessMatcher(m1, m2 *matchers.Matcher) bool {
 	if len(m1.Methods) != len(m2.Methods) {
 		return len(m1.Methods) > len(m2.Methods)
 	}
@@ -86,13 +87,13 @@ const (
 	pathPriorityPrefix
 )
 
-func pathTypePriority(m *v1.Matcher) int {
+func pathTypePriority(m *matchers.Matcher) int {
 	switch m.PathSpecifier.(type) {
-	case *v1.Matcher_Exact:
+	case *matchers.Matcher_Exact:
 		return pathPriorityExact
-	case *v1.Matcher_Regex:
+	case *matchers.Matcher_Regex:
 		return pathPriorityRegex
-	case *v1.Matcher_Prefix:
+	case *matchers.Matcher_Prefix:
 		return pathPriorityPrefix
 	default:
 		return pathPriorityEmpty

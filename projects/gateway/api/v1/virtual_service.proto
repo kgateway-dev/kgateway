@@ -14,6 +14,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+
 /*
 *
 * The **VirtualService** is the root Routing object for the Gloo Gateway.
@@ -191,7 +193,7 @@ message Route {
     // Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
     // If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
     // For delegated routes, the matcher must contain only a `prefix` path matcher and no other config
-    repeated gloo.solo.io.Matcher matchers = 1;
+    repeated core.matchers.gloo.solo.io.Matcher matchers = 1;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {

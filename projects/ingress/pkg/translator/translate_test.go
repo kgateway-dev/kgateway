@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	ingresstype "github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
@@ -204,8 +205,8 @@ var _ = Describe("Translate", func() {
 										},
 										Routes: []*gloov1.Route{
 											{
-												Matchers: []*gloov1.Matcher{{
-													PathSpecifier: &gloov1.Matcher_Regex{
+												Matchers: []*matchers.Matcher{{
+													PathSpecifier: &matchers.Matcher_Regex{
 														Regex: "/",
 													},
 												}},
@@ -244,8 +245,8 @@ var _ = Describe("Translate", func() {
 										},
 										Routes: []*gloov1.Route{
 											{
-												Matchers: []*gloov1.Matcher{{
-													PathSpecifier: &gloov1.Matcher_Regex{
+												Matchers: []*matchers.Matcher{{
+													PathSpecifier: &matchers.Matcher_Regex{
 														Regex: "/longestpathshouldcomesecond",
 													},
 												}},
@@ -265,8 +266,8 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											{
-												Matchers: []*gloov1.Matcher{{
-													PathSpecifier: &gloov1.Matcher_Regex{
+												Matchers: []*matchers.Matcher{{
+													PathSpecifier: &matchers.Matcher_Regex{
 														Regex: "/basic",
 													},
 												}},

@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
@@ -161,8 +162,8 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 	// Route
 	// ----------------------------------------------------------------------------
 	route := &gloov1.Route{
-		Matchers: []*gloov1.Matcher{{
-			PathSpecifier: &gloov1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: "/",
 			},
 		}},

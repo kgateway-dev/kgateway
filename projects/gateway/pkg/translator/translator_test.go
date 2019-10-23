@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/test/samples"
 
 	"github.com/gogo/protobuf/types"
@@ -58,8 +59,8 @@ var _ = Describe("Translator", func() {
 							Domains: []string{"d1.com"},
 							Routes: []*v1.Route{
 								{
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/1",
 										},
 									}},
@@ -73,8 +74,8 @@ var _ = Describe("Translator", func() {
 							Domains: []string{"d2.com"},
 							Routes: []*v1.Route{
 								{
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/2",
 										},
 									}},
@@ -235,8 +236,8 @@ var _ = Describe("Translator", func() {
 								Domains: []string{"d1.com"},
 								Routes: []*v1.Route{
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/1",
 											},
 										}},
@@ -250,8 +251,8 @@ var _ = Describe("Translator", func() {
 								Domains: []string{"d2.com"},
 								Routes: []*v1.Route{
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/2",
 											},
 										}},
@@ -275,7 +276,7 @@ var _ = Describe("Translator", func() {
 			It("omitting matchers should default to '/' prefix matcher", func() {
 
 				snap.VirtualServices[0].VirtualHost.Routes[0].Matchers = nil
-				snap.VirtualServices[1].VirtualHost.Routes[0].Matchers = []*gloov1.Matcher{}
+				snap.VirtualServices[1].VirtualHost.Routes[0].Matchers = []*matchers.Matcher{}
 				proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(proxy.Listeners).To(HaveLen(1))
@@ -495,8 +496,8 @@ var _ = Describe("Translator", func() {
 									Domains: []string{"d1.com"},
 									Routes: []*v1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Prefix{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Prefix{
 													Prefix: "/a",
 												},
 											}},
@@ -517,8 +518,8 @@ var _ = Describe("Translator", func() {
 									Domains: []string{"d2.com"},
 									Routes: []*v1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Prefix{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Prefix{
 													Prefix: "/b",
 												},
 											}},
@@ -541,8 +542,8 @@ var _ = Describe("Translator", func() {
 								},
 								Routes: []*v1.Route{
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/a/1-upstream",
 											},
 										}},
@@ -562,8 +563,8 @@ var _ = Describe("Translator", func() {
 										},
 									},
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/a/3-delegate",
 											},
 										}},
@@ -584,8 +585,8 @@ var _ = Describe("Translator", func() {
 								},
 								Routes: []*v1.Route{
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/b/2-upstream",
 											},
 										}},
@@ -605,8 +606,8 @@ var _ = Describe("Translator", func() {
 										},
 									},
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/b/2-upstream-plugin-override",
 											},
 										}},
@@ -635,8 +636,8 @@ var _ = Describe("Translator", func() {
 								},
 								Routes: []*v1.Route{
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/a/3-delegate/upstream1",
 											},
 										}},
@@ -656,8 +657,8 @@ var _ = Describe("Translator", func() {
 										},
 									},
 									{
-										Matchers: []*gloov1.Matcher{{
-											PathSpecifier: &gloov1.Matcher_Prefix{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
 												Prefix: "/a/3-delegate/upstream2",
 											},
 										}},
@@ -703,8 +704,8 @@ var _ = Describe("Translator", func() {
 
 					Expect(listener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
 						{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/1-upstream",
 								},
 							}},
@@ -725,8 +726,8 @@ var _ = Describe("Translator", func() {
 							RoutePlugins: rootLevelRoutePlugins,
 						},
 						{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/3-delegate/upstream1",
 								},
 							}},
@@ -747,8 +748,8 @@ var _ = Describe("Translator", func() {
 							RoutePlugins: mergedMidLevelRoutePlugins,
 						},
 						{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/3-delegate/upstream2",
 								},
 							}},
@@ -771,8 +772,8 @@ var _ = Describe("Translator", func() {
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
 						{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/b/2-upstream",
 								},
 							}},
@@ -792,8 +793,8 @@ var _ = Describe("Translator", func() {
 							},
 						},
 						{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/b/2-upstream-plugin-override",
 								},
 							}},

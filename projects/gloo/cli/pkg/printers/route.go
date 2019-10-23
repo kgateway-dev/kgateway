@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/solo-io/go-utils/cliutils"
@@ -85,7 +86,7 @@ func routeDefaultTableRow(r *v1.Route, index int, customItems []string) []string
 }
 
 // Matcher extracts the parts of the matcher in the given route
-func Matchers(ms []*gloov1.Matcher) (string, string, string, string) {
+func Matchers(ms []*matchers.Matcher) (string, string, string, string) {
 	var matchers, rTypes, verbs, headers []string
 	for _, m := range ms {
 		matcher, rType, verb, header := Matcher(m)
@@ -98,17 +99,17 @@ func Matchers(ms []*gloov1.Matcher) (string, string, string, string) {
 }
 
 // Matcher extracts the parts of the matcher in the given route
-func Matcher(m *gloov1.Matcher) (string, string, string, string) {
+func Matcher(m *matchers.Matcher) (string, string, string, string) {
 	var path string
 	var rType string
 	switch p := m.PathSpecifier.(type) {
-	case *gloov1.Matcher_Exact:
+	case *matchers.Matcher_Exact:
 		path = p.Exact
 		rType = "Exact Path"
-	case *gloov1.Matcher_Prefix:
+	case *matchers.Matcher_Prefix:
 		path = p.Prefix
 		rType = "Path Prefix"
-	case *gloov1.Matcher_Regex:
+	case *matchers.Matcher_Regex:
 		path = p.Regex
 		rType = "Regex Path"
 	default:

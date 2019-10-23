@@ -7,6 +7,7 @@ import (
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -107,8 +108,8 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 
 func SimpleRoute(us core.ResourceRef) []*gwv1.Route {
 	return []*gwv1.Route{{
-		Matchers: []*v1.Matcher{{
-			PathSpecifier: &v1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: "/",
 			},
 		}},

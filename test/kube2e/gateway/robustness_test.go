@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
@@ -127,8 +128,8 @@ var _ = Describe("Robustness tests", func() {
 				Domains: []string{"*"},
 				Routes: []*gatewayv1.Route{
 					{
-						Matchers: []*gloov1.Matcher{{
-							PathSpecifier: &gloov1.Matcher_Prefix{
+						Matchers: []*matchers.Matcher{{
+							PathSpecifier: &matchers.Matcher_Prefix{
 								Prefix: "/1",
 							},
 						}},
@@ -185,8 +186,8 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
-			Matchers: []*gloov1.Matcher{{
-				PathSpecifier: &gloov1.Matcher_Prefix{
+			Matchers: []*matchers.Matcher{{
+				PathSpecifier: &matchers.Matcher_Prefix{
 					Prefix: "/3",
 				},
 			}},

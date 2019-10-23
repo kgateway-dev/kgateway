@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
@@ -342,7 +343,7 @@ func SelectRouteFromVirtualServiceInteractive(vs *gatewayv1.VirtualService, rout
 	return 0, errors.Errorf("can't find route")
 }
 
-func matchersString(matchers []*v1.Matcher) string {
+func matchersString(matchers []*matchers.Matcher) string {
 	var matchersStrings []string
 	for _, matcher := range matchers {
 		matchersStrings = append(matchersStrings, fmt.Sprintf("%+v", matcher))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
@@ -176,8 +177,8 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Regex{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Regex{
 													Regex: "/",
 												},
 											}},
@@ -237,8 +238,8 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Regex{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Regex{
 													Regex: "/hay",
 												},
 											}},
@@ -307,8 +308,8 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Regex{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Regex{
 													Regex: "/",
 												},
 											}},

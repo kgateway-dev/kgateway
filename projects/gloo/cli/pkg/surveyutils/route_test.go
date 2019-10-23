@@ -3,6 +3,7 @@ package surveyutils_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 
@@ -29,11 +30,11 @@ var _ = Describe("Route", func() {
 			},
 			VirtualHost: &gatewayv1.VirtualHost{
 				Routes: []*gatewayv1.Route{{
-					Matchers: []*v1.Matcher{{
-						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/"},
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"},
 					}}}, {
-					Matchers: []*v1.Matcher{{
-						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/r"},
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/r"},
 					}}},
 				},
 			},

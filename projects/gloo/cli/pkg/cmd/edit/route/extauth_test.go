@@ -5,12 +5,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -33,11 +33,11 @@ var _ = Describe("Extauth", func() {
 			},
 			VirtualHost: &gatewayv1.VirtualHost{
 				Routes: []*gatewayv1.Route{{
-					Matchers: []*v1.Matcher{{
-						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/"},
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"},
 					}}}, {
-					Matchers: []*v1.Matcher{{
-						PathSpecifier: &v1.Matcher_Prefix{Prefix: "/r"},
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/r"},
 					}}},
 				},
 			},

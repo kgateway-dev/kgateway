@@ -150,8 +150,8 @@ func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
 			// and send it to the upstream for this domain
 			Routes: []*v1.Route{{
 				// use a basic catch-all matcher
-				Matcher: &v1.Matcher{
-					PathSpecifier: &v1.Matcher_Prefix{
+				Matcher: &matchers.Matcher{
+					PathSpecifier: &matchers.Matcher_Prefix{
 						Prefix: "/",
 					},
 				},

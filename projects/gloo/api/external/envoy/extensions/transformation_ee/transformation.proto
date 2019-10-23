@@ -14,11 +14,27 @@ import "envoy/type/percent.proto";
 
 
 message FilterTransformations {
-    // specific headers to match
-    repeated envoy.api.v2.route.HeaderMatcher header_matchers = 2;
-    // transformation to perform
-    RouteTransformations route_transformations = 3;
+    // Specifies transformations based on the route matches. The first matched transformation will be
+    // applied. If there are overlapped match conditions, please put the most specific match first.
+    repeated TransformationRule transformations = 1;
 }
+
+message TransformationRule {
+    // The route matching parameter. Only when the match is satisfied, the "requires" field will
+    // apply.
+    //
+    // For example: following match will match all requests.
+    //
+    // .. code-block:: yaml
+    //
+    //    match:
+    //      prefix: /
+    //
+    api.v2.route.RouteMatch match = 1 [(validate.rules).message = {required: true}];
+    // transformation to perform
+    RouteTransformations route_transformations = 2;
+}
+
 
 message RouteTransformations {
     Transformation request_transformation = 1;

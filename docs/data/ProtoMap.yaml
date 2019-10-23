@@ -35,6 +35,15 @@ apis:
   consul.plugins.gloo.solo.io.UpstreamSpec:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto.sk/#UpstreamSpec
     package: consul.plugins.gloo.solo.io
+  core.matchers.gloo.solo.io.HeaderMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#HeaderMatcher
+    package: core.matchers.gloo.solo.io
+  core.matchers.gloo.solo.io.Matcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#Matcher
+    package: core.matchers.gloo.solo.io
+  core.matchers.gloo.solo.io.QueryParameterMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#QueryParameterMatcher
+    package: core.matchers.gloo.solo.io
   core.solo.io.Metadata:
     relativepath: api/github.com/solo-io/solo-kit/api/v1/metadata.proto.sk/#Metadata
     package: core.solo.io
@@ -299,6 +308,9 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.Transformation:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Transformation
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.TransformationRule:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
+    package: envoy.config.filter.http.transformation_ee.v2
   envoy.type.DoubleRange:
     relativepath: api/envoy/type/range.proto.sk/#DoubleRange
     package: envoy.type
@@ -398,9 +410,6 @@ apis:
   gloo.solo.io.GlooOptions:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#GlooOptions
     package: gloo.solo.io
-  gloo.solo.io.HeaderMatcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#HeaderMatcher
-    package: gloo.solo.io
   gloo.solo.io.HttpListener:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#HttpListener
     package: gloo.solo.io
@@ -428,9 +437,6 @@ apis:
   gloo.solo.io.LoadBalancerConfig:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto.sk/#LoadBalancerConfig
     package: gloo.solo.io
-  gloo.solo.io.Matcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Matcher
-    package: gloo.solo.io
   gloo.solo.io.MultiDestination:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MultiDestination
     package: gloo.solo.io
@@ -445,9 +451,6 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.ProxyValidationServiceResponse:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#ProxyValidationServiceResponse
-    package: gloo.solo.io
-  gloo.solo.io.QueryParameterMatcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#QueryParameterMatcher
     package: gloo.solo.io
   gloo.solo.io.RedirectAction:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#RedirectAction

@@ -5,6 +5,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -77,7 +78,7 @@ func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
 			Routes: []*v1.Route{{
-				Matchers: []*gloov1.Matcher{DefaultMatcher()},
+				Matchers: []*matchers.Matcher{DefaultMatcher()},
 				Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{
 					Status: 200,
 					Body: `Gloo and Envoy are configured correctly!
@@ -90,6 +91,6 @@ Delete the '` + name + ` Virtual Service to get started.
 	}
 }
 
-func DefaultMatcher() *gloov1.Matcher {
-	return &gloov1.Matcher{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/"}}
+func DefaultMatcher() *matchers.Matcher {
+	return &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}}
 }

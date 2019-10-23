@@ -5,11 +5,10 @@ package aws
 
 import (
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

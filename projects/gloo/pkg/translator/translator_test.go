@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -60,7 +61,7 @@ var _ = Describe("Translator", func() {
 		proxy             *v1.Proxy
 		params            plugins.Params
 		registeredPlugins []plugins.Plugin
-		matcher           *v1.Matcher
+		matcher           *matchers.Matcher
 		routes            []*v1.Route
 
 		snapshot           envoycache.Snapshot
@@ -127,13 +128,13 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
-		matcher = &v1.Matcher{
-			PathSpecifier: &v1.Matcher_Prefix{
+		matcher = &matchers.Matcher{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: "/",
 			},
 		}
 		routes = []*v1.Route{{
-			Matchers: []*v1.Matcher{matcher},
+			Matchers: []*matchers.Matcher{matcher},
 			Action: &v1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
@@ -281,7 +282,7 @@ var _ = Describe("Translator", func() {
 	Context("route no path", func() {
 		BeforeEach(func() {
 			matcher.PathSpecifier = nil
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name: "test",
 				},
@@ -334,7 +335,7 @@ var _ = Describe("Translator", func() {
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name: "test",
 				},
@@ -349,7 +350,7 @@ var _ = Describe("Translator", func() {
 
 		It("should translate header matcher with value to exact match", func() {
 
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name:  "test",
 					Value: "testvalue",
@@ -366,7 +367,7 @@ var _ = Describe("Translator", func() {
 
 		It("should translate header matcher with regex becomes regex match", func() {
 
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name:  "test",
 					Value: "testvalue",
@@ -384,7 +385,7 @@ var _ = Describe("Translator", func() {
 
 		It("should translate header matcher logic inversion flag", func() {
 
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name:        "test",
 					InvertMatch: true,
@@ -406,14 +407,14 @@ var _ = Describe("Translator", func() {
 
 		Context("Multiple matchers", func() {
 			BeforeEach(func() {
-				routes[0].Matchers = []*v1.Matcher{
+				routes[0].Matchers = []*matchers.Matcher{
 					{
-						PathSpecifier: &v1.Matcher_Prefix{
+						PathSpecifier: &matchers.Matcher_Prefix{
 							Prefix: "/foo",
 						},
 					},
 					{
-						PathSpecifier: &v1.Matcher_Prefix{
+						PathSpecifier: &matchers.Matcher_Prefix{
 							Prefix: "/bar",
 						},
 					},
@@ -702,7 +703,7 @@ var _ = Describe("Translator", func() {
 			}
 			ref := upstreamGroup.Metadata.Ref()
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_UpstreamGroup{
@@ -830,7 +831,7 @@ var _ = Describe("Translator", func() {
 			}
 
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -908,7 +909,7 @@ var _ = Describe("Translator", func() {
 
 			BeforeEach(func() {
 				routes = []*v1.Route{{
-					Matchers: []*v1.Matcher{matcher},
+					Matchers: []*matchers.Matcher{matcher},
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_Single{
@@ -948,7 +949,7 @@ var _ = Describe("Translator", func() {
 
 			BeforeEach(func() {
 				routes = []*v1.Route{{
-					Matchers: []*v1.Matcher{matcher},
+					Matchers: []*matchers.Matcher{matcher},
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_Single{
@@ -1044,7 +1045,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -1197,7 +1198,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{

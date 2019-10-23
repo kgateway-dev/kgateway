@@ -6,6 +6,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -21,8 +22,8 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		return &v1.RouteTable{
 			Metadata: core.Metadata{Name: fmt.Sprintf("node-%d", i), Namespace: namespace},
 			Routes: []*v1.Route{{
-				Matchers: []*gloov1.Matcher{{
-					PathSpecifier: &gloov1.Matcher_Prefix{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
 						Prefix: prefix,
 					},
 				}},
@@ -51,8 +52,8 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		Metadata: core.Metadata{Name: "leaf", Namespace: namespace},
 		Routes: []*v1.Route{
 			{
-				Matchers: []*gloov1.Matcher{{
-					PathSpecifier: &gloov1.Matcher_Exact{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Exact{
 						Exact: prefix + "/exact",
 					},
 				}},
@@ -72,8 +73,8 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 	ref := routeTables[0].Metadata.Ref()
 	vs := defaults.DefaultVirtualService(namespace, vsName)
 	vs.VirtualHost.Routes = []*v1.Route{{
-		Matchers: []*gloov1.Matcher{{
-			PathSpecifier: &gloov1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: root,
 			},
 		}},

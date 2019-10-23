@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
@@ -196,8 +197,8 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 							},
 							Routes: []*gloov1.Route{
 								{ // This route can be accessed by users
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/user",
 										},
 									}},
@@ -217,8 +218,8 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 									},
 								},
 								{ // This route can be accessed only by admins
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/admin",
 										},
 									}},
@@ -247,8 +248,8 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 									},
 								},
 								{ // This route can be accessed by anyone
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/public",
 										},
 									}},

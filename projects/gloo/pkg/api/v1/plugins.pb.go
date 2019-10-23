@@ -6,9 +6,6 @@ package v1
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-	time "time"
-
 	cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -43,6 +40,8 @@ import (
 	stats "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
 	tcp "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp"
 	tracing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
+	math "math"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

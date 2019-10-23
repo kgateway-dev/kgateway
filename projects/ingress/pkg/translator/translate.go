@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -166,8 +167,8 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 					pathRegex = ".*"
 				}
 				route := &gloov1.Route{
-					Matchers: []*gloov1.Matcher{{
-						PathSpecifier: &gloov1.Matcher_Regex{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Regex{
 							Regex: pathRegex,
 						},
 					}},

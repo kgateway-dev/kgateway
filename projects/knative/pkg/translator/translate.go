@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "k8s.io/api/core/v1"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
@@ -145,8 +146,8 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 				}
 
 				route := &gloov1.Route{
-					Matchers: []*gloov1.Matcher{{
-						PathSpecifier: &gloov1.Matcher_Regex{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Regex{
 							Regex: pathRegex,
 						},
 					}},

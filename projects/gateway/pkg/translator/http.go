@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/go-utils/errors"
 
@@ -295,7 +296,7 @@ type routeVisitor struct {
 }
 
 func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours *v1.Route, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
-	matchers := []*gloov1.Matcher{defaults.DefaultMatcher()}
+	matchers := []*matchers.Matcher{defaults.DefaultMatcher()}
 	if len(ours.Matchers) > 0 {
 		matchers = ours.Matchers
 	}
