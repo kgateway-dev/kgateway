@@ -1,4 +1,5 @@
 package version
 
 // The version of GlooE installed by the CLI
-const EnterpriseTag = "0.20.4"
+// This will be set by the linker during build
+var EnterpriseTag = UndefinedVersion

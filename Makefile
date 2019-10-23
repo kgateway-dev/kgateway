@@ -17,8 +17,9 @@ ifeq ($(TAGGED_VERSION),)
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+GLOOE_VERSION ?= 0.20.4
 
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
+LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION) -X github.com/solo-io/gloo/pkg/version.EnterpriseTag=$(GLOOE_VERSION)"
 GCFLAGS := all="-N -l"
 
 # Passed by cloudbuild
@@ -430,7 +431,7 @@ GLOOE_CHANGELOGS_BUCKET=gloo-ee-changelogs
 download-glooe-changelog:
 ifeq ($(RELEASE),"true")
 	mkdir -p '../solo-projects/changelog'
-	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(VERSION)/* '../solo-projects/changelog'
+	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(GLOOE_VERSION)/* '../solo-projects/changelog'
 endif
 
 ASSETS_ONLY := true
