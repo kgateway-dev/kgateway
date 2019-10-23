@@ -99,7 +99,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
@@ -575,7 +575,6 @@ fetch-tagged-helm:
 #----------------------------------------------------------------------------------
 # Third Party License Management
 #----------------------------------------------------------------------------------
-# Run this target any time dependencies or their licenses change
 .PHONY: update-licenses
 update-licenses:
 	cd hack/utils/oss_compliance && go run main.go
