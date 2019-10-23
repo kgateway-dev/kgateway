@@ -11,12 +11,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/errors"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func CreateRequestExtractors(ctx context.Context, params *transformapi.Parameters) (map[string]*transformapi.Extraction, error) {
-	extractors := make(map[string]*transformapi.Extraction)
+func CreateRequestExtractors(ctx context.Context, params *transformapi.Parameters) (map[string]*transformation.Extraction, error) {
+	extractors := make(map[string]*transformation.Extraction)
 	if params == nil {
 		return extractors, nil
 	}
@@ -45,7 +46,7 @@ func CreateRequestExtractors(ctx context.Context, params *transformapi.Parameter
 	return extractors, nil
 }
 
-func addHeaderExtractorFromParam(ctx context.Context, header, parameter string, extractors map[string]*transformapi.Extraction) error {
+func addHeaderExtractorFromParam(ctx context.Context, header, parameter string, extractors map[string]*transformation.Extraction) error {
 	if parameter == "" {
 		return nil
 	}
@@ -56,7 +57,7 @@ func addHeaderExtractorFromParam(ctx context.Context, header, parameter string, 
 	if len(paramNames) == 0 {
 		// extract everything
 		// TODO(yuval): create a special extractor that doesn't use regex when we just want the whole thing
-		extract := &transformapi.Extraction{
+		extract := &transformation.Extraction{
 			Header:   header,
 			Regex:    "(.*)",
 			Subgroup: uint32(1),
@@ -75,7 +76,7 @@ func addHeaderExtractorFromParam(ctx context.Context, header, parameter string, 
 
 	// otherwise it's regex, and we need to create an extraction for each variable name they defined
 	for i, name := range paramNames {
-		extract := &transformapi.Extraction{
+		extract := &transformation.Extraction{
 			Header:   header,
 			Regex:    regexMatcher,
 			Subgroup: uint32(i + 1),
