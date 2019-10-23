@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix CI flake in codegen diff (surfacing as `protoMap.yaml` diff)
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.11.2
+    description: Update solo-kit to version v0.11.2.

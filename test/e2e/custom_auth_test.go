@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/gogo/protobuf/types"
+
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
 	. "github.com/onsi/ginkgo"
@@ -200,7 +202,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 										},
 									}},
 									RoutePlugins: &gloov1.RoutePlugins{
-										PrefixRewrite: "/",
+										PrefixRewrite: &types.StringValue{Value: "/"},
 									},
 									Action: &gloov1.Route_RouteAction{
 										RouteAction: &gloov1.RouteAction{
@@ -221,7 +223,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 										},
 									}},
 									RoutePlugins: &gloov1.RoutePlugins{
-										PrefixRewrite: "/",
+										PrefixRewrite: &types.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_CustomAuth{
 												CustomAuth: &v1.CustomAuth{
@@ -251,7 +253,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 										},
 									}},
 									RoutePlugins: &gloov1.RoutePlugins{
-										PrefixRewrite: "/",
+										PrefixRewrite: &types.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_Disable{
 												Disable: true,

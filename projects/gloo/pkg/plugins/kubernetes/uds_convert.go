@@ -7,6 +7,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
+	"github.com/solo-io/go-utils/contextutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 
 	sanitizer "github.com/solo-io/go-utils/kubeutils"
@@ -19,8 +22,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
-
-const GlooH2Annotation = "gloo.solo.io/h2_service"
 
 var ignoredLabels = []string{
 	"pod-template-hash",        // it is common and provides nothing useful for discovery
@@ -35,25 +36,25 @@ type UpstreamConverter interface {
 
 func DefaultUpstreamConverter() *KubeUpstreamConverter {
 	kuc := new(KubeUpstreamConverter)
-	kuc.createUpstream = createUpstream
+	kuc.serviceConverters = serviceconverter.DefaultServiceConverters
 	return kuc
 }
 
 type KubeUpstreamConverter struct {
-	createUpstream func(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, labels map[string]string) *v1.Upstream
+	serviceConverters []serviceconverter.ServiceConverter
 }
 
 func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *kubev1.Service, pods []*kubev1.Pod) v1.UpstreamList {
 
 	uniqueLabelSets := GetUniqueLabelSets(svc, pods)
-	return uc.CreateUpstreamForLabels(ctx, uniqueLabelSets, svc)
+	return uc.createUpstreamForLabels(ctx, uniqueLabelSets, svc)
 }
 
-func (uc *KubeUpstreamConverter) CreateUpstreamForLabels(ctx context.Context, uniqueLabelSets []map[string]string, svc *kubev1.Service) v1.UpstreamList {
+func (uc *KubeUpstreamConverter) createUpstreamForLabels(ctx context.Context, uniqueLabelSets []map[string]string, svc *kubev1.Service) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, extendedLabels := range uniqueLabelSets {
 		for _, port := range svc.Spec.Ports {
-			upstreams = append(upstreams, uc.createUpstream(ctx, svc, port, extendedLabels))
+			upstreams = append(upstreams, uc.CreateUpstream(ctx, svc, port, extendedLabels))
 		}
 	}
 	return upstreams
@@ -103,7 +104,7 @@ func GetUniqueLabelSetsForObjects(selector map[string]string, podlabelss []map[s
 	return uniqueLabelSets
 }
 
-func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, labels map[string]string) *v1.Upstream {
+func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, labels map[string]string) *v1.Upstream {
 	meta := svc.ObjectMeta
 	coremeta := kubeutils.FromKubeMeta(meta)
 	coremeta.ResourceVersion = ""
@@ -116,45 +117,29 @@ func createUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.Servic
 		extraLabels[k] = v
 	}
 	coremeta.Name = strings.ToLower(UpstreamName(meta.Namespace, meta.Name, port.Port, extraLabels))
-	return &v1.Upstream{
-		Metadata: coremeta,
-		UpstreamSpec: &v1.UpstreamSpec{
-			UseHttp2: UseHttp2(svc, port),
-			UpstreamType: &v1.UpstreamSpec_Kube{
-				Kube: &kubeplugin.UpstreamSpec{
-					ServiceName:      meta.Name,
-					ServiceNamespace: meta.Namespace,
-					ServicePort:      uint32(port.Port),
-					Selector:         labels,
-				},
+
+	spec := &v1.UpstreamSpec{
+		UpstreamType: &v1.UpstreamSpec_Kube{
+			Kube: &kubeplugin.UpstreamSpec{
+				ServiceName:      meta.Name,
+				ServiceNamespace: meta.Namespace,
+				ServicePort:      uint32(port.Port),
+				Selector:         labels,
 			},
 		},
+	}
+
+	for _, sc := range uc.serviceConverters {
+		if err := sc.ConvertService(svc, port, spec); err != nil {
+			contextutils.LoggerFrom(ctx).Errorf("error: failed to process service options with err %v", err)
+		}
+	}
+
+	return &v1.Upstream{
+		Metadata:          coremeta,
+		UpstreamSpec:      spec,
 		DiscoveryMetadata: &v1.DiscoveryMetadata{},
 	}
-}
-
-var http2PortNames = []string{
-	"grpc",
-	"h2",
-	"http2",
-}
-
-func UseHttp2(svc *kubev1.Service, port kubev1.ServicePort) bool {
-	if svc.Annotations != nil {
-		if svc.Annotations[GlooH2Annotation] == "true" {
-			return true
-		} else if svc.Annotations[GlooH2Annotation] == "false" {
-			return false
-		}
-	}
-
-	for _, http2Name := range http2PortNames {
-		if strings.HasPrefix(port.Name, http2Name) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
@@ -235,7 +220,7 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 
 	utils.UpdateUpstreamSpec(original.UpstreamSpec, desired.UpstreamSpec)
 
-	if originalSpec.Equal(desiredSpec) {
+	if original.GetUpstreamSpec().Equal(desired.GetUpstreamSpec()) {
 		return false, nil
 	}
 

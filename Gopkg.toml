@@ -28,11 +28,11 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.11.0"
+  version = "0.11.2"
 
 [[override]]
   name = "github.com/solo-io/go-utils"
-  version = "0.10.18"
+  version = "0.10.20"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
@@ -40,7 +40,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/reporting-client"
-  version = "0.0.2"
+  version = "0.1.0"
 
 [[constraint]]
   name = "github.com/onsi/gomega"
@@ -103,3 +103,6 @@
   name = "k8s.io/klog"
   revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
   source = "github.com/stefanprodan/klog"
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.4.0"

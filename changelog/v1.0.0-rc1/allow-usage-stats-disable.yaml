@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow usage stats collection to be disabled at install time
+    issueLink: https://github.com/solo-io/solo-projects/issues/1226

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Make prefix_rewrite and host_rewrite nullable.
+    issueLink: https://github.com/solo-io/gloo/issues/1373

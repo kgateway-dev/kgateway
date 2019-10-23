@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -37,7 +39,7 @@ var _ = Describe("Conversions", func() {
 				},
 			},
 		}
-		usList := KubeServicesToUpstreams(skkube.ServiceList{svc})
+		usList := KubeServicesToUpstreams(context.TODO(), skkube.ServiceList{svc})
 		usList.Sort()
 		Expect(usList).To(HaveLen(2))
 		Expect(usList[0].Metadata.Name).To(Equal(upstreamNamePrefix + "ns-1-svc-1-8080"))

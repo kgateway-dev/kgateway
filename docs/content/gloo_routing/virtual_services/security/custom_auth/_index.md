@@ -4,40 +4,77 @@ weight: 80
 description: External Authentication with your own auth server
 ---
 
-While Gloo provides an auth server that covers your OpenID Connect, ApiKey, and Basic Auth use cases, it
-also allows your to use your own authentication server, to implement custom auth logic.
+{{% notice note %}}
+The custom auth feature was introduced with **Gloo**, release 0.20.7, and **Gloo Enterprise**, release 0.13.5. 
+If you are using an earlier version, this tutorial will not work.
+{{% /notice %}}
 
-In this guide we will demonstrate your to create and configure Gloo to use your own auth service.
-For simplicity we will use an http service. Though this guide will work (with minor adjustments) also work with a gRPC server that implements
+Gloo Enterprise ships with an external auth server that implements a wide array of authentication and authorization models. 
+Even though these features are not available in the open source version of Gloo, you can deploy your own 
+service and configure Gloo to use it to secure your Virtual Services.
+
+In this guide we will see how to create such a custom external auth service. For simplicity, we will implement an HTTP 
+service. With minor adjustments, you should be able to use the contents of this guide to deploy a gRPC server that implements
 the Envoy spec for an [external authorization server](https://github.com/envoyproxy/envoy/blob/master/api/envoy/service/auth/v2/external_auth.proto).
 
-Let's get right to it!
+## Setup
+{{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-## Deploy Gloo and the petstore demo app
-
-Install Gloo-enterprise (version v0.13.5 or above) and the petstore demo:
+Let's start by creating the sample `petstore` application:
 
 ```shell
-glooctl install gateway enterprise --license-key <YOUR KEY>
 kubectl apply --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
-Add a route and test that everything so far works:
+We can now add a route to the sample application by running the following command:
 
-```shell
+{{< tabs >}}
+{{< tab name="kubectl" codelang="shell" >}}
+kubectl apply -f - <<EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+EOF
+{{< /tab >}}
+{{< tab name="glooctl" codelang="shell" >}}
 glooctl add route --name default --namespace gloo-system --path-prefix / --dest-name default-petstore-8080 --dest-namespace gloo-system
-curl "$(glooctl proxy url)/api/pets/"
+{{< /tab >}}
+{{< /tabs >}}
+
+Let's verify that everything so far works by querying the virtual service.
+
+```shell script
+curl $GATEWAY_URL/api/pets/
 ```
+
+You should see the following output:
 
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-## HTTP Authentication service intro
+## Creating a simple HTTP Authentication service
 
-When using an HTTP auth service, the request will be forwarded to the authentication service. If the
-auth service returns `200 OK` it is considered authorized. Otherwise the request is denied.
-You can fine tune which headers are sent to the the auth service, and wether or not the body is forwarded as well, by editing the [extauth extension](/v1/github.com/solo-io/solo-projects/projects/gloo/api/v1/plugins/extauth/extauth.proto.sk/#settings) settings in the Gloo settings (see [below](#configure-gloo-settings) for an example of the Gloo settings with the extension settings).
+When a request matches a route that defines an `extauth` configuration, Gloo will forward the request to the external 
+auth service. If the HTTP service returns a `200 OK` response, the request will be considered authorized and sent to 
+its original destination. Otherwise the request will be denied.
+You can fine tune which headers are sent to the the auth service, and whether or not the body is forwarded as well, 
+by editing the [extauth settings]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#settings" >}}) 
+in the Gloo settings (see the example [below](#configure-gloo-settings)).
 
 For reference, here's the code for the authorization server used in this tutorial:
 
@@ -65,8 +102,19 @@ if __name__ == "__main__":
 
 As you can see, this service will allow requests to `/api/pets/1` and will deny everything else.
 
+### Deploy auth service
+
+To deploy this service to your cluster, download the [auth-service yaml](auth-service.yaml) file and apply it:
+
+```shell
+kubectl apply --filename auth-service.yaml
+```
+
+This file contains the deployment, service and upstream definitions.
+
 {{% notice tip %}}
-You can easily change the sample auth server. When using minikube, download the [Dockerfile](Dockerfile) and the [server code](server.py) and just run:
+When running in `minikube` you can easily update this sample auth service. Just download the [Dockerfile](Dockerfile) and 
+the [server.py file](server.py) to a local directory, apply your changes to the server code, and run the following commands:
 
 ```shell
 eval $(minikube docker-env)
@@ -75,101 +123,99 @@ kubectl --namespace gloo-system delete pod -l app=sample-auth
 ```
 {{% /notice %}}
 
-### Deploy auth service
-
-To add this service to your cluster, download the [auth-service yaml](auth-service.yaml) and apply it:
-
-```shell
-kubectl apply --filename auth-service.yaml
-```
-
-This file contains the deployment, service and upstream definitions.
-
 ## Configure Gloo to use your server
 
 ### Configure Gloo settings
 
-Edit the gloo settings (`kubectl --namespace gloo-system edit settings default`) to point to your auth server.
-The Settings custom resource should look like this:
+To use our custom auth server, we need to edit the Gloo Settings resource. Run the following command to edit the settings:
 
-{{< highlight yaml "hl_lines=9-18" >}}
+```shell script
+kubectl --namespace gloo-system edit settings default`) to point to your auth server.
+```            
+
+We need to add the following `extauth` attribute:
+
+{{< highlight yaml "hl_lines=18-25" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
   name: default
   namespace: gloo-system
 spec:
-  bindAddr: 0.0.0.0:9977
   discoveryNamespace: gloo-system
-  extensions:
-    configs:
-      extauth:
-        extauthzServerRef:
-          name: auth-server
-          namespace: gloo-system
-        httpService: {}
-        requestBody:
-          maxRequestBytes: 10240
-        requestTimeout: 0.5s
-      rate-limit:
-        ratelimit_server_ref:
-          name: rate-limit
-          namespace: gloo-system
+  gateway:
+    validation:
+      alwaysAccept: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
+  extauth:
+   extauthzServerRef:
+     name: auth-server
+     namespace: gloo-system
+   httpService: {}
+   requestBody:
+     maxRequestBytes: 10240
+   requestTimeout: 0.5s
 {{< /highlight >}}
 
-More details about the `httpService` object are available [here](/v1/github.com/solo-io/solo-projects/projects/gloo/api/v1/plugins/extauth/extauth.proto.sk#httpservice). For example, if you want to copy some of the request headers to your custom auth server
-you would do something like the following example that will pass the `X-foo` request header to the auth server.
+More details about the `httpService` object are available 
+[here]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#httpservice" >}}).
+For example, if you want to copy some of the original request headers to the request that gets sent to the custom auth 
+server, you would need to configure the `extauth` attribute in the following way:
 
-{{< highlight yaml "hl_lines=15-18" >}}
+{{< highlight yaml "hl_lines=22-25" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
   name: default
   namespace: gloo-system
 spec:
-  bindAddr: 0.0.0.0:9977
   discoveryNamespace: gloo-system
-  extensions:
-    configs:
-      extauth:
-        extauthzServerRef:
-          name: auth-server
-          namespace: gloo-system
-        httpService:
-          request:
-            allowedHeaders:
-            - "X-foo"
-        requestBody:
-          maxRequestBytes: 10240
-        requestTimeout: 0.5s
-      rate-limit:
-        ratelimit_server_ref:
-          name: rate-limit
-          namespace: gloo-system
+  gateway:
+    validation:
+      alwaysAccept: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
+  extauth:
+   extauthzServerRef:
+     name: auth-server
+     namespace: gloo-system
+   httpService:
+     request:
+       allowedHeaders:
+       - "X-foo"
+   requestBody:
+     maxRequestBytes: 10240
+   requestTimeout: 0.5s
 {{< /highlight >}}
 
 {{% notice tip %}}
-When using a gRPC auth service, remove the `httpService: {}` line from the config above.
+When using a gRPC auth service, remove the `httpService` attribute from the configuration above.
 {{% /notice %}}
 
 This configuration also sets other configuration parameters:
 
-- requestBody - When set to, the request body will also be sent to the auth service. with this configuration, a body up to 10KB will be buffered and sent to the auth-service. This is useful in use cases where the auth service needs to compute an HMAC on the body.
-- requestTimeout - A timeout for the auth service response. If the service takes longer to response, the request will be denied.
+- `requestBody` - When this attribute is set, the request body will also be sent to the auth service. With the above configuration, 
+a body up to 10KB will be buffered and sent to the service. This is useful in use cases where the request body is relevant 
+to the authentication logic, e.g. when it is used to compute an HMAC.
+- `requestTimeout` - A timeout for the auth service response. If the service takes longer to respond, the request will be denied.
 
-### Configure the VirtualService
+### Securing the Virtual Service
 
-Edit the VirtualService (`kubectl --namespace gloo-system edit virtualservice default`), and mark it with custom auth to turn authentication on. The VirtualService should look like this:
+Edit the VirtualService and mark it with custom auth to turn authentication on:
 
-{{< highlight yaml "hl_lines=10-14" >}}
+{{< highlight yaml "hl_lines=11-13" >}}
+kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -180,10 +226,8 @@ spec:
     domains:
     - '*'
     virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            customAuth: {}
+      extauth:
+        customAuth: {}
     routes:
     - matcher:
         prefix: /
@@ -192,16 +236,18 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
+EOF
 {{< /highlight >}}
 
-To make it easy, if you have followed this guide verbatim, you can just download and apply [this](gloo-vs.yaml) manifest to update both Settings and VirtualService.
+If you have followed this guide verbatim, you can just download and apply [this manifest](gloo-vs.yaml) to update 
+both the `Settings` and the `Virtual Service`.
 
 ## Test
 
-We are all set to test!
+Let's verify that our configuration has been accepted by Gloo. Requests to `/api/pets/1` should be allowed:
 
 ```shell
-curl --write-out "%{http_code}\n" "$(glooctl proxy url)/api/pets/1"
+curl --write-out "%{http_code}\n" $GATEWAY_URL/api/pets/1
 ```
 
 ```noop
@@ -209,8 +255,10 @@ curl --write-out "%{http_code}\n" "$(glooctl proxy url)/api/pets/1"
 200
 ```
 
+Any request with a path that is not `/api/pets/1` should be denied.
+
 ```shell
-curl --write-out "%{http_code}\n" "$(glooctl proxy url)/api/pets/2"
+curl --write-out "%{http_code}\n" $GATEWAY_URL/api/pets/2
 ```
 
 ```noop
