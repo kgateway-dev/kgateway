@@ -471,10 +471,6 @@ func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
 				PresentMatch: true,
 			}
 		} else {
-
-			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
-				ExactMatch: matcher.Value,
-			}
 			if matcher.Regex {
 				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
 					RegexMatch: matcher.Value,
@@ -485,6 +481,11 @@ func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
 				}
 			}
 		}
+
+		if matcher.InvertMatch {
+			envoyMatch.InvertMatch = true
+		}
+
 		out = append(out, envoyMatch)
 	}
 	return out

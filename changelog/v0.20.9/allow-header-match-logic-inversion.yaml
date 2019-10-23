@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Support matching on headers that do NOT match the specified criteria.
+    issueLink: https://github.com/solo-io/gloo/issues/1424

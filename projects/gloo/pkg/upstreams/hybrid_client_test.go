@@ -77,6 +77,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			nil,
 		).AnyTimes()
 	})
+
 	JustBeforeEach(func() {
 		hybridClient, err = upstreams.NewHybridUpstreamClient(
 			baseUsClient,
@@ -148,6 +149,22 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			cancel()
 			Eventually(usChan).Should(BeClosed())
 			Eventually(errChan).Should(BeClosed())
+		})
+	})
+
+	Context("kubernetes client is nil", func() {
+
+		BeforeEach(func() {
+			writeResources()
+
+			// We need the svc client to write resources. When we are done, set it to nil
+			svcClient = nil
+		})
+
+		It("does not list upstreams derived from Kubernetes services", func() {
+			list, err := hybridClient.List(watchNamespace, clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(list).To(HaveLen(1))
 		})
 
 	})

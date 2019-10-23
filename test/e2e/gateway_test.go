@@ -2,6 +2,9 @@ package e2e_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"time"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
@@ -211,6 +214,40 @@ var _ = Describe("Gateway", func() {
 				TestUpstreamReachable()
 			})
 
+			It("should not match requests that contain a header that is excluded from match", func() {
+				up := tu.Upstream
+				vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Create a regular request
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+				Expect(err).NotTo(HaveOccurred())
+				request = request.WithContext(ctx)
+
+				// Check that we can reach the upstream
+				client := &http.Client{}
+				Eventually(func() int {
+					response, err := client.Do(request)
+					if err != nil {
+						return 0
+					}
+					return response.StatusCode
+				}, 5*time.Second, 500*time.Millisecond).Should(Equal(200))
+
+				// Add the header that we are explicitly excluding from the match
+				request.Header = map[string][]string{"this-header-must-not-be-present": {"some-value"}}
+
+				// We should get a 404
+				Consistently(func() int {
+					response, err := client.Do(request)
+					if err != nil {
+						return 0
+					}
+					return response.StatusCode
+				}, time.Second, 200*time.Millisecond).Should(Equal(404))
+			})
+
 			Context("ssl", func() {
 
 				TestUpstreamSslReachable := func() {
@@ -288,8 +325,19 @@ func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 				Action: &gatewayv1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{
-							Single: &gloov1.Destination{
-								DestinationType: nil,
+							Single: &gloov1.Destination{},
+						},
+					},
+				},
+				Matchers: []*gloov1.Matcher{
+					{
+						PathSpecifier: &gloov1.Matcher_Prefix{
+							Prefix: "/",
+						},
+						Headers: []*gloov1.HeaderMatcher{
+							{
+								Name:        "this-header-must-not-be-present",
+								InvertMatch: true,
 							},
 						},
 					},

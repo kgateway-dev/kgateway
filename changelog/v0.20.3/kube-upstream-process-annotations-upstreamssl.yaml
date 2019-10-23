@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Automatically generate Upstream SSL config using Service Annotations
+    issueLink: https://github.com/solo-io/gloo/issues/1190
