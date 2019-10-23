@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
@@ -192,9 +193,12 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return errors.Wrapf(err, "parsing validation addr")
 	}
 
-	refreshRate, err := types.DurationFromProto(settings.RefreshRate)
-	if err != nil {
-		return err
+	refreshRate := time.Minute
+	if settings.GetRefreshRate() != nil {
+		refreshRate, err = types.DurationFromProto(settings.GetRefreshRate())
+		if err != nil {
+			return err
+		}
 	}
 
 	writeNamespace := settings.DiscoveryNamespace
