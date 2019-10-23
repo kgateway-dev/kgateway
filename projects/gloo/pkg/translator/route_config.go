@@ -163,26 +163,31 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []envoyrou
 				"no path specifier provided",
 			)
 		}
-		match := envoyroute.RouteMatch{
-			Headers:         envoyHeaderMatcher(matcher.Headers),
-			QueryParameters: envoyQueryMatcher(matcher.QueryParameters),
-		}
-		if len(matcher.Methods) > 0 {
-			match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
-				Name: ":method",
-				HeaderMatchSpecifier: &envoyroute.HeaderMatcher_RegexMatch{
-					RegexMatch: strings.Join(matcher.Methods, "|"),
-				},
-			})
-		}
-		// need to do this because Go's proto implementation makes oneofs private
-		// which genius thought of that?
-		setEnvoyPathMatcher(matcher, &match)
-
+		match := GlooMatcherToEnvoyMatcher(matcher)
 		out[i].Match = match
 	}
 
 	return out
+}
+
+// utility function to transform gloo matcher to envoy route matcher
+func GlooMatcherToEnvoyMatcher(matcher *matchers.Matcher) envoyroute.RouteMatch {
+	match := envoyroute.RouteMatch{
+		Headers:         envoyHeaderMatcher(matcher.Headers),
+		QueryParameters: envoyQueryMatcher(matcher.QueryParameters),
+	}
+	if len(matcher.Methods) > 0 {
+		match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
+			Name: ":method",
+			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_RegexMatch{
+				RegexMatch: strings.Join(matcher.Methods, "|"),
+			},
+		})
+	}
+	// need to do this because Go's proto implementation makes oneofs private
+	// which genius thought of that?
+	setEnvoyPathMatcher(matcher, &match)
+	return match
 }
 
 func (t *translator) setAction(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route, out *envoyroute.Route) {
