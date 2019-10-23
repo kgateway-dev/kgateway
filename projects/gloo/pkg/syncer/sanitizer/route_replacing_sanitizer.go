@@ -152,6 +152,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
 	if !s.enabled {
 		// if if the route sanitizer is not enabled, enforce strict validation of routes (warnings are treated as errors)
+		// this is necessary because the translator only uses Validate() which ignores warnings
 		return xdsSnapshot, reports.ValidateStrict()
 	}
 
