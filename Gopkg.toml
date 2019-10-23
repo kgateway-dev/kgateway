@@ -110,4 +110,4 @@
 
 [[constraint]]
   name = "github.com/solo-io/go-list-licenses"
-  revision = "4c41cd98c1fb2c13f2dcade0c75ad64aaf615f1b"
+  revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"

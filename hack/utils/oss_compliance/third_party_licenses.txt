@@ -10222,31 +10222,6 @@ License:
    limitations under the License.
 ---
 Index: 60
-Package: github.com/solo-io/gloo/vendor/github.com/mitchellh/go-homedir
-License:
-The MIT License (MIT)
-
-Copyright (c) 2013 Mitchell Hashimoto
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
----
-Index: 61
 Package: github.com/solo-io/gloo/vendor/github.com/mitchellh/hashstructure
 License:
 The MIT License (MIT)
@@ -10271,7 +10246,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ---
-Index: 62
+Index: 61
 Package: github.com/solo-io/gloo/vendor/github.com/mitchellh/mapstructure
 License:
 The MIT License (MIT)
@@ -10296,7 +10271,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ---
-Index: 63
+Index: 62
 Package: github.com/solo-io/gloo/vendor/github.com/modern-go/concurrent
 License:
                                  Apache License
@@ -10501,7 +10476,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 64
+Index: 63
 Package: github.com/solo-io/gloo/vendor/github.com/modern-go/reflect2
 License:
                                  Apache License
@@ -10706,7 +10681,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 65
+Index: 64
 Package: github.com/solo-io/gloo/vendor/github.com/pelletier/go-toml
 License:
 The MIT License (MIT)
@@ -10731,7 +10706,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ---
-Index: 66
+Index: 65
 Package: github.com/solo-io/gloo/vendor/github.com/peterbourgon/diskv
 License:
 Copyright (c) 2011-2012 Peter Bourgon
@@ -10754,7 +10729,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ---
-Index: 67
+Index: 66
 Package: github.com/solo-io/gloo/vendor/github.com/pkg/errors
 License:
 Copyright (c) 2015, Dave Cheney <dave@cheney.net>
@@ -10781,7 +10756,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 68
+Index: 67
 Package: github.com/solo-io/gloo/vendor/github.com/prometheus/client_golang/prometheus
 License:
                                  Apache License
@@ -10986,7 +10961,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 69
+Index: 68
 Package: github.com/solo-io/gloo/vendor/github.com/prometheus/client_model/go
 License:
                                  Apache License
@@ -11191,7 +11166,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 70
+Index: 69
 Package: github.com/solo-io/gloo/vendor/github.com/prometheus/common
 License:
                                  Apache License
@@ -11396,7 +11371,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 71
+Index: 70
 Package: github.com/solo-io/gloo/vendor/github.com/prometheus/procfs
 License:
                                  Apache License
@@ -11601,7 +11576,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 72
+Index: 71
 Package: github.com/solo-io/gloo/vendor/github.com/radovskyb/watcher
 License:
 Copyright (c) 2016, Benjamin Radovsky.
@@ -11632,7 +11607,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 73
+Index: 72
 Package: github.com/solo-io/gloo/vendor/github.com/ryanuber/go-glob
 License:
 The MIT License (MIT)
@@ -11657,7 +11632,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ---
-Index: 74
+Index: 73
 Package: github.com/solo-io/gloo/vendor/github.com/solo-io/envoy-operator/pkg/downward
 License:
                                  Apache License
@@ -11862,7 +11837,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 75
+Index: 74
 Package: github.com/solo-io/gloo/vendor/github.com/solo-io/go-utils
 License:
                                  Apache License
@@ -12067,7 +12042,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 76
+Index: 75
 Package: github.com/solo-io/gloo/vendor/github.com/solo-io/reporting-client/pkg
 License:
                                  Apache License
@@ -12272,7 +12247,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 77
+Index: 76
 Package: github.com/solo-io/gloo/vendor/github.com/solo-io/solo-kit
 License:
 Apache License
@@ -12477,7 +12452,7 @@ Apache License
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 78
+Index: 77
 Package: github.com/solo-io/gloo/vendor/github.com/spf13/pflag
 License:
 Copyright (c) 2012 Alex Ogier. All rights reserved.
@@ -12509,7 +12484,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 79
+Index: 78
 Package: github.com/solo-io/gloo/vendor/go.opencensus.io
 License:
 
@@ -12714,7 +12689,7 @@ License:
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.---
-Index: 80
+Index: 79
 Package: github.com/solo-io/gloo/vendor/go.uber.org/atomic
 License:
 Copyright (c) 2016 Uber Technologies, Inc.
@@ -12737,7 +12712,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ---
-Index: 81
+Index: 80
 Package: github.com/solo-io/gloo/vendor/go.uber.org/multierr
 License:
 Copyright (c) 2017 Uber Technologies, Inc.
@@ -12760,7 +12735,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ---
-Index: 82
+Index: 81
 Package: github.com/solo-io/gloo/vendor/go.uber.org/zap
 License:
 Copyright (c) 2016-2017 Uber Technologies, Inc.
@@ -12783,7 +12758,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ---
-Index: 83
+Index: 82
 Package: github.com/solo-io/gloo/vendor/golang.org/x/crypto/ssh/terminal
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -12814,7 +12789,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 84
+Index: 83
 Package: github.com/solo-io/gloo/vendor/golang.org/x/net
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -12845,7 +12820,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 85
+Index: 84
 Package: github.com/solo-io/gloo/vendor/golang.org/x/oauth2
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -12876,7 +12851,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 86
+Index: 85
 Package: github.com/solo-io/gloo/vendor/golang.org/x/sync/errgroup
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -12907,7 +12882,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 87
+Index: 86
 Package: github.com/solo-io/gloo/vendor/golang.org/x/sys/unix
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -12938,7 +12913,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 88
+Index: 87
 Package: github.com/solo-io/gloo/vendor/golang.org/x/text
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -12969,7 +12944,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 89
+Index: 88
 Package: github.com/solo-io/gloo/vendor/golang.org/x/time/rate
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -13000,7 +12975,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 90
+Index: 89
 Package: github.com/solo-io/gloo/vendor/golang.org/x/xerrors/internal
 License:
 Copyright (c) 2019 The Go Authors. All rights reserved.
@@ -13031,7 +13006,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 91
+Index: 90
 Package: github.com/solo-io/gloo/vendor/google.golang.org/genproto/googleapis
 License:
 
@@ -13237,7 +13212,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 92
+Index: 91
 Package: github.com/solo-io/gloo/vendor/google.golang.org/grpc
 License:
 
@@ -13443,7 +13418,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 93
+Index: 92
 Package: github.com/solo-io/gloo/vendor/gopkg.in/inf.v0
 License:
 Copyright (c) 2012 Péter Surányi. Portions Copyright (c) 2009 The Go
@@ -13475,7 +13450,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 94
+Index: 93
 Package: github.com/solo-io/gloo/vendor/gopkg.in/mgo.v2/bson
 License:
 BSON library for Go
@@ -13504,7 +13479,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 95
+Index: 94
 Package: github.com/solo-io/gloo/vendor/gopkg.in/mgo.v2/internal/json
 License:
 Copyright (c) 2012 The Go Authors. All rights reserved.
@@ -13535,7 +13510,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-Index: 96
+Index: 95
 Package: github.com/solo-io/gloo/vendor/gopkg.in/yaml.v2
 License:
                                  Apache License
@@ -13740,7 +13715,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 97
+Index: 96
 Package: github.com/solo-io/gloo/vendor/istio.io/gogo-genproto
 License:
                                  Apache License
@@ -13945,7 +13920,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 98
+Index: 97
 Package: github.com/solo-io/gloo/vendor/k8s.io/api
 License:
 
@@ -14151,7 +14126,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 99
+Index: 98
 Package: github.com/solo-io/gloo/vendor/k8s.io/apiextensions-apiserver/pkg
 License:
 
@@ -14357,7 +14332,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 100
+Index: 99
 Package: github.com/solo-io/gloo/vendor/k8s.io/apimachinery
 License:
 
@@ -14563,7 +14538,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 101
+Index: 100
 Package: github.com/solo-io/gloo/vendor/k8s.io/client-go
 License:
 
@@ -14769,7 +14744,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 102
+Index: 101
 Package: github.com/solo-io/gloo/vendor/k8s.io/klog
 License:
                                 Apache License
@@ -14975,7 +14950,7 @@ License:
    limitations under the License.
    
 ---
-Index: 103
+Index: 102
 Package: github.com/solo-io/gloo/vendor/knative.dev/pkg
 License:
                                  Apache License
@@ -15180,7 +15155,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 104
+Index: 103
 Package: github.com/solo-io/gloo/vendor/knative.dev/serving/pkg
 License:
 
@@ -15386,7 +15361,7 @@ License:
    See the License for the specific language governing permissions and
    limitations under the License.
 ---
-Index: 105
+Index: 104
 Package: golang.org/x/tools/cmd/goimports
 License:
 Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -15416,7 +15391,7 @@ Copyright (c) 2009 The Go Authors. All rights reserved.
 	THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.---
-Index: 106
+Index: 105
 Package: github.com/gogo/protobuf
 License:
 Copyright (c) 2013, The GoGo Authors. All rights reserved.
@@ -15453,7 +15428,7 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.---
-Index: 107
+Index: 106
 Package: github.com/envoyproxy/envoy
 License:
 
@@ -15658,7 +15633,7 @@ License:
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.---
-Index: 108
+Index: 107
 Package: github.com/envoyproxy/protoc-gen-validate
 License:
 
@@ -15863,7 +15838,7 @@ License:
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.---
-Index: 109
+Index: 108
 Package: github.com/paulvollmer/2gobytes
 License:
 Copyright (C) 2013 Clint Caywood
@@ -15874,7 +15849,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.---
-Index: 110
+Index: 109
 Package: github.com/golang/mock
 License:
 

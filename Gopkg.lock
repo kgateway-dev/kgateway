@@ -542,9 +542,12 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1374,14 +1377,14 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:a6e1711629c0835845c38d1251254ef8fbdc114916a982f5cfecf9e111f04d0e"
+  digest = "1:7a9ff429c9395795e1cd5989449fce966f1968c333be79991f6f36a5b0daa583"
   name = "github.com/solo-io/go-list-licenses"
   packages = [
     "assets",
     "pkg/license",
   ]
   pruneopts = "UT"
-  revision = "4c41cd98c1fb2c13f2dcade0c75ad64aaf615f1b"
+  revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"
 
 [[projects]]
   digest = "1:3c22eb15e732e1bc71a679cca21d33f1f074f7cd94cc3dbd69efa74f4c0c5181"
@@ -2787,6 +2790,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
