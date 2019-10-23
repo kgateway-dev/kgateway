@@ -123,7 +123,7 @@ var _ = Describe("Plugin", func() {
 		It("should be ordered before ext auth", func() {
 			filters, err := rlPlugin.HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to build rate limit filters")
-			Expect(len(filters)).To(Equal(1), "Should only have created one custom filter")
+			Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
 
 			customStagedFilter := filters[0]
 			extAuthPlugin := extauth.NewCustomAuthPlugin()
