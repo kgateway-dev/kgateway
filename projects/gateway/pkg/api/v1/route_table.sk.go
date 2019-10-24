@@ -139,6 +139,11 @@ func (o *RouteTable) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*RouteTable)
 }
 
+func (o *RouteTable) DeepCopyInto(out *RouteTable) {
+	clone := resources.Clone(o).(*RouteTable)
+	*out = *clone
+}
+
 var (
 	RouteTableCrd = crd.NewCrd(
 		"routetables",

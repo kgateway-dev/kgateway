@@ -128,6 +128,11 @@ func (o *Artifact) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Artifact)
 }
 
+func (o *Artifact) DeepCopyInto(out *Artifact) {
+	clone := resources.Clone(o).(*Artifact)
+	*out = *clone
+}
+
 var (
 	ArtifactCrd = crd.NewCrd(
 		"artifacts",

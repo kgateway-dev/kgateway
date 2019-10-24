@@ -127,6 +127,11 @@ func (o *Secret) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Secret)
 }
 
+func (o *Secret) DeepCopyInto(out *Secret) {
+	clone := resources.Clone(o).(*Secret)
+	*out = *clone
+}
+
 var (
 	SecretCrd = crd.NewCrd(
 		"secrets",

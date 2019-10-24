@@ -1443,7 +1443,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:c9ce049431f21580765d40a86a021597023fd2b9128d7fd77bafb2b7d1a4a1c7"
+  digest = "1:0e8acb0142fb3d123f787b1be4ada003991505787312d68f2e2befbc14a5ddd9"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1489,6 +1489,8 @@
     "pkg/code-generator/cmd",
     "pkg/code-generator/codegen",
     "pkg/code-generator/codegen/templates",
+    "pkg/code-generator/codegen/templates/kube",
+    "pkg/code-generator/codegen/utils",
     "pkg/code-generator/docgen",
     "pkg/code-generator/docgen/datafile",
     "pkg/code-generator/docgen/funcs",
@@ -1509,8 +1511,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "78c3732f8fbe19283f7b3379ed4e525eb776e87b"
-  version = "v0.11.2"
+  revision = "6f045c76d0421b13239d9456d73592386d7e011a"
+  version = "v0.11.4"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
