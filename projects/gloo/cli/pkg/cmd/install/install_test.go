@@ -2,6 +2,7 @@ package install_test
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/solo-io/go-utils/testutils/exec"
 
@@ -65,7 +66,7 @@ var _ = Describe("Install", func() {
 	It("should not error when providing the admin console flag", func() {
 		// This test fetches the corresponding GlooE helm chart, thus it needs the version that gets linked
 		// into the glooctl binary at build time
-		out, err := exec.RunCommandInputOutput("glooctl", ".", true, "glooctl", "install", "gateway", "--dry-run", "--with-admin-console")
+		out, err := exec.RunCommandOutput(RootDir, true, filepath.Join("_output", "glooctl"), "install", "gateway", "--dry-run", "--with-admin-console")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out).To(ContainSubstring("kind: Namespace"))
 	})
