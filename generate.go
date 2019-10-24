@@ -10,11 +10,9 @@ import (
 //go:generate go run generate.go
 
 func main() {
-	if false {
-		err := version.CheckVersions()
-		if err != nil {
-			log.Fatalf("generate failed!: %s", err.Error())
-		}
+	err := version.CheckVersions()
+	if err != nil {
+		log.Fatalf("generate failed!: %s", err.Error())
 	}
 	log.Printf("starting generate")
 
