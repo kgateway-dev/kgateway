@@ -1417,7 +1417,7 @@
   version = "v0.0.2"
 
 [[projects]]
-  digest = "1:74ef591481b05a71280bb21afda272bbf7ef6abc2374ce52d36e181b699e4ce0"
+  digest = "1:0e8acb0142fb3d123f787b1be4ada003991505787312d68f2e2befbc14a5ddd9"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1444,6 +1444,7 @@
     "pkg/api/v1/clients/kube/crd/solo.io/v1",
     "pkg/api/v1/clients/kubesecret",
     "pkg/api/v1/clients/memory",
+    "pkg/api/v1/clients/multicluster",
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/clients/wrapper",
     "pkg/api/v1/control-plane/cache",
@@ -1462,6 +1463,8 @@
     "pkg/code-generator/cmd",
     "pkg/code-generator/codegen",
     "pkg/code-generator/codegen/templates",
+    "pkg/code-generator/codegen/templates/kube",
+    "pkg/code-generator/codegen/utils",
     "pkg/code-generator/docgen",
     "pkg/code-generator/docgen/datafile",
     "pkg/code-generator/docgen/funcs",
@@ -1471,6 +1474,8 @@
     "pkg/code-generator/model",
     "pkg/code-generator/parser",
     "pkg/errors",
+    "pkg/multicluster/clustercache",
+    "pkg/multicluster/handler",
     "pkg/stats",
     "pkg/utils/fileutils",
     "pkg/utils/kubeutils",
@@ -1480,8 +1485,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "43b06f6a734ec0ae67e2943976bf3a6f55418733"
-  version = "v0.10.23"
+  revision = "6f045c76d0421b13239d9456d73592386d7e011a"
+  version = "v0.11.4"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2757,6 +2762,7 @@
     "github.com/k0kubun/pp",
     "github.com/kelseyhightower/envconfig",
     "github.com/keybase/go-ps",
+    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",

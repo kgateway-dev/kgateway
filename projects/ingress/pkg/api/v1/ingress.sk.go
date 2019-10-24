@@ -127,6 +127,11 @@ func (o *Ingress) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Ingress)
 }
 
+func (o *Ingress) DeepCopyInto(out *Ingress) {
+	clone := resources.Clone(o).(*Ingress)
+	*out = *clone
+}
+
 var (
 	IngressCrd = crd.NewCrd(
 		"ingresses",

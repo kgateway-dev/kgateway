@@ -144,6 +144,11 @@ func (o *Gateway) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Gateway)
 }
 
+func (o *Gateway) DeepCopyInto(out *Gateway) {
+	clone := resources.Clone(o).(*Gateway)
+	*out = *clone
+}
+
 var (
 	GatewayCrd = crd.NewCrd(
 		"gateways",

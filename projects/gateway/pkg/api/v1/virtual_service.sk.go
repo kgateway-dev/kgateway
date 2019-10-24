@@ -140,6 +140,11 @@ func (o *VirtualService) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*VirtualService)
 }
 
+func (o *VirtualService) DeepCopyInto(out *VirtualService) {
+	clone := resources.Clone(o).(*VirtualService)
+	*out = *clone
+}
+
 var (
 	VirtualServiceCrd = crd.NewCrd(
 		"virtualservices",

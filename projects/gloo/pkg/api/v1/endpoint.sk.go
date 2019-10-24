@@ -130,6 +130,11 @@ func (o *Endpoint) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Endpoint)
 }
 
+func (o *Endpoint) DeepCopyInto(out *Endpoint) {
+	clone := resources.Clone(o).(*Endpoint)
+	*out = *clone
+}
+
 var (
 	EndpointCrd = crd.NewCrd(
 		"endpoints",

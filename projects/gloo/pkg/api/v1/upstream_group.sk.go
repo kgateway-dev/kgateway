@@ -139,6 +139,11 @@ func (o *UpstreamGroup) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*UpstreamGroup)
 }
 
+func (o *UpstreamGroup) DeepCopyInto(out *UpstreamGroup) {
+	clone := resources.Clone(o).(*UpstreamGroup)
+	*out = *clone
+}
+
 var (
 	UpstreamGroupCrd = crd.NewCrd(
 		"upstreamgroups",

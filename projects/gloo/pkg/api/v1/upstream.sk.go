@@ -140,6 +140,11 @@ func (o *Upstream) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Upstream)
 }
 
+func (o *Upstream) DeepCopyInto(out *Upstream) {
+	clone := resources.Clone(o).(*Upstream)
+	*out = *clone
+}
+
 var (
 	UpstreamCrd = crd.NewCrd(
 		"upstreams",

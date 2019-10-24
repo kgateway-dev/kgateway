@@ -159,6 +159,11 @@ func (o *Settings) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Settings)
 }
 
+func (o *Settings) DeepCopyInto(out *Settings) {
+	clone := resources.Clone(o).(*Settings)
+	*out = *clone
+}
+
 var (
 	SettingsCrd = crd.NewCrd(
 		"settings",
