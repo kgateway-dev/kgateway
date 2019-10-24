@@ -175,7 +175,7 @@ Gloo can easily and automatically plug into the Istio SDS architecture. To confi
 ```bash
 kubectl edit deploy/gateway-proxy -n gloo-system
 ```
-{{< highlight yaml "hl_lines=51-52 61-64" >}}
+{{< highlight yaml "hl_lines=51-52 63-66" >}}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -278,7 +278,7 @@ spec:
       sds:
         callCredentials:
           fileCredentialSource:
-            header: istio_sds_credentail_header-bin
+            header: istio_sds_credential_header-bin
             tokenFileName: /var/run/secrets/kubernetes.io/serviceaccount/token
         certificatesSecretName: default
         targetUri: unix:/var/run/sds/uds_path
@@ -306,4 +306,84 @@ curl -v $(glooctl proxy url)/productpage
 ```
 
 
+## Changes for Istio 1.3.x
 
+
+In Istio 1.3 there were some changes to the token used to authenticate as well as how that projected token gets into the gateway. For Istio 1.3, let's add the projected token:
+
+
+```bash
+kubectl edit deploy/gateway-proxy -n gloo-system
+```
+{{< highlight yaml "hl_lines=17-18 33-40" >}}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-proxy
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+
+...
+        volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-config
+        - mountPath: /var/run/sds
+          name: sds-uds-path
+        - mountPath: /var/run/secrets/tokens
+          name: istio-token          
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: gateway-envoy-config
+        name: envoy-config
+      - hostPath:
+          path: /var/run/sds
+          type: ""
+        name: sds-uds-path
+      - name: istio-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: istio-ca
+              expirationSeconds: 43200
+              path: istio-token        
+...        
+{{< /highlight >}}
+
+And in the upstream, point to the new location of the projected token:
+
+```
+kubectl edit upstream default-productpage-9080  -n gloo-system
+```
+
+{{< highlight yaml "hl_lines=17" >}}
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+spec:
+  discoveryMetadata: {}
+  upstreamSpec:
+    kube:
+      selector:
+        app: productpage
+      serviceName: productpage
+      serviceNamespace: default
+      servicePort: 9080
+    sslConfig:
+      sds:
+        callCredentials:
+          fileCredentialSource:
+            header: istio_sds_credential_header-bin
+            tokenFileName: /var/run/secrets/tokens/istio-token
+        certificatesSecretName: default
+        targetUri: unix:/var/run/sds/uds_path
+        validationContextName: ROOTCA
+{{< /highlight >}}
