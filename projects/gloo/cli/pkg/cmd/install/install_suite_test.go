@@ -1,10 +1,11 @@
 package install_test
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 
 	gotestutils "github.com/solo-io/go-utils/testutils"
 
