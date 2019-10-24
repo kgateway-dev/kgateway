@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httputil"
 
@@ -108,8 +109,16 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 		Addr:      fmt.Sprintf(":%v", port),
 		TLSConfig: &tls.Config{Certificates: []tls.Certificate{keyPair}},
 		Handler:   mux,
+		ErrorLog:  log.New(&debugLogger{ctx: ctx}, "validation-webhook-server", log.LstdFlags),
 	}, nil
 
+}
+
+type debugLogger struct{ ctx context.Context }
+
+func (l *debugLogger) Write(p []byte) (n int, err error) {
+	contextutils.LoggerFrom(l.ctx).Debug(string(p))
+	return len(p), nil
 }
 
 type gatewayValidationWebhook struct {

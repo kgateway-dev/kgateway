@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
@@ -27,7 +29,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
@@ -110,7 +111,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		go func() {
 			defer GinkgoRecover()
 			// Start Gloo
-			err = setup.Main(ctx)
+			err = setup.StartGlooInTest(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		go func() {
@@ -135,7 +136,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+translator.GatewayProxyName, glooPort)
+		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run a simple web application locally

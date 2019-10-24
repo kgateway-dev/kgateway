@@ -147,12 +147,14 @@ func setMatch(in *v1.Route, routeReport *validationapi.RouteReport, out *envoyro
 			validationapi.RouteReport_Error_InvalidMatcherError,
 			"no matcher provided",
 		)
+		return
 	}
 	if in.Matcher.PathSpecifier == nil {
 		validation.AppendRouteError(routeReport,
 			validationapi.RouteReport_Error_InvalidMatcherError,
 			"no path specifier provided",
 		)
+		return
 	}
 	match := envoyroute.RouteMatch{
 		Headers:         envoyHeaderMatcher(in.Matcher.Headers),
@@ -460,10 +462,6 @@ func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
 				PresentMatch: true,
 			}
 		} else {
-
-			envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
-				ExactMatch: matcher.Value,
-			}
 			if matcher.Regex {
 				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
 					RegexMatch: matcher.Value,
@@ -474,6 +472,11 @@ func envoyHeaderMatcher(in []*v1.HeaderMatcher) []*envoyroute.HeaderMatcher {
 				}
 			}
 		}
+
+		if matcher.InvertMatch {
+			envoyMatch.InvertMatch = true
+		}
+
 		out = append(out, envoyMatch)
 	}
 	return out

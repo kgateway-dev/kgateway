@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/solo-io/gloo/test/samples"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
@@ -88,17 +90,17 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should translate proxy with default name", func() {
-			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs).To(HaveLen(4))
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
 		})
 
 		It("should properly translate listener plugins to proxy listener", func() {
 			extensions := map[string]*types.Struct{
-				"plugin": &types.Struct{},
+				"plugin": {},
 			}
 
 			snap.Gateways[0].Plugins = &gloov1.ListenerPlugins{
@@ -113,11 +115,11 @@ var _ = Describe("Translator", func() {
 				Configs: extensions,
 			}}
 
-			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs).To(HaveLen(4))
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
 			Expect(proxy.Listeners).To(HaveLen(1))
 			Expect(proxy.Listeners[0].Plugins.Extensions.Configs).To(HaveKey("plugin"))
@@ -139,10 +141,10 @@ var _ = Describe("Translator", func() {
 				},
 			)
 
-			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
 			Expect(proxy.Listeners).To(HaveLen(2))
 		})
@@ -158,10 +160,10 @@ var _ = Describe("Translator", func() {
 				},
 			)
 
-			proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-			Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
 			Expect(proxy.Listeners).To(HaveLen(2))
 		})
@@ -173,7 +175,7 @@ var _ = Describe("Translator", func() {
 			}
 			snap.Gateways = append(snap.Gateways, &dupeGateway)
 
-			_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+			_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 			err := errs.ValidateStrict()
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("bind-address :2 is not unique in a proxy. gateways: gloo-system.name,gloo-system.name2"))
@@ -184,7 +186,7 @@ var _ = Describe("Translator", func() {
 			badRoute := &v1.Route{
 				Matcher: &gloov1.Matcher{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/"}},
 				Action: &v1.Route_DelegateAction{
-					DelegateAction: &core.ResourceRef{"don't", "exist"},
+					DelegateAction: &core.ResourceRef{Name: "don't", Namespace: "exist"},
 				},
 			}
 
@@ -193,7 +195,7 @@ var _ = Describe("Translator", func() {
 			rt := snap.RouteTables[0]
 			rt.Routes = append(rt.Routes, badRoute)
 
-			_, reports := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+			_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 			err := reports.Validate()
 			Expect(err).NotTo(HaveOccurred())
 			err = reports.ValidateStrict()
@@ -201,6 +203,15 @@ var _ = Describe("Translator", func() {
 			Expect(err.Error()).To(ContainSubstring("route table exist.don't missing"))
 		})
 
+		It("should error on route with missing matcher", func() {
+			snap := samples.SimpleGatewaySnapshot(samples.SimpleUpstream().GetMetadata().Ref(), ns)
+			snap.VirtualServices[0].VirtualHost.Routes[0].Matcher = nil
+
+			_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+			err := reports.Validate()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid route: matcher cannot be missing"))
+		})
 	})
 
 	Context("http", func() {
@@ -267,7 +278,7 @@ var _ = Describe("Translator", func() {
 
 			It("should translate an empty gateway to have all vservices", func() {
 
-				proxy, _ := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+				proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -275,7 +286,7 @@ var _ = Describe("Translator", func() {
 			})
 
 			It("should have no ssl config", func() {
-				proxy, _ := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+				proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(proxy.Listeners).To(HaveLen(1))
 				Expect(proxy.Listeners[0].SslConfigurations).To(BeEmpty())
@@ -289,7 +300,7 @@ var _ = Describe("Translator", func() {
 						},
 					}
 
-					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					Expect(proxy).NotTo(BeNil())
@@ -307,7 +318,7 @@ var _ = Describe("Translator", func() {
 						},
 					}
 
-					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					Expect(proxy).NotTo(BeNil())
@@ -320,7 +331,7 @@ var _ = Describe("Translator", func() {
 			It("should not have vhosts with ssl", func() {
 				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-				proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+				proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -334,7 +345,7 @@ var _ = Describe("Translator", func() {
 				snap.Gateways[0].Ssl = true
 				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-				proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+				proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 
@@ -351,10 +362,10 @@ var _ = Describe("Translator", func() {
 
 				It("should translate 2 virtual services with the same domains to 1 virtual service", func() {
 
-					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-					Expect(proxy.Metadata.Name).To(Equal(GatewayProxyName))
+					Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 					Expect(proxy.Metadata.Namespace).To(Equal(ns))
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -365,7 +376,7 @@ var _ = Describe("Translator", func() {
 					snap.VirtualServices[1].VirtualHost.Domains = nil
 					snap.VirtualServices[0].VirtualHost.Domains = nil
 
-					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					Expect(proxy.Listeners).To(HaveLen(1))
@@ -378,7 +389,7 @@ var _ = Describe("Translator", func() {
 				It("should not error with one contains plugins", func() {
 					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 
-					_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 				})
@@ -387,7 +398,7 @@ var _ = Describe("Translator", func() {
 					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 					snap.VirtualServices[1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
 
-					_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).To(HaveOccurred())
 				})
@@ -395,7 +406,7 @@ var _ = Describe("Translator", func() {
 				It("should not error with one contains ssl config", func() {
 					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -406,7 +417,7 @@ var _ = Describe("Translator", func() {
 					snap.Gateways[0].Ssl = true
 					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
 
-					proxy, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -421,7 +432,7 @@ var _ = Describe("Translator", func() {
 					snap.VirtualServices[0].SslConfig.SniDomains = []string{"bar"}
 					snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
 
-					_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).To(HaveOccurred())
 				})
@@ -433,7 +444,7 @@ var _ = Describe("Translator", func() {
 					snap.VirtualServices[0].SslConfig.SniDomains = []string{"bar"}
 					snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
 
-					_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).To(HaveOccurred())
 				})
@@ -445,7 +456,7 @@ var _ = Describe("Translator", func() {
 					snap.VirtualServices[0].SslConfig.SniDomains = []string{"foo"}
 					snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
 
-					_, errs := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 				})
@@ -689,7 +700,7 @@ var _ = Describe("Translator", func() {
 					}
 
 					Expect(listener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
-						&gloov1.Route{
+						{
 							Matcher: &gloov1.Matcher{
 								PathSpecifier: &gloov1.Matcher_Prefix{
 									Prefix: "/a/1-upstream",
@@ -711,7 +722,7 @@ var _ = Describe("Translator", func() {
 							},
 							RoutePlugins: rootLevelRoutePlugins,
 						},
-						&gloov1.Route{
+						{
 							Matcher: &gloov1.Matcher{
 								PathSpecifier: &gloov1.Matcher_Prefix{
 									Prefix: "/a/3-delegate/upstream1",
@@ -733,7 +744,7 @@ var _ = Describe("Translator", func() {
 							},
 							RoutePlugins: mergedMidLevelRoutePlugins,
 						},
-						&gloov1.Route{
+						{
 							Matcher: &gloov1.Matcher{
 								PathSpecifier: &gloov1.Matcher_Prefix{
 									Prefix: "/a/3-delegate/upstream2",
@@ -945,7 +956,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("can properly translate a tcp proxy", func() {
-			proxy, _ := translator.Translate(context.Background(), GatewayProxyName, ns, snap, snap.Gateways)
+			proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 			Expect(proxy.Listeners).To(HaveLen(1))
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_TcpListener).TcpListener

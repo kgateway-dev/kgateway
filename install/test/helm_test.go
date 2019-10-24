@@ -231,14 +231,14 @@ var _ = Describe("Helm Test", func() {
 					Expect(gateway1.Ssl).To(BeFalse())
 					Expect(gateway1.BindPort).To(Equal(uint32(8080)))
 					Expect(gateway1.ProxyNames).To(Equal(proxyNames))
-					Expect(gateway1.UseProxyProto).To(BeNil())
+					Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{Value: false}))
 					Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
 					gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-ssl")
 					ConvertKubeResource(gatewayUns, &gateway1)
 					Expect(gateway1.Ssl).To(BeTrue())
 					Expect(gateway1.BindPort).To(Equal(uint32(8443)))
 					Expect(gateway1.ProxyNames).To(Equal(proxyNames))
-					Expect(gateway1.UseProxyProto).To(BeNil())
+					Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{Value: false}))
 					Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
 				})
 
@@ -331,6 +331,76 @@ var _ = Describe("Helm Test", func() {
 				It("creates a deployment", func() {
 					prepareMakefile("--namespace " + namespace + " --set gateway.upgrade=true")
 					testManifest.Expect(job.Kind, job.Namespace, job.Name).To(BeEquivalentTo(job))
+				})
+			})
+
+			Context("gateway-proxy service", func() {
+				var gatewayProxyService *v1.Service
+
+				BeforeEach(func() {
+					rb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      "gateway-proxy-v2",
+						Args:      nil,
+						Labels: map[string]string{
+							"app":              "gloo",
+							"gloo":             "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy-v2",
+						},
+					}
+					gatewayProxyService = rb.GetService()
+					gatewayProxyService.Spec.Selector = map[string]string{
+						"gateway-proxy-id": "gateway-proxy-v2",
+						"gateway-proxy":    "live",
+					}
+					gatewayProxyService.Spec.Ports = []v1.ServicePort{
+						{
+							Name:       "http",
+							Protocol:   "TCP",
+							Port:       80,
+							TargetPort: intstr.IntOrString{IntVal: 8080},
+						},
+						{
+							Name:       "https",
+							Protocol:   "TCP",
+							Port:       443,
+							TargetPort: intstr.IntOrString{IntVal: 8443},
+						},
+					}
+					gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+				})
+
+				It("sets extra annotations", func() {
+					gatewayProxyService.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+					prepareMakefile("--namespace " + namespace +
+						" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.foo=bar" +
+						" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.bar=baz")
+					testManifest.ExpectService(gatewayProxyService)
+				})
+
+				It("sets external traffic policy", func() {
+					gatewayProxyService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
+					prepareMakefile("--namespace " + namespace +
+						" --set gatewayProxies.gatewayProxyV2.service.externalTrafficPolicy=Local")
+					testManifest.ExpectService(gatewayProxyService)
+				})
+
+				It("sets cluster IP", func() {
+					gatewayProxyService.Spec.Type = v1.ServiceTypeClusterIP
+					gatewayProxyService.Spec.ClusterIP = "test-ip"
+					prepareMakefile("--namespace " + namespace +
+						" --set gatewayProxies.gatewayProxyV2.service.type=ClusterIP" +
+						" --set gatewayProxies.gatewayProxyV2.service.clusterIP=test-ip")
+					testManifest.ExpectService(gatewayProxyService)
+				})
+
+				It("sets load balancer IP", func() {
+					gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+					gatewayProxyService.Spec.LoadBalancerIP = "test-lb-ip"
+					prepareMakefile("--namespace " + namespace +
+						" --set gatewayProxies.gatewayProxyV2.service.type=LoadBalancer" +
+						" --set gatewayProxies.gatewayProxyV2.service.loadBalancerIP=test-lb-ip")
+					testManifest.ExpectService(gatewayProxyService)
 				})
 			})
 

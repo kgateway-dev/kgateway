@@ -1,0 +1,9 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    In order to enable routing directly to Kubernetes services (by using `KubernetesServiceDestinations`), Gloo currently
+    scans the cluster for services and creates a special type of in-memory Upstream (via the `HybridUpstreamClient`).
+    If the cluster contains a lot of services and the user does not take advantage of this feature, this results in
+    unnecessary overhead. This change adds a new `disable_kubernetes_destinations` attribute to the `Settings` resource
+    to allow disabling the feature.
+  issueLink: https://github.com/solo-io/gloo/issues/1466

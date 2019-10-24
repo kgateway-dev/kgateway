@@ -13,11 +13,13 @@ message Settings {
     // If a route/virtual host is configured with WAF, you must explicitly disable its WAF,
     // i.e., it will not inherit the disabled status of its parent
     bool disabled = 1;
+    // Custom message to display if an intervention occurs.
+    string custom_intervention_message = 2;
     // Add OWASP core rule set
     // if nil will not be added
-    CoreRuleSet core_rule_set = 2;
+    CoreRuleSet core_rule_set = 3;
     // Custom rule sets rules to add
-    repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 3;
+    repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
 }
 
 message CoreRuleSet {

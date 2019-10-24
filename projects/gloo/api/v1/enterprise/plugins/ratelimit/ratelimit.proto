@@ -40,6 +40,10 @@ message Settings {
   google.protobuf.Duration request_timeout = 2 [(gogoproto.stdduration) = true];
 
   bool deny_on_fail = 3;
+
+  // Set this is set to true if you would like to rate limit traffic before applying external auth to it.
+  // *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state
+  bool rate_limit_before_auth = 9;
 }
 
 // TODO(kdorosh) remove this when we stop supporting opaque rate limit configuration

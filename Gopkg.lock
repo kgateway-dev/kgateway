@@ -293,7 +293,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:180a8b7ca453d64029fcfc964291c957a70c1997f29b213bdd6404d6caed793a"
+  digest = "1:230c1845901af4a986e6820ed687f947e9eedac69fc458baa29e2930cb692ade"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -302,24 +302,30 @@
     "envoy/api/v2/core",
     "envoy/api/v2/endpoint",
     "envoy/api/v2/listener",
+    "envoy/api/v2/ratelimit",
     "envoy/api/v2/route",
     "envoy/config/accesslog/v2",
     "envoy/config/bootstrap/v2",
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/fault/v2",
+    "envoy/config/filter/http/ext_authz/v2",
     "envoy/config/filter/http/fault/v2",
     "envoy/config/filter/http/health_check/v2",
+    "envoy/config/filter/http/rate_limit/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/config/filter/network/tcp_proxy/v2",
     "envoy/config/grpc_credential/v2alpha",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
+    "envoy/config/ratelimit/v2",
     "envoy/config/trace/v2",
     "envoy/data/accesslog/v2",
     "envoy/service/accesslog/v2",
+    "envoy/service/auth/v2",
     "envoy/service/discovery/v2",
     "envoy/service/metrics/v2",
+    "envoy/service/ratelimit/v2",
     "envoy/type",
     "envoy/type/matcher",
     "pkg/util",
@@ -528,9 +534,12 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1351,15 +1360,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:c5673cbf44dc752b282c962f514b0cc1b64d0d253cc64dba53b123a8e4bc3c4f"
-  name = "github.com/solo-io/go-checkpoint"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "b56cd9c812e84da93eb577054ebdf60a27487acb"
-  version = "0.1.0"
-
-[[projects]]
-  digest = "1:675e88637f52e60444ff59ffe3b708e4fa74ae9f587dde5eb5d4eaa907d0664a"
+  digest = "1:ad4681c2ac6e9017882421da2b288ea198003ffbbf342b1bb140209ba1bcea7a"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1393,6 +1394,7 @@
     "testutils/exec",
     "testutils/helper",
     "testutils/kube",
+    "threadsafe",
     "versionutils",
     "versionutils/dep",
     "versionutils/git",
@@ -1400,11 +1402,22 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "2fff910b5b9a262eba3177f296923ac04887fa53"
-  version = "v0.10.9"
+  revision = "68c84e0981898f92f0d7c7a846d8f0d82dd4fd9a"
+  version = "v0.10.20"
 
 [[projects]]
-  digest = "1:ffa5a38a93e40c722b1cc4513d77395612835254d35d3ededaf5cb24fc1ff9ee"
+  digest = "1:a2922a665903e4336f9e8b13eb9134bdda25ed984b3966159d4aa2bf9c5b0e28"
+  name = "github.com/solo-io/reporting-client"
+  packages = [
+    "pkg/api/v1",
+    "pkg/client",
+  ]
+  pruneopts = "UT"
+  revision = "f47eacc21bd62e6bc8bb8954af0dc1817079af0d"
+  version = "v0.0.2"
+
+[[projects]]
+  digest = "1:0e8acb0142fb3d123f787b1be4ada003991505787312d68f2e2befbc14a5ddd9"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1472,8 +1485,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "a2cfa3fe8e030ddd94643671f30cebd1280c4fb8"
-  version = "v0.11.3"
+  revision = "6f045c76d0421b13239d9456d73592386d7e011a"
+  version = "v0.11.4"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2695,17 +2708,23 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
+    "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2",
     "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2",
     "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2",
+    "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
+    "github.com/envoyproxy/go-control-plane/envoy/type/matcher",
     "github.com/envoyproxy/go-control-plane/pkg/util",
     "github.com/envoyproxy/protoc-gen-validate/validate",
     "github.com/fgrosse/zaptest",
@@ -2715,12 +2734,14 @@
     "github.com/go-openapi/swag",
     "github.com/go-swagger/go-swagger/examples/2.0/petstore/server/api",
     "github.com/gogo/googleapis/google/api",
+    "github.com/gogo/googleapis/google/rpc",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/jsonpb",
     "github.com/gogo/protobuf/proto",
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2755,7 +2776,6 @@
     "github.com/prometheus/client_golang/api/prometheus/v1",
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
-    "github.com/solo-io/go-checkpoint",
     "github.com/solo-io/go-utils/certutils",
     "github.com/solo-io/go-utils/clidoc",
     "github.com/solo-io/go-utils/cliutils",
@@ -2784,6 +2804,8 @@
     "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/go-utils/versionutils/dep",
     "github.com/solo-io/go-utils/versionutils/git",
+    "github.com/solo-io/reporting-client/pkg/api/v1",
+    "github.com/solo-io/reporting-client/pkg/client",
     "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",

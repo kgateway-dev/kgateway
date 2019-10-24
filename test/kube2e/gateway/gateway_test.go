@@ -23,10 +23,8 @@ import (
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/go-utils/errors"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/go-utils/testutils/helper"
 
@@ -58,7 +56,7 @@ import (
 var _ = Describe("Kube2e: gateway", func() {
 
 	const (
-		gatewayProxy = translator.GatewayProxyName
+		gatewayProxy = defaults.GatewayProxyName
 		gatewayPort  = int(80)
 	)
 
@@ -77,10 +75,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		proxyClient          gloov1.ProxyClient
 		serviceClient        skkube.ServiceClient
 	)
-
-	var _ = BeforeEach(StartTestHelper)
-
-	var _ = AfterEach(TearDownTestHelper)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -159,36 +153,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 	})
 
-	It("removes all pods when uninstalled", func() {
-		kubeInterface := kube2e.MustKubeClient().CoreV1()
-		installedPods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
-		Expect(err).NotTo(HaveOccurred(), "Should be able to read pods in the namespace")
-		Expect(installedPods.Items).NotTo(BeEmpty(), "Should have a nonzero number of pods in the namespace")
-
-		cmdArgs := []string{
-			filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName), "uninstall", "-n", testHelper.InstallNamespace,
-		}
-
-		err = exec.RunCommand(testHelper.RootDir, true, cmdArgs...)
-		Expect(err).NotTo(HaveOccurred(), "The uninstall should be clean")
-
-		Eventually(func() ([]corev1.Pod, error) {
-			pods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
-			if err != nil {
-				return nil, err
-			}
-
-			var runningPods []corev1.Pod
-			for _, pod := range pods.Items {
-				// the test runner itself is a pod in the namespace- we don't expect that one to be deleted
-				if pod.ObjectMeta.Name != "testrunner" {
-					runningPods = append(runningPods, pod)
-				}
-			}
-			return runningPods, nil
-		}, time.Minute, time.Second).Should(BeEmpty(), "There should be no pods remaining after running glooctl uninstall")
-	})
-
 	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
@@ -261,7 +225,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// wait for the expected proxy configuration to be accepted
 				Eventually(func() error {
-					proxy, err := proxyClient.Read(testHelper.InstallNamespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 					if err != nil {
 						return err
 					}
@@ -366,8 +330,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Protocol:          "https",
 					Path:              "/",
 					Method:            "GET",
-					Host:              translator.GatewayProxyName,
-					Service:           translator.GatewayProxyName,
+					Host:              defaults.GatewayProxyName,
+					Service:           defaults.GatewayProxyName,
 					Port:              gatewayPort,
 					CaFile:            "/tmp/ca.crt",
 					ConnectionTimeout: 1,
@@ -432,21 +396,25 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("appends linkerd headers when linkerd is enabled", func() {
-				var us *gloov1.Upstream
+				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
+				var ref core.ResourceRef
 				//give discovery time to write the upstream
 				Eventually(func() error {
 					upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 					if err != nil {
 						return err
 					}
-					upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
-					us, err = upstreams.Find(testHelper.InstallNamespace, upstreamName)
-					return err
+					us, err := upstreams.Find(testHelper.InstallNamespace, upstreamName)
+					if err != nil {
+						return err
+					}
+					ref = us.Metadata.Ref()
+					return nil
 				}, time.Second*10, time.Second).ShouldNot(HaveOccurred())
 
 				dest := &gloov1.Destination{
 					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: utils.ResourceRefPtr(us.Metadata.Ref()),
+						Upstream: &ref,
 					},
 				}
 
@@ -564,13 +532,16 @@ var _ = Describe("Kube2e: gateway", func() {
 				Eventually(func() (*gloov1.Upstream, error) { return getUpstream(svc) }, "15s", "0.5s").ShouldNot(BeNil())
 				// now set subset config on an upstream:
 				Eventually(func() error {
-					upstream, _ := getUpstream(svc)
+					upstream, err := getUpstream(svc)
+					if err != nil {
+						return err
+					}
 					upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
 						PluginType: &gloov1plugins.ServiceSpec_Grpc{
 							Grpc: &grpcv1.ServiceSpec{},
 						},
 					}
-					_, err := upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
+					_, err = upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
 					return err
 				}, "1s", "0.1s").ShouldNot(HaveOccurred())
 			}
@@ -582,7 +553,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			for _, svc := range createdServices {
 				// now set subset config on an upstream:
 				up, _ := getUpstream(svc)
-				spec := up.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec
+				spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
 				Expect(spec).ToNot(BeNil())
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
@@ -675,7 +646,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// wait for the expected proxy configuration to be accepted
 			Eventually(func() error {
-				proxy, err := proxyClient.Read(testHelper.InstallNamespace, translator.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 				if err != nil {
 					return err
 				}
@@ -809,7 +780,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				if err != nil {
 					return err
 				}
-				vsList, err := virtualServiceClient.List(vs.Metadata.Namespace, clients.ListOpts{Ctx: ctx})
+				vsList, err := virtualServiceClient.List(vs.GetMetadata().Namespace, clients.ListOpts{Ctx: ctx})
 				if err != nil {
 					return err
 				}
@@ -1090,7 +1061,37 @@ spec:
 				testValidation(tc.resourceYaml, tc.expectedErr)
 			}
 		})
+	})
 
+	// This has to run as last test in this suite, as it uninstalls Gloo!
+	It("removes all pods when uninstalled", func() {
+		kubeInterface := kube2e.MustKubeClient().CoreV1()
+		installedPods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
+		Expect(err).NotTo(HaveOccurred(), "Should be able to read pods in the namespace")
+		Expect(installedPods.Items).NotTo(BeEmpty(), "Should have a nonzero number of pods in the namespace")
+
+		cmdArgs := []string{
+			filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName), "uninstall", "-n", testHelper.InstallNamespace,
+		}
+
+		err = exec.RunCommand(testHelper.RootDir, true, cmdArgs...)
+		Expect(err).NotTo(HaveOccurred(), "The uninstall should be clean")
+
+		Eventually(func() ([]corev1.Pod, error) {
+			pods, err := kubeInterface.Pods(testHelper.InstallNamespace).List(metav1.ListOptions{})
+			if err != nil {
+				return nil, err
+			}
+
+			var runningPods []corev1.Pod
+			for _, pod := range pods.Items {
+				// the test runner itself is a pod in the namespace- we don't expect that one to be deleted
+				if pod.ObjectMeta.Name != "testrunner" {
+					runningPods = append(runningPods, pod)
+				}
+			}
+			return runningPods, nil
+		}, time.Minute, time.Second).Should(BeEmpty(), "There should be no pods remaining after running glooctl uninstall")
 	})
 })
 

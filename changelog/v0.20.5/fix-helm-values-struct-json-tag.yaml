@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  description: >
+    Some boolean fields on Helm value structs have an `omitempty` json tag. This causes the JSON encoder to
+    considered the whole struct empty in cases where we only the boolean field is set to false and might lead to
+    unexpected behavior.
+  issueLink: https://github.com/solo-io/gloo/issues/1360

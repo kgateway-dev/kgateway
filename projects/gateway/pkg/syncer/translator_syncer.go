@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
@@ -13,7 +14,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -129,7 +129,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 				}
 				lastStatus = status
 				subresourceStatuses := map[string]*core.Status{
-					resources.Key(proxy): &status,
+					fmt.Sprintf("%T.%s", proxy, proxy.GetMetadata().Ref().Key()): &status,
 				}
 				err := s.reporter.WriteReports(ctx, reports, subresourceStatuses)
 				if err != nil {

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Support setting external traffic policy on gateway proxy services via helm.
+    issueLink: https://github.com/solo-io/gloo/issues/1410

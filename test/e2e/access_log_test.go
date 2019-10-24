@@ -196,9 +196,11 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					TestUpstreamReachable()
+
 					var entry *envoy_data_accesslog_v2.HTTPAccessLogEntry
-					Eventually(msgChan).Should(Receive(&entry))
+					Eventually(msgChan, 5*time.Second).Should(Receive(&entry))
 					Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
+
 				})
 			})
 

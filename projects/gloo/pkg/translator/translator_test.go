@@ -331,6 +331,27 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(expectedReport))
 		})
 	})
+
+	Context("route without a matcher", func() {
+		BeforeEach(func() {
+			routes[0].Matcher = nil
+		})
+		It("should error when a route is missing a matcher", func() {
+			_, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("Route Error: InvalidMatcherError. Reason: no matcher provided"))
+			expectedReport := validationutils.MakeReport(proxy)
+			expectedReport.ListenerReports[0].GetHttpListenerReport().VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
+				{
+					Type:   validation.RouteReport_Error_InvalidMatcherError,
+					Reason: "no matcher provided",
+				},
+			}
+			Expect(report).To(Equal(expectedReport))
+		})
+	})
+
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
@@ -342,6 +363,7 @@ var _ = Describe("Translator", func() {
 			translate()
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			presentMatch := headerMatch.GetPresentMatch()
 			Expect(presentMatch).To(BeTrue())
 		})
@@ -358,6 +380,7 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			exactMatch := headerMatch.GetExactMatch()
 			Expect(exactMatch).To(Equal("testvalue"))
 		})
@@ -375,8 +398,23 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			regex := headerMatch.GetRegexMatch()
 			Expect(regex).To(Equal("testvalue"))
+		})
+
+		It("should translate header matcher logic inversion flag", func() {
+
+			matcher.Headers = []*v1.HeaderMatcher{
+				{
+					Name:        "test",
+					InvertMatch: true,
+				},
+			}
+			translate()
+
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.InvertMatch).To(Equal(true))
 		})
 
 	})

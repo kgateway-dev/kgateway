@@ -72,7 +72,7 @@ var _ = Describe("SelectorTest", func() {
 					Read(ref.Namespace, ref.Name, clients.ReadOpts{Ctx: context.Background()}).
 					Return(expected, nil)
 
-				actual, err := selector.SelectOrCreate(context.Background(), &ref)
+				actual, err := selector.SelectOrCreateVirtualService(context.Background(), &ref)
 				Expect(err).NotTo(HaveOccurred())
 				ExpectEqualProtoMessages(actual, expected)
 			})
@@ -87,7 +87,7 @@ var _ = Describe("SelectorTest", func() {
 					Write(expected, clients.WriteOpts{Ctx: context.Background()}).
 					Return(expected, nil)
 
-				actual, err := selector.SelectOrCreate(context.Background(), &ref)
+				actual, err := selector.SelectOrCreateVirtualService(context.Background(), &ref)
 				Expect(err).NotTo(HaveOccurred())
 				ExpectEqualProtoMessages(actual, expected)
 			})
@@ -100,7 +100,7 @@ var _ = Describe("SelectorTest", func() {
 					Write(expected, clients.WriteOpts{Ctx: context.Background()}).
 					Return(expected, nil)
 
-				actual, err := selector.SelectOrCreate(context.Background(), nameRef)
+				actual, err := selector.SelectOrCreateVirtualService(context.Background(), nameRef)
 				Expect(err).NotTo(HaveOccurred())
 				ExpectEqualProtoMessages(actual, expected)
 			})
@@ -110,7 +110,7 @@ var _ = Describe("SelectorTest", func() {
 					Read(ref.Namespace, ref.Name, clients.ReadOpts{Ctx: context.Background()}).
 					Return(nil, testErr)
 
-				_, err := selector.SelectOrCreate(context.Background(), &ref)
+				_, err := selector.SelectOrCreateVirtualService(context.Background(), &ref)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(testErr))
 			})
@@ -134,7 +134,7 @@ var _ = Describe("SelectorTest", func() {
 					List(otherNs, clients.ListOpts{Ctx: context.Background()}).
 					Return(list, nil)
 
-				actual, err := selector.SelectOrCreate(context.Background(), nil)
+				actual, err := selector.SelectOrCreateVirtualService(context.Background(), nil)
 				Expect(err).NotTo(HaveOccurred())
 				ExpectEqualProtoMessages(actual, expected)
 			})
@@ -152,7 +152,7 @@ var _ = Describe("SelectorTest", func() {
 					Write(expected, clients.WriteOpts{Ctx: context.Background()}).
 					Return(expected, nil)
 
-				actual, err := selector.SelectOrCreate(context.Background(), nil)
+				actual, err := selector.SelectOrCreateVirtualService(context.Background(), nil)
 				Expect(err).NotTo(HaveOccurred())
 				ExpectEqualProtoMessages(actual, expected)
 			})
@@ -162,7 +162,7 @@ var _ = Describe("SelectorTest", func() {
 					List().
 					Return(nil, testErr)
 
-				_, err := selector.SelectOrCreate(context.Background(), nil)
+				_, err := selector.SelectOrCreateVirtualService(context.Background(), nil)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(testErr))
 			})
@@ -175,7 +175,7 @@ var _ = Describe("SelectorTest", func() {
 					List(otherNs, clients.ListOpts{Ctx: context.Background()}).
 					Return(nil, testErr)
 
-				_, err := selector.SelectOrCreate(context.Background(), nil)
+				_, err := selector.SelectOrCreateVirtualService(context.Background(), nil)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(testErr))
 			})
@@ -188,7 +188,7 @@ var _ = Describe("SelectorTest", func() {
 					Write(getDefault(podNamespace, "default"), clients.WriteOpts{Ctx: context.Background()}).
 					Return(nil, testErr)
 
-				_, err := selector.SelectOrCreate(context.Background(), nil)
+				_, err := selector.SelectOrCreateVirtualService(context.Background(), nil)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(testErr))
 			})

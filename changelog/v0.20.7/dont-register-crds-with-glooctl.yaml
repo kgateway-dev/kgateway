@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Glooctl no longer registers CRDs when performing read/write operations
+    issueLink: https://github.com/solo-io/gloo/issues/1380

@@ -270,6 +270,22 @@ func convertRoutes(vs *v1.VirtualService, tables v1.RouteTableList, reports repo
 	return routes, nil
 }
 
+var (
+	missingPrefixErr    = errors.New("invalid route: routes with delegate actions must specify a prefix matcher")
+	invalidPrefixErr    = errors.New("invalid route: routes within the route table must begin with the prefix of their parent")
+	invalidMatcherErr   = errors.New("invalid route: matcher cannot be missing")
+	hasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
+	hasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
+	hasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
+	delegationCycleErr  = errors.New("invalid route: delegation cycle detected")
+
+	noDelegateActionErr = errors.New("internal error: convertDelegateAction() called on route without delegate action")
+
+	routeTableMissingWarning = func(ref core.ResourceRef) string {
+		return fmt.Sprintf("route table %v.%v missing", ref.Namespace, ref.Name)
+	}
+)
+
 // converts a tree of gateway Routes into a list of Gloo routes
 type routeVisitor struct {
 	ctx     context.Context
@@ -278,6 +294,10 @@ type routeVisitor struct {
 }
 
 func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours *v1.Route, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
+	if ours.Matcher == nil {
+		return nil, invalidMatcherErr
+	}
+
 	route := &gloov1.Route{
 		Matcher:      ours.Matcher,
 		RoutePlugins: ours.RoutePlugins,
@@ -300,22 +320,6 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 	}
 	return []*gloov1.Route{route}, nil
 }
-
-var (
-	missingPrefixErr    = errors.New("invalid route: routes with delegate actions must specify a prefix matcher")
-	invalidPrefixErr    = errors.New("invalid route: routes within the route table must begin with the prefix of their parent")
-	invalidMatcherErr   = errors.New("invalid route: matcher cannot be missing")
-	hasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
-	hasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
-	hasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
-	delegationCycleErr  = errors.New("invalid route: delegation cycle detected")
-
-	noDelegateActionErr = errors.New("internal error: convertDelegateAction() called on route without delegate action")
-
-	routeTableMissingWarning = func(ref core.ResourceRef) string {
-		return fmt.Sprintf("route table %v.%v missing", ref.Namespace, ref.Name)
-	}
-)
 
 func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputResource, route *v1.Route, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
 	delegate := route.GetDelegateAction()

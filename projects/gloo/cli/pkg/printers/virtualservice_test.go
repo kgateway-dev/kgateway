@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("getVirtualServiceStatus", func() {
+var _ = Describe("getStatus", func() {
 	var (
 		thing1 = "thing1"
 		thing2 = "thing2"
@@ -28,7 +28,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 						State: resourceStatusState,
 					},
 				}
-				Expect(getVirtualServiceStatus(vs)).To(Equal(resourceStatusString))
+				Expect(getStatus(vs)).To(Equal(resourceStatusString))
 
 				// range through all possible sub resource states
 				for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
@@ -40,7 +40,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 						},
 					}
 					By(fmt.Sprintf("resource: %v, subresource: %v", resourceStatusString, subResourceStatusString))
-					Expect(getVirtualServiceStatus(vs)).To(Equal(resourceStatusString))
+					Expect(getStatus(vs)).To(Equal(resourceStatusString))
 				}
 			}
 		}
@@ -51,7 +51,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 				State: core.Status_Accepted,
 			},
 		}
-		Expect(getVirtualServiceStatus(vs)).To(Equal(core.Status_Accepted.String()))
+		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
 	})
 	It("handles Accepted state - sub resources accepted", func() {
 		By("one accepted")
@@ -66,7 +66,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 				SubresourceStatuses: subStatuses,
 			},
 		}
-		Expect(getVirtualServiceStatus(vs)).To(Equal(core.Status_Accepted.String()))
+		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
 
 		By("two accepted")
 		subStatuses = map[string]*core.Status{
@@ -78,7 +78,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		vs.Status.SubresourceStatuses = subStatuses
-		Expect(getVirtualServiceStatus(vs)).To(Equal(core.Status_Accepted.String()))
+		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
 	})
 	It("handles Accepted state - sub resources rejected", func() {
 		reasonUntracked := "some reason that does not match a known criteria"
@@ -95,7 +95,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 				SubresourceStatuses: subStatuses,
 			},
 		}
-		out := getVirtualServiceStatus(vs)
+		out := getStatus(vs)
 		Expect(out).To(Equal(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 
 		By("two rejected")
@@ -110,7 +110,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		vs.Status.SubresourceStatuses = subStatuses
-		out = getVirtualServiceStatus(vs)
+		out = getStatus(vs)
 		// Use regex because order does not matter
 		Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUntracked)))
@@ -132,7 +132,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 				SubresourceStatuses: subStatuses,
 			},
 		}
-		out := getVirtualServiceStatus(vs)
+		out := getStatus(vs)
 		Expect(out).To(Equal(subResourceErrorFormat(erroredResourceIdentifier)))
 
 		By("one accepted, one rejected")
@@ -146,7 +146,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		vs.Status.SubresourceStatuses = subStatuses
-		out = getVirtualServiceStatus(vs)
+		out = getStatus(vs)
 		Expect(out).To(MatchRegexp(reasonUpstreamList))
 
 		By("two rejected")
@@ -161,7 +161,7 @@ var _ = Describe("getVirtualServiceStatus", func() {
 			},
 		}
 		vs.Status.SubresourceStatuses = subStatuses
-		out = getVirtualServiceStatus(vs)
+		out = getStatus(vs)
 		// Use regex because order does not matter
 		Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))
 		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUpstreamList)))

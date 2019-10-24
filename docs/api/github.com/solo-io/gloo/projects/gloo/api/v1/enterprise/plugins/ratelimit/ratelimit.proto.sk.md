@@ -130,6 +130,7 @@ Basic rate-limiting API
 "ratelimitServerRef": .core.solo.io.ResourceRef
 "requestTimeout": .google.protobuf.Duration
 "denyOnFail": bool
+"rateLimitBeforeAuth": bool
 
 ```
 
@@ -138,6 +139,7 @@ Basic rate-limiting API
 | `ratelimitServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) |  |  |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `denyOnFail` | `bool` |  |  |
+| `rateLimitBeforeAuth` | `bool` | Set this is set to true if you would like to rate limit traffic before applying external auth to it. *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state. |  |
 
 
 

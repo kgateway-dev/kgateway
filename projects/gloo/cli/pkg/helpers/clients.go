@@ -194,9 +194,10 @@ func UpstreamClient() (v1.UpstreamClient, error) {
 	}
 	cache := kube.NewKubeCache(context.TODO())
 	upstreamClient, err := v1.NewUpstreamClient(&factory.KubeResourceClientFactory{
-		Crd:         v1.UpstreamCrd,
-		Cfg:         cfg,
-		SharedCache: cache,
+		Crd:             v1.UpstreamCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating upstreams client")
@@ -227,9 +228,10 @@ func UpstreamGroupClient() (v1.UpstreamGroupClient, error) {
 	}
 	cache := kube.NewKubeCache(context.TODO())
 	upstreamGroupClient, err := v1.NewUpstreamGroupClient(&factory.KubeResourceClientFactory{
-		Crd:         v1.UpstreamGroupCrd,
-		Cfg:         cfg,
-		SharedCache: cache,
+		Crd:             v1.UpstreamGroupCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating upstream groups client")
@@ -260,9 +262,10 @@ func ProxyClient() (v1.ProxyClient, error) {
 	}
 	cache := kube.NewKubeCache(context.TODO())
 	proxyClient, err := v1.NewProxyClient(&factory.KubeResourceClientFactory{
-		Crd:         v1.ProxyCrd,
-		Cfg:         cfg,
-		SharedCache: cache,
+		Crd:             v1.ProxyCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating proxys client")
@@ -293,9 +296,10 @@ func GatewayV2Client() (gatewayv2.GatewayClient, error) {
 	}
 	cache := kube.NewKubeCache(context.TODO())
 	gatewayClient, err := gatewayv2.NewGatewayClient(&factory.KubeResourceClientFactory{
-		Crd:         gatewayv2.GatewayCrd,
-		Cfg:         cfg,
-		SharedCache: cache,
+		Crd:             gatewayv2.GatewayCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating gateway client")
@@ -326,9 +330,10 @@ func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
 	}
 	cache := kube.NewKubeCache(context.TODO())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(&factory.KubeResourceClientFactory{
-		Crd:         gatewayv1.VirtualServiceCrd,
-		Cfg:         cfg,
-		SharedCache: cache,
+		Crd:             gatewayv1.VirtualServiceCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating virtualServices client")
@@ -337,6 +342,40 @@ func VirtualServiceClient() (gatewayv1.VirtualServiceClient, error) {
 		return nil, err
 	}
 	return virtualServiceClient, nil
+}
+
+func MustRouteTableClient() gatewayv1.RouteTableClient {
+	routeTableClient, err := RouteTableClient()
+	if err != nil {
+		log.Fatalf("failed to create routeTable client: %v", err)
+	}
+	return routeTableClient
+}
+
+func RouteTableClient() (gatewayv1.RouteTableClient, error) {
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return gatewayv1.NewRouteTableClient(customFactory)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache(context.TODO())
+	routeTableClient, err := gatewayv1.NewRouteTableClient(&factory.KubeResourceClientFactory{
+		Crd:             gatewayv1.RouteTableCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating routeTables client")
+	}
+	if err := routeTableClient.Register(); err != nil {
+		return nil, err
+	}
+	return routeTableClient, nil
 }
 
 func MustSettingsClient() v1.SettingsClient {
@@ -359,9 +398,10 @@ func SettingsClient() (v1.SettingsClient, error) {
 	}
 	cache := kube.NewKubeCache(context.TODO())
 	settingsClient, err := v1.NewSettingsClient(&factory.KubeResourceClientFactory{
-		Crd:         v1.SettingsCrd,
-		Cfg:         cfg,
-		SharedCache: cache,
+		Crd:             v1.SettingsCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating settings client")

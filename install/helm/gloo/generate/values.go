@@ -95,9 +95,9 @@ type Settings struct {
 	WatchNamespaces []string      `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
 	WriteNamespace  string        `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
 	Integrations    *Integrations `json:"integrations,omitempty"`
-	Create          bool          `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
+	Create          bool          `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
 	Extensions      interface{}   `json:"extensions,omitempty"`
-	SingleNamespace bool          `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	SingleNamespace bool          `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 }
 
 type Gloo struct {
@@ -105,12 +105,13 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	Image          *Image  `json:"image,omitempty"`
-	XdsPort        int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
-	ValidationPort int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
-	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	Image                 *Image  `json:"image,omitempty"`
+	XdsPort               int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	ValidationPort        int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
+	Stats                 bool    `json:"stats" desc:"enable prometheus stats"`
+	FloatingUserId        bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser             float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	ExternalTrafficPolicy string  `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
 	*DeploymentSpec
 }
 
@@ -176,7 +177,7 @@ type GatewayProxy struct {
 
 type GatewayProxyGatewaySettings struct {
 	DisableGeneratedGateways bool   `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
-	UseProxyProto            bool   `json:"useProxyProto,omitempty" desc:"use proxy protocol"`
+	UseProxyProto            bool   `json:"useProxyProto" desc:"use proxy protocol"`
 	CustomHttpGateway        string `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
 	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 }
@@ -229,7 +230,7 @@ type AccessLogger struct {
 	Image       *Image `json:"image,omitempty"`
 	Port        uint   `json:"port,omitempty"`
 	ServiceName string `json:"serviceName,omitempty"`
-	Enabled     bool   `json:"enabled,omitempty"`
+	Enabled     bool   `json:"enabled"`
 	*DeploymentSpec
 }
 
@@ -240,7 +241,7 @@ type GatewayProxyConfigMap struct {
 type Ingress struct {
 	Enabled             *bool              `json:"enabled"`
 	Deployment          *IngressDeployment `json:"deployment,omitempty"`
-	RequireIngressClass *bool              `json:"requireIngressClass,omitempty" desc:"only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''"`
+	RequireIngressClass *bool              `json:"requireIngressClass" desc:"only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''"`
 }
 
 type IngressDeployment struct {

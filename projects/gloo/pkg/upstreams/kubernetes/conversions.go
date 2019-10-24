@@ -34,7 +34,7 @@ func KubeServicesToUpstreams(services skkube.ServiceList) v1.UpstreamList {
 	var result v1.UpstreamList
 	for _, svc := range services {
 		for _, port := range svc.Spec.Ports {
-			kubeSvc := kubev1.Service(svc.Service)
+			kubeSvc := svc.Service.Service
 			result = append(result, serviceToUpstream(&kubeSvc, port))
 		}
 	}

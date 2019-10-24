@@ -1,0 +1,5 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyTag: v0.1.17
+    dependencyRepo: envoy-gloo
