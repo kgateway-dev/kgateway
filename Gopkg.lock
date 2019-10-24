@@ -534,12 +534,9 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1792,9 +1789,10 @@
   revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
 
 [[projects]]
-  digest = "1:deedfa6fd63a3ab08bcdb6b84de7342a1dbcdb02150c5f6cdb50d2098ecb8e75"
+  digest = "1:bb533ccc3d271b79ca611125beaff2ec3f06c003174849531be262a64a58953e"
   name = "google.golang.org/api"
   packages = [
+    "compute/v1",
     "gensupport",
     "googleapi",
     "googleapi/internal/uritemplates",
@@ -2741,7 +2739,6 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2762,7 +2759,6 @@
     "github.com/k0kubun/pp",
     "github.com/kelseyhightower/envconfig",
     "github.com/keybase/go-ps",
-    "github.com/mattn/go-zglob",
     "github.com/mitchellh/hashstructure",
     "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
@@ -2851,7 +2847,10 @@
     "go.opencensus.io/trace",
     "go.uber.org/multierr",
     "go.uber.org/zap",
+    "golang.org/x/oauth2/google",
     "golang.org/x/sync/errgroup",
+    "google.golang.org/api/compute/v1",
+    "google.golang.org/api/option",
     "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
