@@ -128,6 +128,11 @@ func (o *KubeService) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*KubeService)
 }
 
+func (o *KubeService) DeepCopyInto(out *KubeService) {
+	clone := resources.Clone(o).(*KubeService)
+	*out = *clone
+}
+
 var (
 	KubeServiceCrd = crd.NewCrd(
 		"services",

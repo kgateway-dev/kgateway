@@ -67,9 +67,9 @@ format that will be included in the extauth snapshot.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
-| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk#config) |  |  |
+| `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
+| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) |  |  |
 
 
 
@@ -92,13 +92,13 @@ format that will be included in the extauth snapshot.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk#basicauth) |  Only one of `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk#oauth) |  Only one of `oauth`, `basicAuth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk#customauth) | Deprecated: use ExtAuthExtension.CustomAuth. Only one of `customAuth`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk#apikeyauth) |  Only one of `apiKeyAuth`, `basicAuth`, `oauth`, `customAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  Only one of `pluginAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk#ldap) |  Only one of `ldap`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk/#oauth) |  Only one of `oauth`, `basicAuth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk/#customauth) | Deprecated: use ExtAuthExtension.CustomAuth. Only one of `customAuth`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk/#apikeyauth) |  Only one of `apiKeyAuth`, `basicAuth`, `oauth`, `customAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk/#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
 
 
 
@@ -119,8 +119,8 @@ Auth configurations defined on virtual hosts, routes, and weighted destinations 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disable` | `bool` | Set to true to disable auth on the virtual host/route. Only one of `disable`, or `customAuth` can be set. |  |
-| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | A reference to an AuthConfig. This is used to configure the GlooE extauth server. Only one of `configRef`, or `customAuth` can be set. |  |
-| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk#customauth) | Use this field if you are running your own custom extauth server. Only one of `customAuth`, or `configRef` can be set. |  |
+| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A reference to an AuthConfig. This is used to configure the GlooE extauth server. Only one of `configRef`, or `customAuth` can be set. |  |
+| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk/#customauth) | Use this field if you are running your own custom extauth server. Only one of `customAuth`, or `configRef` can be set. |  |
 
 
 
@@ -143,12 +143,12 @@ Deprecated: use ExtAuthExtension
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk#basicauth) | Deprecated: use `configs` field instead. Only one of `basicAuth`, `oauth`, `customAuth`, or `pluginAuth` can be set. |  |
-| `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk#oauth) | Deprecated: use `configs` field instead. Only one of `oauth`, `basicAuth`, `customAuth`, or `pluginAuth` can be set. |  |
-| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk#customauth) | Deprecated: use `configs` field instead. Only one of `customAuth`, `basicAuth`, `oauth`, or `pluginAuth` can be set. |  |
-| `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk#apikeyauth) | Deprecated: use `configs` field instead. Only one of `apiKeyAuth`, `basicAuth`, `oauth`, or `pluginAuth` can be set. |  |
-| `pluginAuth` | [.enterprise.gloo.solo.io.PluginAuth](../extauth.proto.sk#pluginauth) | Deprecated: use `configs` field instead. Only one of `pluginAuth`, `basicAuth`, `oauth`, or `apiKeyAuth` can be set. |  |
-| `configs` | [[]enterprise.gloo.solo.io.VhostExtension.AuthConfig](../extauth.proto.sk#authconfig) | A chain of AuthN\AuthZ configurations which will be executed in the order they are specified. The first plugin to deny a request will cause a 403 response to be returned; any subsequent plugin in the chain will not be executed. The headers on the OkHttpResponse returned from a plugin in the chain will be added to the request that will be sent to the next one(s) according to the rules described here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-okhttpresponse. |  |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) | Deprecated: use `configs` field instead. Only one of `basicAuth`, `oauth`, `customAuth`, or `pluginAuth` can be set. |  |
+| `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk/#oauth) | Deprecated: use `configs` field instead. Only one of `oauth`, `basicAuth`, `customAuth`, or `pluginAuth` can be set. |  |
+| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk/#customauth) | Deprecated: use `configs` field instead. Only one of `customAuth`, `basicAuth`, `oauth`, or `pluginAuth` can be set. |  |
+| `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk/#apikeyauth) | Deprecated: use `configs` field instead. Only one of `apiKeyAuth`, `basicAuth`, `oauth`, or `pluginAuth` can be set. |  |
+| `pluginAuth` | [.enterprise.gloo.solo.io.PluginAuth](../extauth.proto.sk/#pluginauth) | Deprecated: use `configs` field instead. Only one of `pluginAuth`, `basicAuth`, `oauth`, or `apiKeyAuth` can be set. |  |
+| `configs` | [[]enterprise.gloo.solo.io.VhostExtension.AuthConfig](../extauth.proto.sk/#authconfig) | A chain of AuthN\AuthZ configurations which will be executed in the order they are specified. The first plugin to deny a request will cause a 403 response to be returned; any subsequent plugin in the chain will not be executed. The headers on the OkHttpResponse returned from a plugin in the chain will be added to the request that will be sent to the next one(s) according to the rules described here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-okhttpresponse. |  |
 
 
 
@@ -171,13 +171,13 @@ Deprecated: use ExtAuthExtension
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk#basicauth) |  Only one of `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk#oauth) |  Only one of `oauth`, `basicAuth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk#customauth) |  Only one of `customAuth`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk#apikeyauth) |  Only one of `apiKeyAuth`, `basicAuth`, `oauth`, `customAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  Only one of `pluginAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk#ldap) |  Only one of `ldap`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk/#oauth) |  Only one of `oauth`, `basicAuth`, `customAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk/#customauth) |  Only one of `customAuth`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `apiKeyAuth` | [.enterprise.gloo.solo.io.ApiKeyAuth](../extauth.proto.sk/#apikeyauth) |  Only one of `apiKeyAuth`, `basicAuth`, `oauth`, `customAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk/#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `basicAuth`, `oauth`, `customAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
 
 
 
@@ -219,12 +219,12 @@ Deprecated: use ExtAuthExtension
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `extauthzServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to ask about auth decisions. |  |
-| `httpService` | [.enterprise.gloo.solo.io.HttpService](../extauth.proto.sk#httpservice) | If this is set, communication to the upstream will be via HTTP and not GRPC. |  |
+| `extauthzServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream to ask about auth decisions. |  |
+| `httpService` | [.enterprise.gloo.solo.io.HttpService](../extauth.proto.sk/#httpservice) | If this is set, communication to the upstream will be via HTTP and not GRPC. |  |
 | `userIdHeader` | `string` | If the auth server trusted id of the user, it will be set in this header. Specifically this means that this header will be sanitized form the incoming request. |  |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the ext auth service to respond. Defaults to 200ms. |  |
 | `failureModeAllow` | `bool` | In case of a failure or timeout querying the auth server, normally a request is denied. if this is set to true, the request will be allowed. |  |
-| `requestBody` | [.enterprise.gloo.solo.io.BufferSettings](../extauth.proto.sk#buffersettings) | Set this if you also want to send the body of the request, and not just the headers. |  |
+| `requestBody` | [.enterprise.gloo.solo.io.BufferSettings](../extauth.proto.sk/#buffersettings) | Set this if you also want to send the body of the request, and not just the headers. |  |
 | `clearRouteCache` | `bool` | Clears route cache in order to allow the external authorization service to correctly affect routing decisions. Filter clears all cached routes when: 1. The field is set to *true*. 2. The status returned from the authorization service is a HTTP 200 or gRPC 0. 3. At least one *authorization response header* is added to the client request, or is used for altering another client request header. |  |
 | `statusOnError` | `int` | Sets the HTTP status that is returned to the client when there is a network error between the filter and the authorization server. The default status is HTTP 403 Forbidden. If set, this must be one of the following: - 100 - 200 201 202 203 204 205 206 207 208 226 - 300 301 302 303 304 305 307 308 - 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 421 422 423 424 426 428 429 431 - 500 501 502 503 504 505 506 507 508 510 511. |  |
 
@@ -246,8 +246,8 @@ Deprecated: use ExtAuthExtension
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `pathPrefix` | `string` | Sets a prefix to the value of authorization request header *Path*. |  |
-| `request` | [.enterprise.gloo.solo.io.HttpService.Request](../extauth.proto.sk#request) |  |  |
-| `response` | [.enterprise.gloo.solo.io.HttpService.Response](../extauth.proto.sk#response) |  |  |
+| `request` | [.enterprise.gloo.solo.io.HttpService.Request](../extauth.proto.sk/#request) |  |  |
+| `response` | [.enterprise.gloo.solo.io.HttpService.Response](../extauth.proto.sk/#response) |  |  |
 
 
 
@@ -343,7 +343,7 @@ Deprecated
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `plugins` | [[]enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  |  |
+| `plugins` | [[]enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  |  |
 
 
 
@@ -385,7 +385,7 @@ Deprecated
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `realm` | `string` |  |  |
-| `apr` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk#apr) |  |  |
+| `apr` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) |  |  |
 
 
 
@@ -444,7 +444,7 @@ Deprecated
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `clientId` | `string` | your client id as registered with the issuer. |  |
-| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | your client secret as registered with the issuer. |  |
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |  |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |  |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
@@ -484,7 +484,7 @@ Deprecated
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `labelSelector` | `map<string, string>` | identify all valid apikey secrets using the provided label selector. apikey secrets must be in gloo's watch namespaces for gloo to locate them. |  |
-| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector. |  |
+| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector. |  |
 
 
 
@@ -523,7 +523,7 @@ Deprecated
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |  |
+| `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |  |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |  |
 
 
@@ -554,7 +554,7 @@ Authenticates and authorizes requests by querying an LDAP server. Gloo makes the
 | `userDnTemplate` | `string` | Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io". |  |
 | `membershipAttributeName` | `string` | Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided. |  |
 | `allowedGroups` | `[]string` | In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }. |  |
-| `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |  |
+| `pool` | [.enterprise.gloo.solo.io.Ldap.ConnectionPool](../extauth.proto.sk/#connectionpool) | Use this property to tune the pool of connections to the LDAP server that Gloo maintains. |  |
 
 
 
@@ -601,11 +601,11 @@ is requested (meaning that all the polled connections are in use), the connectio
 | ----- | ---- | ----------- |----------- | 
 | `authConfigRefName` | `string` |  |  |
 | `vhost` | `string` | Deprecated: use auth_config_ref_name instead. |  |
-| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk#oauthconfig) |  Only one of `oauth`, `basicAuth`, or `pluginAuth` can be set. |  |
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk#basicauth) |  Only one of `basicAuth`, `oauth`, or `pluginAuth` can be set. |  |
-| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, or `pluginAuth` can be set. |  |
-| `pluginAuth` | [.enterprise.gloo.solo.io.PluginAuth](../extauth.proto.sk#pluginauth) |  Only one of `pluginAuth`, `oauth`, or `apiKeyAuth` can be set. |  |
-| `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk#config) |  |  |
+| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `basicAuth`, or `pluginAuth` can be set. |  |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, or `pluginAuth` can be set. |  |
+| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk/#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, or `pluginAuth` can be set. |  |
+| `pluginAuth` | [.enterprise.gloo.solo.io.PluginAuth](../extauth.proto.sk/#pluginauth) |  Only one of `pluginAuth`, `oauth`, or `apiKeyAuth` can be set. |  |
+| `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) |  |  |
 
 
 
@@ -690,12 +690,12 @@ is requested (meaning that all the polled connections are in use), the connectio
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk#oauthconfig) |  Only one of `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk#basicauth) |  Only one of `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, `basicAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk#authplugin) |  Only one of `pluginAuth`, `oauth`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `opaAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk#opaauthconfig) |  Only one of `opaAuth`, `oauth`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk#ldap) |  Only one of `ldap`, `oauth`, `basicAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
+| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk/#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, `basicAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `oauth`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `opaAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk/#opaauthconfig) |  Only one of `opaAuth`, `oauth`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `oauth`, `basicAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
 
 
 

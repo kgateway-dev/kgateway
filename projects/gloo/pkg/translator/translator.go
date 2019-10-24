@@ -171,20 +171,13 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 	routeConfigs []*envoyapi.RouteConfiguration,
 	listeners []*envoyapi.Listener) envoycache.Snapshot {
 
-	var endpointsProto, clustersProto, routesProto, listenersProto []envoycache.Resource
+	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {
 		endpointsProto = append(endpointsProto, xds.NewEnvoyResource(ep))
 	}
 	for _, cluster := range clusters {
 		clustersProto = append(clustersProto, xds.NewEnvoyResource(cluster))
-	}
-	for _, routeCfg := range routeConfigs {
-		// don't add empty route configs, envoy will complain
-		if len(routeCfg.VirtualHosts) < 1 {
-			continue
-		}
-		routesProto = append(routesProto, xds.NewEnvoyResource(routeCfg))
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
@@ -205,11 +198,6 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		panic(errors.Wrap(err, "constructing version hash for clusters envoy snapshot components"))
 	}
 
-	routesVersion, err := hashstructure.Hash(routesProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for routes envoy snapshot components"))
-	}
-
 	listenersVersion, err := hashstructure.Hash(listenersProto, nil)
 	if err != nil {
 		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
@@ -220,6 +208,24 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 	return xds.NewSnapshotFromResources(
 		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
-		envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto),
+		MakeRdsResources(routeConfigs),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
+}
+
+func MakeRdsResources(routeConfigs []*envoyapi.RouteConfiguration) envoycache.Resources {
+	var routesProto []envoycache.Resource
+
+	for _, routeCfg := range routeConfigs {
+		// don't add empty route configs, envoy will complain
+		if len(routeCfg.VirtualHosts) < 1 {
+			continue
+		}
+		routesProto = append(routesProto, xds.NewEnvoyResource(routeCfg))
+	}
+
+	routesVersion, err := hashstructure.Hash(routesProto, nil)
+	if err != nil {
+		panic(errors.Wrap(err, "constructing version hash for routes envoy snapshot components"))
+	}
+	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }

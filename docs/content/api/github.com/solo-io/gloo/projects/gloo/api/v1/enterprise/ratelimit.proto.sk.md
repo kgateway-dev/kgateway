@@ -37,7 +37,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `domain` | `string` |  |  |
-| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../plugins/ratelimit/ratelimit.proto.sk#descriptor) |  |  |
+| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../plugins/ratelimit/ratelimit.proto.sk/#descriptor) |  |  |
 
 
 

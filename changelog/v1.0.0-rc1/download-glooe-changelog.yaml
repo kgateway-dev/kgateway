@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Download GlooE changelog from GCP bucket during release so Gloo can generate proper docs.
+    issueLink: https://github.com/solo-io/gloo/issues/1482

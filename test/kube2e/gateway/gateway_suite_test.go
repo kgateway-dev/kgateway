@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 
 	"github.com/gogo/protobuf/types"
@@ -114,13 +116,19 @@ func TearDownTestHelper() {
 
 // enable/disable strict validation
 func UpdateAlwaysAcceptSetting(alwaysAccept bool) {
+	UpdateSettings(func(settings *v1.Settings) {
+		Expect(settings.Gateway).NotTo(BeNil())
+		Expect(settings.Gateway.Validation).NotTo(BeNil())
+		settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: alwaysAccept}
+	})
+}
+
+func UpdateSettings(f func(settings *v1.Settings)) {
 	settingsClient := clienthelpers.MustSettingsClient()
 	settings, err := settingsClient.Read(testHelper.InstallNamespace, "default", clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect(settings.Gateway).NotTo(BeNil())
-	Expect(settings.Gateway.Validation).NotTo(BeNil())
-	settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: alwaysAccept}
+	f(settings)
 
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	Expect(err).NotTo(HaveOccurred())

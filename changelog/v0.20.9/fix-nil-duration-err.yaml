@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix controller pod crash when settings is missing 
+    issueLink: https://github.com/solo-io/gloo/issues/1498

@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	mSetupsRun = utils.MakeCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
+	mSetupsRun = utils.MakeSumCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
 )
 
 // tell us how to setup
@@ -47,7 +47,7 @@ func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 
 	contextutils.LoggerFrom(ctx).Debugw("received settings snapshot", zap.Any("settings", settings))
 
-	utils.Increment(
+	utils.MeasureOne(
 		ctx,
 		mSetupsRun,
 	)

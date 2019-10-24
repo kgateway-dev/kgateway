@@ -51,7 +51,7 @@ Metadata contains general properties of resources for purposes of versioning, an
 | `labels` | `map<string, string>` | Map of string keys and values that can be used to organize and categorize (scope and select) objects. Some resources contain `selectors` which can be linked with other resources by their labels. |  |
 | `annotations` | `map<string, string>` | Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. |  |
 | `generation` | `int` | A sequence number representing a specific generation of the desired state. Currently only populated for resources backed by Kubernetes. |  |
-| `ownerReferences` | [[]core.solo.io.Metadata.OwnerReference](../metadata.proto.sk#ownerreference) | List of objects depended by this object. Currently only populated for resources backed by Kubernetes. |  |
+| `ownerReferences` | [[]core.solo.io.Metadata.OwnerReference](../metadata.proto.sk/#ownerreference) | List of objects depended by this object. Currently only populated for resources backed by Kubernetes. |  |
 
 
 

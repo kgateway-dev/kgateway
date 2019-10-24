@@ -45,7 +45,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `url` | `string` | The url used when accessing the upstream for Json Web Key Set. This is used to set the host and path in the request. |  |
-| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The Upstream representing the Json Web Key Set server. |  |
+| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Upstream representing the Json Web Key Set server. |  |
 | `cacheDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Duration after which the cached JWKS should be expired. If not specified, default cache duration is 5 minutes. |  |
 
 
@@ -81,8 +81,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `remote` | [.jwt.plugins.gloo.solo.io.RemoteJwks](../jwt.proto.sk#remotejwks) | Use a remote JWKS server. Only one of `remote` or `local` can be set. |  |
-| `local` | [.jwt.plugins.gloo.solo.io.LocalJwks](../jwt.proto.sk#localjwks) | Use an inline JWKS. Only one of `local` or `remote` can be set. |  |
+| `remote` | [.jwt.plugins.gloo.solo.io.RemoteJwks](../jwt.proto.sk/#remotejwks) | Use a remote JWKS server. Only one of `remote` or `local` can be set. |  |
+| `local` | [.jwt.plugins.gloo.solo.io.LocalJwks](../jwt.proto.sk/#localjwks) | Use an inline JWKS. Only one of `local` or `remote` can be set. |  |
 
 
 
@@ -101,7 +101,7 @@ Describes the location of a JWT token
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `headers` | [[]jwt.plugins.gloo.solo.io.TokenSource.HeaderSource](../jwt.proto.sk#headersource) | Try to retrieve token from these headers. |  |
+| `headers` | [[]jwt.plugins.gloo.solo.io.TokenSource.HeaderSource](../jwt.proto.sk/#headersource) | Try to retrieve token from these headers. |  |
 | `queryParams` | `[]string` | Try to retrieve token from these query params. |  |
 
 
@@ -166,12 +166,12 @@ Allows copying verified claims to headers sent upstream
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `jwks` | [.jwt.plugins.gloo.solo.io.Jwks](../jwt.proto.sk#jwks) | The source for the keys to validate JWTs. |  |
+| `jwks` | [.jwt.plugins.gloo.solo.io.Jwks](../jwt.proto.sk/#jwks) | The source for the keys to validate JWTs. |  |
 | `audiences` | `[]string` | An incoming JWT must have an 'aud' claim and it must be in this list. |  |
 | `issuer` | `string` | Issuer of the JWT. the 'iss' claim of the JWT must match this. |  |
-| `tokenSource` | [.jwt.plugins.gloo.solo.io.TokenSource](../jwt.proto.sk#tokensource) | Where to find the JWT of the current provider. |  |
+| `tokenSource` | [.jwt.plugins.gloo.solo.io.TokenSource](../jwt.proto.sk/#tokensource) | Where to find the JWT of the current provider. |  |
 | `keepToken` | `bool` | Should the token forwarded upstream. if false, the header containing the token will be removed. |  |
-| `claimsToHeaders` | [[]jwt.plugins.gloo.solo.io.ClaimToHeader](../jwt.proto.sk#claimtoheader) | What claims should be copied to upstream headers. |  |
+| `claimsToHeaders` | [[]jwt.plugins.gloo.solo.io.ClaimToHeader](../jwt.proto.sk/#claimtoheader) | What claims should be copied to upstream headers. |  |
 
 
 

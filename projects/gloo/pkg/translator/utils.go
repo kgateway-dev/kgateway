@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+// returns the name of the cluster created for a given upstream
 func UpstreamToClusterName(upstream core.ResourceRef) string {
 
 	// For non-namespaced resources, return only name

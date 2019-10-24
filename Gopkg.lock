@@ -1377,6 +1377,16 @@
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:7a9ff429c9395795e1cd5989449fce966f1968c333be79991f6f36a5b0daa583"
+  name = "github.com/solo-io/go-list-licenses"
+  packages = [
+    "assets",
+    "pkg/license",
+  ]
+  pruneopts = "UT"
+  revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"
+
+[[projects]]
   digest = "1:3c22eb15e732e1bc71a679cca21d33f1f074f7cd94cc3dbd69efa74f4c0c5181"
   name = "github.com/solo-io/go-utils"
   packages = [
@@ -1433,7 +1443,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:c9ce049431f21580765d40a86a021597023fd2b9128d7fd77bafb2b7d1a4a1c7"
+  digest = "1:34e37248f6d265648cf403f74c85a5a6232af581ea73ab135294627f71dbb472"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1479,6 +1489,8 @@
     "pkg/code-generator/cmd",
     "pkg/code-generator/codegen",
     "pkg/code-generator/codegen/templates",
+    "pkg/code-generator/codegen/templates/kube",
+    "pkg/code-generator/codegen/utils",
     "pkg/code-generator/docgen",
     "pkg/code-generator/docgen/datafile",
     "pkg/code-generator/docgen/funcs",
@@ -1499,8 +1511,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "78c3732f8fbe19283f7b3379ed4e525eb776e87b"
-  version = "v0.11.2"
+  revision = "ea27b57205980f6d89fab3070ce17d3dfa8beead"
+  version = "v0.11.5"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2817,6 +2829,7 @@
     "github.com/prometheus/client_golang/api/prometheus/v1",
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
+    "github.com/solo-io/go-list-licenses/pkg/license",
     "github.com/solo-io/go-utils/certutils",
     "github.com/solo-io/go-utils/changelogutils",
     "github.com/solo-io/go-utils/clidoc",

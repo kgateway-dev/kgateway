@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+
 	gotestutils "github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo"
@@ -34,6 +35,10 @@ var _ = BeforeSuite(func() {
 	os.Mkdir(dir, 0755)
 
 	err = testutils.Make(RootDir, "build-test-chart TEST_ASSET_DIR=\""+dir+"\" BUILD_ID=unit-testing")
+	Expect(err).NotTo(HaveOccurred())
+
+	// Some tests need the Gloo/GlooE version that gets linked into the glooctl binary at build time
+	err = testutils.Make(RootDir, "glooctl")
 	Expect(err).NotTo(HaveOccurred())
 
 	file = filepath.Join(dir, "gloo-test-unit-testing.tgz")

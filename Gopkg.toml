@@ -28,7 +28,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.11.2"
+  version = "0.11.5"
 
 [[override]]
   name = "github.com/solo-io/go-utils"
@@ -103,6 +103,11 @@
   name = "k8s.io/klog"
   revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
   source = "github.com/stefanprodan/klog"
+
 [[constraint]]
   name = "github.com/spf13/viper"
   version = "1.4.0"
+
+[[constraint]]
+  name = "github.com/solo-io/go-list-licenses"
+  revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"

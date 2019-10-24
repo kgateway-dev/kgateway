@@ -12,11 +12,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"go.opencensus.io/tag"
-)
-
-var (
-	proxyNameKey, _ = tag.NewKey("proxyname")
 )
 
 type translatorSyncer struct {

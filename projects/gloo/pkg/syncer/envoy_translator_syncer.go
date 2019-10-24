@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+
 	"github.com/gorilla/mux"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -30,7 +32,7 @@ var (
 		Measure:     envoySnapshotOut,
 		Description: "The number of resources in the snapshot for envoy",
 		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{proxyNameKey, resourceNameKey},
+		TagKeys:     []tag.Key{syncerstats.ProxyNameKey, resourceNameKey},
 	}
 )
 
@@ -65,7 +67,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
-		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(proxyNameKey, proxy.Metadata.Ref().Key())); err == nil {
+		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.Metadata.Ref().Key())); err == nil {
 			proxyCtx = ctxWithTags
 		}
 

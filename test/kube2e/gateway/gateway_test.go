@@ -569,6 +569,77 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 		})
+
+		Context("with a mix of valid and invalid routes on a single virtual service", func() {
+			var vs *gatewayv1.VirtualService
+			BeforeEach(func() {
+
+				UpdateSettings(func(settings *gloov1.Settings) {
+					Expect(settings.Gloo).NotTo(BeNil())
+					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
+					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = true
+				})
+
+				vs = withRoute(&gatewayv1.Route{
+					Matchers: []*gloov1.Matcher{{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/invalid-route"}}},
+					Action: &gatewayv1.Route_RouteAction{RouteAction: &gloov1.RouteAction{
+						Destination: &gloov1.RouteAction_Single{Single: &gloov1.Destination{
+							DestinationType: &gloov1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Namespace: testHelper.InstallNamespace,
+									Name:      "does-not-exist",
+								},
+							},
+						}},
+					}},
+				}, getVirtualService(&gloov1.Destination{
+					DestinationType: &gloov1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						},
+					},
+				}, nil))
+
+				Eventually(func() error {
+					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
+					return err
+				}, time.Second*10).ShouldNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				_ = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{})
+
+				UpdateSettings(func(settings *gloov1.Settings) {
+					Expect(settings.Gloo).NotTo(BeNil())
+					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
+					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = false
+				})
+
+			})
+			It("serves a direct response for the invalid route response", func() {
+				// the valid route should work
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+
+				// the invalid route should respond with the direct response
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/invalid-route",
+					Method:            "GET",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, "Gloo Gateway has invalid configuration", 1, 60*time.Second, 1*time.Second)
+			})
+		})
 	})
 
 	Context("tests with route tables", func() {
@@ -1241,6 +1312,11 @@ func withName(name string, vs *gatewayv1.VirtualService) *gatewayv1.VirtualServi
 
 func withDomains(domains []string, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
 	vs.VirtualHost.Domains = domains
+	return vs
+}
+
+func withRoute(route *gatewayv1.Route, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
+	vs.VirtualHost.Routes = append([]*gatewayv1.Route{route}, vs.VirtualHost.Routes...)
 	return vs
 }
 
