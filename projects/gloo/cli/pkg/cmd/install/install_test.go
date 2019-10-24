@@ -2,6 +2,7 @@ package install_test
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/testutils/exec"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -61,7 +62,7 @@ var _ = Describe("Install", func() {
 	})
 
 	It("should not error when providing the admin console flag", func() {
-		out, err := testutils.GlooctlOut("install gateway --dry-run --with-admin-console")
+		out, err := exec.RunCommandInputOutput("glooctl", ".", true, "glooctl", "install", "gateway", "--dry-run", "--with-admin-console")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out).To(ContainSubstring("kind: Namespace"))
 	})
