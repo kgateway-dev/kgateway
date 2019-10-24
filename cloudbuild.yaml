@@ -18,6 +18,31 @@ steps:
     - 'GIT_SSH_CONFIG=FALSE'
   id: 'dep'
 
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+  args: ['docker']
+  env:
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GOPATH=/workspace/gopath'
+    - 'TAGGED_VERSION=$TAG_NAME'
+    - 'BUILD_ID=$BUILD_ID'
+    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['dep']
+  id: 'compile'
+
+  # Run regression tests
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+  args: ['build-test-assets']
+  env:
+    - 'PROJECT_ROOT=github.com/solo-io/gloo'
+    - 'GOPATH=/workspace/gopath'
+    - 'BUILD_ID=$BUILD_ID'
+    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+    - 'HELM_HOME=/root/.helm'
+    - 'TAGGED_VERSION=$TAG_NAME'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  waitFor: ['compile']
+  id: 'build-test-assets'
 
 - name: 'gcr.io/solo-public/go-make:0.1.12'
   args: ['download-glooe-changelog', 'publish-docs', '-B']
@@ -30,7 +55,7 @@ steps:
   - 'HELM_HOME=/root/.helm' # tell helm where to find data
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'release-chart'
-  waitFor: ['dep']
+  waitFor: ['build-test-assets']
 
 
 timeout: 4200s
