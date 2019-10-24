@@ -208,7 +208,6 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   args: ['manifest', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', '-B']
   env:
-  - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
