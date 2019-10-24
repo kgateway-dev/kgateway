@@ -83,33 +83,33 @@ Represents global settings for all the Gloo components.
 | ----- | ---- | ----------- |----------- | 
 | `discoveryNamespace` | `string` | This is the namespace to which Gloo controllers will write their own resources, e.g. discovered Upstreams or default Gateways. If empty, this will default to "gloo-system". |  |
 | `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |  |
-| `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk#kubernetescrds) |  Only one of `kubernetesConfigSource`, or `consulKvSource` can be set. |  |
-| `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  Only one of `directoryConfigSource`, or `consulKvSource` can be set. |  |
-| `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk#consulkv) |  Only one of `consulKvSource`, or `directoryConfigSource` can be set. |  |
-| `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk#kubernetessecrets) |  Only one of `kubernetesSecretSource`, or `directorySecretSource` can be set. |  |
-| `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk#vaultsecrets) |  Only one of `vaultSecretSource`, or `directorySecretSource` can be set. |  |
-| `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  Only one of `directorySecretSource`, or `vaultSecretSource` can be set. |  |
-| `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |  |
-| `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk#directory) |  Only one of `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |  |
-| `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk#consulkv) |  Only one of `consulKvArtifactSource`, or `directoryArtifactSource` can be set. |  |
+| `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk/#kubernetescrds) |  Only one of `kubernetesConfigSource`, or `consulKvSource` can be set. |  |
+| `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryConfigSource`, or `consulKvSource` can be set. |  |
+| `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvSource`, or `directoryConfigSource` can be set. |  |
+| `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetesSecretSource`, or `directorySecretSource` can be set. |  |
+| `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vaultSecretSource`, or `directorySecretSource` can be set. |  |
+| `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directorySecretSource`, or `vaultSecretSource` can be set. |  |
+| `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |  |
+| `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |  |
+| `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, or `directoryArtifactSource` can be set. |  |
 | `bindAddr` | `string` | Where the Gloo xDS server should bind (should not need configuration by user) Deprecated: use gloo.xdsBindAddr. |  |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc. |  |
 | `devMode` | `bool` | Enable serving debug data on port 9090. |  |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services. |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. Deprecated: use gloo.circuitBreakers. |  |
-| `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |  |
-| `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk#discoveryoptions) | Options for configuring Gloo's Discovery service. |  |
-| `gloo` | [.gloo.solo.io.GlooOptions](../settings.proto.sk#gloooptions) | Options for configuring `gloo`, the core Gloo controller, which serves dynamic configuration to Envoy. |  |
-| `gateway` | [.gloo.solo.io.GatewayOptions](../settings.proto.sk#gatewayoptions) | Options for configuring `gateway`, the Gateway Gloo controller, which enables the VirtualService/Gateway API in Gloo. |  |
-| `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
-| `kubernetes` | [.gloo.solo.io.Settings.KubernetesConfiguration](../settings.proto.sk#kubernetesconfiguration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque settings config for Gloo extensions. |  |
-| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.ServiceSettings](../enterprise/plugins/ratelimit/ratelimit.proto.sk#servicesettings) | Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of *actions*, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes. |  |
-| `ratelimitServer` | [.ratelimit.plugins.gloo.solo.io.Settings](../enterprise/plugins/ratelimit/ratelimit.proto.sk#settings) | Enterprise-only: Settings for the rate limiting server itself. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.Settings](../enterprise/plugins/rbac/rbac.proto.sk#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |  |
-| `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/plugins/extauth/v1/extauth.proto.sk#settings) | Enterprise-only: External auth related settings. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. Deprecated: use gloo.circuitBreakers. |  |
+| `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk/#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |  |
+| `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk/#discoveryoptions) | Options for configuring Gloo's Discovery service. |  |
+| `gloo` | [.gloo.solo.io.GlooOptions](../settings.proto.sk/#gloooptions) | Options for configuring `gloo`, the core Gloo controller, which serves dynamic configuration to Envoy. |  |
+| `gateway` | [.gloo.solo.io.GatewayOptions](../settings.proto.sk/#gatewayoptions) | Options for configuring `gateway`, the Gateway Gloo controller, which enables the VirtualService/Gateway API in Gloo. |  |
+| `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk/#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
+| `kubernetes` | [.gloo.solo.io.Settings.KubernetesConfiguration](../settings.proto.sk/#kubernetesconfiguration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Deprecated: Opaque settings config for Gloo extensions. |  |
+| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.ServiceSettings](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#servicesettings) | Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of *actions*, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes. |  |
+| `ratelimitServer` | [.ratelimit.plugins.gloo.solo.io.Settings](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#settings) | Enterprise-only: Settings for the rate limiting server itself. |  |
+| `rbac` | [.rbac.plugins.gloo.solo.io.Settings](../enterprise/plugins/rbac/rbac.proto.sk/#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |  |
+| `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/plugins/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
 
 
 
@@ -268,7 +268,7 @@ This option determines the root of the directory tree used to this end.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk#fdsmode) |  |  |
+| `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |  |
 
 
 
@@ -329,7 +329,7 @@ need to be set on the Gloo container.
 | `keyFile` | `string` | KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile. |  |
 | `insecureSkipVerify` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | InsecureSkipVerify if set to true will disable TLS host verification. |  |
 | `waitTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used. |  |
-| `serviceDiscovery` | [.gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions](../settings.proto.sk#servicediscoveryoptions) | Enable Service Discovery via Consul with this field set to empty struct `{}` to enable with defaults. |  |
+| `serviceDiscovery` | [.gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions](../settings.proto.sk/#servicediscoveryoptions) | Enable Service Discovery via Consul with this field set to empty struct `{}` to enable with defaults. |  |
 
 
 
@@ -365,7 +365,7 @@ Provides overrides for the default configuration parameters used to interact wit
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [.gloo.solo.io.Settings.KubernetesConfiguration.RateLimits](../settings.proto.sk#ratelimits) | Rate limits for the kubernetes clients. |  |
+| `rateLimits` | [.gloo.solo.io.Settings.KubernetesConfiguration.RateLimits](../settings.proto.sk/#ratelimits) | Rate limits for the kubernetes clients. |  |
 
 
 
@@ -410,10 +410,10 @@ Settings specific to the gloo (Envoy xDS server) controller
 | ----- | ---- | ----------- |----------- | 
 | `xdsBindAddr` | `string` | Where the `gloo` xDS server should bind (should not need configuration by user). Defaults to `0.0.0.0:9977`. |  |
 | `validationBindAddr` | `string` | Where the `gloo` validation server should bind. Defaults to `0.0.0.0:9988`. |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Default circuit breaker configuration to use for upstream requests, when not provided by specific upstream. |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Default circuit breaker configuration to use for upstream requests, when not provided by specific upstream. |  |
 | `endpointsWarmingTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout to get initial snapshot of resources. If not set, Gloo will not wait for initial snapshot - if set and and gloo could not fetch it's initial snapshot before the timeout reached, gloo will panic. |  |
-| `awsOptions` | [.gloo.solo.io.GlooOptions.AWSOptions](../settings.proto.sk#awsoptions) |  |  |
-| `invalidConfigPolicy` | [.gloo.solo.io.GlooOptions.InvalidConfigPolicy](../settings.proto.sk#invalidconfigpolicy) | set these options to fine-tune the way Gloo handles invalid user configuration. |  |
+| `awsOptions` | [.gloo.solo.io.GlooOptions.AWSOptions](../settings.proto.sk/#awsoptions) |  |  |
+| `invalidConfigPolicy` | [.gloo.solo.io.GlooOptions.InvalidConfigPolicy](../settings.proto.sk/#invalidconfigpolicy) | set these options to fine-tune the way Gloo handles invalid user configuration. |  |
 | `disableKubernetesDestinations` | `bool` | Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off. |  |
 
 
@@ -475,7 +475,7 @@ Settings specific to the Gateway controller
 | ----- | ---- | ----------- |----------- | 
 | `validationServerAddr` | `string` | Address of the `gloo` config validation server. Defaults to `gloo:9988`. |  |
 | `disableAutoGenGateways` | `bool` | Disable auto generation of default gateways from gateway pod. |  |
-| `validation` | [.gloo.solo.io.GatewayOptions.ValidationOptions](../settings.proto.sk#validationoptions) | if provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) of Gateways, Virtual Services, and Route Tables when running in Kubernetes. |  |
+| `validation` | [.gloo.solo.io.GatewayOptions.ValidationOptions](../settings.proto.sk/#validationoptions) | if provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) of Gateways, Virtual Services, and Route Tables when running in Kubernetes. |  |
 
 
 

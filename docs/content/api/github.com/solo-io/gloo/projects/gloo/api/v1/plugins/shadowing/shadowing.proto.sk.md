@@ -40,7 +40,7 @@ See here for additional information on Envoy's shadowing capabilities: https://w
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstream` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The upstream to which the shadowed traffic should be sent. |  |
+| `upstream` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream to which the shadowed traffic should be sent. |  |
 | `percentage` | `float` | This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
 
 

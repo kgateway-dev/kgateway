@@ -86,7 +86,7 @@ configuration for serving.
 | `id` | `string` | An opaque node identifier for the Envoy node. This also provides the local service node name. It should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-node`. |  |
 | `cluster` | `string` | Defines the local service cluster name where Envoy is running. Though optional, it should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`health check cluster verification <envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name>`, :ref:`runtime override directory <envoy_api_msg_config.bootstrap.v2.Runtime>`, :ref:`user agent addition <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent>`, :ref:`HTTP global rate limiting <config_http_filters_rate_limit>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-cluster`. |  |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque metadata extending the node identifier. Envoy will pass this directly to the management server. |  |
-| `locality` | [.envoy.api.v2.core.Locality](../base.proto.sk#locality) | Locality specifying where the Envoy instance is running. |  |
+| `locality` | [.envoy.api.v2.core.Locality](../base.proto.sk/#locality) | Locality specifying where the Envoy instance is running. |  |
 | `buildVersion` | `string` | This is motivated by informing a management server during canary which version of Envoy is being tested in a heterogeneous fleet. This will be set by Envoy in management server RPCs. |  |
 
 
@@ -184,7 +184,7 @@ Header name/value pair plus option to control append behavior.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | [.envoy.api.v2.core.HeaderValue](../base.proto.sk#headervalue) | Header name/value pair that this option applies to. |  |
+| `header` | [.envoy.api.v2.core.HeaderValue](../base.proto.sk/#headervalue) | Header name/value pair that this option applies to. |  |
 | `append` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should the value be appended? If true (default), the value is appended to existing values. |  |
 
 
@@ -203,7 +203,7 @@ Wrapper for a set of headers.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `headers` | [[]envoy.api.v2.core.HeaderValue](../base.proto.sk#headervalue) |  |  |
+| `headers` | [[]envoy.api.v2.core.HeaderValue](../base.proto.sk/#headervalue) |  |  |
 
 
 
@@ -279,7 +279,7 @@ might not exist in upstream kernels or precompiled Envoy binaries.
 | `name` | `int` | The numeric name as passed to setsockopt. |  |
 | `intValue` | `int` | Because many sockopts take an int value. Only one of `intValue` or `bufValue` can be set. |  |
 | `bufValue` | `bytes` | Otherwise it's a byte buffer. Only one of `bufValue` or `intValue` can be set. |  |
-| `state` | [.envoy.api.v2.core.SocketOption.SocketState](../base.proto.sk#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |  |
+| `state` | [.envoy.api.v2.core.SocketOption.SocketState](../base.proto.sk/#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |  |
 
 
 
@@ -313,7 +313,7 @@ specified via a runtime key.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `defaultValue` | [.envoy.type.FractionalPercent](../../../../type/percent.proto.sk#fractionalpercent) | Default value if the runtime value's for the numerator/denominator keys are not available. |  |
+| `defaultValue` | [.envoy.type.FractionalPercent](../../../../type/percent.proto.sk/#fractionalpercent) | Default value if the runtime value's for the numerator/denominator keys are not available. |  |
 | `runtimeKey` | `string` | Runtime key for a YAML representation of a FractionalPercent. |  |
 
 

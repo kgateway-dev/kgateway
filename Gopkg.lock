@@ -1443,7 +1443,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:0e8acb0142fb3d123f787b1be4ada003991505787312d68f2e2befbc14a5ddd9"
+  digest = "1:34e37248f6d265648cf403f74c85a5a6232af581ea73ab135294627f71dbb472"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1511,8 +1511,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "6f045c76d0421b13239d9456d73592386d7e011a"
-  version = "v0.11.4"
+  revision = "ea27b57205980f6d89fab3070ce17d3dfa8beead"
+  version = "v0.11.5"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"

@@ -39,7 +39,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.11.2/api-
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `accessLog` | [[]als.plugins.gloo.solo.io.AccessLog](../als.proto.sk#accesslog) |  |  |
+| `accessLog` | [[]als.plugins.gloo.solo.io.AccessLog](../als.proto.sk/#accesslog) |  |  |
 
 
 
@@ -57,8 +57,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.11.2/api-
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `fileSink` | [.als.plugins.gloo.solo.io.FileSink](../als.proto.sk#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |  |
-| `grpcService` | [.als.plugins.gloo.solo.io.GrpcService](../als.proto.sk#grpcservice) | Send access logs to GRPC service. Only one of `grpcService` or `fileSink` can be set. |  |
+| `fileSink` | [.als.plugins.gloo.solo.io.FileSink](../als.proto.sk/#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |  |
+| `grpcService` | [.als.plugins.gloo.solo.io.GrpcService](../als.proto.sk/#grpcservice) | Send access logs to GRPC service. Only one of `grpcService` or `fileSink` can be set. |  |
 
 
 

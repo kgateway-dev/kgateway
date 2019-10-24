@@ -46,8 +46,8 @@ to be usable by Gloo.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk#accessloggingservice) |  |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
+| `accessLoggingService` | [.als.plugins.gloo.solo.io.AccessLoggingService](../plugins/als/als.proto.sk/#accessloggingservice) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
 
 
 
@@ -69,11 +69,11 @@ Plugin-specific configuration that lives on http listeners
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk#grpcweb) |  |  |
-| `httpConnectionManagerSettings` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings](../plugins/hcm/hcm.proto.sk#httpconnectionmanagersettings) |  |  |
-| `healthCheck` | [.healthcheck.plugins.gloo.solo.io.HealthCheck](../plugins/healthcheck/healthcheck.proto.sk#healthcheck) | enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener. |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
-| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
+| `grpcWeb` | [.grpc_web.plugins.gloo.solo.io.GrpcWeb](../plugins/grpc_web/grpc_web.proto.sk/#grpcweb) |  |  |
+| `httpConnectionManagerSettings` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings](../plugins/hcm/hcm.proto.sk/#httpconnectionmanagersettings) |  |  |
+| `healthCheck` | [.healthcheck.plugins.gloo.solo.io.HealthCheck](../plugins/healthcheck/healthcheck.proto.sk/#healthcheck) | enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener. |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk/#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 
 
 
@@ -91,7 +91,7 @@ Plugin-specific configuration that lives on tcp listeners
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `tcpProxySettings` | [.tcp.plugins.gloo.solo.io.TcpProxySettings](../plugins/tcp/tcp.proto.sk#tcpproxysettings) |  |  |
+| `tcpProxySettings` | [.tcp.plugins.gloo.solo.io.TcpProxySettings](../plugins/tcp/tcp.proto.sk/#tcpproxysettings) |  |  |
 
 
 
@@ -123,18 +123,18 @@ to be usable by Gloo.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
-| `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
-| `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk#stats) |  |  |
-| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host. |  |
-| `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. |  |
-| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../../external/envoy/extensions/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
-| `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
-| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
-| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
-| `jwt` | [.jwt.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/jwt/jwt.proto.sk#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
-| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
+| `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk/#retrypolicy) |  |  |
+| `stats` | [.stats.plugins.gloo.solo.io.Stats](../plugins/stats/stats.proto.sk/#stats) |  |  |
+| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk/#headermanipulation) | Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host. |  |
+| `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk/#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../../external/envoy/extensions/transformation/transformation.proto.sk/#routetransformations) | Transformations to apply. |  |
+| `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
+| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitVhostExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk/#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
+| `jwt` | [.jwt.plugins.gloo.solo.io.VhostExtension](../enterprise/plugins/jwt/jwt.proto.sk/#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
+| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk/#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
 
@@ -173,25 +173,25 @@ to be usable by Gloo.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../../external/envoy/extensions/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
-| `faults` | [.fault.plugins.gloo.solo.io.RouteFaults](../plugins/faultinjection/fault.proto.sk#routefaults) |  |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../../external/envoy/extensions/transformation/transformation.proto.sk/#routetransformations) | Transformations to apply. |  |
+| `faults` | [.fault.plugins.gloo.solo.io.RouteFaults](../plugins/faultinjection/fault.proto.sk/#routefaults) |  |  |
 | `prefixRewrite` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream. |  |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk#retrypolicy) |  |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
-| `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/. |  |
-| `shadowing` | [.shadowing.plugins.gloo.solo.io.RouteShadowing](../plugins/shadowing/shadowing.proto.sk#routeshadowing) | Specifies traffic shadowing configuration for the route. See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy. |  |
-| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses on this Route. |  |
+| `retries` | [.retries.plugins.gloo.solo.io.RetryPolicy](../plugins/retries/retries.proto.sk/#retrypolicy) |  |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
+| `tracing` | [.tracing.plugins.gloo.solo.io.RouteTracingSettings](../plugins/tracing/tracing.proto.sk/#routetracingsettings) | Defines route-specific tracing configuration. See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/. |  |
+| `shadowing` | [.shadowing.plugins.gloo.solo.io.RouteShadowing](../plugins/shadowing/shadowing.proto.sk/#routeshadowing) | Specifies traffic shadowing configuration for the route. See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy. |  |
+| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk/#headermanipulation) | Append/Remove headers on Requests or Responses on this Route. |  |
 | `hostRewrite` | `string` | Indicates that during forwarding, the host header will be swapped with this value. Only one of `hostRewrite` or `autoHostRewrite` can be set. |  |
 | `autoHostRewrite` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable/Disable auto host re-write. Indicates that the host header will be swapped with the hostname of the upstream host. This setting is only honored for upstreams that use DNS resolution (i.e., their generated Envoy cluster is of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames). Only one of `autoHostRewrite` or `hostRewrite` can be set. |  |
-| `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |  |
-| `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service. |  |
-| `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
-| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
-| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
-| `jwt` | [.jwt.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/jwt/jwt.proto.sk#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
-| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
+| `cors` | [.cors.plugins.gloo.solo.io.CorsPolicy](../plugins/cors/cors.proto.sk/#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |  |
+| `lbHash` | [.lbhash.plugins.gloo.solo.io.RouteActionHashConfig](../plugins/lbhash/lbhash.proto.sk/#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service. |  |
+| `ratelimitBasic` | [.ratelimit.plugins.gloo.solo.io.IngressRateLimit](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#ingressratelimit) | Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API. |  |
+| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.RateLimitRouteExtension](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. |  |
+| `waf` | [.waf.plugins.gloo.solo.io.Settings](../enterprise/plugins/waf/waf.proto.sk/#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
+| `jwt` | [.jwt.plugins.gloo.solo.io.RouteExtension](../enterprise/plugins/jwt/jwt.proto.sk/#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |  |
+| `rbac` | [.rbac.plugins.gloo.solo.io.ExtensionSettings](../enterprise/plugins/rbac/rbac.proto.sk/#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
+| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
 
@@ -212,10 +212,10 @@ Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec 
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `aws` | [.aws.plugins.gloo.solo.io.DestinationSpec](../plugins/aws/aws.proto.sk#destinationspec) |  Only one of `aws`, `azure`, or `grpc` can be set. |  |
-| `azure` | [.azure.plugins.gloo.solo.io.DestinationSpec](../plugins/azure/azure.proto.sk#destinationspec) |  Only one of `azure`, `aws`, or `grpc` can be set. |  |
-| `rest` | [.rest.plugins.gloo.solo.io.DestinationSpec](../plugins/rest/rest.proto.sk#destinationspec) |  Only one of `rest`, `aws`, or `grpc` can be set. |  |
-| `grpc` | [.grpc.plugins.gloo.solo.io.DestinationSpec](../plugins/grpc/grpc.proto.sk#destinationspec) |  Only one of `grpc`, `aws`, or `rest` can be set. |  |
+| `aws` | [.aws.plugins.gloo.solo.io.DestinationSpec](../plugins/aws/aws.proto.sk/#destinationspec) |  Only one of `aws`, `azure`, or `grpc` can be set. |  |
+| `azure` | [.azure.plugins.gloo.solo.io.DestinationSpec](../plugins/azure/azure.proto.sk/#destinationspec) |  Only one of `azure`, `aws`, or `grpc` can be set. |  |
+| `rest` | [.rest.plugins.gloo.solo.io.DestinationSpec](../plugins/rest/rest.proto.sk/#destinationspec) |  Only one of `rest`, `aws`, or `grpc` can be set. |  |
+| `grpc` | [.grpc.plugins.gloo.solo.io.DestinationSpec](../plugins/grpc/grpc.proto.sk/#destinationspec) |  Only one of `grpc`, `aws`, or `rest` can be set. |  |
 
 
 
@@ -237,10 +237,10 @@ is selected for routing.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination. |  |
-| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../../external/envoy/extensions/transformation/transformation.proto.sk#routetransformations) | Transformations to apply. |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
-| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk#extauthextension) | Enterprise-only: Authentication configuration. |  |
+| `headerManipulation` | [.headers.plugins.gloo.solo.io.HeaderManipulation](../plugins/headers/headers.proto.sk/#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination. |  |
+| `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../../external/envoy/extensions/transformation/transformation.proto.sk/#routetransformations) | Transformations to apply. |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Deprecated: Opaque config for Gloo plugins. |  |
+| `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/plugins/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 
 
 
@@ -272,20 +272,20 @@ Each upstream type is handled by a corresponding Gloo plugin.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk#upstreamsslconfig) |  |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |  |
-| `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk#loadbalancerconfig) |  |  |
-| `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk#connectionconfig) |  |  |
-| `healthChecks` | [[]envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk#healthcheck) |  |  |
-| `outlierDetection` | [.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk#outlierdetection) |  |  |
+| `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) |  |  |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |  |
+| `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk/#loadbalancerconfig) |  |  |
+| `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk/#connectionconfig) |  |  |
+| `healthChecks` | [[]envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk/#healthcheck) |  |  |
+| `outlierDetection` | [.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk/#outlierdetection) |  |  |
 | `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`. |  |
-| `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
-| `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
-| `pipe` | [.pipe.plugins.gloo.solo.io.UpstreamSpec](../plugins/pipe/pipe.proto.sk#upstreamspec) |  Only one of `pipe`, `kube`, `static`, `aws`, `azure`, or `awsEc2` can be set. |  |
-| `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk#upstreamspec) |  Only one of `aws`, `kube`, `static`, `pipe`, `azure`, or `awsEc2` can be set. |  |
-| `azure` | [.azure.plugins.gloo.solo.io.UpstreamSpec](../plugins/azure/azure.proto.sk#upstreamspec) |  Only one of `azure`, `kube`, `static`, `pipe`, `aws`, or `awsEc2` can be set. |  |
-| `consul` | [.consul.plugins.gloo.solo.io.UpstreamSpec](../plugins/consul/consul.proto.sk#upstreamspec) |  Only one of `consul`, `kube`, `static`, `pipe`, `aws`, or `awsEc2` can be set. |  |
-| `awsEc2` | [.aws_ec2.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/ec2/aws_ec2.proto.sk#upstreamspec) |  Only one of `awsEc2`, `kube`, `static`, `pipe`, `aws`, or `consul` can be set. |  |
+| `kube` | [.kubernetes.plugins.gloo.solo.io.UpstreamSpec](../plugins/kubernetes/kubernetes.proto.sk/#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
+| `static` | [.static.plugins.gloo.solo.io.UpstreamSpec](../plugins/static/static.proto.sk/#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
+| `pipe` | [.pipe.plugins.gloo.solo.io.UpstreamSpec](../plugins/pipe/pipe.proto.sk/#upstreamspec) |  Only one of `pipe`, `kube`, `static`, `aws`, `azure`, or `awsEc2` can be set. |  |
+| `aws` | [.aws.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/aws.proto.sk/#upstreamspec) |  Only one of `aws`, `kube`, `static`, `pipe`, `azure`, or `awsEc2` can be set. |  |
+| `azure` | [.azure.plugins.gloo.solo.io.UpstreamSpec](../plugins/azure/azure.proto.sk/#upstreamspec) |  Only one of `azure`, `kube`, `static`, `pipe`, `aws`, or `awsEc2` can be set. |  |
+| `consul` | [.consul.plugins.gloo.solo.io.UpstreamSpec](../plugins/consul/consul.proto.sk/#upstreamspec) |  Only one of `consul`, `kube`, `static`, `pipe`, `aws`, or `awsEc2` can be set. |  |
+| `awsEc2` | [.aws_ec2.plugins.gloo.solo.io.UpstreamSpec](../plugins/aws/ec2/aws_ec2.proto.sk/#upstreamspec) |  Only one of `awsEc2`, `kube`, `static`, `pipe`, `aws`, or `consul` can be set. |  |
 
 
 
