@@ -35,15 +35,6 @@ apis:
   consul.plugins.gloo.solo.io.UpstreamSpec:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto.sk/#UpstreamSpec
     package: consul.plugins.gloo.solo.io
-  core.matchers.gloo.solo.io.HeaderMatcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#HeaderMatcher
-    package: core.matchers.gloo.solo.io
-  core.matchers.gloo.solo.io.Matcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#Matcher
-    package: core.matchers.gloo.solo.io
-  core.matchers.gloo.solo.io.QueryParameterMatcher:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#QueryParameterMatcher
-    package: core.matchers.gloo.solo.io
   core.solo.io.Metadata:
     relativepath: api/github.com/solo-io/solo-kit/api/v1/metadata.proto.sk/#Metadata
     package: core.solo.io
@@ -725,6 +716,15 @@ apis:
   lbhash.plugins.gloo.solo.io.RouteActionHashConfig:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/lbhash/lbhash.proto.sk/#RouteActionHashConfig
     package: lbhash.plugins.gloo.solo.io
+  matchers.core.gloo.solo.io.HeaderMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#HeaderMatcher
+    package: matchers.core.gloo.solo.io
+  matchers.core.gloo.solo.io.Matcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#Matcher
+    package: matchers.core.gloo.solo.io
+  matchers.core.gloo.solo.io.QueryParameterMatcher:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#QueryParameterMatcher
+    package: matchers.core.gloo.solo.io
   pipe.plugins.gloo.solo.io.UpstreamSpec:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/pipe/pipe.proto.sk/#UpstreamSpec
     package: pipe.plugins.gloo.solo.io

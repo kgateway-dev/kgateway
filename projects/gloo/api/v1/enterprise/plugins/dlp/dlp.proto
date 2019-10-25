@@ -16,20 +16,27 @@ option (gogoproto.equal_all) = true;
 
 // Listener level config for dlp filter
 message FilterConfig {
+    // The list of transformation, matcher pairs.
+    // The first rule which matches will be applied.
     repeated DlpRule dlp_rules = 1;
 }
 
 // Rule which applies a given set of actions to a matching route.
 // The route matching functions exactly the same as the envoy routes in the virtual host.
 message DlpRule {
-    // Matcher by which to determine if the
-    core.matchers.gloo.solo.io.Matcher matcher = 1;
+    // Matcher by which to determine if the given transformation should be applied
+    matchers.core.gloo.solo.io.Matcher matcher = 1;
     // List of data loss prevention actions to be applied.
     // These actions will be applied in order, one at a time.
     repeated Action actions = 2;
 }
 
-// Route/Vhost level config for dlp filter
+/*
+    Route/Vhost level config for dlp filter
+
+    If a config is present on the route or vhost level it will completely overwrite the
+    listener level config.
+*/
 message Config {
     // List of data loss prevention actions to be applied.
     // These actions will be applied in order, one at a time.
@@ -63,7 +70,6 @@ message Config {
 
 
 */
-
 message Action {
     enum ActionType {
         CUSTOM = 0;
@@ -78,10 +84,12 @@ message Action {
         ALL_CREDIT_CARDS = 9;
     }
 
+    // The action type to implement.
     ActionType action_type = 1;
-
+    // The custom user action to be applied.
+    // This field will only be used if the custom action type is specified above.
     CustomAction custom_action = 2;
-
+    // Shadow represents whether the action should be taken, or just recorded.
     bool shadow = 3;
 }
 

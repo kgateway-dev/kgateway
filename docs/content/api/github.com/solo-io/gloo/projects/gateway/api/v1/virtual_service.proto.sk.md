@@ -186,7 +186,7 @@ DelegateActions can be used to delegate the behavior for a set out routes with a
 a top-level `RouteTable` resource.
 
 ```yaml
-"matchers": []core.matchers.gloo.solo.io.Matcher
+"matchers": []matchers.core.gloo.solo.io.Matcher
 "routeAction": .gloo.solo.io.RouteAction
 "redirectAction": .gloo.solo.io.RedirectAction
 "directResponseAction": .gloo.solo.io.DirectResponseAction
@@ -197,7 +197,7 @@ a top-level `RouteTable` resource.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `matchers` | [[]core.matchers.gloo.solo.io.Matcher](../../../../gloo/api/v1/core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher) For delegated routes, the matcher must contain only a `prefix` path matcher and no other config. |  |
+| `matchers` | [[]matchers.core.gloo.solo.io.Matcher](../../../../gloo/api/v1/core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher) For delegated routes, the matcher must contain only a `prefix` path matcher and no other config. |  |
 | `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |  |
 | `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |  |
 | `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |  |

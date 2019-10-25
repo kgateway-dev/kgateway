@@ -177,7 +177,7 @@ message VirtualHost {
 message Route {
     // Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
     // If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
-    repeated core.matchers.gloo.solo.io.Matcher matchers = 1;
+    repeated matchers.core.gloo.solo.io.Matcher matchers = 1;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {
