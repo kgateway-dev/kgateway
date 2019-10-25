@@ -8,19 +8,61 @@ import "envoy/type/percent.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-message Config {
-    repeated Action actions = 1;
-}
+/*
+    DLP (data loss prevention)
+    The purpose of this filter is to prevent sensitive data from being exposed.
+    This is accomplished by doing a series of regex replacements on the response body.
+*/
 
+// Listener level config for dlp filter
 message FilterConfig {
     repeated DlpRule dlp_rules = 1;
 }
 
+// Rule which applies a given set of actions to a matching route.
+// The route matching functions exactly the same as the envoy routes in the virtual host.
 message DlpRule {
+    // Matcher by which to determine if the
     core.matchers.gloo.solo.io.Matcher matcher = 1;
-
+    // List of data loss prevention actions to be applied.
+    // These actions will be applied in order, one at a time.
     repeated Action actions = 2;
 }
+
+// Route/Vhost level config for dlp filter
+message Config {
+    // List of data loss prevention actions to be applied.
+    // These actions will be applied in order, one at a time.
+    repeated Action actions = 1;
+}
+/*
+    A single action meant to mask sensitive data.
+    The action type represents a set of pre configured actions,
+    as well as the ability to create custom actions.
+    These actions can also be shadowed, a shadowed action will be recorded
+    in the statistics, and debug logs, but not actually committed in the response body.
+
+    To use a premade action simply set the action type to anything other than `CUSTOM`
+
+    ``` yaml
+    actionType: VISA
+    ```
+
+    To create a custom action set the custom action field. The default enum value
+    is custom, so that can be left empty.
+
+    ``` yaml
+    customAction:
+        name: test
+        regex:
+            - "hello"
+            - "world"
+        maskChar: Y
+        percent: 60
+    ```
+
+
+*/
 
 message Action {
     enum ActionType {
@@ -43,9 +85,40 @@ message Action {
     bool shadow = 3;
 }
 
+/*
+    A user defined custom action to carry out on the response body.
+
+    The list of regex strings are applied in order. So for instance, if there is a response body with the content:
+    `hello world`
+
+    And there is a custom action
+    ``` yaml
+    customAction:
+        name: test
+        regex:
+            - "hello"
+            - "world"
+        maskChar: Y
+        percent: 60
+    ```
+
+    the result would be:
+    `YYYlo YYYld`
+
+    If the mask_char, and percent were left to default, the result would be:
+    `XXXXo XXXXd`
+
+*/
 message CustomAction {
+    // The name of the custom action.
+    // This name is used for logging and debugging purposes.
     string name = 1;
+    // The list of regex strings which will be applied in order.
     repeated string regex = 2;
+    // The masking character for the sensitive data.
+    // default value: X
     string mask_char = 3;
+    // The percent of the string which will be masked by the mask_char
+    // default value: 75%
     envoy.type.Percent percent = 4;
 }
