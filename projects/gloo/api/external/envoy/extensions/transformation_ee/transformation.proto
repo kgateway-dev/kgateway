@@ -51,7 +51,7 @@ message Transformation {
 }
 
 message DlpTransformation {
-    // list of actioms to apply
+    // list of actions to apply
     repeated Action actions = 1;
 }
 
