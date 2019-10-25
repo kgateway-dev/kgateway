@@ -28,8 +28,8 @@ DOCS_VERSION := latest
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/fa7f1e95a84fe54bef7df578d4f1a1989582e06b
-	git -C themes/hugo-theme-soloio checkout fa7f1e95a84fe54bef7df578d4f1a1989582e06b
+	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/e0c50784a92fb7f61c635ff9a6e3a010f636f550
+	git -C themes/hugo-theme-soloio checkout e0c50784a92fb7f61c635ff9a6e3a010f636f550
 	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
