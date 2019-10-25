@@ -38,7 +38,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `transformations` | `map<string, .envoy.api.v2.filter.http.TransformationTemplate>` |  |  |
-| `swaggerInfo` | [.rest.plugins.gloo.solo.io.ServiceSpec.SwaggerInfo](../rest.proto.sk#swaggerinfo) |  |  |
+| `swaggerInfo` | [.rest.plugins.gloo.solo.io.ServiceSpec.SwaggerInfo](../rest.proto.sk/#swaggerinfo) |  |  |
 
 
 
@@ -78,8 +78,8 @@ This is only for upstream with REST service spec
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `functionName` | `string` |  |  |
-| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk#parameters) |  |  |
-| `responseTransformation` | [.envoy.api.v2.filter.http.TransformationTemplate](../../transformation/transformation.proto.sk#transformationtemplate) |  |  |
+| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) |  |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.TransformationTemplate](../../transformation/transformation.proto.sk/#transformationtemplate) |  |  |
 
 
 

@@ -28,11 +28,11 @@ const (
 
 var (
 	// rate limiting should happen after auth
-	defaultFilterStage = plugins.DuringStage(plugins.RateLimitStage)
+	DefaultFilterStage = plugins.DuringStage(plugins.RateLimitStage)
 
 	// we may want to rate limit before executing the AuthN and AuthZ stages
 	// notably, AuthZ still needs to occur after AuthN
-	beforeAuthStage = plugins.BeforeStage(plugins.AuthNStage)
+	BeforeAuthStage = plugins.BeforeStage(plugins.AuthNStage)
 )
 
 type Plugin struct {
@@ -159,9 +159,9 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 	customConf := generateEnvoyConfigForCustomFilter(*p.upstreamRef, p.timeout, p.denyOnFail)
 
-	filterStage := defaultFilterStage
+	filterStage := DefaultFilterStage
 	if p.rateLimitBeforeAuth {
-		filterStage = beforeAuthStage
+		filterStage = BeforeAuthStage
 	}
 
 	customStagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, customConf, filterStage)

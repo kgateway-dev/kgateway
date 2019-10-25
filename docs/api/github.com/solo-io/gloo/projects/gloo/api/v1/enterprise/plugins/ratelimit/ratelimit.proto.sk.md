@@ -60,8 +60,8 @@ Descriptors can be nested for your convenience and flexibility
 | ----- | ---- | ----------- |----------- | 
 | `key` | `string` |  |  |
 | `value` | `string` |  |  |
-| `rateLimit` | [.ratelimit.plugins.gloo.solo.io.RateLimit](../ratelimit.proto.sk#ratelimit) |  |  |
-| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk#descriptor) |  |  |
+| `rateLimit` | [.ratelimit.plugins.gloo.solo.io.RateLimit](../ratelimit.proto.sk/#ratelimit) |  |  |
+| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk/#descriptor) |  |  |
 
 
 
@@ -79,7 +79,7 @@ Descriptors can be nested for your convenience and flexibility
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `unit` | [.ratelimit.plugins.gloo.solo.io.RateLimit.Unit](../ratelimit.proto.sk#unit) |  |  |
+| `unit` | [.ratelimit.plugins.gloo.solo.io.RateLimit.Unit](../ratelimit.proto.sk/#unit) |  |  |
 | `requestsPerUnit` | `int` |  |  |
 
 
@@ -115,8 +115,8 @@ Basic rate-limiting API
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `authorizedLimits` | [.ratelimit.plugins.gloo.solo.io.RateLimit](../ratelimit.proto.sk#ratelimit) |  |  |
-| `anonymousLimits` | [.ratelimit.plugins.gloo.solo.io.RateLimit](../ratelimit.proto.sk#ratelimit) |  |  |
+| `authorizedLimits` | [.ratelimit.plugins.gloo.solo.io.RateLimit](../ratelimit.proto.sk/#ratelimit) |  |  |
+| `anonymousLimits` | [.ratelimit.plugins.gloo.solo.io.RateLimit](../ratelimit.proto.sk/#ratelimit) |  |  |
 
 
 
@@ -136,7 +136,7 @@ Basic rate-limiting API
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `ratelimitServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) |  |  |
+| `ratelimitServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |  |
 | `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 | `denyOnFail` | `bool` |  |  |
 | `rateLimitBeforeAuth` | `bool` | Set this is set to true if you would like to rate limit traffic before applying external auth to it. *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state. |  |
@@ -157,7 +157,7 @@ TODO(kdorosh) remove this when we stop supporting opaque rate limit configuratio
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `customConfig` | [.ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig](../ratelimit.proto.sk#ratelimitcustomconfig) |  |  |
+| `customConfig` | [.ratelimit.plugins.gloo.solo.io.EnvoySettings.RateLimitCustomConfig](../ratelimit.proto.sk/#ratelimitcustomconfig) |  |  |
 
 
 
@@ -174,7 +174,7 @@ TODO(kdorosh) remove this when we stop supporting opaque rate limit configuratio
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk#descriptor) |  |  |
+| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk/#descriptor) |  |  |
 
 
 
@@ -207,7 +207,7 @@ descriptors:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk#descriptor) |  |  |
+| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../ratelimit.proto.sk/#descriptor) |  |  |
 
 
 
@@ -224,7 +224,7 @@ descriptors:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `actions` | [[]ratelimit.plugins.gloo.solo.io.Action](../ratelimit.proto.sk#action) | descriptors: - key: account_id descriptors: - key: plan value: BASIC rateLimit: requestsPerUnit: 1 unit: MINUTE - key: plan value: PLUS rateLimit: requestsPerUnit: 20 unit: MINUTE. |  |
+| `actions` | [[]ratelimit.plugins.gloo.solo.io.Action](../ratelimit.proto.sk/#action) | descriptors: - key: account_id descriptors: - key: plan value: BASIC rateLimit: requestsPerUnit: 1 unit: MINUTE - key: plan value: PLUS rateLimit: requestsPerUnit: 20 unit: MINUTE. |  |
 
 
 
@@ -241,7 +241,7 @@ descriptors:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
+| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
 
 
 
@@ -260,7 +260,7 @@ descriptors:
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |  |
-| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
+| `rateLimits` | [[]ratelimit.plugins.gloo.solo.io.RateLimitActions](../ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
 
 
 
@@ -283,12 +283,12 @@ TODO(yuval-k): copied from envoy; will be removed and imported properly in a fut
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `sourceCluster` | [.ratelimit.plugins.gloo.solo.io.Action.SourceCluster](../ratelimit.proto.sk#sourcecluster) | Rate limit on source cluster. Only one of `sourceCluster`, `destinationCluster`, `requestHeaders`, `remoteAddress`, or `headerValueMatch` can be set. |  |
-| `destinationCluster` | [.ratelimit.plugins.gloo.solo.io.Action.DestinationCluster](../ratelimit.proto.sk#destinationcluster) | Rate limit on destination cluster. Only one of `destinationCluster`, `sourceCluster`, `requestHeaders`, `remoteAddress`, or `headerValueMatch` can be set. |  |
-| `requestHeaders` | [.ratelimit.plugins.gloo.solo.io.Action.RequestHeaders](../ratelimit.proto.sk#requestheaders) | Rate limit on request headers. Only one of `requestHeaders`, `sourceCluster`, `destinationCluster`, `remoteAddress`, or `headerValueMatch` can be set. |  |
-| `remoteAddress` | [.ratelimit.plugins.gloo.solo.io.Action.RemoteAddress](../ratelimit.proto.sk#remoteaddress) | Rate limit on remote address. Only one of `remoteAddress`, `sourceCluster`, `destinationCluster`, `requestHeaders`, or `headerValueMatch` can be set. |  |
-| `genericKey` | [.ratelimit.plugins.gloo.solo.io.Action.GenericKey](../ratelimit.proto.sk#generickey) | Rate limit on a generic key. Only one of `genericKey`, `sourceCluster`, `destinationCluster`, `requestHeaders`, or `headerValueMatch` can be set. |  |
-| `headerValueMatch` | [.ratelimit.plugins.gloo.solo.io.Action.HeaderValueMatch](../ratelimit.proto.sk#headervaluematch) | Rate limit on the existence of request headers. Only one of `headerValueMatch`, `sourceCluster`, `destinationCluster`, `requestHeaders`, or `genericKey` can be set. |  |
+| `sourceCluster` | [.ratelimit.plugins.gloo.solo.io.Action.SourceCluster](../ratelimit.proto.sk/#sourcecluster) | Rate limit on source cluster. Only one of `sourceCluster`, `destinationCluster`, `requestHeaders`, `remoteAddress`, or `headerValueMatch` can be set. |  |
+| `destinationCluster` | [.ratelimit.plugins.gloo.solo.io.Action.DestinationCluster](../ratelimit.proto.sk/#destinationcluster) | Rate limit on destination cluster. Only one of `destinationCluster`, `sourceCluster`, `requestHeaders`, `remoteAddress`, or `headerValueMatch` can be set. |  |
+| `requestHeaders` | [.ratelimit.plugins.gloo.solo.io.Action.RequestHeaders](../ratelimit.proto.sk/#requestheaders) | Rate limit on request headers. Only one of `requestHeaders`, `sourceCluster`, `destinationCluster`, `remoteAddress`, or `headerValueMatch` can be set. |  |
+| `remoteAddress` | [.ratelimit.plugins.gloo.solo.io.Action.RemoteAddress](../ratelimit.proto.sk/#remoteaddress) | Rate limit on remote address. Only one of `remoteAddress`, `sourceCluster`, `destinationCluster`, `requestHeaders`, or `headerValueMatch` can be set. |  |
+| `genericKey` | [.ratelimit.plugins.gloo.solo.io.Action.GenericKey](../ratelimit.proto.sk/#generickey) | Rate limit on a generic key. Only one of `genericKey`, `sourceCluster`, `destinationCluster`, `requestHeaders`, or `headerValueMatch` can be set. |  |
+| `headerValueMatch` | [.ratelimit.plugins.gloo.solo.io.Action.HeaderValueMatch](../ratelimit.proto.sk/#headervaluematch) | Rate limit on the existence of request headers. Only one of `headerValueMatch`, `sourceCluster`, `destinationCluster`, `requestHeaders`, or `genericKey` can be set. |  |
 
 
 
@@ -435,7 +435,7 @@ The following descriptor entry is appended to the descriptor:
 | ----- | ---- | ----------- |----------- | 
 | `descriptorValue` | `string` | The value to use in the descriptor entry. |  |
 | `expectMatch` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, the action will append a descriptor entry when the request matches the headers. If set to false, the action will append a descriptor entry when the request does not match the headers. The default value is true. |  |
-| `headers` | [[]ratelimit.plugins.gloo.solo.io.HeaderMatcher](../ratelimit.proto.sk#headermatcher) | Specifies a set of headers that the rate limit action should match on. The action will check the request’s headers against all the specified headers in the config. A match will happen if all the headers in the config are present in the request with the same values (or based on presence if the value field is not in the config). |  |
+| `headers` | [[]ratelimit.plugins.gloo.solo.io.HeaderMatcher](../ratelimit.proto.sk/#headermatcher) | Specifies a set of headers that the rate limit action should match on. The action will check the request’s headers against all the specified headers in the config. A match will happen if all the headers in the config are present in the request with the same values (or based on presence if the value field is not in the config). |  |
 
 
 
@@ -483,7 +483,7 @@ end).
 | `name` | `string` | Specifies the name of the header in the request. |  |
 | `exactMatch` | `string` | If specified, header match will be performed based on the value of the header. Only one of `exactMatch`, `regexMatch`, `rangeMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
 | `regexMatch` | `string` | If specified, this regex string is a regular expression rule which implies the entire request header value must match the regex. The rule will not match if only a subsequence of the request header value matches the regex. The regex grammar used in the value field is defined `here <https://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex *\d{3}* matches the value *123* * The regex *\d{3}* does not match the value *1234* * The regex *\d{3}* does not match the value *123.456*. Only one of `regexMatch`, `exactMatch`, `rangeMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
-| `rangeMatch` | [.ratelimit.plugins.gloo.solo.io.Int64Range](../ratelimit.proto.sk#int64range) | If specified, header match will be performed based on range. The rule will match if the request header value is within this range. The entire request header value must represent an integer in base 10 notation: consisting of an optional plus or minus sign followed by a sequence of digits. The rule will not match if the header value does not represent an integer. Match will fail for empty values, floating point numbers or if only a subsequence of the header value is an integer. Examples: * For range [-10,0), route will match for header value -1, but not for 0, "somestring", 10.9, "-1somestring". Only one of `rangeMatch`, `exactMatch`, `regexMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
+| `rangeMatch` | [.ratelimit.plugins.gloo.solo.io.Int64Range](../ratelimit.proto.sk/#int64range) | If specified, header match will be performed based on range. The rule will match if the request header value is within this range. The entire request header value must represent an integer in base 10 notation: consisting of an optional plus or minus sign followed by a sequence of digits. The rule will not match if the header value does not represent an integer. Match will fail for empty values, floating point numbers or if only a subsequence of the header value is an integer. Examples: * For range [-10,0), route will match for header value -1, but not for 0, "somestring", 10.9, "-1somestring". Only one of `rangeMatch`, `exactMatch`, `regexMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
 | `presentMatch` | `bool` | If specified, header match will be performed based on whether the header is in the request. Only one of `presentMatch`, `exactMatch`, `regexMatch`, `rangeMatch`, or `suffixMatch` can be set. |  |
 | `prefixMatch` | `string` | If specified, header match will be performed based on the prefix of the header value. Note: empty prefix is not allowed, please use present_match instead. Examples: * The prefix *abcd* matches the value *abcdxyz*, but not for *abcxyz*. Only one of `prefixMatch`, `exactMatch`, `regexMatch`, `rangeMatch`, or `suffixMatch` can be set. |  |
 | `suffixMatch` | `string` | If specified, header match will be performed based on the suffix of the header value. Note: empty suffix is not allowed, please use present_match instead. Examples: * The suffix *abcd* matches the value *xyzabcd*, but not for *xyzbcd*. Only one of `suffixMatch`, `exactMatch`, `regexMatch`, `rangeMatch`, or `prefixMatch` can be set. |  |

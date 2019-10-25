@@ -36,7 +36,7 @@ This plugin provides additional configuration options to expose statistics.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualClusters` | [[]stats.plugins.gloo.solo.io.VirtualCluster](../stats.proto.sk#virtualcluster) | Virtual clusters allow exposing additional statistics for traffic served by a Virtual Host. |  |
+| `virtualClusters` | [[]stats.plugins.gloo.solo.io.VirtualCluster](../stats.proto.sk/#virtualcluster) | Virtual clusters allow exposing additional statistics for traffic served by a Virtual Host. |  |
 
 
 

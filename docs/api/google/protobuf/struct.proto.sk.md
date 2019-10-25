@@ -136,7 +136,7 @@ The JSON representation for `ListValue` is JSON array.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `values` | [[]google.protobuf.Value](../struct.proto.sk#value) | Repeated field of dynamically typed values. |  |
+| `values` | [[]google.protobuf.Value](../struct.proto.sk/#value) | Repeated field of dynamically typed values. |  |
 
 
 

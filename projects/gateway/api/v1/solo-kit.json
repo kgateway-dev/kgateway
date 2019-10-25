@@ -1,5 +1,6 @@
 {
   "name": "gateway.solo.io",
   "version": "v1",
-  "docs_dir": "docs/api"
+  "docs_dir": "docs/api",
+  "gen_kube_types": true
 }
