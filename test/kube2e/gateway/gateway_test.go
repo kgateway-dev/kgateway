@@ -581,7 +581,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				})
 
 				vs = withRoute(&gatewayv1.Route{
-					Matchers: []*gloov1.Matcher{{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/invalid-route"}}},
+					Matchers: []*matchers.Matcher{{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/invalid-route"}}},
 					Action: &gatewayv1.Route_RouteAction{RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{Single: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
