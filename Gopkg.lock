@@ -1417,7 +1417,7 @@
   version = "v0.0.2"
 
 [[projects]]
-  digest = "1:0e8acb0142fb3d123f787b1be4ada003991505787312d68f2e2befbc14a5ddd9"
+  digest = "1:7147e4b9fd12eb6b709930f4ca13300d5b4cabdaed6803601e166e901a00c9cc"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1444,7 +1444,7 @@
     "pkg/api/v1/clients/kube/crd/solo.io/v1",
     "pkg/api/v1/clients/kubesecret",
     "pkg/api/v1/clients/memory",
-    "pkg/api/v1/clients/multicluster",
+    "pkg/api/v1/clients/multicluster/factory",
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/clients/wrapper",
     "pkg/api/v1/control-plane/cache",
@@ -1485,8 +1485,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "6f045c76d0421b13239d9456d73592386d7e011a"
-  version = "v0.11.4"
+  revision = "d91ad29be797283993883b7bb320ec895101aed5"
+  version = "v0.11.6"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"

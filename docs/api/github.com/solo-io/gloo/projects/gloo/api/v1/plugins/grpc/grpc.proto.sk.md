@@ -42,7 +42,7 @@ spec is fine), to make sure that traffic to it is routed with http2.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet. |  |
-| `grpcServices` | [[]grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk#grpcservice) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |  |
+| `grpcServices` | [[]grpc.plugins.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk/#grpcservice) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |  |
 
 
 
@@ -88,7 +88,7 @@ This is only for upstream with Grpc service spec.
 | `package` | `string` | The proto package of the function. |  |
 | `service` | `string` | The name of the service of the function. |  |
 | `function` | `string` | The name of the function. |  |
-| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk#parameters) | Parameters describe how to extract the function parameters from the request. |  |
+| `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) | Parameters describe how to extract the function parameters from the request. |  |
 
 
 

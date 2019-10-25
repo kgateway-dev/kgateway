@@ -63,7 +63,7 @@ An RBAC principal - the identity entity (usually a user or a service account).
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `jwtPrincipal` | [.rbac.plugins.gloo.solo.io.JWTPrincipal](../rbac.proto.sk#jwtprincipal) |  |  |
+| `jwtPrincipal` | [.rbac.plugins.gloo.solo.io.JWTPrincipal](../rbac.proto.sk/#jwtprincipal) |  |  |
 
 
 
@@ -102,8 +102,8 @@ If more than one field is added, all of them need to match.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `principals` | [[]rbac.plugins.gloo.solo.io.Principal](../rbac.proto.sk#principal) | Principals in this policy. |  |
-| `permissions` | [.rbac.plugins.gloo.solo.io.Permissions](../rbac.proto.sk#permissions) | Permissions granted to the principals. |  |
+| `principals` | [[]rbac.plugins.gloo.solo.io.Principal](../rbac.proto.sk/#principal) | Principals in this policy. |  |
+| `permissions` | [.rbac.plugins.gloo.solo.io.Permissions](../rbac.proto.sk/#permissions) | Permissions granted to the principals. |  |
 
 
 
@@ -175,7 +175,7 @@ TODO(kdorosh) remove once we stop supporting opaque RBAC config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk#config) |  |  |
+| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk/#config) |  |  |
 
 
 
@@ -195,7 +195,7 @@ TODO(kdorosh) remove once we stop supporting opaque RBAC config
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disable` | `bool` | Disable RBAC checks on this route. This is useful to allow access to static resources/login page without RBAC checks. Only one of `disable` or `config` can be set. |  |
-| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk#config) |  Only one of `config` or `disable` can be set. |  |
+| `config` | [.rbac.plugins.gloo.solo.io.Config](../rbac.proto.sk/#config) |  Only one of `config` or `disable` can be set. |  |
 
 
 

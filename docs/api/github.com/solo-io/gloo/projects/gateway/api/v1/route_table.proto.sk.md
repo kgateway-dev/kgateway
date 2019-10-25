@@ -181,9 +181,9 @@ Would produce the following route config for `mydomain.com`:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk#route) | the list of routes for the route table. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
+| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | the list of routes for the route table. |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 

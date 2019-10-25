@@ -75,8 +75,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `abort` | [.fault.plugins.gloo.solo.io.RouteAbort](../fault.proto.sk#routeabort) |  |  |
-| `delay` | [.fault.plugins.gloo.solo.io.RouteDelay](../fault.proto.sk#routedelay) |  |  |
+| `abort` | [.fault.plugins.gloo.solo.io.RouteAbort](../fault.proto.sk/#routeabort) |  |  |
+| `delay` | [.fault.plugins.gloo.solo.io.RouteDelay](../fault.proto.sk/#routedelay) |  |  |
 
 
 
