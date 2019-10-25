@@ -25,6 +25,42 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+//
+//The following pre-made action types map to the following regex matchers:
+//
+//SSN:
+//- "(\\D|^)[0-9]{9}(\\D|$)"
+//- "(\\D|^)[0-9]{3}\\-[0-9]{2}\\-[0-9]{4}(\\D|$)"
+//- "(\\D|^)[0-9]{3}\\ [0-9]{2}\\ [0-9]{4}(\\D|$)"
+//
+//MASTERCARD:
+//- "(\\D|^)5[1-5][0-9]{2}(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\D|$)"
+//
+//VISA:
+//- "(\\D|^)4[0-9]{3}(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\D|$)"
+//
+//AMEX:
+//- "(\\D|^)(34|37)[0-9]{2}(\\ |\\-|)[0-9]{6}(\\ |\\-|)[0-9]{5}(\\D|$)"
+//
+//DISCOVER:
+//- "(\\D|^)6011(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\D|$)"
+//
+//JCB:
+//- "(\\D|^)3[0-9]{3}(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\ |\\-|)[0-9]{4}(\\D|$)"
+//- "(\\D|^)(2131|1800)[0-9]{11}(\\D|$)"
+//
+//DINERS_CLUB:
+//- "(\\D|^)30[0-5][0-9](\\ |\\-|)[0-9]{6}(\\ |\\-|)[0-9]{4}(\\D|$)"
+//- "(\\D|^)(36|38)[0-9]{2}(\\ |\\-|)[0-9]{6}(\\ |\\-|)[0-9]{4}(\\D|$)"
+//
+//CREDIT_CARD_TRACKERS:
+//- "[1-9][0-9]{2}\\-[0-9]{2}\\-[0-9]{4}\\^\\d"
+//- "(\\D|^)\\%?[Bb]\\d{13,19}\\^[\\-\\/\\.\\w\\s]{2,26}\\^[0-9][0-9][01][0-9][0-9]{3}"
+//- "(\\D|^)\\;\\d{13,19}\\=(\\d{3}|)(\\d{4}|\\=)"
+//
+//ALL_CREDIT_CARDS:
+//- (All credit card related regexes from above)
+//
 type Action_ActionType int32
 
 const (
@@ -119,6 +155,7 @@ func (m *FilterConfig) GetDlpRules() []*DlpRule {
 // The route matching functions exactly the same as the envoy routes in the virtual host.
 type DlpRule struct {
 	// Matcher by which to determine if the given transformation should be applied
+	// if omitted, will it match all (i.e., default to / prefix matcher)
 	Matcher *matchers.Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
 	// List of data loss prevention actions to be applied.
 	// These actions will be applied in order, one at a time.
@@ -218,7 +255,7 @@ func (m *Config) GetActions() []*Action {
 //These actions can also be shadowed, a shadowed action will be recorded
 //in the statistics, and debug logs, but not actually committed in the response body.
 //
-//To use a premade action simply set the action type to anything other than `CUSTOM`
+//To use a pre-made action simply set the action type to anything other than `CUSTOM`
 //
 //``` yaml
 //actionType: VISA
@@ -330,6 +367,7 @@ type CustomAction struct {
 	MaskChar string `protobuf:"bytes,3,opt,name=mask_char,json=maskChar,proto3" json:"mask_char,omitempty"`
 	// The percent of the string which will be masked by the mask_char
 	// default value: 75%
+	// rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/
 	Percent              *_type.Percent `protobuf:"bytes,4,opt,name=percent,proto3" json:"percent,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`

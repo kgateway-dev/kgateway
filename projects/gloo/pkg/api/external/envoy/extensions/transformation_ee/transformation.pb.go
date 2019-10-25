@@ -243,7 +243,7 @@ func (*Transformation) XXX_OneofWrappers() []interface{} {
 }
 
 type DlpTransformation struct {
-	// list of actioms to apply
+	// list of actions to apply
 	Actions              []*Action `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
