@@ -300,6 +300,12 @@ plugins:
 
 Here is the sample output of a successful run of the script:
 
+```text	
+{"level":"info","ts":"2019-08-21T17:02:22.803Z","logger":"verify-plugins.header_value_plugin","caller":"pkg/impl.go:39","msg":"Parsed RequiredHeaderAuthService config","requiredHeader":"my-auth-header","allowedHeaderValues":["foo","bar","baz"]}	
+{"level":"info","ts":"2019-08-21T17:02:22.803Z","logger":"verify-plugins","caller":"plugins/loader.go:85","msg":"Successfully loaded plugin. Adding it to the plugin chain.","pluginName":"RequiredHeader"}	
+{"level":"info","ts":"2019-08-21T17:02:22.803Z","logger":"verify-plugins","caller":"scripts/verify_plugins.go:62","msg":"Successfully verified that plugins can be loaded by Gloo!"}	
+```
+
 {{% notice note %}}
 The script is compiled to run on `linux` with `amd64` architectures. We will explain how it is supposed to be used in the next section.
 {{% /notice %}}
