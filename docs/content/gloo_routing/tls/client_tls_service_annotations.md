@@ -68,7 +68,7 @@ spec:
 
 
 {{% notice note %}}
-Note: The certificates must be mounted to the Proxy pod with the paths specified in the annotations.
+Note: The certificates must be mounted to the proxy pod (named `gateway-proxy-v2` by default) with the paths specified in the annotations.
 {{% /notice %}}
 
 

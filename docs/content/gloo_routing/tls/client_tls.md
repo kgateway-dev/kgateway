@@ -182,14 +182,14 @@ Now we've got to configure the `default-example-tls-server-8080` upstream to ref
 This can be done using either `glooctl` to modify the Upstream directly, or adding an annotation to the the service:
 
 {{< tabs >}}
-{{< tab name="modify the upstream with glooctl" codelang="bash">}}
+{{< tab name="glooctl" codelang="bash">}}
 glooctl edit upstream \
     --name default-example-tls-server-8080 \
     --namespace gloo-system \
     --ssl-secret-name upstream-tls \
     --ssl-secret-namespace default
 {{< /tab >}}
-{{< tab name="modify the service annotations with kubectl" codelang="bash">}}
+{{< tab name="kubectl" codelang="bash">}}
 kubectl annotate service -n default example-tls-server gloo.solo.io/sslService.secret=upstream-tls
 {{< /tab >}}
 {{< /tabs >}}
