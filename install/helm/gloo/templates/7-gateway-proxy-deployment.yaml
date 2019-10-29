@@ -2,7 +2,6 @@
 {{- include "gloo.updatevalues" . -}}
 {{- end -}}
 {{- if .Values.gateway.enabled }}
-{{- $topScope := . }}
 {{- $global := .Values.global }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
@@ -83,7 +82,7 @@ spec:
       serviceAccountName: gateway-proxy
       {{- if $spec.extraInitContainersHelper }}
       initContainers:
-      {{- include $spec.extraInitContainersHelper $topScope | nindent 6 }}
+      {{- include $spec.extraInitContainersHelper $ | nindent 6 }}
       {{- end }}
       containers:
       - args: ["--disable-hot-restart"]
@@ -166,7 +165,7 @@ spec:
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
-{{- include $spec.extraContainersHelper $topScope | nindent 6 }}
+{{- include $spec.extraContainersHelper $ | nindent 6 }}
 {{- end }}
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
@@ -199,7 +198,7 @@ spec:
         emptyDir: {}
       {{- end }}
       {{- if $spec.extraVolumeHelper }}
-      {{- include $spec.extraVolumeHelper $topScope | nindent 6 }}
+      {{- include $spec.extraVolumeHelper $ | nindent 6 }}
       {{- end }}
 {{- end }}
 {{- end }}
