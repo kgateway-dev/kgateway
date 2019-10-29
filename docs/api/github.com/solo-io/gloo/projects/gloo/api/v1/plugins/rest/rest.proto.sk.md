@@ -79,7 +79,7 @@ This is only for upstream with REST service spec
 | ----- | ---- | ----------- |----------- | 
 | `functionName` | `string` |  |  |
 | `parameters` | [.transformation.plugins.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) |  |  |
-| `responseTransformation` | [.envoy.api.v2.filter.http.TransformationTemplate](../../transformation/transformation.proto.sk/#transformationtemplate) |  |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) |  |  |
 
 
 

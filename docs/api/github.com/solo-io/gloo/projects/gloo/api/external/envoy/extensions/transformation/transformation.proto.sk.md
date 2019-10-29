@@ -11,6 +11,8 @@ weight: 5
 #### Types:
 
 
+- [FilterTransformations](#filtertransformations)
+- [TransformationRule](#transformationrule)
 - [RouteTransformations](#routetransformations)
 - [Transformation](#transformation)
 - [Extraction](#extraction)
@@ -23,8 +25,44 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/plugins/transformation/transformation.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto)
 
+
+
+
+
+---
+### FilterTransformations
+
+
+
+```yaml
+"transformations": []envoy.api.v2.filter.http.TransformationRule
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `transformations` | [[]envoy.api.v2.filter.http.TransformationRule](../transformation.proto.sk/#transformationrule) | Specifies transformations based on the route matches. The first matched transformation will be applied. If there are overlapped match conditions, please put the most specific match first. |  |
+
+
+
+
+---
+### TransformationRule
+
+
+
+```yaml
+"match": .envoy.api.v2.route.RouteMatch
+"routeTransformations": .envoy.api.v2.filter.http.RouteTransformations
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `match` | [.envoy.api.v2.route.RouteMatch](../../../../../../../../../../../envoy/api/v2/route/route.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |  |
+| `routeTransformations` | [.envoy.api.v2.filter.http.RouteTransformations](../transformation.proto.sk/#routetransformations) | transformation to perform. |  |
 
 
 
