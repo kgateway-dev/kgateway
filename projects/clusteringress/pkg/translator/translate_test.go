@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
@@ -230,7 +232,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
+												Transformations: (*envoytransformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
@@ -329,7 +331,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
+												Transformations: (*envoytransformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
@@ -444,7 +446,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
+												Transformations: (*envoytransformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),

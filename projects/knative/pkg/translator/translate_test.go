@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
@@ -169,14 +171,14 @@ var _ = Describe("Translate", func() {
 
 		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
-				&gloov1.Listener{
+				{
 					Name:        "http",
 					BindAddress: "::",
 					BindPort:    0x00000050,
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
-								&gloov1.VirtualHost{
+								{
 									Name: "example.ing-0",
 									Domains: []string{
 										"petes.com",
@@ -193,7 +195,7 @@ var _ = Describe("Translate", func() {
 										"mysvc.myns.example.com:80",
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
@@ -204,7 +206,7 @@ var _ = Describe("Translate", func() {
 													Destination: &gloov1.RouteAction_Multi{
 														Multi: &gloov1.MultiDestination{
 															Destinations: []*gloov1.WeightedDestination{
-																&gloov1.WeightedDestination{
+																{
 																	Destination: &gloov1.Destination{
 																		DestinationType: &gloov1.Destination_Kube{
 																			Kube: &gloov1.KubernetesServiceDestination{
@@ -229,7 +231,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
+												Transformations: (*envoytransformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
@@ -243,7 +245,7 @@ var _ = Describe("Translate", func() {
 												Shadowing:  (*shadowing.RouteShadowing)(nil),
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														&headers.HeaderValueOption{
+														{
 															Header: &headers.HeaderValue{
 																Key:   "add",
 																Value: "me",
@@ -259,7 +261,7 @@ var _ = Describe("Translate", func() {
 									VirtualHostPlugins: (*gloov1.VirtualHostPlugins)(nil),
 									CorsPolicy:         (*gloov1.CorsPolicy)(nil),
 								},
-								&gloov1.VirtualHost{
+								{
 									Name: "example.ing-1",
 									Domains: []string{
 										"pog.com",
@@ -270,7 +272,7 @@ var _ = Describe("Translate", func() {
 										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/hay",
@@ -281,7 +283,7 @@ var _ = Describe("Translate", func() {
 													Destination: &gloov1.RouteAction_Multi{
 														Multi: &gloov1.MultiDestination{
 															Destinations: []*gloov1.WeightedDestination{
-																&gloov1.WeightedDestination{
+																{
 																	Destination: &gloov1.Destination{
 																		DestinationType: &gloov1.Destination_Kube{
 																			Kube: &gloov1.KubernetesServiceDestination{
@@ -306,7 +308,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
+												Transformations: (*envoytransformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
@@ -320,7 +322,7 @@ var _ = Describe("Translate", func() {
 												Shadowing:  (*shadowing.RouteShadowing)(nil),
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														&headers.HeaderValueOption{
+														{
 															Header: &headers.HeaderValue{
 																Key:   "add",
 																Value: "me",
@@ -343,14 +345,14 @@ var _ = Describe("Translate", func() {
 					UseProxyProto: (*types.BoolValue)(nil),
 					Plugins:       (*gloov1.ListenerPlugins)(nil),
 				},
-				&gloov1.Listener{
+				{
 					Name:        "https",
 					BindAddress: "::",
 					BindPort:    0x000001bb,
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
-								&gloov1.VirtualHost{
+								{
 									Name: "example.ing-tls-0",
 									Domains: []string{
 										"petes.com",
@@ -359,7 +361,7 @@ var _ = Describe("Translate", func() {
 										"zah.net:443",
 									},
 									Routes: []*gloov1.Route{
-										&gloov1.Route{
+										{
 											Matcher: &gloov1.Matcher{
 												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
@@ -370,7 +372,7 @@ var _ = Describe("Translate", func() {
 													Destination: &gloov1.RouteAction_Multi{
 														Multi: &gloov1.MultiDestination{
 															Destinations: []*gloov1.WeightedDestination{
-																&gloov1.WeightedDestination{
+																{
 																	Destination: &gloov1.Destination{
 																		DestinationType: &gloov1.Destination_Kube{
 																			Kube: &gloov1.KubernetesServiceDestination{
@@ -395,7 +397,7 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*transformation.RouteTransformations)(nil),
+												Transformations: (*envoytransformation.RouteTransformations)(nil),
 												Faults:          (*faultinjection.RouteFaults)(nil),
 												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
 												Timeout:         durptr(1),
@@ -409,7 +411,7 @@ var _ = Describe("Translate", func() {
 												Shadowing:  (*shadowing.RouteShadowing)(nil),
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														&headers.HeaderValueOption{
+														{
 															Header: &headers.HeaderValue{
 																Key:   "add",
 																Value: "me",
@@ -430,7 +432,7 @@ var _ = Describe("Translate", func() {
 						},
 					},
 					SslConfigurations: []*gloov1.SslConfig{
-						&gloov1.SslConfig{
+						{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "areallygreatsecret",
