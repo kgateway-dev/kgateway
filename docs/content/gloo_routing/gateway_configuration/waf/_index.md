@@ -204,6 +204,9 @@ spec:
 Once this config has been accepted run the following to test that it works.
 ```bash
 curl -v  $(glooctl proxy url)/sample-route-1
+```
+should respond with
+```
 *   Trying IP_REDACTED...
 * TCP_NODELAY set
 * Connected to IP_REDACTED (IP_REDACTED) port 80 (#0)
