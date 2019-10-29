@@ -1,9 +1,4 @@
 changelog:
   - type: NEW_FEATURE
-    description: >
-      Allow extauth to be deployed as both a standalone service and as a sidecar in
-      the envoy pod simultaneously. We have added the field global.extensions.extAuth.standaloneDeployment
-      to our helm chart and have deprecated (but not removed) the field global.extensions.extAuth.enabled.
-      Setting both extAuth.envoySidecar and extAuth.standaloneDeployment to false should be equivalent
-      to setting extAuth.enabled to false.
+    description: Allow the gateway-proxy pod to optionally receive both init containers to run and extra volumes to define through helm
     issueLink: https://github.com/solo-io/gloo/issues/1537
