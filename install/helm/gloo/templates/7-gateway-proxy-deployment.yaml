@@ -16,7 +16,7 @@ apiVersion: apps/v1
 kind: Deployment
 {{- else }}
 kind: DaemonSet
-{{- end}} # if deployment
+{{- end}}
 metadata:
   labels:
     app: gloo
