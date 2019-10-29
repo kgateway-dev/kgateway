@@ -453,7 +453,9 @@ ifeq ($(RELEASE),"true")
 endif
 
 ## START Temporary targets while master/v0.20.x branch is supported
-## Run `GCLOUD_PROJECT_ID=solo-public TAGGED_VERSION=v0-20-11 make publish-v-20-docs -B` manually to produce a docs image with the following properties:
+# Whenever a new Gloo release is made from the master/v0.20.x branch,
+# run `GCLOUD_PROJECT_ID=solo-public TAGGED_VERSION=v0-20-<PARTICULAR_VERSION> make publish-v-20-docs -B`
+# to manually to produce a docs image with the following properties:
 # - api, cli, changelog content from master/v0.20.x
 # - docs content, hosting config from feature-rc1
 .PHONY: publish-v-20-docs
