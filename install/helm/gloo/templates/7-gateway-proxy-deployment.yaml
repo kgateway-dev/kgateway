@@ -27,7 +27,7 @@ metadata:
 spec:
   {{- if $spec.kind.deployment}}
   replicas: {{ $spec.kind.deployment.replicas }}
-  {{- end}} # if deployment
+  {{- end}}
   selector:
     matchLabels:
       gloo: gateway-proxy
@@ -46,26 +46,26 @@ spec:
       annotations:
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
-      {{- end }} # range extraAnnotations
-{{- end }} # if extraAnnotations
+      {{- end }}
+{{- end }}
 {{- if $spec.stats }}
 {{- if not $annotationExist }}
 {{- $annotationExist = true}}
       annotations:
-{{- end}} # if not $annotationExist
+{{- end}}
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
-{{- end}} # if stats
+{{- end}}
 {{- if $spec.readConfig }}
 {{- if not $annotationExist }}
       annotations:
-{{- end}} # if not annotationsExist
+{{- end}}
         readconfig-stats: /stats
         readconfig-ready: /ready
         readconfig-config_dump: /config_dump
         readconfig-port: "8082"
-{{- end}} # if readConfig
+{{- end}}
     spec:
 {{- if $spec.kind.deployment }}
 {{- if $spec.kind.deployment.antiAffinity }}
@@ -78,8 +78,8 @@ spec:
                 matchLabels:
                   gloo: gateway-proxy
               topologyKey: kubernetes.io/hostname
-{{- end}} # if deployment.antiAffinity
-{{- end}} # if deployment
+{{- end}}
+{{- end}}
       serviceAccountName: gateway-proxy
       {{- if $spec.extraInitContainersHelper }}
       initContainers:
