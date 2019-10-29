@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Include make targets for producing docs images from master/v0.20.x APIs
+      that can be hosted at docs.solo.io/gloo/latest/.
