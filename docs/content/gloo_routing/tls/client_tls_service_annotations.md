@@ -7,7 +7,7 @@ description: Set up Gloo to route to TLS-encrypted services by using annotations
 
 # Motivation
 
-Gloo can auto-discover SSL configuration for [upstream TLS connections]({{< ref "/gloo_routing/tls/client_tls_service_annotations.md">}}) using annotations on the Kubernetes Service. 
+Gloo can auto-discover SSL configuration for [upstream TLS connections]({{< ref "/gloo_routing/tls/client_tls.md">}}) using annotations on the Kubernetes Service. 
 
 This can be used as a convenient alternative to the [Upstream]({{% protobuf name="gloo.solo.io.Upstream" %}}) to configure Upstream or Client SSL.
 
@@ -43,7 +43,7 @@ Note: The secret must live in the same namespace as the service.
 
 # Configuring Upstream SSL Using Files Mounted to the Proxy
 
-To use a Kubernetes TLS secret for Upstream TLS, set the annotations of your service like so:
+To certs mounted to the proxy pod (named `gateway-proxy-v2` by default) for Upstream TLS, set the annotations of your service like so:
 
 {{< highlight yaml "hl_lines=4-7" >}}
 apiVersion: v1
@@ -79,12 +79,12 @@ A service may have more than one port, where only a specific port is serving SSL
 In this case, it's necessary to include the SSL port in the annotation value, like so:
 
 
-{{< highlight yaml "hl_lines=4-7" >}}
-# configure Upstream SSL for routes to port 443 of our service
+{{< highlight yaml "hl_lines=5-8" >}}
 apiVersion: v1
 kind: Service
 metadata:
   annotations:
+    # configure Upstream SSL for routes to port 443 of our service
     gloo.solo.io/sslService.tlsCert: /443:tls.crt
     gloo.solo.io/sslService.tlsKey: /443:tls.key
     gloo.solo.io/sslService.rootCa: /443:ca.crt
