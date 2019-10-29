@@ -1,4 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  description: Add filter level support for matchers in transformation filter.
-  issueLink: https://github.com/solo-io/envoy-gloo/issues/34
