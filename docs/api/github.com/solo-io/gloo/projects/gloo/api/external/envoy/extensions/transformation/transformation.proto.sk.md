@@ -17,6 +17,8 @@ weight: 5
 - [Transformation](#transformation)
 - [Extraction](#extraction)
 - [TransformationTemplate](#transformationtemplate)
+- [DynamicMetadataValue](#dynamicmetadatavalue)
+- [RequestBodyParse](#requestbodyparse)
 - [InjaTemplate](#injatemplate)
 - [Passthrough](#passthrough)
 - [MergeExtractorsToBody](#mergeextractorstobody)
@@ -115,6 +117,7 @@ weight: 5
 
 ```yaml
 "header": string
+"body": .google.protobuf.Empty
 "regex": string
 "subgroup": int
 
@@ -122,7 +125,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | `string` |  |  |
+| `header` | `string` |  Only one of `header` or `body` can be set. |  |
+| `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `body` or `header` can be set. |  |
 | `regex` | `string` | what information to extract. if extraction fails the result is an empty value. |  |
 | `subgroup` | `int` |  |  |
 
@@ -141,17 +145,57 @@ weight: 5
 "body": .envoy.api.v2.filter.http.InjaTemplate
 "passthrough": .envoy.api.v2.filter.http.Passthrough
 "mergeExtractorsToBody": .envoy.api.v2.filter.http.MergeExtractorsToBody
+"parseBodyBehavior": .envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse
+"ignoreErrorOnParse": bool
+"dynamicMetadataValues": []envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `advancedTemplates` | `bool` |  |  |
-| `extractors` | `map<string, .envoy.api.v2.filter.http.Extraction>` | Extractors are in the origin request language domain. |  |
+| `extractors` | `map<string, .envoy.api.v2.filter.http.Extraction>` | Extractors are in the original request language domain. |  |
 | `headers` | `map<string, .envoy.api.v2.filter.http.InjaTemplate>` |  |  |
 | `body` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) |  Only one of `body`, or `mergeExtractorsToBody` can be set. |  |
 | `passthrough` | [.envoy.api.v2.filter.http.Passthrough](../transformation.proto.sk/#passthrough) |  Only one of `passthrough`, or `mergeExtractorsToBody` can be set. |  |
 | `mergeExtractorsToBody` | [.envoy.api.v2.filter.http.MergeExtractorsToBody](../transformation.proto.sk/#mergeextractorstobody) |  Only one of `mergeExtractorsToBody`, or `passthrough` can be set. |  |
+| `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) |  |  |
+| `ignoreErrorOnParse` | `bool` |  |  |
+| `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) |  |  |
+
+
+
+
+---
+### DynamicMetadataValue
+
+
+
+```yaml
+"metadataNamespace": string
+"key": string
+"value": .envoy.api.v2.filter.http.InjaTemplate
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `metadataNamespace` | `string` | optional. if not set filter namespace will be used. |  |
+| `key` | `string` |  |  |
+| `value` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) |  |  |
+
+
+
+
+---
+### RequestBodyParse
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `ParseAsJson` |  |
+| `DontParse` |  |
 
 
 

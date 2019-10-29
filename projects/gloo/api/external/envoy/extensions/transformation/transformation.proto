@@ -4,6 +4,7 @@ package envoy.api.v2.filter.http;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation";
 
+import "google/protobuf/empty.proto";
 import "envoy/api/v2/route/route.proto";
 import "validate/validate.proto";
 import "gogoproto/gogo.proto";
@@ -51,7 +52,10 @@ message Transformation {
 }
 
 message Extraction {
-    string header = 1;
+    oneof source {
+        string header = 1;
+        google.protobuf.Empty body = 4;
+    }
     // what information to extract. if extraction fails the result is
     // an empty value.
     string regex = 2;
@@ -60,7 +64,7 @@ message Extraction {
 
 message TransformationTemplate {
     bool advanced_templates = 1;
-    // Extractors are in the origin request language domain
+    // Extractors are in the original request language domain
     map<string, Extraction> extractors = 2;
 
     map<string, InjaTemplate> headers = 3;
@@ -70,6 +74,22 @@ message TransformationTemplate {
         Passthrough passthrough = 5;
         MergeExtractorsToBody merge_extractors_to_body = 6;
     }
+
+    enum RequestBodyParse {
+        ParseAsJson = 0;
+        DontParse = 1;
+    }
+    RequestBodyParse parse_body_behavior = 7;
+    bool ignore_error_on_parse = 8;
+
+    message DynamicMetadataValue {
+        // optional. if not set filter namespace will be used.
+        string metadata_namespace = 1;
+        string key = 2 [(validate.rules).string = {min_bytes: 1}];
+        InjaTemplate value = 3;
+    }
+    repeated DynamicMetadataValue dynamic_metadata_values = 9;
+
 }
 
 /*
