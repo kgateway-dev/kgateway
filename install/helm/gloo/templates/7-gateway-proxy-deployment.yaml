@@ -16,7 +16,7 @@ apiVersion: apps/v1
 kind: Deployment
 {{- else }}
 kind: DaemonSet
-{{- end}}
+{{- end}} # if deployment
 metadata:
   labels:
     app: gloo
@@ -27,7 +27,7 @@ metadata:
 spec:
   {{- if $spec.kind.deployment}}
   replicas: {{ $spec.kind.deployment.replicas }}
-  {{- end}}
+  {{- end}} # if deployment
   selector:
     matchLabels:
       gloo: gateway-proxy
@@ -46,26 +46,26 @@ spec:
       annotations:
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
-      {{- end }}
-{{- end }}
+      {{- end }} # range extraAnnotations
+{{- end }} # if extraAnnotations
 {{- if $spec.stats }}
 {{- if not $annotationExist }}
 {{- $annotationExist = true}}
       annotations:
-{{- end}}
+{{- end}} # if not $annotationExist
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
-{{- end}}
+{{- end}} # if stats
 {{- if $spec.readConfig }}
 {{- if not $annotationExist }}
       annotations:
-{{- end}}
+{{- end}} # if not annotationsExist
         readconfig-stats: /stats
         readconfig-ready: /ready
         readconfig-config_dump: /config_dump
         readconfig-port: "8082"
-{{- end}}
+{{- end}} # if readConfig
     spec:
 {{- if $spec.kind.deployment }}
 {{- if $spec.kind.deployment.antiAffinity }}
@@ -78,9 +78,13 @@ spec:
                 matchLabels:
                   gloo: gateway-proxy
               topologyKey: kubernetes.io/hostname
-{{- end}}
-{{- end}}
+{{- end}} # if deployment.antiAffinity
+{{- end}} # if deployment
       serviceAccountName: gateway-proxy
+      {{- if $spec.extraInitContainersHelper }}
+      initContainers:
+      {{ include $spec.extraInitContainersHelper $topScope | nindent 6 }}
+      {{- end }}
       containers:
       - args: ["--disable-hot-restart"]
         env:
@@ -193,6 +197,9 @@ spec:
       {{- if $spec.extraContainersHelper }}
       - name: shared-data
         emptyDir: {}
+      {{- end }}
+      {{- if $spec.extraVolumeHelper }}
+      {{- include $spec.extraVolumeHelper $topScope | nindent 6 }}
       {{- end }}
 {{- end }}
 {{- end }}
