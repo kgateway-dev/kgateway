@@ -29,8 +29,10 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type TransformationTemplate_RequestBodyParse int32
 
 const (
+	// Will attempt to parse the request/response body as JSON
 	TransformationTemplate_ParseAsJson TransformationTemplate_RequestBodyParse = 0
-	TransformationTemplate_DontParse   TransformationTemplate_RequestBodyParse = 1
+	// The request/response body will be treated as plain text
+	TransformationTemplate_DontParse TransformationTemplate_RequestBodyParse = 1
 )
 
 var TransformationTemplate_RequestBodyParse_name = map[int32]string{
@@ -149,9 +151,11 @@ func (m *TransformationRule) GetRouteTransformations() *RouteTransformations {
 }
 
 type RouteTransformations struct {
+	// Apply a transformation to requests.
 	RequestTransformation *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
-	// clear the route cache if the request transformation was applied
-	ClearRouteCache        bool            `protobuf:"varint,3,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
+	// Clear the route cache if the request transformation was applied.
+	ClearRouteCache bool `protobuf:"varint,3,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
+	// Apply a transformation to responses.
 	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
 	XXX_unrecognized       []byte          `json:"-"`
@@ -203,10 +207,9 @@ func (m *RouteTransformations) GetResponseTransformation() *Transformation {
 	return nil
 }
 
-// [#proto-status: experimental]
+// This message defines a transformation.
 type Transformation struct {
-	// Template is in the transformed request language domain
-	// currently both are JSON
+	// The type of transformation to apply.
 	//
 	// Types that are valid to be assigned to TransformationType:
 	//	*Transformation_TransformationTemplate
@@ -285,14 +288,20 @@ func (*Transformation) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// Extractions can be used to extract information from the request/response.
+// The extracted information can then be referenced in template fields.
 type Extraction struct {
+	// The source of the extraction
+	//
 	// Types that are valid to be assigned to Source:
 	//	*Extraction_Header
 	//	*Extraction_Body
 	Source isExtraction_Source `protobuf_oneof:"source"`
-	// what information to extract. if extraction fails the result is
-	// an empty value.
-	Regex                string   `protobuf:"bytes,2,opt,name=regex,proto3" json:"regex,omitempty"`
+	// Only strings matching this regular expression will be part of the extraction.
+	// The most simple value for this field is '.*', which matches the whole source.
+	// The field is required. If extraction fails the result is an empty value.
+	Regex string `protobuf:"bytes,2,opt,name=regex,proto3" json:"regex,omitempty"`
+	// If your regex contains capturing groups, use this field to determine which group should be selected.
 	Subgroup             uint32   `protobuf:"varint,3,opt,name=subgroup,proto3" json:"subgroup,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -381,18 +390,35 @@ func (*Extraction) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// Defines a transformation template.
 type TransformationTemplate struct {
+	// If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to
+	// access JSON elements. Defaults to false.
+	//
+	// Please note that, if set to 'true', you will need to use the `extraction` function to access extractors in the
+	// template (e.g. '{{ extraction("my_extractor") }}'); if the default value of 'false' is used,  extractors will
+	// simply be available by their name (e.g. '{{ my_extractor }}').
 	AdvancedTemplates bool `protobuf:"varint,1,opt,name=advanced_templates,json=advancedTemplates,proto3" json:"advanced_templates,omitempty"`
-	// Extractors are in the original request language domain
-	Extractors map[string]*Extraction   `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Headers    map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Use this attribute to extract information from the request. It consists of a map of strings to extractors.
+	// The extractor will defines which information will be extracted, while the string key will provide the extractor
+	// with a name. You can reference extractors by their name in templates, e.g. "{{ my-extractor }}" will render to the
+	// value of the "my-extractor" extractor.
+	Extractors map[string]*Extraction `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Use this attribute to transform request/response headers. It consists of a map of strings to templates.
+	// The string key determines the name of the resulting header, the rendered template will determine the value.
+	Headers map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Determines the type of transformation to apply to the request/response body
+	//
 	// Types that are valid to be assigned to BodyTransformation:
 	//	*TransformationTemplate_Body
 	//	*TransformationTemplate_Passthrough
 	//	*TransformationTemplate_MergeExtractorsToBody
-	BodyTransformation    isTransformationTemplate_BodyTransformation    `protobuf_oneof:"body_transformation"`
-	ParseBodyBehavior     TransformationTemplate_RequestBodyParse        `protobuf:"varint,7,opt,name=parse_body_behavior,json=parseBodyBehavior,proto3,enum=envoy.api.v2.filter.http.TransformationTemplate_RequestBodyParse" json:"parse_body_behavior,omitempty"`
-	IgnoreErrorOnParse    bool                                           `protobuf:"varint,8,opt,name=ignore_error_on_parse,json=ignoreErrorOnParse,proto3" json:"ignore_error_on_parse,omitempty"`
+	BodyTransformation isTransformationTemplate_BodyTransformation `protobuf_oneof:"body_transformation"`
+	// Determines how the body will be parsed.
+	ParseBodyBehavior TransformationTemplate_RequestBodyParse `protobuf:"varint,7,opt,name=parse_body_behavior,json=parseBodyBehavior,proto3,enum=envoy.api.v2.filter.http.TransformationTemplate_RequestBodyParse" json:"parse_body_behavior,omitempty"`
+	// If set to true, Envoy will not throw an exception in case the body parsing fails.
+	IgnoreErrorOnParse bool `protobuf:"varint,8,opt,name=ignore_error_on_parse,json=ignoreErrorOnParse,proto3" json:"ignore_error_on_parse,omitempty"`
+	// Use this field to set Dynamic Metadata.
 	DynamicMetadataValues []*TransformationTemplate_DynamicMetadataValue `protobuf:"bytes,9,rep,name=dynamic_metadata_values,json=dynamicMetadataValues,proto3" json:"dynamic_metadata_values,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}                                       `json:"-"`
 	XXX_unrecognized      []byte                                         `json:"-"`
@@ -521,10 +547,13 @@ func (*TransformationTemplate) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
 type TransformationTemplate_DynamicMetadataValue struct {
-	// optional. if not set filter namespace will be used.
-	MetadataNamespace    string        `protobuf:"bytes,1,opt,name=metadata_namespace,json=metadataNamespace,proto3" json:"metadata_namespace,omitempty"`
-	Key                  string        `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	// The metadata namespace. Defaults to the filter namespace.
+	MetadataNamespace string `protobuf:"bytes,1,opt,name=metadata_namespace,json=metadataNamespace,proto3" json:"metadata_namespace,omitempty"`
+	// The metadata key.
+	Key string `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	// A template that determines the metadata value.
 	Value                *InjaTemplate `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
@@ -580,10 +609,13 @@ func (m *TransformationTemplate_DynamicMetadataValue) GetValue() *InjaTemplate {
 	return nil
 }
 
-//
-//custom functions:
-//header_value(name) -> from the original headers
-//extracted_value(name, index) -> from the extracted values
+// Defines an [Inja template](https://github.com/pantor/inja) that will be rendered by Gloo.
+// In addition to the core template functions, the Gloo transformation filter defines the following custom functions:
+// - header(header_name): returns the value of the header with the given name
+// - extraction(extractor_name): returns the value of the extractor with the given name
+// - env(env_var_name): returns the value of the environment variable with the given name
+// - body(): returns the request/response body
+// - context(): returns the base JSON context (allowing for example to range on a JSON body that is an array)
 type InjaTemplate struct {
 	Text                 string   `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

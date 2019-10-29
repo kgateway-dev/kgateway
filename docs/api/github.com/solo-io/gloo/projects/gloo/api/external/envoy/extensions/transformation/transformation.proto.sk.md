@@ -83,9 +83,9 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) |  |  |
-| `clearRouteCache` | `bool` | clear the route cache if the request transformation was applied. |  |
-| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) |  |  |
+| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to requests. |  |
+| `clearRouteCache` | `bool` | Clear the route cache if the request transformation was applied. |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to responses. |  |
 
 
 
@@ -94,7 +94,7 @@ weight: 5
 ### Transformation
 
  
-[#proto-status: experimental]
+This message defines a transformation.
 
 ```yaml
 "transformationTemplate": .envoy.api.v2.filter.http.TransformationTemplate
@@ -104,8 +104,8 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../transformation.proto.sk/#transformationtemplate) |  Only one of `transformationTemplate` or `headerBodyTransform` can be set. |  |
-| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../transformation.proto.sk/#headerbodytransform) |  Only one of `headerBodyTransform` or `transformationTemplate` can be set. |  |
+| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../transformation.proto.sk/#transformationtemplate) | Apply transformation templates. Only one of `transformationTemplate` or `headerBodyTransform` can be set. |  |
+| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../transformation.proto.sk/#headerbodytransform) | This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body. Only one of `headerBodyTransform` or `transformationTemplate` can be set. |  |
 
 
 
@@ -113,7 +113,9 @@ weight: 5
 ---
 ### Extraction
 
-
+ 
+Extractions can be used to extract information from the request/response.
+The extracted information can then be referenced in template fields.
 
 ```yaml
 "header": string
@@ -125,10 +127,10 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | `string` |  Only one of `header` or `body` can be set. |  |
-| `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `body` or `header` can be set. |  |
-| `regex` | `string` | what information to extract. if extraction fails the result is an empty value. |  |
-| `subgroup` | `int` |  |  |
+| `header` | `string` | Extract information from headers. Only one of `header` or `body` can be set. |  |
+| `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Extract information from the request/response body. Only one of `body` or `header` can be set. |  |
+| `regex` | `string` | Only strings matching this regular expression will be part of the extraction. The most simple value for this field is '.*', which matches the whole source. The field is required. If extraction fails the result is an empty value. |  |
+| `subgroup` | `int` | If your regex contains capturing groups, use this field to determine which group should be selected. |  |
 
 
 
@@ -136,7 +138,8 @@ weight: 5
 ---
 ### TransformationTemplate
 
-
+ 
+Defines a transformation template.
 
 ```yaml
 "advancedTemplates": bool
@@ -153,15 +156,15 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `advancedTemplates` | `bool` |  |  |
-| `extractors` | `map<string, .envoy.api.v2.filter.http.Extraction>` | Extractors are in the original request language domain. |  |
-| `headers` | `map<string, .envoy.api.v2.filter.http.InjaTemplate>` |  |  |
-| `body` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) |  Only one of `body`, or `mergeExtractorsToBody` can be set. |  |
-| `passthrough` | [.envoy.api.v2.filter.http.Passthrough](../transformation.proto.sk/#passthrough) |  Only one of `passthrough`, or `mergeExtractorsToBody` can be set. |  |
-| `mergeExtractorsToBody` | [.envoy.api.v2.filter.http.MergeExtractorsToBody](../transformation.proto.sk/#mergeextractorstobody) |  Only one of `mergeExtractorsToBody`, or `passthrough` can be set. |  |
-| `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) |  |  |
-| `ignoreErrorOnParse` | `bool` |  |  |
-| `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) |  |  |
+| `advancedTemplates` | `bool` | If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false. Please note that, if set to 'true', you will need to use the `extraction` function to access extractors in the template (e.g. '{{ extraction("my_extractor") }}'); if the default value of 'false' is used, extractors will simply be available by their name (e.g. '{{ my_extractor }}'). |  |
+| `extractors` | `map<string, .envoy.api.v2.filter.http.Extraction>` | Use this attribute to extract information from the request. It consists of a map of strings to extractors. The extractor will defines which information will be extracted, while the string key will provide the extractor with a name. You can reference extractors by their name in templates, e.g. "{{ my-extractor }}" will render to the value of the "my-extractor" extractor. |  |
+| `headers` | `map<string, .envoy.api.v2.filter.http.InjaTemplate>` | Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. |  |
+| `body` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | Apply a template to the body. Only one of `body`, or `mergeExtractorsToBody` can be set. |  |
+| `passthrough` | [.envoy.api.v2.filter.http.Passthrough](../transformation.proto.sk/#passthrough) | This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it. Only one of `passthrough`, or `mergeExtractorsToBody` can be set. |  |
+| `mergeExtractorsToBody` | [.envoy.api.v2.filter.http.MergeExtractorsToBody](../transformation.proto.sk/#mergeextractorstobody) | Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name. Only one of `mergeExtractorsToBody`, or `passthrough` can be set. |  |
+| `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) | Determines how the body will be parsed. |  |
+| `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |  |
+| `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |  |
 
 
 
@@ -169,7 +172,8 @@ weight: 5
 ---
 ### DynamicMetadataValue
 
-
+ 
+Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
 
 ```yaml
 "metadataNamespace": string
@@ -180,9 +184,9 @@ weight: 5
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `metadataNamespace` | `string` | optional. if not set filter namespace will be used. |  |
-| `key` | `string` |  |  |
-| `value` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) |  |  |
+| `metadataNamespace` | `string` | The metadata namespace. Defaults to the filter namespace. |  |
+| `key` | `string` | The metadata key. |  |
+| `value` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | A template that determines the metadata value. |  |
 
 
 
@@ -194,8 +198,8 @@ weight: 5
 
 | Name | Description |
 | ----- | ----------- | 
-| `ParseAsJson` |  |
-| `DontParse` |  |
+| `ParseAsJson` | Will attempt to parse the request/response body as JSON |
+| `DontParse` | The request/response body will be treated as plain text |
 
 
 
@@ -204,9 +208,13 @@ weight: 5
 ### InjaTemplate
 
  
-custom functions:
-header_value(name) -> from the original headers
-extracted_value(name, index) -> from the extracted values
+Defines an [Inja template](https://github.com/pantor/inja) that will be rendered by Gloo.
+In addition to the core template functions, the Gloo transformation filter defines the following custom functions:
+- header(header_name): returns the value of the header with the given name
+- extraction(extractor_name): returns the value of the extractor with the given name
+- env(env_var_name): returns the value of the environment variable with the given name
+- body(): returns the request/response body
+- context(): returns the base JSON context (allowing for example to range on a JSON body that is an array)
 
 ```yaml
 "text": string
