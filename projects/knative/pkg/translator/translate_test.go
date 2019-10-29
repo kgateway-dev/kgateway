@@ -4,13 +4,6 @@ import (
 	"context"
 	"time"
 
-	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
-
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hostrewrite"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
 	"github.com/solo-io/gloo/projects/knative/api/external/knative"
@@ -19,9 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
 	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -217,11 +208,11 @@ var _ = Describe("Translate", func() {
 																				Port: 0x00000050,
 																			},
 																		},
-																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
-																		Subset:          (*gloov1.Subset)(nil),
+																		DestinationSpec: nil,
+																		Subset:          nil,
 																	},
 																	Weight:                     0x00000064,
-																	WeightedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
+																	WeightedDestinationPlugins: nil,
 																	XXX_NoUnkeyedLiteral:       struct{}{},
 																	XXX_sizecache:              0,
 																},
@@ -231,18 +222,18 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*envoytransformation.RouteTransformations)(nil),
-												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												Transformations: nil,
+												Faults:          nil,
+												PrefixRewrite:   nil,
 												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
 													RetryOn:       "",
 													NumRetries:    0x0000000e,
 													PerTryTimeout: durptr(1000),
 												},
-												Extensions: (*gloov1.Extensions)(nil),
-												Tracing:    (*tracing.RouteTracingSettings)(nil),
-												Shadowing:  (*shadowing.RouteShadowing)(nil),
+												Extensions: nil,
+												Tracing:    nil,
+												Shadowing:  nil,
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
 														{
@@ -250,16 +241,16 @@ var _ = Describe("Translate", func() {
 																Key:   "add",
 																Value: "me",
 															},
-															Append: (*types.BoolValue)(nil),
+															Append: nil,
 														},
 													},
 												},
-												HostRewrite: (*hostrewrite.HostRewrite)(nil),
+												HostRewrite: nil,
 											},
 										},
 									},
-									VirtualHostPlugins: (*gloov1.VirtualHostPlugins)(nil),
-									CorsPolicy:         (*gloov1.CorsPolicy)(nil),
+									VirtualHostPlugins: nil,
+									CorsPolicy:         nil,
 								},
 								{
 									Name: "example.ing-1",
@@ -294,11 +285,11 @@ var _ = Describe("Translate", func() {
 																				Port: 0x00000050,
 																			},
 																		},
-																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
-																		Subset:          (*gloov1.Subset)(nil),
+																		DestinationSpec: nil,
+																		Subset:          nil,
 																	},
 																	Weight:                     0x00000064,
-																	WeightedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
+																	WeightedDestinationPlugins: nil,
 																	XXX_NoUnkeyedLiteral:       struct{}{},
 																	XXX_sizecache:              0,
 																},
@@ -308,18 +299,18 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*envoytransformation.RouteTransformations)(nil),
-												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												Transformations: nil,
+												Faults:          nil,
+												PrefixRewrite:   nil,
 												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
 													RetryOn:       "",
 													NumRetries:    0x0000000e,
 													PerTryTimeout: durptr(1000),
 												},
-												Extensions: (*gloov1.Extensions)(nil),
-												Tracing:    (*tracing.RouteTracingSettings)(nil),
-												Shadowing:  (*shadowing.RouteShadowing)(nil),
+												Extensions: nil,
+												Tracing:    nil,
+												Shadowing:  nil,
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
 														{
@@ -327,23 +318,23 @@ var _ = Describe("Translate", func() {
 																Key:   "add",
 																Value: "me",
 															},
-															Append: (*types.BoolValue)(nil),
+															Append: nil,
 														},
 													},
 												},
-												HostRewrite: (*hostrewrite.HostRewrite)(nil),
+												HostRewrite: nil,
 											},
 										},
 									},
-									VirtualHostPlugins: (*gloov1.VirtualHostPlugins)(nil),
-									CorsPolicy:         (*gloov1.CorsPolicy)(nil),
+									VirtualHostPlugins: nil,
+									CorsPolicy:         nil,
 								},
 							},
-							ListenerPlugins: (*gloov1.HttpListenerPlugins)(nil),
+							ListenerPlugins: nil,
 						},
 					},
-					UseProxyProto: (*types.BoolValue)(nil),
-					Plugins:       (*gloov1.ListenerPlugins)(nil),
+					UseProxyProto: nil,
+					Plugins:       nil,
 				},
 				{
 					Name:        "https",
@@ -383,11 +374,11 @@ var _ = Describe("Translate", func() {
 																				Port: 0x00000050,
 																			},
 																		},
-																		DestinationSpec: (*gloov1.DestinationSpec)(nil),
-																		Subset:          (*gloov1.Subset)(nil),
+																		DestinationSpec: nil,
+																		Subset:          nil,
 																	},
 																	Weight:                    0x00000064,
-																	WeighedDestinationPlugins: (*gloov1.WeightedDestinationPlugins)(nil),
+																	WeighedDestinationPlugins: nil,
 																	XXX_NoUnkeyedLiteral:      struct{}{},
 																	XXX_sizecache:             0,
 																},
@@ -397,18 +388,18 @@ var _ = Describe("Translate", func() {
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Transformations: (*envoytransformation.RouteTransformations)(nil),
-												Faults:          (*faultinjection.RouteFaults)(nil),
-												PrefixRewrite:   (*transformation.PrefixRewrite)(nil),
+												Transformations: nil,
+												Faults:          nil,
+												PrefixRewrite:   nil,
 												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
 													RetryOn:       "",
 													NumRetries:    0x0000000e,
 													PerTryTimeout: durptr(1000),
 												},
-												Extensions: (*gloov1.Extensions)(nil),
-												Tracing:    (*tracing.RouteTracingSettings)(nil),
-												Shadowing:  (*shadowing.RouteShadowing)(nil),
+												Extensions: nil,
+												Tracing:    nil,
+												Shadowing:  nil,
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
 														{
@@ -416,19 +407,19 @@ var _ = Describe("Translate", func() {
 																Key:   "add",
 																Value: "me",
 															},
-															Append: (*types.BoolValue)(nil),
+															Append: nil,
 														},
 													},
 												},
-												HostRewrite: (*hostrewrite.HostRewrite)(nil),
+												HostRewrite: nil,
 											},
 										},
 									},
-									VirtualHostPlugins: (*gloov1.VirtualHostPlugins)(nil),
-									CorsPolicy:         (*gloov1.CorsPolicy)(nil),
+									VirtualHostPlugins: nil,
+									CorsPolicy:         nil,
 								},
 							},
-							ListenerPlugins: (*gloov1.HttpListenerPlugins)(nil),
+							ListenerPlugins: nil,
 						},
 					},
 					SslConfigurations: []*gloov1.SslConfig{
@@ -442,11 +433,11 @@ var _ = Describe("Translate", func() {
 							SniDomains: []string{
 								"petes.com",
 							},
-							Parameters: (*gloov1.SslParameters)(nil),
+							Parameters: nil,
 						},
 					},
-					UseProxyProto: (*types.BoolValue)(nil),
-					Plugins:       (*gloov1.ListenerPlugins)(nil),
+					UseProxyProto: nil,
+					Plugins:       nil,
 				},
 			},
 			Status: core.Status{

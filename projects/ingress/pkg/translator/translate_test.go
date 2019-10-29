@@ -198,20 +198,20 @@ var _ = Describe("Translate", func() {
 			//log.Printf("%v", proxy)
 			Expect(proxy.String()).To(Equal((&gloov1.Proxy{
 				Listeners: []*gloov1.Listener{
-					&gloov1.Listener{
+					{
 						Name:        "http",
 						BindAddress: "::",
 						BindPort:    0x00000050,
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
-									&gloov1.VirtualHost{
+									{
 										Name: "wow.com-http",
 										Domains: []string{
 											"wow.com",
 										},
 										Routes: []*gloov1.Route{
-											&gloov1.Route{
+											{
 												Matcher: &gloov1.Matcher{
 													PathSpecifier: &gloov1.Matcher_Regex{
 														Regex: "/",
@@ -233,7 +233,7 @@ var _ = Describe("Translate", func() {
 																		Namespace: "example",
 																	},
 																},
-																DestinationSpec:      (*gloov1.DestinationSpec)(nil),
+																DestinationSpec:      nil,
 																XXX_NoUnkeyedLiteral: struct{}{},
 																XXX_unrecognized:     []uint8{},
 																XXX_sizecache:        0,
@@ -244,19 +244,19 @@ var _ = Describe("Translate", func() {
 														XXX_sizecache:        0,
 													},
 												},
-												RoutePlugins:         (*gloov1.RoutePlugins)(nil),
+												RoutePlugins:         nil,
 												XXX_NoUnkeyedLiteral: struct{}{},
 												XXX_unrecognized:     []uint8{},
 												XXX_sizecache:        0,
 											},
 										},
-										VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
+										VirtualHostPlugins:   nil,
 										XXX_NoUnkeyedLiteral: struct{}{},
 										XXX_unrecognized:     []uint8{},
 										XXX_sizecache:        0,
 									},
 								},
-								ListenerPlugins:      (*gloov1.HttpListenerPlugins)(nil),
+								ListenerPlugins:      nil,
 								XXX_NoUnkeyedLiteral: struct{}{},
 								XXX_unrecognized:     []uint8{},
 								XXX_sizecache:        0,
@@ -267,20 +267,20 @@ var _ = Describe("Translate", func() {
 						XXX_unrecognized:     []uint8{},
 						XXX_sizecache:        0,
 					},
-					&gloov1.Listener{
+					{
 						Name:        "https",
 						BindAddress: "::",
 						BindPort:    0x000001bb,
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
-									&gloov1.VirtualHost{
+									{
 										Name: "wow.com-https",
 										Domains: []string{
 											"wow.com",
 										},
 										Routes: []*gloov1.Route{
-											&gloov1.Route{
+											{
 												Matcher: &gloov1.Matcher{
 													PathSpecifier: &gloov1.Matcher_Regex{
 														Regex: "/longestpathshouldcomesecond",
@@ -302,7 +302,7 @@ var _ = Describe("Translate", func() {
 																		Namespace: "example",
 																	},
 																},
-																DestinationSpec:      (*gloov1.DestinationSpec)(nil),
+																DestinationSpec:      nil,
 																XXX_NoUnkeyedLiteral: struct{}{},
 																XXX_unrecognized:     []uint8{},
 																XXX_sizecache:        0,
@@ -313,12 +313,12 @@ var _ = Describe("Translate", func() {
 														XXX_sizecache:        0,
 													},
 												},
-												RoutePlugins:         (*gloov1.RoutePlugins)(nil),
+												RoutePlugins:         nil,
 												XXX_NoUnkeyedLiteral: struct{}{},
 												XXX_unrecognized:     []uint8{},
 												XXX_sizecache:        0,
 											},
-											&gloov1.Route{
+											{
 												Matcher: &gloov1.Matcher{
 													PathSpecifier: &gloov1.Matcher_Regex{
 														Regex: "/basic",
@@ -340,7 +340,7 @@ var _ = Describe("Translate", func() {
 																		Namespace: "example",
 																	},
 																},
-																DestinationSpec:      (*gloov1.DestinationSpec)(nil),
+																DestinationSpec:      nil,
 																XXX_NoUnkeyedLiteral: struct{}{},
 																XXX_unrecognized:     []uint8{},
 																XXX_sizecache:        0,
@@ -351,19 +351,19 @@ var _ = Describe("Translate", func() {
 														XXX_sizecache:        0,
 													},
 												},
-												RoutePlugins:         (*gloov1.RoutePlugins)(nil),
+												RoutePlugins:         nil,
 												XXX_NoUnkeyedLiteral: struct{}{},
 												XXX_unrecognized:     []uint8{},
 												XXX_sizecache:        0,
 											},
 										},
-										VirtualHostPlugins:   (*gloov1.VirtualHostPlugins)(nil),
+										VirtualHostPlugins:   nil,
 										XXX_NoUnkeyedLiteral: struct{}{},
 										XXX_unrecognized:     []uint8{},
 										XXX_sizecache:        0,
 									},
 								},
-								ListenerPlugins:      (*gloov1.HttpListenerPlugins)(nil),
+								ListenerPlugins:      nil,
 								XXX_NoUnkeyedLiteral: struct{}{},
 								XXX_unrecognized:     []uint8{},
 								XXX_sizecache:        0,
@@ -480,7 +480,7 @@ var _ = Describe("Translate", func() {
 		Expect(errs).NotTo(HaveOccurred())
 		Expect(proxy.Listeners).To(HaveLen(1))
 		Expect(proxy.Listeners[0].SslConfigurations).To(Equal([]*gloov1.SslConfig{
-			&gloov1.SslConfig{
+			{
 				SslSecrets: &gloov1.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "amoeba-api-ingress-secret",
@@ -491,7 +491,7 @@ var _ = Describe("Translate", func() {
 					"api-dev.intellishift.com",
 				},
 			},
-			&gloov1.SslConfig{
+			{
 				SslSecrets: &gloov1.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "amoeba-ui-ingress-secret",
