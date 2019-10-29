@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add docs for customization of waf intervention message.
+    issueLink: https://github.com/solo-io/gloo/issues/1457

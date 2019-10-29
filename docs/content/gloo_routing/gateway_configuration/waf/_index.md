@@ -32,6 +32,8 @@ message ModSecurity {
     bool disabled = 1;
     // Global rule sets for the current http connection manager
     repeated RuleSet rule_sets = 2;
+    // Custom message to display when an intervention occurs
+    string custom_intervention_message = 3;
 }
 
 message RuleSet {
@@ -75,22 +77,23 @@ Run the following command to edit the gateway object with the waf config:
 kubectl edit gateway -n gloo-system gateway-proxy-v2
 ```
 
-{{< highlight yaml "hl_lines=12-20" >}}
+{{< highlight yaml "hl_lines=12-21" >}}
 apiVersion: gateway.solo.io.v2/v2
 kind: Gateway
 metadata:
-  generation: 6
-  name: gateway
+  name: gateway-proxy-v2
   namespace: gloo-system
 spec:
   bindAddress: '::'
   bindPort: 8080
-  gatewayProxyName: gateway-proxy-v2
+  proxyNames:
+  - gateway-proxy-v2
   httpGateway:
     plugins:
       extensions:
         configs:
           waf:
+            customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
             ruleSets:
             - ruleStr: |
                 # Turn rule engine on
@@ -102,23 +105,25 @@ spec:
 Once this config has been accepted run the following to test that the rule has been applied
 ```bash
 curl -v -H user-agent:scammer $(glooctl proxy url)/sample-route-1
-
-*   Trying IP_REDACTED...
+```
+should respond with
+```
+*   Trying 192.168.99.144...
 * TCP_NODELAY set
-* Connected to IP_REDACTED (IP_REDACTED) port 80 (#0)
+* Connected to 192.168.99.144 (192.168.99.144) port 32683 (#0)
 > GET /sample-route-1 HTTP/1.1
-> Host: IP_REDACTED
+> Host: 192.168.99.144:32683
 > Accept: */*
 > user-agent:scammer
 >
 < HTTP/1.1 403 Forbidden
-< content-length: 33
+< content-length: 55
 < content-type: text/plain
-< date: Mon, 02 Sep 2019 15:25:52 GMT
+< date: Tue, 29 Oct 2019 19:53:38 GMT
 < server: envoy
 <
-* Connection #0 to host IP_REDACTED left intact
-ModSecurity: intervention occurred
+* Connection #0 to host 192.168.99.144 left intact
+ModSecurity intervention! Custom message details here..
 ```
 
 As can be seen above from the curl output, the request was rejected by the waf filter, and the status 403 was returned.
@@ -129,7 +134,7 @@ Firstly, remove the extension config from the gateway which was added in the sec
 ```bash
 kubectl edit virtualservices.gateway.solo.io -n gloo-system default
 ```
-{{< highlight yaml "hl_lines=12-20" >}}
+{{< highlight yaml "hl_lines=6-16" >}}
 ...
 spec:
   virtualHost:
@@ -141,6 +146,7 @@ spec:
           waf:
             settings:
               ruleSets:
+              customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
               - ruleStr: |
                   # Turn rule engine on
                   SecRuleEngine On
