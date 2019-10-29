@@ -3,7 +3,7 @@ changelog:
   dependencyOwner: solo-io
   dependencyTag: v0.1.18
   dependencyRepo: envoy-gloo
-  description: Update envoy-gloo to version v0.8.23.
+  description: Update envoy-gloo to version v0.1.18.
 - type: DEPENDENCY_BUMP
   dependencyOwner: solo-io
   dependencyTag: v0.11.7
