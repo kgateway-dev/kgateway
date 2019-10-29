@@ -58,7 +58,7 @@ func addHeaderExtractorFromParam(ctx context.Context, header, parameter string, 
 		// extract everything
 		// TODO(yuval): create a special extractor that doesn't use regex when we just want the whole thing
 		extract := &transformation.Extraction{
-			Header:   header,
+			Source:   &transformation.Extraction_Header{Header: header},
 			Regex:    "(.*)",
 			Subgroup: uint32(1),
 		}
@@ -77,7 +77,7 @@ func addHeaderExtractorFromParam(ctx context.Context, header, parameter string, 
 	// otherwise it's regex, and we need to create an extraction for each variable name they defined
 	for i, name := range paramNames {
 		extract := &transformation.Extraction{
-			Header:   header,
+			Source:   &transformation.Extraction_Header{Header: header},
 			Regex:    regexMatcher,
 			Subgroup: uint32(i + 1),
 		}

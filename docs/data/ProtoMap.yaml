@@ -560,6 +560,9 @@ apis:
   google.protobuf.Duration:
     relativepath: api/google/protobuf/duration.proto.sk/#Duration
     package: google.protobuf
+  google.protobuf.Empty:
+    relativepath: api/google/protobuf/empty.proto.sk/#Empty
+    package: google.protobuf
   google.protobuf.EnumDescriptorProto:
     relativepath: api/google/protobuf/descriptor.proto.sk/#EnumDescriptorProto
     package: google.protobuf

@@ -542,12 +542,9 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1443,7 +1440,7 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:34e37248f6d265648cf403f74c85a5a6232af581ea73ab135294627f71dbb472"
+  digest = "1:f9096021ca6e2134f80df8f3c54bbb33a96a1933ed7d90ae7b3e4576467708aa"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1470,7 +1467,7 @@
     "pkg/api/v1/clients/kube/crd/solo.io/v1",
     "pkg/api/v1/clients/kubesecret",
     "pkg/api/v1/clients/memory",
-    "pkg/api/v1/clients/multicluster",
+    "pkg/api/v1/clients/multicluster/factory",
     "pkg/api/v1/clients/vault",
     "pkg/api/v1/clients/wrapper",
     "pkg/api/v1/control-plane/cache",
@@ -1511,8 +1508,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "ea27b57205980f6d89fab3070ce17d3dfa8beead"
-  version = "v0.11.5"
+  revision = "cb8abf21a54ea79cee99eed5936f587f5dbdd545"
+  version = "v0.11.7"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2792,7 +2789,6 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",

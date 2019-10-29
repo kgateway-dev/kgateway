@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
 
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
@@ -144,7 +143,11 @@ var _ = Describe("Translate", func() {
 		secret := &gloov1.Secret{
 			Metadata: core.Metadata{Name: secretName, Namespace: namespace},
 			Kind: &gloov1.Secret_Tls{
-				Tls: &gloov1.TlsSecret{},
+				Tls: &gloov1.TlsSecret{
+					CertChain:  "",
+					RootCa:     "",
+					PrivateKey: "",
+				},
 			},
 		}
 		snap := &v1.TranslatorSnapshot{
@@ -177,11 +180,11 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Regex{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
 												},
-											}},
+											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Multi{
@@ -195,36 +198,74 @@ var _ = Describe("Translate", func() {
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
-																				Port: 0x00000050,
+																				Port:                 0x00000050,
+																				XXX_NoUnkeyedLiteral: struct{}{},
+																				XXX_sizecache:        0,
 																			},
 																		},
+																		DestinationSpec:      nil,
+																		Subset:               nil,
+																		XXX_NoUnkeyedLiteral: struct{}{},
+																		XXX_sizecache:        0,
 																	},
-																	Weight: 0x00000064,
+																	Weight:                     0x00000064,
+																	WeightedDestinationPlugins: nil,
+																	XXX_NoUnkeyedLiteral:       struct{}{},
+																	XXX_sizecache:              0,
 																},
 															},
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Timeout: durptr(1),
+												Transformations: nil,
+												Faults:          nil,
+												PrefixRewrite:   nil,
+												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
-													NumRetries:    0x0000000e,
-													PerTryTimeout: durptr(1000),
+													RetryOn:              "",
+													NumRetries:           0x0000000e,
+													PerTryTimeout:        durptr(1000),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
+												Extensions: nil,
+												Tracing:    nil,
+												Shadowing:  nil,
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
 														{
 															Header: &headers.HeaderValue{
-																Key:   "add",
-																Value: "me",
+																Key:                  "add",
+																Value:                "me",
+																XXX_NoUnkeyedLiteral: struct{}{},
+																XXX_sizecache:        0,
 															},
+															Append:               nil,
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
+												HostRewrite:          nil,
+												XXX_NoUnkeyedLiteral: struct{}{},
+												XXX_sizecache:        0,
 											},
+											XXX_NoUnkeyedLiteral: struct{}{},
+											XXX_sizecache:        0,
 										},
 									},
+									VirtualHostPlugins:   nil,
+									CorsPolicy:           nil,
+									XXX_NoUnkeyedLiteral: struct{}{},
+									XXX_sizecache:        0,
 								},
 								{
 									Name: "example.ing-1",
@@ -238,11 +279,11 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Regex{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/hay",
 												},
-											}},
+											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Multi{
@@ -256,40 +297,85 @@ var _ = Describe("Translate", func() {
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
-																				Port: 0x00000050,
+																				Port:                 0x00000050,
+																				XXX_NoUnkeyedLiteral: struct{}{},
+																				XXX_sizecache:        0,
 																			},
 																		},
+																		DestinationSpec:      nil,
+																		Subset:               nil,
+																		XXX_NoUnkeyedLiteral: struct{}{},
+																		XXX_sizecache:        0,
 																	},
-																	Weight: 0x00000064,
+																	Weight:                    0x00000064,
+																	WeighedDestinationPlugins: nil,
+																	XXX_NoUnkeyedLiteral:      struct{}{},
+																	XXX_sizecache:             0,
 																},
 															},
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Timeout: durptr(1),
+												Transformations: nil,
+												Faults:          nil,
+												PrefixRewrite:   nil,
+												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
-													NumRetries:    0x0000000e,
-													PerTryTimeout: durptr(1000),
+													RetryOn:              "",
+													NumRetries:           0x0000000e,
+													PerTryTimeout:        durptr(1000),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
+												Extensions: nil,
+												Tracing:    nil,
+												Shadowing:  nil,
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
 														{
 															Header: &headers.HeaderValue{
-																Key:   "add",
-																Value: "me",
+																Key:                  "add",
+																Value:                "me",
+																XXX_NoUnkeyedLiteral: struct{}{},
+																XXX_sizecache:        0,
 															},
+															Append:               nil,
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
+												HostRewrite:          nil,
+												XXX_NoUnkeyedLiteral: struct{}{},
+												XXX_sizecache:        0,
 											},
+											XXX_NoUnkeyedLiteral: struct{}{},
+											XXX_sizecache:        0,
 										},
 									},
+									VirtualHostPlugins:   nil,
+									CorsPolicy:           nil,
+									XXX_NoUnkeyedLiteral: struct{}{},
+									XXX_sizecache:        0,
 								},
 							},
+							ListenerPlugins:      nil,
+							XXX_NoUnkeyedLiteral: struct{}{},
+							XXX_sizecache:        0,
 						},
 					},
+					UseProxyProto:        nil,
+					Plugins:              nil,
+					XXX_NoUnkeyedLiteral: struct{}{},
+					XXX_sizecache:        0,
 				},
 				{
 					Name:        "https",
@@ -308,11 +394,11 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*matchers.Matcher{{
-												PathSpecifier: &matchers.Matcher_Regex{
+											Matcher: &gloov1.Matcher{
+												PathSpecifier: &gloov1.Matcher_Regex{
 													Regex: "/",
 												},
-											}},
+											},
 											Action: &gloov1.Route_RouteAction{
 												RouteAction: &gloov1.RouteAction{
 													Destination: &gloov1.RouteAction_Multi{
@@ -326,38 +412,79 @@ var _ = Describe("Translate", func() {
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
-																				Port: 0x00000050,
+																				Port:                 0x00000050,
+																				XXX_NoUnkeyedLiteral: struct{}{},
+																				XXX_sizecache:        0,
 																			},
 																		},
+																		DestinationSpec:      nil,
+																		Subset:               nil,
+																		XXX_NoUnkeyedLiteral: struct{}{},
+																		XXX_sizecache:        0,
 																	},
-																	Weight: 0x00000064,
+																	Weight:                     0x00000064,
+																	WeightedDestinationPlugins: nil,
+																	XXX_NoUnkeyedLiteral:       struct{}{},
+																	XXX_sizecache:              0,
 																},
 															},
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
 											},
 											RoutePlugins: &gloov1.RoutePlugins{
-												Timeout: durptr(1),
+												Transformations: nil,
+												Faults:          nil,
+												PrefixRewrite:   nil,
+												Timeout:         durptr(1),
 												Retries: &retries.RetryPolicy{
-													NumRetries:    0x0000000e,
-													PerTryTimeout: durptr(1000),
+													RetryOn:              "",
+													NumRetries:           0x0000000e,
+													PerTryTimeout:        durptr(1000),
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
+												Extensions: nil,
+												Tracing:    nil,
+												Shadowing:  nil,
 												HeaderManipulation: &headers.HeaderManipulation{
 													RequestHeadersToAdd: []*headers.HeaderValueOption{
 														{
 															Header: &headers.HeaderValue{
-																Key:   "add",
-																Value: "me",
+																Key:                  "add",
+																Value:                "me",
+																XXX_NoUnkeyedLiteral: struct{}{},
+																XXX_sizecache:        0,
 															},
+															Append:               nil,
+															XXX_NoUnkeyedLiteral: struct{}{},
+															XXX_sizecache:        0,
 														},
 													},
+													XXX_NoUnkeyedLiteral: struct{}{},
+													XXX_sizecache:        0,
 												},
+												HostRewrite:          nil,
+												XXX_NoUnkeyedLiteral: struct{}{},
+												XXX_sizecache:        0,
 											},
+											XXX_NoUnkeyedLiteral: struct{}{},
+											XXX_sizecache:        0,
 										},
 									},
+									VirtualHostPlugins:   nil,
+									CorsPolicy:           nil,
+									XXX_NoUnkeyedLiteral: struct{}{},
+									XXX_sizecache:        0,
 								},
 							},
+							ListenerPlugins:      nil,
+							XXX_NoUnkeyedLiteral: struct{}{},
+							XXX_sizecache:        0,
 						},
 					},
 					SslConfigurations: []*gloov1.SslConfig{
@@ -371,15 +498,34 @@ var _ = Describe("Translate", func() {
 							SniDomains: []string{
 								"petes.com",
 							},
+							Parameters:           nil,
+							XXX_NoUnkeyedLiteral: struct{}{},
+							XXX_sizecache:        0,
 						},
 					},
+					UseProxyProto:        nil,
+					Plugins:              nil,
+					XXX_NoUnkeyedLiteral: struct{}{},
+					XXX_sizecache:        0,
 				},
 			},
-			Status: core.Status{},
-			Metadata: core.Metadata{
-				Name:      "clusteringress-proxy",
-				Namespace: "example",
+			Status: core.Status{
+				State:                0,
+				Reason:               "",
+				ReportedBy:           "",
+				XXX_NoUnkeyedLiteral: struct{}{},
+				XXX_sizecache:        0,
 			},
+			Metadata: core.Metadata{
+				Name:                 "clusteringress-proxy",
+				Namespace:            "example",
+				Cluster:              "",
+				ResourceVersion:      "",
+				XXX_NoUnkeyedLiteral: struct{}{},
+				XXX_sizecache:        0,
+			},
+			XXX_NoUnkeyedLiteral: struct{}{},
+			XXX_sizecache:        0,
 		}
 
 		Expect(proxy).To(Equal(expected))
