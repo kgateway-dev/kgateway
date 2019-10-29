@@ -3,6 +3,8 @@ package kube_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv1kubetypes "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
@@ -99,9 +101,9 @@ var _ = Describe("Generated Kube Code", func() {
 			Spec: gatewayv1.VirtualService{
 				VirtualHost: &gatewayv1.VirtualHost{
 					Routes: []*gatewayv1.Route{{
-						Matcher: &gloov1.Matcher{
-							PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/"},
-						},
+						Matchers: []*matchers.Matcher{{
+							PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"},
+						}},
 						Action: &gatewayv1.Route_RouteAction{
 							RouteAction: &gloov1.RouteAction{
 								Destination: &gloov1.RouteAction_Single{
