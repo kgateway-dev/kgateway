@@ -53,7 +53,7 @@ settings will be `extauth-sidecar`.
 
 Here is a look at a snippet of the `default` settings after a fresh install of Gloo, using the default Helm configuration; note the Ext Auth server ref specifically.
 
-```
+```shell
 $ kubectl -n gloo-system get settings default -oyaml
 ```
 
