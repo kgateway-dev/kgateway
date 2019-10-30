@@ -175,7 +175,7 @@ spec:
         configs:
           waf:
             settings:
-              coreRuleSet: 
+              coreRuleSet:
                 customSettingsString: |
                     # default rules section
                     SecRuleEngine On
@@ -207,21 +207,21 @@ curl -v  $(glooctl proxy url)/sample-route-1
 ```
 should respond with
 ```
-*   Trying IP_REDACTED...
+*   Trying 192.168.99.145...
 * TCP_NODELAY set
-* Connected to IP_REDACTED (IP_REDACTED) port 80 (#0)
+* Connected to 192.168.99.145 (192.168.99.145) port 30093 (#0)
 > GET /sample-route-1 HTTP/1.1
-> Host: IP_REDACTED
+> Host: 192.168.99.145:30093
 > User-Agent: curl/7.54.0
 > Accept: */*
 >
 < HTTP/1.1 403 Forbidden
 < content-length: 33
 < content-type: text/plain
-< date: Mon, 02 Sep 2019 15:46:51 GMT
+< date: Wed, 30 Oct 2019 13:10:38 GMT
 < server: envoy
 <
-* Connection #0 to host IP_REDACTED left intact
-ModSecurity: intervention occurred
+* Connection #0 to host 192.168.99.145 left intact
+ModSecurity: intervention occured
 ```
 There are a couple important things to note from the config above. The `coreRuleSet` object is the first. By setting this object to non-nil the `coreRuleSet` is automatically applied to the gateway/vhost/route is has been added to. The Core Rule Set can be applied manually as well if a specific version of it is required which we do not mount into the container. The second thing to note is the config string. This config string is an important part of configuring the core rule set, an example of which can be found [here](https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example).
