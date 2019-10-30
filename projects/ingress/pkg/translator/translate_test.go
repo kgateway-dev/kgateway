@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
 	ingresstype "github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
@@ -144,13 +145,6 @@ var _ = Describe("Translate", func() {
 			Expect(err).NotTo(HaveOccurred())
 			secret := &gloov1.Secret{
 				Metadata: core.Metadata{Name: secretName, Namespace: namespace},
-				Kind: &gloov1.Secret_Tls{
-					Tls: &gloov1.TlsSecret{
-						CertChain:  "",
-						RootCa:     "",
-						PrivateKey: "",
-					},
-				},
 			}
 			us := &gloov1.Upstream{
 				Metadata: core.Metadata{
@@ -195,7 +189,6 @@ var _ = Describe("Translate", func() {
 			}
 			proxy, errs := translateProxy(namespace, snap, requireIngressClass)
 			Expect(errs).NotTo(HaveOccurred())
-			//log.Printf("%v", proxy)
 			Expect(proxy.String()).To(Equal((&gloov1.Proxy{
 				Listeners: []*gloov1.Listener{
 					{
@@ -212,17 +205,11 @@ var _ = Describe("Translate", func() {
 										},
 										Routes: []*gloov1.Route{
 											{
-												Matcher: &gloov1.Matcher{
-													PathSpecifier: &gloov1.Matcher_Regex{
+												Matchers: []*matchers.Matcher{{
+													PathSpecifier: &matchers.Matcher_Regex{
 														Regex: "/",
 													},
-													Headers:              []*gloov1.HeaderMatcher{},
-													QueryParameters:      []*gloov1.QueryParameterMatcher{},
-													Methods:              []string{},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_unrecognized:     []uint8{},
-													XXX_sizecache:        0,
-												},
+												}},
 												Action: &gloov1.Route_RouteAction{
 													RouteAction: &gloov1.RouteAction{
 														Destination: &gloov1.RouteAction_Single{
@@ -233,39 +220,16 @@ var _ = Describe("Translate", func() {
 																		Namespace: "example",
 																	},
 																},
-																DestinationSpec:      nil,
-																XXX_NoUnkeyedLiteral: struct{}{},
-																XXX_unrecognized:     []uint8{},
-																XXX_sizecache:        0,
 															},
 														},
-														XXX_NoUnkeyedLiteral: struct{}{},
-														XXX_unrecognized:     []uint8{},
-														XXX_sizecache:        0,
 													},
 												},
-												RoutePlugins:         nil,
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_unrecognized:     []uint8{},
-												XXX_sizecache:        0,
 											},
 										},
-										VirtualHostPlugins:   nil,
-										XXX_NoUnkeyedLiteral: struct{}{},
-										XXX_unrecognized:     []uint8{},
-										XXX_sizecache:        0,
 									},
 								},
-								ListenerPlugins:      nil,
-								XXX_NoUnkeyedLiteral: struct{}{},
-								XXX_unrecognized:     []uint8{},
-								XXX_sizecache:        0,
 							},
 						},
-						SslConfigurations:    []*gloov1.SslConfig{},
-						XXX_NoUnkeyedLiteral: struct{}{},
-						XXX_unrecognized:     []uint8{},
-						XXX_sizecache:        0,
 					},
 					{
 						Name:        "https",
@@ -281,17 +245,11 @@ var _ = Describe("Translate", func() {
 										},
 										Routes: []*gloov1.Route{
 											{
-												Matcher: &gloov1.Matcher{
-													PathSpecifier: &gloov1.Matcher_Regex{
+												Matchers: []*matchers.Matcher{{
+													PathSpecifier: &matchers.Matcher_Regex{
 														Regex: "/longestpathshouldcomesecond",
 													},
-													Headers:              []*gloov1.HeaderMatcher{},
-													QueryParameters:      []*gloov1.QueryParameterMatcher{},
-													Methods:              []string{},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_unrecognized:     []uint8{},
-													XXX_sizecache:        0,
-												},
+												}},
 												Action: &gloov1.Route_RouteAction{
 													RouteAction: &gloov1.RouteAction{
 														Destination: &gloov1.RouteAction_Single{
@@ -302,34 +260,17 @@ var _ = Describe("Translate", func() {
 																		Namespace: "example",
 																	},
 																},
-																DestinationSpec:      nil,
-																XXX_NoUnkeyedLiteral: struct{}{},
-																XXX_unrecognized:     []uint8{},
-																XXX_sizecache:        0,
 															},
 														},
-														XXX_NoUnkeyedLiteral: struct{}{},
-														XXX_unrecognized:     []uint8{},
-														XXX_sizecache:        0,
 													},
 												},
-												RoutePlugins:         nil,
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_unrecognized:     []uint8{},
-												XXX_sizecache:        0,
 											},
 											{
-												Matcher: &gloov1.Matcher{
-													PathSpecifier: &gloov1.Matcher_Regex{
+												Matchers: []*matchers.Matcher{{
+													PathSpecifier: &matchers.Matcher_Regex{
 														Regex: "/basic",
 													},
-													Headers:              []*gloov1.HeaderMatcher{},
-													QueryParameters:      []*gloov1.QueryParameterMatcher{},
-													Methods:              []string{},
-													XXX_NoUnkeyedLiteral: struct{}{},
-													XXX_unrecognized:     []uint8{},
-													XXX_sizecache:        0,
-												},
+												}},
 												Action: &gloov1.Route_RouteAction{
 													RouteAction: &gloov1.RouteAction{
 														Destination: &gloov1.RouteAction_Single{
@@ -340,33 +281,14 @@ var _ = Describe("Translate", func() {
 																		Namespace: "example",
 																	},
 																},
-																DestinationSpec:      nil,
-																XXX_NoUnkeyedLiteral: struct{}{},
-																XXX_unrecognized:     []uint8{},
-																XXX_sizecache:        0,
 															},
 														},
-														XXX_NoUnkeyedLiteral: struct{}{},
-														XXX_unrecognized:     []uint8{},
-														XXX_sizecache:        0,
 													},
 												},
-												RoutePlugins:         nil,
-												XXX_NoUnkeyedLiteral: struct{}{},
-												XXX_unrecognized:     []uint8{},
-												XXX_sizecache:        0,
 											},
 										},
-										VirtualHostPlugins:   nil,
-										XXX_NoUnkeyedLiteral: struct{}{},
-										XXX_unrecognized:     []uint8{},
-										XXX_sizecache:        0,
 									},
 								},
-								ListenerPlugins:      nil,
-								XXX_NoUnkeyedLiteral: struct{}{},
-								XXX_unrecognized:     []uint8{},
-								XXX_sizecache:        0,
 							},
 						},
 						SslConfigurations: []*gloov1.SslConfig{
@@ -377,33 +299,15 @@ var _ = Describe("Translate", func() {
 										Namespace: "example",
 									},
 								},
-								SniDomains:           []string{"wow.com"},
-								XXX_NoUnkeyedLiteral: struct{}{},
-								XXX_unrecognized:     []uint8{},
-								XXX_sizecache:        0,
+								SniDomains: []string{"wow.com"},
 							},
 						},
-						XXX_NoUnkeyedLiteral: struct{}{},
-						XXX_unrecognized:     []uint8{},
-						XXX_sizecache:        0,
 					},
 				},
-				Status: core.Status{
-					State:               0,
-					Reason:              "",
-					ReportedBy:          "",
-					SubresourceStatuses: map[string]*core.Status{},
-				},
 				Metadata: core.Metadata{
-					Name:            "ingress-proxy",
-					Namespace:       "example",
-					ResourceVersion: "",
-					Labels:          map[string]string{},
-					Annotations:     map[string]string{},
+					Name:      "ingress-proxy",
+					Namespace: "example",
 				},
-				XXX_NoUnkeyedLiteral: struct{}{},
-				XXX_unrecognized:     []uint8{},
-				XXX_sizecache:        0,
 			}).String()))
 		}
 		testIngressTranslate(true)
@@ -452,23 +356,9 @@ var _ = Describe("Translate", func() {
 
 		secret1 := &gloov1.Secret{
 			Metadata: core.Metadata{Name: "amoeba-api-ingress-secret", Namespace: "amoeba-dev"},
-			Kind: &gloov1.Secret_Tls{
-				Tls: &gloov1.TlsSecret{
-					CertChain:  "",
-					RootCa:     "",
-					PrivateKey: "",
-				},
-			},
 		}
 		secret2 := &gloov1.Secret{
 			Metadata: core.Metadata{Name: "amoeba-ui-ingress-secret", Namespace: "amoeba-dev"},
-			Kind: &gloov1.Secret_Tls{
-				Tls: &gloov1.TlsSecret{
-					CertChain:  "",
-					RootCa:     "",
-					PrivateKey: "",
-				},
-			},
 		}
 		snap := &v1.TranslatorSnapshot{
 			Ingresses: ingresses,
