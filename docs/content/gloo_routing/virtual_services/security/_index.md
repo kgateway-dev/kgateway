@@ -24,7 +24,7 @@ supporting basic use cases to complex and fine grained secure access control. Ar
 auth server to verify the user credentials and determine their permissions. Gloo provides an auth server that can support 
 several authN/Z implementations, but also allows you to provide your own auth server to implement custom logic. 
 
-#### Sidecar mode
+#### Switching Between Ext Auth Deployment Modes
 By default, Gloo's built-in Auth Server is deployed as its own Kubernetes pod. This means that, in order to 
 authenticate a request, Gloo (which runs in a separate pod) needs to communicate with the service over the network.
 In case you deem this overhead not to be acceptable for your use case, you can deploy the server in **sidecar mode**.
@@ -45,7 +45,51 @@ Note that you can provide any combination of values for these two overrides, inc
 more easily test the latency improvement gained by using the sidecar mode. Regardless of the deployment mode used, the values set
 in `global.extensions.extAuth` will apply to both instances of Ext Auth.
 
-#### Configuration overview
+You can set which auth server that Envoy communicates with by updating your settings to point to the proper Ext Auth upstream.
+On install, we manually create an upstream for each instance of Ext Auth that you have deployed; standalone deployments get an upstream named
+`extauth`, and sidecar deployments get an upstream named `extauth-sidecar`. If you are deploying both standalone and sidecar, or 
+just standalone, the default upstream name in your settings will be `extauth`. If you are deploying just the sidecar, the default upstream name in your 
+settings will be `extauth-sidecar`.
+
+Here is a look at a snippet of the `default` settings after a fresh install of Gloo, using the default Helm configuration; note the Ext Auth server ref specifically.
+
+```
+$ kubectl -n gloo-system get settings default -oyaml
+```
+
+{{< highlight yaml "hl_lines=15-18" >}}
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  ...
+  labels:
+    app: gloo
+    gloo: settings
+  name: default
+  namespace: gloo-system
+  ...
+spec:
+  discoveryNamespace: gloo-system
+  extensions:
+    configs:
+      extauth:
+        extauthzServerRef:
+          name: extauth
+          namespace: gloo-system
+      rate-limit:
+        ratelimit_server_ref:
+          name: rate-limit
+          namespace: gloo-system
+  gateway:
+    validation:
+      alwaysAccept: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
+  ...
+{{< /highlight >}}
+
+#### Auth Configuration overview
 
 {{% notice info %}}
 {{% extauth_version_info_note %}}
