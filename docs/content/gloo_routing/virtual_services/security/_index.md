@@ -46,8 +46,8 @@ more easily test the latency improvement gained by using the sidecar mode. Regar
 in `global.extensions.extAuth` will apply to both instances of Ext Auth.
 
 You can set which auth server Envoy queries by updating your settings to use the proper Ext Auth upstream.
-On install, we manually create an upstream for each instance of Ext Auth that you have deployed; standalone deployments get an upstream named
-`extauth`, and sidecar deployments get an upstream named `extauth-sidecar`. If you are deploying both standalone and sidecar, or 
+On install, Gloo manually creates an upstream for each instance of Ext Auth that you have deployed; standalone deployments get an upstream named
+`extauth` and sidecar deployments get an upstream named `extauth-sidecar`. If you are deploying both standalone and sidecar, or 
 just standalone, the default upstream name in your settings will be `extauth`. If you are deploying just the sidecar, the default upstream name in your 
 settings will be `extauth-sidecar`.
 
