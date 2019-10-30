@@ -27,7 +27,14 @@ configs:
       namespace: ... # rate-limit upstream namespace
     request_timeout: ...  # optional, default 100ms
     deny_on_fail: ...     # optional, default false
+    rate_limit_before_auth: ... # optional, default false
 ```
+
+{{% notice note %}}
+Setting the value `rate_limit_before_auth` to true will cause the rate limiting filter to run before the Ext Auth filter.
+This necessarily means the loss of Ext Auth-aware rate limiting features, like providing different rate limits for authenticated
+vs non-authenticated users.
+{{% /notice %}}
 
 Gloo Enterprise provides an enhanced version of [Lyft's rate limit service](https://github.com/lyft/ratelimit) that
 supports the full Envoy rate limit server API, as well as a simplified API built on top of this service. Gloo uses

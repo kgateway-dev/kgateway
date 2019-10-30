@@ -34,11 +34,16 @@ Gloo's Envoy instance(s) and communication with Envoy will occur via Unix Domain
 the overhead associated with the TCP protocol and can provide huge performance benefits (40%+ in some benchmarks).
 
 You can activate this mode by [installing Gloo with Helm]({{< ref "installation/enterprise#installing-on-kubernetes-with-helm" >}})
-and providing the following value override:
+and providing the following value overrides:
 
 | option                                                    | type     | description                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | global.extensions.extAuth.envoySidecar                    | bool     | Deploy ext-auth as a sidecar to Envoy instances. Communication occurs over Unix Domain Sockets instead of TCP. Default is `false` |
+| global.extensions.extAuth.standaloneDeployment            | bool     | Deploy ext-auth as a standalone deployment. Communication occurs over TCP. Default is `true` |
+
+Note that you can provide any combination of values for these two overrides, including setting both to `true` if you'd like to 
+more easily test the latency improvement gained by using the sidecar mode. Regardless of the deployment mode used, the values set
+in `global.extensions.extAuth` will apply to both the instances of Ext Auth.
 
 #### Configuration overview
 
