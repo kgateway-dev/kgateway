@@ -222,6 +222,6 @@ should respond with
 < server: envoy
 <
 * Connection #0 to host 192.168.99.145 left intact
-ModSecurity: intervention occured
+ModSecurity: intervention occurred
 ```
 There are a couple important things to note from the config above. The `coreRuleSet` object is the first. By setting this object to non-nil the `coreRuleSet` is automatically applied to the gateway/vhost/route is has been added to. The Core Rule Set can be applied manually as well if a specific version of it is required which we do not mount into the container. The second thing to note is the config string. This config string is an important part of configuring the core rule set, an example of which can be found [here](https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example).
