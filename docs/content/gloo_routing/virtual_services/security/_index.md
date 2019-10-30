@@ -43,7 +43,7 @@ and providing the following value overrides:
 
 Note that you can provide any combination of values for these two overrides, including setting both to `true` if you'd like to 
 more easily test the latency improvement gained by using the sidecar mode. Regardless of the deployment mode used, the values set
-in `global.extensions.extAuth` will apply to both the instances of Ext Auth.
+in `global.extensions.extAuth` will apply to both instances of Ext Auth.
 
 #### Configuration overview
 
