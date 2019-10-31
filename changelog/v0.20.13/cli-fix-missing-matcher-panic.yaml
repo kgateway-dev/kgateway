@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Avoid panicking on routes without matchers when running `glooctl get vs`.
+  issueLink: https://github.com/solo-io/gloo/issues/1563

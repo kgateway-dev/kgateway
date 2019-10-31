@@ -2,7 +2,10 @@ package printers
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -165,5 +168,34 @@ var _ = Describe("getStatus", func() {
 		// Use regex because order does not matter
 		Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))
 		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUpstreamList)))
+	})
+
+	It("does not panic on routes with no matchers", func() {
+		routes := []*v1.Route{
+			{
+				Action: &v1.Route_DirectResponseAction{
+					DirectResponseAction: &gloov1.DirectResponseAction{
+						Status: 200,
+						Body:   "OK",
+					},
+				},
+			},
+		}
+		vs := &v1.VirtualService{
+			VirtualHost: &v1.VirtualHost{
+				Domains: []string{"*"},
+				Routes:  routes,
+			},
+			Status: core.Status{
+				State: core.Status_Rejected,
+			},
+			Metadata: core.Metadata{
+				Name:      "no-matcher",
+				Namespace: defaults.GlooSystem,
+			},
+		}
+
+		Expect(func() { VirtualServiceTable([]*v1.VirtualService{vs}, ioutil.Discard) }).NotTo(Panic())
+		Expect(func() { RouteTable(routes, ioutil.Discard) }).NotTo(Panic())
 	})
 })

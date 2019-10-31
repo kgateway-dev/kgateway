@@ -321,7 +321,7 @@ func SelectRouteFromVirtualServiceInteractive(vs *gatewayv1.VirtualService, rout
 
 	var routes []string
 	for i, r := range vs.VirtualHost.Routes {
-		routes = append(routes, fmt.Sprintf("%v: %+v", i, r.Matcher.PathSpecifier))
+		routes = append(routes, fmt.Sprintf("%v: %+v", i, r.GetMatcher().GetPathSpecifier()))
 	}
 
 	var chosenRoute string

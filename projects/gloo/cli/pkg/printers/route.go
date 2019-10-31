@@ -88,7 +88,7 @@ func routeDefaultTableRow(r *v1.Route, index int, customItems []string) []string
 func Matcher(r *v1.Route) (string, string, string, string) {
 	var path string
 	var rType string
-	switch p := r.Matcher.PathSpecifier.(type) {
+	switch p := r.GetMatcher().GetPathSpecifier().(type) {
 	case *gloov1.Matcher_Exact:
 		path = p.Exact
 		rType = "Exact Path"
@@ -103,13 +103,13 @@ func Matcher(r *v1.Route) (string, string, string, string) {
 		rType = "Unknown"
 	}
 	verb := "*"
-	if r.Matcher.Methods != nil {
-		verb = strings.Join(r.Matcher.Methods, " ")
+	if methods := r.GetMatcher().GetMethods(); methods != nil {
+		verb = strings.Join(methods, " ")
 	}
 	headers := ""
-	if r.Matcher.Headers != nil {
+	if headerMatchers := r.GetMatcher().GetHeaders(); headerMatchers != nil {
 		builder := bytes.Buffer{}
-		for _, v := range r.Matcher.Headers {
+		for _, v := range headerMatchers {
 			header := *v
 			builder.WriteString(string(header.Name))
 			builder.WriteString(":")

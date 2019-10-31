@@ -195,7 +195,7 @@ func vhPlugins(v *v1.VirtualService) string {
 }
 
 func matcherString(matcher *gloov1.Matcher) string {
-	switch ps := matcher.PathSpecifier.(type) {
+	switch ps := matcher.GetPathSpecifier().(type) {
 	case *gloov1.Matcher_Exact:
 		return ps.Exact
 	case *gloov1.Matcher_Prefix:
