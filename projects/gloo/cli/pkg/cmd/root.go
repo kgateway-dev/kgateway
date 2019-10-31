@@ -87,6 +87,7 @@ func GlooCli() *cobra.Command {
 
 	preRunFuncs := []PreRunFunc{
 		// should make sure to read the config file first
+		// this also sets the resolved path to the glooctl config file to use, which is needed by later pre run funcs
 		ReadConfigFile,
 		prerun.SetKubeConfigEnv,
 		prerun.ReportUsage,

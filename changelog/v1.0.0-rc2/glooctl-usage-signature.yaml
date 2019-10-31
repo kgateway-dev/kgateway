@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Make sure glooctl reports the same signature across multiple invocations
+    issueLink: https://github.com/solo-io/gloo/issues/1559

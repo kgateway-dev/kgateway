@@ -60,7 +60,8 @@ func Main(opts SetupOpts) error {
 
 	if opts.UsageReporter != nil {
 		go func() {
-			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggingPrefix)
+			signatureManager := signature.NewSignatureManager()
+			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggingPrefix, signatureManager)
 			for err := range errs {
 				contextutils.LoggerFrom(ctx).Errorw("Error while reporting usage", zap.Error(err))
 			}
@@ -145,8 +146,7 @@ func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) 
 }
 
 // does not block the current goroutine
-func StartReportingUsage(ctx context.Context, usagePayloadReader client.UsagePayloadReader, product string) <-chan error {
-	signatureManager := signature.NewSignatureManager()
+func StartReportingUsage(ctx context.Context, usagePayloadReader client.UsagePayloadReader, product string, signatureManager signature.SignatureManager) <-chan error {
 	usageClient := client.NewUsageClient(
 		usage.ReportingServiceUrl,
 		usagePayloadReader,

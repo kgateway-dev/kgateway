@@ -37,24 +37,28 @@ var DefaultConfigPath = path.Join(homeDir, ConfigDirName, ConfigFileName)
 func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 	configFilePathArg := opts.Top.ConfigFilePath
 
-	configFilePath := ""
+	// resolve the actual path to use for the config file
+	resolvedConfigFilePath := ""
 	if configFilePathArg == DefaultConfigPath {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return err
 		}
 
-		configFilePath = path.Join(homeDir, ConfigDirName, ConfigFileName)
+		resolvedConfigFilePath = path.Join(homeDir, ConfigDirName, ConfigFileName)
 	} else {
-		configFilePath = configFilePathArg
+		resolvedConfigFilePath = configFilePathArg
 	}
 
-	err := ensureExists(configFilePath)
+	// set the cleaned file path back into the opts so that later stages can actually use the path
+	opts.Top.ConfigFilePath = resolvedConfigFilePath
+
+	err := ensureExists(opts.Top.ConfigFilePath)
 	if err != nil {
 		return err
 	}
 
-	viper.SetConfigFile(configFilePath)
+	viper.SetConfigFile(opts.Top.ConfigFilePath)
 	viper.SetConfigType("yaml")
 	err = viper.ReadInConfig()
 	if err != nil {

@@ -3,6 +3,7 @@ package prerun
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/pkg/utils/usage"
@@ -36,6 +37,11 @@ func ReportUsage(opts *options.Options, cmd *cobra.Command) error {
 		return nil
 	}
 
-	_ = setuputils.StartReportingUsage(context.Background(), &usage.CliUsageReader{}, "glooctl")
+	configFilePath := opts.Top.ConfigFilePath
+	configDir, _ := filepath.Split(configFilePath)
+
+	signatureManager := usage.NewFileBackedSignatureManager(configDir)
+
+	_ = setuputils.StartReportingUsage(context.Background(), &usage.CliUsageReader{}, "glooctl", signatureManager)
 	return nil
 }
