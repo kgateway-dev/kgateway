@@ -67,9 +67,10 @@ You can customize the Gloo installation by providing your own value file.
 For example, you can create a file named `value-overrides.yaml` with the following content:
 
 ```yaml
-rbac:
-  # do not create kubernetes rbac resources
-  create: false
+global:
+  glooRbac:
+    # do not create kubernetes rbac resources
+    create: false
 settings:
   # configure gloo to write generated custom resources to a custom namespace
   writeNamespace: my-custom-namespace
