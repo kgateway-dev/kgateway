@@ -50,7 +50,7 @@ func main() {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
 	if err := generateGatewayValueDocs(helmDocsVersionText, repoPrefixOverride, globalPullPolicy); err != nil {
-		log.Fatalf("generating values.yaml failed!: %v", err)
+		log.Fatalf("generating values.yaml docs failed!: %v", err)
 	}
 	if err := generateKnativeValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
 		log.Fatalf("generating values-knative.yaml failed!: %v", err)

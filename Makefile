@@ -443,7 +443,7 @@ upload-github-release-assets: build-cli render-yaml
 	go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
 
 .PHONY: publish-docs
-publish-docs: manifest
+publish-docs: prepare-helm
 ifeq ($(RELEASE),"true")
 	cd docs && make docker-push-docs \
 		VERSION=$(VERSION) \
