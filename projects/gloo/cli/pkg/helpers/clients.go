@@ -19,6 +19,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/log"
@@ -493,4 +494,38 @@ func ApiExtsClient() (apiexts.Interface, error) {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
 	return apiexts.NewForConfig(cfg)
+}
+
+func MustAuthConfigClient() extauth.AuthConfigClient {
+	client, err := AuthConfigClient()
+	if err != nil {
+		log.Fatalf("failed to create auth config client: %v", err)
+	}
+	return client
+}
+
+func AuthConfigClient() (extauth.AuthConfigClient, error) {
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return extauth.NewAuthConfigClient(customFactory)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	cache := kube.NewKubeCache(context.TODO())
+	authConfigClient, err := extauth.NewAuthConfigClient(&factory.KubeResourceClientFactory{
+		Crd:             extauth.AuthConfigCrd,
+		Cfg:             cfg,
+		SharedCache:     cache,
+		SkipCrdCreation: true,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating auth config client")
+	}
+	if err := authConfigClient.Register(); err != nil {
+		return nil, err
+	}
+	return authConfigClient, nil
 }

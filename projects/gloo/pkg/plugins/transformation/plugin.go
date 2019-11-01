@@ -49,14 +49,6 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 func (p *Plugin) ProcessWeightedDestination(_ plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
 	transformations := in.GetWeightedDestinationPlugins().GetTransformations()
-	if transformations == nil {
-		// Try deprecated field
-		transformations = in.GetWeighedDestinationPlugins().GetTransformations()
-		if transformations == nil {
-			return nil
-		}
-	}
-
 	p.RequireTransformationFilter = true
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, transformations)
 }

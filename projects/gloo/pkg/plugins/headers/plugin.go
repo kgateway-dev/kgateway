@@ -31,14 +31,6 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 
 func (p *Plugin) ProcessWeightedDestination(_ plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
 	headerManipulation := in.GetWeightedDestinationPlugins().GetHeaderManipulation()
-	if headerManipulation == nil {
-		// Try deprecated field
-		headerManipulation = in.GetWeighedDestinationPlugins().GetHeaderManipulation()
-		if headerManipulation == nil {
-			return nil
-		}
-	}
-
 	envoyHeader, err := convertHeaderConfig(headerManipulation)
 	if err != nil {
 		return err

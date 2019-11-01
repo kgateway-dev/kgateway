@@ -1,17 +1,13 @@
 package route
 
 import (
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	editRouteOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/route/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -60,33 +56,14 @@ func ExtAuthConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ...cliutil
 
 func editRoute(opts *editRouteOptions.RouteEditInput, input *authEditInput, args []string) error {
 	return editRouteOptions.UpdateRoute(opts, func(route *gatewayv1.Route) error {
-		var extAuthRouteExtension extauthpb.RouteExtension
-		err := utils.UnmarshalExtension(route.RoutePlugins, constants.ExtAuthExtensionName, &extAuthRouteExtension)
-		if err != nil {
-			if err != utils.NotFoundError {
-				return err
-			}
+		switch extAuth := route.RoutePlugins.Extauth.Spec.(type) {
+		case *extauthpb.ExtAuthExtension_Disable:
+			extAuth.Disable = input.Disable
+			route.RoutePlugins.Extauth.Spec = extAuth
+		default:
+			return nil
 		}
 
-		extAuthRouteExtension.Disable = input.Disable
-
-		if route.RoutePlugins == nil {
-			route.RoutePlugins = &gloov1.RoutePlugins{}
-		}
-
-		if route.RoutePlugins.Extensions == nil {
-			route.RoutePlugins.Extensions = &gloov1.Extensions{}
-		}
-
-		if route.RoutePlugins.Extensions.Configs == nil {
-			route.RoutePlugins.Extensions.Configs = make(map[string]*types.Struct)
-		}
-
-		extStruct, err := protoutils.MarshalStruct(&extAuthRouteExtension)
-		if err != nil {
-			return err
-		}
-		route.RoutePlugins.Extensions.Configs[constants.ExtAuthExtensionName] = extStruct
 		return nil
 	})
 }

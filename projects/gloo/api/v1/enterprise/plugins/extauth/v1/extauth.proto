@@ -37,8 +37,6 @@ message AuthConfig {
     oneof auth_config {
       BasicAuth basic_auth = 1;
       OAuth oauth = 2;
-      // Deprecated: use ExtAuthExtension.CustomAuth
-      CustomAuth custom_auth = 3 [deprecated=true];
       ApiKeyAuth api_key_auth = 4;
       AuthPlugin plugin_auth = 5;
       OpaAuth opa_auth = 6;
@@ -59,50 +57,6 @@ message ExtAuthExtension {
     // Use this field if you are running your own custom extauth server.
     CustomAuth custom_auth = 3;
   }
-}
-
-// Deprecated: use ExtAuthExtension
-message VhostExtension {
-  option deprecated = true;
-
-  // Deprecated: use `configs` field instead.
-  oneof auth_config {
-    // Deprecated: use `configs` field instead.
-    BasicAuth basic_auth = 1 [deprecated=true];
-    // Deprecated: use `configs` field instead.
-    OAuth oauth = 2 [deprecated=true];
-    // Deprecated: use `configs` field instead.
-    CustomAuth custom_auth = 3 [deprecated=true];
-    // Deprecated: use `configs` field instead.
-    ApiKeyAuth api_key_auth = 4 [deprecated=true];
-    // Deprecated: use `configs` field instead.
-    PluginAuth plugin_auth = 5 [deprecated=true];
-  }
-
-  message AuthConfig {
-    oneof auth_config {
-      BasicAuth basic_auth = 1;
-      OAuth oauth = 2;
-      CustomAuth custom_auth = 3;
-      ApiKeyAuth api_key_auth = 4;
-      AuthPlugin plugin_auth = 5;
-      OpaAuth opa_auth = 6;
-      Ldap ldap = 7;
-    }
-  }
-
-  // A chain of AuthN\AuthZ configurations which will be executed in the order they are specified. The first plugin to deny a request will
-  // cause a 403 response to be returned; any subsequent plugin in the chain will not be executed.
-  // The headers on the OkHttpResponse returned from a plugin in the chain will be added to the request that will be sent
-  // to the next one(s) according to the rules described here:
-  // https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-okhttpresponse
-  repeated AuthConfig configs = 6;
-}
-
-// Deprecated: use ExtAuthExtension
-message RouteExtension {
-  option deprecated = true;
-  bool disable = 1;
 }
 
 message Settings {
@@ -209,13 +163,6 @@ message CustomAuth {
   // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings)
   // for more details.
   map<string,string> context_extensions = 1;
-}
-
-// Configures auth via dynamically loaded Go plugins.
-// Deprecated
-message PluginAuth {
-  option deprecated = true;
-  repeated AuthPlugin plugins = 1;
 }
 
 message AuthPlugin {
@@ -348,9 +295,6 @@ message ExtAuthConfig {
   // which AuthConfig should be applied to it.
   string auth_config_ref_name = 1;
 
-  // Deprecated: use auth_config_ref_name instead
-  string vhost = 2 [deprecated=true];
-
   message OAuthConfig {
     // your client id as registered with the issuer
     string client_id = 1;
@@ -388,14 +332,6 @@ message ExtAuthConfig {
     // or an array with boolean as the first element. A boolean `true` value means that the request
     // will be authorized. Any other value, or error, means that the request will be denied.
     string query = 2;
-  }
-
-  // Deprecated
-  oneof auth_config {
-    OAuthConfig oauth = 3 [deprecated=true];
-    BasicAuth basic_auth = 4 [deprecated=true];
-    ApiKeyAuthConfig api_key_auth = 5 [deprecated=true];
-    PluginAuth plugin_auth = 6 [deprecated=true];
   }
 
   message Config {
