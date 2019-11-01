@@ -134,8 +134,6 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("should be ordered before ext auth", func() {
-				Expect(rlPlugin.ShouldRateLimitBeforeAuth()).To(BeTrue())
-
 				filters, err := rlPlugin.HttpFilters(params, nil)
 				Expect(err).NotTo(HaveOccurred(), "Should be able to build rate limit filters")
 				Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
