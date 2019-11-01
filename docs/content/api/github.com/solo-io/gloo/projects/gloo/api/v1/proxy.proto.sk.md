@@ -376,7 +376,6 @@ WeightedDestination attaches a weight to a single destination.
 ```yaml
 "destination": .gloo.solo.io.Destination
 "weight": int
-"weighedDestinationPlugins": .gloo.solo.io.WeightedDestinationPlugins
 "weightedDestinationPlugins": .gloo.solo.io.WeightedDestinationPlugins
 
 ```
@@ -385,7 +384,6 @@ WeightedDestination attaches a weight to a single destination.
 | ----- | ---- | ----------- |----------- | 
 | `destination` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) |  |  |
 | `weight` | `int` | Weight must be greater than zero Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route. |  |
-| `weighedDestinationPlugins` | [.gloo.solo.io.WeightedDestinationPlugins](../plugins.proto.sk/#weighteddestinationplugins) | Deprecated: use weighted_destination_plugins Apply configuration to traffic that is sent to this weighted destination. |  |
 | `weightedDestinationPlugins` | [.gloo.solo.io.WeightedDestinationPlugins](../plugins.proto.sk/#weighteddestinationplugins) | Apply configuration to traffic that is sent to this weighted destination. |  |
 
 

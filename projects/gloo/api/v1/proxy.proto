@@ -308,12 +308,8 @@ message WeightedDestination {
     // Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route
     uint32 weight = 2;
 
-    //Deprecated: use weighted_destination_plugins
     // Apply configuration to traffic that is sent to this weighted destination
-    WeightedDestinationPlugins weighed_destination_plugins = 3 [deprecated=true];
-
-    // Apply configuration to traffic that is sent to this weighted destination
-    WeightedDestinationPlugins weighted_destination_plugins = 4;
+    WeightedDestinationPlugins weighted_destination_plugins = 3;
 }
 
 // Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
