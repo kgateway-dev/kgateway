@@ -156,8 +156,8 @@ You should obtain the following response:
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-Now, let's pretend the animal names (Cat/Dog) are sensitive, identifying information and mask them.
-Apply the following virtual service:
+Names are often used as personally identifying information, or **PII**. Let's write our own regex to mask the
+names returned by the petstore service:
 
 {{< highlight yaml "hl_lines=16-26" >}}
 apiVersion: gateway.solo.io/v1
@@ -180,11 +180,11 @@ spec:
         actions:
         - customAction:
             maskChar: "Y"
-            name: test # only used for logging
+            name: test   # only used for logging
             percent:
-              value: 60
+              value: 60  # % of regex match to mask
             regex:
-            - (Cat|Dog)
+            - '(?<="name":")[^:]+(?=",|$)'
 {{< /highlight >}}
 
 Query for pets again:
