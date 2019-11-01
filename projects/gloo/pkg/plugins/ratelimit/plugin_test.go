@@ -193,7 +193,7 @@ var _ = Describe("Plugin", func() {
 		allTests()
 	})
 
-	// TODO(kdorosh) clean this up and remove this higher level context whssen we stop supporting opaque rate-limiting config
+	// TODO(kdorosh) clean this up and remove this higher level context when we stop supporting opaque rate-limiting config
 	Context("strongly-typed config", func() {
 		BeforeEach(beforeEach)
 
