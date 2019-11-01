@@ -35,7 +35,7 @@ type Namespace struct {
 
 type Rbac struct {
 	Create     bool `json:"create" desc:"create rbac rules for the gloo-system service account"`
-	Namespaced bool `json:"Namespaced" desc:"use Roles instead of ClusterRoles"`
+	Namespaced bool `json:"namespaced" desc:"use Roles instead of ClusterRoles"`
 }
 
 type Crds struct {
