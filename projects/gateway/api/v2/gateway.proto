@@ -55,9 +55,6 @@ message Gateway {
         TcpGateway tcp_gateway = 10;
     }
 
-    // deprecated: use proxyNames
-    string gateway_proxy_name = 11 [deprecated=true];
-
     /*
     * Names of the [`Proxy`](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
     * resources to generate from this gateway. If other gateways exist which point to the same proxy,
