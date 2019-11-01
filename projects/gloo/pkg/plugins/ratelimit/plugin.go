@@ -46,6 +46,10 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
+func (p *Plugin) ShouldRateLimitBeforeAuth() bool {
+	return p.rateLimitBeforeAuth
+}
+
 //TODO(kdorosh) delete once support for old config is dropped
 func (p *Plugin) handleDeprecatedPluginConfig(params plugins.InitParams) error {
 	var settings ratelimit.Settings

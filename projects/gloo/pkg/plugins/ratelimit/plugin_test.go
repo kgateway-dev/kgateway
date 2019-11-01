@@ -1,7 +1,9 @@
-package ratelimit
+package ratelimit_test
 
 import (
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 
 	extauthapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
@@ -28,13 +30,13 @@ var _ = Describe("Plugin", func() {
 		rlSettings *ratelimitpb.Settings
 		initParams plugins.InitParams
 		params     plugins.Params
-		rlPlugin   *Plugin
+		rlPlugin   *ratelimit.Plugin
 		extensions *gloov1.Extensions
 		ref        core.ResourceRef
 	)
 
 	beforeEach := func() {
-		rlPlugin = NewPlugin()
+		rlPlugin = ratelimit.NewPlugin()
 		ref = core.ResourceRef{
 			Name:      "test",
 			Namespace: "test",
@@ -61,7 +63,7 @@ var _ = Describe("Plugin", func() {
 				Expect(cfg.FailureModeDeny).To(BeFalse())
 			}
 
-			hundredms := DefaultTimeout
+			hundredms := ratelimit.DefaultTimeout
 			expectedConfig := &envoyratelimit.RateLimit{
 				Domain:          "custom",
 				FailureModeDeny: false,
@@ -84,7 +86,7 @@ var _ = Describe("Plugin", func() {
 		It("default timeout is 100ms", func() {
 			filters, err := rlPlugin.HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
-			timeout := DefaultTimeout
+			timeout := ratelimit.DefaultTimeout
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
 				cfg := getConfig(f.HttpFilter)
@@ -132,7 +134,7 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("should be ordered before ext auth", func() {
-				Expect(rlPlugin.rateLimitBeforeAuth).To(BeTrue())
+				Expect(rlPlugin.ShouldRateLimitBeforeAuth()).To(BeTrue())
 
 				filters, err := rlPlugin.HttpFilters(params, nil)
 				Expect(err).NotTo(HaveOccurred(), "Should be able to build rate limit filters")
@@ -181,7 +183,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			glooExtensions := map[string]*types.Struct{
-				ExtensionName: settingsStruct,
+				ratelimit.ExtensionName: settingsStruct,
 			}
 			extensions = &gloov1.Extensions{
 				Configs: glooExtensions,
