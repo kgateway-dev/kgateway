@@ -40,7 +40,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/reporting-client"
-  version = "0.1.0"
+  version = "0.1.1"
 
 [[constraint]]
   name = "github.com/onsi/gomega"
