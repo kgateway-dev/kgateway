@@ -3,3 +3,7 @@ changelog:
     description: >
       Helm value update: `global.glooRbac.Namespaced` becomes `global.glooRbac.namespaced`.
     issueLink: https://github.com/solo-io/gloo/issues/1569
+  - type: HELM
+    description: >
+      Helm value update: `global.glooRbac.Namespaced` becomes `global.glooRbac.namespaced`.
+    issueLink: https://github.com/solo-io/gloo/issues/1569
