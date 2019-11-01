@@ -473,6 +473,7 @@ gather-v-20-docs:
 	cp $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/cli/glooctl* docs/content/cli/
 	rm -rf docs/content/api/
 	cp -r $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/api/ docs/content/api/
+	rm -r $(OLD_DOCS_TEMP_DIR)
 ## END Temporary targets while master/v0.20.x branch is supported
 
 #----------------------------------------------------------------------------------
