@@ -14,13 +14,18 @@ import (
 var (
 	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
 	valuesOutput          = "install/helm/gloo/values.yaml"
-	docsOutput            = "docs/helm-values.md"
+	docsOutput            = "docs/content/installation/gateway/kubernetes/values.txt"
 	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
 	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
 	ingressValuesTemplate = "install/helm/gloo/values-ingress-template.yaml"
 	ingressValuesOutput   = "install/helm/gloo/values-ingress.yaml"
 	chartTemplate         = "install/helm/gloo/Chart-template.yaml"
 	chartOutput           = "install/helm/gloo/Chart.yaml"
+	// For non-release builds, the string "dev" is used as the version
+	devVersionTag = "dev"
+	// Helm docs are generated during builds. Since version changes each build, substitute with descriptive text.
+	// Provide an example to clarify format (1.2.3, not v1.2.3).
+	helmDocsVersionText = "<release_version, ex: 1.2.3>"
 
 	always = "Always"
 )
@@ -42,6 +47,9 @@ func main() {
 
 	log.Printf("Generating helm files.")
 	if err := generateGatewayValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
+		log.Fatalf("generating values.yaml failed!: %v", err)
+	}
+	if err := generateGatewayValueDocs(helmDocsVersionText, repoPrefixOverride, globalPullPolicy); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
 	if err := generateKnativeValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
@@ -98,10 +106,10 @@ func readGatewayConfig() (*generate.HelmConfig, error) {
 }
 
 // install with gateway only
-func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
+func generateGatewayValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*generate.HelmConfig, error) {
 	cfg, err := readGatewayConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cfg.Gloo.Deployment.Image.Tag = version
@@ -117,7 +125,25 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		v.PodTemplate.Image.Tag = version
 	}
 
-	if version == "dev" {
+	if repositoryPrefix != "" {
+		cfg.Global.Image.Registry = repositoryPrefix
+	}
+
+	if globalPullPolicy != "" {
+		cfg.Global.Image.PullPolicy = globalPullPolicy
+	}
+
+	return cfg, nil
+}
+
+func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
+	cfg, err := generateGatewayValuesConfig(version, repositoryPrefix, globalPullPolicy)
+	if err != nil {
+		return err
+	}
+
+	// customize config as needed for dev builds
+	if version == devVersionTag {
 		cfg.Gloo.Deployment.Image.PullPolicy = always
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Gateway.Deployment.Image.PullPolicy = always
@@ -131,19 +157,19 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		}
 	}
 
-	if repositoryPrefix != "" {
-		cfg.Global.Image.Registry = repositoryPrefix
-	}
+	return writeYaml(cfg, valuesOutput)
+}
 
-	if globalPullPolicy != "" {
-		cfg.Global.Image.PullPolicy = globalPullPolicy
-	}
-
-	if err := writeDocs(helmchart.Doc(cfg), docsOutput); err != nil {
+func generateGatewayValueDocs(version, repositoryPrefix, globalPullPolicy string) error {
+	cfg, err := generateGatewayValuesConfig(version, repositoryPrefix, globalPullPolicy)
+	if err != nil {
 		return err
 	}
 
-	return writeYaml(cfg, valuesOutput)
+	// customize config as needed for docs
+	// (currently only the version text differs, and this is passed as a function argument)
+
+	return writeDocs(helmchart.Doc(cfg), docsOutput)
 }
 
 // install with knative only
@@ -162,7 +188,7 @@ func generateKnativeValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 	cfg.Ingress.Deployment.Image.Tag = version
 	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
 
-	if version == "dev" {
+	if version == devVersionTag {
 		cfg.Gloo.Deployment.Image.PullPolicy = always
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Ingress.Deployment.Image.PullPolicy = always
@@ -196,7 +222,7 @@ func generateIngressValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 	cfg.Ingress.Deployment.Image.Tag = version
 	cfg.IngressProxy.Deployment.Image.Tag = version
 
-	if version == "dev" {
+	if version == devVersionTag {
 		cfg.Gloo.Deployment.Image.PullPolicy = always
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Ingress.Deployment.Image.PullPolicy = always
