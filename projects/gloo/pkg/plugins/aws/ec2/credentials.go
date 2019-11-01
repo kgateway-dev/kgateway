@@ -49,14 +49,10 @@ func (cs *CredentialSpec) Clone() *CredentialSpec {
 }
 
 func NewCredentialSpecFromEc2UpstreamSpec(spec *glooec2.UpstreamSpec) *CredentialSpec {
-	roleArn := spec.GetRoleArn()
-	if roleArn == "" && len(spec.GetRoleArns()) > 0 {
-		roleArn = spec.GetRoleArns()[0]
-	}
 	return &CredentialSpec{
 		secretRef: spec.SecretRef,
 		region:    spec.Region,
-		roleArn:   roleArn,
+		roleArn:   spec.GetRoleArn(),
 	}
 }
 
