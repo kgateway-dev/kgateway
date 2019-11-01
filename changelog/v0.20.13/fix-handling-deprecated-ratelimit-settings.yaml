@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  description: >
+    Handle the `rate_limit_before_auth` setting in its deprecated location. We currently correctly handle the flag in its
+    new location (`spec.extensions.configs.rate-limit.rate_limit_before_auth`) but ignore it in the
+    deprecated one (`spec.ratelimit_server.rate_limit_before_auth`).
+  issueLink: https://github.com/solo-io/gloo/issues/1572

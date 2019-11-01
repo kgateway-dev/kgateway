@@ -61,6 +61,7 @@ func (p *Plugin) handleDeprecatedPluginConfig(params plugins.InitParams) error {
 	p.upstreamRef = settings.RatelimitServerRef
 	p.timeout = settings.RequestTimeout
 	p.denyOnFail = settings.DenyOnFail
+	p.rateLimitBeforeAuth = settings.RateLimitBeforeAuth
 	return nil
 }
 

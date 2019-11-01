@@ -1,4 +1,4 @@
-package ratelimit_test
+package ratelimit
 
 import (
 	"time"
@@ -8,8 +8,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
@@ -113,7 +111,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("rate limit ordering", func() {
-			JustBeforeEach(func() {
+			BeforeEach(func() {
 				timeout := time.Second
 				params.Snapshot.Upstreams = []*gloov1.Upstream{
 					{
@@ -124,20 +122,18 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 				rlSettings.RateLimitBeforeAuth = true
-				initParams.Settings = &gloov1.Settings{
-					RatelimitServer: rlSettings,
-					Extauth: &extauthapi.Settings{
-						ExtauthzServerRef: &core.ResourceRef{
-							Name:      "extauth-upstream",
-							Namespace: "ns",
-						},
-						RequestTimeout: &timeout,
+				initParams.Settings.Extauth = &extauthapi.Settings{
+					ExtauthzServerRef: &core.ResourceRef{
+						Name:      "extauth-upstream",
+						Namespace: "ns",
 					},
+					RequestTimeout: &timeout,
 				}
-				rlPlugin.Init(initParams)
 			})
 
 			It("should be ordered before ext auth", func() {
+				Expect(rlPlugin.rateLimitBeforeAuth).To(BeTrue())
+
 				filters, err := rlPlugin.HttpFilters(params, nil)
 				Expect(err).NotTo(HaveOccurred(), "Should be able to build rate limit filters")
 				Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
@@ -191,18 +187,20 @@ var _ = Describe("Plugin", func() {
 				Configs: glooExtensions,
 			}
 			initParams.ExtensionsSettings = extensions
-			rlPlugin.Init(initParams)
+			err = rlPlugin.Init(initParams)
+			Expect(err).NotTo(HaveOccurred())
 		})
 		allTests()
 	})
 
-	// TODO(kdorosh) clean this up and remove this higher level context when we stop supporting opaque rate-limiting config
+	// TODO(kdorosh) clean this up and remove this higher level context whssen we stop supporting opaque rate-limiting config
 	Context("strongly-typed config", func() {
 		BeforeEach(beforeEach)
 
 		JustBeforeEach(func() {
-			initParams.Settings = &gloov1.Settings{RatelimitServer: rlSettings}
-			rlPlugin.Init(initParams)
+			initParams.Settings.RatelimitServer = rlSettings
+			err := rlPlugin.Init(initParams)
+			Expect(err).NotTo(HaveOccurred())
 		})
 		allTests()
 	})
