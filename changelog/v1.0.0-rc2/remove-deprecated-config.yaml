@@ -1,0 +1,6 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Remove some deprecated APIs, namely weighed destination plugins, ...
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false
