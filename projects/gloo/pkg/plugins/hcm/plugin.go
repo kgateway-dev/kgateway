@@ -103,11 +103,26 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 	cfg.DrainTimeout = hcmSettings.DrainTimeout
 	cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
 	cfg.ServerName = hcmSettings.ServerName
+	cfg.ForwardClientCertDetails = envoyhttp.HttpConnectionManager_ForwardClientCertDetails(hcmSettings.ForwardClientCertDetails)
 
 	if hcmSettings.AcceptHttp_10 {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: hcmSettings.DefaultHostForHttp_10,
+		}
+	}
+
+	shouldConfigureClientCertDetails := (hcmSettings.ForwardClientCertDetails == hcm.HttpConnectionManagerSettings_APPEND_FORWARD ||
+		hcmSettings.ForwardClientCertDetails == hcm.HttpConnectionManagerSettings_SANITIZE_SET) &&
+		hcmSettings.SetCurrentClientCertDetails != nil
+
+	if shouldConfigureClientCertDetails {
+		cfg.SetCurrentClientCertDetails = &envoyhttp.HttpConnectionManager_SetCurrentClientCertDetails{
+			Subject: hcmSettings.SetCurrentClientCertDetails.Subject,
+			Cert:    hcmSettings.SetCurrentClientCertDetails.Cert,
+			Chain:   hcmSettings.SetCurrentClientCertDetails.Chain,
+			Dns:     hcmSettings.SetCurrentClientCertDetails.Dns,
+			Uri:     hcmSettings.SetCurrentClientCertDetails.Uri,
 		}
 	}
 }
