@@ -13,6 +13,22 @@ option (gogoproto.equal_all) = true;
 // Contains various settings for Envoy's http connection manager.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
 message HttpConnectionManagerSettings {
+    enum ForwardClientCertDetails {
+        SANITIZE = 0;
+        FORWARD_ONLY = 1;
+        APPEND_FORWARD = 2;
+        SANITIZE_SET = 3;
+        ALWAYS_FORWARD_ONLY = 4;
+    }
+
+    message SetCurrentClientCertDetails {
+        google.protobuf.BoolValue subject = 1;
+        bool cert = 2;
+        bool chain = 3;
+        bool dns = 4;
+        bool uri = 5;
+    }
+
     bool skip_xff_append = 1;
     string via = 2;
     uint32 xff_num_trusted_hops = 3;
@@ -32,4 +48,8 @@ message HttpConnectionManagerSettings {
     string default_host_for_http_10 = 16;
 
     tracing.plugins.gloo.solo.io.ListenerTracingSettings tracing = 17;
+
+    ForwardClientCertDetails forward_client_cert_details = 18;
+
+    SetCurrentClientCertDetails set_current_client_cert_details = 19;
 }
