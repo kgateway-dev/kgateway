@@ -32,7 +32,7 @@
 
 [[override]]
   name = "github.com/solo-io/go-utils"
-  revision = "4a78c4940d03e0e6d1549b5e5fa2e400680408cb"
+  version = "0.10.25"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
