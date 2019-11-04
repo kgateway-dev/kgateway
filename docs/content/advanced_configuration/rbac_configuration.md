@@ -12,9 +12,9 @@ resources like RBAC roles and role-bindings.
 
 Gloo's RBAC resources will not be installed if the Helm flag `global.glooRbac.create` is set to `false`.
 
-Our Grafana and Prometheus subcharts will still attempt to create their own RBAC resources. If you would
-like to also prevent those resources from being creeated, you must also set the flags `grafana.rbac.create`
-and `prometheus.rbac.create` to `false`.
+In Enterprise deployments of Gloo, our Grafana and Prometheus subcharts will still attempt to create their 
+own RBAC resources. If you would like to prevent those resources from being created as well, you must also 
+set the flags `grafana.rbac.create` and `prometheus.rbac.create` to `false`.
 
 ## Uniquely Identifying Cluster-Scoped Resources
 
