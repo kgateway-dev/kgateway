@@ -153,7 +153,9 @@ extractors:
 ```
 
 Extracted values can be used in two ways:
-- You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}` will render to the value of 
+
+- You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}` 
+(or `{{ extraction(my-extractor) }}`, if you are setting `advancedTemplates` to `true`) will render to the value of 
   the `my-extractor` extractor.
 - You can use them in conjunction with the `mergeExtractorsToBody` body transformation type to merge them into the body.
 
