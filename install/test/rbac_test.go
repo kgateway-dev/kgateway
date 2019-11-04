@@ -35,24 +35,19 @@ var _ = Describe("RBAC Test", func() {
 
 	Context("all cluster-scoped RBAC resources", func() {
 		allShouldHaveSuffix := func(manifest TestManifest, suffix string) {
-			manifest.ExpectAll(func(role *unstructured.Unstructured) {
-				Expect(role.GetName()).To(HaveSuffix("-" + suffix))
+			manifest.ExpectAll(func(resource *unstructured.Unstructured) {
+				Expect(resource.GetName()).To(HaveSuffix("-" + suffix))
 			})
 		}
 
 		checkSuffix := func(suffix string) {
-			rolesManifest := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-				return resource.GetKind() == "ClusterRole"
-			})
-			roleBindingsManifest := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-				return resource.GetKind() == "ClusterRoleBinding"
+			rbacResources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+				return resource.GetKind() == "ClusterRole" || resource.GetKind() == "ClusterRoleBinding"
 			})
 
-			Expect(rolesManifest.NumResources()).NotTo(BeZero())
-			Expect(roleBindingsManifest.NumResources()).NotTo(BeZero())
+			Expect(rbacResources.NumResources()).NotTo(BeZero())
 
-			allShouldHaveSuffix(rolesManifest, suffix)
-			allShouldHaveSuffix(roleBindingsManifest, suffix)
+			allShouldHaveSuffix(rbacResources, suffix)
 		}
 
 		It("is all named appropriately when a custom suffix is specified", func() {
