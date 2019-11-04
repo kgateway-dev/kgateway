@@ -5,7 +5,7 @@ description: Extend Gloo's built-in auth server with custom Go plugins
 ---
 
 We have seen that one way of implementing custom authentication logic is by 
-[providing your own auth server]({{< ref "gloo_routing/virtual_services/security/custom_auth/_index.md" >}}). 
+[providing your own auth server]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/custom_auth" >}}). 
 While this approach gives you great freedom, it also comes at a cost: 
 
 - You have to write and manage an additional service. If your authentication logic is simple, the plumbing needed to get 
@@ -37,7 +37,8 @@ routes.
 
 {{% notice note %}}
 For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated
-[**Plugin Developer Guide**]({{< ref "dev/writing_auth_plugins/_index.md" >}}).
+[**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}).
+
 {{% /notice %}}
 
 ## Building an Ext Auth plugin
@@ -60,7 +61,7 @@ type ExtAuthPlugin interface {
 }
 ```
 
-Check the [plugin developer guide]({{< ref "dev/writing_auth_plugins#api-overview" >}}) for a detailed explanation of the API.
+Check the [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#api-overview" >}}) for a detailed explanation of the API.
 
 For this guide we will use a simple example plugin that has already been built. You can find the source code to build it 
 yourself [here](https://github.com/solo-io/ext-auth-plugin-examples/tree/master/plugins/required_header).
@@ -116,7 +117,7 @@ You can see that it contains the compiled plugin file `RequiredHeader.so`.
 {{% notice warning %}}
 Make sure the plugin image tag matches the version of GlooE you are using. Plugins with mismatching versions will most 
 likely fail to be loaded due to the compatibility constraints imposed by the Go plugin model. See 
-[this section]({{< ref "dev/writing_auth_plugins#build-helper-tools" >}}) of the plugin developer guide for more information.
+[this section]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#build-helper-tools" >}}) of the plugin developer guide for more information.
 {{% /notice %}}
 
 ## Configuring Gloo
@@ -207,7 +208,7 @@ spec:
 {{< /highlight >}}
 
 Each plugin container image built as described in the *Packaging and publishing the plugin*
-[section]({{< ref "gloo_routing/virtual_services/security/plugin_auth#packaging-and-publishing-the-plugin" >}}) 
+[section]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#packaging-and-publishing-the-plugin" >}}) 
 has been added as an `initContainer` to the `extauth` deployment. A volume named `auth-plugins` is mounted in the 
 `initContainer`s and the `extauth` container at `/auth-plugins` path: when the `initContainer`s are run, they will copy 
 the compiled plugin files they contain (in this case `RequiredHeader.so`) to the shared volume, where they become available 
@@ -339,12 +340,12 @@ for the next two fields.
 - `config`: information that will be used to configure your plugin. Gloo will attempt to parse the value of this 
 attribute into the object pointer returned by your plugin's `NewConfigInstance` function implementation. In our case 
 this will be an instance of `*Config`, as seen in the 
-*Building an Ext Auth plugin* [section]({{< ref "gloo_routing/virtual_services/security/plugin_auth#building-an-ext-auth-plugin" >}}).
+*Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#building-an-ext-auth-plugin" >}}).
 
 {{% notice note %}}
 Plugins in a **plugin chain** will be executed in the order they are defined. The first plugin to deny the request will 
 cause the chain execution to be interrupted. The headers on each plugin response will be merged into the request to the 
-next one. Check the [plugin developer guide]({{< ref "dev/writing_auth_plugins#plugin-chains-and-header-propagation" >}}) 
+next one. Check the [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#plugin-chains-and-header-propagation" >}}) 
 for more information about how the headers are merged.
 {{% /notice %}}
 
@@ -420,5 +421,5 @@ glooctl uninstall -n gloo-system
 ```
 
 ## Next steps
-As a next step, check out our [plugin developer guide]({{< ref "dev/writing_auth_plugins/_index.md" >}}) for a detailed 
+As a next step, check out our [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}) for a detailed 
 tutorial on how to build your own external auth plugins!

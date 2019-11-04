@@ -6,7 +6,7 @@ description: Overview of the external auth configuration formats supported by ea
 
 #### GlooE versions >=0.20.1
 
-**Gloo Enterprise**, release [**0.20.1**]({{< ref "/changelog#gloo-enterprise" >}}), simplified the external auth 
+**Gloo Enterprise**, release [**0.20.1**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), simplified the external auth 
 configuration format. You can now specify the `extauth` configuration directly on the `Plugins` attribute of the 
 relevant resource:
 
@@ -30,7 +30,7 @@ virtualHostPlugins:
           namespace: gloo-system
 ```
 
-For more information on the latest configuration format see the [main page]({{< ref "gloo_routing/virtual_services/security#configuration-overview" >}}) 
+For more information on the latest configuration format see the [main page]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/#auth-configuration-overview" >}}) 
 of the authentication section of the docs.
 
 #### GlooE versions >=0.19.0
@@ -39,7 +39,7 @@ of the authentication section of the docs.
 As of now, this configuration format is still supported by **Gloo Enterprise**.
 {{% /notice %}}
 
-**Gloo Enterprise**, release [**0.19.0**]({{< ref "/changelog#gloo-enterprise" >}}), introduced the possibility to 
+**Gloo Enterprise**, release [**0.19.0**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), introduced the possibility to 
 configure authentication on **Routes** and **WeightedDestinations**. As part of this change, authentication configurations 
 have been promoted to top-level resources, i.e. they are stored in a dedicated `AuthConfig` resource. 
 **The new features require this new configuration format**.
@@ -127,7 +127,7 @@ spec:
 As of now, this configuration format is still supported by **Gloo Enterprise**.
 {{% /notice %}}
 
-**Gloo Enterprise**, release [**0.18.21**]({{< ref "/changelog#gloo-enterprise" >}}), introduced a change in the 
+**Gloo Enterprise**, release [**0.18.21**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), introduced a change in the 
 authentication configuration format. It turned the `extauth` attribute from being an object into an array. This allows us 
 to define multiple configuration steps that are executed in the order in which they are specified. If any one of these 
 steps fails, the request will be denied without executing any subsequent steps. Authentication can still be configured 

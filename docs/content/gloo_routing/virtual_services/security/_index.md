@@ -15,7 +15,7 @@ control policies.
 ### Authentication in Gloo
 {{% notice note %}}
 This section refers specifically to the **Gloo Enterprise** external auth server. If you are using the open source version 
-of Gloo, please refer to the [Custom Auth section]({{< ref "gloo_routing/virtual_services/security/custom_auth" >}})
+of Gloo, please refer to the [Custom Auth section]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/custom_auth" >}})
 of the security docs.
 {{% /notice %}}
 
@@ -33,7 +33,7 @@ In this configuration, the Ext Auth server will run as an additional container i
 Gloo's Envoy instance(s) and communication with Envoy will occur via Unix Domain Sockets instead of TCP. This cuts out 
 the overhead associated with the TCP protocol and can provide huge performance benefits (40%+ in some benchmarks).
 
-You can activate this mode by [installing Gloo with Helm]({{< ref "installation/enterprise#installing-on-kubernetes-with-helm" >}})
+You can activate this mode by [installing Gloo with Helm]({{< versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" >}})
 and providing the following value overrides:
 
 | option                                                    | type     | description                                                                                                                                                                                                                                                    |

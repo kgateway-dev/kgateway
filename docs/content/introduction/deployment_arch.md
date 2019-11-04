@@ -18,15 +18,15 @@ Let's dig a bit deeper and see why you might use some of these architectures.
 
 ## As a simple ingress to Kubernetes
 
-Gloo can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo]({{< ref "gloo_integrations/ingress/_index.md" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo) functionality is not exposed through the Ingress API. Consider using [Gateway mode]({{< ref "installation/gateway/_index.md" >}}) for non-trivial deployments. 
+Gloo can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo]({{< versioned_link_path fromRoot="/gloo_integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo) functionality is not exposed through the Ingress API. Consider using [Gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/ingress.png" %}})
 
-In this deployment model, the only component from the Gloo control plane that's required is the `gloo` deployment. Take a look at the [Gloo Ingress Installation docs]({{< ref "installation/ingress/_index.md" >}}) for more.
+In this deployment model, the only component from the Gloo control plane that's required is the `gloo` deployment. Take a look at the [Gloo Ingress Installation docs]({{< versioned_link_path fromRoot="/installation/ingress" >}}) for more.
 
 ## As a kube-native edge API Gateway for Kubernetes
 
-Since the Kubernetes Ingress API is very limited and restricted to HTTP traffic, we recommend avoiding it for anything but very trivial hello-world usecases. For any non-trivial cluster, you'll want to use the [Gloo Gateway functionality]({{< ref "installation/gateway/_index.md" >}}). In this model, the proxy is deployed as a full-featured API gateway with functionality like traffic routing, header matching, rate limiting, security features (WAF, Oauth, etc) and others. Having these features close to the applications is desirable, therefore you run the Gateway within the cluster as the edge ingress proxy (note, this is ingress with a lowercase "i" and not necessarily the Kubernetes Ingress resource.)
+Since the Kubernetes Ingress API is very limited and restricted to HTTP traffic, we recommend avoiding it for anything but very trivial hello-world usecases. For any non-trivial cluster, you'll want to use the [Gloo Gateway functionality]({{< versioned_link_path fromRoot="/installation/gateway" >}}). In this model, the proxy is deployed as a full-featured API gateway with functionality like traffic routing, header matching, rate limiting, security features (WAF, Oauth, etc) and others. Having these features close to the applications is desirable, therefore you run the Gateway within the cluster as the edge ingress proxy (note, this is ingress with a lowercase "i" and not necessarily the Kubernetes Ingress resource.)
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/gateway.png" %}})
 
