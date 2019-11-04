@@ -40,12 +40,14 @@ glooctl add route --name update-request-path --path-prefix / --dest-name postman
 We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request 
 body. Create a file named `data.json` with the following content in your current working directory:
 
-```json
+```shell
+cat << EOF > data.json
 {
   "payload": {
     "foo": "bar"
   }
 }
+EOF
 ```
 
 Let's test that the configuration was correctly picked up by Gloo by executing the following command:

@@ -43,12 +43,14 @@ glooctl add route --name update-response-code --path-prefix / --dest-name postma
 We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request 
 body. Create a file named `data.json` with the following content in your current working directory:
 
-```json
+```shell
+cat << EOF > data.json
 {
   "error": {
     "message": "This is an error"
   }
 }
+EOF
 ```
 
 Let's test that the configuration was correctly picked up by Gloo by executing the following command:
@@ -151,10 +153,13 @@ You should get the following output, representing the response code:
 
 Now let's update the `data.json` file to turn `error` into an empty object:
 
-```json
+
+```shell
+cat << EOF > data.json
 {
   "error": {}
 }
+EOF
 ```
 
 If you execute the same `curl` command again, you should now get a `200` response:
