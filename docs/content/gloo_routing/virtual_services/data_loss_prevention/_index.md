@@ -5,7 +5,7 @@ description: Data Loss Prevention (DLP) is a method of ensuring that sensitive d
 ---
 
 {{% notice note %}}
-DLP is a feature of **Gloo Enterprise v1.0.0+**. GlooE release candidate v1.0.0-rc1 was the first version to
+DLP is a feature of **Gloo Enterprise v1.0.0+**. Gloo Enterprise release candidate v1.0.0-rc1 was the first version to
 support this feature. 
 {{% /notice %}}
 
@@ -157,7 +157,7 @@ You should obtain the following response:
 ```
 
 Names are often used as personally identifying information, or **PII**. Let's write our own regex to mask the
-names returned by the petstore service:
+names returned by the petstore service (in our case, `Cat` or `Dog`):
 
 {{< highlight yaml "hl_lines=16-26" >}}
 apiVersion: gateway.solo.io/v1
@@ -184,7 +184,7 @@ spec:
             percent:
               value: 60  # % of regex match to mask
             regex:
-            - '(?<="name":")[^:]+(?=",|$)'
+            - '(Cat|Dog)'
 {{< /highlight >}}
 
 Query for pets again:
