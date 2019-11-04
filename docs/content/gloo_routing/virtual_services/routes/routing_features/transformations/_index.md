@@ -92,7 +92,7 @@ The `body`, `passthrough`, and `mergeExtractorsToBody` attributes define three d
 the request/response. Please note that **only one of them may be set**, otherwise Gloo will reject the `transformationTemplate`.
 {{% /notice %}}
 
-Let's go ahead and describe each one of these attribute in detail.
+Let's go ahead and describe each one of these attributes in detail.
 
 ##### parseBodyBehavior
 This attribute determines how the request/response body will be parsed and can have one of two values:
