@@ -4,7 +4,7 @@
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: kube-resource-watcher
+    name: kube-resource-watcher{{ include "gloo.rolesuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -22,7 +22,7 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-upstream-mutator
+    name: gloo-upstream-mutator{{ include "gloo.rolesuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -41,7 +41,7 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-resource-reader
+    name: gloo-resource-reader{{ include "gloo.rolesuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -63,7 +63,7 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: settings-user
+    name: settings-user{{ include "gloo.rolesuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -82,7 +82,7 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-resource-mutator
+    name: gloo-resource-mutator{{ include "gloo.rolesuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -100,7 +100,7 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gateway-resource-reader
+    name: gateway-resource-reader{{ include "gloo.rolesuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -131,7 +131,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
+    name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolesuffix" . }}
     labels:
         app: gloo
         gloo: rbac

@@ -12,11 +12,14 @@ ClusterRole
 {{- end -}}
 {{- end -}}
 
-{{- define "gloo.rolebindingsuffix" -}}
-{{- if not .Values.global.glooRbac.namespaced -}}
+{{- define "gloo.rolesuffix" -}}
+{{- if .Values.global.glooRbac.roleSuffix -}}
+-{{ .Values.global.glooRbac.roleSuffix }}
+{{- else if not .Values.global.glooRbac.namespaced -}}
 -{{ .Release.Namespace }}
 {{- end -}}
 {{- end -}}
+
 {{/*
 Expand the name of a container image
 */}}
