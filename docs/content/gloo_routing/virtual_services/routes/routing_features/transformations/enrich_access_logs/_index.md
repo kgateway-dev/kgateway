@@ -1,5 +1,5 @@
 ---
-title: Enrich Gloo access logs
+title: Enriching access logs
 weight: 50
 description: Use transformations to craft custom attributes in access logs.
 ---
