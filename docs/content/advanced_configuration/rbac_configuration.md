@@ -29,3 +29,9 @@ That will cause the string `"-$roleSuffix"` to be appended to the roles' and rol
 `$roleSuffix` is the string you passed to the Helm flag. For example, setting `global.glooRbac.roleSuffix`
 to the string `"blue-deployment"` will cause the ClusterRole normally named `gloo-resource-reader` to
 instead be named `gloo-resource-reader-blue-deployment`.
+
+{{% notice note %}}
+Our Grafana and Prometheus subcharts currently do not allow customization of their own RBAC resources' names, so
+you may still have a conflict on these. The current best-practice is to either disable the install of
+Grafana/Prometheus, or manually fix after installation.
+{{% /notice %}}
