@@ -45,7 +45,7 @@ By default, a transformation defined on a Virtual Service attribute is **inherit
 If however a child attribute defines its own transformation, it will override the configuration on its parent.
 
 ### Configuration format
-In this section we will detail all the properties of the `transformations` [object]({{< protobuf name="envoy.api.v2.filter.http.RouteTransformations" >}}),
+In this section we will detail all the properties of the `transformations` {{< protobuf display="object" name="envoy.api.v2.filter.http.RouteTransformations" >}},
 which has the following structure:
 
 ```yaml
@@ -57,10 +57,10 @@ transformations:
 
 The `clearRouteCache` attribute is a boolean value that determines whether the route cache should be cleared if the 
 request transformation was applied. If the transformation modifies the headers in a way that affects routing, this 
-attribute must be set to `true`.
+attribute must be set to `true`. The default value is `false`.
 
 The `requestTransformation` and `responseTransformation` attributes have the 
-[same format]({{< protobuf name="envoy.api.v2.filter.http.Transformation" >}}) and specify transformations that 
+{{< protobuf display="same format" name="envoy.api.v2.filter.http.Transformation" >}} and specify transformations that 
 will be applied to requests and responses respectively. The format can take one of two forms:
 
 - `headerBodyTransform`: this type of transformation will make all the headers available in the body. The result will be 
@@ -69,7 +69,7 @@ a JSON body that consists of two attributes: `headers`, containing the headers, 
 powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
 
 #### Transformation templates
-[Templates]({{< protobuf name="envoy.api.v2.filter.http.TransformationTemplate" >}}) are the core of Gloo's 
+{{< protobuf display="Templates" name="envoy.api.v2.filter.http.TransformationTemplate" >}} are the core of Gloo's 
 transformation API. They allow you to mutate the headers and bodies of requests and responses based on the properties of 
 the headers and bodies themselves. The following snippet illustrates the structure of the `transformationTemplate` object:
 
@@ -103,7 +103,7 @@ This attribute determines how the request/response body will be parsed and can h
 As we will [see later](#templating-language), some of the templating features won't be available when treating the body as plain text.
 
 ##### ignoreErrorOnParse
-If set to true, Envoy will not throw an exception in case the body parsing fails.
+If set to `true`, Envoy will not throw an exception in case the body parsing fails. Defaults to `false`.
 
 ##### extractors
 Use this attribute to extract information from a request or response. It consists of a set of mappings from a string 
@@ -161,7 +161,7 @@ Extracted values can be used in two ways:
 
 ##### headers
 Use this attribute to apply templates to request/response headers. It consists of a map where each key determines the name of 
-the resulting header, while the corresponding value is a [template]({{< protobuf name="envoy.api.v2.filter.http.InjaTemplate" >}}) 
+the resulting header, while the corresponding value is a {{< protobuf display="template" name="envoy.api.v2.filter.http.InjaTemplate" >}} 
 which will determine the value.
 
 For example, to set the header `foo` to the value of the header `bar`, you could use the following configuration:
