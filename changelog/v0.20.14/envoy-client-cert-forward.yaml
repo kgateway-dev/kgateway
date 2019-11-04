@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Support for Envoy's `forward_client_cert_details` and `set_current_client_cert_details` HTTP connection manager options
+    issueLink: https://github.com/solo-io/gloo/issues/1577

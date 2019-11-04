@@ -47,6 +47,15 @@ var _ = Describe("Plugin", func() {
 				RequestHeadersForTags: []string{"path", "origin"},
 				Verbose:               true,
 			},
+
+			ForwardClientCertDetails: hcm.HttpConnectionManagerSettings_APPEND_FORWARD,
+			SetCurrentClientCertDetails: &hcm.HttpConnectionManagerSettings_SetCurrentClientCertDetails{
+				Subject: &types.BoolValue{Value: true},
+				Cert:    true,
+				Chain:   true,
+				Dns:     true,
+				Uri:     true,
+			},
 		}
 		hl := &v1.HttpListener{
 			ListenerPlugins: &v1.HttpListenerPlugins{
@@ -102,6 +111,15 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
+
+		Expect(cfg.ForwardClientCertDetails).To(Equal(envoyhttp.APPEND_FORWARD))
+
+		ccd := cfg.SetCurrentClientCertDetails
+		Expect(ccd.Subject.Value).To(BeTrue())
+		Expect(ccd.Cert).To(BeTrue())
+		Expect(ccd.Chain).To(BeTrue())
+		Expect(ccd.Dns).To(BeTrue())
+		Expect(ccd.Uri).To(BeTrue())
 	})
 
 })

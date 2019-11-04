@@ -12,6 +12,8 @@ weight: 5
 
 
 - [HttpConnectionManagerSettings](#httpconnectionmanagersettings)
+- [SetCurrentClientCertDetails](#setcurrentclientcertdetails)
+- [ForwardClientCertDetails](#forwardclientcertdetails)
   
 
 
@@ -46,6 +48,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "acceptHttp10": bool
 "defaultHostForHttp10": string
 "tracing": .tracing.plugins.gloo.solo.io.ListenerTracingSettings
+"forwardClientCertDetails": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails
+"setCurrentClientCertDetails": .hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
 
 ```
 
@@ -67,6 +71,49 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions. |  |
 | `defaultHostForHttp10` | `string` |  |  |
 | `tracing` | [.tracing.plugins.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk/#listenertracingsettings) |  |  |
+| `forwardClientCertDetails` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails](../hcm.proto.sk/#forwardclientcertdetails) |  |  |
+| `setCurrentClientCertDetails` | [.hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails](../hcm.proto.sk/#setcurrentclientcertdetails) |  |  |
+
+
+
+
+---
+### SetCurrentClientCertDetails
+
+
+
+```yaml
+"subject": .google.protobuf.BoolValue
+"cert": bool
+"chain": bool
+"dns": bool
+"uri": bool
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `subject` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |  |
+| `cert` | `bool` |  |  |
+| `chain` | `bool` |  |  |
+| `dns` | `bool` |  |  |
+| `uri` | `bool` |  |  |
+
+
+
+
+---
+### ForwardClientCertDetails
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `SANITIZE` |  |
+| `FORWARD_ONLY` |  |
+| `APPEND_FORWARD` |  |
+| `SANITIZE_SET` |  |
+| `ALWAYS_FORWARD_ONLY` |  |
 
 
 
