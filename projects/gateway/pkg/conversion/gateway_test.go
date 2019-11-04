@@ -67,7 +67,7 @@ var _ = Describe("Gateway Conversion", func() {
 						Plugins:         plugins,
 					},
 				},
-				GatewayProxyName: defaults2.GatewayProxyName,
+				ProxyNames: []string{defaults2.GatewayProxyName},
 			}
 		}
 

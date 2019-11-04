@@ -45,6 +45,6 @@ func (c *gatewayConverter) FromV1ToV2(src *gatewayv1.Gateway) *gatewayv2.Gateway
 				Plugins:         src.Plugins,
 			},
 		},
-		GatewayProxyName: gatewaydefaults.GatewayProxyName,
+		ProxyNames: []string{gatewaydefaults.GatewayProxyName},
 	}
 }
