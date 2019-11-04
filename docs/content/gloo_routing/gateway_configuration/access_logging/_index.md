@@ -9,7 +9,8 @@ HTTP (L7) connections as well at TCP (L4).
 
 # Access Logging
 
-The envoy documentation on Access Logging can be found [here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-default-format)
+The envoy documentation on Access Logging can be found 
+[here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-default-format).
 
 #### Usage
 
@@ -24,7 +25,8 @@ Possible use cases include:
 
 The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial](../../../installation/gateway/kubernetes). The only Gloo resource involved in enabling Access Loggins is the `Gateway`. Further Documentation can be found [here]({{< protobuf name="gateway.solo.io.Gateway">}}).
 
-Enabling access logs in Gloo is as simple as adding a [listener plugin](../../gateway_configuration/) to any one of the gateway resources. The documentation for the `Access Logging Service` plugin API can be found [here]({{< protobuf name="als.plugins.gloo.solo.io.AccessLog">}}).
+Enabling access logs in Gloo is as simple as adding a [listener plugin](../../gateway_configuration/) to any one of the gateway resources. 
+The documentation for the `Access Logging Service` plugin API can be found {{< protobuf display="here" name="als.plugins.gloo.solo.io.AccessLog">}}.
 
 Gloo supports two types of Access Logging. `File Sink` and `GRPC`.
 
@@ -38,6 +40,12 @@ Within the `File Sink` category of Access Logs there are 2 options for output, t
 These are mutually exclusive for a given Access Logging configuration, but any number of access logging configurations can be applied to any place in the API which supports Access Logging. All `File Sink` configurations also accept a file path which envoy logs to. If the desired behavior is for these logs to output to `stdout` along with the other envoy logs then use the value `/dev/stdout` as the path.
 
 The documentation on envoy formatting directives can be found [here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#format-dictionaries)
+
+{{% notice note %}}
+See [**this guide**]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}}) 
+to see how to include custom attributes in your access logs by leveraging Gloo's 
+[**transformation API**]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations" >}}).
+{{% /notice %}}
 
 ##### String formatted
 
