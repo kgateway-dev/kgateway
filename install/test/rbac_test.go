@@ -61,7 +61,7 @@ var _ = Describe("RBAC Test", func() {
 			checkSuffix(suffix)
 		})
 
-		It("is named appropriately in a non-namespaced install", func() {
+		It("is all named appropriately in a non-namespaced install", func() {
 			prepareMakefile("--namespace " + namespace)
 			checkSuffix(namespace)
 		})
