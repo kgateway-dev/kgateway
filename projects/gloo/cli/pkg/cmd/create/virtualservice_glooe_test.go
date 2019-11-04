@@ -3,8 +3,6 @@ package create_test
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 
 	. "github.com/onsi/ginkgo"
@@ -15,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	pluginutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -25,31 +22,35 @@ var _ = Describe("VirtualService", func() {
 		helpers.UseMemoryClients()
 	})
 
-	getExtension := func() extauthpb.VhostExtension {
-
+	getExtension := func() []*extauthpb.AuthConfig_Config {
 		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "vs1", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(vs.Metadata.Name).To(Equal("vs1"))
 
-		var extension extauthpb.VhostExtension
-		err = pluginutils.UnmarshalExtension(vs.GetVirtualHost().GetVirtualHostPlugins(), constants.ExtAuthExtensionName, &extension)
+		ac, err := helpers.MustAuthConfigClient().Read("gloo-system", create.DefaultAuthConfigName, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		return extension
+
+		spec := vs.VirtualHost.VirtualHostPlugins.Extauth.Spec.(*extauthpb.ExtAuthExtension_ConfigRef)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(ac.Metadata.Name).To(Equal(spec.ConfigRef.Name))
+		Expect(ac.Metadata.Namespace).To(Equal(spec.ConfigRef.Namespace))
+
+		return ac.Configs
 	}
 
 	getOIDCConfig := func() *extauthpb.OAuth {
-		return getExtension().Configs[0].GetOauth()
+		return getExtension()[0].GetOauth()
 	}
 
 	getApiKeyConfig := func() *extauthpb.ApiKeyAuth {
-		return getExtension().Configs[0].GetApiKeyAuth()
+		return getExtension()[0].GetApiKeyAuth()
 	}
 	getOpaConfig := func() *extauthpb.OpaAuth {
-		return getExtension().Configs[0].GetOpaAuth()
+		return getExtension()[0].GetOpaAuth()
 	}
 
 	get2ndOpaConfig := func() *extauthpb.OpaAuth {
-		return getExtension().Configs[1].GetOpaAuth()
+		return getExtension()[1].GetOpaAuth()
 	}
 
 	DescribeTable("should create oidc vhost",
@@ -113,29 +114,28 @@ var _ = Describe("VirtualService", func() {
 		Entry("with apikey config -- label selector", "create vs --name vs1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1",
 			extauthpb.ApiKeyAuth{
-				LabelSelector:    map[string]string{"k1": "v1"},
-				ApiKeySecretRefs: nil,
+				LabelSelector: map[string]string{"k1": "v1"},
 			}),
 
 		Entry("with apikey config -- secret refs", "create vs --name vs1 --enable-apikey-auth "+
-			"--apikey-secret-namespace ns1 --apikey-secret-name s1 ",
+			"--apikey-secret-namespace ns1 --apikey-secret-name 1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: nil,
 				ApiKeySecretRefs: []*core.ResourceRef{
 					{
 						Namespace: "ns1",
-						Name:      "s1",
+						Name:      "1",
 					},
 				},
 			}),
 		Entry("with apikey config -- both groups & secret refs", "create vs --name vs1 --enable-apikey-auth "+
-			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name s1 ",
+			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name 1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
 				ApiKeySecretRefs: []*core.ResourceRef{
 					{
 						Namespace: "ns1",
-						Name:      "s1",
+						Name:      "1",
 					},
 				},
 			}),

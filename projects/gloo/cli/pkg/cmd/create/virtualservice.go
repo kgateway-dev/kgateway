@@ -3,12 +3,8 @@ package create
 import (
 	"strings"
 
-	"github.com/solo-io/go-utils/kubeutils"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -27,6 +23,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )
+
+const DefaultAuthConfigName = "default"
 
 var defaultDomains = []string{"*"}
 
@@ -146,7 +144,12 @@ func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualServic
 
 func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) error {
 
-	var vhostAuth *extauth.ExtAuthExtension
+	authConfig := &extauth.AuthConfig{
+		Metadata: core.Metadata{
+			Name:      DefaultAuthConfigName,
+			Namespace: vs.Metadata.Namespace,
+		},
+	}
 
 	oidc := input.OIDCAuth
 	if oidc.Enable {
@@ -166,42 +169,19 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 			return errors.Errorf("invalid client secret ref specified: %v.%v", oidc.ClientSecretRef.Namespace, oidc.ClientSecretRef.Name)
 		}
 
-		authConfigRef := &core.ResourceRef{
-			Name:      oidc.ClientId,
-			Namespace: vs.Metadata.Namespace,
-		}
-
-		vhostAuth = &extauth.ExtAuthExtension{
-			Spec: &extauth.ExtAuthExtension_ConfigRef{
-				ConfigRef: authConfigRef,
-			},
-		}
-
-		authConfig := &extauth.AuthConfig{
-			Configs: []*extauth.AuthConfig_Config{
-				{
-					AuthConfig: &extauth.AuthConfig_Config_Oauth{
-						Oauth: &extauth.OAuth{
-							AppUrl:          oidc.AppUrl,
-							CallbackPath:    oidc.CallbackPath,
-							ClientId:        oidc.ClientId,
-							ClientSecretRef: oidc.ClientSecretRef,
-							IssuerUrl:       oidc.IssuerUrl,
-							Scopes:          oidc.Scopes,
-						},
-					},
+		oauthConf := &extauth.AuthConfig_Config{
+			AuthConfig: &extauth.AuthConfig_Config_Oauth{
+				Oauth: &extauth.OAuth{
+					AppUrl:          oidc.AppUrl,
+					CallbackPath:    oidc.CallbackPath,
+					ClientId:        oidc.ClientId,
+					ClientSecretRef: oidc.ClientSecretRef,
+					IssuerUrl:       oidc.IssuerUrl,
+					Scopes:          oidc.Scopes,
 				},
 			},
-			Metadata: core.Metadata{
-				Name:      authConfigRef.Name,
-				Namespace: authConfigRef.Namespace,
-			},
 		}
-		authConfigClient := helpers.MustAuthConfigClient()
-		_, err := authConfigClient.Write(authConfig, clients.WriteOpts{})
-		if err != nil {
-			return err
-		}
+		authConfig.Configs = append(authConfig.Configs, oauthConf)
 
 	}
 
@@ -226,38 +206,15 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 			labelSelector = labels.MustMap()
 		}
 
-		authConfigRef := &core.ResourceRef{
-			Name:      apiKey.SecretName,
-			Namespace: vs.Metadata.Namespace,
-		}
-
-		vhostAuth = &extauth.ExtAuthExtension{
-			Spec: &extauth.ExtAuthExtension_ConfigRef{
-				ConfigRef: authConfigRef,
-			},
-		}
-
-		authConfig := &extauth.AuthConfig{
-			Configs: []*extauth.AuthConfig_Config{
-				{
-					AuthConfig: &extauth.AuthConfig_Config_ApiKeyAuth{
-						ApiKeyAuth: &extauth.ApiKeyAuth{
-							LabelSelector:    labelSelector,
-							ApiKeySecretRefs: secretRefs,
-						},
-					},
+		apiKeyAuthConfig := &extauth.AuthConfig_Config{
+			AuthConfig: &extauth.AuthConfig_Config_ApiKeyAuth{
+				ApiKeyAuth: &extauth.ApiKeyAuth{
+					LabelSelector:    labelSelector,
+					ApiKeySecretRefs: secretRefs,
 				},
 			},
-			Metadata: core.Metadata{
-				Name:      authConfigRef.Name,
-				Namespace: authConfigRef.Namespace,
-			},
 		}
-		authConfigClient := helpers.MustAuthConfigClient()
-		_, err := authConfigClient.Write(authConfig, clients.WriteOpts{})
-		if err != nil {
-			return err
-		}
+		authConfig.Configs = append(authConfig.Configs, apiKeyAuthConfig)
 	}
 
 	opaAuth := input.OpaAuth
@@ -281,58 +238,34 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 			modules = append(modules, &core.ResourceRef{Name: name, Namespace: namespace})
 		}
 
-		authConfigRef := &core.ResourceRef{
-			Name:      kubeutils.SanitizeNameV2(query),
-			Namespace: vs.Metadata.Namespace,
-		}
-
-		vhostAuth = &extauth.ExtAuthExtension{
-			Spec: &extauth.ExtAuthExtension_ConfigRef{
-				ConfigRef: authConfigRef,
-			},
-		}
-
-		authConfig := &extauth.AuthConfig{
-			Configs: []*extauth.AuthConfig_Config{
-				{
-					AuthConfig: &extauth.AuthConfig_Config_OpaAuth{
-						OpaAuth: &extauth.OpaAuth{
-							Modules: modules,
-							Query:   query,
-						},
-					},
+		opaAuthConfig := &extauth.AuthConfig_Config{
+			AuthConfig: &extauth.AuthConfig_Config_OpaAuth{
+				OpaAuth: &extauth.OpaAuth{
+					Modules: modules,
+					Query:   query,
 				},
 			},
-			Metadata: core.Metadata{
-				Name:      authConfigRef.Name,
-				Namespace: authConfigRef.Namespace,
-			},
 		}
+		authConfig.Configs = append(authConfig.Configs, opaAuthConfig)
+	}
+
+	if len(authConfig.Configs) > 0 {
+
 		authConfigClient := helpers.MustAuthConfigClient()
 		_, err := authConfigClient.Write(authConfig, clients.WriteOpts{})
 		if err != nil {
 			return err
 		}
-	}
-
-	if vhostAuth != nil {
 
 		if vs.VirtualHost.VirtualHostPlugins == nil {
 			vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
 		}
-
-		vhostAuthStruct, err := envoyutil.MessageToStruct(vhostAuth)
-		if err != nil {
-			return errors.Wrapf(err, "Error marshalling oauth config")
+		vhostAuth := &extauth.ExtAuthExtension{
+			Spec: &extauth.ExtAuthExtension_ConfigRef{
+				ConfigRef: &core.ResourceRef{Name: authConfig.Metadata.Name, Namespace: authConfig.Metadata.Namespace},
+			},
 		}
-		if vs.VirtualHost.VirtualHostPlugins.Extensions == nil {
-			vs.VirtualHost.VirtualHostPlugins.Extensions = new(gloov1.Extensions)
-		}
-		if vs.VirtualHost.VirtualHostPlugins.Extensions.Configs == nil {
-			vs.VirtualHost.VirtualHostPlugins.Extensions.Configs = make(map[string]*types.Struct)
-		}
-		vs.VirtualHost.VirtualHostPlugins.Extensions.Configs[constants.ExtAuthExtensionName] = vhostAuthStruct
-
+		vs.VirtualHost.VirtualHostPlugins.Extauth = vhostAuth
 	}
 
 	return nil
