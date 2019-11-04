@@ -1,6 +1,6 @@
 ---
 title: Enrich Gloo access logs
-weight: 10
+weight: 50
 description: Use transformations to craft custom attributes in access logs.
 ---
 
@@ -88,7 +88,7 @@ glooctl add route --name test-access-logs --path-prefix / --dest-name postman-ec
 Let's test that the configuration was correctly picked up by Gloo by executing the following command:
 
 ```shell
-curl -v $(glooctl proxy url)/get | jq
+curl $(glooctl proxy url)/get | jq
 ```
 
 You should see an output similar like this:
@@ -244,7 +244,7 @@ spec:
 To test that our configuration has been correctly picked up by Gloo, let's execute our `curl` command again:
 
 ```shell
-curl -v $(glooctl proxy url)/get | jq
+curl $(glooctl proxy url)/get | jq
 ```
 
 Now let's inspect the access logs again:
