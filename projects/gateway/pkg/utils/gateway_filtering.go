@@ -20,11 +20,7 @@ func GatewaysByProxyName(gateways v2.GatewayList) map[string]v2.GatewayList {
 func GetProxyNamesForGateway(gw *v2.Gateway) []string {
 	proxyNames := gw.ProxyNames
 	if len(proxyNames) == 0 {
-		if gw.GatewayProxyName != "" {
-			proxyNames = []string{gw.GatewayProxyName}
-		} else {
-			proxyNames = []string{defaults.GatewayProxyName}
-		}
+		proxyNames = []string{defaults.GatewayProxyName}
 	}
 	return proxyNames
 }
