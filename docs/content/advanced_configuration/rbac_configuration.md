@@ -31,7 +31,7 @@ to the string `"blue-deployment"` will cause the ClusterRole normally named `glo
 instead be named `gloo-resource-reader-blue-deployment`.
 
 {{% notice note %}}
-Our Grafana and Prometheus subcharts currently do not allow customization of their own RBAC resources' names, so
-you may still have a conflict on these. The current best-practice is to either disable the install of
-Grafana/Prometheus, or manually fix after installation.
+For Enterprise deployments of Gloo: Our Grafana and Prometheus subcharts currently do not allow customization 
+of their own RBAC resources' names, so you may still have a conflict on these. The current best-practice is
+to either disable the install of Grafana/Prometheus, or manually fix after installation.
 {{% /notice %}}
