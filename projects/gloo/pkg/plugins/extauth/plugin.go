@@ -36,7 +36,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, _ *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	// Delegate to a function with a simpler signature,will make it easier to reuse
+	// Delegate to a function with a simpler signature, will make it easier to reuse
 	return BuildHttpFilters(p.extAuthSettings, params.Snapshot.Upstreams)
 }
 
