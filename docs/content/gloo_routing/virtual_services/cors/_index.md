@@ -54,6 +54,16 @@ The following fields are available when specifying CORS on your `VirtualService`
 | `maxAge`           | `string`   | Specifies the content for the *access-control-max-age* header.                                                                                                   |         |
 | `allowCredentials` | `bool`     | Specifies whether the resource allows credentials.                                                                                                               |         |
 
+
+#### Regex Grammar
+
+Note that Gloo uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar.
+
+For example, in order to match all subdomains:
+
+  - Do not use: `*.example.com`
+  - Instead, use: `[a-zA-Z0-9]*.example.com`
+
 ### Example
 
 In the example below, the virtual service, through CORS parameters, will inform your browser that it should also allow
@@ -79,7 +89,7 @@ spec:
       allowOrigin:
       - solo.io
       allowOriginRegex:
-      - '*.supergloo.dev'
+      - '[a-zA-Z0-9]*.supergloo.dev'
       exposeHeaders:
       - origin
       maxAge: 1d
