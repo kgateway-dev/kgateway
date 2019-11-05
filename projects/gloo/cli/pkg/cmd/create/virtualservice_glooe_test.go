@@ -118,24 +118,24 @@ var _ = Describe("VirtualService", func() {
 			}),
 
 		Entry("with apikey config -- secret refs", "create vs --name vs1 --enable-apikey-auth "+
-			"--apikey-secret-namespace ns1 --apikey-secret-name 1 ",
+			"--apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: nil,
 				ApiKeySecretRefs: []*core.ResourceRef{
 					{
 						Namespace: "ns1",
-						Name:      "1",
+						Name:      "s1",
 					},
 				},
 			}),
 		Entry("with apikey config -- both groups & secret refs", "create vs --name vs1 --enable-apikey-auth "+
-			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name 1 ",
+			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
 				ApiKeySecretRefs: []*core.ResourceRef{
 					{
 						Namespace: "ns1",
-						Name:      "1",
+						Name:      "s1",
 					},
 				},
 			}),
