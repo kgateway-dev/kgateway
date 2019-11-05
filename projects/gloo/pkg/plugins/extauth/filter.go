@@ -52,7 +52,7 @@ func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) (
 		return nil, err
 	}
 
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, extAuthCfg, filterStage)
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, extAuthCfg, FilterStage)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ const (
 
 // Note that although this configures the "envoy.ext_authz" filter, we still want the ordering to be within the
 // AuthNStage because we are using this filter for authentication purposes
-var filterStage = plugins.DuringStage(plugins.AuthNStage)
+var FilterStage = plugins.DuringStage(plugins.AuthNStage)
 
 var _ plugins.Plugin = &Plugin{}
 
