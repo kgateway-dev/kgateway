@@ -6,7 +6,8 @@ description: Data Loss Prevention (DLP) is a method of ensuring that sensitive d
 
 {{% notice note %}}
 DLP is a feature of **Gloo Enterprise v1.0.0+**. Gloo Enterprise release candidate v1.0.0-rc1 was the first version to
-support this feature. 
+support this feature. v1.0.0-rc2 contained some minor fixes to the standard regexes -- this guide is written for
+v1.0.0-rc2+
 {{% /notice %}}
 
 ### Understanding DLP
@@ -34,6 +35,12 @@ into this response:
 DLP is configured as a list of `Action`s, applied in order, on an HTTP listener, virtual service, or route. If
 configured on the listener, an additional matcher is paired with a list of `Action`s, and the first DLP rule that
 matches a request will be applied.
+
+DLP is one of the first filters run by Envoy. Gloo's current filter order follows:
+1. Fault Stage (Fault injection)
+1. CORS/DLP Stage (order here is not guaranteed to be idempotent)
+1. WAF Stage
+1. Rest of the filters ... (not all in the same stage)
 
 ### Prerequisites
 
