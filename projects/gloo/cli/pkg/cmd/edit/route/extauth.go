@@ -6,6 +6,7 @@ import (
 	editRouteOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/route/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
@@ -56,14 +57,13 @@ func ExtAuthConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ...cliutil
 
 func editRoute(opts *editRouteOptions.RouteEditInput, input *authEditInput, args []string) error {
 	return editRouteOptions.UpdateRoute(opts, func(route *gatewayv1.Route) error {
-		switch extAuth := route.RoutePlugins.Extauth.Spec.(type) {
-		case *extauthpb.ExtAuthExtension_Disable:
-			extAuth.Disable = input.Disable
-			route.RoutePlugins.Extauth.Spec = extAuth
-		default:
-			return nil
+		if route.RoutePlugins == nil {
+			route.RoutePlugins = &gloov1.RoutePlugins{}
 		}
-
+		if route.RoutePlugins.Extauth == nil {
+			route.RoutePlugins.Extauth = &extauthpb.ExtAuthExtension{}
+		}
+		route.RoutePlugins.Extauth.Spec = &extauthpb.ExtAuthExtension_Disable{Disable:input.Disable}
 		return nil
 	})
 }

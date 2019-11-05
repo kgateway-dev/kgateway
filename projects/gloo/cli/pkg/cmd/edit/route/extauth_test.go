@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
@@ -12,7 +11,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -47,26 +45,15 @@ var _ = Describe("Extauth", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	extAuthExtension := func(index int, metadata core.Metadata) *extauthpb.RouteExtension {
-		var extAuthRouteExt extauthpb.RouteExtension
-		var err error
+	extAuthExtension := func(index int, metadata core.Metadata) *extauthpb.ExtAuthExtension {
 		vsv, err := helpers.MustVirtualServiceClient().Read(metadata.Namespace, metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-
-		err = utils.UnmarshalExtension(vsv.VirtualHost.Routes[index].RoutePlugins, constants.ExtAuthExtensionName, &extAuthRouteExt)
-		if err != nil {
-			if err == utils.NotFoundError {
-				return nil
-			}
-			Expect(err).NotTo(HaveOccurred())
-		}
-		return &extAuthRouteExt
+		return vsv.VirtualHost.Routes[index].GetRoutePlugins().GetExtauth()
 	}
 	Context("Non-interactive tests", func() {
 
 		DescribeTable("should edit extauth config",
-			func(cmd string, index int, expected *extauthpb.RouteExtension) {
-
+			func(cmd string, index int, expected *extauthpb.ExtAuthExtension) {
 				err := testutils.Glooctl(cmd)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -78,13 +65,13 @@ var _ = Describe("Extauth", func() {
 				nil),
 			Entry("edit route and disable it", "edit route externalauth --name vs --namespace gloo-system --index 1 --disable=true",
 				1,
-				&extauthpb.RouteExtension{
-					Disable: true,
+				&extauthpb.ExtAuthExtension{
+					Spec: &extauthpb.ExtAuthExtension_Disable{Disable:true},
 				}),
 			Entry("edit route and un-disable it", "edit route externalauth --name vs --namespace gloo-system --index 1 --disable=false",
 				1,
-				&extauthpb.RouteExtension{
-					Disable: false,
+				&extauthpb.ExtAuthExtension{
+					Spec: &extauthpb.ExtAuthExtension_Disable{Disable:false},
 				}),
 		)
 	})
@@ -107,8 +94,8 @@ var _ = Describe("Extauth", func() {
 				err := testutils.Glooctl("edit route externalauth -i")
 				Expect(err).NotTo(HaveOccurred())
 				extension := extAuthExtension(1, vsvc.Metadata)
-				Expect(extension).To(Equal(&extauthpb.RouteExtension{
-					Disable: true,
+				Expect(extension).To(Equal(&extauthpb.ExtAuthExtension{
+					Spec: &extauthpb.ExtAuthExtension_Disable{Disable:true},
 				}))
 			})
 		})
