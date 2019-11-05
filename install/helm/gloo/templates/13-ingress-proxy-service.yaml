@@ -5,6 +5,7 @@ metadata:
   labels:
     app: gloo
     gloo: ingress-proxy
+    installationId: {{ include "gloo.installationId" . }}
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
 spec:
@@ -17,6 +18,7 @@ spec:
     name: https
   selector:
     gloo: ingress-proxy
+    installationId: {{ include "gloo.installationId" . }}
   type: LoadBalancer
 
 

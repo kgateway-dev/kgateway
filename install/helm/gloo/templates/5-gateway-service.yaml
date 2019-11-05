@@ -5,6 +5,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
+    installationId: {{ include "gloo.installationId" . }}
   name: gateway
   namespace: {{ .Release.Namespace }}
 spec:
@@ -16,4 +17,5 @@ spec:
     targetPort: 8443
   selector:
     gloo: gateway
+    installationId: {{ include "gloo.installationId" . }}
 {{- end}}

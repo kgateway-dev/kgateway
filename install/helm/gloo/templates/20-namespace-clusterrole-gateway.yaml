@@ -4,13 +4,14 @@
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: kube-resource-watcher
+    name: kube-resource-watcher{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -22,13 +23,14 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-upstream-mutator
+    name: gloo-upstream-mutator{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -41,13 +43,14 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-resource-reader
+    name: gloo-resource-reader{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -63,13 +66,14 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: settings-user
+    name: settings-user{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -82,13 +86,14 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-resource-mutator
+    name: gloo-resource-mutator{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -100,13 +105,14 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gateway-resource-reader
+    name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -131,10 +137,11 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
+    name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "5"

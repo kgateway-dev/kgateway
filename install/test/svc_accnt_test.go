@@ -10,13 +10,15 @@ var _ = Describe("SVC Accnt Test", func() {
 	var (
 		testManifest    TestManifest
 		resourceBuilder ResourceBuilder
+		installationId  = "svc-accnt-installation-id"
 	)
 
 	prepareMakefile := func(name, helmFlags string) {
 		resourceBuilder.Name = name
 		resourceBuilder.Labels["gloo"] = name
+		resourceBuilder.Labels["installationId"] = installationId
 
-		testManifest = renderManifest(helmFlags)
+		testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + installationId)
 	}
 
 	BeforeEach(func() {

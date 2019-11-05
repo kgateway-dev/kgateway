@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: > 
+      Currently Gloo logs a warning each time it replaces an illegal character in the name of a Virtual Host.
+      Change it to a debug level message to not flood the logs.
+    issueLink: https://github.com/solo-io/gloo/issues/1604

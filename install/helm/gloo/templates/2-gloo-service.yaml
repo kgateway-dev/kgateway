@@ -4,6 +4,7 @@ metadata:
   labels:
     app: gloo
     gloo: gloo
+    installationId: {{ include "gloo.installationId" . }}
   name: gloo
   namespace: {{ .Release.Namespace }}
 spec:
@@ -22,3 +23,4 @@ spec:
     protocol: TCP
   selector:
     gloo: gloo
+    installationId: {{ include "gloo.installationId" . }}

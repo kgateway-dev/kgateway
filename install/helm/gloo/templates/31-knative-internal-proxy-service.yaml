@@ -6,6 +6,7 @@ metadata:
   labels:
     app: gloo
     gloo: knative-internal-proxy
+    installationId: {{ include "gloo.installationId" . }}
   name: knative-internal-proxy
   namespace: {{ .Release.Namespace }}
 spec:
@@ -18,6 +19,7 @@ spec:
     name: https
   selector:
     gloo: knative-internal-proxy
+    installationId: {{ include "gloo.installationId" . }}
   type: ClusterIP
 {{- end }}
 {{- end }}

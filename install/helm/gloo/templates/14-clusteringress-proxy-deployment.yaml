@@ -10,6 +10,7 @@ metadata:
   labels:
     app: gloo
     gloo: clusteringress-proxy
+    installationId: {{ include "gloo.installationId" . }}
   name: clusteringress-proxy
   namespace: {{ .Release.Namespace }}
 spec:
@@ -17,10 +18,12 @@ spec:
   selector:
     matchLabels:
       gloo: clusteringress-proxy
+      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
         gloo: clusteringress-proxy
+        installationId: {{ include "gloo.installationId" . }}
     spec:
       containers:
       - args: ["--disable-hot-restart"]

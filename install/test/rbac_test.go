@@ -2,19 +2,23 @@ package test
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	. "github.com/solo-io/go-utils/manifesttestutils"
 )
 
 var _ = Describe("RBAC Test", func() {
 	var (
-		testManifest    TestManifest
-		resourceBuilder ResourceBuilder
+		testManifest        TestManifest
+		resourceBuilder     ResourceBuilder
+		installationId      = "rbac-test-install-id"
+		installationIdLabel = "installationId"
 	)
 
 	prepareMakefile := func(helmFlags string) {
-		testManifest = renderManifest(helmFlags)
+		testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + installationId)
 	}
 
 	Context("implementation-agnostic permissions", func() {
@@ -31,13 +35,39 @@ var _ = Describe("RBAC Test", func() {
 		})
 	})
 
+	Context("all cluster-scoped RBAC resources", func() {
+		checkSuffix := func(suffix string) {
+			rbacResources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+				return resource.GetKind() == "ClusterRole" || resource.GetKind() == "ClusterRoleBinding"
+			})
+
+			Expect(rbacResources.NumResources()).NotTo(BeZero())
+
+			rbacResources.ExpectAll(func(resource *unstructured.Unstructured) {
+				Expect(resource.GetName()).To(HaveSuffix("-" + suffix))
+			})
+		}
+
+		It("is all named appropriately when a custom suffix is specified", func() {
+			suffix := "test-suffix"
+			prepareMakefile("--namespace " + namespace + " --set global.glooRbac.nameSuffix=" + suffix)
+			checkSuffix(suffix)
+		})
+
+		It("is all named appropriately in a non-namespaced install", func() {
+			prepareMakefile("--namespace " + namespace)
+			checkSuffix(namespace)
+		})
+	})
+
 	Context("kube-resource-watcher", func() {
 		BeforeEach(func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "kube-resource-watcher",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -65,6 +95,7 @@ var _ = Describe("RBAC Test", func() {
 		})
 		Context("cluster scope", func() {
 			It("role", func() {
+				resourceBuilder.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
 			})
@@ -72,6 +103,7 @@ var _ = Describe("RBAC Test", func() {
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
 				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
+				resourceBuilder.RoleRef.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -101,8 +133,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gloo-upstream-mutator",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -126,6 +159,7 @@ var _ = Describe("RBAC Test", func() {
 		})
 		Context("cluster scope", func() {
 			It("role", func() {
+				resourceBuilder.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
 			})
@@ -133,6 +167,7 @@ var _ = Describe("RBAC Test", func() {
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
 				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
+				resourceBuilder.RoleRef.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -162,8 +197,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gloo-resource-reader",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -192,6 +228,7 @@ var _ = Describe("RBAC Test", func() {
 		})
 		Context("cluster scope", func() {
 			It("role", func() {
+				resourceBuilder.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
 			})
@@ -199,6 +236,7 @@ var _ = Describe("RBAC Test", func() {
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
 				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
+				resourceBuilder.RoleRef.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -228,8 +266,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "settings-user",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -261,6 +300,7 @@ var _ = Describe("RBAC Test", func() {
 		})
 		Context("cluster scope", func() {
 			It("role", func() {
+				resourceBuilder.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
 			})
@@ -268,6 +308,7 @@ var _ = Describe("RBAC Test", func() {
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
 				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
+				resourceBuilder.RoleRef.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -297,8 +338,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gloo-resource-mutator",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -322,6 +364,7 @@ var _ = Describe("RBAC Test", func() {
 		})
 		Context("cluster scope", func() {
 			It("role", func() {
+				resourceBuilder.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
 			})
@@ -329,6 +372,7 @@ var _ = Describe("RBAC Test", func() {
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
 				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
+				resourceBuilder.RoleRef.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})
@@ -358,8 +402,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gateway-resource-reader",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -391,6 +436,7 @@ var _ = Describe("RBAC Test", func() {
 		})
 		Context("cluster scope", func() {
 			It("role", func() {
+				resourceBuilder.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRole(resourceBuilder.GetClusterRole())
 			})
@@ -398,6 +444,7 @@ var _ = Describe("RBAC Test", func() {
 			It("role binding", func() {
 				resourceBuilder.Name += "-binding-" + namespace
 				resourceBuilder.Annotations["helm.sh/hook-weight"] = "15"
+				resourceBuilder.RoleRef.Name += "-" + namespace
 				prepareMakefile("--namespace " + namespace + " --set namespace.create=true --set global.glooRbac.namespaced=false")
 				testManifest.ExpectClusterRoleBinding(resourceBuilder.GetClusterRoleBinding())
 			})

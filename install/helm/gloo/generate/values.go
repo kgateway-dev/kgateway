@@ -10,6 +10,7 @@ type HelmConfig struct {
 }
 
 type Config struct {
+	InstallConfig  *InstallConfig          `json:"installConfig,omitempty"`
 	Namespace      *Namespace              `json:"namespace,omitempty"`
 	Crds           *Crds                   `json:"crds,omitempty"`
 	Settings       *Settings               `json:"settings,omitempty"`
@@ -23,6 +24,10 @@ type Config struct {
 	AccessLogger   *AccessLogger           `json:"accessLogger,omitempty"`
 }
 
+type InstallConfig struct {
+	InstallationId string `json:"installationId" desc:"If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling"`
+}
+
 type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
@@ -34,8 +39,9 @@ type Namespace struct {
 }
 
 type Rbac struct {
-	Create     bool `json:"create" desc:"create rbac rules for the gloo-system service account"`
-	Namespaced bool `json:"Namespaced" desc:"use Roles instead of ClusterRoles"`
+	Create     bool   `json:"create" desc:"create rbac rules for the gloo-system service account"`
+	Namespaced bool   `json:"Namespaced" desc:"use Roles instead of ClusterRoles"`
+	NameSuffix string `json:"nameSuffix" desc:"When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'"`
 }
 
 type Crds struct {
