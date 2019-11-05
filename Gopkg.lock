@@ -542,9 +542,12 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1384,7 +1387,7 @@
   revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"
 
 [[projects]]
-  digest = "1:953b61fc106fcd8629859c78630015425fa87b29488608b57ac0f01ce9896bf3"
+  digest = "1:ff3271ba73e7b0f9834fa78e22e76f99b094bc2143fcada18188bee3efb76a03"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1424,8 +1427,8 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "fbde466dfa3dd055301e48fa1d7b20c23efceb90"
-  version = "v0.10.24"
+  revision = "7a2d18c9ca395de2ebf7df015d5e1bdac18e122d"
+  version = "v0.10.25"
 
 [[projects]]
   digest = "1:3f4ac0fb4306bc49eb2111c4898bfb6e98e1ca7805a0b8c7692ebc41ad5dadc3"
@@ -2789,6 +2792,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",

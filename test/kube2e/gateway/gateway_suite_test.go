@@ -142,6 +142,7 @@ func getHelmValuesOverrideFile() (filename string, cleanup func()) {
 global:
   glooRbac:
     namespaced: true
+    nameSuffix: e2e-test-rbac-suffix
 settings:
   singleNamespace: true
   create: true

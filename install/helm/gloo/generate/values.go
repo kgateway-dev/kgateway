@@ -34,8 +34,9 @@ type Namespace struct {
 }
 
 type Rbac struct {
-	Create     bool `json:"create" desc:"create rbac rules for the gloo-system service account"`
-	Namespaced bool `json:"namespaced" desc:"use Roles instead of ClusterRoles"`
+	Create     bool   `json:"create" desc:"create rbac rules for the gloo-system service account"`
+	Namespaced bool   `json:"namespaced" desc:"use Roles instead of ClusterRoles"`
+	NameSuffix string `json:"nameSuffix" desc:"When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'"`
 }
 
 type Crds struct {
