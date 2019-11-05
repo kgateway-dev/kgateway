@@ -3,11 +3,16 @@ package install
 import (
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 )
+
+const installationIdLabel = "installationId"
 
 func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 	if err := uninstallGloo(opts, cli); err != nil {
@@ -18,10 +23,19 @@ func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 }
 
 func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
+	// attempt to uninstall by deleting resources with the label containing this installation ID
+	installationId := findInstallationId(opts, cli)
+	if installationId == "" && !opts.Uninstall.Force {
+		return errors.New(`Could not find installation ID in 'gloo' pod labels. Use --force to uninstall anyway.
+Note that using --force may delete cluster-scoped resources belonging to some other installation of Gloo...
+This error may mean that the version of glooctl you are using is newer than the version of Gloo running in-cluster.
+`)
+	}
+
 	if opts.Uninstall.DeleteNamespace || opts.Uninstall.DeleteAll {
 		deleteNamespace(cli, opts.Uninstall.Namespace)
 	} else {
-		deleteGlooSystem(cli, opts.Uninstall.Namespace)
+		deleteGlooSystem(cli, opts.Uninstall.Namespace, installationId)
 	}
 
 	if opts.Uninstall.DeleteCrds || opts.Uninstall.DeleteAll {
@@ -29,7 +43,7 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 	}
 
 	if opts.Uninstall.DeleteAll {
-		deleteRbac(cli)
+		deleteRbac(cli, installationId)
 	}
 
 	uninstallKnativeIfNecessary()
@@ -37,11 +51,33 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 	return nil
 }
 
-func deleteRbac(cli install.KubeCli) {
+// attempt to read the installation id off of the gloo pod labels
+func findInstallationId(opts *options.Options, cli install.KubeCli) string {
+	jsonPath := fmt.Sprintf("-ojsonpath='{.items[0].metadata.labels.%s}'", installationIdLabel)
+	installationId, err := cli.KubectlOut(nil, "-n", opts.Uninstall.Namespace, "get", "pod", "-l", "gloo=gloo", jsonPath)
+	if err != nil {
+		return ""
+	}
+
+	fmt.Printf("Removing gloo installation ID %s...\n", installationId)
+
+	// the jsonpath formatting will leave single-quotes at the beginning and end of the installation ID. Strip them out before returning the value
+	return strings.Replace(string(installationId), "'", "", -1)
+}
+
+func deleteRbac(cli install.KubeCli, installationId string) {
 	fmt.Printf("Removing Gloo RBAC configuration...\n")
 	failedRbacs := ""
 	for _, rbacKind := range GlooRbacKinds {
-		if err := cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo"); err != nil {
+		var err error
+		if installationId == "" {
+			err = cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo")
+		} else {
+			labelValue := fmt.Sprintf("installationId=%s", installationId)
+			err = cli.Kubectl(nil, "delete", rbacKind, "-l", labelValue)
+		}
+
+		if err != nil {
 			failedRbacs += rbacKind + " "
 		}
 	}
@@ -50,14 +86,22 @@ func deleteRbac(cli install.KubeCli) {
 	}
 }
 
-func deleteGlooSystem(cli install.KubeCli, namespace string) {
+func deleteGlooSystem(cli install.KubeCli, namespace, installationId string) {
 	fmt.Printf("Removing Gloo system components from namespace %s...\n", namespace)
 	failedComponents := ""
 	for _, kind := range GlooSystemKinds {
-		for _, appName := range []string{"gloo", "glooe-grafana", "glooe-prometheus"} {
-			if err := cli.Kubectl(nil, "delete", kind, "-l", fmt.Sprintf("app=%s", appName), "-n", namespace); err != nil {
-				failedComponents += kind + " "
+		var err error
+		if installationId == "" {
+			for _, appName := range []string{"gloo", "glooe-grafana", "glooe-prometheus"} {
+				err = cli.Kubectl(nil, "delete", kind, "-l", fmt.Sprintf("app=%s", appName), "-n", namespace)
 			}
+		} else {
+			labelValue := fmt.Sprintf("installationId=%s", installationId)
+			err = cli.Kubectl(nil, "delete", kind, "-l", labelValue, "-n", namespace)
+		}
+
+		if err != nil {
+			failedComponents += kind + " "
 		}
 	}
 	if len(failedComponents) > 0 {
