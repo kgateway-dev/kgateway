@@ -4,7 +4,7 @@
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: kube-resource-watcher-binding{{ include "gloo.rolesuffix" . }}
+  name: kube-resource-watcher-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -23,13 +23,13 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: kube-resource-watcher{{ include "gloo.rolesuffix" . }}
+  name: kube-resource-watcher{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-upstream-mutator-binding{{ include "gloo.rolesuffix" . }}
+  name: gloo-upstream-mutator-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -45,13 +45,13 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gloo-upstream-mutator{{ include "gloo.rolesuffix" . }}
+  name: gloo-upstream-mutator{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-reader-binding{{ include "gloo.rolesuffix" . }}
+  name: gloo-resource-reader-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -67,13 +67,13 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gloo-resource-reader{{ include "gloo.rolesuffix" . }}
+  name: gloo-resource-reader{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: settings-user-binding{{ include "gloo.rolesuffix" . }}
+  name: settings-user-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -95,13 +95,13 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: settings-user{{ include "gloo.rolesuffix" . }}
+  name: settings-user{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-mutator-binding{{ include "gloo.rolesuffix" . }}
+  name: gloo-resource-mutator-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -117,13 +117,13 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gloo-resource-mutator{{ include "gloo.rolesuffix" . }}
+  name: gloo-resource-mutator{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gateway-resource-reader-binding{{ include "gloo.rolesuffix" . }}
+  name: gateway-resource-reader-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
@@ -139,7 +139,7 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gateway-resource-reader{{ include "gloo.rolesuffix" . }}
+  name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 
 
@@ -149,7 +149,7 @@ roleRef:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolesuffix" . }}
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
   labels:
     app: gloo
     gloo: rbac
@@ -162,7 +162,7 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolesuffix" . }}
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 
 {{- end -}}

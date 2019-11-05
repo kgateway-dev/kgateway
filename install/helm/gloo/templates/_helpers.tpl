@@ -12,9 +12,9 @@ ClusterRole
 {{- end -}}
 {{- end -}}
 
-{{- define "gloo.rolesuffix" -}}
-{{- if .Values.global.glooRbac.roleSuffix -}}
--{{ .Values.global.glooRbac.roleSuffix }}
+{{- define "gloo.rbacNameSuffix" -}}
+{{- if .Values.global.glooRbac.nameSuffix -}}
+-{{ .Values.global.glooRbac.nameSuffix }}
 {{- else if not .Values.global.glooRbac.namespaced -}}
 -{{ .Release.Namespace }}
 {{- end -}}

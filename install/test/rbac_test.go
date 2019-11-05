@@ -34,12 +34,6 @@ var _ = Describe("RBAC Test", func() {
 	})
 
 	Context("all cluster-scoped RBAC resources", func() {
-		allShouldHaveSuffix := func(manifest TestManifest, suffix string) {
-			manifest.ExpectAll(func(resource *unstructured.Unstructured) {
-				Expect(resource.GetName()).To(HaveSuffix("-" + suffix))
-			})
-		}
-
 		checkSuffix := func(suffix string) {
 			rbacResources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 				return resource.GetKind() == "ClusterRole" || resource.GetKind() == "ClusterRoleBinding"
@@ -47,12 +41,14 @@ var _ = Describe("RBAC Test", func() {
 
 			Expect(rbacResources.NumResources()).NotTo(BeZero())
 
-			allShouldHaveSuffix(rbacResources, suffix)
+			rbacResources.ExpectAll(func(resource *unstructured.Unstructured) {
+				Expect(resource.GetName()).To(HaveSuffix("-" + suffix))
+			})
 		}
 
 		It("is all named appropriately when a custom suffix is specified", func() {
 			suffix := "test-suffix"
-			prepareMakefile("--namespace " + namespace + " --set global.glooRbac.roleSuffix=" + suffix)
+			prepareMakefile("--namespace " + namespace + " --set global.glooRbac.nameSuffix=" + suffix)
 			checkSuffix(suffix)
 		})
 

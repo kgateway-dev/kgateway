@@ -1,9 +1,12 @@
 changelog:
 - type: HELM
   description: >
-    Allow RBAC cluster-scoped role names to receive custom suffixes. This enables, for example,
-    blue/green deployments of Gloo to different namespaces within the same cluster. If you are
-    performing an upgrade of Gloo from a version prior to this change, then you may have
-    duplicate roles/role-bindings hanging around in your cluster. The ones created prior to this
-    version can be safely cleaned up.
+    Allow RBAC resource names to receive custom suffixes through the introduction of the new
+    Helm setting "global.glooRbac.nameSuffix". This enables, for example, blue/green
+    deployments of Gloo to different namespaces within the same cluster when using
+    cluster-scoped RBAC resources. This change is backwards compatible. However, if you are
+    performing an upgrade of Gloo from a version prior to this change and plan to use the new
+    Helm value, then you may end up with duplicate RBAC resources in your cluster (e.g.
+    Roles/RoleBindings with and without the suffix). If this is the case, the old resources
+    (without the suffix) can be safely cleaned up.
   issueLink: https://github.com/solo-io/gloo/issues/1459
