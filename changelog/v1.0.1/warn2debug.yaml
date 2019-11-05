@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Changing a log from warn to debug.
+    issueLink: https://github.com/solo-io/gloo/issues/1604
