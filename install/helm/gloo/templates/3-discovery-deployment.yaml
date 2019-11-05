@@ -9,6 +9,7 @@ metadata:
   labels:
     app: gloo
     gloo: discovery
+    installationId: {{ include "gloo.installationId" . }}
   name: discovery
   namespace: {{ .Release.Namespace }}
 spec:
@@ -20,6 +21,7 @@ spec:
     metadata:
       labels:
         gloo: discovery
+        installationId: {{ include "gloo.installationId" . }}
       {{- if .Values.discovery.deployment.stats }}
       annotations:
         prometheus.io/path: /metrics

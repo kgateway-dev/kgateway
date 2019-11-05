@@ -5,6 +5,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
+    installationId: {{ include "gloo.installationId" . }}
   name: gateway
   namespace: {{ .Release.Namespace }}
 spec:

@@ -7,6 +7,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     gloo: settings
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: gloo.solo.io
   names:
@@ -28,6 +29,8 @@ metadata:
   name: gateways.gateway.solo.io.v2
   annotations:
     "helm.sh/hook": crd-install
+  labels:
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: gateway.solo.io.v2
   names:
@@ -50,6 +53,8 @@ metadata:
   name: virtualservices.gateway.solo.io
   annotations:
     "helm.sh/hook": crd-install
+  labels:
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: gateway.solo.io
   names:
@@ -72,6 +77,8 @@ metadata:
   name: routetables.gateway.solo.io
   annotations:
     "helm.sh/hook": crd-install
+  labels:
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: gateway.solo.io
   names:
@@ -94,6 +101,8 @@ metadata:
   name: proxies.gloo.solo.io
   annotations:
     "helm.sh/hook": crd-install
+  labels:
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: gloo.solo.io
   names:
@@ -116,6 +125,8 @@ metadata:
   name: upstreams.gloo.solo.io
   annotations:
     "helm.sh/hook": crd-install
+  labels:
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: gloo.solo.io
   names:
@@ -138,6 +149,8 @@ metadata:
   name: upstreamgroups.gloo.solo.io
   annotations:
     "helm.sh/hook": crd-install
+  labels:
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: gloo.solo.io
   names:
@@ -160,6 +173,8 @@ metadata:
   name: authconfigs.enterprise.gloo.solo.io
   annotations:
     "helm.sh/hook": crd-install
+  labels:
+    installationId: {{ include "gloo.installationId" . }}
 spec:
   group: enterprise.gloo.solo.io
   names:

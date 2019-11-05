@@ -8,6 +8,7 @@ metadata:
   labels:
     app: gloo
     gloo: gloo
+    installationId: {{ include "gloo.installationId" . }}
   name: gloo
   namespace: {{ .Release.Namespace }}
 spec:
@@ -19,6 +20,7 @@ spec:
     metadata:
       labels:
         gloo: gloo
+        installationId: {{ include "gloo.installationId" . }}
       {{- if .Values.gloo.deployment.stats }}
       annotations:
         prometheus.io/path: /metrics
@@ -27,6 +29,13 @@ spec:
       {{- end}}
     spec:
       serviceAccountName: gloo
+      volumes:
+      - name: labels-volume
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
       containers:
       - image: {{template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
@@ -60,6 +69,10 @@ spec:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: grpc-validation
           protocol: TCP
+        volumeMounts:
+        - name: labels-volume
+          mountPath: /etc/gloo
+          readOnly: true
         env:
           - name: POD_NAMESPACE
             valueFrom:

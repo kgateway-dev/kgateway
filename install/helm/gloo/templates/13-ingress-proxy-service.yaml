@@ -5,6 +5,7 @@ metadata:
   labels:
     app: gloo
     gloo: ingress-proxy
+    installationId: {{ include "gloo.installationId" . }}
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
 spec:

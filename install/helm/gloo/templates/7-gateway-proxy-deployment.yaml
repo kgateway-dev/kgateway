@@ -21,6 +21,7 @@ metadata:
     app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
+    installationId: {{ include "gloo.installationId" $ }}
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 spec:
@@ -36,6 +37,7 @@ spec:
       labels:
         gloo: gateway-proxy
         gateway-proxy-id: {{ $name | kebabcase }}
+        installationId: {{ include "gloo.installationId" $ }}
         {{- if not $isUpgrade }}
         gateway-proxy: live
         {{- end }}

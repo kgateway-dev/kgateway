@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/solo-io/go-utils/installutils/kuberesource"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 
@@ -101,6 +103,76 @@ var _ = Describe("Helm Test", func() {
 				"prometheus.io/port":   "9091",
 				"prometheus.io/scrape": "true",
 			}
+		})
+
+		FContext("installation", func() {
+			installIdLabel := "installationId"
+
+			It("attaches a unique installation ID label to all top-level resources and pods from deployments", func() {
+				prepareMakefile("--namespace " + namespace)
+
+				Expect(testManifest.NumResources()).NotTo(BeZero())
+				var uniqueInstallationId string
+				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
+					installationId, ok := resource.GetLabels()[installIdLabel]
+					Expect(ok).To(BeTrue(), fmt.Sprintf("The installation ID key should be present, but is not present on %s %s in namespace %s",
+						resource.GetKind(),
+						resource.GetName(),
+						resource.GetNamespace()))
+
+					if uniqueInstallationId == "" {
+						uniqueInstallationId = installationId
+					}
+
+					Expect(installationId).To(Equal(uniqueInstallationId),
+						fmt.Sprintf("Should not have generated several installation IDs, but found %s on %s %s in namespace %s",
+							installationId,
+							resource.GetKind(),
+							resource.GetNamespace(),
+							resource.GetNamespace()))
+				})
+
+				haveNonzeroDeployments := false
+				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return resource.GetKind() == "Deployment"
+				}).ExpectAll(func(unstructuredDeployment *unstructured.Unstructured) {
+					haveNonzeroDeployments = true
+
+					converted, err := kuberesource.ConvertUnstructured(unstructuredDeployment)
+					Expect(err).NotTo(HaveOccurred(), "Should be able to convert from unstructured")
+					deployment, ok := converted.(*appsv1.Deployment)
+					Expect(ok).To(BeTrue(), "Should be castable to a deployment")
+
+					Expect(len(deployment.Spec.Template.Labels)).NotTo(BeZero())
+
+					podInstallId, ok := deployment.Spec.Template.Labels[installIdLabel]
+					Expect(ok).To(BeTrue(), "Should have the install id label set")
+					Expect(podInstallId).To(Equal(uniqueInstallationId), "Pods from deployments should have the same install IDs as everything else")
+				})
+
+				Expect(haveNonzeroDeployments).To(BeTrue())
+			})
+
+			It("can assign a custom installation ID", func() {
+				installId := "custom-install-id"
+				prepareMakefile("--namespace " + namespace + " --set installConfig.installationId=" + installId)
+
+				Expect(testManifest.NumResources()).NotTo(BeZero())
+				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
+					installationId, ok := resource.GetLabels()[installIdLabel]
+					Expect(ok).To(BeTrue(), fmt.Sprintf("The installation ID key should be present, but is not present on %s %s in namespace %s",
+						resource.GetKind(),
+						resource.GetName(),
+						resource.GetNamespace()))
+
+					Expect(installationId).To(Equal(installId),
+						fmt.Sprintf("Should not have generated several installation IDs, but found %s on %s %s in namespace %s",
+							installationId,
+							resource.GetKind(),
+							resource.GetNamespace(),
+							resource.GetNamespace()))
+				})
+			})
 		})
 
 		Context("gateway", func() {
