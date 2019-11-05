@@ -28,7 +28,7 @@ Expand the name of a container image
      make sure it's compatible with label values */}}
 {{- define "gloo.installationId" -}}
 {{- if not .Values.installConfig.installationId -}}
-{{- $_ := set .Values.installConfig "installationId" (randAlpha 10) -}}
+{{- $_ := set .Values.installConfig "installationId" (randAlphaNum 20) -}}
 {{- end -}}
 {{ .Values.installConfig.installationId }}
 {{- end -}}

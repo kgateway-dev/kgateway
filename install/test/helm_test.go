@@ -117,10 +117,10 @@ var _ = Describe("Helm Test", func() {
 		Context("installation", func() {
 			installIdLabel := "installationId"
 
-			It("attaches a unique installation ID label to all top-level resources and pods from deployments", func() {
-				prepareMakefile("--namespace " + namespace)
+			It("attaches a unique installation ID label to all top-level kubernetes resources if install ID is omitted", func() {
+				testManifest = renderManifest("--namespace " + namespace)
 
-				Expect(testManifest.NumResources()).NotTo(BeZero())
+				Expect(testManifest.NumResources()).NotTo(BeZero(), "Test manifest should have a nonzero number of resources")
 				var uniqueInstallationId string
 				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
 					installationId, ok := resource.GetLabels()[installIdLabel]
@@ -141,6 +141,8 @@ var _ = Describe("Helm Test", func() {
 							resource.GetNamespace()))
 				})
 
+				Expect(uniqueInstallationId).NotTo(Equal(helmTestInstallId), "Make sure we didn't accidentally set our install ID to the helm test ID")
+
 				haveNonzeroDeployments := false
 				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 					return resource.GetKind() == "Deployment"
@@ -152,7 +154,7 @@ var _ = Describe("Helm Test", func() {
 					deployment, ok := converted.(*appsv1.Deployment)
 					Expect(ok).To(BeTrue(), "Should be castable to a deployment")
 
-					Expect(len(deployment.Spec.Template.Labels)).NotTo(BeZero())
+					Expect(len(deployment.Spec.Template.Labels)).NotTo(BeZero(), "The deployment's pod spec had no labels")
 
 					podInstallId, ok := deployment.Spec.Template.Labels[installIdLabel]
 					Expect(ok).To(BeTrue(), "Should have the install id label set")
