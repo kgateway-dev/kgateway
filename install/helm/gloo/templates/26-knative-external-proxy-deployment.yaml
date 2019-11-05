@@ -10,6 +10,7 @@ metadata:
   labels:
     app: gloo
     gloo: knative-external-proxy
+    installationId: {{ include "gloo.installationId" . }}
   name: knative-external-proxy
   namespace: {{ .Release.Namespace }}
 spec:
@@ -17,10 +18,12 @@ spec:
   selector:
     matchLabels:
       gloo: knative-external-proxy
+      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
         gloo: knative-external-proxy
+        installationId: {{ include "gloo.installationId" . }}
     spec:
       containers:
       - args: ["--disable-hot-restart"]

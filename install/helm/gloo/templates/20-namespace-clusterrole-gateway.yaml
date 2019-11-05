@@ -11,6 +11,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -29,6 +30,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -48,6 +50,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -70,6 +73,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -89,6 +93,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -107,6 +112,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "10"
@@ -135,6 +141,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: {{ include "gloo.installationId" . }}
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "5"

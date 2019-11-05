@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"github.com/solo-io/reporting-client/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -75,18 +76,27 @@ var _ = Describe("Helm Test", func() {
 			{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
 			{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
 		}
+		helmTestInstallId = "helm-unit-test-install-id"
 	)
 
 	Describe("gateway proxy extra annotations and crds", func() {
 		var (
-			labels           map[string]string
+			globalLabels = map[string]string{
+				"installationId": helmTestInstallId,
+			}
+			setGlobalLabels = func(testLabels map[string]string) {
+				for k, v := range globalLabels {
+					testLabels[k] = v
+				}
+			}
 			selector         map[string]string
 			testManifest     TestManifest
 			statsAnnotations map[string]string
 		)
 
+		// adds the install ID into the provided helm flags- no need to provide it yourself
 		prepareMakefile := func(helmFlags string) {
-			testManifest = renderManifest(helmFlags)
+			testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + helmTestInstallId)
 		}
 
 		// helper for passing a values file
@@ -105,17 +115,92 @@ var _ = Describe("Helm Test", func() {
 			}
 		})
 
+		Context("installation", func() {
+			installIdLabel := "installationId"
+
+			It("attaches a unique installation ID label to all top-level kubernetes resources if install ID is omitted", func() {
+				testManifest = renderManifest("--namespace " + namespace)
+
+				Expect(testManifest.NumResources()).NotTo(BeZero(), "Test manifest should have a nonzero number of resources")
+				var uniqueInstallationId string
+				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
+					installationId, ok := resource.GetLabels()[installIdLabel]
+					Expect(ok).To(BeTrue(), fmt.Sprintf("The installation ID key should be present, but is not present on %s %s in namespace %s",
+						resource.GetKind(),
+						resource.GetName(),
+						resource.GetNamespace()))
+
+					if uniqueInstallationId == "" {
+						uniqueInstallationId = installationId
+					}
+
+					Expect(installationId).To(Equal(uniqueInstallationId),
+						fmt.Sprintf("Should not have generated several installation IDs, but found %s on %s %s in namespace %s",
+							installationId,
+							resource.GetKind(),
+							resource.GetNamespace(),
+							resource.GetNamespace()))
+				})
+
+				Expect(uniqueInstallationId).NotTo(Equal(helmTestInstallId), "Make sure we didn't accidentally set our install ID to the helm test ID")
+
+				haveNonzeroDeployments := false
+				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return resource.GetKind() == "Deployment"
+				}).ExpectAll(func(unstructuredDeployment *unstructured.Unstructured) {
+					haveNonzeroDeployments = true
+
+					converted, err := kuberesource.ConvertUnstructured(unstructuredDeployment)
+					Expect(err).NotTo(HaveOccurred(), "Should be able to convert from unstructured")
+					deployment, ok := converted.(*appsv1.Deployment)
+					Expect(ok).To(BeTrue(), "Should be castable to a deployment")
+
+					Expect(len(deployment.Spec.Template.Labels)).NotTo(BeZero(), "The deployment's pod spec had no labels")
+
+					podInstallId, ok := deployment.Spec.Template.Labels[installIdLabel]
+					Expect(ok).To(BeTrue(), "Should have the install id label set")
+					Expect(podInstallId).To(Equal(uniqueInstallationId), "Pods from deployments should have the same install IDs as everything else")
+				})
+
+				Expect(haveNonzeroDeployments).To(BeTrue())
+			})
+
+			It("can assign a custom installation ID", func() {
+				installId := "custom-install-id"
+				testManifest = renderManifest("--namespace " + namespace + " --set installConfig.installationId=" + installId)
+
+				Expect(testManifest.NumResources()).NotTo(BeZero())
+				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
+					installationId, ok := resource.GetLabels()[installIdLabel]
+					Expect(ok).To(BeTrue(), fmt.Sprintf("The installation ID key should be present, but is not present on %s %s in namespace %s",
+						resource.GetKind(),
+						resource.GetName(),
+						resource.GetNamespace()))
+
+					Expect(installationId).To(Equal(installId),
+						fmt.Sprintf("Should not have generated several installation IDs, but found %s on %s %s in namespace %s",
+							installationId,
+							resource.GetKind(),
+							resource.GetNamespace(),
+							resource.GetNamespace()))
+				})
+			})
+		})
+
 		Context("gateway", func() {
+			var labels map[string]string
 			BeforeEach(func() {
 				labels = map[string]string{
 					"app":              "gloo",
 					"gloo":             "gateway-proxy",
 					"gateway-proxy-id": "gateway-proxy-v2",
 				}
+				setGlobalLabels(labels)
 				selector = map[string]string{
 					"gateway-proxy":    "live",
 					"gateway-proxy-id": "gateway-proxy-v2",
 				}
+				setGlobalLabels(selector)
 			})
 
 			It("has a namespace", func() {
@@ -157,6 +242,7 @@ var _ = Describe("Helm Test", func() {
 						"app":  "gloo",
 						"gloo": "gateway-proxy-v2-access-logger",
 					}
+					setGlobalLabels(labels)
 				})
 
 				It("can create an access logging deployment/service", func() {
@@ -207,6 +293,7 @@ var _ = Describe("Helm Test", func() {
 						"app":              "gloo",
 						"gateway-proxy-id": "gateway-proxy-v2",
 					}
+					setGlobalLabels(labels)
 					proxySpec["envoy.yaml"] = confWithAccessLogger
 					cmRb := ResourceBuilder{
 						Namespace: namespace,
@@ -286,16 +373,18 @@ var _ = Describe("Helm Test", func() {
 					job *batchv1.Job
 				)
 				BeforeEach(func() {
+					jobLabels := map[string]string{
+						"app":  "gloo",
+						"gloo": "gateway",
+					}
+					setGlobalLabels(jobLabels)
 					job = &batchv1.Job{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Job",
 							APIVersion: "batch/v1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"app":  "gloo",
-								"gloo": "gateway",
-							},
+							Labels:    jobLabels,
 							Name:      "gateway-conversion",
 							Namespace: namespace,
 						},
@@ -340,21 +429,25 @@ var _ = Describe("Helm Test", func() {
 				var gatewayProxyService *v1.Service
 
 				BeforeEach(func() {
+					serviceLabels := map[string]string{
+						"app":              "gloo",
+						"gloo":             "gateway-proxy",
+						"gateway-proxy-id": "gateway-proxy-v2",
+					}
+					setGlobalLabels(serviceLabels)
 					rb := ResourceBuilder{
 						Namespace: namespace,
 						Name:      "gateway-proxy-v2",
 						Args:      nil,
-						Labels: map[string]string{
-							"app":              "gloo",
-							"gloo":             "gateway-proxy",
-							"gateway-proxy-id": "gateway-proxy-v2",
-						},
+						Labels:    serviceLabels,
 					}
 					gatewayProxyService = rb.GetService()
-					gatewayProxyService.Spec.Selector = map[string]string{
+					selectorLabels := map[string]string{
 						"gateway-proxy-id": "gateway-proxy-v2",
 						"gateway-proxy":    "live",
 					}
+					setGlobalLabels(selectorLabels)
+					gatewayProxyService.Spec.Selector = selectorLabels
 					gatewayProxyService.Spec.Ports = []v1.ServicePort{
 						{
 							Name:       "http",
@@ -416,11 +509,13 @@ var _ = Describe("Helm Test", func() {
 						"gloo":             "gateway-proxy",
 						"gateway-proxy-id": "gateway-proxy-v2",
 					}
+					setGlobalLabels(selector)
 					podLabels := map[string]string{
 						"gloo":             "gateway-proxy",
 						"gateway-proxy":    "live",
 						"gateway-proxy-id": "gateway-proxy-v2",
 					}
+					setGlobalLabels(podLabels)
 					podname := v1.EnvVar{
 						Name: "POD_NAME",
 						ValueFrom: &v1.EnvVarSource{
@@ -668,6 +763,7 @@ metadata:
     discovery.solo.io/function_discovery: disabled
     app: gloo
     gloo: gateway
+    installationId: ` + helmTestInstallId + `
   name: gateway
   namespace: ` + namespace + `
 spec:
@@ -678,6 +774,7 @@ spec:
     targetPort: 8443
   selector:
     gloo: gateway
+    installationId: ` + helmTestInstallId + `
 `)
 
 					prepareMakefile("--namespace " + namespace)
@@ -695,6 +792,7 @@ metadata:
     helm.sh/hook-weight: "5"
   labels:
     app: gloo
+    installationId: ` + helmTestInstallId + `
   name: default
   namespace: ` + namespace + `
 spec:
@@ -730,6 +828,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
+    installationId: ` + helmTestInstallId + `
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # should come before cert-gen job
@@ -764,6 +863,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
+    installationId: ` + helmTestInstallId + `
   name: gateway-v2
   namespace: ` + namespace + `
 spec:
@@ -771,10 +871,12 @@ spec:
   selector:
     matchLabels:
       gloo: gateway
+      installationId: ` + helmTestInstallId + `
   template:
     metadata:
       labels:
         gloo: gateway
+        installationId: ` + helmTestInstallId + `
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
@@ -834,6 +936,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway-certgen
+    installationId: ` + helmTestInstallId + `
   name: gateway-certgen
   namespace: ` + namespace + `
   annotations:
@@ -874,6 +977,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        installationId: ` + helmTestInstallId + `
     annotations:
       "helm.sh/hook": "pre-install"
       "helm.sh/hook-weight": "5"
@@ -896,6 +1000,7 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+    installationId: ` + helmTestInstallId + `
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "5"
@@ -919,6 +1024,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
+    installationId: ` + helmTestInstallId + `
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "5"
@@ -936,7 +1042,11 @@ metadata:
 				deploy.Spec.Selector = &metav1.LabelSelector{
 					MatchLabels: selector,
 				}
-				deploy.Spec.Template.ObjectMeta.Labels = selector
+				deploy.Spec.Template.ObjectMeta.Labels = map[string]string{}
+				deploy.Spec.Template.ObjectMeta.Labels["installationId"] = helmTestInstallId
+				for k, v := range selector {
+					deploy.Spec.Template.ObjectMeta.Labels[k] = v
+				}
 
 				truez := true
 				falsez := false
@@ -955,15 +1065,18 @@ metadata:
 			Context("gloo deployment", func() {
 				var (
 					glooDeployment *appsv1.Deployment
+					labels         map[string]string
 				)
 				BeforeEach(func() {
 					labels = map[string]string{
 						"gloo": "gloo",
 						"app":  "gloo",
 					}
+					setGlobalLabels(labels)
 					selector = map[string]string{
 						"gloo": "gloo",
 					}
+					setGlobalLabels(selector)
 					container := GetQuayContainerSpec("gloo", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
@@ -975,6 +1088,24 @@ metadata:
 					}
 					deploy := rb.GetDeploymentAppsv1()
 					updateDeployment(deploy)
+					deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
+						Name: "labels-volume",
+						VolumeSource: v1.VolumeSource{
+							DownwardAPI: &v1.DownwardAPIVolumeSource{
+								Items: []v1.DownwardAPIVolumeFile{{
+									Path: "labels",
+									FieldRef: &v1.ObjectFieldSelector{
+										FieldPath: "metadata.labels",
+									},
+								}},
+							},
+						},
+					}}
+					deploy.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{{
+						Name:      "labels-volume",
+						MountPath: "/etc/gloo",
+						ReadOnly:  true,
+					}}
 					deploy.Spec.Template.Spec.Containers[0].Ports = glooPorts
 					deploy.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
 						Requests: v1.ResourceList{
@@ -1057,15 +1188,18 @@ metadata:
 			Context("gateway deployment", func() {
 				var (
 					gatewayDeployment *appsv1.Deployment
+					labels            map[string]string
 				)
 				BeforeEach(func() {
 					labels = map[string]string{
 						"gloo": "gateway",
 						"app":  "gloo",
 					}
+					setGlobalLabels(labels)
 					selector = map[string]string{
 						"gloo": "gateway",
 					}
+					setGlobalLabels(selector)
 					container := GetQuayContainerSpec("gateway", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
@@ -1163,15 +1297,18 @@ metadata:
 			Context("discovery deployment", func() {
 				var (
 					discoveryDeployment *appsv1.Deployment
+					labels              map[string]string
 				)
 				BeforeEach(func() {
 					labels = map[string]string{
 						"gloo": "discovery",
 						"app":  "gloo",
 					}
+					setGlobalLabels(labels)
 					selector = map[string]string{
 						"gloo": "discovery",
 					}
+					setGlobalLabels(selector)
 					container := GetQuayContainerSpec("discovery", version, GetPodNamespaceEnvVar(), GetPodNamespaceStats())
 
 					rb := ResourceBuilder{
@@ -1253,6 +1390,10 @@ metadata:
 				"gateway-proxy-id": "gateway-proxy-v2",
 			}
 
+			BeforeEach(func() {
+				setGlobalLabels(labels)
+			})
+
 			Describe("gateway proxy - tracing config", func() {
 				It("has a proxy without tracing", func() {
 					helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
@@ -1327,6 +1468,18 @@ metadata:
 			}
 
 			It("merges the config correctly, allow override of ingress without altering gloo", func() {
+				deploymentLabels := map[string]string{
+					"app": "gloo", "gloo": "gloo",
+				}
+				setGlobalLabels(deploymentLabels)
+				selectors := map[string]string{
+					"gloo": "gloo",
+				}
+				setGlobalLabels(selectors)
+				podLabels := map[string]string{
+					"gloo": "gloo",
+				}
+				setGlobalLabels(podLabels)
 				var glooDeploymentPostMerge = &appsv1.Deployment{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Deployment",
@@ -1335,24 +1488,38 @@ metadata:
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "gloo",
 						Namespace: "gloo-system",
-						Labels: map[string]string{
-							"app": "gloo", "gloo": "gloo"},
+						Labels:    deploymentLabels,
 					},
 					Spec: appsv1.DeploymentSpec{
 						Replicas: pointer.Int32Ptr(1),
-						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
-							"gloo": "gloo"},
-						},
+						Selector: &metav1.LabelSelector{MatchLabels: selectors},
 						Template: v1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{
-									"gloo": "gloo"},
+								Labels:      podLabels,
 								Annotations: statsAnnotations,
 							},
 							Spec: v1.PodSpec{
+								Volumes: []v1.Volume{{
+									Name: "labels-volume",
+									VolumeSource: v1.VolumeSource{
+										DownwardAPI: &v1.DownwardAPIVolumeSource{
+											Items: []v1.DownwardAPIVolumeFile{{
+												Path: "labels",
+												FieldRef: &v1.ObjectFieldSelector{
+													FieldPath: "metadata.labels",
+												},
+											}},
+										},
+									},
+								}},
 								ServiceAccountName: "gloo",
 								Containers: []v1.Container{
 									{
+										VolumeMounts: []v1.VolumeMount{{
+											Name:      "labels-volume",
+											MountPath: "/etc/gloo",
+											ReadOnly:  true,
+										}},
 										Name: "gloo",
 										// Note: this was NOT overwritten
 										Image: "quay.io/solo-io/gloo:dev",
@@ -1400,6 +1567,18 @@ metadata:
 						},
 					},
 				}
+				ingressDeploymentLabels := map[string]string{
+					"app": "gloo", "gloo": "ingress",
+				}
+				setGlobalLabels(ingressDeploymentLabels)
+				ingressSelector := map[string]string{
+					"gloo": "ingress",
+				}
+				setGlobalLabels(ingressSelector)
+				ingressPodLabels := map[string]string{
+					"gloo": "ingress",
+				}
+				setGlobalLabels(ingressPodLabels)
 				var ingressDeploymentPostMerge = &appsv1.Deployment{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Deployment",
@@ -1408,18 +1587,14 @@ metadata:
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "ingress",
 						Namespace: "gloo-system",
-						Labels: map[string]string{
-							"app": "gloo", "gloo": "ingress"},
+						Labels:    ingressDeploymentLabels,
 					},
 					Spec: appsv1.DeploymentSpec{
 						Replicas: pointer.Int32Ptr(1),
-						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
-							"gloo": "ingress"},
-						},
+						Selector: &metav1.LabelSelector{MatchLabels: ingressSelector},
 						Template: v1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{
-									"gloo": "ingress"},
+								Labels: ingressPodLabels,
 							},
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
