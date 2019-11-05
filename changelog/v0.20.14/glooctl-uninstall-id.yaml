@@ -1,0 +1,10 @@
+changelog:
+  - type: FIX
+    description: >
+      Use the installation ID set by Helm to ensure that glooctl uninstalls only resources created for
+      the instance of Gloo being uninstalled. It does this by attempting to read the "installationId"
+      label from the gloo pod. If the label is not found, the uninstall will fail. You can choose to
+      proceed by passing the new --force flag to "glooctl uninstall", which will attempt to perform an
+      uninstall that may inadvertently delete cluster-scoped resources belonging to some other
+      installation of Gloo.
+    issueLink: https://github.com/solo-io/gloo/issues/1593
