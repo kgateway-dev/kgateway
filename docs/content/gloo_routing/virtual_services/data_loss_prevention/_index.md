@@ -28,7 +28,7 @@ into this response:
 ```json
 {
    "fakevisa": "XXXXXXXXXXXX4828",
-   "ssn": "XXX-XX-XX89"
+   "ssn": "XXX-XX-X789"
 }
 ```
 
@@ -116,7 +116,7 @@ This time it will return a masked response:
 ```json
 {
    "fakevisa": "XXXXXXXXXXXX4828",
-   "ssn": "XXX-XX-XX89"
+   "ssn": "XXX-XX-X789"
 }
 ```
 
