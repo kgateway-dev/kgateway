@@ -200,7 +200,7 @@ var _ = Describe("Transformations", func() {
 								Destinations: []*gloov1.WeightedDestination{
 									{
 										Weight: 1,
-										WeighedDestinationPlugins: &gloov1.WeightedDestinationPlugins{
+										WeightedDestinationPlugins: &gloov1.WeightedDestinationPlugins{
 											Transformations: transform,
 										},
 										Destination: &gloov1.Destination{
