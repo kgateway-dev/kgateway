@@ -63,7 +63,7 @@ func editRoute(opts *editRouteOptions.RouteEditInput, input *authEditInput, args
 		if route.RoutePlugins.Extauth == nil {
 			route.RoutePlugins.Extauth = &extauthpb.ExtAuthExtension{}
 		}
-		route.RoutePlugins.Extauth.Spec = &extauthpb.ExtAuthExtension_Disable{Disable:input.Disable}
+		route.RoutePlugins.Extauth.Spec = &extauthpb.ExtAuthExtension_Disable{Disable: input.Disable}
 		return nil
 	})
 }

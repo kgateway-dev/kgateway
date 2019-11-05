@@ -252,7 +252,7 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 	if len(authConfig.Configs) > 0 {
 
 		authConfigClient := helpers.MustAuthConfigClient()
-		_, err := authConfigClient.Write(authConfig, clients.WriteOpts{OverwriteExisting:false})
+		_, err := authConfigClient.Write(authConfig, clients.WriteOpts{OverwriteExisting: false})
 		if err != nil {
 			return err
 		}

@@ -66,12 +66,12 @@ var _ = Describe("Extauth", func() {
 			Entry("edit route and disable it", "edit route externalauth --name vs --namespace gloo-system --index 1 --disable=true",
 				1,
 				&extauthpb.ExtAuthExtension{
-					Spec: &extauthpb.ExtAuthExtension_Disable{Disable:true},
+					Spec: &extauthpb.ExtAuthExtension_Disable{Disable: true},
 				}),
 			Entry("edit route and un-disable it", "edit route externalauth --name vs --namespace gloo-system --index 1 --disable=false",
 				1,
 				&extauthpb.ExtAuthExtension{
-					Spec: &extauthpb.ExtAuthExtension_Disable{Disable:false},
+					Spec: &extauthpb.ExtAuthExtension_Disable{Disable: false},
 				}),
 		)
 	})
@@ -95,7 +95,7 @@ var _ = Describe("Extauth", func() {
 				Expect(err).NotTo(HaveOccurred())
 				extension := extAuthExtension(1, vsvc.Metadata)
 				Expect(extension).To(Equal(&extauthpb.ExtAuthExtension{
-					Spec: &extauthpb.ExtAuthExtension_Disable{Disable:true},
+					Spec: &extauthpb.ExtAuthExtension_Disable{Disable: true},
 				}))
 			})
 		})
