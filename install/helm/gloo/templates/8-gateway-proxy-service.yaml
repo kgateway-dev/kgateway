@@ -33,6 +33,7 @@ spec:
   selector:
     gateway-proxy-id: {{ $name | kebabcase }}
     gateway-proxy: live
+    installationId: {{ include "gloo.installationId" $ }}
   type: {{ $spec.service.type }}
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}

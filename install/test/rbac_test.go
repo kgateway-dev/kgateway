@@ -9,12 +9,14 @@ import (
 
 var _ = Describe("RBAC Test", func() {
 	var (
-		testManifest    TestManifest
-		resourceBuilder ResourceBuilder
+		testManifest        TestManifest
+		resourceBuilder     ResourceBuilder
+		installationId      = "rbac-test-install-id"
+		installationIdLabel = "installationId"
 	)
 
 	prepareMakefile := func(helmFlags string) {
-		testManifest = renderManifest(helmFlags)
+		testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + installationId)
 	}
 
 	Context("implementation-agnostic permissions", func() {
@@ -36,8 +38,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "kube-resource-watcher",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -101,8 +104,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gloo-upstream-mutator",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -162,8 +166,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gloo-resource-reader",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -228,8 +233,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "settings-user",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -297,8 +303,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gloo-resource-mutator",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{
@@ -358,8 +365,9 @@ var _ = Describe("RBAC Test", func() {
 			resourceBuilder = ResourceBuilder{
 				Name: "gateway-resource-reader",
 				Labels: map[string]string{
-					"app":  "gloo",
-					"gloo": "rbac",
+					"app":               "gloo",
+					"gloo":              "rbac",
+					installationIdLabel: installationId,
 				},
 				Annotations: map[string]string{"helm.sh/hook": "pre-install", "helm.sh/hook-weight": "10"},
 				Rules: []rbacv1.PolicyRule{

@@ -17,4 +17,5 @@ spec:
     targetPort: 8443
   selector:
     gloo: gateway
+    installationId: {{ include "gloo.installationId" . }}
 {{- end}}

@@ -18,6 +18,7 @@ spec:
   selector:
     matchLabels:
       gloo: knative-external-proxy
+      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:

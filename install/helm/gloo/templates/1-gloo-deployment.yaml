@@ -16,6 +16,7 @@ spec:
   selector:
     matchLabels:
       gloo: gloo
+      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
