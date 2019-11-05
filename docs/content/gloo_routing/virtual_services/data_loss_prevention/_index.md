@@ -108,8 +108,8 @@ curl $(glooctl proxy url)/ssn/123-45-6789/fakevisa/4397945340344828
 This time it will return a masked response:
 ```json
 {
-   "fakevisa": XXXXXXXXXXXXXX828",
-   "ssn": XXXX-XX-XX89"
+   "fakevisa": "XXXXXXXXXXXX4828",
+   "ssn": "XXX-XX-XX89"
 }
 ```
 
@@ -157,7 +157,7 @@ You should obtain the following response:
 ```
 
 Names are often used as personally identifying information, or **PII**. Let's write our own regex to mask the
-names returned by the petstore service (in our case, `Cat` or `Dog`):
+names returned by the petstore service:
 
 {{< highlight yaml "hl_lines=16-26" >}}
 apiVersion: gateway.solo.io/v1
@@ -184,7 +184,7 @@ spec:
             percent:
               value: 60  # % of regex match to mask
             regex:
-            - '(Cat|Dog)'
+            - '(?!"name"[\s]*:[\s]*")[^"]+(?="[\s]*,|"[\s]})'
 {{< /highlight >}}
 
 Query for pets again:
