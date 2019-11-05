@@ -7,3 +7,9 @@ changelog:
       a valid kubernetes label (refer to
       https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
     issueLink: https://github.com/solo-io/gloo/issues/1577
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.10.25
+    description: Update go-utils to version 0.10.25
+    issueLink: https://github.com/solo-io/gloo/issues/1577
