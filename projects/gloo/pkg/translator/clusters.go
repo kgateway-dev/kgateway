@@ -17,7 +17,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-func (t *translator) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.Cluster {
+func (t *translatorInstance) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.Cluster {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
 	params.Ctx = ctx
@@ -36,7 +36,7 @@ func (t *translator) computeClusters(params plugins.Params, reports reporter.Res
 	return clusters
 }
 
-func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
+func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
 	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports)
 
@@ -57,7 +57,7 @@ func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream
 	return out
 }
 
-func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoyapi.Cluster {
+func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoyapi.Cluster {
 	hcConfig, err := createHealthCheckConfig(upstream)
 	if err != nil {
 		reports.AddError(upstream, err)

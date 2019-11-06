@@ -150,7 +150,10 @@ var _ = Describe("Translator", func() {
 	})
 
 	JustBeforeEach(func() {
-		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, registeredPlugins...)
+		getPlugins := func() []plugins.Plugin {
+			return registeredPlugins
+		}
+		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, getPlugins)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",

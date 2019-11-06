@@ -23,23 +23,41 @@ type Translator interface {
 	Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
 }
 
-type translator struct {
-	plugins             []plugins.Plugin
-	extensionsSettings  *v1.Extensions
-	settings            *v1.Settings
-	sslConfigTranslator utils.SslConfigTranslator
-}
-
-func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.Settings, plugins ...plugins.Plugin) Translator {
-	return &translator{
-		plugins:             plugins,
+func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.Settings, getPlugins func() []plugins.Plugin) Translator {
+	return &translatorFactory{
+		getPlugins:          getPlugins,
 		extensionsSettings:  settings.Extensions,
 		settings:            settings,
 		sslConfigTranslator: sslConfigTranslator,
 	}
 }
 
-func (t *translator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+type translatorFactory struct {
+	getPlugins          func() []plugins.Plugin
+	extensionsSettings  *v1.Extensions
+	settings            *v1.Settings
+	sslConfigTranslator utils.SslConfigTranslator
+}
+
+func (t *translatorFactory) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+	instance := &translatorInstance{
+		plugins:             t.getPlugins(),
+		extensionsSettings:  t.extensionsSettings,
+		settings:            t.settings,
+		sslConfigTranslator: t.sslConfigTranslator,
+	}
+	return instance.Translate(params, proxy)
+}
+
+// a translator instance performs one
+type translatorInstance struct {
+	plugins             []plugins.Plugin
+	extensionsSettings  *v1.Extensions
+	settings            *v1.Settings
+	sslConfigTranslator utils.SslConfigTranslator
+}
+
+func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
@@ -145,7 +163,7 @@ type listenerResources struct {
 	listener    *envoyapi.Listener
 }
 
-func (t *translator) computeListenerResources(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *listenerResources {
+func (t *translatorInstance) computeListenerResources(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *listenerResources {
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
 	defer span.End()

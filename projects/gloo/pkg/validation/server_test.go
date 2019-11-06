@@ -60,7 +60,11 @@ var _ = Describe("Validation Server", func() {
 	})
 
 	JustBeforeEach(func() {
-		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, registeredPlugins...)
+
+		getPlugins := func() []plugins.Plugin {
+			return registeredPlugins
+		}
+		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, getPlugins)
 	})
 
 	It("validates the requested proxy", func() {

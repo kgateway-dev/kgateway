@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-func (t *translator) verifyUpstreamGroups(params plugins.Params, reports reporter.ResourceReports) {
+func (t *translatorInstance) verifyUpstreamGroups(params plugins.Params, reports reporter.ResourceReports) {
 
 	upstreams := params.Snapshot.Upstreams
 	upstreamGroups := params.Snapshot.UpstreamGroups

@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *envoyapi.Listener {
+func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *envoyapi.Listener {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
 
 	validateListenerPorts(proxy, listenerReport)
@@ -81,7 +81,7 @@ func (t *translator) computeListener(params plugins.Params, proxy *v1.Proxy, lis
 	return out
 }
 
-func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.Listener, listenerReport *validationapi.ListenerReport) []envoylistener.Filter {
+func (t *translatorInstance) computeListenerFilters(params plugins.Params, listener *v1.Listener, listenerReport *validationapi.ListenerReport) []envoylistener.Filter {
 	var listenerFilters []plugins.StagedListenerFilter
 	// run the Listener Filter Plugins
 	for _, plug := range t.plugins {
@@ -124,7 +124,7 @@ func (t *translator) computeListenerFilters(params plugins.Params, listener *v1.
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func (t *translator) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, listenerReport *validationapi.ListenerReport) []envoylistener.FilterChain {
+func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, listenerReport *validationapi.ListenerReport) []envoylistener.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfigurations) == 0 {

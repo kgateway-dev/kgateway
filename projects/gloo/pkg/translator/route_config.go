@@ -32,7 +32,7 @@ var (
 	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not.")
 )
 
-func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, routeCfgName string, listenerReport *validationapi.ListenerReport) *envoyapi.RouteConfiguration {
+func (t *translatorInstance) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, routeCfgName string, listenerReport *validationapi.ListenerReport) *envoyapi.RouteConfiguration {
 	if listener.GetHttpListener() == nil {
 		return nil
 	}
@@ -60,7 +60,7 @@ func (t *translator) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, 
 	}
 }
 
-func (t *translator) computeVirtualHosts(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, httpListenerReport *validationapi.HttpListenerReport) []envoyroute.VirtualHost {
+func (t *translatorInstance) computeVirtualHosts(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, httpListenerReport *validationapi.HttpListenerReport) []envoyroute.VirtualHost {
 	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
 	if !ok {
 		return nil
@@ -81,7 +81,7 @@ func (t *translator) computeVirtualHosts(params plugins.Params, proxy *v1.Proxy,
 	return envoyVirtualHosts
 }
 
-func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtualHost *v1.VirtualHost, requireTls bool, vhostReport *validationapi.VirtualHostReport) envoyroute.VirtualHost {
+func (t *translatorInstance) computeVirtualHost(params plugins.VirtualHostParams, virtualHost *v1.VirtualHost, requireTls bool, vhostReport *validationapi.VirtualHostReport) envoyroute.VirtualHost {
 
 	// Make copy to avoid modifying the snapshot
 	virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
@@ -131,7 +131,7 @@ func (t *translator) computeVirtualHost(params plugins.VirtualHostParams, virtua
 	return out
 }
 
-func (t *translator) envoyRoutes(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route) []envoyroute.Route {
+func (t *translatorInstance) envoyRoutes(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route) []envoyroute.Route {
 
 	out := initRoutes(in, routeReport)
 
@@ -190,7 +190,7 @@ func GlooMatcherToEnvoyMatcher(matcher *matchers.Matcher) envoyroute.RouteMatch 
 	return match
 }
 
-func (t *translator) setAction(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route, out *envoyroute.Route) {
+func (t *translatorInstance) setAction(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route, out *envoyroute.Route) {
 	switch action := in.Action.(type) {
 	case *v1.Route_RouteAction:
 		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
@@ -290,7 +290,7 @@ func (t *translator) setAction(params plugins.RouteParams, routeReport *validati
 	}
 }
 
-func (t *translator) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoyroute.RouteAction, routeReport *validationapi.RouteReport) error {
+func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoyroute.RouteAction, routeReport *validationapi.RouteReport) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
@@ -320,7 +320,7 @@ func (t *translator) setRouteAction(params plugins.RouteParams, in *v1.RouteActi
 	return errors.Errorf("unknown upstream destination type")
 }
 
-func (t *translator) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoyroute.RouteAction, routeReport *validationapi.RouteReport) error {
+func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoyroute.RouteAction, routeReport *validationapi.RouteReport) error {
 	if len(multiDest.Destinations) == 0 {
 		return NoDestinationSpecifiedError
 	}

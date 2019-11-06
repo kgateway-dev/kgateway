@@ -386,10 +386,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
 
-	allPlugins := registry.Plugins(opts, extensions.PluginExtensions...)
+	getPlugins := func() []plugins.Plugin {
+		return registry.Plugins(opts, extensions.PluginExtensions...)
+	}
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range allPlugins {
+	for _, plug := range getPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			discoveryPlugins = append(discoveryPlugins, disc)
@@ -445,7 +447,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
 	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, allPlugins...)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
 
 	validator := validation.NewValidator(t)
 	if opts.ValidationServer.Server != nil {

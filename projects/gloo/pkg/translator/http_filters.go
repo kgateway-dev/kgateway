@@ -52,7 +52,7 @@ func NewHttpConnectionManager(listener *v1.HttpListener, httpFilters []*envoyhtt
 	}
 }
 
-func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, listener *v1.HttpListener, rdsName string, httpListenerReport *validationapi.HttpListenerReport) envoylistener.Filter {
+func (t *translatorInstance) computeHttpConnectionManagerFilter(params plugins.Params, listener *v1.HttpListener, rdsName string, httpListenerReport *validationapi.HttpListenerReport) envoylistener.Filter {
 	httpFilters := t.computeHttpFilters(params, listener, httpListenerReport)
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
 
@@ -65,7 +65,7 @@ func (t *translator) computeHttpConnectionManagerFilter(params plugins.Params, l
 	return hcmFilter
 }
 
-func (t *translator) computeHttpFilters(params plugins.Params, listener *v1.HttpListener, httpListenerReport *validationapi.HttpListenerReport) []*envoyhttp.HttpFilter {
+func (t *translatorInstance) computeHttpFilters(params plugins.Params, listener *v1.HttpListener, httpListenerReport *validationapi.HttpListenerReport) []*envoyhttp.HttpFilter {
 	var httpFilters []plugins.StagedHttpFilter
 	// run the Http Filter Plugins
 	for _, plug := range t.plugins {
