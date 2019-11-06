@@ -74,6 +74,11 @@ var (
 		Short:   "Debug Gloo logs (requires Gloo running on Kubernetes)",
 	}
 
+	DEBUG_YAML_COMMAND = cobra.Command{
+		Use:   "yaml",
+		Short: "Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)",
+	}
+
 	DELETE_COMMAND = cobra.Command{
 		Use:     "delete",
 		Aliases: []string{"d"},
