@@ -71,7 +71,7 @@ var _ = Describe("Extauth", func() {
 			Entry("edit route and un-disable it", "edit route externalauth --name vs --namespace gloo-system --index 1 --disable=false",
 				1,
 				&extauthpb.ExtAuthExtension{
-					Spec: &extauthpb.ExtAuthExtension_Disable{Disable: false},
+					Spec: nil,
 				}),
 		)
 	})
