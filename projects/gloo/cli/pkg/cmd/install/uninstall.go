@@ -14,6 +14,8 @@ import (
 
 const installationIdLabel = "installationId"
 
+var subchartAppNames = []string{"glooe-grafana", "glooe-prometheus"}
+
 func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 	if err := uninstallGloo(opts, cli); err != nil {
 		fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
@@ -28,7 +30,8 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 	if installationId == "" && !opts.Uninstall.Force {
 		return errors.New(`Could not find installation ID in 'gloo' pod labels. Use --force to uninstall anyway.
 Note that using --force may delete cluster-scoped resources belonging to some other installation of Gloo...
-This error may mean that the version of glooctl you are using is newer than the version of Gloo running in-cluster.
+This error may mean that you are trying to use glooctl >=0.20.14 to uninstall a version of Gloo <0.20.13 (or Enterprise Gloo <0.20.9).
+Make sure you are on open source Gloo >=0.20.14 or Enterprise Gloo >=0.20.9.
 `)
 	}
 
@@ -59,7 +62,7 @@ func findInstallationId(opts *options.Options, cli install.KubeCli) string {
 		return ""
 	}
 
-	fmt.Printf("Removing gloo installation ID %s...\n", installationId)
+	fmt.Printf("Removing gloo, installation ID %s...\n", installationId)
 
 	// the jsonpath formatting will leave single-quotes at the beginning and end of the installation ID. Strip them out before returning the value
 	return strings.Replace(string(installationId), "'", "", -1)
@@ -92,16 +95,33 @@ func deleteGlooSystem(cli install.KubeCli, namespace, installationId string) {
 	for _, kind := range GlooSystemKinds {
 		var err error
 		if installationId == "" {
-			for _, appName := range []string{"gloo", "glooe-grafana", "glooe-prometheus"} {
+			// if we don't have an installation ID, attempt to delete everything with app=gloo and app=$subChartName
+			for _, appName := range append(subchartAppNames, "gloo") {
 				err = cli.Kubectl(nil, "delete", kind, "-l", fmt.Sprintf("app=%s", appName), "-n", namespace)
+				if err != nil {
+					break
+				}
 			}
 		} else {
-			labelValue := fmt.Sprintf("installationId=%s", installationId)
-			err = cli.Kubectl(nil, "delete", kind, "-l", labelValue, "-n", namespace)
+			// otherwise, delete everything with both the label app=gloo and installationId=$installationId (as well as subchart resources)
+			glooComponentLabelValue := fmt.Sprintf("app=gloo,installationId=%s", installationId)
+			err = cli.Kubectl(nil, "delete", kind, "-l", glooComponentLabelValue, "-n", namespace)
+			if err != nil {
+				failedComponents += kind + " "
+				continue
+			}
+
+			for _, appName := range subchartAppNames {
+				err = cli.Kubectl(nil, "delete", kind, "-l", fmt.Sprintf("app=%s", appName), "-n", namespace)
+				if err != nil {
+					break
+				}
+			}
 		}
 
 		if err != nil {
 			failedComponents += kind + " "
+			continue
 		}
 	}
 	if len(failedComponents) > 0 {
