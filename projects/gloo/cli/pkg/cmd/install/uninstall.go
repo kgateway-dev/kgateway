@@ -57,7 +57,7 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 // attempt to read the installation id off of the gloo pod labels
 func findInstallationId(opts *options.Options, cli install.KubeCli) (string, error) {
 	jsonPath := fmt.Sprintf("-ojsonpath='{.items[0].metadata.labels.%s}'", installationIdLabel)
-	kubeOutput, err := cli.KubectlOut(nil, "-n", opts.Uninstall.Namespace, "get", "pod", "-l", "gloo=gloo", jsonPath)
+	kubeOutput, err := cli.KubectlOut(nil, "-n", opts.Uninstall.Namespace, "get", "deployment", "-l", "gloo=gloo", jsonPath)
 	if err != nil {
 		return "", FailedToFindLabel(err)
 	}
