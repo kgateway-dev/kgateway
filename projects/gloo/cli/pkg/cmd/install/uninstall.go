@@ -5,8 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/solo-io/go-utils/errors"
-
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -26,13 +24,11 @@ func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 
 func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 	// attempt to uninstall by deleting resources with the label containing this installation ID
-	installationId := findInstallationId(opts, cli)
-	if installationId == "" && !opts.Uninstall.Force {
-		return errors.New(`Could not find installation ID in 'gloo' pod labels. Use --force to uninstall anyway.
-Note that using --force may delete cluster-scoped resources belonging to some other installation of Gloo...
-This error may mean that you are trying to use glooctl >=0.20.14 to uninstall a version of Gloo <0.20.13 (or Enterprise Gloo <0.20.9).
-Make sure you are on open source Gloo >=0.20.14 or Enterprise Gloo >=0.20.9.
-`)
+	installationId, err := findInstallationId(opts, cli)
+	if err != nil && !opts.Uninstall.Force {
+		return CantUninstallWithoutInstallId(err)
+	} else if err != nil && opts.Uninstall.Force {
+		fmt.Printf("Warning: An error occurred while determining the installation ID, but continuing because --force was used\n%s\n", err.Error())
 	}
 
 	if opts.Uninstall.DeleteNamespace || opts.Uninstall.DeleteAll {
@@ -55,17 +51,23 @@ Make sure you are on open source Gloo >=0.20.14 or Enterprise Gloo >=0.20.9.
 }
 
 // attempt to read the installation id off of the gloo pod labels
-func findInstallationId(opts *options.Options, cli install.KubeCli) string {
+func findInstallationId(opts *options.Options, cli install.KubeCli) (string, error) {
 	jsonPath := fmt.Sprintf("-ojsonpath='{.items[0].metadata.labels.%s}'", installationIdLabel)
-	installationId, err := cli.KubectlOut(nil, "-n", opts.Uninstall.Namespace, "get", "pod", "-l", "gloo=gloo", jsonPath)
+	kubeOutput, err := cli.KubectlOut(nil, "-n", opts.Uninstall.Namespace, "get", "pod", "-l", "gloo=gloo", jsonPath)
 	if err != nil {
-		return ""
+		return "", FailedToFindLabel(err)
 	}
 
-	fmt.Printf("Removing gloo, installation ID %s...\n", installationId)
+	// the jsonpath formatting will leave single-quotes at the beginning and end of the installation ID. Strip them out before using the value
+	installationId := strings.Replace(string(kubeOutput), "'", "", -1)
 
-	// the jsonpath formatting will leave single-quotes at the beginning and end of the installation ID. Strip them out before returning the value
-	return strings.Replace(string(installationId), "'", "", -1)
+	// if the label isn't present (ie, on an older install of gloo), then we get the empty string back
+	if installationId == "" {
+		return "", LabelNotSet
+	}
+
+	fmt.Printf("Removing gloo, installation ID %s\n", installationId)
+	return installationId, nil
 }
 
 func deleteRbac(cli install.KubeCli, installationId string) {
@@ -76,7 +78,7 @@ func deleteRbac(cli install.KubeCli, installationId string) {
 		if installationId == "" {
 			err = cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo")
 		} else {
-			labelValue := fmt.Sprintf("installationId=%s", installationId)
+			labelValue := fmt.Sprintf("%s=%s", installationIdLabel, installationId)
 			err = cli.Kubectl(nil, "delete", rbacKind, "-l", labelValue)
 		}
 
@@ -104,7 +106,7 @@ func deleteGlooSystem(cli install.KubeCli, namespace, installationId string) {
 			}
 		} else {
 			// otherwise, delete everything with both the label app=gloo and installationId=$installationId (as well as subchart resources)
-			glooComponentLabelValue := fmt.Sprintf("app=gloo,installationId=%s", installationId)
+			glooComponentLabelValue := fmt.Sprintf("app=gloo,%s=%s", installationIdLabel, installationId)
 			err = cli.Kubectl(nil, "delete", kind, "-l", glooComponentLabelValue, "-n", namespace)
 			if err != nil {
 				failedComponents += kind + " "
