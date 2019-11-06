@@ -24,9 +24,9 @@ you upgrade Gloo by performing a
 and deploying Gloo to two namespaces simultaneously within the same cluster. The identically-named 
 cluster-scoped roles and role-bindings will conflict with each other and will cause an error.
 
-To resolve this, you may set the Helm flag `global.glooRbac.roleSuffix` to some string of your choosing.
-That will cause the string `"-$roleSuffix"` to be appended to the roles' and role-bindings' names, where
-`$roleSuffix` is the string you passed to the Helm flag. For example, setting `global.glooRbac.roleSuffix`
+To resolve this, you may set the Helm flag `global.glooRbac.nameSuffix` to some string of your choosing.
+That will cause the string `"-$nameSuffix"` to be appended to the roles' and role-bindings' names, where
+`$nameSuffix` is the string you passed to the Helm flag. For example, setting `global.glooRbac.nameSuffix`
 to the string `"blue-deployment"` will cause the ClusterRole normally named `gloo-resource-reader` to
 instead be named `gloo-resource-reader-blue-deployment`.
 
