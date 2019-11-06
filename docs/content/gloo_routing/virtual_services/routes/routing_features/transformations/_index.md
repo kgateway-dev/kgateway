@@ -120,7 +120,7 @@ An extraction must have one of two sources:
       myExtractor:
         header: 'foo'
     ```
-- `header`: extract information from the body. This attribute takes an empty value (as there is always only one body).
+- `body`: extract information from the body. This attribute takes an empty value (as there is always only one body).
     ```yaml
     extractors:
       myExtractor:
