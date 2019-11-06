@@ -24,12 +24,19 @@ func KubectlDelete(manifest []byte, extraArgs ...string) error {
 
 type KubeCli interface {
 	Kubectl(stdin io.Reader, args ...string) error
+	KubectlOut(stdin io.Reader, args ...string) ([]byte, error)
 }
 
 type CmdKubectl struct{}
 
+var _ KubeCli = &CmdKubectl{}
+
 func (k *CmdKubectl) Kubectl(stdin io.Reader, args ...string) error {
 	return Kubectl(stdin, args...)
+}
+
+func (k *CmdKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
+	return KubectlOut(stdin, args...)
 }
 
 var verbose bool
