@@ -76,16 +76,12 @@ func findInstallationId(opts *options.Options, cli install.KubeCli) (string, err
 func deleteRbac(cli install.KubeCli, installationId string) {
 	fmt.Printf("Removing Gloo RBAC configuration...\n")
 	failedRbacs := ""
+	label := "app=gloo"
+	if installationId != "" {
+		label += fmt.Sprintf(",%s=%s", installationIdLabel, installationId)
+	}
 	for _, rbacKind := range GlooRbacKinds {
-		var err error
-		if installationId == "" {
-			err = cli.Kubectl(nil, "delete", rbacKind, "-l", "app=gloo")
-		} else {
-			labelValue := fmt.Sprintf("%s=%s", installationIdLabel, installationId)
-			err = cli.Kubectl(nil, "delete", rbacKind, "-l", labelValue)
-		}
-
-		if err != nil {
+		if err := cli.Kubectl(nil, "delete", rbacKind, "-l", label); err != nil {
 			failedRbacs += rbacKind + " "
 		}
 	}
@@ -113,8 +109,7 @@ func deleteGlooSystem(cli install.KubeCli, namespace, installationId string) {
 	for _, kind := range GlooSystemKinds {
 		for _, label := range labelsToDelete {
 			if err := cli.Kubectl(nil, "delete", kind, "-l", label, "-n", namespace); err != nil {
-				failedComponents += kind + " "
-				break
+				failedComponents += kind + " (for label " + label + ") "
 			}
 		}
 	}

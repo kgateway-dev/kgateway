@@ -217,8 +217,8 @@ var _ = Describe("Uninstall", func() {
 			fmt.Sprintf(findInstallIdCmd, "gloo-system"),
 			"delete namespace gloo-system",
 			deleteCrds,
-			"delete ClusterRole -l installationId=test-install-id",
-			"delete ClusterRoleBinding -l installationId=test-install-id",
+			"delete ClusterRole -l app=gloo,installationId=test-install-id",
+			"delete ClusterRoleBinding -l app=gloo,installationId=test-install-id",
 		}
 		stdoutLines := []string{testInstallId}
 		cli := NewMockKubectl(cmds, stdoutLines)
@@ -232,8 +232,8 @@ var _ = Describe("Uninstall", func() {
 			fmt.Sprintf(findInstallIdCmd, "foo"),
 			"delete namespace foo",
 			deleteCrds,
-			"delete ClusterRole -l installationId=test-install-id",
-			"delete ClusterRoleBinding -l installationId=test-install-id",
+			"delete ClusterRole -l app=gloo,installationId=test-install-id",
+			"delete ClusterRoleBinding -l app=gloo,installationId=test-install-id",
 		}
 		stdoutLines := []string{testInstallId}
 		cli := NewMockKubectl(cmds, stdoutLines)
