@@ -69,6 +69,7 @@ type Uninstall struct {
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
+	Force           bool
 }
 
 type Proxy struct {
