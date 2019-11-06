@@ -81,21 +81,21 @@ var _ = Describe("Uninstall", func() {
 		flagSet.Parse([]string{})
 		commands := []string{
 			fmt.Sprintf(findInstallIdCmd, "gloo-system"),
-			"delete Deployment -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete Deployment -l app=glooe-grafana -n gloo-system",
 			"delete Deployment -l app=glooe-prometheus -n gloo-system",
-			"delete Service -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete Deployment -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete Service -l app=glooe-grafana -n gloo-system",
 			"delete Service -l app=glooe-prometheus -n gloo-system",
-			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete Service -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete ServiceAccount -l app=glooe-grafana -n gloo-system",
 			"delete ServiceAccount -l app=glooe-prometheus -n gloo-system",
-			"delete ConfigMap -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete ConfigMap -l app=glooe-grafana -n gloo-system",
 			"delete ConfigMap -l app=glooe-prometheus -n gloo-system",
-			"delete Job -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete ConfigMap -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete Job -l app=glooe-grafana -n gloo-system",
 			"delete Job -l app=glooe-prometheus -n gloo-system",
+			"delete Job -l app=gloo,installationId=test-install-id -n gloo-system",
 		}
 		stdoutLines := []string{testInstallId}
 		cli := NewMockKubectl(commands, stdoutLines)
@@ -107,21 +107,21 @@ var _ = Describe("Uninstall", func() {
 		flagSet.Parse([]string{"-n", "foo"})
 		cmds := []string{
 			fmt.Sprintf(findInstallIdCmd, "foo"),
-			"delete Deployment -l app=gloo,installationId=test-install-id -n foo",
 			"delete Deployment -l app=glooe-grafana -n foo",
 			"delete Deployment -l app=glooe-prometheus -n foo",
-			"delete Service -l app=gloo,installationId=test-install-id -n foo",
+			"delete Deployment -l app=gloo,installationId=test-install-id -n foo",
 			"delete Service -l app=glooe-grafana -n foo",
 			"delete Service -l app=glooe-prometheus -n foo",
-			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n foo",
+			"delete Service -l app=gloo,installationId=test-install-id -n foo",
 			"delete ServiceAccount -l app=glooe-grafana -n foo",
 			"delete ServiceAccount -l app=glooe-prometheus -n foo",
-			"delete ConfigMap -l app=gloo,installationId=test-install-id -n foo",
+			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n foo",
 			"delete ConfigMap -l app=glooe-grafana -n foo",
 			"delete ConfigMap -l app=glooe-prometheus -n foo",
-			"delete Job -l app=gloo,installationId=test-install-id -n foo",
+			"delete ConfigMap -l app=gloo,installationId=test-install-id -n foo",
 			"delete Job -l app=glooe-grafana -n foo",
 			"delete Job -l app=glooe-prometheus -n foo",
+			"delete Job -l app=gloo,installationId=test-install-id -n foo",
 		}
 		stdoutLines := []string{testInstallId}
 		cli := NewMockKubectl(cmds, stdoutLines)
@@ -133,21 +133,21 @@ var _ = Describe("Uninstall", func() {
 		flagSet.Parse([]string{"--delete-crds"})
 		cmds := []string{
 			fmt.Sprintf(findInstallIdCmd, "gloo-system"),
-			"delete Deployment -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete Deployment -l app=glooe-grafana -n gloo-system",
 			"delete Deployment -l app=glooe-prometheus -n gloo-system",
-			"delete Service -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete Deployment -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete Service -l app=glooe-grafana -n gloo-system",
 			"delete Service -l app=glooe-prometheus -n gloo-system",
-			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete Service -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete ServiceAccount -l app=glooe-grafana -n gloo-system",
 			"delete ServiceAccount -l app=glooe-prometheus -n gloo-system",
-			"delete ConfigMap -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete ConfigMap -l app=glooe-grafana -n gloo-system",
 			"delete ConfigMap -l app=glooe-prometheus -n gloo-system",
-			"delete Job -l app=gloo,installationId=test-install-id -n gloo-system",
+			"delete ConfigMap -l app=gloo,installationId=test-install-id -n gloo-system",
 			"delete Job -l app=glooe-grafana -n gloo-system",
 			"delete Job -l app=glooe-prometheus -n gloo-system",
+			"delete Job -l app=gloo,installationId=test-install-id -n gloo-system",
 			deleteCrds,
 		}
 		stdoutLines := []string{testInstallId}
@@ -160,21 +160,21 @@ var _ = Describe("Uninstall", func() {
 		flagSet.Parse([]string{"-n", "foo", "--delete-crds"})
 		cmds := []string{
 			fmt.Sprintf(findInstallIdCmd, "foo"),
-			"delete Deployment -l app=gloo,installationId=test-install-id -n foo",
 			"delete Deployment -l app=glooe-grafana -n foo",
 			"delete Deployment -l app=glooe-prometheus -n foo",
-			"delete Service -l app=gloo,installationId=test-install-id -n foo",
+			"delete Deployment -l app=gloo,installationId=test-install-id -n foo",
 			"delete Service -l app=glooe-grafana -n foo",
 			"delete Service -l app=glooe-prometheus -n foo",
-			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n foo",
+			"delete Service -l app=gloo,installationId=test-install-id -n foo",
 			"delete ServiceAccount -l app=glooe-grafana -n foo",
 			"delete ServiceAccount -l app=glooe-prometheus -n foo",
-			"delete ConfigMap -l app=gloo,installationId=test-install-id -n foo",
+			"delete ServiceAccount -l app=gloo,installationId=test-install-id -n foo",
 			"delete ConfigMap -l app=glooe-grafana -n foo",
 			"delete ConfigMap -l app=glooe-prometheus -n foo",
-			"delete Job -l app=gloo,installationId=test-install-id -n foo",
+			"delete ConfigMap -l app=gloo,installationId=test-install-id -n foo",
 			"delete Job -l app=glooe-grafana -n foo",
 			"delete Job -l app=glooe-prometheus -n foo",
+			"delete Job -l app=gloo,installationId=test-install-id -n foo",
 			deleteCrds,
 		}
 		stdoutLines := []string{testInstallId}

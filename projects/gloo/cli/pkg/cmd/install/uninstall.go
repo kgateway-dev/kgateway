@@ -31,6 +31,10 @@ func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 		fmt.Printf("Warning: An error occurred while determining the installation ID, but continuing because --force was used\n%s\n", err.Error())
 	}
 
+	if installationId != "" {
+		fmt.Printf("Removing gloo, installation ID %s\n", installationId)
+	}
+
 	if opts.Uninstall.DeleteNamespace || opts.Uninstall.DeleteAll {
 		deleteNamespace(cli, opts.Uninstall.Namespace)
 	} else {
@@ -66,7 +70,6 @@ func findInstallationId(opts *options.Options, cli install.KubeCli) (string, err
 		return "", LabelNotSet
 	}
 
-	fmt.Printf("Removing gloo, installation ID %s\n", installationId)
 	return installationId, nil
 }
 
@@ -94,36 +97,25 @@ func deleteRbac(cli install.KubeCli, installationId string) {
 func deleteGlooSystem(cli install.KubeCli, namespace, installationId string) {
 	fmt.Printf("Removing Gloo system components from namespace %s...\n", namespace)
 	failedComponents := ""
+
+	var labelsToDelete []string
+	for _, appName := range subchartAppNames {
+		labelsToDelete = append(labelsToDelete, fmt.Sprintf("app=%s", appName))
+	}
+
+	// if we have no installation ID, then the best we can do is to delete the label app=gloo
+	if installationId == "" {
+		labelsToDelete = append(labelsToDelete, "app=gloo")
+	} else {
+		labelsToDelete = append(labelsToDelete, fmt.Sprintf("app=gloo,%s=%s", installationIdLabel, installationId))
+	}
+
 	for _, kind := range GlooSystemKinds {
-		var err error
-		if installationId == "" {
-			// if we don't have an installation ID, attempt to delete everything with app=gloo and app=$subChartName
-			for _, appName := range append(subchartAppNames, "gloo") {
-				err = cli.Kubectl(nil, "delete", kind, "-l", fmt.Sprintf("app=%s", appName), "-n", namespace)
-				if err != nil {
-					break
-				}
-			}
-		} else {
-			// otherwise, delete everything with both the label app=gloo and installationId=$installationId (as well as subchart resources)
-			glooComponentLabelValue := fmt.Sprintf("app=gloo,%s=%s", installationIdLabel, installationId)
-			err = cli.Kubectl(nil, "delete", kind, "-l", glooComponentLabelValue, "-n", namespace)
-			if err != nil {
+		for _, label := range labelsToDelete {
+			if err := cli.Kubectl(nil, "delete", kind, "-l", label, "-n", namespace); err != nil {
 				failedComponents += kind + " "
-				continue
+				break
 			}
-
-			for _, appName := range subchartAppNames {
-				err = cli.Kubectl(nil, "delete", kind, "-l", fmt.Sprintf("app=%s", appName), "-n", namespace)
-				if err != nil {
-					break
-				}
-			}
-		}
-
-		if err != nil {
-			failedComponents += kind + " "
-			continue
 		}
 	}
 	if len(failedComponents) > 0 {
