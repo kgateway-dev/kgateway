@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/authconfig"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -65,6 +67,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.AddCommand(Upstream(opts))
 	cmd.AddCommand(UpstreamGroup(opts))
 	cmd.AddCommand(secret.CreateCmd(opts))
+	cmd.AddCommand(authconfig.AuthConfigCreate(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

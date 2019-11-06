@@ -121,6 +121,7 @@ type Create struct {
 	InputUpstream      InputUpstream
 	InputUpstreamGroup InputUpstreamGroup
 	InputSecret        Secret
+	AuthConfig         InputAuthConfig
 	DryRun             bool   // print resource as a kubernetes style yaml and exit without writing to storage
 	Consul             Consul // use consul as config backend
 	Vault              Vault  // use vault as secrets backend
@@ -217,9 +218,13 @@ type InputVirtualService struct {
 	Domains     []string
 	DisplayName string
 	RateLimit   RateLimit
-	OIDCAuth    OIDCAuth
-	ApiKeyAuth  ApiKeyAuth
-	OpaAuth     OpaAuth
+	AuthConfig  AuthConfig
+}
+
+type InputAuthConfig struct {
+	OIDCAuth   OIDCAuth
+	ApiKeyAuth ApiKeyAuth
+	OpaAuth    OpaAuth
 }
 
 const (
@@ -345,6 +350,11 @@ var RateLimit_TimeUnits = func() []string {
 	sort.Strings(vals)
 	return vals
 }()
+
+type AuthConfig struct {
+	Name      string
+	Namespace string
+}
 
 type RateLimit struct {
 	Enable              bool

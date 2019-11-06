@@ -45,6 +45,11 @@ var (
 		Aliases: []string{"s", "secret"},
 	}
 
+	AUTH_CONFIG_COMMAND = cobra.Command{
+		Use:     "authconfig",
+		Aliases: []string{"ac", "authconfig"},
+	}
+
 	ADD_COMMAND = cobra.Command{
 		Use:     "add",
 		Aliases: []string{"a"},

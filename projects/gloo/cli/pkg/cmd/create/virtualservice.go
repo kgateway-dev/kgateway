@@ -1,9 +1,8 @@
 package create
 
 import (
-	"strings"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+	v12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -15,7 +14,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -24,21 +22,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const DefaultAuthConfigName = "default"
-
 var defaultDomains = []string{"*"}
 
-var (
-	ProvideNamespaceAndNameError = func(namespace, secretName string) error {
-		return errors.Errorf("provide both a secret namespace [%v] and secret name [%v]", namespace, secretName)
-	}
-	EmptyQueryError       = errors.Errorf("query must not be empty")
-	InvalidRefFormatError = errors.Errorf("invalid format: provide namespaced names for config maps (namespace.configMapName)")
-)
-
 func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
-
-	opts.Create.VirtualService.OIDCAuth.ClientSecretRef = new(core.ResourceRef)
 
 	cmd := &cobra.Command{
 		// Use command constants to aid with replacement.
@@ -105,7 +91,6 @@ func createVirtualService(opts *options.Options, args []string) error {
 	return nil
 }
 
-// TODO: dedupe with Gloo
 func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualService) (*v1.VirtualService, error) {
 	if len(input.Domains) == 0 {
 		input.Domains = defaultDomains
@@ -143,130 +128,20 @@ func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualServic
 }
 
 func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) error {
-
-	authConfig := &extauth.AuthConfig{
-		Metadata: core.Metadata{
-			Name:      DefaultAuthConfigName,
-			Namespace: vs.Metadata.Namespace,
-		},
+	if input.AuthConfig.Name == "" || input.AuthConfig.Namespace == "" {
+		return nil
 	}
 
-	oidc := input.OIDCAuth
-	if oidc.Enable {
-		if oidc.AppUrl == "" {
-			return errors.Errorf("invalid app url specified: %v", oidc.AppUrl)
-		}
-		if oidc.IssuerUrl == "" {
-			return errors.Errorf("invalid issuer url specified: %v", oidc.IssuerUrl)
-		}
-		if oidc.ClientId == "" {
-			return errors.Errorf("invalid client id specified: %v", oidc.ClientId)
-		}
-		if oidc.CallbackPath == "" {
-			return errors.Errorf("invalid callback path specified: %v", oidc.CallbackPath)
-		}
-		if oidc.ClientSecretRef.Name == "" || oidc.ClientSecretRef.Namespace == "" {
-			return errors.Errorf("invalid client secret ref specified: %v.%v", oidc.ClientSecretRef.Namespace, oidc.ClientSecretRef.Name)
-		}
-
-		oauthConf := &extauth.AuthConfig_Config{
-			AuthConfig: &extauth.AuthConfig_Config_Oauth{
-				Oauth: &extauth.OAuth{
-					AppUrl:          oidc.AppUrl,
-					CallbackPath:    oidc.CallbackPath,
-					ClientId:        oidc.ClientId,
-					ClientSecretRef: oidc.ClientSecretRef,
-					IssuerUrl:       oidc.IssuerUrl,
-					Scopes:          oidc.Scopes,
-				},
-			},
-		}
-		authConfig.Configs = append(authConfig.Configs, oauthConf)
-
+	acRef := &core.ResourceRef{
+		Name:      input.AuthConfig.Name,
+		Namespace: input.AuthConfig.Namespace,
 	}
-
-	apiKey := input.ApiKeyAuth
-	if apiKey.Enable {
-		var secretRefs []*core.ResourceRef
-		if apiKey.SecretNamespace != "" && apiKey.SecretName != "" {
-			secretRefs = []*core.ResourceRef{
-				{
-					Namespace: apiKey.SecretNamespace,
-					Name:      apiKey.SecretName,
-				},
-			}
-		} else if apiKey.SecretNamespace != "" || apiKey.SecretName != "" {
-			return ProvideNamespaceAndNameError(apiKey.SecretNamespace, apiKey.SecretName)
-		}
-
-		var labels options.InputMapStringString
-		labels.Entries = apiKey.Labels
-		var labelSelector map[string]string
-		if len(labels.MustMap()) > 0 {
-			labelSelector = labels.MustMap()
-		}
-
-		apiKeyAuthConfig := &extauth.AuthConfig_Config{
-			AuthConfig: &extauth.AuthConfig_Config_ApiKeyAuth{
-				ApiKeyAuth: &extauth.ApiKeyAuth{
-					LabelSelector:    labelSelector,
-					ApiKeySecretRefs: secretRefs,
-				},
-			},
-		}
-		authConfig.Configs = append(authConfig.Configs, apiKeyAuthConfig)
+	if vs.VirtualHost.VirtualHostPlugins == nil {
+		vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
 	}
-
-	opaAuth := input.OpaAuth
-	if opaAuth.Enable {
-
-		var modules []*core.ResourceRef
-		query := opaAuth.Query
-
-		if len(query) == 0 {
-			return EmptyQueryError
-		}
-
-		for _, moduleRef := range opaAuth.Modules {
-
-			splits := strings.Split(moduleRef, ".")
-			if len(splits) != 2 {
-				return InvalidRefFormatError
-			}
-			namespace := splits[0]
-			name := splits[1]
-			modules = append(modules, &core.ResourceRef{Name: name, Namespace: namespace})
-		}
-
-		opaAuthConfig := &extauth.AuthConfig_Config{
-			AuthConfig: &extauth.AuthConfig_Config_OpaAuth{
-				OpaAuth: &extauth.OpaAuth{
-					Modules: modules,
-					Query:   query,
-				},
-			},
-		}
-		authConfig.Configs = append(authConfig.Configs, opaAuthConfig)
+	if vs.VirtualHost.VirtualHostPlugins.Extauth == nil {
+		vs.VirtualHost.VirtualHostPlugins.Extauth = &v12.ExtAuthExtension{}
 	}
-
-	if len(authConfig.Configs) > 0 {
-
-		authConfigClient := helpers.MustAuthConfigClient()
-		_, err := authConfigClient.Write(authConfig, clients.WriteOpts{OverwriteExisting: false})
-		if err != nil {
-			return err
-		}
-
-		if vs.VirtualHost.VirtualHostPlugins == nil {
-			vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
-		}
-		vhostAuth := &extauth.ExtAuthExtension{
-			Spec: &extauth.ExtAuthExtension_ConfigRef{
-				ConfigRef: &core.ResourceRef{Name: authConfig.Metadata.Name, Namespace: authConfig.Metadata.Namespace},
-			},
-		}
-		vs.VirtualHost.VirtualHostPlugins.Extauth = vhostAuth
-	}
-
+	vs.VirtualHost.VirtualHostPlugins.Extauth.Spec = &v12.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
 	return nil
 }

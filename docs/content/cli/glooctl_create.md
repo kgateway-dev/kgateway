@@ -36,6 +36,7 @@ glooctl create [flags]
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl create authconfig](../glooctl_create_authconfig)	 - Create an Auth Config
 * [glooctl create secret](../glooctl_create_secret)	 - Create a secret
 * [glooctl create upstream](../glooctl_create_upstream)	 - Create an Upstream
 * [glooctl create upstreamgroup](../glooctl_create_upstreamgroup)	 - Create an Upstream Group
