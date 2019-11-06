@@ -9,3 +9,8 @@ changelog:
       4. Extauth's `VhostExtension` and `RouteExtension`, among other minor removals. Prefer configuring Gloo Enterprise ExtAuth using `AuthConfig` Custom Resources, and configure Virtual Services via `ExtAuthExtension` to either reference these `AuthConfig`s or reference your own custom auth implementation using `CustomAuth`.
     issueLink: https://github.com/solo-io/gloo/issues/1171
     resolvesIssue: false
+  - type: NEW_FEATURE
+    description: >
+      Add `glooctl` commands to create and get `AuthConfig`s, and update `glooctl create vs` command to allow
+      providing `AuthConfig` refs to configure extauth.
+    issueLink: https://github.com/solo-io/gloo/issues/1171
