@@ -23,4 +23,3 @@ spec:
     protocol: TCP
   selector:
     gloo: gloo
-    installationId: {{ include "gloo.installationId" . }}

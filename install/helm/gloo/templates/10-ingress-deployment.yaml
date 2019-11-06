@@ -17,12 +17,10 @@ spec:
   selector:
     matchLabels:
       gloo: ingress
-      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
         gloo: ingress
-        installationId: {{ include "gloo.installationId" . }}
     spec:
       containers:
       - image: {{template "gloo.image" $image}}
