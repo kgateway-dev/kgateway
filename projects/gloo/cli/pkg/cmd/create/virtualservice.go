@@ -2,7 +2,7 @@ package create
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
-	v12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -140,8 +140,8 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 		vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
 	}
 	if vs.VirtualHost.VirtualHostPlugins.Extauth == nil {
-		vs.VirtualHost.VirtualHostPlugins.Extauth = &v12.ExtAuthExtension{}
+		vs.VirtualHost.VirtualHostPlugins.Extauth = &extauthv1.ExtAuthExtension{}
 	}
-	vs.VirtualHost.VirtualHostPlugins.Extauth.Spec = &v12.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
+	vs.VirtualHost.VirtualHostPlugins.Extauth.Spec = &extauthv1.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
 	return nil
 }

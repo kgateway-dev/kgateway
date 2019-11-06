@@ -38,7 +38,7 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 		Use:     constants.AUTH_CONFIG_COMMAND.Use,
 		Aliases: constants.AUTH_CONFIG_COMMAND.Aliases,
 		Short:   "Create an Auth Config",
-		Long: "When using Gloo Enterprise, the Gloo extauth server can be configured with numerous typed of auth " +
+		Long: "When using Gloo Enterprise, the Gloo extauth server can be configured with numerous types of auth " +
 			"schemes. This configuration lives on top-level AuthConfig resources, which can be referenced from your " +
 			"virtual services. Virtual service auth settings can be overridden at the route or weighted destination " +
 			"level. Auth schemes can be chained together and executed in order, e.g. oauth, apikey auth, and more.",
@@ -97,7 +97,6 @@ func createAuthConfig(opts *options.Options, args []string) error {
 	return nil
 }
 
-// TODO: dedupe with Gloo
 func authConfigFromOpts(meta core.Metadata, input options.InputAuthConfig) (*extauth.AuthConfig, error) {
 	ac := &extauth.AuthConfig{
 		Metadata: meta,

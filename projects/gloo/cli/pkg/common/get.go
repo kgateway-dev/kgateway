@@ -5,7 +5,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -124,8 +124,8 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	return list, nil
 }
 
-func GetAuthConfigs(name string, opts *options.Options) (v12.AuthConfigList, error) {
-	var authConfigList v12.AuthConfigList
+func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {
+	var authConfigList extauthv1.AuthConfigList
 
 	authConfigClient := helpers.MustAuthConfigClient()
 	if name == "" {
