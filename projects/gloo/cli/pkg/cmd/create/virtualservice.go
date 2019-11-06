@@ -48,8 +48,8 @@ func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		Long: "A virtual service describes the set of routes to match for a set of domains. \n" +
 			"Virtual services are containers for routes assigned to a domain or set of domains. \n" +
 			"Virtual services must not have overlapping domains, as the virtual service to match a request " +
-			"is selected by the Host header (in HTTP1) or :authority header (in HTTP2). " +
-			"When using Gloo Enterprise, virtual services can be configured with rate limiting, oauth, and apikey auth.",
+			"is selected by the Host header (in HTTP1) or :authority header (in HTTP2). When using " +
+			"Gloo Enterprise, virtual services can be configured with rate limiting, oauth, apikey auth, and more.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
