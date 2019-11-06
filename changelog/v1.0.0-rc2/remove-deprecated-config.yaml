@@ -14,3 +14,4 @@ changelog:
       Add `glooctl` commands to create and get `AuthConfig`s, and update `glooctl create vs` command to allow
       providing `AuthConfig` refs to configure extauth.
     issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false
