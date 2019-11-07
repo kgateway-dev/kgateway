@@ -161,6 +161,18 @@ helm template <(curl https://storage.googleapis.com/solo-public-helm/charts/gloo
 
 We will perform the same upgrade of Gloo v0.20.12 to v0.20.13:
 
+{{% notice note %}}
+For Enterprise users of Gloo, this process is largely the same. You'll just need to change your `helm`
+invocation to
+
+```bash
+helm template <(curl https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-0.20.8.tgz) \
+    --license-key "$license"
+    -f path/to/your/values.yaml
+```
+Get a trial Enterprise license at https://www.solo.io/gloo-trial.
+{{% /notice %}}
+
 ```bash
 (⎈ |minikube:gloo-system)~ > glooctl version
 Client: {"version":"0.20.12"}
