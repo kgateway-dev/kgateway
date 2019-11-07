@@ -11,4 +11,5 @@ description: Frequently-Asked Questions about our upgrade steps
 1. What will happen to my upstreams, virtual services, settings, and Gloo state in general?
 1. How do I handle upgrading across a breaking change?
 1. Is the upgrade procedure any different if I am not an administrator of the cluster being installed to?
+1. Why do I get an error when upgrading using `helm install` or `helm upgrade`?
 

@@ -61,7 +61,13 @@ Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"0.20.13","Name":"d
 #### Upgrading the Control Plane
 
 There are two options for how to perform the control plane upgrade. Note that these options are not
-mutually-exclusive; if you have used one in the past, you can choose to use a different one in the future.
+mutually-exclusive; if you have used one in the past, you can freely choose to use a different one in the future.
+
+Both installation methods allow you to provide overrides for the default chart values; however, installing through
+Helm may give you more flexibility as you are working directly with Helm.
+See our [open-source installation docs](../../installation/gateway/kubernetes/#list-of-gloo-helm-chart-values) and
+our [enterprise installation docs](../../installation/enterprise/#list-of-gloo-helm-chart-values)
+for a complete list of Helm values that can be overridden.
 
 ##### Using `glooctl`
 
@@ -77,6 +83,7 @@ Some useful flags to be aware of in particular:
 
 * `--dry-run` (`-d`): lets you preview the YAML that is about to be handed to `kubectl apply`
 * `--namespace` (`-n`): lets you customize the namespace being installed to, which defaults to `gloo-system`
+* `--values`: provide a path to a values override file to use when rendering the Helm chart
 
 Here we perform an upgrade from Gloo 0.20.12 to 0.20.13 in our minikube
 cluster, confirming along the way (just as a demonstration) that the new images `glooctl` is referencing 
@@ -124,12 +131,27 @@ quay.io/solo-io/gloo:0.20.13
 
 ##### Using Helm
 
+{{% notice note %}}
+Upgrading through Helm only (i.e., not through `glooctl`) will not ensure that the version of `glooctl` 
+matches the control plane. You may encounter errors in this state. Be sure to follow the 
+["upgrading `glooctl`"](#upgrading-glooctl) steps above to match `glooctl`'s version to the control plane. 
+{{% /notice %}}
 
-Both options can be mixed and matched;
-you are not locked in to a particular upgrade path if you have used it in the past.
+At the time of writing, Helm v2 [does not support managing CRDs](https://github.com/helm/helm/issues/5871#issuecomment-522096388).
+As a result, if you try to upgrade through `helm install` or `helm upgrade`, you may encounter an error
+stating that a CRD already exists.
 
-Two options for how to upgrade:
+```bash
+(⎈ |minikube:gloo-system)~ > helm install gloo/gloo
+Error: customresourcedefinitions.apiextensions.k8s.io "authconfigs.enterprise.gloo.solo.io" already exists
+```
 
-1. Through glooctl
-1. Through helm (need to mention `helm upgrade`? Haven't seen that before). Should mention both rendering the chart directly with helm or using upgrade
+You could delete the CRDs yourself, or you could simply render chart yourself and then
+`kubectl apply` it. The rest of this section will assume the latter.
 
+```bash
+namespace=gloo-system # customize to your namespace
+helm template <(curl https://storage.googleapis.com/solo-public-helm/charts/gloo-0.20.13.tgz) \
+    --namespace "$namespace" \
+    -f path/to/your/values.yaml
+```
