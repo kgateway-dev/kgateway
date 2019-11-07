@@ -13,12 +13,12 @@ In this guide, we'll walk you through how to upgrade Gloo. There are two compone
 * [`glooctl`](#upgrading-glooctl)
 * [Gloo (control plane)](#upgrading-the-control-plane)
 
-Before upgrading, always make sure to check our changelogs (either 
-[open-source](../../changelog/open_source) or [enterprise](../../changelog/enterprise) Gloo)
+Before upgrading, always make sure to check our changelogs (refer to our
+[open-source](../../changelog/open_source) or [enterprise](../../changelog/enterprise) changelogs)
 for any mention of breaking changes. In some cases, a breaking change may mean a slightly different upgrade 
 procedure; if this is the case, then we will take care to explain what must be done in the changelog notes.
 
-You may also want to scan our [frequently-asked questions](#faq) to see if any of those cases apply to you.
+You may also want to scan our [frequently-asked questions](../faq) to see if any of those cases apply to you.
 Also feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our 
 [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path.
 
@@ -31,26 +31,105 @@ configuration.
 
 #### Upgrading `glooctl`
 
+{{% notice note %}}
+It is important to try to keep the version of `glooctl` in alignment with the version of the Gloo
+control-plane running in your cluster. Because `glooctl` can create resources in your cluster
+(for example, with `glooctl add route`), you may see errors in Gloo if you create resources from a version
+of `glooctl` that is incompatible with the version of your control plane.
+{{% /notice %}}
+
 The easiest way to upgrade `glooctl` is to simply run `glooctl upgrade`, which will attempt to download
 the latest binary. There are more fine-grained options available; those can be viewed by running
-`glooctl upgrade --help`.
+`glooctl upgrade --help`. One in particular to make note of is `glooctl upgrade --release`, which can
+be useful in maintaining careful control over what version you are running.
 
-It is important to try to keep the version of `glooctl` in alignment with the version of the Gloo
-control-plane running in your cluster.
+Here is an example where we notice we have a version mismatch between `glooctl` and the version of Gloo
+running in our minikube cluster (0.20.12 and 0.20.13 respectively), and we correct it:
+
+```bash
+(⎈ |minikube:gloo-system)~ > glooctl version
+Client: {"version":"0.20.12"}
+Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"0.20.13","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.20.13","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.20.13","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"0.20.13","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
+(⎈ |minikube:gloo-system)~ > glooctl upgrade --release v0.20.13
+downloading glooctl-darwin-amd64 from release tag v0.20.13
+successfully downloaded and installed glooctl version v0.20.13 to /usr/local/bin/glooctl
+(⎈ |minikube:gloo-system)~ > glooctl version
+Client: {"version":"0.20.13"}
+Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"0.20.13","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.20.13","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.20.13","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"0.20.13","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
+```
 
 #### Upgrading the Control Plane
+
+There are two options for how to perform the control plane upgrade. Note that these options are not
+mutually-exclusive; if you have used one in the past, you can choose to use a different one in the future.
+
+##### Using `glooctl`
+
+You'll want to use the `glooctl install` command tree, the most common path in which is
+`glooctl install gateway`. A good way to proceed in a simple case is a two-step process, which will ensure that
+`glooctl`'s version is left matching the control plane:
+
+1. Upgrade the `glooctl` binary as described above
+1. Run `glooctl install gateway`, which will pull down image versions matching `glooctl`'s version.
+
+All `glooctl` commands can have `--help` appended to them to view helpful usage information.
+Some useful flags to be aware of in particular:
+
+* `--dry-run` (`-d`): lets you preview the YAML that is about to be handed to `kubectl apply`
+* `--namespace` (`-n`): lets you customize the namespace being installed to, which defaults to `gloo-system`
+
+Here we perform an upgrade from Gloo 0.20.12 to 0.20.13 in our minikube
+cluster, confirming along the way (just as a demonstration) that the new images `glooctl` is referencing 
+match its own version. Along the way you may need to delete the completed `gateway-certgen` job.
+
+{{% notice note %}}
+For Enterprise users of Gloo, this process is largely the same. You'll just need to change your `glooctl`
+invocation to
+
+```bash
+glooctl install gateway enterprise --license-key ${license}
+```
+Get a trial Enterprise license at https://www.solo.io/gloo-trial.
+{{% /notice %}}
+
+```bash
+(⎈ |minikube:gloo-system)~ > glooctl version
+Client: {"version":"0.20.12"}
+Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"0.20.12","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
+(⎈ |minikube:gloo-system)~ > glooctl upgrade --release v0.20.13
+downloading glooctl-darwin-amd64 from release tag v0.20.13
+successfully downloaded and installed glooctl version v0.20.13 to /usr/local/bin/glooctl
+(⎈ |minikube:gloo-system)~ > glooctl version
+Client: {"version":"0.20.13"}
+Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"0.20.12","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
+(⎈ |minikube:gloo-system)~ > glooctl install gateway --dry-run | grep -o 'quay.*$'
+quay.io/solo-io/certgen:0.20.13
+quay.io/solo-io/gloo:0.20.13
+quay.io/solo-io/discovery:0.20.13
+quay.io/solo-io/gateway:0.20.13
+quay.io/solo-io/gloo-envoy-wrapper:0.20.13
+(⎈ |minikube:gloo-system)~ > kubectl delete job gateway-certgen # the job is immutable, so if the new release changes it, you may need to delete it
+job.batch "gateway-certgen" deleted
+(⎈ |minikube:gloo-system)~ > glooctl install gateway
+Starting Gloo installation...
+Installing CRDs...
+Preparing namespace and other pre-install tasks...
+Installing...
+
+Gloo was successfully installed!
+(⎈ |minikube:gloo-system)~ > kubectl get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
+quay.io/solo-io/gloo:0.20.13
+```
+
+
+##### Using Helm
+
+
+Both options can be mixed and matched;
+you are not locked in to a particular upgrade path if you have used it in the past.
 
 Two options for how to upgrade:
 
 1. Through glooctl
 1. Through helm (need to mention `helm upgrade`? Haven't seen that before). Should mention both rendering the chart directly with helm or using upgrade
-
-### FAQ
-
-1. Is the upgrade procedure any different if I'm playing with Gloo in a non-production/sandbox environment?
-1. What is the recommended way to upgrade if I'm running Gloo in a production environment, where downtime is unacceptable?
-1. What will happen to my upstreams, virtual services, settings, and Gloo state in general?
-1. How do I handle upgrading across a breaking change?
-1. Is the upgrade procedure any different if I am not an administrator of the cluster being installed to?
-
 
