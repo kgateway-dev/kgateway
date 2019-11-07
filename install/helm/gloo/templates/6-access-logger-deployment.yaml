@@ -19,13 +19,11 @@ spec:
     matchLabels:
       app: gloo
       gloo: gateway-proxy-v2-access-logger
-      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
         app: gloo
         gloo: gateway-proxy-v2-access-logger
-        installationId: {{ include "gloo.installationId" . }}
     spec:
       serviceAccountName: gateway-proxy
       containers:
