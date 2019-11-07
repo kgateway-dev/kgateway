@@ -101,9 +101,8 @@ You can see exactly what metrics are published from a particular pod by taking a
 [Help strings](https://prometheus.io/docs/instrumenting/writing_exporters/#help-strings). For a given
 pod you're interested in, you can curl `/metrics` on its stats port (usually `9091`) to see this content.
 
-For example, here's a look at the Help strings published by our `gloo` pod as of 0.20.13. Keep in mind
-though that you can do the same thing for any of our pods, including the closed-source ones in the case
-of enterprise Gloo.
+For example, here's a look at the Help strings published by our `gloo` pod as of 0.20.13. You can do the
+same thing for any of our pods, including the closed-source ones in the case of enterprise Gloo.
 
 ```bash
 $ kubectl port-forward deployment/gloo 9091 &

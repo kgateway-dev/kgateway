@@ -12,6 +12,8 @@ In this guide, we'll walk you through how to upgrade Gloo. There are two compone
 
 * [`glooctl`](#upgrading-glooctl)
 * [Gloo (control plane)](#upgrading-the-control-plane)
+    * [Updating Gloo using `glooctl`](#using-glooctl)
+    * [Updating Gloo using Helm](#using-helm)
 
 Before upgrading, always make sure to check our changelogs (refer to our
 [open-source](../../changelog/open_source) or [enterprise](../../changelog/enterprise) changelogs)
@@ -64,7 +66,8 @@ There are two options for how to perform the control plane upgrade. Note that th
 mutually-exclusive; if you have used one in the past, you can freely choose to use a different one in the future.
 
 Both installation methods allow you to provide overrides for the default chart values; however, installing through
-Helm may give you more flexibility as you are working directly with Helm.
+Helm may give you more flexibility as you are working directly with Helm rather than `glooctl`, which, for
+installation, is essentially just a wrapper around Helm.
 See our [open-source installation docs](../../installation/gateway/kubernetes/#list-of-gloo-helm-chart-values) and
 our [enterprise installation docs](../../installation/enterprise/#list-of-gloo-helm-chart-values)
 for a complete list of Helm values that can be overridden.
@@ -154,4 +157,24 @@ namespace=gloo-system # customize to your namespace
 helm template <(curl https://storage.googleapis.com/solo-public-helm/charts/gloo-0.20.13.tgz) \
     --namespace "$namespace" \
     -f path/to/your/values.yaml
+```
+
+We will perform the same upgrade of Gloo v0.20.12 to v0.20.13:
+
+```bash
+(⎈ |minikube:gloo-system)~ > glooctl version
+Client: {"version":"0.20.12"}
+Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"0.20.12","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
+(⎈ |minikube:gloo-system)~ > kubectl delete job gateway-certgen # the job is immutable, so if the new release changes it, you may need to delete it
+job.batch "gateway-certgen" deleted
+(⎈ |minikube:gloo-system)~ > helm template <(curl https://storage.googleapis.com/solo-public-helm/charts/gloo-0.20.13.tgz) --namespace gloo-system | kubectl apply -f -
+configmap/gloo-usage configured
+configmap/gateway-proxy-v2-envoy-config unchanged
+serviceaccount/gloo unchanged
+... # snipped for brevity
+gateway.gateway.solo.io.v2/gateway-proxy-v2-ssl unchanged
+settings.gloo.solo.io/default unchanged
+validatingwebhookconfiguration.admissionregistration.k8s.io/gloo-gateway-validation-webhook-gloo-system configured
+(⎈ |minikube:gloo-system)~ > kubectl get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
+quay.io/solo-io/gloo:0.20.13
 ```
