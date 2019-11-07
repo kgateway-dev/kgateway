@@ -47,6 +47,8 @@ $ curl -s localhost:9091/metrics | grep HELP
 $ kill $portForwardPid
 ```
 
+You can do the same thing for any of our pods, including closed-source ones (in the case of enterprise Gloo).
+
 ### Helm Chart Options
 
 The first way is via the helm chart. All deployment objects in the helm templates accept an argument `stats` which
