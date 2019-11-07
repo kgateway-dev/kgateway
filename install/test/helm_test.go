@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"github.com/solo-io/reporting-client/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
