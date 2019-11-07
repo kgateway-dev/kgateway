@@ -11,6 +11,42 @@ All Gloo pods ship with optional [Prometheus](https://prometheus.io/) monitoring
 This functionality is turned off by default, and can be turned on a couple of different ways: through [Helm chart install
 options]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-the-gloo-gateway-on-kubernetes" >}}); and through environment variables.
 
+You can see exactly what metrics are published from a particular pod by taking a look at our Prometheus
+[Help strings](https://prometheus.io/docs/instrumenting/writing_exporters/#help-strings). For a given
+pod you're interested in, you can curl `/metrics` on its stats port (usually `9091`) to see this content.
+
+For example, here's a look at the Help strings published by our `gloo` pod as of 0.20.13:
+
+```bash
+$ kubectl port-forward deployment/gloo 9091 &
+$ portForwardPid=$!
+$ curl -s localhost:9091/metrics | grep HELP
+# HELP api_gloo_solo_io_emitter_resources_in The number of resource lists received on open watch channels
+# HELP api_gloo_solo_io_emitter_snap_in Deprecated. Use api.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.
+# HELP api_gloo_solo_io_emitter_snap_missed The number of snapshots updates going missed. this can happen in heavy load. missed snapshot will be re-tried after a second.
+# HELP api_gloo_solo_io_emitter_snap_out The number of snapshots updates going out
+# HELP eds_gloo_solo_io_emitter_resources_in The number of resource lists received on open watch channels
+# HELP eds_gloo_solo_io_emitter_snap_in Deprecated. Use eds.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.
+# HELP eds_gloo_solo_io_emitter_snap_out The number of snapshots updates going out
+# HELP gloo_solo_io_setups_run The number of times the main setup loop has run
+# HELP grpc_io_server_completed_rpcs Count of RPCs by method and status.
+# HELP grpc_io_server_received_bytes_per_rpc Distribution of received bytes per RPC, by method.
+# HELP grpc_io_server_received_messages_per_rpc Distribution of messages received count per RPC, by method.
+# HELP grpc_io_server_sent_bytes_per_rpc Distribution of total sent bytes per RPC, by method.
+# HELP grpc_io_server_sent_messages_per_rpc Distribution of messages sent count per RPC, by method.
+# HELP grpc_io_server_server_latency Distribution of server latency in milliseconds, by method.
+# HELP kube_events_count The number of events sent from kuberenets to us
+# HELP kube_lists_count The number of list calls
+# HELP kube_req_in_flight The number of requests in flight
+# HELP kube_updates_count The number of update calls
+# HELP kube_watches_count The number of watch calls
+# HELP runtime_goroutines The number of goroutines
+# HELP setup_gloo_solo_io_emitter_resources_in The number of resource lists received on open watch channels
+# HELP setup_gloo_solo_io_emitter_snap_in Deprecated. Use setup.gloo.solo.io/emitter/resources_in. The number of snapshots updates coming in.
+
+$ kill $portForwardPid
+```
+
 ### Helm Chart Options
 
 The first way is via the helm chart. All deployment objects in the helm templates accept an argument `stats` which

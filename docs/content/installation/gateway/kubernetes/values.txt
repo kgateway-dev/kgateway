@@ -1,5 +1,6 @@
 |Option|Type|Default Value|Description|
 |------|----|-----------|-------------|
+|installConfig.installationId|string||If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling|
 |namespace.create|bool|false|create the installation namespace|
 |crds.create|bool|true|create CRDs for Gloo (turn off if installing with Helm to a cluster that already has Gloo CRDs)|
 |settings.watchNamespaces[]|string||whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces|
@@ -239,3 +240,4 @@
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
+|global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
