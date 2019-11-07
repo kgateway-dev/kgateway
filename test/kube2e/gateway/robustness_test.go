@@ -98,8 +98,7 @@ var _ = Describe("Robustness tests", func() {
 
 	AfterEach(func() {
 		if virtualService != nil {
-			_ = virtualServiceClient.Delete(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-
+			deleteVirtualService(virtualServiceClient, virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
 			Eventually(func() bool {
 				_, err := virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 				if err != nil && skerrors.IsNotExist(err) {
@@ -119,7 +118,7 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("create a virtual service routing to the service")
-		virtualService, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
+		writeVirtualService(virtualServiceClient, &gatewayv1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "echo-vs",
 				Namespace: namespace,
@@ -154,7 +153,6 @@ var _ = Describe("Robustness tests", func() {
 				},
 			},
 		}, clients.WriteOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
 
 		By("wait for proxy to be accepted")
 		Eventually(func() error {
@@ -213,8 +211,7 @@ var _ = Describe("Robustness tests", func() {
 		// required to prevent gateway webhook from rejecting
 		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
 
-		virtualService, err = virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
+		writeVirtualService(virtualServiceClient, virtualService, clients.WriteOpts{OverwriteExisting: true})
 
 		By("wait for proxy to enter warning state")
 		Eventually(func() error {

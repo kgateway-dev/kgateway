@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/gogo/protobuf/types"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -153,4 +153,21 @@ settings:
 	Expect(err).NotTo(HaveOccurred())
 
 	return values.Name(), func() { _ = os.Remove(values.Name()) }
+}
+
+func writeVirtualService(vsClient gatewayv1.VirtualServiceClient, vs *gatewayv1.VirtualService, opts clients.WriteOpts) {
+	// We wrap this in a eventually because the validating webhook may reject the virtual service if one of the
+	// resources the VS depends on is not yet available.
+	EventuallyWithOffset(1, func() error {
+		_, err := vsClient.Write(vs, opts)
+		return err
+	}, time.Minute, "5s").Should(BeNil())
+}
+
+func deleteVirtualService(vsClient gatewayv1.VirtualServiceClient, ns, name string, opts clients.DeleteOpts) {
+	// We wrap this in a eventually because the validating webhook may reject the virtual service if one of the
+	// resources the VS depends on is not yet available.
+	EventuallyWithOffset(1, func() error {
+		return vsClient.Delete(ns, name, opts)
+	}, time.Minute, "5s").Should(BeNil())
 }

@@ -168,8 +168,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		AfterEach(func() {
 			cancel()
-			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
-			Expect(err).NotTo(HaveOccurred())
+			deleteVirtualService(virtualServiceClient, testHelper.InstallNamespace, "vs", clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
 		})
 
 		It("correctly routes requests to an upstream", func() {
@@ -181,11 +180,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				},
 			}
-			// give proxy validation a chance to start
-			Eventually(func() error {
-				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
-				return err
-			}).ShouldNot(HaveOccurred())
+
+			writeVirtualService(virtualServiceClient, getVirtualService(dest, nil), clients.WriteOpts{})
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
@@ -221,8 +217,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						},
 					},
 				}
-				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred())
+				writeVirtualService(virtualServiceClient, getVirtualService(dest, nil), clients.WriteOpts{Ctx: ctx})
 			})
 
 			It("correctly routes to the service (http)", func() {
@@ -317,11 +312,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// give Gloo a chance to pick up the secret
 				// required to allow validation to pass
-				Eventually(func() error {
-					_, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
-					return err
-				}, time.Second*5, time.Second).ShouldNot(HaveOccurred())
-				Expect(err).NotTo(HaveOccurred())
+				writeVirtualService(virtualServiceClient, vs, clients.WriteOpts{})
 
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 				// wait for default gateway to be created
@@ -429,8 +420,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				}
 
-				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				writeVirtualService(virtualServiceClient, getVirtualService(dest, nil), clients.WriteOpts{})
 
 				responseString := fmt.Sprintf(`"%s":"%s.%s.svc.cluster.local:%v"`,
 					linkerd.HeaderKey, helper.HttpEchoName, testHelper.InstallNamespace, helper.HttpEchoPort)
@@ -471,27 +461,20 @@ var _ = Describe("Kube2e: gateway", func() {
 						},
 					}, nil)))
 
-				Eventually(func() error {
-					_, err := virtualServiceClient.Write(valid, clients.WriteOpts{})
-					return err
-				}, time.Second*10).ShouldNot(HaveOccurred())
+				writeVirtualService(virtualServiceClient, valid, clients.WriteOpts{})
 
 				// sanity check that validation is enabled/strict
-				_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
-				Expect(err).To(HaveOccurred())
+				writeVirtualService(virtualServiceClient, inValid, clients.WriteOpts{})
 
 				// disable strict validation
 				UpdateAlwaysAcceptSetting(true)
 
-				Eventually(func() error {
-					_, err = virtualServiceClient.Write(inValid, clients.WriteOpts{})
-					return err
-				}, time.Second*10).ShouldNot(HaveOccurred())
+				writeVirtualService(virtualServiceClient, inValid, clients.WriteOpts{})
 			})
 			AfterEach(func() {
 				UpdateAlwaysAcceptSetting(false)
-				virtualServiceClient.Delete(testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{})
-				virtualServiceClient.Delete(testHelper.InstallNamespace, validVsName, clients.DeleteOpts{})
+				deleteVirtualService(virtualServiceClient, testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+				deleteVirtualService(virtualServiceClient, testHelper.InstallNamespace, validVsName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
 			})
 			It("propagates the valid virtual services to envoy", func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -538,10 +521,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				invalidVs.VirtualHost = validVh
 				validVs.VirtualHost = invalidVh
 
-				_, err = virtualServiceClient.Write(validVs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-				_, err = virtualServiceClient.Write(invalidVs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
+				writeVirtualService(virtualServiceClient, validVs, clients.WriteOpts{OverwriteExisting: true})
+				writeVirtualService(virtualServiceClient, invalidVs, clients.WriteOpts{OverwriteExisting: true})
 
 				// the original virtual service should work
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -600,14 +581,10 @@ var _ = Describe("Kube2e: gateway", func() {
 					},
 				}, nil))
 
-				Eventually(func() error {
-					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
-					return err
-				}, time.Second*10).ShouldNot(HaveOccurred())
+				writeVirtualService(virtualServiceClient, vs, clients.WriteOpts{})
 			})
 			AfterEach(func() {
-				_ = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{})
-
+				deleteVirtualService(virtualServiceClient, vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
 				UpdateSettings(func(settings *gloov1.Settings) {
 					Expect(settings.Gloo).NotTo(BeNil())
 					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
@@ -645,9 +622,8 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		AfterEach(func() {
 			cancel()
-			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			err = routeTableClient.Delete(testHelper.InstallNamespace, "rt1", clients.DeleteOpts{})
+			deleteVirtualService(virtualServiceClient, testHelper.InstallNamespace, "vs", clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+			err := routeTableClient.Delete(testHelper.InstallNamespace, "rt1", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = routeTableClient.Delete(testHelper.InstallNamespace, "rt2", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -672,8 +648,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			_, err = routeTableClient.Write(rt2, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
+			writeVirtualService(virtualServiceClient, vs, clients.WriteOpts{})
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
@@ -969,8 +944,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 
 			if vs != nil {
-				err := virtualServiceClient.Delete(testHelper.InstallNamespace, vs.Metadata.Name, clients.DeleteOpts{IgnoreNotExist: true})
-				Expect(err).NotTo(HaveOccurred())
+				deleteVirtualService(virtualServiceClient, testHelper.InstallNamespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
 			}
 
 			if ug != nil {
@@ -1076,7 +1050,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// create an upstream group
 			// add subset to the upstream
 			// create another pod
-			vs, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
+			writeVirtualService(virtualServiceClient, &gatewayv1.VirtualService{
 				Metadata: core.Metadata{
 					Name:      "vs",
 					Namespace: testHelper.InstallNamespace,
