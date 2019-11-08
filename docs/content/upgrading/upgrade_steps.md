@@ -11,7 +11,7 @@ This guide will largely assume that you are running Gloo in Kubernetes.
 In this guide, we'll walk you through how to upgrade Gloo. There are two components that need to be updated:
 
 * [`glooctl`](#upgrading-glooctl)
-* [Gloo (control plane)](#upgrading-the-control-plane)
+* [Gloo (server components)](#upgrading-the-control-plane)
     * [Updating Gloo using `glooctl`](#using-glooctl)
     * [Updating Gloo using Helm](#using-helm)
 
