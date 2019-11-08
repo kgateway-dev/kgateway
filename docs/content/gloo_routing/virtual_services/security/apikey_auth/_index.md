@@ -149,7 +149,7 @@ config:
 
 Our API key is indeed `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`! 
 
-Now that we have a valid API key secret, let's go ahead and create and `AuthConfig` CRD with our API key 
+Now that we have a valid API key secret, let's go ahead and create an `AuthConfig` CRD with our API key 
 authentication configuration:
 
 {{< highlight shell "hl_lines=9-11" >}}
@@ -166,7 +166,6 @@ spec:
         team: infrastructure
 EOF
 {{< /highlight >}}
-
 
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
