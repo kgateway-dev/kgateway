@@ -5,7 +5,7 @@ description: Steps for upgrading Gloo components
 ---
 
 {{% notice note %}}
-This guide will largely assume that you are running the Gloo control plane in Kubernetes.
+This guide will largely assume that you are running Gloo in Kubernetes.
 {{% /notice %}}
 
 In this guide, we'll walk you through how to upgrade Gloo. There are two components that need to be updated:
