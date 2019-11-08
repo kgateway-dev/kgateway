@@ -923,6 +923,7 @@ spec:
 				})
 
 				It("creates the certgen job, rbac, and service account", func() {
+					prepareMakefile("--namespace " + namespace)
 					job := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -937,6 +938,7 @@ metadata:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "10"
 spec:
+  ttlSecondsAfterFinished: 60
   template:
     metadata:
       labels:

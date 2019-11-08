@@ -149,7 +149,7 @@ type Gateway struct {
 	Upgrade             *bool              `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
 	Deployment          *GatewayDeployment `json:"deployment,omitempty"`
 	ConversionJob       *Job               `json:"conversionJob,omitempty"`
-	CertGenJob          *Job               `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
+	CertGenJob          *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
 	UpdateValues        bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount ServiceAccount     `json:"proxyServiceAccount" `
 }
@@ -175,6 +175,12 @@ type GatewayDeployment struct {
 type Job struct {
 	Image *Image `json:"image,omitempty"`
 	*JobSpec
+}
+
+type CertGenJob struct {
+	Job
+	SetTtlAfterFinished     bool `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
+	TtlSecondsAfterFinished int  `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
 
 type GatewayProxy struct {
