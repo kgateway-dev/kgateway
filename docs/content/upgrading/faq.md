@@ -24,7 +24,12 @@ We will be providing more docs on this soon, but in the meantime, reach out to u
 
 A normal upgrade of Gloo across minor versions should not cause any disruption to existing Gloo state. In
 the case of a breaking change, we will communicate through the changelog or other channels if some other
-adjustment must be made to perform the upgrade.  
+adjustment must be made to perform the upgrade.
+
+As of open-source Gloo version 0.21.1, there is a command available in `glooctl` that can help mitigate
+some concern about Gloo state: `glooctl debug yaml` can be used to dump the current Gloo state to one
+large YAML manifest. While this command is not yet really suitable as a robust backup tool, it is
+a very useful debug tool to have available.
 
 - **How do I handle upgrading across a breaking change?**
 
