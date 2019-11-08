@@ -20,7 +20,7 @@ Gloo's plugin based architecture makes it easy to extend functionality in a vari
 ## Gloo API Concepts
 
 
-* {{< protobuf name="gloo.solo.io.Proxy"> display="v1.Proxies"}} provide the routing configuration which Gloo will translate and apply to Envoy.
+* {{< protobuf name="gloo.solo.io.Proxy" display="v1.Proxies">}} provide the routing configuration which Gloo will translate and apply to Envoy.
 * {{< protobuf name="gloo.solo.io.Upstream" display="v1.Upstreams" >}} describe routable destinations for Gloo.
 
 * **Proxies** represent a unified configuration to be applied to one or more instances of a proxy. You can think of the proxy of as tree like such:
