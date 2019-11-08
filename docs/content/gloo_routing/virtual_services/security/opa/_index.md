@@ -4,51 +4,85 @@ weight: 50
 description: Illustrating how to combine OpenID Connect with Open Policy Agent to achieve fine grained policy with Gloo.
 ---
 
-## Motivation
+{{% notice note %}}
+The OPA feature was introduced with **Gloo Enterprise**, release 0.18.21. If you are using an earlier version, this tutorial will not work.
+{{% /notice %}}
 
-Open Policy Agent (OPA for short) can be used to express versatile organization policies.
-Starting in gloo-e version 0.18.21 you can use OPA policies to make authorization decisions
-on incoming requests.
-This allows you having uniform policy language all across your organization.
-This also allows you to create more fine grained policies compared to RBAC authorization system. For more information, see [here](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
+The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that 
+can be used to define and enforce versatile policies in a uniform way across your organization. 
+Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see 
+[the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
 
-##  Prerequisites
+Be sure to check the external auth [configuration overview]({{< ref "gloo_routing/virtual_services/security#configuration-overview" >}}) 
+for detailed information about how authentication is configured on Virtual Services.
 
-- A Kubernetes cluster. [minikube](https://github.com/kubernetes/minikube) is a good way to get started
-- `glooctl` - To install and interact with Gloo (optional).
+## Setup
+{{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-## Install Gloo and Test Service
+Let's deploy a sample application that we will route requests to during this guide:
 
-That's easy!
-
+```shell script
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
-glooctl install gateway enterprise --license-key=$GLOO_KEY
-kubectl --namespace default apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
-```
 
-See more information and options of installing Gloo [here](/installation/enterprise).
+### Creating a Virtual Service
 
-### Verify Install
-Make sure all is deployed correctly:
+Now we can create a Virtual Service that routes any requests with the `/echo` prefix to the `http-echo` service.
+
+{{< highlight shell "hl_lines=17-21" >}}
+kubectl apply -f - << EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
+EOF
+{{< /highlight >}}
+
+
+To verify that the Virtual Service works, let's send a request to `/api/pets`:
 
 ```shell
-curl $(glooctl proxy url)/api/pets
+curl $GATEWAY_URL/api/pets
 ```
 
-should respond with
+You should see the following output:
+
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-## Configuring an Open Policy Agent Policy 
+## Secure the Virtual Service
+{{% notice warning %}}
+{{% extauth_version_info_note %}}
+{{% /notice %}}
 
-Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). The Rego language is inspired from Datalog, which inturn is a subset of Prolog. Rego is more suited to work with modern JSON documents.
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
+Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+We will update the Virtual Service so that only requests that comply with a given OPA policy are allowed.
 
-### Create the Policy 
-Let's create a Policy to control what actions are allowed on our service, and apply it to Kubernetes as a ConfigMap:
+
+### Define an OPA policy 
+Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). 
+The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work 
+with modern JSON documents. Let's create a Policy to control which actions are allowed on our service:
 
 ```shell
-cat <<EOF > /tmp/policy.rego
+cat <<EOF > policy.rego
 package test
 
 default allow = false
@@ -63,37 +97,57 @@ allow {
     })
 }
 EOF
-kubectl --namespace=gloo-system create configmap allow-get-users --from-file=/tmp/policy.rego
 ```
 
-Let's break this down:
+This policy:
 
-- This policy denies everything by default
-- It is allowed if:
-  - The path starts with "/api/pets" AND the http method is "GET"
-  - **OR**
-  - The path is exactly "/api/pets/2" AND the http method is either "GET" or "DELETE"
-
-In the next setup, we will attach this policy to a Gloo VirtualService to enforce it.
+- denies everything by default,
+- allows requests if:
+  - the path starts with `/api/pets` AND the http method is `GET` **OR**
+  - the path is exactly `/api/pets/2` AND the http method is either `GET` or `DELETE`
 
 
-### Create a VirtualService with the OPA Authorization
+### Create an OPA AuthConfig CRD
+Gloo expects OPA policies to be stored in a Kubernetes ConfigMap, so let't go ahead and create a ConfigMap with the 
+contents of the above policy file:
 
-To enforce the policy, we will create a Gloo VirtualService with OPA Authorization enabled. We will refer to the policy created above, and add a query that allows access
-only if the `allow` variable is `true`:
+```
+kubectl -n gloo-system create configmap allow-get-users --from-file=policy.rego
+```
 
-{{< tabs >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name default --enable-opa-auth --opa-query 'data.test.allow == true' --opa-module-ref gloo-system.allow-get-users
-glooctl add route --name default --path-prefix / --dest-name default-petstore-8080 --dest-namespace gloo-system
-{{< /tab >}}
-{{< tab name="kubectl" codelang="yaml">}}
-kind: VirtualService
+First we can to create an `AuthConfig` CRD with our OPA authorization configuration:
+
+{{< highlight shell "hl_lines=9-13" >}}
+kubectl apply -f - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
 metadata:
-  name: default
+  name: opa
   namespace: gloo-system
 spec:
-  displayName: default
+  configs:
+  - opa_auth:
+      modules:
+      - name: allow-get-users
+        namespace: gloo-system
+      query: "data.test.allow == true"
+EOF
+{{< /highlight >}}
+
+The above `AuthConfig` references the ConfigMap  (`modules`) we created earlier and adds a query that allows access only 
+if the `allow` variable is `true`. 
+
+### Update the Virtual Service
+Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
+
+{{< highlight shell "hl_lines=21-25" >}}
+kubectl apply -f - <<EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
   virtualHost:
     domains:
     - '*'
@@ -102,53 +156,45 @@ spec:
         prefix: /
       routeAction:
         single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
     virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            configs:
-            - opa_auth:
-                modules:
-                - name: allow-get-users
-                  namespace: gloo-system
-                query: "data.test.allow == true"
-{{< /tab >}}
-{{< /tabs >}} 
+      extauth:
+        config_ref:
+          name: opa
+          namespace: gloo-system
+EOF
+{{< /highlight >}}
 
-That's all that is needed as far as configuration. Let's verify that all is working as expected.
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "gloo_routing/virtual_services/security#inheritance-rules" >}}) it.
 
-## Verify
-
-```shell
-URL=$(glooctl proxy url)
+### Testing our configuration
+Paths that don't start with `/api/pets` are not authorized (should return 403):
 ```
-
-Paths that don't start with /api/pets are not authorized (should return 403):
-```
-curl -s -w "%{http_code}\n" $URL/api/
+curl -s -w "%{http_code}\n" $GATEWAY_URL/api/
 
 403
 ```
 
-Not allowed to delete pets/1  (should return 403):
+Not allowed to delete `pets/1` (should return 403):
 ```
-curl -s -w "%{http_code}\n" $URL/api/pets/1 -X DELETE
+curl -s -w "%{http_code}\n" $GATEWAY_URL/api/pets/1 -X DELETE
 
 403
 ```
 
-Allowed to delete pets/2  (should return 204):
+Allowed to delete `pets/2` (should return 204):
 ```
-curl -s -w "%{http_code}\n" $URL/api/pets/2 -X DELETE
+curl -s -w "%{http_code}\n" $GATEWAY_URL/api/pets/2 -X DELETE
 
 204
 ```
 
 ## Open Policy Agent and Open ID Connect
-
 We can use OPA to verify policies on the JWT coming from Gloo's OpenID Connect authentication.
 
 ### Install Dex
