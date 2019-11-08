@@ -891,6 +891,6 @@ kube-system-tiller-deploy-44134   54m
 
 Sweet! You're an official Gloo developer! You've just seen how easy it is to extend Gloo to service one of many 
 potential use cases. Take a look at our 
-[API Reference Documentation]({{< protobuf name="gloo.solo.io.Proxy">}}) to learn about the 
+{{< protobuf name="gloo.solo.io.Proxy" display="API Reference Documentation">}} to learn about the 
 wide range of configuration options Proxies expose such as request transformation, SSL termination, serverless computing, 
 and much more.

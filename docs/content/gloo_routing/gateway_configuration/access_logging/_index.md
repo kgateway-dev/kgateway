@@ -23,7 +23,7 @@ Possible use cases include:
 
 #### Configuration
 
-The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial](../../../installation/gateway/kubernetes). The only Gloo resource involved in enabling Access Loggins is the `Gateway`. Further Documentation can be found [here]({{< protobuf name="gateway.solo.io.Gateway">}}).
+The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial](../../../installation/gateway/kubernetes). The only Gloo resource involved in enabling Access Loggins is the `Gateway`. Further Documentation can be found {{< protobuf name="gateway.solo.io.Gateway" display="here">}}.
 
 Enabling access logs in Gloo is as simple as adding a [listener plugin](../../gateway_configuration/) to any one of the gateway resources. 
 The documentation for the `Access Logging Service` plugin API can be found {{< protobuf display="here" name="als.plugins.gloo.solo.io.AccessLog">}}.

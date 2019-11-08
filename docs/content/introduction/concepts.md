@@ -24,8 +24,8 @@ of a *matcher*, which specifies the kind of function calls to match (requests an
 and the name of the destination (or destinations) to route them to.
 
 - **Upstreams** define destinations for routes. Upstreams tell Gloo what to route to. Upstreams may also define
-[functions]({{< protobuf name="aws.plugins.gloo.solo.io.LambdaFunctionSpec">}}).)
-and [service specs]({{< protobuf name="plugins.gloo.solo.io.ServiceSpec">}}) for *function-level routing*.
+{{< protobuf name="aws.plugins.gloo.solo.io.LambdaFunctionSpec" display="functions" >}}.)
+and {{< protobuf name="plugins.gloo.solo.io.ServiceSpec" display="service specs">}} for *function-level routing*.
 
 ## Gateways
 
@@ -143,9 +143,9 @@ types as well as new function types through our plugin interface.
 how to handle routing for the upstream based on its `spec` field. Upstreams have a type-specific `spec` field which must
 be used to provide routing information to Gloo.
 
-The most basic upstream type is the [`static` upstream type]({{< protobuf name="static.plugins.gloo.solo.io.UpstreamSpec">}}), which tells Gloo
+The most basic upstream type is the {{< protobuf name="static.plugins.gloo.solo.io.UpstreamSpec" display="static upstream type" >}}, which tells Gloo
 a list of static hosts or dns names logically grouped together for an upstream. More sophisticated upstream types
-include the kubernetes upstream and the [AWS Lambda upstream]({{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec">}}).
+include the kubernetes upstream and the {{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec" display="AWS Lambda upstream">}}.
 
 Let's walk through an example of a kubernetes upstream in order to understand how this works.
 
@@ -214,7 +214,7 @@ section.
 
 ## Secrets
 
-Certain plugins such as the [AWS Lambda Plugin]({{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec">}})
+Certain plugins such as the {{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec" display="AWS Lambda Plugin">}}
 require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be
 stored in plaintext configuration.
 
